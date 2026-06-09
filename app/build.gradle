@@ -4,12 +4,21 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
+// LWJGL3 version used for both API JARs and native extraction
+def lwjglVersion = "3.4.0"
+
 repositories {
     mavenCentral()
     google()
     maven {
         url 'https://oss.sonatype.org/content/repositories/snapshots'
     }
+}
+
+// Separate configuration so the extraction task can resolve native JARs independently
+// of the fat-JAR build (shadow plugin only pulls from runtimeClasspath, not this config).
+configurations {
+    lwjglNatives
 }
 
 dependencies {
@@ -73,6 +82,21 @@ dependencies {
 
     // WebSocket server for external integrations
     implementation 'org.java-websocket:Java-WebSocket:1.5.7'
+
+    // LWJGL3 with SDL3 bindings — joystick/HOTAS/gamepad/pedal input for StarVizion overlay.
+    // API JARs: compile + runtime.  Native JARs: kept in the fat JAR as a last-resort fallback,
+    // AND extracted to distribution/native/lwjgl/ at build time (see extractLwjglNatives task)
+    // so SdlInputService can point LWJGL3 there instead of %TEMP%, sidestepping AV/noexec issues.
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-sdl:${lwjglVersion}"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-linux"
+    lwjglNatives "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    lwjglNatives "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-windows"
+    lwjglNatives "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+    lwjglNatives "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-linux"
 }
 
 
@@ -114,6 +138,22 @@ sourceSets {
     }
 }
 
+// Flatten all LWJGL3 native DLLs / SOs out of their versioned JAR paths into one flat dir.
+// SdlInputService points LWJGL3 here via org.lwjgl.system.SharedLibraryExtractPath so the
+// loader never needs to write to %TEMP%, bypassing AV noexec and Unicode-path failures.
+tasks.register('extractLwjglNatives', Sync) {
+    description = 'Pre-extracts LWJGL3 native DLLs/SOs to distribution/native/lwjgl/.'
+    from { configurations.lwjglNatives.collect { zipTree(it) } }
+    into "${rootProject.projectDir}/distribution/native/lwjgl"
+    include '**/*.dll', '**/*.so'
+    exclude '**/META-INF/**'
+    eachFile { fcd ->
+        fcd.relativePath = new RelativePath(true, fcd.name)
+    }
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 shadowJar {
     archiveFileName = 'elite_intel.jar'
     manifest {
@@ -121,6 +161,7 @@ shadowJar {
     }
     mergeServiceFiles()
     destinationDirectory = file("${rootProject.projectDir}/distribution")
+    dependsOn extractLwjglNatives
 }
 
 // Default test task — exclude local-integration tests so CI never tries to call Ollama

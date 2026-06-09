@@ -14,6 +14,7 @@
 ./build
 ./.gradle
 ./distribution/elite_intel.jar
+/distribution/native/lwjgl/
 .gradle/*
 .gradle/*/*
 ./.gradle/file-system.probe
@@ -23,3 +24,4 @@
 /distribution/elite_intel_updater.jar
 /scratch/scratch.sql
 /installers/
+/PACKAGES.md

@@ -3,6 +3,7 @@ package elite.intel.ui.view;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
+import elite.intel.starvizion.StarVizionTabPanel;
 import elite.intel.ui.controller.AiTabController;
 import elite.intel.ui.event.LanguageChangedEvent;
 import elite.intel.ui.event.ServicesStateEvent;
@@ -44,6 +45,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
     private MarkdownViewPanel userManualPanel;
+    private StarVizionTabPanel starVizionTabPanel;
     private AiTabController aiTabController;
     private boolean servicesRunning;
 
@@ -101,12 +103,14 @@ public class AppView extends JFrame implements AppViewInterface {
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
         userManualPanel = new MarkdownViewPanel("user-manual.md");
+        starVizionTabPanel = new StarVizionTabPanel();
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
         tabs.addTab(getText("tab.player"), playerIcon, playerTabPanel);
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
+        tabs.addTab(getText("tab.starvizion"), null, starVizionTabPanel);
         tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
@@ -155,6 +159,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (actionsTabPanel != null) actionsTabPanel.dispose();
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
+        if (starVizionTabPanel != null) starVizionTabPanel.dispose();
         buildUi();
         initData();
         revalidate();
