@@ -97,11 +97,16 @@ public class SdlInputService {
             EventBusManager.publish(new SvServiceStateEvent(true, null));
 
             Set<Integer> knownIds = new HashSet<>();
+            boolean firstPoll = true;
 
             while (running.get()) {
                 SDLEvents.SDL_PumpEvents();
 
                 Set<Integer> currentIds = enumerateJoystickIds();
+                if (firstPoll) {
+                    log.debug("StarVizion initial joystick enumeration: {} device(s) found, ids={}", currentIds.size(), currentIds);
+                    firstPoll = false;
+                }
 
                 for (int id : currentIds) {
                     if (knownIds.add(id)) onDeviceAdded(id);
@@ -199,14 +204,17 @@ public class SdlInputService {
         IntBuffer buf = SDLJoystick.SDL_GetJoysticks();
         if (buf != null) {
             while (buf.hasRemaining()) ids.add(buf.get());
+        } else {
+            log.error("SDL_GetJoysticks() returned null: {}", SDLError.SDL_GetError());
         }
         return ids;
     }
 
     private void onDeviceAdded(int id) {
+        log.debug("StarVizion joystick enumeration found device id={}", id);
         long handle = SDLJoystick.SDL_OpenJoystick(id);
         if (handle == 0L) {
-            log.warn("SDL_OpenJoystick({}) failed: {}", id, SDLError.SDL_GetError());
+            log.error("StarVizion SDL_OpenJoystick({}) failed: {}", id, SDLError.SDL_GetError());
             return;
         }
         openHandles.put(id, handle);
