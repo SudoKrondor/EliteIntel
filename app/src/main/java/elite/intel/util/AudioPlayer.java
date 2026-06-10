@@ -53,6 +53,19 @@ public final class AudioPlayer {
             }
             InputStream audioStream = new BufferedInputStream(resourceStream);
             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioStream);
+
+            // Transcode to 16-bit PCM if needed so the output device can always open it.
+            AudioFormat src = audioInputStream.getFormat();
+            if (src.getSampleSizeInBits() != 16 || src.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
+                AudioFormat target = new AudioFormat(
+                        AudioFormat.Encoding.PCM_SIGNED,
+                        src.getSampleRate(), 16, src.getChannels(),
+                        src.getChannels() * 2, src.getSampleRate(), false);
+                if (AudioSystem.isConversionSupported(target, src)) {
+                    audioInputStream = AudioSystem.getAudioInputStream(target, audioInputStream);
+                }
+            }
+
             Clip clip = AudioSystem.getClip();
             clip.open(audioInputStream);
             if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {

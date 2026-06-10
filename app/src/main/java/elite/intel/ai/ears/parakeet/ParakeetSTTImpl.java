@@ -64,6 +64,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     private AntiAliasingFilter antiAliasingFilter;
     private int sampleRateHertz;
     private int bufferSize;
+    private AudioFormat captureFormat;
     public double RMS_THRESHOLD_HIGH;
     public double NOISE_FLOOR;
     private final double MINIMUM_NOISE_FLOOR_TO_RMS_RATIO = 300;
@@ -85,11 +86,12 @@ public class ParakeetSTTImpl implements EarsInterface {
         AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
         this.sampleRateHertz = format.getSampleRate();
         this.bufferSize = format.getBufferSize();
+        this.captureFormat = format.getCaptureFormat();
 
         Double high = systemSession.getRmsThresholdHigh();
         Double low = systemSession.getRmsThresholdLow();
         if (high == 0 || low == 0) {
-            RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(sampleRateHertz, bufferSize, inputMixerInfo);
+            RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             this.RMS_THRESHOLD_HIGH = cal.getRmsHigh();
             this.NOISE_FLOOR = cal.getRmsLow();
         } else {
@@ -229,11 +231,10 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     private void runVadAndTranscribe() throws LineUnavailableException, InterruptedException {
-        AudioFormat audioFormat = new AudioFormat(sampleRateHertz, 16, CHANNELS, true, false);
-        DataLine.Info info = new DataLine.Info(TargetDataLine.class, audioFormat);
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, captureFormat);
 
         try (TargetDataLine line = AudioDeviceEnumerator.openInputLine(info, inputMixerInfo)) {
-            line.open(audioFormat, bufferSize);
+            line.open(captureFormat, bufferSize);
             line.start();
             byte[] buffer = new byte[bufferSize];
 
@@ -247,10 +248,13 @@ public class ParakeetSTTImpl implements EarsInterface {
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead <= 0) continue;
 
+                // Convert capture format (e.g. 24-bit stereo) to 16-bit mono before all downstream processing.
+                byte[] mono16 = AudioFormatDetector.toPCM16Mono(buffer, bytesRead, captureFormat);
+
                 byte[] preResample = (antiAliasingFilter != null)
-                        ? antiAliasingFilter.filter(buffer, bytesRead)
-                        : buffer;
-                int preResampleLen = (antiAliasingFilter != null) ? preResample.length : bytesRead;
+                        ? antiAliasingFilter.filter(mono16, mono16.length)
+                        : mono16;
+                int preResampleLen = (antiAliasingFilter != null) ? preResample.length : mono16.length;
                 byte[] audio = (resampler != null)
                         ? resampler.resample(preResample, preResampleLen)
                         : preResample;

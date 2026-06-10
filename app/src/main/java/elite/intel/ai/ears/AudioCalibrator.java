@@ -38,29 +38,17 @@ public class AudioCalibrator {
     private static final double MAX_NOISE_AVG = 800.0;
 
 
-    public static RmsTupple<Double, Double> calibrateRMS(int sampleRateHertz, int bufferSize) {
-        return calibrateRMS(sampleRateHertz, bufferSize, null);
+    public static RmsTupple<Double, Double> calibrateRMS(AudioFormatDetector.Format format) {
+        return calibrateRMS(format, null);
     }
 
-    /**
-     * Calibrates the Root Mean Square (RMS) thresholds for audio input by analyzing noise and speech levels.
-     * This method performs a two-phase calibration process:
-     * 1. Noise calibration to determine the noise floor.
-     * 2. Speech calibration to identify the average speech RMS values.
-     * Based on these measurements, the method calculates thresholds for detecting speech in audio streams.
-     *
-     * @param sampleRateHertz the sample rate of the audio in Hertz.
-     * @param bufferSize      the size of the byte buffer used for audio data processing.
-     * @param mixerInfo       the audio mixer to be used for capturing audio input.
-     * @return a tuple containing the high RMS threshold and the low RMS threshold,
-     * which represent the settings for detecting speech effectively based on the calibration process.
-     */
-    public static RmsTupple<Double, Double> calibrateRMS(int sampleRateHertz, int bufferSize, Mixer.Info mixerInfo) {
+    public static RmsTupple<Double, Double> calibrateRMS(AudioFormatDetector.Format format, Mixer.Info mixerInfo) {
         log.info("Starting RMS calibration: noise for {}ms, speech for {}ms, with {}ms TTS delays",
                 NOISE_CALIBRATION_DURATION_MS, SPEECH_CALIBRATION_DURATION_MS, TTS_PROMPT_DELAY_MS);
 
-        AudioFormat format = new AudioFormat(sampleRateHertz, 16, 1, true, false);
-        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+        AudioFormat captureFormat = format.getCaptureFormat();
+        int bufferSize = format.getBufferSize();
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, captureFormat);
         byte[] buffer = new byte[bufferSize];
 
         // Phase 1: noise floor
@@ -72,7 +60,7 @@ public class AudioCalibrator {
             log.warn("Noise TTS delay interrupted: {}", e.getMessage());
             Thread.currentThread().interrupt();
         }
-        double noiseFloor = calibrateNoiseFloor(format, bufferSize, buffer, info, mixerInfo);
+        double noiseFloor = calibrateNoiseFloor(captureFormat, bufferSize, buffer, info, mixerInfo);
 
         // Phase 2: speech
         EventBusManager.publish(new AiVoxResponseEvent("Now count to 12 to calibrate audio..."));
@@ -83,7 +71,7 @@ public class AudioCalibrator {
             log.warn("Speech TTS delay interrupted: {}", e.getMessage());
             Thread.currentThread().interrupt();
         }
-        double avgSpeechRMS = calibrateSpeech(format, bufferSize, buffer, info, noiseFloor, mixerInfo);
+        double avgSpeechRMS = calibrateSpeech(captureFormat, bufferSize, buffer, info, noiseFloor, mixerInfo);
 
         // VAD trigger = midpoint between noise and speech.
         // Always above ambient, always below speech, regardless of absolute levels.
@@ -137,7 +125,8 @@ public class AudioCalibrator {
             while (System.currentTimeMillis() - startTime < NOISE_CALIBRATION_DURATION_MS) {
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead > 0) {
-                    samples.add(calculateRMS(buffer, bytesRead));
+                    byte[] mono16 = AudioFormatDetector.toPCM16Mono(buffer, bytesRead, format);
+                    samples.add(calculateRMS(mono16, mono16.length));
                 }
             }
         } catch (LineUnavailableException | IllegalArgumentException e) {
@@ -203,7 +192,8 @@ public class AudioCalibrator {
             while (System.currentTimeMillis() - startTime < SPEECH_CALIBRATION_DURATION_MS) {
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead > 0) {
-                    double rms = calculateRMS(buffer, bytesRead);
+                    byte[] mono16 = AudioFormatDetector.toPCM16Mono(buffer, bytesRead, format);
+                    double rms = calculateRMS(mono16, mono16.length);
                     totalSampleCount++;
                     if (rms > noiseFloor * 1.3) {
                         sumSpeechRMS += rms;

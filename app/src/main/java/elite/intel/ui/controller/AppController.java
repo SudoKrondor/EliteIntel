@@ -2,11 +2,11 @@ package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ApiFactory;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.ears.AudioCalibrator;
 import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -115,7 +115,7 @@ public class AppController implements Runnable {
             new Thread(() -> {
                 try {
                     AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat();
-                    AudioCalibrator.calibrateRMS(format.getSampleRate(), format.getBufferSize());
+                    AudioCalibrator.calibrateRMS(format);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
                         EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration complete"));
