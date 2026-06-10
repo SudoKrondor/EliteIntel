@@ -13,6 +13,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
@@ -374,8 +375,16 @@ public class KokoroTTS implements MouthInterface {
 
     // -- Engine construction ---------------------------------------------------
 
+    private static String kokoroLangCode(Language language) {
+        return switch (language) {
+            case FR -> "fr-fr";
+            //case ES -> "es-es";
+            default -> "en-us";
+        };
+    }
+
     private OfflineTts buildOfflineTts() {
-        Path modelDir = AppPaths.getTtsModelDir().resolve("kokoro-en-v0_19");
+        Path modelDir = AppPaths.getTtsModelDir().resolve("kokoro-multi-lang-v1_0");
         if (!Files.exists(modelDir)) {
             throw new IllegalStateException(
                     "Kokoro model missing at: " + modelDir +
@@ -387,7 +396,7 @@ public class KokoroTTS implements MouthInterface {
                 .setVoices(AppPaths.toNativePath(modelDir.resolve("voices.bin")))
                 .setTokens(AppPaths.toNativePath(modelDir.resolve("tokens.txt")))
                 .setDataDir(AppPaths.toNativePath(modelDir.resolve("espeak-ng-data")))
-                .setLang("en-us")
+                .setLang(kokoroLangCode(SystemSession.getInstance().getLanguage()))
                 .build();
 
         OfflineTtsModelConfig modelConfig = OfflineTtsModelConfig.builder()

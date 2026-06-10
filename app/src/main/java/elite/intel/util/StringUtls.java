@@ -9,7 +9,10 @@ import elite.intel.ui.i18n.MultiLingualTextProvider;
 import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 public class StringUtls {
 
@@ -85,13 +88,21 @@ public class StringUtls {
         return MultiLingualTextProvider.getText(language, greetingKey, spokenName);
     }
 
+
+    //TODO: remove payer name from method signature once UI changes are in
     public static String shipIntroduction(String playerName, String shipName) {
         Language language = effectiveTtsLanguage();
         String spokenName = spokenNameOrCommander(playerName, language);
         String safeShipName = shipName == null || shipName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : shipName;
-        return MultiLingualTextProvider.getText(language, "speech.shipIntroduction", spokenName, safeShipName);
+        return MultiLingualTextProvider.getText(
+                language,
+                "speech.shipIntroduction",
+                spokenName,
+                safeShipName,
+                Ranks.getPlayerHonorific()
+        );
     }
 
     public static String localizedSpeech(String key, Object... args) {
@@ -105,6 +116,7 @@ public class StringUtls {
             case UK -> "language.ukrainian";
             case DE -> "language.german";
             case FR -> "language.french";
+            case ES -> "language.spanish";
         };
         return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key);
     }

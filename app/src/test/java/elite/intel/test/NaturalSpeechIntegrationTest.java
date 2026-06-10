@@ -43,7 +43,7 @@ public class NaturalSpeechIntegrationTest {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 5000;
+    private static final int LLM_WAIT_MS = 2500;
 
     private HandlerCapture capture;
 
@@ -155,6 +155,17 @@ public class NaturalSpeechIntegrationTest {
         return Stream.of("look ahead", "reset", "reset head look", "head look to neutral");
     }
 
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(16)
+    @MethodSource
+    void honkTheSystem(String input) throws InterruptedException {
+        assertRouted(input, HONK_THE_SYSTEM.getAction());
+    }
+
+    static Stream<String> honkTheSystem() {
+        return Stream.of("honk", "honk the system", "discovery scan");
+    }
     // =========================================================================
     // Speed / throttle - highest collision risk group
     // =========================================================================
@@ -767,7 +778,7 @@ public class NaturalSpeechIntegrationTest {
     @Order(90)
     @MethodSource
     void disableAnnouncements(String input) throws InterruptedException {
-        assertRouted(input, DISABLE_ALL_ANNOUNCEMENTS.getAction());
+        assertRouted(input, TOGGLE_ALL_ANNOUNCEMENTS.getAction());
     }
 
     static Stream<String> disableAnnouncements() {

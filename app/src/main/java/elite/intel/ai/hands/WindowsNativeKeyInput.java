@@ -91,6 +91,7 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         SCAN_MAP.put(NATIVE_BASE + 19, (short) 0x0B); // KEY_AGRAVE   → à (FR, PS/2 position 0)
         SCAN_MAP.put(NATIVE_BASE + 20, (short) 0x27); // KEY_UGRAVE   → ù (FR, PS/2 ';' position)
         SCAN_MAP.put(NATIVE_BASE + 21, (short) 0x0A); // KEY_CCEDILLA → ç (FR, PS/2 position 9)
+        SCAN_MAP.put(NATIVE_BASE + 22, (short) 0x27); // KEY_NTILDE   → ñ (ES, PS/2 ';' position)
 
         // --- Control / editing keys ---
         SCAN_MAP.put(KeyEvent.VK_ESCAPE, (short) 0x01);

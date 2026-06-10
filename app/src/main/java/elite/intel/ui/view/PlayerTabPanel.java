@@ -14,7 +14,6 @@ import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.i18n.Language;
-import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
@@ -34,9 +33,9 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
-import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.view.AppTheme.*;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class PlayerTabPanel extends JPanel {
 
@@ -341,7 +340,8 @@ public class PlayerTabPanel extends JPanel {
                 new LanguageOption(getText("language.russian"), Language.RU),
                 new LanguageOption(getText("language.ukrainian"), Language.UK),
                 new LanguageOption(getText("language.german"), Language.DE),
-                new LanguageOption(getText("language.french"), Language.FR)
+                new LanguageOption(getText("language.french"), Language.FR),
+                new LanguageOption(getText("language.spanish"), Language.ES),
         });
         combo.setBackground(BG_PANEL);
         combo.setForeground(FG);

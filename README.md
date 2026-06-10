@@ -57,6 +57,9 @@ The cost will very depending on which one you choose.
     - LLM takes 6.5GB
 See [**Configure the app**](UI-and-Configuration-Options) for next steps.
 
+- 👉 Video by DawnTreader for [Windows Users on how to setup LMStudio on Windows](https://www.youtube.com/watch?v=F5RgRRePrTo)
+- 👉 Video by Sudo Krondor for [Linux Users on how to setup LMStudio on Linux](https://www.youtube.com/watch?v=2HGFmlZGK1g)
+
 ---
 
 ### Realtek users

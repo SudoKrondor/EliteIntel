@@ -3,11 +3,7 @@ package elite.intel.ai.brain.i18n;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public final class AiActionLocalizations {
 
@@ -21,6 +17,7 @@ public final class AiActionLocalizations {
             case UK -> new UkrainianAiActionAliases();
             case DE -> new GermanAiActionAliases();
             case FR -> new FrenchAiActionAliases();
+            case ES -> new SpanishAiActionAliases();
         };
     }
 

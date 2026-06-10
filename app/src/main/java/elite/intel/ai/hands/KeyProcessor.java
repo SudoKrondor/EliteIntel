@@ -85,6 +85,7 @@ public class KeyProcessor {
     public static final int KEY_AGRAVE = NATIVE_BASE + 19; // à (FR AZERTY, number-row position 0)
     public static final int KEY_UGRAVE = NATIVE_BASE + 20; // ù (FR AZERTY, ù key position)
     public static final int KEY_CCEDILLA = NATIVE_BASE + 21; // ç (FR AZERTY, number-row position 9)
+    public static final int KEY_NTILDE = NATIVE_BASE + 22;   // ñ (ES Spanish, home-row position after L)
     public static final int KEY_LEFTCONTROL = NATIVE_BASE + 1;
     public static final int KEY_RIGHTCONTROL = NATIVE_BASE + 2;
     public static final int KEY_LEFTSHIFT = NATIVE_BASE + 3;

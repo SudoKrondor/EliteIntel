@@ -105,7 +105,7 @@ public class TradeProfileManager {
 
 
         TradeStationSearchCriteria.Filters filters = new TradeStationSearchCriteria.Filters();
-        filters.setDistanceToArrival(new TradeStationSearchCriteria.RangeFilter(0, 120000));
+        filters.setDistanceToArrival(new TradeStationSearchCriteria.RangeFilter(0, 6000));
         TradeStationSearchCriteria.StationType stationType = new TradeStationSearchCriteria.StationType();
         stationType.setTypes(Arrays.asList("Asteroid base", "Coriolis Starport", "Mega ship", "Ocellus Starport", "Orbis Starport", "Planetary Port", "Space Station", "Odyssey Settlement", "Planetary Base", "outpost"));
         filters.setStationType(stationType);
@@ -268,19 +268,6 @@ public class TradeProfileManager {
         });
     }
 
-    public boolean setAllowSystemPermits(boolean allowSystemPermits) {
-        final ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
-            return false;
-        }
-        TradeProfileDao.TradeProfile profile = getProfile(ship);
-        profile.setAllowPermit(allowSystemPermits);
-        return Database.withDao(TradeProfileDao.class, dao -> {
-            dao.save(profile);
-            return true;
-        });
-    }
 
     public boolean hasCargoCapacity() {
         return shipManager.getShip() == null ? false : shipManager.getShip().getCargoCapacity() > 0;

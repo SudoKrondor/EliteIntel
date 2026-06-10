@@ -47,7 +47,7 @@ import java.util.Comparator;
  */
 public class JournalParser implements Runnable, ManagedService {
     private static final Logger log = LogManager.getLogger(JournalParser.class);
-    private  Path journalDir;
+    private Path journalDir;
     private Thread processingThread;
     private volatile boolean isRunning;
     private final WebSocketBroadcaster webSocketBroadcaster = WebSocketBroadcaster.getInstance();
@@ -209,11 +209,13 @@ public class JournalParser implements Runnable, ManagedService {
                                 if (eventJson.has("event")) {
                                     String eventType = eventJson.get("event").getAsString();
                                     BaseEvent event = EventRegistry.createEvent(eventType, eventJson);
-                                    if (event != null && !event.isExpired()) {
+                                    if (event != null && !event.isReplay() && !event.isExpired()) {
                                         EventBusManager.publish(event);
                                         webSocketBroadcaster.broadcast(event.toJson());
                                         EventBusManager.publish(new AppLogDebugEvent("\tProcessing Event: " + eventType));
                                         log.info("Processing Journal Event: {} {}", eventType, event.toJsonObject());
+                                    } else if (event != null && event.isReplay()) {
+                                        log.debug("Skipping replay event: {}", eventType);
                                     } else if (event != null && event.isExpired()) {
                                         log.warn("Skipping event: {}, reason {}", eventType, "Event expired");
                                     }

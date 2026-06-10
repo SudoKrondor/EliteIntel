@@ -3,6 +3,8 @@ package elite.intel.search.spansh.traderoute;
 import elite.intel.search.spansh.client.StringQuery;
 import elite.intel.util.json.GsonFactory;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.StringJoiner;
 
 public class TradeRouteSearchCriteria implements StringQuery {
@@ -136,8 +138,8 @@ public class TradeRouteSearchCriteria implements StringQuery {
 
         String criteria = "max_hops=" + maxHops +
                 "&max_hop_distance=" + maxHopDistance
-                + "&system=" + system
-                + "&station=" + station
+                + "&system=" + URLEncoder.encode(system, StandardCharsets.UTF_8)
+                + "&station=" + URLEncoder.encode(station, StandardCharsets.UTF_8)
                 + "&starting_capital=" + startingCapital
                 + "&max_cargo=" + maxCargo
                 + "&max_system_distance=" + maxLsFromArrival
@@ -145,10 +147,11 @@ public class TradeRouteSearchCriteria implements StringQuery {
                 + (allowProhibited ? "&allow_prohibited=1" : "")
                 + (allowPlanetary ? "&allow_planetary=1" : "")
                 + (allowFleetCarriers ? "&allow_player_owned=1" : "")
-                + "&max_price_age=" + (ONE_HOUR * 2)
+                + "&max_price_age=" + (ONE_HOUR * 10)
                 + (allowPermit ? "&permit=1" : "")
                 + (allowStrongHold ? "&allow_restricted_access=1" : "");
-        return criteria.replace(" ", "%20");
+
+        return criteria;
     }
 
     //max_hops=5&max_hop_distance=50&system=Tir&station=Anand+Metallurgic+Base&starting_capital=25000000&max_cargo=250&max_system_distance=10000000&requires_large_pad=1&allow_prohibited=0&allow_planetary=0&allow_player_owned=0&allow_restricted_access=0&unique=0&permit=0

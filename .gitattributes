@@ -3,7 +3,7 @@ distribution/models/**/*.bin filter=lfs diff=lfs merge=lfs -text
 distribution/models/tts/kokoro-en-v0_19/espeak-ng-data/** filter=lfs diff=lfs merge=lfs -text
 distribution/tts/**/*.onnx filter=lfs diff=lfs merge=lfs -text
 distribution/tts/**/*.bin filter=lfs diff=lfs merge=lfs -text
-distribution/tts/kokoro-en-v0_19/espeak-ng-data/** filter=lfs diff=lfs merge=lfs -text
+distribution/tts/*/espeak-ng-data/** filter=lfs diff=lfs merge=lfs -text
 distribution/whisper/*.bin filter=lfs diff=lfs merge=lfs -text
 distribution/native/**/*.so filter=lfs diff=lfs merge=lfs -text
 distribution/native/**/*.dll filter=lfs diff=lfs merge=lfs -text

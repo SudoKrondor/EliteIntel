@@ -21,7 +21,7 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
     public BaseEvent(String timestamp,  Duration ttl, String eventName) {
         this.event = eventName;
         this.timestamp = timestamp;
-        this.endOfLife = Instant.parse(timestamp).plus(ttl);
+        this.endOfLife = Instant.now().plus(ttl);
     }
 
     public boolean isReplay() {

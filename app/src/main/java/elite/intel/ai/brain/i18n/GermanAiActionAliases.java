@@ -174,11 +174,11 @@ public class GermanAiActionAliases implements AiActionAliasProvider {
         map.put("radarkontakt ansagen {state:true/false}, radar kontakt ansage {state:true/false}", SET_RADAR_CONTACT_ANNOUNCEMENT.getAction());
         map.put("entdeckungsansagen {state:true/false}, discovery ansagen {state:true/false}", DISCOVERY_ON_OFF.getAction());
         map.put("routenansagen {state:true/false}, route ansagen {state:true/false}", ROUTE_ON_OFF.getAction());
-        map.put("alle ansagen deaktivieren, alle meldungen ausschalten", DISABLE_ALL_ANNOUNCEMENTS.getAction());
+        map.put("alle ansagen umschalten {state:true/false}, alle ankündigungen {state:true/false}", TOGGLE_ALL_ANNOUNCEMENTS.getAction());
         map.put("erinnerungen löschen, erinnerungen zurücksetzen", CLEAR_REMINDERS.getAction());
         map.put("erinnerung setzen {key:X}, erinnere mich {key:X}", SET_REMINDER.getAction());
         map.put("erinnere mich in {minutes:X} minuten {key:Y}, timer für {minutes:X} minuten {key:Y}, zeitgesteuerte erinnerung {minutes:X} minuten {key:Y}", SET_TIMED_REMINDER.getAction());
-
+        map.put("Erkunde das System, scanne das System, scanne das System", HONK_THE_SYSTEM.getAction());
         // UI panels
         map.put("aktivieren, aktiviere", ACTIVATE.getAction());
         map.put("transaktionen anzeigen, transaktionspanel öffnen", SHOW_TRANSACTIONS.getAction());

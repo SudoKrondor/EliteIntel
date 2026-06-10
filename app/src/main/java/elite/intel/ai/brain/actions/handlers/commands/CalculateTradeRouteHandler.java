@@ -10,12 +10,14 @@ import elite.intel.search.spansh.traderoute.TradeRouteResponse;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.search.spansh.traderoute.TradeRouteTransaction;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 
 public class CalculateTradeRouteHandler implements CommandHandler {
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
     private final TradeProfileManager profileManager = TradeProfileManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
+    private final Status status = Status.getInstance();
 
     @Override public void handle(String action, JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
@@ -23,9 +25,8 @@ public class CalculateTradeRouteHandler implements CommandHandler {
             return;
         }
 
-        EventBusManager.publish(new AiVoxResponseEvent("Calculating trade route. Please wait. This takes time."));
-
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
+        EventBusManager.publish(new AiVoxResponseEvent("Calculating trade route from station " + criteria.getStation() + "."));
 
         if (criteria == null) {
             return;
@@ -62,7 +63,17 @@ public class CalculateTradeRouteHandler implements CommandHandler {
 
         TradeRouteResponse route = tradeRouteManager.calculateTradeRoute(criteria);
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found. Try landing at a station. I might have better luck finding a trade route."));
+            String tryLandingAtStations = "";
+            if (status.isDocked()) {
+                tryLandingAtStations = "";
+            } else {
+                tryLandingAtStations = "Try landing at a station. ";
+            }
+            if (criteria.getStation() != null) {
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found. "));
+            } else {
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found. " + tryLandingAtStations + " Spansh call did not find a trade route."));
+            }
             return;
         }
         long totalProfit = route.getResult().stream()

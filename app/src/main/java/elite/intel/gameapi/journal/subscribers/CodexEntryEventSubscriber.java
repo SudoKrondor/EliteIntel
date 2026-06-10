@@ -82,7 +82,7 @@ public class CodexEntryEventSubscriber {
                         sb.append(" credits bonus for first discovery.");
                     }
                     sb.append(".");
-                    playerSession.setGenusPaymentAnnounced(genus);
+                    playerSession.addAnnouncedGenusPayment(genus);
                 }
             } else {
                 for (CodexEntryDao.CodexEntry entry : codexEntryManager.getForPlanet(currentLocation.getStarName(), currentLocation.getBodyId())) {

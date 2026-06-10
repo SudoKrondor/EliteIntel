@@ -167,7 +167,8 @@ public class EnglishAiActionAliases implements AiActionAliasProvider {
         map.put("radar contact announcement {state:true/false}", SET_RADAR_CONTACT_ANNOUNCEMENT.getAction());
         map.put("discovery announcements {state:true/false}", DISCOVERY_ON_OFF.getAction());
         map.put("route announcements {state:true/false}", ROUTE_ON_OFF.getAction());
-        map.put("disable all announcements", DISABLE_ALL_ANNOUNCEMENTS.getAction());
+        map.put("toggle all announcements {state:true/false}", TOGGLE_ALL_ANNOUNCEMENTS.getAction());
+        map.put("honk, honk the system, discovery scan", HONK_THE_SYSTEM.getAction());
         map.put("clear reminders", CLEAR_REMINDERS.getAction());
         map.put("set reminder {key:X}", SET_REMINDER.getAction());
         map.put("remind me in {minutes:X} minutes to {key:Y}, set a {minutes:X} minute timer {key:Y}, set timer for {minutes:X} minutes {key:Y}, timed reminder {minutes:X} minutes {key:Y}", SET_TIMED_REMINDER.getAction());

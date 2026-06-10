@@ -9,7 +9,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public enum Commands {
 
 
-    DISABLE_ALL_ANNOUNCEMENTS                           ("disable_all_announcements", null, DisableAllAnnouncementHandler.class),
     LIGHTS_ON_OFF                                       ("toggle_lights_on_off", null, LightsOnOffHandler.class),
     ADD_MINING_TARGET                                   ("add_mining_target", null, AddMiningTargetHandler.class),
     REMOVE_MINING_TARGET                                ("remove_mining_target", null, RemoveMiningTargetHandler.class),
@@ -58,6 +57,8 @@ public enum Commands {
     DISCOVERY_ON_OFF                                    ("toggle_discovery_announcements", null, DiscoveryOnOffHandler.class),
     MINING_ON_OFF                                       ("toggle_mining_announcements", null, MiningOnOffHandler.class),
     ROUTE_ON_OFF                                        ("toggle_route_announcements", null, RouteAnnouncementsOnOffHandler.class),
+    TOGGLE_ALL_ANNOUNCEMENTS                            ("toggle_all_announcements", null, ToggleAllAnnouncementsHandler.class),
+    HONK_THE_SYSTEM                                     ("honk_the_system", null, HonkTheSystemHandler.class),
 
     INCREASE_SPEED_BY                                   ("increase_speed", BINDING_INCREASE_SPEED.getGameBinding(),  SpeedPlusControlHandler.class),
     DECREASE_SPEED_BY                                   ("decrease_speed", BINDING_DECREASE_SPEED.getGameBinding(),  SpeedMinusControlHandler.class),

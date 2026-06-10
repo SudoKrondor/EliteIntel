@@ -82,6 +82,7 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
         KEYSYM_MAP.put(NATIVE_BASE + 19, 0x00E0L);  // KEY_AGRAVE   → XK_agrave (à)
         KEYSYM_MAP.put(NATIVE_BASE + 20, 0x00F9L);  // KEY_UGRAVE   → XK_ugrave (ù)
         KEYSYM_MAP.put(NATIVE_BASE + 21, 0x00E7L);  // KEY_CCEDILLA → XK_ccedilla (ç)
+        KEYSYM_MAP.put(NATIVE_BASE + 22, 0x00F1L);  // KEY_NTILDE   → XK_ntilde (ñ)
     }
 
     private final X11 x11;

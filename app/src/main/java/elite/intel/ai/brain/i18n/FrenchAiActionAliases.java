@@ -168,7 +168,7 @@ public class FrenchAiActionAliases implements AiActionAliasProvider {
         map.put("annonce contact radar, annonces contact radar, annonces contacts radar, radar contact {state:true/false}", SET_RADAR_CONTACT_ANNOUNCEMENT.getAction());
         map.put("annonces de découverte, annonces de decouverte, annonces découverte, annonces decouverte {state:true/false}", DISCOVERY_ON_OFF.getAction());
         map.put("annonces de route, annonces d'itinéraire, annonces d'itineraire, annonces route {state:true/false}", ROUTE_ON_OFF.getAction());
-        map.put("désactive toutes les annonces, desactive toutes les annonces, coupe toutes les annonces, silence annonces", DISABLE_ALL_ANNOUNCEMENTS.getAction());
+        map.put("basculer toutes les annonces {state:true/false}, toutes les annonces {state:true/false}", TOGGLE_ALL_ANNOUNCEMENTS.getAction());
         map.put("efface les rappels, supprime les rappels, clear reminders", CLEAR_REMINDERS.getAction());
         map.put("définis rappel {key:X}, definis rappel {key:X}, crée rappel {key:X}, cree rappel {key:X}, rappel {key:X}", SET_REMINDER.getAction());
         map.put("rappelle-moi dans {minutes:X} minutes {key:Y}, rappelle moi dans {minutes:X} minutes {key:Y}, minuterie {minutes:X} minutes {key:Y}, rappel minuté {minutes:X} minutes {key:Y}", SET_TIMED_REMINDER.getAction());

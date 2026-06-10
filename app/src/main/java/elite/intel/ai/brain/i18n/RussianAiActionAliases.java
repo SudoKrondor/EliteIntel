@@ -175,10 +175,11 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
         map.put("объявления радарных контактов {state:true/false}", SET_RADAR_CONTACT_ANNOUNCEMENT.getAction());
         map.put("объявления открытий {state:true/false}", DISCOVERY_ON_OFF.getAction());
         map.put("объявления маршрута {state:true/false}", ROUTE_ON_OFF.getAction());
-        map.put("отключи все объявления, выключи все уведомления", DISABLE_ALL_ANNOUNCEMENTS.getAction());
+        map.put("переключить все объявления {state:true/false}, все объявления {state:true/false}", TOGGLE_ALL_ANNOUNCEMENTS.getAction());
         map.put("очисти напоминания, сбрось напоминания", CLEAR_REMINDERS.getAction());
         map.put("установи напоминание {key:X}, напомни {key:X}", SET_REMINDER.getAction());
         map.put("напомни мне через {minutes:X} минут {key:Y}, таймер на {minutes:X} минут {key:Y}, напоминание через {minutes:X} минут {key:Y}", SET_TIMED_REMINDER.getAction());
+        map.put("исследуй систему, сканируй систему, отсканируй систему, отсканируй систему", HONK_THE_SYSTEM.getAction());
 
         // UI panels
         map.put("активировать выбранное, активируй выбранное, подтверди выбор, нажми активную кнопку", ACTIVATE.getAction());

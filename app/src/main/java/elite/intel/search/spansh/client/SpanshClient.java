@@ -61,7 +61,8 @@ public class SpanshClient {
 
     /**
      * Corner case, string query post, used by trade route plotter
-     * */
+     *
+     */
     private String getSearch(String query) throws IOException, InterruptedException {
 
         HttpRequest post = HttpRequest.newBuilder()
@@ -83,9 +84,12 @@ public class SpanshClient {
         WebSocketBroadcaster.getInstance().broadcast(post);
         HttpResponse<String> resp = httpClient.send(post, HttpResponse.BodyHandlers.ofString());
         String body = resp.body();
-        if(resp.statusCode() == 400){
+        if (resp.statusCode() == 400) {
             log.warn("POST failed: {}", body);
-            EventBusManager.publish(new SensorDataEvent("Unable to complete Spansh request: " + body, "Issue a warning"));
+            EventBusManager.publish(new SensorDataEvent(
+                    "Unable to complete search request. Spansh failed with error message: " + body,
+                    "Issue a warning with exact error message returned from API. format for Speech to Text")
+            );
         }
 
         if (resp.statusCode() != 202) {
@@ -100,7 +104,7 @@ public class SpanshClient {
 
     protected JsonObject performSearch(StringQuery query) {
         try {
-            log.info("performing search: {}", BASE_URL+query.getQuery());
+            log.info("performing search: {}", BASE_URL + query.getQuery());
             String searchRefId = getSearch(query.getQuery());
             return waitForResults(searchRefId);
         } catch (IOException | InterruptedException e) {
@@ -109,7 +113,7 @@ public class SpanshClient {
         return new JsonObject();
     }
 
-    protected JsonObject performSearch(ToJsonConvertible criteria){
+    protected JsonObject performSearch(ToJsonConvertible criteria) {
         try {
             String searchRefId = postSearch(criteria);
             return waitForResults(searchRefId);
@@ -119,7 +123,7 @@ public class SpanshClient {
         return new JsonObject();
     }
 
-    protected JsonObject performSearch(String json){
+    protected JsonObject performSearch(String json) {
         try {
             String searchRefId = postSearch(json);
             return waitForResults(searchRefId);

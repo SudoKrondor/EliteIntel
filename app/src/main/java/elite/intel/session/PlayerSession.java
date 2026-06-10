@@ -581,7 +581,7 @@ public class PlayerSession {
         });
     }
 
-    public void setGenusPaymentAnnounced(String genus) {
+    public void addAnnouncedGenusPayment(String genus) {
         genusAnouncements.put(genus, true);
     }
 

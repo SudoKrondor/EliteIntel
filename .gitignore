@@ -12,7 +12,7 @@
 ./logs
 ./.idea
 ./build
-./.gradle
+.gradle/
 ./distribution/elite_intel.jar
 /distribution/native/lwjgl/
 .gradle/*
