@@ -7,6 +7,7 @@ import elite.intel.ui.event.SystemShutDownEvent;
 import elite.intel.ui.event.UpdateAvailableEvent;
 import elite.intel.ui.view.settings.AudioSettingsPanel;
 import elite.intel.ui.view.settings.CloudServicesSettingsPanel;
+import elite.intel.ui.view.settings.InputSettingsPanel;
 import elite.intel.ui.view.settings.LocalLlmSettingsPanel;
 import elite.intel.util.Updater;
 
@@ -22,6 +23,7 @@ public class SettingsTabPanel extends JPanel {
 
     private final LocalLlmSettingsPanel localLlmPanel = new LocalLlmSettingsPanel();
     private final AudioSettingsPanel audioPanel = new AudioSettingsPanel();
+    private final InputSettingsPanel inputPanel = new InputSettingsPanel();
     private final CloudServicesSettingsPanel cloudPanel = new CloudServicesSettingsPanel();
 
     private JButton updateAppButton;
@@ -36,6 +38,7 @@ public class SettingsTabPanel extends JPanel {
     }
 
     public void dispose() {
+        inputPanel.dispose();
         EventBusManager.unregister(this);
     }
 
@@ -47,6 +50,7 @@ public class SettingsTabPanel extends JPanel {
         styleTabbedPane(tabs);
         tabs.addTab(getText("settings.tab.localLlm"), scaledIcon("/images/local-llm.png"), localLlmPanel);
         tabs.addTab(getText("settings.tab.audio"), scaledIcon("/images/audio.png"), audioPanel);
+        tabs.addTab(getText("settings.tab.input"), scaledIcon("/images/controller.png"), inputPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), scaledIcon("/images/cloud.png"), cloudPanel);
 
         updateAppButton = makeButtonSubtle(getText("settings.update.upToDate"));
@@ -80,6 +84,7 @@ public class SettingsTabPanel extends JPanel {
     public void initData() {
         localLlmPanel.initData();
         audioPanel.initData();
+        inputPanel.initData();
         cloudPanel.initData();
     }
 
