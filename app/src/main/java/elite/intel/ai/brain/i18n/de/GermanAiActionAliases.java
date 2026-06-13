@@ -235,7 +235,7 @@ public class GermanAiActionAliases implements AiActionAliasProvider {
         map.put("fleet carrier im system, carrier im system, wie viele carrier, träger im system, carrier in der nähe", QUERY_CARRIERS.getAction());
         map.put("carrier route, carrier navigation, carrier sprungroute, carrier reise, wie viele sprünge auf der carrier route, verbleibende carrier sprünge", FLEET_CARRIER_ROUTE_ANALYSIS.getAction());
         map.put("carrier route, wohin fliegt der carrier, nächster carrier sprung, wohin ist der carrier unterwegs, carrier ziel, endziel des carriers", FLEET_CARRIER_ROUTE.getAction());
-        map.put("carrier tritium, carrier treibstoff, wie viel tritium, tritium vorrat, tritium stand, carrier fuel level", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
+        //map.put("carrier tritium, carrier treibstoff, wie viel tritium, tritium vorrat, tritium stand, carrier fuel level", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
         map.put("carrier status, carrier finanzen, carrier balance, carrier übersicht, carrier kontostand, wie lange kann der carrier betrieben werden, carrier reichweite", FLEET_CARRIER_STATUS.getAction());
         map.put("carrier eta, wann kommt der carrier an, wie lange bis carrier ankunft, carrier ankunft, wann springt der carrier, carrier sprungzeit", FLEET_CARRIER_ETA.getAction());
         map.put("entfernung zum carrier, wo ist unser carrier, wie weit ist der carrier weg, distanz zum carrier, carrier nähe", DISTANCE_TO_CARRIER.getAction());

@@ -1,6 +1,7 @@
 package elite.intel.ui.view;
 
 import javax.swing.*;
+import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -25,6 +26,14 @@ public class AppTheme {
      * HUD_TABLE_STYLE_LOCKED for tables (ED_HUD_REFERENCE §8.6).
      */
     public static final String HUD_SCROLL_STYLE_LOCKED = "eliteIntel.hud.scrollStyleLocked";
+    /**
+     * Marks a combo box editor text field as fully styled by its factory (e.g. {@link HudComboBox#picker}).
+     * {@link #applyDarkPalette} / {@link #styleTextComponent} must skip components carrying this flag;
+     * otherwise they overwrite the editor's tight {@link javax.swing.border.EmptyBorder} with
+     * {@link #hudFieldBorder()} (a {@link javax.swing.border.LineBorder}), whose right edge appears
+     * as a visible vertical line inside the field next to the arrow button.
+     */
+    public static final String HUD_COMBO_EDITOR_LOCKED = "eliteIntel.hud.comboEditorLocked";
     public static final String HUD_CARD_BORDER_COLOR = "eliteIntel.hud.cardBorderColor";
 
     public static final Color BG = new Color(0x151519);
@@ -85,12 +94,18 @@ public class AppTheme {
     public static final Color HUD_SYSTEM_LOG_TIMESTAMP = new Color(0x4A6270);
 
     public static final int HUD_GAP = 8;
+    /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
+    public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;
     public static final int SCREEN_TOP_GAP = 12;
     public static final int HUD_PADDING = 10;
     public static final int HUD_PADDING_SMALL = 6;
     /** Width of the HUD_BG separator stripe used between info-zone and content (checkbox, text field). */
     public static final int HUD_SEP_W = 3;
+    /** Vertical inset for HUD combo box dropdown list cells (list-level padding, not field border). */
+    public static final int HUD_COMBO_ITEM_INSET_V = 4;
+    /** Horizontal inset for HUD combo box dropdown list cells (list-level padding, not field border). */
+    public static final int HUD_COMBO_ITEM_INSET_H = 8;
     public static final int SUBTAB_CONTENT_GAP = HUD_GAP;
     public static final int HUD_BORDER_THICKNESS = 1;
     /** Thickness for high-visibility accent borders — modal dialogs and similar prominent frames. */
@@ -99,6 +114,10 @@ public class AppTheme {
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
     public static final int HUD_FIELD_HEIGHT = 34;
+    /** Preferred width for searchable editable picker combo boxes. */
+    public static final int HUD_PICKER_FIELD_WIDTH  = 500;
+    /** Preferred height for searchable editable picker combo boxes. */
+    public static final int HUD_PICKER_FIELD_HEIGHT = 42;
     public static final int HUD_BUTTON_HEIGHT = 34;
     public static final int HUD_BUTTON_HEIGHT_COMPACT = 28;
     public static final int HUD_DIALOG_HEADER_HEIGHT = 44;
@@ -310,6 +329,24 @@ public class AppTheme {
     }
 
     /**
+     * Canonical modal footer border (§7.2): warm {@link #HUD_ORANGE_FILL_HOVER} rule of
+     * {@link #HUD_BORDER_THICKNESS} with {@link #HUD_GAP} side insets (not full-width) and
+     * {@link #HUD_GAP} padding on all sides. Apply to the button panel of a modal footer.
+     */
+    public static Border hudModalFooterBorder() {
+        final int gap = HUD_GAP;
+        final int th  = HUD_BORDER_THICKNESS;
+        return new AbstractBorder() {
+            @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                g.setColor(HUD_ORANGE_FILL_HOVER);
+                g.fillRect(x, y, w, th);            // full-width rule, zero side inset
+            }
+            @Override public Insets getBorderInsets(Component c) { return new Insets(th + gap, 0, gap, 0); }
+            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(th + gap, 0, gap, 0); return i; }
+        };
+    }
+
+    /**
      * Creates a compact label for HUD section titles without changing the global UI font.
      */
     public static JLabel hudSectionLabel(String text) {
@@ -429,6 +466,14 @@ public class AppTheme {
     }
 
     /**
+     * Builds and returns the wrapper JPanel for an undecorated modal dialog using the HUD canon (§7.2).
+     * Call {@code dialog.setContentPane(AppTheme.hudModalScaffold(spec))} after constructing the dialog.
+     */
+    public static JPanel hudModalScaffold(HudModalSpec spec) {
+        return HudModalScaffold.build(spec);
+    }
+
+    /**
      * Applies the standard HUD treatment to text components without replacing the component instance.
      */
     public static void styleTextComponent(JTextComponent tc) {
@@ -440,6 +485,10 @@ public class AppTheme {
         if (tc instanceof HudMetadataField) {
             styleMetadataField(tc);
             return;
+        }
+        if (tc instanceof JComponent jce
+                && Boolean.TRUE.equals(jce.getClientProperty(HUD_COMBO_EDITOR_LOCKED))) {
+            return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
         tc.setBackground(HUD_TABLE_ROW);
         tc.setForeground(FG);
@@ -484,7 +533,13 @@ public class AppTheme {
      * Installs {@link HudComboBoxUI} for the flat ▼ arrow and warm field background.
      */
     public static void styleComboBox(JComboBox<?> comboBox) {
-        comboBox.setUI(new HudComboBoxUI());
+        // setUI() unconditionally recreates the editor (uninstall/installComponents),
+        // orphaning any DocumentListener on an editable combo's editor. Only install the
+        // HUD UI when it is not already present, so repeat calls (e.g. applyDarkPalette
+        // re-walking an already-styled picker) are no-ops for the editor.
+        if (!(comboBox.getUI() instanceof HudComboBoxUI)) {
+            comboBox.setUI(new HudComboBoxUI());
+        }
         comboBox.setBackground(HUD_TABLE_ROW);
         comboBox.setForeground(FG);
         comboBox.setBorder(hudFieldBorder());
@@ -729,6 +784,31 @@ public class AppTheme {
         g2.drawLine(x1, y2, x2, y1); // bottom-left → top-right
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Paints the HUD checkbox marker: a 2-px double-outline square box, with a centred
+     * filled inner square when {@code filled} is true. Geometry matches the legacy inline
+     * drawing in {@link HudCheckBox}. Caller is responsible for antialiasing hints.
+     *
+     * @param g2          graphics context (not disposed by this method)
+     * @param x           left edge of the marker box
+     * @param y           top edge of the marker box
+     * @param size        outer marker size in px (e.g. {@code HUD_TABLE_ROW_HEIGHT_COMPACT - 2*HUD_PADDING_SMALL})
+     * @param markerColor colour of outline and inner fill
+     * @param filled      draw the inner filled square (ON state) when true
+     */
+    public static void paintHudCheckMarker(Graphics2D g2, int x, int y, int size,
+                                           Color markerColor, boolean filled) {
+        g2.setColor(markerColor);
+        g2.drawRect(x,     y,     size - 1, size - 1);
+        g2.drawRect(x + 1, y + 1, size - 3, size - 3);
+        if (filled) {
+            int innerSize = size / 2;
+            int innerX = x + (size - innerSize) / 2;
+            int innerY = y + (size - innerSize) / 2;
+            g2.fillRect(innerX, innerY, innerSize, innerSize);
+        }
     }
 
     // -- Tabbed pane -----------------------------------------------------------

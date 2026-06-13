@@ -151,7 +151,7 @@ public class EnglishAiActionAliases implements AiActionAliasProvider {
         map.put("fleet carriers in system, carriers in system, how many carriers, fleet carriers here, any carriers nearby", QUERY_CARRIERS.getAction());
         map.put("carrier route, carrier navigation, how many jumps on carrier route, jumps remaining on carrier, carrier route jump count, jumps left on carrier, carrier trip, carrier journey, carrier travel plan", FLEET_CARRIER_ROUTE_ANALYSIS.getAction());
         map.put("where is carrier going, carrier next jump, where is carrier headed, carrier heading, carrier endpoint, carrier final destination", FLEET_CARRIER_ROUTE.getAction());
-        map.put("carrier tritium, carrier fuel, how much tritium, tritium supply, tritium level, carrier fuel level, tritium reserve", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
+        //map.put("carrier tritium, carrier fuel, how much tritium, tritium supply, tritium level, carrier fuel level, tritium reserve", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
         map.put("carrier status, carrier finances, carrier overview, fleet carrier status, fleet carrier fuel status, how far can carrier jump, carrier jump range, carrier jump range with current tritium", FLEET_CARRIER_STATUS.getAction());
         map.put("carrier ETA, when does carrier arrive, how long until carrier, carrier arrival time, carrier arrival, carrier jump time, carrier next jump time", FLEET_CARRIER_ETA.getAction());
         map.put("distance to carrier, where is our carrier, how far is carrier, range to carrier, carrier proximity, how far away is carrier", DISTANCE_TO_CARRIER.getAction());

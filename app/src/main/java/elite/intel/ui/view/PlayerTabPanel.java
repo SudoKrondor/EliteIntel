@@ -150,7 +150,7 @@ public class PlayerTabPanel extends JPanel {
         HudTable.style(fleetTable);
         fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        fleetTable.getColumnModel().getColumn(0).setCellRenderer(new UpperCaseCellRenderer());
+        fleetTable.getColumnModel().getColumn(0).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(1).setCellRenderer(new ComboColumnRenderer(null));
         fleetTable.getColumnModel().getColumn(2).setCellRenderer(new ComboColumnRenderer("ship.personality."));
         fleetTable.getColumnModel().getColumn(3).setCellRenderer(new ComboColumnRenderer("ship.cadence."));
@@ -284,22 +284,6 @@ public class PlayerTabPanel extends JPanel {
                 }
             }
             fireTableCellUpdated(row, col);
-        }
-    }
-
-    // -------------------------------------------------------------------------
-
-    /** Renders the ship name in uppercase for HUD display consistency (§0.3). Data is not mutated. */
-    private static final class UpperCaseCellRenderer extends HudTable.CellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-            Object display = value == null ? "" : value.toString().toUpperCase(Locale.ROOT);
-            Component c = super.getTableCellRendererComponent(table, display, isSelected, hasFocus, row, col);
-            if (!isSelected) {
-                c.setForeground(AppTheme.FG);   // ship name is a work value, not a status — white (§6.1)
-            }
-            return c;
         }
     }
 

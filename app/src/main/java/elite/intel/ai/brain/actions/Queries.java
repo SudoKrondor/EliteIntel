@@ -31,7 +31,7 @@ public enum Queries {
     PLOTTED_ROUTE_ANALYSIS              ("query_ship_route_remaining_jumps",            AnalyzeRouterHandler.class),
 
     FLEET_CARRIER_ROUTE_ANALYSIS        ("query_fleet_carrier_route",                         AnalyzeFleetCarrierRouteHandler.class),
-    FLEET_CARRIER_TRITIUM_SUPPLY        ("query_fleet_carrier_fuel",                          AnalyzeFleetCarrierFuelSupplyHandler.class),
+    //FLEET_CARRIER_TRITIUM_SUPPLY        ("query_fleet_carrier_fuel",                          AnalyzeFleetCarrierFuelSupplyHandler.class),
     FLEET_CARRIER_ROUTE                 ("query_fleet_carrier_route",                         AnalyzeFleetCarrierFinalDestinationHandler.class),
     FLEET_CARRIER_STATUS                ("query_fleet_carrier_status_fuel_credit_finance",    AnalyzeFleetCarrierDataHandler.class),
     FLEET_CARRIER_ETA                   ("query_fleet_carrier_eta",                           AnalyzeFleetCarrierETAHandler.class),

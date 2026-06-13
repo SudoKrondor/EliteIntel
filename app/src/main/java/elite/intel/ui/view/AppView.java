@@ -251,5 +251,13 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("ComboBox.disabledForeground",       AppTheme.HUD_DISABLED);
         UIManager.put("ComboBox.buttonDisabledBackground", AppTheme.HUD_TABLE_ROW);
         UIManager.put("ComboBox.maximumRowCount",          8);
+        // Width=0 suppresses the vertical separator between value and arrow button.
+        // FlatLaf re-installs buttonSeparatorColor from the theme after per-instance nulling,
+        // so zeroing the width is the only reliable suppression (update() skips it when width <= 0).
+        UIManager.put("ComboBox.buttonSeparatorWidth",     0);
+        // Editable combo editor calls selectAll() on setSelectedItem; override FlatLaf's
+        // cold-blue theme default so selection follows the warm HUD palette.
+        UIManager.put("ComboBox.selectionBackground", AppTheme.ACCENT);
+        UIManager.put("ComboBox.selectionForeground", AppTheme.SEL_FG);
     }
 }

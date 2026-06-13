@@ -8,9 +8,7 @@ import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.event.KeyEvent;
 import java.awt.*;
 import java.util.LinkedHashMap;
@@ -113,35 +111,47 @@ public final class CommandDetailsDialog extends JDialog {
         setUndecorated(true);
 
         JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        content.setBackground(AppTheme.HUD_DIALOG_BODY);
-        content.setOpaque(true);
-        content.setBorder(new EmptyBorder(AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2,
-                AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2));
-        HudSection detailsSection = HudSection.flat(getText("actions.commands.details.section.metadata"), new BorderLayout());
+        content.add(header(), BorderLayout.NORTH);   // commandTitleBlock(entry.name(), entry.id())
+
+        HudSection detailsSection = HudSection.flat(
+                getText("actions.commands.details.section.metadata"), new BorderLayout());
         detailsSection.body().add(details(), BorderLayout.CENTER);
-        content.add(header(), BorderLayout.NORTH);
         content.add(detailsSection, BorderLayout.CENTER);
 
-        JScrollPane scroll = AppTheme.hudScrollPane(content);
-        scroll.getViewport().setBackground(AppTheme.HUD_DIALOG_BODY);
+        JButton run = runButton();
+        run.addActionListener(event -> runCommand());
+        JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
+        close.addActionListener(event -> dispose());
 
-        HudDialogHeader dialogHeader = new HudDialogHeader(dialogTitle(entry), this::dispose);
+        HudModalSpec.Builder b = HudModalSpec.builder()
+                .title(dialogTitle(entry))
+                .onClose(this::dispose)
+                .body(content)
+                .scrollBody(true)
+                .primary(run)            // right side, outermost
+                .dismiss(close);         // left side
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(AppTheme.HUD_BG);
-        wrapper.add(dialogHeader, BorderLayout.NORTH);
-        wrapper.add(scroll, BorderLayout.CENTER);
-        wrapper.add(buttons(), BorderLayout.SOUTH);
+        // edit/delete are optional extras, grouped on the right to the left of primary (run)
+        if (editAction != null) {
+            JButton edit = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.edit"));
+            edit.addActionListener(event -> runAfterClose(editAction));
+            b.extra(edit);
+        }
+        if (deleteAction != null) {
+            JButton delete = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.delete"));
+            delete.addActionListener(event -> runAfterClose(deleteAction));
+            b.extra(delete);
+        }
 
-        setContentPane(wrapper);
-        getRootPane().setBorder(new LineBorder(AppTheme.HUD_ORANGE_FILL_HOVER, AppTheme.HUD_BORDER_THICKNESS_ACCENT));
+        setContentPane(AppTheme.hudModalScaffold(b.build()));
+
         getRootPane().registerKeyboardAction(
                 e -> dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        getRootPane().setDefaultButton(close);   // Enter = close, NOT run (window-specific)
         pack();
         setMinimumSize(new Dimension(720, 520));
         setLocationRelativeTo(getOwner());
@@ -308,53 +318,6 @@ public final class CommandDetailsDialog extends JDialog {
 
     private JLabel detailLabel(String text) {
         return AppTheme.hudReadoutLabel(text);
-    }
-
-    private JPanel buttons() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        int gap = AppTheme.HUD_GAP;
-        int th  = AppTheme.HUD_BORDER_THICKNESS;
-        AbstractBorder topRule = new AbstractBorder() {
-            @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-                g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
-                g.fillRect(x + gap, y, w - gap * 2, th);
-            }
-            @Override public Insets getBorderInsets(Component c) { return new Insets(th, 0, 0, 0); }
-            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(th, 0, 0, 0); return i; }
-        };
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                topRule,
-                BorderFactory.createEmptyBorder(gap, gap, gap, gap)));
-
-        JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        leftButtons.setOpaque(false);
-
-        JButton run = runButton();
-        run.addActionListener(event -> runCommand());
-        leftButtons.add(run);
-
-        panel.add(leftButtons, BorderLayout.WEST);
-
-        JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        rightButtons.setOpaque(false);
-        if (editAction != null) {
-            JButton edit = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.edit"));
-            edit.addActionListener(event -> runAfterClose(editAction));
-            rightButtons.add(edit);
-        }
-        if (deleteAction != null) {
-            JButton delete = AppTheme.makeButtonSubtle(getText("actions.customCommands.action.delete"));
-            delete.addActionListener(event -> runAfterClose(deleteAction));
-            rightButtons.add(delete);
-        }
-
-        JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
-        close.addActionListener(event -> dispose());
-        rightButtons.add(close);
-        panel.add(rightButtons, BorderLayout.EAST);
-        getRootPane().setDefaultButton(close);
-        return panel;
     }
 
     private void runAfterClose(Runnable action) {

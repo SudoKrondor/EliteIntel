@@ -127,18 +127,7 @@ public class HudCheckBox extends JCheckBox {
             g2.setColor(AppTheme.HUD_BG);
             g2.fillRect(markerZoneW, 0, AppTheme.HUD_SEP_W, h);
 
-            // Marker: 2-px square border (two nested drawRects)
-            g2.setColor(markerColor);
-            g2.drawRect(markerX,     markerY,     markerSize - 1, markerSize - 1);
-            g2.drawRect(markerX + 1, markerY + 1, markerSize - 3, markerSize - 3);
-
-            // Inner filled square — ON state only
-            if (on && enabled) {
-                int innerSize = markerSize / 2;
-                int innerX    = markerX + (markerSize - innerSize) / 2;
-                int innerY    = markerY + (markerSize - innerSize) / 2;
-                g2.fillRect(innerX, innerY, innerSize, innerSize);
-            }
+            AppTheme.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on && enabled);
 
             // Label text in the text zone, vertically centred
             Font f = getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);

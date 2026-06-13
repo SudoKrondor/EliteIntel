@@ -237,7 +237,7 @@ public class UkrainianAiActionAliases implements AiActionAliasProvider {
         map.put("авіаносці в системі, carriers у системі, скільки авіаносців, чи є авіаносці поруч", QUERY_CARRIERS.getAction());
         map.put("маршрут авіаносця, навігація авіаносця, шлях авіаносця, скільки стрибків на маршруті авіаносця, стрибків залишилось", FLEET_CARRIER_ROUTE_ANALYSIS.getAction());
         map.put("маршрут авіаносця, куди летить авіаносець, наступний стрибок авіаносця, кінцева точка авіаносця", FLEET_CARRIER_ROUTE.getAction());
-        map.put("тритій авіаносця, паливо авіаносця, скільки тритію, рівень тритію, резерв тритію", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
+        //map.put("тритій авіаносця, паливо авіаносця, скільки тритію, рівень тритію, резерв тритію", FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
         map.put("статус авіаносця, фінанси авіаносця, баланс авіаносця, огляд авіаносця, кошти авіаносця, скільки авіаносець може працювати, запас ходу авіаносця", FLEET_CARRIER_STATUS.getAction());
         map.put("eta авіаносця, коли прибуде авіаносець, скільки до прибуття авіаносця, час стрибка авіаносця", FLEET_CARRIER_ETA.getAction());
 

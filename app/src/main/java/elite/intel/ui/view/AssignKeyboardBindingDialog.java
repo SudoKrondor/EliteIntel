@@ -6,7 +6,6 @@ import elite.intel.ai.hands.KeyBindingsParser;
 import elite.intel.ai.hands.KeyboardKeyAvailabilityService;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.nio.file.Path;
 import java.util.List;
@@ -31,8 +30,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final String originalKey;
     private final BindingModifier originalModifier;
     private final boolean alreadyCleared;
-    private final JComboBox<KeyOption> keyCombo;
-    private final JComboBox<ModifierOption> modifierCombo;
+    private final HudComboBox<KeyOption> keyCombo;
+    private final HudComboBox<ModifierOption> modifierCombo;
     private final JButton saveButton;
     private final JLabel noFreeKeysLabel;
     private final JLabel alreadyInUseLabel;
@@ -48,6 +47,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
             KeyboardKeyAvailabilityService availabilityService
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
+        setUndecorated(true);
         this.bindingsFile = bindingsFile;
         this.bindingId = bindingId;
         this.slotType = slotType;
@@ -56,8 +56,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.originalKey = currentKeyboardKey(currentSlot);
         this.originalModifier = currentSupportedModifier(currentSlot);
         this.alreadyCleared = isClearedSlot(currentSlot);
-        this.keyCombo = new JComboBox<>();
-        this.modifierCombo = new JComboBox<>();
+        this.keyCombo = new HudComboBox<>(new DefaultComboBoxModel<KeyOption>(), KeyOption::label, KeyOption::placeholder);
+        this.modifierCombo = new HudComboBox<>(new DefaultComboBoxModel<ModifierOption>(), ModifierOption::label);
         this.saveButton = makeButton(getText("button.save"));
         this.noFreeKeysLabel = new JLabel(getText("bindings.assign.noFreeKeys"));
         this.alreadyInUseLabel = new JLabel(getText("bindings.assign.alreadyInUse"));
@@ -72,7 +72,6 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
     private void buildUi() {
         JPanel content = transparentPanel(new GridBagLayout());
-        content.setBorder(new EmptyBorder(10, 14, 8, 14));
         GridBagConstraints gbc = baseGbc();
         gbc.insets = new Insets(3, 6, 3, 6);
 
@@ -89,8 +88,6 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         nextRow(gbc);
         addLabel(content, getText("bindings.assign.newKey"), gbc);
-        styleCombo(keyCombo);
-        keyCombo.setRenderer(new KeyOptionRenderer());
         keyCombo.addActionListener(e -> {
             if (!refreshingOptions) {
                 resetModifierWhenClearing();
@@ -101,8 +98,6 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         nextRow(gbc);
         addLabel(content, getText("bindings.assign.modifier"), gbc);
-        styleCombo(modifierCombo);
-        modifierCombo.setRenderer(new ModifierOptionRenderer());
         modifierCombo.addActionListener(e -> {
             if (!refreshingOptions) {
                 KeyOption selectedKey = (KeyOption) keyCombo.getSelectedItem();
@@ -118,29 +113,33 @@ public class AssignKeyboardBindingDialog extends JDialog {
         noFreeKeysLabel.setForeground(FG_MUTED);
         content.add(noFreeKeysLabel, gbc);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        buttons.setOpaque(false);
-        buttons.setBorder(new EmptyBorder(0, 20, 10, 20));
-        JButton cancelButton = makeButtonSubtle(getText("button.cancel"));
-        cancelButton.addActionListener(e -> dispose());
-        saveButton.addActionListener(e -> saveSelection());
+        nextRow(gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         alreadyInUseLabel.setForeground(HUD_DANGER);
         alreadyInUseLabel.setFont(alreadyInUseLabel.getFont().deriveFont(Font.BOLD));
         alreadyInUseLabel.setVisible(false);
-        buttons.add(alreadyInUseLabel);
-        buttons.add(cancelButton);
-        buttons.add(saveButton);
+        content.add(alreadyInUseLabel, gbc);
 
-        HudSection bindingSection = new HudSection(getText("bindings.assign.section.assignment"), new BorderLayout());
+        HudSection bindingSection = HudSection.flat(
+                getText("bindings.assign.section.assignment"), new BorderLayout());
         bindingSection.body().add(content, BorderLayout.CENTER);
 
-        JPanel wrapper = transparentPanel(new BorderLayout(0, HUD_GAP));
-        wrapper.setOpaque(true);
-        wrapper.setBackground(HUD_BG);
-        wrapper.setBorder(new EmptyBorder(HUD_PADDING, HUD_PADDING, HUD_PADDING, HUD_PADDING));
-        wrapper.add(bindingSection, BorderLayout.CENTER);
-        wrapper.add(buttons, BorderLayout.SOUTH);
-        setContentPane(wrapper);
+        JButton cancelButton = makeButtonSubtle(getText("button.back"));
+        cancelButton.addActionListener(e -> dispose());
+        saveButton.addActionListener(e -> saveSelection());
+
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getText("bindings.assign.dialogTitle"))
+                .onClose(this::dispose)
+                .body(bindingSection)
+                .scrollBody(false)
+                .primary(saveButton)          // right side
+                .dismiss(cancelButton)        // left side
+                .build();
+
+        setContentPane(AppTheme.hudModalScaffold(spec));
 
         getRootPane().setDefaultButton(saveButton);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -354,10 +353,6 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 : getText("bindings.column.secondary");
     }
 
-    private void styleCombo(JComboBox<?> combo) {
-        styleComboBox(combo);
-    }
-
     private String formatKeyToken(String token) {
         if (token.startsWith("Key_") && token.length() > "Key_".length()) {
             return getText("bindings.assign.keyDisplay", slotFormatter.formatBindingToken(token), token);
@@ -399,46 +394,4 @@ public class AssignKeyboardBindingDialog extends JDialog {
         }
     }
 
-    private static class KeyOptionRenderer extends DefaultListCellRenderer {
-        @Override
-        public Component getListCellRendererComponent(
-                JList<?> list,
-                Object value,
-                int index,
-                boolean isSelected,
-                boolean cellHasFocus
-        ) {
-            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof KeyOption option) {
-                label.setText(option.label());
-                if (option.placeholder() && !isSelected) {
-                    label.setForeground(FG_MUTED);
-                }
-            }
-            label.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
-            if (!isSelected && !(value instanceof KeyOption option && option.placeholder())) {
-                label.setForeground(FG);
-            }
-            return label;
-        }
-    }
-
-    private static class ModifierOptionRenderer extends DefaultListCellRenderer {
-        @Override
-        public Component getListCellRendererComponent(
-                JList<?> list,
-                Object value,
-                int index,
-                boolean isSelected,
-                boolean cellHasFocus
-        ) {
-            JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            if (value instanceof ModifierOption option) {
-                label.setText(option.label());
-            }
-            label.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
-            label.setForeground(isSelected ? SEL_FG : FG);
-            return label;
-        }
-    }
 }

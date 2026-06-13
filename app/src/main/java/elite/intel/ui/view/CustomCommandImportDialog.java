@@ -5,21 +5,17 @@ import elite.intel.ai.brain.actions.customcommand.CustomCommandExportImportServi
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
-import java.awt.image.BufferedImage;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BooleanSupplier;
+import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -45,6 +41,7 @@ final class CustomCommandImportDialog extends JDialog {
             getText("actions.customCommands.import.title"),
             ModalityType.APPLICATION_MODAL
         );
+        setUndecorated(true);
         this.tableModel = new ImportTableModel(candidates);
         buildUi(candidates);
         pack();
@@ -101,16 +98,27 @@ final class CustomCommandImportDialog extends JDialog {
     }
 
     private void buildUi(List<CustomCommandExportImportService.ImportCandidate> candidates) {
-        JPanel root = AppTheme.transparentPanel(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
-        root.setOpaque(true);
-        root.setBorder(new EmptyBorder(12, 12, 12, 12));
-        root.setBackground(AppTheme.HUD_BG);
-        HudSection importSection = new HudSection(getText("actions.customCommands.import.section.review"), new BorderLayout());
+        HudSection importSection = HudSection.flat(
+                getText("actions.customCommands.import.section.review"), new BorderLayout());
         importSection.body().add(buildScrollPane(candidates), BorderLayout.CENTER);
-        root.add(importSection, BorderLayout.CENTER);
-        root.add(buildBottomBar(), BorderLayout.SOUTH);
-        setContentPane(root);
-        getContentPane().setBackground(AppTheme.HUD_BG);
+
+        JButton importBtn = AppTheme.makeButton(getText("actions.customCommands.import.button"));
+        importBtn.addActionListener(e -> doImport());
+        JButton back = AppTheme.makeButtonSubtle(getText("button.back"));
+        back.addActionListener(e -> dispose());
+
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getText("actions.customCommands.import.title"))
+                .onClose(this::dispose)
+                .body(importSection)
+                .scrollBody(false)            // scroll already inside the table, body is not scrolled
+                .primary(importBtn)           // right side
+                .dismiss(back)                // left side
+                .build();
+
+        setContentPane(AppTheme.hudModalScaffold(spec));
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        getRootPane().setDefaultButton(importBtn);
     }
 
     private JScrollPane buildScrollPane(List<CustomCommandExportImportService.ImportCandidate> candidates) {
@@ -121,16 +129,31 @@ final class CustomCommandImportDialog extends JDialog {
         table.getTableHeader().setReorderingAllowed(false);
         table.setFillsViewportHeight(true);
         table.setRowHeight(28);
-        table.setDefaultRenderer(String.class, new StatusCellRenderer(candidates));
+
         table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED).setMaxWidth(40);
         table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED).setPreferredWidth(40);
         table.getColumnModel().getColumn(ImportTableModel.COL_NAME).setPreferredWidth(220);
         table.getColumnModel().getColumn(ImportTableModel.COL_ACTION_KEY).setPreferredWidth(280);
         table.getColumnModel().getColumn(ImportTableModel.COL_STATUS).setPreferredWidth(120);
 
-        // Column header is a clickable checkbox that toggles all valid rows
+        // Checkbox column: HUD renderer and single-click editor, no native LAF checkbox
         table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED)
-            .setHeaderRenderer(new CheckBoxHeaderRenderer(tableModel::areAllValidSelected));
+                .setCellRenderer(new HudBooleanCellRenderer());
+        table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED)
+                .setCellEditor(new HudBooleanCellEditor());
+        table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED)
+                .setHeaderRenderer(new HudCheckBoxHeaderRenderer(tableModel::areAllValidSelected));
+
+        // Name and action-key columns: caps + ACCENT colour
+        var nameRenderer = new HudTable.ValueCellRenderer();
+        table.getColumnModel().getColumn(ImportTableModel.COL_NAME).setCellRenderer(nameRenderer);
+        table.getColumnModel().getColumn(ImportTableModel.COL_ACTION_KEY).setCellRenderer(nameRenderer);
+
+        // Status column: caps + status-specific colour (danger / warn / ok)
+        table.getColumnModel().getColumn(ImportTableModel.COL_STATUS)
+                .setCellRenderer(new StatusCellRenderer(candidates));
+
+        // Header checkbox click toggles all valid rows
         table.getTableHeader().addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -142,18 +165,6 @@ final class CustomCommandImportDialog extends JDialog {
         });
 
         return HudTable.scrollPane(table);
-    }
-
-    private JPanel buildBottomBar() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        panel.setOpaque(false);
-        JButton cancel = AppTheme.makeButtonSubtle(getText("button.cancel"));
-        cancel.addActionListener(e -> dispose());
-        JButton importBtn = AppTheme.makeButton(getText("actions.customCommands.import.button"));
-        importBtn.addActionListener(e -> doImport());
-        panel.add(cancel);
-        panel.add(importBtn);
-        return panel;
     }
 
     private void doImport() {
@@ -171,111 +182,47 @@ final class CustomCommandImportDialog extends JDialog {
 
     // -------------------------------------------------------------------------
 
-    /**
-     * Renders a checkbox whose state reflects whether all valid rows are selected.
-     * The checkbox is non-opaque inside a JPanel wrapper that carries the LAF border,
-     * so column separator lines remain visible regardless of Look and Feel.
-     */
-    private static final class CheckBoxHeaderRenderer implements TableCellRenderer {
-        private final JCheckBox checkBox = new JCheckBox();
-        private final JPanel wrapper = new JPanel(new GridBagLayout());
-        private final BooleanSupplier allSelectedQuery;
-
-        CheckBoxHeaderRenderer(BooleanSupplier allSelectedQuery) {
-            this.allSelectedQuery = allSelectedQuery;
-            checkBox.setOpaque(false);
-            wrapper.setOpaque(true);
-            wrapper.setBackground(AppTheme.HUD_PANEL_BG_ALT);
-            wrapper.add(checkBox);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            checkBox.setSelected(allSelectedQuery.getAsBoolean());
-            // Copy border and background from the default header renderer to get
-            // the same LAF-drawn separator lines as the other header columns.
-            Component defaultComp = table.getTableHeader().getDefaultRenderer()
-                .getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            if (defaultComp instanceof JComponent jc) {
-                wrapper.setBorder(jc.getBorder());
-                wrapper.setBackground(jc.getBackground());
-            }
-            return wrapper;
-        }
-    }
-
-    // -------------------------------------------------------------------------
-
-    /** Colors invalid entries red and conflict entries orange; shows tooltip on the Status column. */
-    private static final class StatusCellRenderer extends DefaultTableCellRenderer {
-        private static final Icon CONFLICT_ICON = buildConflictIcon();
-
-        private static Icon buildConflictIcon() {
-            int s = 13;
-            BufferedImage img = new BufferedImage(s, s, BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g = img.createGraphics();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            int[] xp = {s / 2, 0, s - 1};
-            int[] yp = {0, s - 1, s - 1};
-            g.setColor(AppTheme.ACCENT);
-            g.fillPolygon(xp, yp, 3);
-            g.setColor(AppTheme.BG);
-            g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 8));
-            FontMetrics fm = g.getFontMetrics();
-            g.drawString("!", (s - fm.stringWidth("!")) / 2, s - 3);
-            g.dispose();
-            return new ImageIcon(img);
-        }
+    /** Caps status text and applies danger/warn/ok foreground by candidate validity. */
+    private static final class StatusCellRenderer extends HudTable.CellRenderer {
 
         private final List<CustomCommandExportImportService.ImportCandidate> candidates;
 
         StatusCellRenderer(List<CustomCommandExportImportService.ImportCandidate> candidates) {
             this.candidates = candidates;
-            setOpaque(true);
         }
 
         @Override
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column
         ) {
+            Object display = value == null ? "" : value.toString().toUpperCase(Locale.ROOT);
             JLabel label = (JLabel) super.getTableCellRendererComponent(
-                table, value, isSelected, hasFocus, row, column);
-            label.setBorder(new EmptyBorder(4, 8, 4, 8));
+                    table, display, isSelected, hasFocus, row, column);
             label.setToolTipText(null);
+            label.setIcon(null);
 
             if (row >= candidates.size()) return label;
             CustomCommandExportImportService.ImportCandidate c = candidates.get(row);
 
-            if (!isSelected) {
-                label.setBackground(row % 2 == 0 ? AppTheme.HUD_TABLE_BG : AppTheme.HUD_ROW_ALT);
-                if (!c.isValid()) {
-                    label.setForeground(AppTheme.HUD_DANGER);
-                } else if (c.hasConflict()) {
-                    label.setForeground(AppTheme.ACCENT);
-                } else {
-                    label.setForeground(AppTheme.FG);
-                }
+            // On selected rows keep SEL_FG; coloured status text is only for unselected rows.
+            if (isSelected) {
+                label.setForeground(AppTheme.SEL_FG);
+            } else if (!c.isValid()) {
+                label.setForeground(AppTheme.HUD_DANGER);
+            } else if (c.hasConflict()) {
+                label.setForeground(AppTheme.HUD_WARN);
+            } else {
+                label.setForeground(AppTheme.HUD_OK);
             }
 
-            if (column == ImportTableModel.COL_STATUS) {
-                if (!c.isValid()) {
-                    label.setIcon(null);
-                    label.setToolTipText(MultiLingualTextProvider.getText(
+            if (!c.isValid()) {
+                label.setToolTipText(MultiLingualTextProvider.getText(
                         "actions.customCommands.import.invalid.description",
                         String.join("; ", c.validationErrors())));
-                } else if (c.hasConflict()) {
-                    label.setIcon(CONFLICT_ICON);
-                    label.setHorizontalTextPosition(SwingConstants.LEADING);
-                    label.setIconTextGap(5);
-                    label.setToolTipText(MultiLingualTextProvider.getText(
+            } else if (c.hasConflict()) {
+                label.setToolTipText(MultiLingualTextProvider.getText(
                         "actions.customCommands.import.conflict.description",
                         c.definition().getActionKey()));
-                } else {
-                    label.setIcon(null);
-                }
-            } else {
-                label.setIcon(null);
             }
             return label;
         }

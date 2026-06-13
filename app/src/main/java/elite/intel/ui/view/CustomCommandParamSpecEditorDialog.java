@@ -19,7 +19,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
     private static final String[] TYPES = {"string", "number", "boolean"};
 
     private final JTextField nameField = new JTextField(28);
-    private final JComboBox<String> typeCombo = new JComboBox<>(TYPES);
+    private final HudComboBox<String> typeCombo = new HudComboBox<>(TYPES);
     private final JCheckBox requiredCheck = new JCheckBox();
     private final JTextField descriptionField = new JTextField(28);
     private final JTextField examplesField = new JTextField(28);
@@ -30,6 +30,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
         super(SwingUtilities.getWindowAncestor(parent),
                 getText("actions.customCommands.editor.param.title"),
                 ModalityType.APPLICATION_MODAL);
+        setUndecorated(true);
         populate(spec);
         buildUi();
     }
@@ -50,16 +51,27 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        content.setOpaque(true);
-        content.setBackground(AppTheme.HUD_BG);
-        content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        HudSection section = new HudSection(getText("actions.customCommands.editor.param.section.definition"), new BorderLayout());
+        HudSection section = HudSection.flat(
+                getText("actions.customCommands.editor.param.section.definition"), new BorderLayout());
         section.body().add(form(), BorderLayout.CENTER);
-        content.add(section, BorderLayout.CENTER);
-        content.add(buttons(), BorderLayout.SOUTH);
-        setContentPane(content);
+
+        JButton save = AppTheme.makeButton(getText("button.save"));
+        save.addActionListener(e -> save());
+        JButton back = AppTheme.makeButtonSubtle(getText("button.back"));
+        back.addActionListener(e -> dispose());
+
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getText("actions.customCommands.editor.param.title"))
+                .onClose(this::dispose)
+                .body(section)
+                .scrollBody(false)
+                .primary(save)                // right side
+                .dismiss(back)                // left side
+                .build();
+
+        setContentPane(AppTheme.hudModalScaffold(spec));
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        getRootPane().setDefaultButton(save);
         pack();
         setMinimumSize(new Dimension(480, 320));
         setLocationRelativeTo(getOwner());
@@ -79,7 +91,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
 
         AppTheme.applyDarkPalette(panel);
         AppTheme.styleTextComponent(nameField);
-        AppTheme.styleComboBox(typeCombo);
+
         AppTheme.styleCheckBox(requiredCheck);
         AppTheme.styleTextComponent(descriptionField);
         AppTheme.styleTextComponent(examplesField);
@@ -101,19 +113,6 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(field, gbc);
         gbc.gridy++;
-    }
-
-    private JPanel buttons() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        JButton save = AppTheme.makeButton(getText("button.save"));
-        save.addActionListener(e -> save());
-        panel.add(save, BorderLayout.WEST);
-        JButton cancel = AppTheme.makeButtonSubtle(getText("button.cancel"));
-        cancel.addActionListener(e -> dispose());
-        panel.add(cancel, BorderLayout.EAST);
-        getRootPane().setDefaultButton(save);
-        return panel;
     }
 
     private void save() {

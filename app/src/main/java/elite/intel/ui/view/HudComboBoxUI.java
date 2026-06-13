@@ -19,11 +19,14 @@ class HudComboBoxUI extends FlatComboBoxUI {
         // restore the HUD warm frame here so it is in place before styleComboBox applies its own call.
         comboBox.setBorder(AppTheme.hudFieldBorder());
         // FlatComboBoxUI.update() paints the arrow area with buttonBackground on top of the
-        // component-wide fill, producing a visible "button box". Null all three background
+        // component-wide fill, producing a visible "button box". Null all four background
         // fields so buttonColor resolves to null and the arrow area keeps HUD_TABLE_ROW.
-        buttonBackground        = null;
-        buttonFocusedBackground = null;
-        focusedBackground       = null;
+        // buttonEditableBackground is a separate field read by FlatComboBoxUI in editable mode;
+        // without nulling it, editable combos show a bright FlatLaf-default rectangle.
+        buttonBackground         = null;
+        buttonFocusedBackground  = null;
+        buttonEditableBackground = null;
+        focusedBackground        = null;
         popupBackground         = AppTheme.HUD_TABLE_ROW;   // тёплый фон JList и popup-окна
     }
 

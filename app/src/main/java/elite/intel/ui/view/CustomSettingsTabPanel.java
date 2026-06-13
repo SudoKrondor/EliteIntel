@@ -21,7 +21,7 @@ public class CustomSettingsTabPanel extends JPanel {
     private final SystemSession systemSession = SystemSession.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
-    private JComboBox<LanguageOption> languageCombo;
+    private HudComboBox<LanguageOption> languageCombo;
     private JCheckBox conversationModeCheckBox;
     private JTextField journalDirField;
 
@@ -101,8 +101,8 @@ public class CustomSettingsTabPanel extends JPanel {
         journalDirField.setText(playerSession.getJournalPath().toString());
     }
 
-    private JComboBox<LanguageOption> makeLanguageCombo(Language selected) {
-        JComboBox<LanguageOption> combo = new JComboBox<>(new LanguageOption[]{
+    private HudComboBox<LanguageOption> makeLanguageCombo(Language selected) {
+        HudComboBox<LanguageOption> combo = new HudComboBox<>(new LanguageOption[]{
                 new LanguageOption(getText("language.english"), Language.EN),
                 new LanguageOption(getText("language.russian"), Language.RU),
                 new LanguageOption(getText("language.ukrainian"), Language.UK),
@@ -110,7 +110,6 @@ public class CustomSettingsTabPanel extends JPanel {
                 new LanguageOption(getText("language.french"), Language.FR),
                 new LanguageOption(getText("language.french"), Language.ES)
         });
-        styleComboBox(combo);
         selectLanguage(combo, selected);
         return combo;
     }
@@ -119,7 +118,7 @@ public class CustomSettingsTabPanel extends JPanel {
         selectLanguage(languageCombo, language);
     }
 
-    private void selectLanguage(JComboBox<LanguageOption> combo, Language language) {
+    private void selectLanguage(HudComboBox<LanguageOption> combo, Language language) {
         for (int i = 0; i < combo.getItemCount(); i++) {
             LanguageOption option = combo.getItemAt(i);
             if (option.language() == language) {

@@ -7,9 +7,6 @@ import elite.intel.util.BrowserUtil;
 import elite.intel.util.GitHubIssueUrlBuilder;
 
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.List;
@@ -54,37 +51,36 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
         setUndecorated(true);
 
         JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        content.setOpaque(true);
-        content.setBackground(AppTheme.HUD_DIALOG_BODY);
-        content.setBorder(new EmptyBorder(AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2,
-                AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2));
-
         content.add(AppTheme.commandTitleBlock(entry.name(), entry.id()), BorderLayout.NORTH);
 
-        HudSection section = HudSection.flat(getText("actions.commands.suggest.section.correction"), new BorderLayout());
+        HudSection section = HudSection.flat(
+                getText("actions.commands.suggest.section.correction"), new BorderLayout());
         section.body().add(formPanel(), BorderLayout.CENTER);
         content.add(section, BorderLayout.CENTER);
 
-        JScrollPane scroll = AppTheme.hudScrollPane(content);
-        scroll.getViewport().setBackground(AppTheme.HUD_DIALOG_BODY);
+        JButton openIssue = AppTheme.makeButton(getText("actions.commands.suggest.openGitHubIssue"));
+        openIssue.addActionListener(event -> openGitHubIssue());
+        JButton back = AppTheme.makeButtonSubtle(getText("button.back"));
+        back.addActionListener(event -> dispose());
 
-        HudDialogHeader header = new HudDialogHeader(getText("actions.commands.suggest.title"), this::dispose);
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getText("actions.commands.suggest.title"))
+                .onClose(this::dispose)
+                .body(content)
+                .scrollBody(true)             // long body wrapped in scroll (was manual hudScrollPane)
+                .primary(openIssue)           // right side
+                .dismiss(back)                // left side
+                .build();
 
-        JPanel wrapper = new JPanel(new BorderLayout());
-        wrapper.setBackground(AppTheme.HUD_BG);
-        wrapper.add(header, BorderLayout.NORTH);
-        wrapper.add(scroll, BorderLayout.CENTER);
-        wrapper.add(buttonPanel(), BorderLayout.SOUTH);
+        setContentPane(AppTheme.hudModalScaffold(spec));
 
-        setContentPane(wrapper);
-        getRootPane().setBorder(new LineBorder(AppTheme.HUD_ORANGE_FILL_HOVER, AppTheme.HUD_BORDER_THICKNESS_ACCENT));
         getRootPane().registerKeyboardAction(
                 e -> dispose(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        getRootPane().setDefaultButton(openIssue);
         pack();
         setMinimumSize(new Dimension(760, 620));
         setLocationRelativeTo(getOwner());
@@ -135,35 +131,6 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
         gbc.fill = GridBagConstraints.BOTH;
         panel.add(AppTheme.hudScrollPane(area), gbc);
         gbc.gridy++;
-    }
-
-    private JPanel buttonPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-
-        int gap = AppTheme.HUD_GAP;
-        int th  = AppTheme.HUD_BORDER_THICKNESS;
-        AbstractBorder topRule = new AbstractBorder() {
-            @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-                g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
-                g.fillRect(x + gap, y, w - gap * 2, th);
-            }
-            @Override public Insets getBorderInsets(Component c) { return new Insets(th, 0, 0, 0); }
-            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(th, 0, 0, 0); return i; }
-        };
-        panel.setBorder(BorderFactory.createCompoundBorder(
-                topRule,
-                BorderFactory.createEmptyBorder(gap, gap, gap, gap)));
-
-        JButton openIssue = AppTheme.makeButton(getText("actions.commands.suggest.openGitHubIssue"));
-        openIssue.addActionListener(event -> openGitHubIssue());
-        panel.add(openIssue, BorderLayout.WEST);
-
-        JButton back = AppTheme.makeButtonSubtle(getText("button.back"));
-        back.addActionListener(event -> dispose());
-        panel.add(back, BorderLayout.EAST);
-        getRootPane().setDefaultButton(openIssue);
-        return panel;
     }
 
     private void openGitHubIssue() {

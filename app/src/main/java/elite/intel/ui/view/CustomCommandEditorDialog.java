@@ -43,8 +43,8 @@ final class CustomCommandEditorDialog extends JDialog {
     private final String originalActionKey;
     /** Read-only diagnostic field showing the internal UUID. */
     private final JTextField idField = new JTextField(36);
-    private final JTextField actionKeyField = new JTextField(36);
-    private final JTextField nameField = new JTextField(36);
+    private final JTextField actionKeyField = AppTheme.makeTextField();
+    private final JTextField nameField = AppTheme.makeTextField();
     private final JTextArea descriptionArea = textArea(3);
     private final JTextArea phrasesArea = textArea(4);
     private final ParamsTableModel paramsModel = new ParamsTableModel();
@@ -61,6 +61,7 @@ final class CustomCommandEditorDialog extends JDialog {
                 customCommand == null ? getText("actions.customCommands.editor.newTitle") : getText("actions.customCommands.editor.editTitle"),
                 ModalityType.APPLICATION_MODAL
         );
+        setUndecorated(true);
         this.existingCustomCommands = existingCustomCommands == null ? List.of() : List.copyOf(existingCustomCommands);
         this.originalId = customCommand == null ? null : customCommand.getId();
         this.originalActionKey = customCommand == null ? null : customCommand.getActionKey();
@@ -89,23 +90,42 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private void buildUi(boolean existing) {
-        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        content.setOpaque(true);
-        content.setBackground(AppTheme.HUD_BG);
-        content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        HudSection identitySection = new HudSection(getText("actions.customCommands.editor.section.identity"), new BorderLayout());
+        HudSection identitySection = HudSection.flat(
+                getText("actions.customCommands.editor.section.identity"), new BorderLayout());
         identitySection.body().add(form(existing), BorderLayout.CENTER);
-        content.add(identitySection, BorderLayout.NORTH);
 
         JPanel center = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
         center.add(paramsPanel(), BorderLayout.NORTH);
         center.add(stepsPanel(), BorderLayout.CENTER);
-        content.add(center, BorderLayout.CENTER);
 
-        content.add(bottomPanel(), BorderLayout.SOUTH);
-        setContentPane(content);
+        // errors block: lives in body SOUTH (was in bottomPanel CENTER before migration)
+        errorsArea.setEditable(false);
+        errorsArea.setVisible(false);
+        errorsScrollPane = AppTheme.hudScrollPane(errorsArea);
+        errorsScrollPane.setVisible(false);
 
+        JPanel body = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        body.add(identitySection, BorderLayout.NORTH);
+        body.add(center, BorderLayout.CENTER);
+        body.add(errorsScrollPane, BorderLayout.SOUTH);
+
+        JButton save = AppTheme.makeButton(getText("button.save"));
+        save.addActionListener(event -> save());
+        JButton back = AppTheme.makeButtonSubtle(getText("button.back"));
+        back.addActionListener(event -> dispose());
+
+        HudModalSpec spec = HudModalSpec.builder()
+                .title(getTitle())
+                .onClose(this::dispose)
+                .body(body)
+                .scrollBody(false)            // sections manage their own scroll; body not scrolled
+                .primary(save)                // right side
+                .dismiss(back)                // left side
+                .build();
+
+        setContentPane(AppTheme.hudModalScaffold(spec));
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        getRootPane().setDefaultButton(save);
         pack();
         setMinimumSize(new Dimension(860, 860));
         setLocationRelativeTo(getOwner());
@@ -126,12 +146,18 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel paramsPanel() {
-        HudSection panel = new HudSection(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, AppTheme.HUD_GAP));
+        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, AppTheme.HUD_GAP));
 
         paramsTable.setFillsViewportHeight(true);
         paramsTable.setRowHeight(26);
         paramsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         HudTable.style(paramsTable);
+        paramsTable.getColumnModel().getColumn(0)
+                .setCellRenderer(new HudTable.ValueCellRenderer());
+        for (int i = 1; i <= 4; i++) {
+            paramsTable.getColumnModel().getColumn(i)
+                    .setCellRenderer(new HudTable.ValueCellRenderer());
+        }
         paramsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -179,12 +205,16 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel stepsPanel() {
-        HudSection panel = new HudSection(getText("actions.customCommands.editor.steps"), new BorderLayout(0, AppTheme.HUD_GAP));
+        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.steps"), new BorderLayout(0, AppTheme.HUD_GAP));
 
         stepsTable.setFillsViewportHeight(true);
         stepsTable.setRowHeight(30);
         stepsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         HudTable.style(stepsTable);
+        stepsTable.getColumnModel().getColumn(0).setCellRenderer(new HudTable.ValueCellRenderer());
+        stepsTable.getColumnModel().getColumn(1).setCellRenderer(new HudTable.ValueCellRenderer());
+        stepsTable.getColumnModel().getColumn(2)
+                .setCellRenderer(new HudTable.ValueCellRenderer(null, SwingConstants.RIGHT));
         stepsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -203,36 +233,11 @@ final class CustomCommandEditorDialog extends JDialog {
         return panel;
     }
 
-    private JPanel bottomPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-
-        errorsArea.setEditable(false);
-        errorsArea.setVisible(false);
-        errorsScrollPane = AppTheme.hudScrollPane(errorsArea);
-        errorsScrollPane.setVisible(false);
-        panel.add(errorsScrollPane, BorderLayout.CENTER);
-
-        JPanel buttons = new JPanel(new BorderLayout());
-        buttons.setOpaque(false);
-        JButton save = AppTheme.makeButton(getText("button.save"));
-        save.addActionListener(event -> save());
-        buttons.add(save, BorderLayout.WEST);
-
-        JButton cancel = AppTheme.makeButtonSubtle(getText("button.cancel"));
-        cancel.addActionListener(event -> dispose());
-        buttons.add(cancel, BorderLayout.EAST);
-        panel.add(buttons, BorderLayout.SOUTH);
-        getRootPane().setDefaultButton(save);
-        return panel;
-    }
-
     private void addField(JPanel panel, GridBagConstraints gbc, String labelText, JTextField field) {
         addLabel(panel, gbc, labelText);
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        AppTheme.styleTextComponent(field);
         panel.add(field, gbc);
         gbc.gridy++;
     }
@@ -242,7 +247,11 @@ final class CustomCommandEditorDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(AppTheme.hudScrollPane(area), gbc);
+        JScrollPane sp = AppTheme.hudScrollPane(area);
+        sp.setBorder(AppTheme.hudFieldBorder());
+        sp.getViewport().setBackground(AppTheme.HUD_TABLE_ROW);
+        area.setBackground(AppTheme.HUD_TABLE_ROW);
+        panel.add(sp, gbc);
         gbc.gridy++;
     }
 
@@ -250,8 +259,7 @@ final class CustomCommandEditorDialog extends JDialog {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        JLabel label = new JLabel(labelText);
-        label.setForeground(AppTheme.FG_MUTED);
+        JLabel label = AppTheme.hudReadoutLabel(labelText);
         label.setPreferredSize(new Dimension(170, 28));
         panel.add(label, gbc);
     }

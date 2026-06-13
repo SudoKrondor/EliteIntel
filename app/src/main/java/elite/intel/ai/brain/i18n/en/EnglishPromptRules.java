@@ -95,9 +95,9 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(FLEET_CARRIER_STATUS.getAction());
         sb.append("\n");
 
-        sb.append("- carrier tritium level only: 'how much tritium / tritium supply / tritium level / tritium reserve' → ");
-        sb.append(FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
-        sb.append("\n");
+        //sb.append("- carrier tritium level only: 'how much tritium / tritium supply / tritium level / tritium reserve' → ");
+        //sb.append(FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
+        //sb.append("\n");
 
         sb.append("- bio signals: 'which planets have bio signals / bio signals in system / organics in system / biological signals / how many planets have bio' → ");
         sb.append(BIO_SAMPLE_IN_STAR_SYSTEM.getAction());

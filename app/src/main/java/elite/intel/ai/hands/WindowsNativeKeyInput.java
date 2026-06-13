@@ -232,6 +232,11 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             log.error("[diag] checkJnaConnectivity failed", t);
         }
         try {
+            checkKeyboardLayout();
+        } catch (Throwable t) {
+            log.error("[diag] checkKeyboardLayout failed", t);
+        }
+        try {
             checkProcessElevation();
         } catch (Throwable t) {
             log.error("[diag] checkProcessElevation failed", t);
@@ -248,6 +253,19 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         log.info("[diag] *** Fix: ED launcher → right-click → Properties → Compatibility    ***");
         log.info("[diag] *** tab → un-check 'Run this program as an administrator'.          ***");
         log.info("=================================================");
+    }
+
+    private static void checkKeyboardLayout() {
+        WinDef.HKL threadHkl = User32.INSTANCE.GetKeyboardLayout(0);
+        WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+        WinDef.HKL fgHkl = null;
+        if (hwnd != null) {
+            int tid = User32.INSTANCE.GetWindowThreadProcessId(hwnd, null);
+            fgHkl = User32.INSTANCE.GetKeyboardLayout(tid);
+        }
+        log.info("[diag] Keyboard layout. This-thread HKL: {} | foreground-window HKL: {}",
+                threadHkl, fgHkl);
+        log.info("[diag] (AZERTY = 0x040C040C, QWERTY-US = 0x04090409; LOWORD=lang, HIWORD=layout)");
     }
 
     private static void checkJnaConnectivity() {
@@ -364,6 +382,23 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         sendKeyEvent(keyCode, true);
     }
 
+    // Returns the keyboard layout (HKL) of the foreground window's thread i.e. the
+    // layout that the target application (ED) is actively using. This is the correct
+    // layout to pass to MapVirtualKeyEx for letters so that AZERTY/QWERTZ remappings
+    // resolve to the right physical scan code. Returns null on failure (MapVirtualKeyEx
+    // then falls back to the calling thread's layout).
+    private static WinDef.HKL getForegroundWindowLayout() {
+        try {
+            WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+            if (hwnd == null) return null;
+            int tid = User32.INSTANCE.GetWindowThreadProcessId(hwnd, null);
+            return User32.INSTANCE.GetKeyboardLayout(tid);
+        } catch (Throwable t) {
+            log.warn("[key] getForegroundWindowLayout failed: {}", t.getMessage());
+            return null;
+        }
+    }
+
     private void sendKeyEvent(int keyCode, boolean isKeyUp) {
         short scan;
         String resolvedVia;
@@ -380,10 +415,15 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             boolean isLetter = keyCode >= KeyEvent.VK_A && keyCode <= KeyEvent.VK_Z;
             boolean isNavCluster = keyCode >= KeyEvent.VK_PAGE_UP && keyCode <= KeyEvent.VK_DOWN;
             if (isLetter || isNavCluster) {
-                int vsc = User32.INSTANCE.MapVirtualKeyEx(keyCode, MAPVK_VK_TO_VSC, null);
+                // For letters, pass the foreground window's keyboard layout so that
+                // layout-remapped keys (e.g. AZERTY VK_M → scan 0x33, not QWERTY 0x32)
+                // resolve to the correct physical scan code. Nav cluster scan codes are
+                // layout-independent so null (= calling thread's layout) is fine there.
+                WinDef.HKL hkl = isLetter ? getForegroundWindowLayout() : null;
+                int vsc = User32.INSTANCE.MapVirtualKeyEx(keyCode, MAPVK_VK_TO_VSC, hkl);
                 if (vsc != 0) {
                     scan = (short) vsc;
-                    resolvedVia = isLetter ? "MapVirtualKeyEx(letter)" : "MapVirtualKeyEx(nav)";
+                    resolvedVia = isLetter ? "MapVirtualKeyEx(letter,hkl=" + hkl + ")" : "MapVirtualKeyEx(nav)";
                 } else {
                     log.warn("[key] MapVirtualKeyEx returned 0 for VK=0x{} ({}), falling back to SCAN_MAP",
                             Integer.toHexString(keyCode), keyName(keyCode));

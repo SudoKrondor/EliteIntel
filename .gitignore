@@ -1,4 +1,5 @@
 /app/build
+/app/out
 /logs
 /misc
 /session

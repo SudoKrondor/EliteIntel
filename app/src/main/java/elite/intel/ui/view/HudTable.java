@@ -188,4 +188,44 @@ public final class HudTable {
             return label;
         }
     }
+
+    /**
+     * Extends {@link CellRenderer} with configurable upper-casing, foreground colour, and horizontal
+     * alignment. Use for columns where the value is an identifier (pass {@link AppTheme#FG}),
+     * a numeric (pass {@link SwingConstants#RIGHT}), or needs explicit caps without global impact.
+     *
+     * @param fg        non-selected foreground; {@code null} keeps the default {@link AppTheme#ACCENT}
+     * @param alignment {@link SwingConstants#LEFT} or {@link SwingConstants#RIGHT}
+     */
+    public static class ValueCellRenderer extends CellRenderer {
+        private final java.awt.Color fg;
+        private final int alignment;
+
+        /** Creates a renderer with caps, default ACCENT foreground, and LEFT alignment. */
+        public ValueCellRenderer() {
+            this(null, SwingConstants.LEFT);
+        }
+
+        public ValueCellRenderer(java.awt.Color fg, int alignment) {
+            super();
+            this.fg = fg;
+            this.alignment = alignment;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column) {
+            Object display = value == null ? "" : value.toString().toUpperCase(java.util.Locale.ROOT);
+            Component c = super.getTableCellRendererComponent(
+                    table, display, isSelected, hasFocus, row, column);
+            if (!isSelected && fg != null) {
+                c.setForeground(fg);
+            }
+            if (c instanceof JLabel l) {
+                l.setHorizontalAlignment(alignment);
+            }
+            return c;
+        }
+    }
 }
