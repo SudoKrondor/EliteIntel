@@ -66,6 +66,11 @@ public abstract class VizletWindow extends JWindow {
 
     protected abstract void openSettings();
 
+    /** Override to return false to hide the Settings item from the right-click menu. */
+    protected boolean hasSettings() {
+        return true;
+    }
+
     // -- Drag -----------------------------------------------------------------
 
     private void installDragSupport() {
@@ -95,8 +100,11 @@ public abstract class VizletWindow extends JWindow {
     private void installContextMenu() {
         JPopupMenu menu = new JPopupMenu();
 
-        JMenuItem settingsItem = new JMenuItem(getText("vizlet.menu.settings"));
-        settingsItem.addActionListener(e -> openSettings());
+        if (hasSettings()) {
+            JMenuItem settingsItem = new JMenuItem(getText("vizlet.menu.settings"));
+            settingsItem.addActionListener(e -> openSettings());
+            menu.add(settingsItem);
+        }
 
         JMenuItem lockItem = new JMenuItem(getText("vizlet.menu.lock"));
         lockItem.addActionListener(e -> {
@@ -107,7 +115,6 @@ public abstract class VizletWindow extends JWindow {
         JMenuItem closeItem = new JMenuItem(getText("vizlet.menu.close"));
         closeItem.addActionListener(e -> closeVizlet());
 
-        menu.add(settingsItem);
         menu.add(lockItem);
         menu.addSeparator();
         menu.add(closeItem);

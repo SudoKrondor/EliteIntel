@@ -6,6 +6,8 @@ import elite.intel.starvizion.event.SvServiceStateEvent;
 import elite.intel.starvizion.input.SdlInputService;
 import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
+import elite.intel.starvizion.overlay.CounterVizlet;
+import elite.intel.starvizion.overlay.KeyboardVizlet;
 import elite.intel.ui.view.AppTheme;
 
 import javax.swing.*;
@@ -25,6 +27,8 @@ public class StarVizionTabPanel extends JPanel {
     private static final int AXES_DEFAULT_H  = 200;
     private static final int BTN_DEFAULT_W   = 120;
     private static final int BTN_DEFAULT_H   = 120;
+    private static final int KEYBOARD_DEFAULT_W = 160;
+    private static final int COUNTER_DEFAULT_W  = 160;
     private static final int SPAWN_MARGIN    = 20;
     private static final int VIZLET_GAP      = 10;
     private static final int VIZLET_TOP_Y    = 60;
@@ -36,6 +40,8 @@ public class StarVizionTabPanel extends JPanel {
     private SdlInputService sdlInputService;
     private AxesVizlet  axesVizlet;
     private ButtonVizlet buttonVizlet;
+    private KeyboardVizlet keyboardVizlet;
+    private CounterVizlet counterVizlet;
 
     public StarVizionTabPanel() {
         EventBusManager.register(this);
@@ -116,6 +122,9 @@ public class StarVizionTabPanel extends JPanel {
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         int axesX  = screen.width - AXES_DEFAULT_W - SPAWN_MARGIN;
         int btnX   = axesX - BTN_DEFAULT_W - VIZLET_GAP;
+        int row2Y  = VIZLET_TOP_Y + AXES_DEFAULT_H + VIZLET_GAP;
+        int keyboardX = screen.width - KEYBOARD_DEFAULT_W - SPAWN_MARGIN;
+        int counterX  = keyboardX - COUNTER_DEFAULT_W - VIZLET_GAP;
 
         axesVizlet = new AxesVizlet();
         axesVizlet.setLocation(axesX, VIZLET_TOP_Y);
@@ -125,6 +134,14 @@ public class StarVizionTabPanel extends JPanel {
         buttonVizlet.setLocation(btnX, VIZLET_TOP_Y);
         buttonVizlet.showVizlet();
 
+        keyboardVizlet = new KeyboardVizlet();
+        keyboardVizlet.setLocation(keyboardX, row2Y);
+        keyboardVizlet.showVizlet();
+
+        counterVizlet = new CounterVizlet();
+        counterVizlet.setLocation(counterX, row2Y);
+        counterVizlet.showVizlet();
+
         active = true;
         activateButton.setText(getText("starvizion.deactivate"));
     }
@@ -132,6 +149,8 @@ public class StarVizionTabPanel extends JPanel {
     private void deactivate() {
         if (axesVizlet != null) { axesVizlet.closeVizlet(); axesVizlet = null; }
         if (buttonVizlet != null) { buttonVizlet.closeVizlet(); buttonVizlet = null; }
+        if (keyboardVizlet != null) { keyboardVizlet.closeVizlet(); keyboardVizlet = null; }
+        if (counterVizlet != null) { counterVizlet.closeVizlet(); counterVizlet = null; }
         active = false;
         if (activateButton != null) activateButton.setText(getText("starvizion.activate"));
     }

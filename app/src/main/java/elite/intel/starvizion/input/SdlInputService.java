@@ -5,17 +5,22 @@ import elite.intel.starvizion.event.SvAxisStateEvent;
 import elite.intel.starvizion.event.SvButtonStateEvent;
 import elite.intel.starvizion.event.SvDeviceConnectedEvent;
 import elite.intel.starvizion.event.SvDeviceDisconnectedEvent;
+import elite.intel.starvizion.event.SvKeyPressedEvent;
 import elite.intel.starvizion.event.SvServiceStateEvent;
 import elite.intel.starvizion.model.SvDevice;
 import org.lwjgl.sdl.SDLError;
 import org.lwjgl.sdl.SDLEvents;
 import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDLJoystick;
+import org.lwjgl.sdl.SDLKeyboard;
+import org.lwjgl.sdl.SDLKeycode;
+import org.lwjgl.sdl.SDLScancode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,9 +32,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.lwjgl.sdl.SDLInit.*;
 
 /**
- * Polls SDL3 for joystick/HOTAS/gamepad/pedal input on a dedicated platform thread.
- * Publishes connect/disconnect and axis/button state events on the main EventBusManager.
- * Read-only device access — never writes to the game or any game file.
+ * Polls SDL3 for joystick/HOTAS/gamepad/pedal input, and keyboard scancode state, on a
+ * dedicated platform thread. Publishes connect/disconnect, axis/button state, and key-pressed
+ * events on the main EventBusManager. Read-only device access — never writes to the game or
+ * any game file.
  *
  * Singleton. Call start() once; stop() to shut down cleanly.
  */
@@ -52,6 +58,9 @@ public class SdlInputService {
     private final Map<Integer, Long> openHandles = new LinkedHashMap<>();
     private final Map<Integer, short[]> prevAxes = new HashMap<>();
     private final Map<Integer, boolean[]> prevButtons = new HashMap<>();
+
+    // Previous SDL_GetKeyboardState() snapshot, indexed by SDL_Scancode. Accessed only from sdlThread.
+    private boolean[] prevKeyState;
 
     private SdlInputService() {}
 
@@ -124,6 +133,8 @@ public class SdlInputService {
                 for (Map.Entry<Integer, Long> entry : openHandles.entrySet()) {
                     pollJoystick(entry.getKey(), entry.getValue());
                 }
+
+                pollKeyboard();
 
                 //noinspection BusyWait
                 Thread.sleep(POLL_INTERVAL_MS);
@@ -272,5 +283,58 @@ public class SdlInputService {
         prevAxes.clear();
         prevButtons.clear();
         connectedDevices.clear();
+        prevKeyState = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // Keyboard polling — SDL_GetKeyboardState() reflects raw hardware state and is updated by
+    // SDL_PumpEvents() above, independent of which window (if any) has input focus.
+    // -------------------------------------------------------------------------
+
+    private void pollKeyboard() {
+        ByteBuffer state = SDLKeyboard.SDL_GetKeyboardState();
+        if (state == null) return;
+
+        int numKeys = state.remaining();
+        if (prevKeyState == null || prevKeyState.length != numKeys) {
+            prevKeyState = new boolean[numKeys];
+        }
+
+        short modState = SDLKeyboard.SDL_GetModState();
+        for (int i = 0; i < numKeys; i++) {
+            boolean pressed = state.get(i) != 0;
+            if (pressed && !prevKeyState[i]) {
+                EventBusManager.publish(new SvKeyPressedEvent(i, buildKeyDisplayName(i, modState)));
+            }
+            prevKeyState[i] = pressed;
+        }
+    }
+
+    private static String buildKeyDisplayName(int scancode, short modState) {
+        boolean isCtrl  = scancode == SDLScancode.SDL_SCANCODE_LCTRL  || scancode == SDLScancode.SDL_SCANCODE_RCTRL;
+        boolean isShift = scancode == SDLScancode.SDL_SCANCODE_LSHIFT || scancode == SDLScancode.SDL_SCANCODE_RSHIFT;
+        boolean isAlt   = scancode == SDLScancode.SDL_SCANCODE_LALT   || scancode == SDLScancode.SDL_SCANCODE_RALT;
+        boolean isGui   = scancode == SDLScancode.SDL_SCANCODE_LGUI   || scancode == SDLScancode.SDL_SCANCODE_RGUI;
+
+        StringBuilder name = new StringBuilder();
+        if (!isCtrl  && (modState & SDLKeycode.SDL_KMOD_CTRL)  != 0) name.append("Ctrl+");
+        if (!isShift && (modState & SDLKeycode.SDL_KMOD_SHIFT) != 0) name.append("Shift+");
+        if (!isAlt   && (modState & SDLKeycode.SDL_KMOD_ALT)   != 0) name.append("Alt+");
+        if (!isGui   && (modState & SDLKeycode.SDL_KMOD_GUI)   != 0) name.append("Win+");
+        name.append(scancodeDisplayName(scancode));
+        return name.toString();
+    }
+
+    private static String scancodeDisplayName(int scancode) {
+        return switch (scancode) {
+            case SDLScancode.SDL_SCANCODE_LCTRL, SDLScancode.SDL_SCANCODE_RCTRL -> "Ctrl";
+            case SDLScancode.SDL_SCANCODE_LSHIFT, SDLScancode.SDL_SCANCODE_RSHIFT -> "Shift";
+            case SDLScancode.SDL_SCANCODE_LALT, SDLScancode.SDL_SCANCODE_RALT -> "Alt";
+            case SDLScancode.SDL_SCANCODE_LGUI, SDLScancode.SDL_SCANCODE_RGUI -> "Win";
+            default -> {
+                String name = SDLKeyboard.SDL_GetScancodeName(scancode);
+                yield (name == null || name.isBlank()) ? ("Key " + scancode) : name;
+            }
+        };
     }
 }
