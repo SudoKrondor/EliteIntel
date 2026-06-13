@@ -1,9 +1,9 @@
 package elite.intel.starvizion.overlay;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.starvizion.event.SvAxisStateEvent;
-import elite.intel.starvizion.event.SvDeviceDisconnectedEvent;
-import elite.intel.starvizion.model.SvDevice;
+import elite.intel.devices.events.DeviceAxisEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.devices.model.Device;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,7 +44,7 @@ public class AxesVizlet extends VizletWindow {
     // -- EventBus subscribers -------------------------------------------------
 
     @Subscribe
-    public void onAxisState(SvAxisStateEvent event) {
+    public void onAxisState(DeviceAxisEvent event) {
         if (assignedDeviceId == null || event.deviceId() != assignedDeviceId) return;
         if (event.axisIndex() == xAxisIndex) xValue = event.value();
         else if (event.axisIndex() == yAxisIndex) yValue = event.value();
@@ -52,7 +52,7 @@ public class AxesVizlet extends VizletWindow {
     }
 
     @Subscribe
-    public void onDeviceDisconnected(SvDeviceDisconnectedEvent event) {
+    public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
         if (assignedDeviceId != null && event.deviceId() == assignedDeviceId) {
             assignedDeviceId = null;
             xValue = 0f;
@@ -63,7 +63,7 @@ public class AxesVizlet extends VizletWindow {
 
     // -- Configuration --------------------------------------------------------
 
-    public void configure(SvDevice device, int xAxis, int yAxis, Color color, DotShape shape) {
+    public void configure(Device device, int xAxis, int yAxis, Color color, DotShape shape) {
         this.assignedDeviceId = device.id();
         this.xAxisIndex = xAxis;
         this.yAxisIndex = yAxis;

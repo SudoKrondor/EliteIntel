@@ -1,9 +1,9 @@
 package elite.intel.starvizion;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.events.DeviceServiceStateEvent;
 import elite.intel.gameapi.EventBusManager;
-import elite.intel.starvizion.event.SvServiceStateEvent;
-import elite.intel.starvizion.input.SdlInputService;
 import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
@@ -37,7 +37,7 @@ public class StarVizionTabPanel extends JPanel {
     private JLabel  statusLabel;
     private boolean active = false;
 
-    private SdlInputService sdlInputService;
+    private DeviceService deviceService;
     private AxesVizlet  axesVizlet;
     private ButtonVizlet buttonVizlet;
     private KeyboardVizlet keyboardVizlet;
@@ -50,7 +50,7 @@ public class StarVizionTabPanel extends JPanel {
 
     public void dispose() {
         deactivate();
-        if (sdlInputService != null) sdlInputService.stop();
+        if (deviceService != null) deviceService.stop();
         EventBusManager.unregister(this);
     }
 
@@ -110,10 +110,10 @@ public class StarVizionTabPanel extends JPanel {
     }
 
     private void activate() {
-        // Lazy-init SDL service on first activation — result arrives via SvServiceStateEvent
-        if (sdlInputService == null) {
-            sdlInputService = SdlInputService.getInstance();
-            sdlInputService.start();
+        // Lazy-init device service on first activation — result arrives via DeviceServiceStateEvent
+        if (deviceService == null) {
+            deviceService = DeviceService.getInstance();
+            deviceService.start();
             statusLabel.setText(getText("starvizion.sdl.initializing"));
             statusLabel.setForeground(FG_MUTED);
         }
@@ -158,7 +158,7 @@ public class StarVizionTabPanel extends JPanel {
     // -- Event handlers -------------------------------------------------------
 
     @Subscribe
-    public void onSvServiceState(SvServiceStateEvent event) {
+    public void onDeviceServiceState(DeviceServiceStateEvent event) {
         SwingUtilities.invokeLater(() -> {
             if (!event.available()) {
                 statusLabel.setText(getText("starvizion.sdl.unavailable"));

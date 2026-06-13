@@ -1,8 +1,8 @@
 package elite.intel.starvizion.overlay;
 
-import elite.intel.starvizion.input.SdlInputService;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.model.Device;
 import elite.intel.starvizion.model.SvButton;
-import elite.intel.starvizion.model.SvDevice;
 import elite.intel.ui.view.AppTheme;
 
 import javax.swing.*;
@@ -15,7 +15,7 @@ public class ButtonSettingsDialog extends JDialog {
 
     private final ButtonVizlet vizlet;
 
-    private JComboBox<SvDevice>                deviceCombo;
+    private JComboBox<Device>                  deviceCombo;
     private JComboBox<SvButton>                buttonCombo;
     private JComboBox<ButtonVizlet.ButtonShape> shapeCombo;
     private JButton                            colorButton;
@@ -46,7 +46,7 @@ public class ButtonSettingsDialog extends JDialog {
         nextRow(gbc);
         addLabel(root, getText("starvizion.button.device"), gbc);
         deviceCombo = new JComboBox<>();
-        SdlInputService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
+        DeviceService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
         addField(root, deviceCombo, gbc);
         deviceCombo.addActionListener(e -> repopulateButtons());
 
@@ -111,7 +111,7 @@ public class ButtonSettingsDialog extends JDialog {
     }
 
     private void repopulateButtons() {
-        SvDevice dev = (SvDevice) deviceCombo.getSelectedItem();
+        Device dev = (Device) deviceCombo.getSelectedItem();
         buttonCombo.removeAllItems();
         if (dev == null) return;
         for (int i = 0; i < dev.buttonCount(); i++) {
@@ -127,7 +127,7 @@ public class ButtonSettingsDialog extends JDialog {
     }
 
     private void apply() {
-        SvDevice dev = (SvDevice) deviceCombo.getSelectedItem();
+        Device dev = (Device) deviceCombo.getSelectedItem();
         if (dev == null) { dispose(); return; }
         SvButton btn = (SvButton) buttonCombo.getSelectedItem();
         int b = btn != null ? btn.index() : 0;

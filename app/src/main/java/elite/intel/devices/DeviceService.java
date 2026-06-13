@@ -1,20 +1,20 @@
-package elite.intel.starvizion.input;
+package elite.intel.devices;
 
+import elite.intel.devices.events.DeviceAxisEvent;
+import elite.intel.devices.events.DeviceButtonEvent;
+import elite.intel.devices.events.DeviceConnectedEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.devices.events.DeviceDuplicateWarningEvent;
+import elite.intel.devices.events.DeviceServiceStateEvent;
+import elite.intel.devices.model.Device;
 import elite.intel.gameapi.EventBusManager;
-import elite.intel.starvizion.event.SvAxisStateEvent;
-import elite.intel.starvizion.event.SvButtonStateEvent;
-import elite.intel.starvizion.event.SvDeviceConnectedEvent;
-import elite.intel.starvizion.event.SvDeviceDisconnectedEvent;
-import elite.intel.starvizion.event.SvKeyPressedEvent;
-import elite.intel.starvizion.event.SvServiceStateEvent;
-import elite.intel.starvizion.model.SvDevice;
 import org.lwjgl.sdl.SDLError;
 import org.lwjgl.sdl.SDLEvents;
+import org.lwjgl.sdl.SDLGUID;
 import org.lwjgl.sdl.SDLInit;
 import org.lwjgl.sdl.SDLJoystick;
-import org.lwjgl.sdl.SDLKeyboard;
-import org.lwjgl.sdl.SDLKeycode;
-import org.lwjgl.sdl.SDLScancode;
+import org.lwjgl.sdl.SDL_GUID;
+import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +22,7 @@ import java.io.File;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,42 +33,41 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.lwjgl.sdl.SDLInit.*;
 
 /**
- * Polls SDL3 for joystick/HOTAS/gamepad/pedal input, and keyboard scancode state, on a
- * dedicated platform thread. Publishes connect/disconnect, axis/button state, and key-pressed
- * events on the main EventBusManager. Read-only device access — never writes to the game or
- * any game file.
+ * Polls SDL3 for joystick/HOTAS/gamepad/pedal input on a dedicated platform thread. Publishes
+ * connect/disconnect, axis, and button events on the main EventBusManager. Read-only device
+ * access — never writes to the game or any game file.
  *
- * Singleton. Call start() once; stop() to shut down cleanly.
+ * Singleton shared infrastructure: StarVizion, BindForge, and push-to-talk all consume these
+ * events rather than owning their own SDL3 context. Call start() once; stop() to shut down
+ * cleanly.
  */
-public class SdlInputService {
+public class DeviceService {
 
-    private static final Logger log = LoggerFactory.getLogger(SdlInputService.class);
+    private static final Logger log = LoggerFactory.getLogger(DeviceService.class);
     private static final int POLL_INTERVAL_MS = 16; // ~60 Hz
     private static final float AXIS_SCALE = 1.0f / 32767.0f;
 
-    private static volatile SdlInputService instance;
+    private static volatile DeviceService instance;
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean available = new AtomicBoolean(false);
-    private Thread sdlThread;
+    private Thread pollThread;
 
-    // Written only from the SDL thread; readable from any thread via CopyOnWriteArrayList.
-    private final CopyOnWriteArrayList<SvDevice> connectedDevices = new CopyOnWriteArrayList<>();
+    // Written only from the poll thread; readable from any thread via CopyOnWriteArrayList.
+    private final CopyOnWriteArrayList<Device> connectedDevices = new CopyOnWriteArrayList<>();
 
-    // Open joystick handles — keyed by SDL JoystickID. Accessed only from sdlThread.
+    // Open joystick handles — keyed by SDL JoystickID. Accessed only from pollThread.
     private final Map<Integer, Long> openHandles = new LinkedHashMap<>();
     private final Map<Integer, short[]> prevAxes = new HashMap<>();
     private final Map<Integer, boolean[]> prevButtons = new HashMap<>();
+    private final Map<Integer, int[]> vidPidByDevice = new HashMap<>(); // [vendor, product]
 
-    // Previous SDL_GetKeyboardState() snapshot, indexed by SDL_Scancode. Accessed only from sdlThread.
-    private boolean[] prevKeyState;
+    private DeviceService() {}
 
-    private SdlInputService() {}
-
-    public static SdlInputService getInstance() {
+    public static DeviceService getInstance() {
         if (instance == null) {
-            synchronized (SdlInputService.class) {
-                if (instance == null) instance = new SdlInputService();
+            synchronized (DeviceService.class) {
+                if (instance == null) instance = new DeviceService();
             }
         }
         return instance;
@@ -78,7 +78,7 @@ public class SdlInputService {
     public boolean isAvailable() { return available.get(); }
 
     /** Returns a snapshot of currently connected devices — safe to call from any thread. */
-    public List<SvDevice> getConnectedDevices() {
+    public List<Device> getConnectedDevices() {
         return Collections.unmodifiableList(new ArrayList<>(connectedDevices));
     }
 
@@ -86,24 +86,24 @@ public class SdlInputService {
 
     public void start() {
         if (!running.compareAndSet(false, true)) return;
-        sdlThread = Thread.ofPlatform().name("starvizion-sdl").start(this::sdlLoop);
+        pollThread = Thread.ofPlatform().name("elite-intel-devices").start(this::pollLoop);
     }
 
     public void stop() {
         running.set(false);
-        if (sdlThread != null) {
-            try { sdlThread.join(3_000); }
+        if (pollThread != null) {
+            try { pollThread.join(3_000); }
             catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         }
     }
 
     // -------------------------------------------------------------------------
 
-    private void sdlLoop() {
+    private void pollLoop() {
         try {
             if (!initSdl()) return;
             available.set(true);
-            EventBusManager.publish(new SvServiceStateEvent(true, null));
+            EventBusManager.publish(new DeviceServiceStateEvent(true, null));
 
             Set<Integer> knownIds = new HashSet<>();
             boolean firstPoll = true;
@@ -113,7 +113,7 @@ public class SdlInputService {
 
                 Set<Integer> currentIds = enumerateJoystickIds();
                 if (firstPoll) {
-                    log.debug("StarVizion initial joystick enumeration: {} device(s) found, ids={}", currentIds.size(), currentIds);
+                    log.debug("Device service initial joystick enumeration: {} device(s) found, ids={}", currentIds.size(), currentIds);
                     firstPoll = false;
                 }
 
@@ -134,8 +134,6 @@ public class SdlInputService {
                     pollJoystick(entry.getKey(), entry.getValue());
                 }
 
-                pollKeyboard();
-
                 //noinspection BusyWait
                 Thread.sleep(POLL_INTERVAL_MS);
             }
@@ -145,7 +143,7 @@ public class SdlInputService {
             closeAllHandles();
             SDLInit.SDL_Quit();
             available.set(false);
-            log.info("StarVizion SDL3 service stopped");
+            log.info("Device service stopped");
         }
     }
 
@@ -168,7 +166,7 @@ public class SdlInputService {
      */
     private void configureLwjglNativePath() {
         try {
-            URL src = SdlInputService.class.getProtectionDomain().getCodeSource().getLocation();
+            URL src = DeviceService.class.getProtectionDomain().getCodeSource().getLocation();
             Path nativesDir = Paths.get(src.toURI()).getParent().resolve("native/lwjgl");
             if (!Files.isDirectory(nativesDir)) {
                 log.debug("LWJGL3 native pre-extract dir not found ({}), using default temp extraction", nativesDir);
@@ -196,16 +194,16 @@ public class SdlInputService {
                 String err = SDLError.SDL_GetError();
                 log.error("SDL_Init failed: {}", err);
                 running.set(false);
-                EventBusManager.publish(new SvServiceStateEvent(false, err));
+                EventBusManager.publish(new DeviceServiceStateEvent(false, err));
                 return false;
             }
-            log.info("StarVizion SDL3 initialized");
+            log.info("Device service SDL3 initialized");
             return true;
         } catch (UnsatisfiedLinkError | ExceptionInInitializerError | NoClassDefFoundError e) {
             // NoClassDefFoundError is thrown on second access if Library's static init failed.
             log.error("SDL3 native libraries not available: {}", e.getMessage());
             running.set(false);
-            EventBusManager.publish(new SvServiceStateEvent(false, e.getMessage()));
+            EventBusManager.publish(new DeviceServiceStateEvent(false, e.getMessage()));
             return false;
         }
     }
@@ -222,10 +220,10 @@ public class SdlInputService {
     }
 
     private void onDeviceAdded(int id) {
-        log.debug("StarVizion joystick enumeration found device id={}", id);
+        log.debug("Device enumeration found device id={}", id);
         long handle = SDLJoystick.SDL_OpenJoystick(id);
         if (handle == 0L) {
-            log.error("StarVizion SDL_OpenJoystick({}) failed: {}", id, SDLError.SDL_GetError());
+            log.error("SDL_OpenJoystick({}) failed: {}", id, SDLError.SDL_GetError());
             return;
         }
         openHandles.put(id, handle);
@@ -235,13 +233,19 @@ public class SdlInputService {
         String name = SDLJoystick.SDL_GetJoystickNameForID(id);
         if (name == null || name.isBlank()) name = "Joystick " + id;
 
+        String usbPath = SDLJoystick.SDL_GetJoystickPathForID(id);
+        if (usbPath == null) usbPath = "";
+        String guid = readGuid(id);
+
         prevAxes.put(id, new short[Math.max(0, axes)]);
         prevButtons.put(id, new boolean[Math.max(0, buttons)]);
 
-        SvDevice device = new SvDevice(id, name, axes, buttons);
+        Device device = new Device(id, name, axes, buttons, usbPath, guid);
         connectedDevices.add(device);
-        log.info("StarVizion device connected: {} (id={}, axes={}, buttons={})", name, id, axes, buttons);
-        EventBusManager.publish(new SvDeviceConnectedEvent(device));
+        log.info("Device connected: {} (id={}, axes={}, buttons={})", name, id, axes, buttons);
+        EventBusManager.publish(new DeviceConnectedEvent(device));
+
+        checkForDuplicate(id, device);
     }
 
     private void onDeviceRemoved(int id) {
@@ -249,9 +253,10 @@ public class SdlInputService {
         if (handle != null) SDLJoystick.SDL_CloseJoystick(handle);
         prevAxes.remove(id);
         prevButtons.remove(id);
+        vidPidByDevice.remove(id);
         connectedDevices.removeIf(d -> d.id() == id);
-        log.info("StarVizion device disconnected: id={}", id);
-        EventBusManager.publish(new SvDeviceDisconnectedEvent(id));
+        log.info("Device disconnected: id={}", id);
+        EventBusManager.publish(new DeviceDisconnectedEvent(id));
     }
 
     private void pollJoystick(int id, long handle) {
@@ -264,7 +269,7 @@ public class SdlInputService {
             if (raw != prev[a]) {
                 prev[a] = raw;
                 float normalized = Math.max(-1f, raw * AXIS_SCALE);
-                EventBusManager.publish(new SvAxisStateEvent(id, a, normalized));
+                EventBusManager.publish(new DeviceAxisEvent(id, a, normalized));
             }
         }
 
@@ -272,7 +277,7 @@ public class SdlInputService {
             boolean pressed = SDLJoystick.SDL_GetJoystickButton(handle, b);
             if (pressed != prevBtn[b]) {
                 prevBtn[b] = pressed;
-                EventBusManager.publish(new SvButtonStateEvent(id, b, pressed));
+                EventBusManager.publish(new DeviceButtonEvent(id, b, pressed));
             }
         }
     }
@@ -282,59 +287,48 @@ public class SdlInputService {
         openHandles.clear();
         prevAxes.clear();
         prevButtons.clear();
+        vidPidByDevice.clear();
         connectedDevices.clear();
-        prevKeyState = null;
     }
 
     // -------------------------------------------------------------------------
-    // Keyboard polling — SDL_GetKeyboardState() reflects raw hardware state and is updated by
-    // SDL_PumpEvents() above, independent of which window (if any) has input focus.
+    // GUID / duplicate device detection
     // -------------------------------------------------------------------------
 
-    private void pollKeyboard() {
-        ByteBuffer state = SDLKeyboard.SDL_GetKeyboardState();
-        if (state == null) return;
-
-        int numKeys = state.remaining();
-        if (prevKeyState == null || prevKeyState.length != numKeys) {
-            prevKeyState = new boolean[numKeys];
-        }
-
-        short modState = SDLKeyboard.SDL_GetModState();
-        for (int i = 0; i < numKeys; i++) {
-            boolean pressed = state.get(i) != 0;
-            if (pressed && !prevKeyState[i]) {
-                EventBusManager.publish(new SvKeyPressedEvent(i, buildKeyDisplayName(i, modState)));
-            }
-            prevKeyState[i] = pressed;
+    /** Reads the 32-character hex GUID string for a device, or "" if unavailable. */
+    private String readGuid(int id) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            SDL_GUID guid = SDL_GUID.malloc(stack);
+            SDLJoystick.SDL_GetJoystickGUIDForID(id, guid);
+            ByteBuffer out = stack.malloc(33);
+            SDLGUID.SDL_GUIDToString(guid, out);
+            byte[] hex = new byte[32];
+            out.get(hex);
+            return new String(hex, StandardCharsets.US_ASCII);
+        } catch (Exception e) {
+            log.debug("Could not read GUID for device {}: {}", id, e.getMessage());
+            return "";
         }
     }
 
-    private static String buildKeyDisplayName(int scancode, short modState) {
-        boolean isCtrl  = scancode == SDLScancode.SDL_SCANCODE_LCTRL  || scancode == SDLScancode.SDL_SCANCODE_RCTRL;
-        boolean isShift = scancode == SDLScancode.SDL_SCANCODE_LSHIFT || scancode == SDLScancode.SDL_SCANCODE_RSHIFT;
-        boolean isAlt   = scancode == SDLScancode.SDL_SCANCODE_LALT   || scancode == SDLScancode.SDL_SCANCODE_RALT;
-        boolean isGui   = scancode == SDLScancode.SDL_SCANCODE_LGUI   || scancode == SDLScancode.SDL_SCANCODE_RGUI;
+    /** Publishes DeviceDuplicateWarningEvent if the newly added device shares VID/PID with an already-connected device. */
+    private void checkForDuplicate(int newId, Device newDevice) {
+        int vendor = SDLJoystick.SDL_GetJoystickVendorForID(newId) & 0xFFFF;
+        int product = SDLJoystick.SDL_GetJoystickProductForID(newId) & 0xFFFF;
 
-        StringBuilder name = new StringBuilder();
-        if (!isCtrl  && (modState & SDLKeycode.SDL_KMOD_CTRL)  != 0) name.append("Ctrl+");
-        if (!isShift && (modState & SDLKeycode.SDL_KMOD_SHIFT) != 0) name.append("Shift+");
-        if (!isAlt   && (modState & SDLKeycode.SDL_KMOD_ALT)   != 0) name.append("Alt+");
-        if (!isGui   && (modState & SDLKeycode.SDL_KMOD_GUI)   != 0) name.append("Win+");
-        name.append(scancodeDisplayName(scancode));
-        return name.toString();
-    }
-
-    private static String scancodeDisplayName(int scancode) {
-        return switch (scancode) {
-            case SDLScancode.SDL_SCANCODE_LCTRL, SDLScancode.SDL_SCANCODE_RCTRL -> "Ctrl";
-            case SDLScancode.SDL_SCANCODE_LSHIFT, SDLScancode.SDL_SCANCODE_RSHIFT -> "Shift";
-            case SDLScancode.SDL_SCANCODE_LALT, SDLScancode.SDL_SCANCODE_RALT -> "Alt";
-            case SDLScancode.SDL_SCANCODE_LGUI, SDLScancode.SDL_SCANCODE_RGUI -> "Win";
-            default -> {
-                String name = SDLKeyboard.SDL_GetScancodeName(scancode);
-                yield (name == null || name.isBlank()) ? ("Key " + scancode) : name;
+        for (Map.Entry<Integer, int[]> entry : vidPidByDevice.entrySet()) {
+            int[] vidPid = entry.getValue();
+            if (vidPid[0] == vendor && vidPid[1] == product) {
+                int existingId = entry.getKey();
+                for (Device existing : connectedDevices) {
+                    if (existing.id() == existingId) {
+                        EventBusManager.publish(new DeviceDuplicateWarningEvent(existing, newDevice));
+                        break;
+                    }
+                }
             }
-        };
+        }
+
+        vidPidByDevice.put(newId, new int[]{vendor, product});
     }
 }

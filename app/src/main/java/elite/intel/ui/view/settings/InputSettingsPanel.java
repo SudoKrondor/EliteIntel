@@ -1,13 +1,13 @@
 package elite.intel.ui.view.settings;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.events.DeviceButtonEvent;
+import elite.intel.devices.events.DeviceConnectedEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.devices.model.Device;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
-import elite.intel.starvizion.event.SvButtonStateEvent;
-import elite.intel.starvizion.event.SvDeviceConnectedEvent;
-import elite.intel.starvizion.event.SvDeviceDisconnectedEvent;
-import elite.intel.starvizion.input.SdlInputService;
-import elite.intel.starvizion.model.SvDevice;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
 
 import javax.swing.*;
@@ -19,7 +19,7 @@ import static elite.intel.ui.view.AppTheme.*;
 
 /**
  * "Input" settings tab — lets the user map a controller button to push-to-talk, monitored via
- * the existing SDL3 poll loop in {@link SdlInputService}. Session-only, no DB persistence.
+ * the shared SDL3 poll loop in {@link DeviceService}. Session-only, no DB persistence.
  */
 public class InputSettingsPanel extends JPanel {
 
@@ -31,7 +31,7 @@ public class InputSettingsPanel extends JPanel {
 
     // Mirrors of the Swing selection state above, read from the SDL poll thread.
     private volatile boolean pushToTalkEnabled = false;
-    private volatile SvDevice selectedDevice = null;
+    private volatile Device selectedDevice = null;
     private volatile int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
     private volatile boolean toggleMode = true;
 
@@ -118,7 +118,7 @@ public class InputSettingsPanel extends JPanel {
         pushToTalkEnabled = enabled;
         setControlsEnabled(enabled);
         if (enabled) {
-            SdlInputService.getInstance().start();
+            DeviceService.getInstance().start();
             refreshControllerCombo();
         }
     }
@@ -132,7 +132,7 @@ public class InputSettingsPanel extends JPanel {
 
     private void onControllerSelected() {
         Object selected = controllerCombo.getSelectedItem();
-        SvDevice device = (selected instanceof SvDevice d) ? d : null;
+        Device device = (selected instanceof Device d) ? d : null;
         selectedDevice = device;
         populateButtonCombo(device);
     }
@@ -144,17 +144,17 @@ public class InputSettingsPanel extends JPanel {
     // -- Combo population --------------------------------------------------------
 
     private void refreshControllerCombo() {
-        SvDevice previouslySelected = selectedDevice;
+        Device previouslySelected = selectedDevice;
 
         controllerCombo.removeAllItems();
         controllerCombo.addItem(getText("settings.input.controller.placeholder"));
-        for (SvDevice device : SdlInputService.getInstance().getConnectedDevices()) {
+        for (Device device : DeviceService.getInstance().getConnectedDevices()) {
             controllerCombo.addItem(device);
         }
 
         if (previouslySelected != null) {
             for (int i = 1; i < controllerCombo.getItemCount(); i++) {
-                if (controllerCombo.getItemAt(i) instanceof SvDevice d && d.id() == previouslySelected.id()) {
+                if (controllerCombo.getItemAt(i) instanceof Device d && d.id() == previouslySelected.id()) {
                     controllerCombo.setSelectedIndex(i);
                     return;
                 }
@@ -163,7 +163,7 @@ public class InputSettingsPanel extends JPanel {
         controllerCombo.setSelectedIndex(0);
     }
 
-    private void populateButtonCombo(SvDevice device) {
+    private void populateButtonCombo(Device device) {
         buttonCombo.removeAllItems();
         buttonCombo.addItem(getText("settings.input.button.placeholder"));
         if (device != null) {
@@ -177,12 +177,12 @@ public class InputSettingsPanel extends JPanel {
     // -- SDL event subscriptions -------------------------------------------------
 
     @Subscribe
-    public void onDeviceConnected(SvDeviceConnectedEvent event) {
+    public void onDeviceConnected(DeviceConnectedEvent event) {
         SwingUtilities.invokeLater(this::refreshControllerCombo);
     }
 
     @Subscribe
-    public void onDeviceDisconnected(SvDeviceDisconnectedEvent event) {
+    public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
         SwingUtilities.invokeLater(() -> {
             if (selectedDevice != null && selectedDevice.id() == event.deviceId()) {
                 selectedDevice = null;
@@ -194,10 +194,10 @@ public class InputSettingsPanel extends JPanel {
     }
 
     @Subscribe
-    public void onButtonState(SvButtonStateEvent event) {
+    public void onButtonState(DeviceButtonEvent event) {
         if (!pushToTalkEnabled) return;
 
-        SvDevice device = selectedDevice;
+        Device device = selectedDevice;
         int buttonIndex = selectedButtonIndex;
         if (device == null || buttonIndex < 0) return;
         if (event.deviceId() != device.id() || event.buttonIndex() != buttonIndex) return;

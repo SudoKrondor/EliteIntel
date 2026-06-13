@@ -1,8 +1,8 @@
 package elite.intel.starvizion.overlay;
 
-import elite.intel.starvizion.input.SdlInputService;
+import elite.intel.devices.DeviceService;
+import elite.intel.devices.model.Device;
 import elite.intel.starvizion.model.SvAxis;
-import elite.intel.starvizion.model.SvDevice;
 import elite.intel.ui.view.AppTheme;
 
 import javax.swing.*;
@@ -16,7 +16,7 @@ public class AxesSettingsDialog extends JDialog {
 
     private final AxesVizlet vizlet;
 
-    private JComboBox<SvDevice> deviceCombo;
+    private JComboBox<Device> deviceCombo;
     private JComboBox<SvAxis>   xAxisCombo;
     private JComboBox<SvAxis>   yAxisCombo;
     private JButton             colorButton;
@@ -48,7 +48,7 @@ public class AxesSettingsDialog extends JDialog {
         nextRow(gbc);
         addLabel(root, getText("starvizion.axes.device"), gbc);
         deviceCombo = new JComboBox<>();
-        SdlInputService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
+        DeviceService.getInstance().getConnectedDevices().forEach(d -> deviceCombo.addItem(d));
         addField(root, deviceCombo, gbc);
         deviceCombo.addActionListener(e -> repopulateAxes());
 
@@ -119,7 +119,7 @@ public class AxesSettingsDialog extends JDialog {
     }
 
     private void repopulateAxes() {
-        SvDevice dev = (SvDevice) deviceCombo.getSelectedItem();
+        Device dev = (Device) deviceCombo.getSelectedItem();
         xAxisCombo.removeAllItems();
         yAxisCombo.removeAllItems();
         if (dev == null) return;
@@ -139,7 +139,7 @@ public class AxesSettingsDialog extends JDialog {
     }
 
     private void apply() {
-        SvDevice dev = (SvDevice) deviceCombo.getSelectedItem();
+        Device dev = (Device) deviceCombo.getSelectedItem();
         if (dev == null) { dispose(); return; }
         SvAxis xAxis = (SvAxis) xAxisCombo.getSelectedItem();
         SvAxis yAxis = (SvAxis) yAxisCombo.getSelectedItem();

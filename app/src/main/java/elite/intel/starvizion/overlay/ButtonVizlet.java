@@ -1,9 +1,9 @@
 package elite.intel.starvizion.overlay;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.starvizion.event.SvButtonStateEvent;
-import elite.intel.starvizion.event.SvDeviceDisconnectedEvent;
-import elite.intel.starvizion.model.SvDevice;
+import elite.intel.devices.events.DeviceButtonEvent;
+import elite.intel.devices.events.DeviceDisconnectedEvent;
+import elite.intel.devices.model.Device;
 
 import javax.swing.*;
 import java.awt.*;
@@ -41,7 +41,7 @@ public class ButtonVizlet extends VizletWindow {
     // -- EventBus subscribers -------------------------------------------------
 
     @Subscribe
-    public void onButtonState(SvButtonStateEvent event) {
+    public void onButtonState(DeviceButtonEvent event) {
         if (assignedDeviceId == null || event.deviceId() != assignedDeviceId) return;
         if (event.buttonIndex() != buttonIndex) return;
         pressed = event.pressed();
@@ -49,7 +49,7 @@ public class ButtonVizlet extends VizletWindow {
     }
 
     @Subscribe
-    public void onDeviceDisconnected(SvDeviceDisconnectedEvent event) {
+    public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
         if (assignedDeviceId != null && event.deviceId() == assignedDeviceId) {
             assignedDeviceId = null;
             pressed = false;
@@ -59,7 +59,7 @@ public class ButtonVizlet extends VizletWindow {
 
     // -- Configuration --------------------------------------------------------
 
-    public void configure(SvDevice device, int button, Color color, ButtonShape shape) {
+    public void configure(Device device, int button, Color color, ButtonShape shape) {
         this.assignedDeviceId = device.id();
         this.buttonIndex = button;
         this.pressedColor = color;
