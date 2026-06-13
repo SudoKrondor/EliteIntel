@@ -2,7 +2,6 @@ package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ui.view.AppTheme;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.JournalPreScanner;
@@ -10,6 +9,7 @@ import elite.intel.gameapi.SubscriberRegistration;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
+import elite.intel.ui.view.AppTheme;
 import elite.intel.ui.view.AppView;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
@@ -44,6 +44,8 @@ public class App {
         EventBusManager.publish(new LoadSessionEvent());
 
         // init UI
+        System.setProperty("awt.useSystemAAFontSettings", "lcd");
+        System.setProperty("swing.aatext", "true");
         FlatLightLaf.setup();
         SwingUtilities.invokeLater(() -> {
             try {
