@@ -9,6 +9,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
 
@@ -33,13 +34,13 @@ public class NavigateToToKnownPirateMassacreMissionProvider implements CommandHa
         }
 
         if (location.getStarName().equalsIgnoreCase(targetSystem)){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Check ports and outposts around this star. Look for factions with missions against " + targetSystem + " star system."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem)));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Head to " + destination + " look for factions with missions against " + targetSystem + " system."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem)));
         }
 
         if (destination == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Knowing mission providers. Searching..."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noKnowingProviders")));
             EventBusManager.publish(new UserInputEvent(" find hunting grounds"));
         } else {
             RoutePlotter plotter = new RoutePlotter();

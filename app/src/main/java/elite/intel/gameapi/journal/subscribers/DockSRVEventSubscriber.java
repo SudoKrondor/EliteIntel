@@ -6,10 +6,12 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.DockSRVEvent;
 import elite.intel.session.PlayerSession;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class DockSRVEventSubscriber {
 
     @Subscribe
     public void onDockSRVEvent(DockSRVEvent event) {
-        EventBusManager.publish(new AiVoxResponseEvent("Welcome back aboard, " + PlayerSession.getInstance().getVariablePlayerName()));
+        EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.srv.welcomeBack", PlayerSession.getInstance().getVariablePlayerName())));
     }
 }

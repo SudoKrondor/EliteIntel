@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.session.SystemSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -20,7 +21,7 @@ public class TimeQueryHandler extends BaseQueryAnalyzer implements QueryHandler 
             ZonedDateTime localNow = ZonedDateTime.now(ZoneId.systemDefault());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
             String formattedTime = localNow.format(formatter);
-            return process("Time is: " + formattedTime);
+            return process(StringUtls.localizedLlm("query.time.local", formattedTime));
         } else {
             ////EventBusManager.publish(new AiVoxResponseEvent("Analyzing temporal data. Stand by."));
 

@@ -17,6 +17,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 public class MaterialCollectedSubscriber {
 
     private static final int DEBOUNCE_MS = 2000;
@@ -31,8 +34,9 @@ public class MaterialCollectedSubscriber {
         materialManager.save(event.getName(), determineType(event.getCategory()), event.getCount());
 
         MaterialsDao.Material material = Database.withDao(MaterialsDao.class, dao -> dao.findByExactName(StringUtls.capitalizeWords(event.getName())));
-        String message = "Collected " + event.getCount() + " units of " + event.getName()
-                + (material == null ? "." : ". Total in storage is " + material.getAmount() + " units.");
+        String message = material == null
+                ? localizedEvent("event.material.collected", event.getCount(), event.getName())
+                : localizedEvent("event.material.collectedTotal", event.getCount(), event.getName(), material.getAmount());
 
         synchronized (pending) {
             pending.add(message);
@@ -48,7 +52,7 @@ public class MaterialCollectedSubscriber {
             if (pending.isEmpty()) return;
             String announcement = pending.size() == 1
                     ? pending.getFirst()
-                    : pending.size() + " materials collected.";
+                    : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
             EventBusManager.publish(new MiningAnnouncementEvent(announcement));
         }

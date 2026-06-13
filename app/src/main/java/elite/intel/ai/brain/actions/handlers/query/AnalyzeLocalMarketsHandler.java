@@ -6,6 +6,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.MarketDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -20,7 +21,7 @@ public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements Que
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         MarketDto market = currentLocation.getMarket();
         if (market == null || market.getData() == null) {
-            return process("No market data available for current location.");
+            return process(StringUtls.localizedLlm("query.market.noData"));
         }
 
         String instructions = """

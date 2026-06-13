@@ -7,6 +7,8 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 @SuppressWarnings("unused") //registered in SubscriberRegistration
 public class FuelStateSubscriber {
 
@@ -27,7 +29,7 @@ public class FuelStateSubscriber {
         if (status.isInSrv()) {
             //TODO Need a way to know we are in SRV
             if (fuelReservoir <= 0.06 && !hasAnnounced) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("SRV Fuel Critical!"));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.srvCritical")));
                 hasAnnounced = true;
             } else {
                 hasAnnounced = false;
@@ -39,7 +41,7 @@ public class FuelStateSubscriber {
                 double fuelAmount = oldStatus.getFuel().getFuelMain();
                 double remainingFuelInPercent = Math.round((fuelAmount / fuelCapacityMain * 100) * 100.0) / 100.0;
                 if (remainingFuelInPercent != 0 && remainingFuelInPercent < QUARTER_TANK_REMAINING && event.getFuel().getFuelMain() < fuelAmount) {
-                    EventBusManager.publish(new MissionCriticalAnnouncementEvent("Fuel warning: " + remainingFuelInPercent + "% remaining."));
+                    EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.warning", remainingFuelInPercent)));
                     hasAnnounced = true;
                 } else {
                     hasAnnounced = false;

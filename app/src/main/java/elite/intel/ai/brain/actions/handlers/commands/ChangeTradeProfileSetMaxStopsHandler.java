@@ -11,13 +11,13 @@ public class ChangeTradeProfileSetMaxStopsHandler implements CommandHandler {
         Integer numberOfStops = StringUtls.getIntSafely(params.get("key").getAsString());
 
         if (numberOfStops == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Invalid number of stops. Try again."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidStops")));
             return;
         }
 
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setMaximumStops(numberOfStops)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Maximum stops set to " + numberOfStops));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops)));
         }
     }
 }

@@ -11,6 +11,8 @@ import elite.intel.session.Status;
 import elite.intel.session.StatusFlags.GuiFocus;
 import elite.intel.session.ui.PanelStateTracker;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class StatusEventSubscriber {
 
     private boolean lowFuelAnnounced = false;
@@ -42,7 +44,7 @@ public class StatusEventSubscriber {
                 && !"Speeding".equalsIgnoreCase(legalState)
                 && !"Clean".equalsIgnoreCase(legalState)
                 && !legalState.equalsIgnoreCase(lastAnnouncedLegalState)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Legal status: " + legalState + ". "));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.legalStatus", legalState)));
             lastAnnouncedLegalState = legalState;
         }
 
@@ -61,22 +63,22 @@ public class StatusEventSubscriber {
         // --------------------------------------------------------------------------------------
         // Mission-critical alerts
         if (status.isLowFuel() && !lowFuelAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Low fuel warning!"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowFuel")));
             lowFuelAnnounced = true;
         }
 
         if (status.isLowOxygen() && !lowOxygenAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Low oxygen warning!"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowOxygen")));
             lowOxygenAnnounced = true;
         }
 
         if (status.isLowHealth() && !lowHealthAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Low health warning!"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowHealth")));
             lowHealthAnnounced = true;
         }
 
         if (status.isGlideMode() && !glideAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Glide Engaged!"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.glideEngaged")));
             glideAnnounced = true;
         } else if (!status.isGlideMode() && glideAnnounced) {
             glideAnnounced = false;

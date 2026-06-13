@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -15,7 +16,7 @@ public class AnalyzeSquadronCarrierDataHandler extends BaseQueryAnalyzer impleme
         CarrierDataDto stats = playerSession.getSquadronCarrierData();
 
         if (stats == null || (stats.getTotalBalance() == 0 && stats.getFuelLevel() == 0)) {
-            return process("No squadron carrier data available.");
+            return process(StringUtls.localizedLlm("query.squadronCarrier.noData"));
         } else {
             String instructions = """
                     Answer the user's question about squadron carrier status.

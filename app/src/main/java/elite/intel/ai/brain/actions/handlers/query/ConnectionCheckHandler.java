@@ -7,14 +7,19 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-public class ConnectionCheck extends BaseQueryAnalyzer implements QueryHandler {
+public class ConnectionCheckHandler extends BaseQueryAnalyzer implements QueryHandler {
 
     @Override
     public JsonObject handle(String action, JsonObject params, String responseText) {
-        JsonObject response = process(new AiDataStruct("Confirm connection", new ConnectionCheckData("ping")), "Are we online?");
-        if (isSuccessfulConnectionCheck(response)) {
-            response.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, StringUtls.localizedSpeech("speech.connectionSuccessful"));
-        }
+
+
+        JsonObject response = process(
+                new AiDataStruct("Confirm connection. Respond in requested language. ",
+                        new ConnectionCheckData("ping")),
+                StringUtls.localizedLlm("connection.check")
+        );
+        String key = isSuccessfulConnectionCheck(response) ? "speech.connectionSuccessful" : "speech.connectionFailed";
+        response.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, StringUtls.localizedLlm(key));
         return response;
     }
 

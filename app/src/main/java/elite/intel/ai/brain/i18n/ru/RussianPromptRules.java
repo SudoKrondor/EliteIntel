@@ -4,8 +4,7 @@ import elite.intel.ai.brain.actions.Commands;
 import elite.intel.ai.brain.actions.Queries;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
-import static elite.intel.ai.brain.actions.Commands.CLEAR_ALL_ACTIVE_MISSIONS;
-import static elite.intel.ai.brain.actions.Commands.INTERRUPT_TTS;
+import static elite.intel.ai.brain.actions.Commands.*;
 import static elite.intel.ai.brain.actions.Queries.*;
 
 public class RussianPromptRules implements PromptLanguageRules {
@@ -67,6 +66,16 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
         sb.append(" with пункт назначения авианосца эскадрильи → ");
         sb.append(SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction());
+        sb.append("\n");
+
+
+        sb.append(" - classify войти в суперкруиз, суперкруиз, включи суперкруиз, световая скорость, на форсаж as ");
+        sb.append(ENTER_SUPER_CRUISE.getAction());
+        sb.append(" never as ");
+        sb.append(JUMP_TO_HYPERSPACE.getAction());
+        sb.append("\n");
+        sb.append(" - classify прыжок в гиперпространство, прыгай, гиперпрыжок, войти в гиперпространство, поехали, следующий маршрутный пункт as ");
+        sb.append(JUMP_TO_HYPERSPACE.getAction());
         sb.append("\n");
 
         sb.append("- require very high probability match for action →");

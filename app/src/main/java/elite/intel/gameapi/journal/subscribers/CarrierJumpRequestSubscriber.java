@@ -10,6 +10,9 @@ import elite.intel.session.PlayerSession;
 import java.time.Duration;
 import java.time.Instant;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 @SuppressWarnings("unused")
 public class CarrierJumpRequestSubscriber {
 
@@ -24,27 +27,29 @@ public class CarrierJumpRequestSubscriber {
             long hours = totalMinutes / 60;
             long minutes = totalMinutes % 60;
 
+            String hoursStr = localizedEventPlural((int) hours, "event.time.hours");
+            String minutesStr = localizedEventPlural((int) minutes, "event.time.minutes");
             String timeUntil;
             if (hours > 0 && minutes > 0) {
-                timeUntil = hours + (hours == 1 ? " hour" : " hours") + " and " + minutes + (minutes == 1 ? " minute" : " minutes");
+                timeUntil = localizedEvent("event.time.hoursAndMinutes", hoursStr, minutesStr);
             } else if (hours > 0) {
-                timeUntil = hours + (hours == 1 ? " hour" : " hours");
+                timeUntil = hoursStr;
             } else {
-                timeUntil = minutes + (minutes == 1 ? " minute" : " minutes");
+                timeUntil = minutesStr;
             }
 
             StringBuilder sb = new StringBuilder();
-            sb.append("Carrier scheduled to depart");
             if (destinationStellarBody != null && !destinationStellarBody.isBlank()) {
-                sb.append(" to ").append(destinationStellarBody);
+                sb.append(localizedEvent("event.carrier.scheduledDepartTo", destinationStellarBody, timeUntil));
+            } else {
+                sb.append(localizedEvent("event.carrier.scheduledDepart", timeUntil));
             }
-            sb.append(" in ").append(timeUntil).append(".");
 
             PlayerSession playerSession = PlayerSession.getInstance();
             playerSession.setCarrierDepartureTime(rawDepartureTime);
 
             long millis = Instant.parse(event.getDepartureTime()).toEpochMilli() - (1000 * 60 * 3);
-            DeferredNotificationManager.getInstance().scheduleNotification("Carrier is departing in three minutes.", millis);
+            DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.departingThreeMinutes"), millis);
             String instructions = "Report the carrier departure. State the destination and the time until departure.";
             EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
         });

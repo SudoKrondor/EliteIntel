@@ -24,7 +24,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
     @Override
     public void addAliases(Map<String, String> map, Status status, boolean isDryRun) {
         // always available
-        map.put("проснись, слушай, слушай меня, активируйся, просыпайся", WAKEUP.getAction());
+        map.put("проснись, проснуться, слушай, слушай меня, активируйся, просыпайся", WAKEUP.getAction());
         map.put("спи, усни, иди спать, перейди в спящий режим, включи спящий режим, игнорируй меня, не слушай, не отслеживай, не слушай", SLEEP.getAction());
         map.put("перебей, прерви, останови речь, прекрати говорить, прервать, отставить, заткнись", INTERRUPT_TTS.getAction());
 
@@ -40,7 +40,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
         map.put("отмени навигацию, прерви навигацию, останови навигацию, сбрось маршрут", NAVIGATION_OFF.getAction());
         map.put("установи домашнюю систему, сделай текущую систему домашней, отметь домашнюю систему", SET_HOME_SYSTEM.getAction());
         map.put("веди домой, лети домой, навигация домой, вернись домой, проложи маршрут домой, курс домой", TAKE_ME_HOME.getAction());
-        map.put("сбрось взгляд, сброс, смотреть вперёд, сбрось направление взгляда, взгляд по умолчанию, обзор по центру, вид по умолчанию, сбрось head look", RESET_HEAD_LOOK.getAction());
+        map.put("смотри вперёд, сбрось взгляд, сброс, смотреть вперёд, сбрось направление взгляда, взгляд по умолчанию, обзор по центру, вид по умолчанию, сбрось head look", RESET_HEAD_LOOK.getAction());
 
         if (status.isInMainShip() || isDryRun) {
             // navigation
@@ -70,7 +70,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
             map.put("покажи панель истребителя, открой панель истребителя, отобрази панель истребителя", SHOW_FIGHTER_PANEL.getAction());
 
             // combat
-            map.put("выпусти оружие, оружие к бою, боевой режим, оружие свободно, вооружиться, подготовить оружие, выпусти хардпойнты, разверни хардпойнты, развернуть орудия", DEPLOY_HARDPOINTS.getAction());
+            map.put("боевая готовность, к бою, выпусти оружие, оружие к бою, боевой режим, оружие свободно, вооружиться, подготовить оружие, выпусти хардпойнты, разверни хардпойнты, развернуть орудия", DEPLOY_HARDPOINTS.getAction());
             map.put("убери оружие, оружие убрать, снять оружие, выйти из боя, спрячь оружие, безопасный режим оружия, убери хардпойнты, сложи хардпойнты, отбой", RETRACT_HARDPOINTS.getAction());
             map.put("цель FSD {key:fsd}, цель двигатели {key:drive}, цель распределитель энергии {key:power distributor}, цель силовая установка {key:powerplant}, цель жизнеобеспечение {key:life support}", TARGET_SUB_SYSTEM.getAction());
             map.put("цель ведомый один, ведомый альфа", TARGET_WINGMAN0.getAction());
@@ -200,7 +200,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
         map.put("открой управление авианосцем, панель управления авианосцем, открой carrier management", DISPLAY_CARRIER_MANAGEMENT.getAction());
         map.put("открой карту галактики, покажи карту галактики", OPEN_GALAXY_MAP.getAction());
         map.put("открой карту системы, покажи локальную карту, системная карта", OPEN_SYSTEM_MAP.getAction());
-        map.put("закрыть панель, закрыть, назад, закрой меню, выйти из панели, закрыть панель", EXIT_CLOSE.getAction());
+        map.put("закрывай, закрой, закрыть панель, закрыть, назад, закрой меню, выйти из панели, закрыть панель", EXIT_CLOSE.getAction());
 
         // pirate massacre missions
         map.put("навигация к системе выдачи миссий, курс к системе провайдера миссий", RECON_PROVIDER_SYSTEM.getAction());

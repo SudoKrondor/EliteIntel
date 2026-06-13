@@ -8,6 +8,7 @@ import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -25,7 +26,7 @@ public class AnalyzeMissionHandler extends BaseQueryAnalyzer implements QueryHan
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         MissionType[] availableMissionTypes = missionManager.getAvailableMissionTypes();
-        if (availableMissionTypes.length == 0) return process("We have no active missions");
+        if (availableMissionTypes.length == 0) return process(StringUtls.localizedLlm("query.missions.none"));
 
         Map<MissionType, Collection<MissionDto>> missions = Arrays.stream(availableMissionTypes).collect(
                 Collectors.toMap(

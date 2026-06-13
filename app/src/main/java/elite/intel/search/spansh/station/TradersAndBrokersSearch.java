@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class TradersAndBrokersSearch {
 
     private static TradersAndBrokersSearch instance;
@@ -43,7 +45,7 @@ public class TradersAndBrokersSearch {
 
         TraderAndBrokerSearchCriteria.ReferenceCoords coordinates = new TraderAndBrokerSearchCriteria.ReferenceCoords();
         if (galacticCoordinates == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Unable to comply. Galactic coordinates not available"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.search.noCoords")));
             return null;
         }
 
@@ -82,7 +84,7 @@ public class TradersAndBrokersSearch {
         List<TraderAndBrokerSearchDto.Result> results = SearchForMaterialBrokerOrTrader.findMaterialTrader(criteria);
 
         if (results == null || results.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent("No Suitable match found."));
+            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
             return null;
         }
 
@@ -107,12 +109,13 @@ public class TradersAndBrokersSearch {
 
         if (result != null) {
             EventBusManager.publish(
-                    new AiVoxResponseEvent("Head to " + result.getSystemName() + " star system. When you get there looks for " + result.getStationName()
-                            + ". Data was last updated: " + TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)
-                    )
+                    new AiVoxResponseEvent(localizedEvent("event.search.headTo",
+                            result.getSystemName(),
+                            result.getStationName(),
+                            TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)))
             );
             ReminderManager.getInstance().setReminder(
-                    "Head to " + result.getStationName(), result.getSystemName()
+                    localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName()
             );
             return result.getSystemName();
         }

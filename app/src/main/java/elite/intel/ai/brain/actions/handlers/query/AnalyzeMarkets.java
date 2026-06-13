@@ -6,6 +6,7 @@ import elite.intel.search.edsm.EdsmApiClient;
 import elite.intel.search.edsm.dto.StationsDto;
 import elite.intel.search.edsm.dto.data.Station;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -23,7 +24,7 @@ public class AnalyzeMarkets extends BaseQueryAnalyzer implements QueryHandler {
         StationsDto stationsDto = EdsmApiClient.searchStations(starName, 0);
         List<Station> stations = stationsDto.getData().getStations();
         if (stations == null || stations.isEmpty()) {
-            return process("no data available");
+            return process(StringUtls.localizedLlm("query.noData"));
         }
 
         List<StationData> stationData = new LinkedList<>();

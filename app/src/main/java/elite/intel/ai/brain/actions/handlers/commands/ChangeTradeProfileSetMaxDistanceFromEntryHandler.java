@@ -12,13 +12,13 @@ public class ChangeTradeProfileSetMaxDistanceFromEntryHandler implements Command
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get("key").getAsString());
 
         if(distanceFromEntry == null){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Invalid distance from entry. Try again."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));
             return;
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setDistanceFromSystemEntry(distanceFromEntry)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Distance from system entry set to " + distanceFromEntry));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry)));
         }
     }
 }

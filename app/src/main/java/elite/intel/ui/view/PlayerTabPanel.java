@@ -17,6 +17,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
+import elite.intel.ui.view.settings.SettingsPopup;
 import elite.intel.ui.view.settings.ShipSettingsPopup;
 import elite.intel.util.StringUtls;
 
@@ -431,7 +432,9 @@ public class PlayerTabPanel extends JPanel {
                     String identifier = displayShipName(currentShip);
                     ShipSettingsDao.ShipSettings settings =
                             ShipSettingsManager.getInstance().getSettings(currentShip.getShipId());
-                    ShipSettingsPopup.create(ownerTable, identifier, settings).setVisible(true);
+                    SettingsPopup popup = ShipSettingsPopup.create(ownerTable, identifier, settings);
+                    Window owner = SwingUtilities.getWindowAncestor(ownerTable);
+                    AppTheme.runWithModalScrim(owner, () -> popup.setVisible(true));
                 }
                 fireEditingStopped();
             });

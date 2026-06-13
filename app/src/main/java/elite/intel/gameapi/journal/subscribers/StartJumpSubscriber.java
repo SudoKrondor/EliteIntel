@@ -9,6 +9,8 @@ import elite.intel.search.edsm.dto.DeathsDto;
 import elite.intel.search.edsm.dto.TrafficDto;
 import elite.intel.session.PlayerSession;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 @SuppressWarnings("unused")
 public class StartJumpSubscriber {
 
@@ -19,17 +21,12 @@ public class StartJumpSubscriber {
             TrafficDto trafficDto = EdsmApiClient.searchTraffic(event.getStarSystem());
             DeathsDto deathsDto = EdsmApiClient.searchDeaths(event.getStarSystem());
             StringBuilder sb = new StringBuilder();
-                sb.append("In route to ");
-            sb.append(event.getStarSystem());
-            sb.append(", ");
-                sb.append("Star class: ");
-                sb.append(event.getStarClass());
-                sb.append(". ");
+                sb.append(localizedEvent("event.startJump.route", event.getStarSystem(), event.getStarClass()));
                 if (trafficDto.getData() != null && trafficDto.getData().getTraffic() != null && trafficDto.getData().getTraffic().getTotal() > 0) {
-                sb.append(" Traffic data: " + trafficDto.getData().getTraffic().toYaml());
+                    sb.append(" ").append(localizedEvent("event.startJump.traffic", trafficDto.getData().getTraffic().toYaml()));
             }
                 if (deathsDto.getData() != null && deathsDto.getData().getDeaths() != null && deathsDto.getData().getDeaths().getTotal() > 0) {
-                sb.append(" Deaths data: " + deathsDto.getData().getDeaths().toYaml());
+                    sb.append(" ").append(localizedEvent("event.startJump.deaths", deathsDto.getData().getDeaths().toYaml()));
             }
 
             PlayerSession playerSession = PlayerSession.getInstance();

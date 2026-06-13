@@ -34,7 +34,7 @@ import java.util.Map;
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
 import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
 import static elite.intel.util.GravityCalculator.calculateSurfaceGravity;
-import static elite.intel.util.StringUtls.isFuelStarClause;
+import static elite.intel.util.StringUtls.*;
 
 @SuppressWarnings("unused")
 public class JumpCompletedSubscriber {
@@ -96,9 +96,9 @@ public class JumpCompletedSubscriber {
             if (finalDestination != null && finalDestination.equalsIgnoreCase(event.getStarSystem())) {
                 shipRoute.clearRoute();
                 if (reminderText != null && !reminderText.isBlank()) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Reminder " + reminderText));
+                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 } else {
-                    sb.append(" Arrived at final destination: ").append(finalDestination);
+                    sb.append(localizedEvent("event.route.arrivedFinal", finalDestination));
                 }
                 TrafficDto trafficDto = EdsmApiClient.searchTraffic(finalDestination);
                 DeathsDto deathsDto = EdsmApiClient.searchDeaths(finalDestination);
@@ -107,26 +107,20 @@ public class JumpCompletedSubscriber {
 
             } else if (roueSet) {
                 if (reminderText != null && !reminderText.isBlank() && reminderText.toLowerCase().contains(event.getStarSystem().toLowerCase(Locale.ROOT))) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Reminder " + reminderText));
+                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 }
 
-                sb.append("Arrived at ").append(event.getStarSystem()).append(".");
+                sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
                 List<NavRouteDto> route = shipRoute.getOrderedRoute();
                 int remainingJump = route.size();
                 if (remainingJump > 0) {
                     route.stream().findFirst().ifPresent(
                             nextStop -> sb
-                                    .append(" Next Waypoint: ")
-                                    .append(nextStop.getName())
-                                    .append(", ")
-                                    .append(" Star Class: ")
-                                    .append(nextStop.getStarClass())
-                                    .append(". ")
+                                    .append(" ")
+                                    .append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()))
                                     .append(isFuelStarClause(nextStop.getStarClass()))
                     );
-                    sb.append(" We have ").append(remainingJump).append(" jump");
-                    if (remainingJump > 1) sb.append("s");
-                    sb.append(" left to destination. ");
+                    sb.append(" ").append(localizedEventPlural(remainingJump, "event.route.jumpsLeft"));
                 }
             }
 

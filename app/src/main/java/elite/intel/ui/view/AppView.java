@@ -245,7 +245,11 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("Table.foreground", AppTheme.FG);
         UIManager.put("Table.selectionBackground", AppTheme.ACCENT);
         UIManager.put("Table.selectionForeground", AppTheme.SEL_FG);
-        UIManager.put("ComboBox.background", AppTheme.HUD_TABLE_ROW);
-        UIManager.put("ComboBox.foreground", AppTheme.FG);
+        UIManager.put("ComboBox.background",              AppTheme.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.foreground",              AppTheme.FG);
+        UIManager.put("ComboBox.disabledBackground",       AppTheme.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.disabledForeground",       AppTheme.HUD_DISABLED);
+        UIManager.put("ComboBox.buttonDisabledBackground", AppTheme.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.maximumRowCount",          8);
     }
 }

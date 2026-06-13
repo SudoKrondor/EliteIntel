@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
+import static elite.intel.util.StringUtls.localizedEvent;
 
 
 public class DistanceFromShipTracker {
@@ -64,8 +65,7 @@ public class DistanceFromShipTracker {
         if (isInDonut && movingAway && !announcedForCurrentEntry && !status.isInMainShip()) {
             EventBusManager.publish(
                     new MissionCriticalAnnouncementEvent(
-                            String.format("Warning: You are %d meters from your ship, approaching auto-departure zone!",
-                                    Math.round(distance))
+                            localizedEvent("event.distance.shipProximity", Math.round(distance))
                     )
             );
             log.info("Alert triggered: Player moving away from ship at {} meters.", distance);

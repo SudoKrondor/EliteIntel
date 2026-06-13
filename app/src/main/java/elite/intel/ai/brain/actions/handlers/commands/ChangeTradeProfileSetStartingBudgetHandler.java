@@ -11,13 +11,13 @@ public class ChangeTradeProfileSetStartingBudgetHandler implements CommandHandle
     @Override public void handle(String action, JsonObject params, String responseText) {
         Integer budget = StringUtls.getIntSafely(params.get("key").getAsString());
         if (budget == null) {
-           EventBusManager.publish(new MissionCriticalAnnouncementEvent("Invalid starting budget. Try again."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidBudget")));
            return;
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setStartingCapitol(budget)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Starting budget set to " + budget + " credits."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.startingBudget", budget)));
         }
     }
 }

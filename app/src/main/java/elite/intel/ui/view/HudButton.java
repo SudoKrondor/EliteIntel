@@ -29,7 +29,6 @@ public class HudButton extends JButton {
         setForeground(primary ? AppTheme.BUTTON_FG : AppTheme.ACCENT);
         setFont(getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_BUTTON));
         setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
-        setPreferredSize(new Dimension(Math.max(90, getPreferredSize().width), AppTheme.HUD_BUTTON_HEIGHT));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Prevent applyDarkPalette from overriding the state-driven foreground colour.
         putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
@@ -37,6 +36,12 @@ public class HudButton extends JButton {
         if (!primary) {
             getModel().addChangeListener(e -> setForeground(getModel().isPressed() ? AppTheme.SEL_FG : AppTheme.ACCENT));
         }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        Dimension d = super.getPreferredSize();
+        return new Dimension(Math.max(90, d.width), AppTheme.HUD_BUTTON_HEIGHT);
     }
 
     @Override

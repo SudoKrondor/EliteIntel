@@ -6,6 +6,7 @@ import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class DeleteCodexEntryHandler implements CommandHandler {
 
@@ -17,9 +18,9 @@ public class DeleteCodexEntryHandler implements CommandHandler {
         if (tracking != null) {
             codexEntryManager.deleteTrackedEntry(tracking);
             playerSession.setTracking(null);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Deleted codex entry for tracked location."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.codex.deleted")));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No tracking location."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.codex.noTracking")));
         }
     }
 }

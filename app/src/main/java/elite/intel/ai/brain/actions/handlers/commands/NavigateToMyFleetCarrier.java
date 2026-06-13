@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 public class NavigateToMyFleetCarrier implements CommandHandler {
 
@@ -24,7 +25,7 @@ public class NavigateToMyFleetCarrier implements CommandHandler {
             } else if (hasHomeSystem) {
                 destination = playerSession.getHomeSystem().getStarName();
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No home system available for route plotting."));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noHomeSystem")));
                 return;
             }
 
@@ -32,10 +33,10 @@ public class NavigateToMyFleetCarrier implements CommandHandler {
                 RoutePlotter plotter = new RoutePlotter();
                 plotter.plotRoute(destination);
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Carrier location not available."));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.carrierNotAvailable")));
             }
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Route can only be plotted in SRV or Main Ship."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
     }
 }

@@ -1,6 +1,8 @@
 package elite.intel.util;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -63,11 +65,9 @@ public class StringUtls {
     }
 
     public static String isFuelStarClause(String starClass) {
-        if (starClass == null) {
-            return "";
-        }
+        if (starClass == null) return "";
         boolean isFuelStar = "KGBFOAM".contains(starClass);
-        return isFuelStar ? " Refuel possible. " : " Warning! - No fuel Available at next stop. ";
+        return " " + (isFuelStar ? localizedEvent("event.route.fuelAvailable") : localizedEvent("event.route.noFuel")) + " ";
     }
 
     private static int getHourOfDay() {
@@ -107,6 +107,39 @@ public class StringUtls {
 
     public static String localizedSpeech(String key, Object... args) {
         return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedLlm(String key, Object... args) {
+        return LlmTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedEvent(String key, Object... args) {
+        return EventsTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedEventPlural(int count, String keyBase, Object... extraArgs) {
+        Language lang = effectiveTtsLanguage();
+        String suffix = pluralSuffix(lang, count);
+        Object[] args = new Object[1 + extraArgs.length];
+        args[0] = count;
+        System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
+        return EventsTextProvider.getText(lang, keyBase + suffix, args);
+    }
+
+    private static String pluralSuffix(Language lang, int count) {
+        return switch (lang) {
+            case RU, UK -> ruPlural(count);
+            default -> count == 1 ? ".one" : ".many";
+        };
+    }
+
+    private static String ruPlural(int count) {
+        int mod100 = count % 100;
+        int mod10 = count % 10;
+        if (mod100 >= 11 && mod100 <= 19) return ".many";
+        if (mod10 == 1) return ".one";
+        if (mod10 >= 2 && mod10 <= 4) return ".few";
+        return ".many";
     }
 
     public static String localizedSpeechLanguageName(Language language) {

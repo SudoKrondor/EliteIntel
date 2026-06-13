@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.util.NavigationUtils;
+import elite.intel.util.StringUtls;
 
 public class AnalyzeDistanceFromTheBubble extends BaseQueryAnalyzer implements QueryHandler {
 
@@ -13,7 +14,7 @@ public class AnalyzeDistanceFromTheBubble extends BaseQueryAnalyzer implements Q
         LocationDao.Coordinates galacticCoordinates = locationManager.getGalacticCoordinates();
 
         if (galacticCoordinates.x() == 0 && galacticCoordinates.y() == 0 && galacticCoordinates.z() == 0) {
-            return process("Local Coordinates are not available.");
+            return process(StringUtls.localizedLlm("query.noLocalCoords"));
         }
 
         double distance = NavigationUtils.calculateGalacticDistance(
@@ -29,11 +30,6 @@ public class AnalyzeDistanceFromTheBubble extends BaseQueryAnalyzer implements Q
         int hours = (int) (totalMinutes / 60);
         int minutes = (int) (totalMinutes % 60);
 
-        String responseText = String.format(
-                "%d light years, carrier fuel required %d tons, travel time %d hours and %d minutes by fleet carrier.",
-                distLy, fuelTons, hours, minutes
-        );
-
-        return process(responseText);
+        return process(StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes));
     }
 }

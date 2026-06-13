@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -16,7 +17,7 @@ public class AnalyzeFleetCarrierETAHandler extends BaseQueryAnalyzer implements 
         PlayerSession playerSession = PlayerSession.getInstance();
         String carrierDepartureTime = playerSession.getCarrierDepartureTime();
         if (carrierDepartureTime == null) {
-            return process("No carrier departure time available.");
+            return process(StringUtls.localizedLlm("query.carrier.noDepartureTime"));
         }
 
         long minutesUntilArrival;
@@ -24,7 +25,7 @@ public class AnalyzeFleetCarrierETAHandler extends BaseQueryAnalyzer implements 
             ZonedDateTime arrival = ZonedDateTime.parse(carrierDepartureTime, DateTimeFormatter.ISO_DATE_TIME);
             minutesUntilArrival = ChronoUnit.MINUTES.between(ZonedDateTime.now(), arrival);
         } catch (Exception e) {
-            return process("Carrier ETA not available.");
+            return process(StringUtls.localizedLlm("query.carrier.noEta"));
         }
 
         String instructions = """

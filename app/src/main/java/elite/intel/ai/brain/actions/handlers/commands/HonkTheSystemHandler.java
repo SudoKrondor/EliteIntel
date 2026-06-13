@@ -15,6 +15,7 @@ import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
 
 public class HonkTheSystemHandler implements CommandHandler {
 
+    public static final int SCAN_HOLD_MS = 4900;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();
     private final Status status = Status.getInstance();
@@ -35,9 +36,9 @@ public class HonkTheSystemHandler implements CommandHandler {
         /// Scan
         int honkTrigger = shipSettings.getHonkTrigger(); /// 1 primary, 2 secondary
         if (honkTrigger == 1) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_PRIMARY_FIRE.getGameBinding(), 6000)));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_PRIMARY_FIRE.getGameBinding(), SCAN_HOLD_MS)));
         } else {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_SECONDARY_FIRE.getGameBinding(), 6000)));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_SECONDARY_FIRE.getGameBinding(), SCAN_HOLD_MS)));
         }
 
         /// change back to combat mode - if the user was in combat mode

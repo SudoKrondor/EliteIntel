@@ -6,6 +6,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.TraderType;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
 public class FindRawMaterialTraderHandler implements CommandHandler {
@@ -17,12 +18,12 @@ public class FindRawMaterialTraderHandler implements CommandHandler {
         Status status = Status.getInstance();
         if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {
             Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Searching for " + TraderType.RAW.getType() + " material traders. Stand by."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
             TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Route can only be plotted in SRV or Main Ship or on foot"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot")));
         }
     }
 }

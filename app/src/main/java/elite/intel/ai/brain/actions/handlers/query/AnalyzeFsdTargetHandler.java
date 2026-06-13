@@ -7,6 +7,7 @@ import elite.intel.search.edsm.dto.data.DeathsData;
 import elite.intel.search.edsm.dto.data.StarSystemInformation;
 import elite.intel.search.edsm.dto.data.TrafficData;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -19,7 +20,7 @@ public class AnalyzeFsdTargetHandler extends BaseQueryAnalyzer implements QueryH
 
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget == null) {
-            return process("No FSD target data available.");
+            return process(StringUtls.localizedLlm("query.fsd.noTarget"));
         }
 
         String instructions = """

@@ -20,7 +20,7 @@ public class AnalyzeShipLoadoutHandler extends BaseQueryAnalyzer implements Quer
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         PlayerSession playerSession = PlayerSession.getInstance();
         ShipLoadOutDto shipLoadout = playerSession.getShipLoadout();
-        if (shipLoadout == null) return process("No data available");
+        if (shipLoadout == null) return process(StringUtls.localizedLlm("query.noData"));
 
         Map<String, Object> facts = ShipFactsExtractor.extractFacts(shipLoadout);
 

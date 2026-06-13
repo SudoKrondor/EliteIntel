@@ -5,7 +5,7 @@ import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 public enum Queries {
 
     /// ########################################################################################################################################
-    CONNECTION_CHECK                    (CONNECTION_CHECK_COMMAND, ConnectionCheck.class),
+    CONNECTION_CHECK                    (CONNECTION_CHECK_COMMAND, ConnectionCheckHandler.class),
     BIO_SAMPLE_IN_STAR_SYSTEM           ("query_bio_scans_and_samples_in_star_system",  AnalyzeBioScansStarSystemHandler.class),
     EXOBIOLOGY_SAMPLES_ON_THIS_PLANET   ("query_exobiology_samples",                    AnalyzeBioSamplesPlanetSurfaceHandler.class),
     QUERY_STELLAR_OBJETS                ("query_stellar_objects",                       AnalyzeStellarObjectsHandler.class),

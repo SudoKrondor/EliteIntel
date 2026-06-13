@@ -8,6 +8,7 @@ import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -28,28 +29,18 @@ public class ReconPirateMissionTargetSystemHandler implements CommandHandler {
         ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
 
         if (target == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No recognisance target systems found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noReconSystems")));
             return;
         }
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
         if (multipleMissionProviders) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Routing to target star system with multiple mission providers."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.multipleProviders")));
         }
 
         String starSystem = target.getStarSystem();
 
-        EventBusManager.publish(
-                new MissionCriticalAnnouncementEvent(
-                        """
-                                        Plotting route to target system: %s.
-                                        When you get there scan nav beacon or search for resource sites.
-                                        I may not be able to detect them automatically.
-                                        Confirmation is required.
-                                        If scans do not trigger confirmation, you may need to manually confirm the presence of resource sites.
-                                """.formatted(starSystem)
-                )
-        );
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem)));
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(starSystem);

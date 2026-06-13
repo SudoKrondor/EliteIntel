@@ -11,6 +11,8 @@ import elite.intel.session.PlayerSession;
 
 import java.util.List;
 
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 public class FSSBodySignalsSubscriber {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -54,9 +56,9 @@ public class FSSBodySignalsSubscriber {
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
                 if (bioSignals > 0)
-                    EventBusManager.publish(new DiscoveryAnnouncementEvent(bioSignals + " bio signals discovered"));
+                    EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(bioSignals, "event.fss.body.bioSignals")));
                 if (geoSignals > 0)
-                    EventBusManager.publish(new DiscoveryAnnouncementEvent(geoSignals + " geo signals discovered"));
+                    EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(geoSignals, "event.fss.body.geoSignals")));
             }
         });
     }

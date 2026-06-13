@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -33,7 +34,7 @@ public class AnalyzeCargoHoldHandler extends BaseQueryAnalyzer implements QueryH
                     originalUserInput
             );
         } else {
-            return process("Loadout not available. New installation? Please re-load into the ship.");
+            return process(StringUtls.localizedLlm("query.cargo.noLoadout"));
         }
     }
 

@@ -8,6 +8,8 @@ import elite.intel.session.PlayerSession;
 
 import java.util.List;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class ApproachSettlementSubscriber {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -17,31 +19,24 @@ public class ApproachSettlementSubscriber {
         Thread.ofVirtual().start(() -> {
             StringBuilder sb = new StringBuilder();
 
-            sb.append("Approaching settlement: ");
-            sb.append(event.getName());
-            sb.append(", ");
+            sb.append(localizedEvent("event.approach.settlement.approaching", event.getName()));
+            sb.append(" ");
 
             if ("$government_Engineer;".equalsIgnoreCase(event.getStationGovernment())) {
-                sb.append("Engineer: ");
-                sb.append(event.getStationFaction().getName());
-                sb.append(", ");
+                sb.append(localizedEvent("event.approach.settlement.engineer", event.getStationFaction().getName()));
+                sb.append(" ");
             }
 
-
-            sb.append("Allegiance: ");
-            sb.append(event.getStationAllegiance()).append(". ");
-            sb.append("Economy: ");
-            sb.append(event.getStationEconomy()).append(". ");
-            sb.append("Government: ");
-            sb.append(event.getStationGovernment()).append(". ");
+            sb.append(localizedEvent("event.approach.settlement.allegiance", event.getStationAllegiance())).append(" ");
+            sb.append(localizedEvent("event.approach.settlement.economy", event.getStationEconomy())).append(" ");
+            sb.append(localizedEvent("event.approach.settlement.government", event.getStationGovernment())).append(" ");
             if (event.getStationFaction() != null) {
-                sb.append("Controlling Faction: ");
-                sb.append(event.getStationFaction().getName()).append(". ");
+                sb.append(localizedEvent("event.approach.settlement.faction", event.getStationFaction().getName())).append(" ");
             }
 
             List<String> stationServices = event.getStationServices();
             if (stationServices != null && !stationServices.isEmpty()) {
-                sb.append("Services: ");
+                sb.append(localizedEvent("event.approach.settlement.services")).append(" ");
                 for (String services : stationServices) {
                     sb.append(services);
                     sb.append(", ");
@@ -49,7 +44,7 @@ public class ApproachSettlementSubscriber {
             }
 
             String availableData = LocalServicesData.setLocalServicesData(event.getMarketID());
-            if (!availableData.isEmpty()) sb.append(". More data available on request.");
+            if (!availableData.isEmpty()) sb.append(" ").append(localizedEvent("event.approach.settlement.moreData"));
 
             if (playerSession.isRouteAnnouncementOn()) {
                 String instructions = """

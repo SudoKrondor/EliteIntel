@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 @SuppressWarnings("unused")
 public class BountyEventSubscriber {
 
@@ -44,13 +46,13 @@ public class BountyEventSubscriber {
                     missionManager.getPirateMissionTypes()
             );
             if (!targetFactions.isEmpty() && targetFactions.contains(event.getVictimFaction())) {
-                sb.append(" Mission Kill Confirmed, ");
+                sb.append(localizedEvent("event.bounty.missionKill")).append(" ");
             } else {
-                sb.append(" Kill Confirmed, ");
+                sb.append(localizedEvent("event.bounty.killConfirmed")).append(" ");
             }
 
             long bountyCollected = rewards.stream().mapToLong(r -> r.getReward()).sum();
-            if (rewards.size() > 0) sb.append(bountyCollected + " Bounty Claimed ");
+            if (!rewards.isEmpty()) sb.append(localizedEvent("event.bounty.claimed", bountyCollected));
             playerSession.addBountyReward(event.getTotalReward());
             EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
         });

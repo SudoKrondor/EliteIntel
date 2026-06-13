@@ -6,6 +6,7 @@ import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TimedReminderManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.util.StringUtls;
 
 public class ClearReminderHandler implements CommandHandler {
 
@@ -16,6 +17,6 @@ public class ClearReminderHandler implements CommandHandler {
         destinationReminder.clear();
         monetizeRouteManager.clear();
         TimedReminderManager.getInstance().clearAll();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Reminders cleared"));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.reminder.cleared")));
     }
 }

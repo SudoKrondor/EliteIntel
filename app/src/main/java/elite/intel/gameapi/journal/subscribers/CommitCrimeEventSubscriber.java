@@ -5,21 +5,17 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.CommitCrimeEvent;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class CommitCrimeEventSubscriber {
 
     @Subscribe
     public void onCommitCrimeEvent(CommitCrimeEvent event) {
         Thread.ofVirtual().start(() -> {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(" WARNING: Faction ");
-            sb.append(event.getFaction());
-            sb.append(" issued bounty of ").append(event.getBounty()).append(" credits ");
-            sb.append(" for ").append(event.getCrimeType());
-            sb.append(" against ");
-            sb.append(event.getVictimLocalised());
-
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(
+                    localizedEvent("event.crime.bountyIssued",
+                            event.getFaction(), event.getBounty(), event.getCrimeType(), event.getVictimLocalised())
+            ));
         });
     }
 }

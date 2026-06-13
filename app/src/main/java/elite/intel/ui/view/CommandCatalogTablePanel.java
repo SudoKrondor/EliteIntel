@@ -128,7 +128,9 @@ public class CommandCatalogTablePanel extends JPanel {
         if (modelRow < 0 || modelRow >= visibleEntries.size()) {
             return;
         }
-        new CommandDetailsDialog(this, visibleEntries.get(modelRow)).showDialog();
+        AppTheme.runWithModalScrim(
+                SwingUtilities.getWindowAncestor(this),
+                () -> new CommandDetailsDialog(this, visibleEntries.get(modelRow)).showDialog());
     }
 
     private String readableType(CommandCatalogEntryType type) {

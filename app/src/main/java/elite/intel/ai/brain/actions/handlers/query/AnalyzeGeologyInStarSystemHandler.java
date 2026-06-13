@@ -8,6 +8,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -22,7 +23,7 @@ public class AnalyzeGeologyInStarSystemHandler extends BaseQueryAnalyzer impleme
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        EventBusManager.publish(new AiVoxResponseEvent("Searching for planets with geological signals..."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.geology.searching")));
         Map<String, Integer> planetsWithGeoSignals = planetsWithGeoSignals();
         String instructions = """
                 Report geological signals detected in this star system.

@@ -9,6 +9,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.station.vista.VistaGenomicsLocationDto;
 import elite.intel.search.spansh.station.vista.VistaGenomicsSearch;
 import elite.intel.search.spansh.station.vista.VistaSearchCriteria;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public class FindVistaGenomicsHandler implements CommandHandler {
 
     @Override public void handle(String action, JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 250);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Searching for Vista Genomics. Stand by."));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.vistaGenomics.searching")));
 
 
         VistaSearchCriteria criteria = new VistaSearchCriteria();
@@ -45,7 +46,7 @@ public class FindVistaGenomicsHandler implements CommandHandler {
 
         List<VistaGenomicsLocationDto.Result> results = VistaGenomicsSearch.findVistaGenomics(criteria);
         if (results == null || results.isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Vista Genomics found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.vistaGenomics.notFound")));
             return;
         }
 
@@ -53,12 +54,9 @@ public class FindVistaGenomicsHandler implements CommandHandler {
         RoutePlotter routePlotter = new RoutePlotter();
         VistaGenomicsLocationDto.Result result = first.get();
 
-        String reminder = "Head to " + result.getSystemName() + " star system. When you get there looks for " + result.getStationName();
-        ReminderManager.getInstance().setReminder(
-                result.getSystemName(),
-                reminder
-        );
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(reminder));
+        String announcement = StringUtls.localizedLlm("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
+        ReminderManager.getInstance().setReminder(result.getSystemName(), announcement);
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(announcement));
         routePlotter.plotRoute(result.getSystemName());
     }
 }

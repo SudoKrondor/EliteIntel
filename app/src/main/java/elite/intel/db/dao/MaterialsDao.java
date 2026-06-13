@@ -6,6 +6,7 @@ import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.Bind;
+import org.jdbi.v3.sqlobject.customizer.Define;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
@@ -34,6 +35,25 @@ public interface MaterialsDao {
 
     @SqlQuery("SELECT materialName FROM materials WHERE LOWER(materialName) = LOWER(:materialName) LIMIT 1")
     String getOriginalCase(@Bind("materialName") String materialName);
+
+    // JOIN with material_names to get localized display names for inventory items;
+    // falls back to materialName when no translation exists for the given language column.
+    @SqlQuery("""
+            SELECT LOWER(COALESCE(mn.<col>, m.materialName))
+            FROM materials m
+            LEFT JOIN material_names mn ON LOWER(m.materialName) = LOWER(mn.name)
+            ORDER BY COALESCE(mn.<col>, m.materialName)
+            """)
+    List<String> getAllLocalizedNamesLowerCase(@Define("col") String col);
+
+    @SqlQuery("""
+            SELECT m.materialName
+            FROM materials m
+            LEFT JOIN material_names mn ON LOWER(m.materialName) = LOWER(mn.name)
+            WHERE LOWER(COALESCE(mn.<col>, m.materialName)) = LOWER(:localizedName)
+            LIMIT 1
+            """)
+    String getEnglishByLocalizedName(@Define("col") String col, @Bind("localizedName") String localizedName);
 
     @SqlQuery("SELECT * FROM materials WHERE LOWER(materialName) = LOWER(:materialName)")
     Material findByExactName(String materialName);

@@ -8,6 +8,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsSearch;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
 
@@ -20,11 +21,7 @@ public class PlotRouteToInterstellarFactorsHandler implements CommandHandler {
     public void handle(String action, JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         if (coordinates == null) {
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            "Unable to comply. Your coordinates are not available. Make at least one hyperspace jump so I can get your coordinates"
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.noCoords")));
             return;
         }
         List<InterstellarFactorsResultDto.Result> results = InterstellarFactorsSearch.findNearestInterstellarFactors(
@@ -32,11 +29,7 @@ public class PlotRouteToInterstellarFactorsHandler implements CommandHandler {
         );
 
         if (results == null || results.isEmpty()) {
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            "Unable to find any Interstellar Factor locations in Spansh at this time"
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.notFound")));
             return;
         }
 
@@ -45,10 +38,8 @@ public class PlotRouteToInterstellarFactorsHandler implements CommandHandler {
         RoutePlotter routePlotter = new RoutePlotter();
         routePlotter.plotRoute(starName);
 
-        EventBusManager.publish(
-                new MissionCriticalAnnouncementEvent("Visit " + stationName + " port in " + starName + " system!"
-                )
-        );
+        String announcement = StringUtls.localizedLlm("handler.interstellarFactors.visit", stationName, starName);
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(announcement));
         reminderManager.setReminder("Visit Interstellar Factors at " + stationName, starName);
     }
 }

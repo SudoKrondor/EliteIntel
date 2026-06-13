@@ -13,6 +13,9 @@ import elite.intel.session.PlayerSession;
 
 import java.util.Map;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 public class FleetCarrierRouteCalculator {
 
     public static void calculate() {
@@ -32,17 +35,17 @@ public class FleetCarrierRouteCalculator {
         int cargoSpaceUsed = carrierData.getCargoSpaceUsed();
         String destination = ClipboardUtils.getClipboardText();
 
-        EventBusManager.publish(new AiVoxResponseEvent("Accessing Spansh... Stand by..."));
+        EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.accessing")));
 
         if(carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent("Fleet Carrier location not available."));
+            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.locationUnavailable")));
             return;
         }
 
         LocationDto nearestStartingPoint = NearestKnownLocationSearchClient.findNearest(carrierData.getX(), carrierData.getY(), carrierData.getZ());
 
         if (destination == null || nearestStartingPoint == null) {
-            EventBusManager.publish(new AiVoxResponseEvent("No destination or nearest known location found."));
+            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.noDestination")));
             return;
         }
 
@@ -61,13 +64,15 @@ public class FleetCarrierRouteCalculator {
         int numJumps = route.size();
 
         if (numJumps == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent("Unable to navigate to " + destination + ". Data is not available in Spansh. Try another star system near by."));
+            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.navFailed", destination)));
         } else {
             EventBusManager.publish(new AiVoxResponseEvent(
-                    "Calculated Fleet Carrier route to " + destination + ". " +
-                            numJumps + " jumps, with a total of " +
-                            fuelRequired + " tons of fuel required. When you are ready - open the Galaxy Map from Fleet Carrier panel, select the text field and ask me to enter next carrier jump location.")
-            );
+                    localizedEvent("event.carrier.route.calculated",
+                            destination,
+                            localizedEventPlural(numJumps, "event.carrier.jump.count"),
+                            fuelRequired)
+                            + " " + localizedEvent("event.carrier.route.nextStep")
+            ));
         }
     }
 }

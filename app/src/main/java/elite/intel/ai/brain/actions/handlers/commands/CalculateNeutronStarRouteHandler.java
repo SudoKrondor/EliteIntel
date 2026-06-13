@@ -14,6 +14,7 @@ import elite.intel.search.spansh.neutronroute.NeutronStarRouteCalculatorCriteria
 import elite.intel.search.spansh.neutronroute.NeutronStarRouteClient;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.ClipboardUtils;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.util.StringUtls.getIntSafely;
 
@@ -30,25 +31,20 @@ public class CalculateNeutronStarRouteHandler implements CommandHandler {
         JsonElement key = params.get("efficiency");
 
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Please specify efficiency from 1 to 100"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }
 
         int efficiency = getIntSafely(key.getAsString());
         if (efficiency < 1 || efficiency > 100) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Please specify efficiency from 1 to 100"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         String destination = ClipboardUtils.getClipboardText();
-        EventBusManager.publish(
-                new MissionCriticalAnnouncementEvent(
-                        "Calculating neutron star route from " + location.getStarName()
-                                + " to " + destination
-                                + " with efficiency " + efficiency
-                )
-        );
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency)));
+
         ShipLoadOutDto shipLoadout = shipLoadoutManager.get();
         if (shipLoadout == null) {
             return;
@@ -56,16 +52,7 @@ public class CalculateNeutronStarRouteHandler implements CommandHandler {
 
         double maxJumpRange = shipLoadout.getMaxJumpRange();
         if (maxJumpRange < 20) {
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            """ 
-                                            WARNING! We have low jump range. We may end up using a boosted jump
-                                            into a system which we do not have enough range to jump out of.
-                                            Be careful when plotting using this and check that you can get out of the system
-                                            when you are on the galaxy map.
-                                    """
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning")));
         }
 
 
@@ -77,11 +64,8 @@ public class CalculateNeutronStarRouteHandler implements CommandHandler {
         );
 
         if (route != null && route.getResult() != null && route.getResult().getTotalJumps() > 0) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(" Calculated neutron star route to ").append(destination).append(" in ").append(route.getResult().getTotalJumps()).append(" jumps.");
-            sb.append(" Ask me to plot the navigate to the next neutron star.");
             neutronStarRouteManager.saveNeutronStarRoute(route);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps())));
         }
     }
 }

@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.*;
+import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.subtractString;
 
 @SuppressWarnings("unused")
@@ -221,9 +222,9 @@ public class ScanEventSubscriber {
 
         if (!wasDiscovered && PLANET.equals(location.getLocationType())) {
             if (event.getTerraformState() != null && !event.getTerraformState().isEmpty()) {
-                EventBusManager.publish(new DiscoveryAnnouncementEvent("New Terraformable planet: " + shortName + ". "));
+                EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newTerraformable", shortName)));
             } else if (event.getPlanetClass() != null && valuablePlanetClasses.contains(event.getPlanetClass().toLowerCase())) {
-                EventBusManager.publish(new DiscoveryAnnouncementEvent("New discovery logged: " + event.getPlanetClass()));
+                EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newDiscovery", event.getPlanetClass())));
             }
         }
 
@@ -234,7 +235,7 @@ public class ScanEventSubscriber {
                 log.info(sensorData);
             }
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
-            EventBusManager.publish(new DiscoveryAnnouncementEvent("New System discovered!"));
+            EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newSystem")));
         }
     }
 

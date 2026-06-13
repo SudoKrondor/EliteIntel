@@ -7,6 +7,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class ConfirmHuntingGroundHandler implements CommandHandler {
 
@@ -18,6 +19,6 @@ public class ConfirmHuntingGroundHandler implements CommandHandler {
     @Override public void handle(String action, JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         missionDataManager.confirmTargetReconResourceSite(location.getStarName());
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("hunting ground confirmed"));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.huntingGroundConfirmed")));
     }
 }

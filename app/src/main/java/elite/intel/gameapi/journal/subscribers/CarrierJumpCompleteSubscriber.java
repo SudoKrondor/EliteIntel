@@ -19,6 +19,9 @@ import elite.intel.util.FleetCarrierRouteCalculator;
 
 import java.util.Objects;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 @SuppressWarnings("unused")
 public class CarrierJumpCompleteSubscriber {
     private static final Long FOUR_MINUTES = (long) (1000 * 60 * 4);
@@ -33,8 +36,8 @@ public class CarrierJumpCompleteSubscriber {
             playerSession.setLastKnownCarrierLocation(starSystem);
 
             if (starPos.length == 3 && starPos[0] == 0.0 && starPos[1] == 0.0 && starPos[2] == 0 && !"sol".equalsIgnoreCase(starSystem)) {
-                EventBusManager.publish(new AppLogEvent("WARNING: Carrier Jump complete, but star position is reported 0.0.0"));
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Carrier jump is complete, but star position was not reported."));
+                EventBusManager.publish(new AppLogEvent(localizedEvent("event.carrier.jumpCompleteStarWarning")));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.carrier.jumpCompleteNoStar")));
             }
 
 
@@ -90,12 +93,16 @@ public class CarrierJumpCompleteSubscriber {
             if (estimatedTimeToFinal > 59) {
                 int hours = estimatedTimeToFinal / 60;
                 int minutes = estimatedTimeToFinal % 60;
-                timeString = hours + " hours and " + minutes + " minutes";
+                timeString = localizedEvent("event.time.hoursAndMinutes",
+                        localizedEventPlural(hours, "event.time.hours"),
+                        localizedEventPlural(minutes, "event.time.minutes"));
             } else {
-                timeString = estimatedTimeToFinal + " minutes";
+                timeString = localizedEventPlural(estimatedTimeToFinal, "event.time.minutes");
             }
-            String jumpWord = numJumpsRemaining == 1 ? "jump" : "jumps";
-            String remainingRoute = numJumpsRemaining == 0 ? ". Final destination reached!" : ". Remaining " + numJumpsRemaining + " " + jumpWord + ". Estimated time to final " + timeString + " ";
+            String remainingRoute = numJumpsRemaining == 0
+                    ? " " + localizedEvent("event.carrier.jump.finalDest")
+                    : " " + localizedEvent("event.carrier.jump.remaining",
+                    localizedEventPlural(numJumpsRemaining, "event.carrier.jump.count"), timeString);
 
             String instructions = """
                         Notify user about new carrier location.
@@ -107,7 +114,7 @@ public class CarrierJumpCompleteSubscriber {
                             instructions
                     )
             );
-            DeferredNotificationManager.getInstance().scheduleNotification("Carrier jump cooldown is complete", FOUR_MINUTES);
+            DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.jumpCooldownComplete"), FOUR_MINUTES);
         });
     }
 

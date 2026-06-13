@@ -14,6 +14,7 @@ import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
+import static elite.intel.util.StringUtls.localizedEvent;
 
 public class CodexEntryEventSubscriber {
 
@@ -47,41 +48,37 @@ public class CodexEntryEventSubscriber {
 
 
             if (!alreadyHaveThisEntry && event.isNewEntry()) {
-                sb.append(" New Codex Entry: ");
+                sb.append(" ").append(localizedEvent("event.codex.newEntry")).append(" ");
             } else {
-                sb.append(" Codex Entry: ");
+                sb.append(" ").append(localizedEvent("event.codex.entry")).append(" ");
             }
-            sb.append(" Name: ");
+            sb.append(localizedEvent("event.codex.name")).append(" ");
             String[] split = nameLocalised.split(" - ", 2);
             if (split.length == 2) {
-                sb.append(split[0]).append(", variant ").append(split[1]).append(", ");
+                sb.append(split[0]).append(", ").append(localizedEvent("event.codex.variant")).append(" ").append(split[1]).append(", ");
             } else {
                 sb.append(nameLocalised).append(", ");
             }
-            sb.append(" Category: ");
+            sb.append(localizedEvent("event.codex.category")).append(" ");
             sb.append(event.getSubCategoryLocalised()).append(". ");
 
             if (bioSampleDistance > 0 && !alreadyHaveThisEntry) {
-                sb.append(" Minimum distance between samples for collection: ").append(bioSampleDistance).append(" meters. ");
+                sb.append(" ").append(localizedEvent("event.codex.sampleDistance", bioSampleDistance));
             }
 
 
             if (!alreadyHaveThisEntry) {
                 sb.append(", ");
                 if (event.getVoucherAmount() > 0) {
-                    sb.append("Voucher Amount: ");
-                    sb.append(event.getVoucherAmount());
-                    sb.append(" credits. ");
+                    sb.append(localizedEvent("event.codex.voucher", event.getVoucherAmount()));
                 }
                 Boolean isAnnounced = playerSession.paymentHasBeenAnnounced(genus);
 
                 if (projectedPayment != null && projectedPayment.payment() != null && !isAnnounced) {
-                    sb.append("Vista Genomics Payment: ").append(projectedPayment.payment()).append(" credits. For a complete set of three samples. ");
+                    sb.append(" ").append(localizedEvent("event.codex.vistaPayment", projectedPayment.payment()));
                     if (projectedPayment.firstDiscoveryBonus() != null && currentLocation.isOurDiscovery()) {
-                        sb.append(projectedPayment.firstDiscoveryBonus());
-                        sb.append(" credits bonus for first discovery.");
+                        sb.append(" ").append(localizedEvent("event.codex.firstDiscoveryBonus", projectedPayment.firstDiscoveryBonus()));
                     }
-                    sb.append(".");
                     playerSession.addAnnouncedGenusPayment(genus);
                 }
             } else {
@@ -96,7 +93,7 @@ public class CodexEntryEventSubscriber {
                             0
                     );
                     if (genus != null && isNameMatched && distanceFromPreviousSample < bioSampleDistance) {
-                        sb.append(" WARNING: Codex entry too proximate to previous sample of same genus- insufficient separation for sample diversity!");
+                        sb.append(" ").append(localizedEvent("event.codex.tooProximate"));
                         break;
                     }
                 }

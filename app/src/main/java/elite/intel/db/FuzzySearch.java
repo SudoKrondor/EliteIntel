@@ -5,6 +5,8 @@ import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -41,20 +43,64 @@ public class FuzzySearch {
 
 
     public static String fuzzyCommodityMatch(String input, int similarity) {
-        return fuzzyMatch(input, similarity, CommodityDao.class, CommodityDao::getAllNamesLowerCase, CommodityDao::getOriginalCase);
+        Language lang = SystemSession.getInstance().getLanguage();
+        if (lang == Language.EN) {
+            return fuzzyMatch(input, similarity, CommodityDao.class, CommodityDao::getAllNamesLowerCase, CommodityDao::getOriginalCase);
+        }
+        String col = commodityColumn(lang);
+        return fuzzyMatch(input, similarity, CommodityDao.class,
+                dao -> dao.getAllLocalizedNamesLowerCase(col),
+                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
     }
 
     public static String fuzzyMaterialNameSearch(String input, int similarity) {
-        return fuzzyMatch(input, similarity, MaterialNameDao.class, MaterialNameDao::getAllNamesLowerCase, MaterialNameDao::getOriginalCase);
+        Language lang = SystemSession.getInstance().getLanguage();
+        if (lang == Language.EN) {
+            return fuzzyMatch(input, similarity, MaterialNameDao.class, MaterialNameDao::getAllNamesLowerCase, MaterialNameDao::getOriginalCase);
+        }
+        String col = materialNameColumn(lang);
+        return fuzzyMatch(input, similarity, MaterialNameDao.class,
+                dao -> dao.getAllLocalizedNamesLowerCase(col),
+                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
     }
 
-
     public static String fuzzyInventorySearch(String input, int similarity) {
-        return fuzzyMatch(input, similarity, MaterialsDao.class, MaterialsDao::getAllNamesLowerCase, MaterialsDao::getOriginalCase);
+        Language lang = SystemSession.getInstance().getLanguage();
+        if (lang == Language.EN) {
+            return fuzzyMatch(input, similarity, MaterialsDao.class, MaterialsDao::getAllNamesLowerCase, MaterialsDao::getOriginalCase);
+        }
+        // Inventory materialNames are always English (from journal).
+        // JOIN with material_names lets us match localized input and return the English canonical name.
+        String col = materialNameColumn(lang);
+        return fuzzyMatch(input, similarity, MaterialsDao.class,
+                dao -> dao.getAllLocalizedNamesLowerCase(col),
+                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
     }
 
     public static String fuzzySubSystemSearch(String input, int similarity) {
         return fuzzyMatch(input, similarity, SubSystemDao.class, SubSystemDao::getAllNamesLowerCase, SubSystemDao::getOriginalCase);
+    }
+
+    private static String materialNameColumn(Language lang) {
+        return switch (lang) {
+            case DE -> "name_de";
+            case FR -> "name_fr";
+            case ES -> "name_es";
+            case RU -> "name_ru";
+            case UK -> "name_uk";
+            default -> "name";
+        };
+    }
+
+    private static String commodityColumn(Language lang) {
+        return switch (lang) {
+            case DE -> "commodity_de";
+            case FR -> "commodity_fr";
+            case ES -> "commodity_es";
+            case RU -> "commodity_ru";
+            case UK -> "commodity_uk";
+            default -> "commodity";
+        };
     }
 
 
@@ -90,12 +136,18 @@ public class FuzzySearch {
             return Database.withDao(daoClass, dao -> originalCaseProvider.apply(dao, finalBestPrefix));
         }
 
+        ///NOTE
         // Pass 2: Levenshtein fallback for typos/near-matches.
-        // Scale the threshold with input length so multi-word STT substitutions
-        // (e.g. "commodities" heard instead of "composites", distance≈5) get enough
-        // budget without loosening the threshold for short words where false positives
-        // are more likely (short inputs keep the caller-supplied minimum).
-        int effectiveSimilarity = Math.max(similarity, lowerInput.length() / 3);
+        // Threshold is fully dynamic so it scales correctly for both short single words
+        // ("бор" = 3 chars -> tight budget) and long multi-word names
+        // ("Специальные микропрограммы..." = 47 chars -> generous budget).
+        // Lower bound: max(caller's similarity, len/3) – ensures long names get enough room.
+        // Upper bound: max(2, len/2) – prevents short words from accepting unrelated matches
+        // e.g. "хрома"(5) gets cap=2, so dist=4 to "бор" is rejected.
+        int effectiveSimilarity = Math.min(
+                Math.max(similarity, lowerInput.length() / 3),
+                Math.max(2, lowerInput.length() / 2)
+        );
         String bestLower = null;
         int bestDist = Integer.MAX_VALUE;
         for (String c : candidates) {

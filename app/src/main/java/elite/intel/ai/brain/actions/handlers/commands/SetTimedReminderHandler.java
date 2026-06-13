@@ -6,6 +6,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TimedReminderManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.util.StringUtls;
 
 import java.util.Objects;
 
@@ -17,7 +18,7 @@ public class SetTimedReminderHandler implements CommandHandler {
         JsonElement minutesEl = params.get("minutes");
 
         if (isValidReminder(keyEl, minutesEl)) {
-            EventBusManager.publish(new AiVoxResponseEvent("reminder text and duration required. reminder is not set"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));
             return;
         }
 
@@ -25,19 +26,19 @@ public class SetTimedReminderHandler implements CommandHandler {
         try {
             minutes = Integer.parseInt(minutesEl.getAsString().trim());
         } catch (NumberFormatException e) {
-            EventBusManager.publish(new AiVoxResponseEvent("invalid duration for timed reminder"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidDuration")));
             return;
         }
 
         if (minutes <= 0) {
-            EventBusManager.publish(new AiVoxResponseEvent("duration must be greater than zero"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.durationZero")));
             return;
         }
 
         String text = keyEl.getAsString();
         TimedReminderManager.getInstance().schedule(text, minutes);
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(
-                "Reminder set for " + minutes + " minute" + (minutes == 1 ? "" : "s")));
+                StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes)));
     }
 
     private static boolean isValidReminder(JsonElement keyEl, JsonElement minutesEl) {

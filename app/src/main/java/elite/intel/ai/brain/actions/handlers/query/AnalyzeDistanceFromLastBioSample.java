@@ -8,6 +8,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -33,7 +34,7 @@ public class AnalyzeDistanceFromLastBioSample extends BaseQueryAnalyzer implemen
                 """;
 
         if (status.getStatus() == null) {
-            return process("No planet data available");
+            return process(StringUtls.localizedLlm("query.bio.noPlanetData"));
         }
 
         double latitude = status.getStatus().getLatitude();
@@ -41,11 +42,11 @@ public class AnalyzeDistanceFromLastBioSample extends BaseQueryAnalyzer implemen
         double planetRadius = status.getStatus().getPlanetRadius();
 
         if (latitude == 0 || longitude == 0 || planetRadius == 0) {
-            return process("Your current position is not available.");
+            return process(StringUtls.localizedLlm("query.noPosition"));
         }
 
         if (currentLocation.getPartialBioSamples().isEmpty()) {
-            return process("No partial bio scans data.");
+            return process(StringUtls.localizedLlm("query.bio.noPartialScans"));
         }
 
         BioSampleDto bioSample = currentLocation.getPartialBioSamples().getLast();

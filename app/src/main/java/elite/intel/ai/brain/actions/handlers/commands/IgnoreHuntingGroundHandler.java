@@ -7,6 +7,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class IgnoreHuntingGroundHandler implements CommandHandler {
 
@@ -17,6 +18,6 @@ public class IgnoreHuntingGroundHandler implements CommandHandler {
     @Override public void handle(String action, JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         huntingGroundManager.ignoreHuntingGround(location.getStarName());
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(" Hunting ground for " + location.getStarName() + " has been deleted "));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.huntingGroundDeleted", location.getStarName())));
     }
 }

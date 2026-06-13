@@ -6,6 +6,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 public class NavigateToHomeHandler implements CommandHandler {
 
@@ -16,16 +17,16 @@ public class NavigateToHomeHandler implements CommandHandler {
 
         Status status = Status.getInstance();
         if(status.isInSrv() || status.isInMainShip()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Plotting route to home system..."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.plottingHome")));
             LocationDto location = playerSession.getHomeSystem();
             if (location.getBodyId() == -1) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Home system is not set. We are homeless!"));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.homeNotSet")));
                 return;
             }
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(location.getStarName());
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Route can only be plotted in SRV or Main Ship."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
     }
 }

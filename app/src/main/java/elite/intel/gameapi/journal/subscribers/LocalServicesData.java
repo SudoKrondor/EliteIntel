@@ -8,6 +8,8 @@ import elite.intel.search.edsm.dto.OutfittingDto;
 import elite.intel.search.edsm.dto.ShipyardDto;
 import elite.intel.session.PlayerSession;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class LocalServicesData {
 
     public static String setLocalServicesData(long marketId) {
@@ -20,19 +22,19 @@ public class LocalServicesData {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         if (marketDto.getData() != null && marketDto.getData().getCommodities() != null) {
-            sb.append(" Market ");
+            sb.append(" ").append(localizedEvent("event.docked.marketLabel")).append(" ");
             sb.append(marketDto.getData().getName());
             sb.append(", ");
             currentLocation.setMarket(marketDto);
         }
 
         if (outfittingDto.getData() != null && outfittingDto.getData().getOutfitting() != null) {
-            sb.append(" Outfitting, ");
+            sb.append(" ").append(localizedEvent("event.docked.outfitting")).append(", ");
             currentLocation.setOutfitting(outfittingDto);
         }
 
         if (shipyardDto.getData() != null && shipyardDto.getData().getShips() != null) {
-            sb.append(" Shipyard, ");
+            sb.append(" ").append(localizedEvent("event.docked.shipyard")).append(", ");
             currentLocation.setShipyard(shipyardDto);
         }
         locationManager.save(currentLocation);

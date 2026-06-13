@@ -17,6 +17,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import static elite.intel.util.StringUtls.localizedEventPlural;
+
 public class EdsmCommoditySearch {
 
     private final static List<String> ALLOWED_STATION_TYPES = Arrays.asList(
@@ -69,7 +71,7 @@ public class EdsmCommoditySearch {
             }
         }
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Found " + stations.size() + " markets. Analyzing commodities."));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEventPlural(stations.size(), "event.search.commodity.marketsFound")));
 
         List<CommoditySearchResult> results = new ArrayList<>();
         for (Station station : stations) {

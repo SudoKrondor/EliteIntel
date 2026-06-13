@@ -12,6 +12,7 @@ import elite.intel.search.spansh.stellarobjects.ReserveLevel;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 import java.util.Optional;
 
@@ -25,20 +26,20 @@ public class FindMiningSiteHandler implements CommandHandler {
     @Override public void handle(String action, JsonObject params, String responseText) {
         Status status = Status.getInstance();
         if (!status.isInMainShip()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Please board your ship."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.boardShip")));
             return;
         }
 
         JsonElement mat = params.get("key");
         JsonElement distance = params.get("max_distance");
         if (mat == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Did not catch the material name."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.didNotCatch")));
             return;
         }
 
         String material =
                 capitalizeWords(
-                        FuzzySearch.fuzzyMaterialNameSearch(
+                        FuzzySearch.fuzzyCommodityMatch(
                                 mat.getAsString(), 8
                         )
                 );
@@ -52,7 +53,7 @@ public class FindMiningSiteHandler implements CommandHandler {
                 );
 
         if (miningLocations == null || miningLocations.getResults().isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Mining sites found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFound")));
             return;
         }
 
@@ -60,14 +61,11 @@ public class FindMiningSiteHandler implements CommandHandler {
         if (result.isPresent()) {
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(result.get().getSystemName());
-            String reminder = "Found nearest mining location in " + result.get().getSystemName() + " system head to planet " + result.get().getBodyName();
-            ReminderManager.getInstance().setReminder(
-                    reminder,
-                    result.get().getSystemName()
-            );
+            String reminder = StringUtls.localizedLlm("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
+            ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
             EventBusManager.publish(new AiVoxResponseEvent(reminder));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No mining sites found within range."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFoundInRange")));
         }
     }
 }

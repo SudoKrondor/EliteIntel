@@ -7,6 +7,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.edsm.monetize.MonetizeRoute;
+import elite.intel.util.StringUtls;
 
 public class MonetizeRouteHandler implements CommandHandler {
 
@@ -16,32 +17,26 @@ public class MonetizeRouteHandler implements CommandHandler {
     @Override public void handle(String action, JsonObject params, String responseText) {
         ShipManager shipManager = ShipManager.getInstance();
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Ship does not have enough cargo capacity."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.shipNoCapacity")));
             return;
         }
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Searching markets along our route. This might take some time..."));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.searchingMarkets")));
 
         MonetizeRoute.TradeTransaction tradeTuple = monetizeRouteManager.monetizeRoute();
 
         if (tradeTuple == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noTradeFound")));
         } else {
-            String reminder = "Stop at " + tradeTuple.getSource().getStarSystem() + " star system. "+ tradeTuple.getSource().getStationName()
-                    + ". Pick up " + tradeTuple.getSource().getCommodity() +
-                    " and deliver to " + tradeTuple.getDestination().getStarSystem()
-                    + " star system, "
-                    + tradeTuple.getDestination().getStationName() + " port. ";
+            String reminder = StringUtls.localizedLlm("handler.tradeRoute.tradeReminder",
+                    tradeTuple.getSource().getStarSystem(),
+                    tradeTuple.getSource().getStationName(),
+                    tradeTuple.getSource().getCommodity(),
+                    tradeTuple.getDestination().getStarSystem(),
+                    tradeTuple.getDestination().getStationName());
 
-            reminderManager.setReminder(
-                    reminder,
-                    tradeTuple.getSource().getStarSystem()
-            );
+            reminderManager.setReminder(reminder, tradeTuple.getSource().getStarSystem());
 
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            "Trade found. " + reminder
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.tradeFound", reminder)));
         }
     }
 }

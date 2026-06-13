@@ -35,6 +35,11 @@ class HudComboBoxUI extends FlatComboBoxUI {
             basic.setBorder(javax.swing.BorderFactory.createLineBorder(
                     AppTheme.HUD_ORANGE_SOFT, AppTheme.HUD_BORDER_THICKNESS));
         }
+        JScrollPane scroller = (JScrollPane) SwingUtilities.getAncestorOfClass(
+                JScrollPane.class, popup.getList());
+        if (scroller != null) {
+            AppTheme.styleScrollBar(scroller.getVerticalScrollBar());
+        }
         return popup;
     }
 

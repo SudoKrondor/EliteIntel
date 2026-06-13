@@ -6,6 +6,7 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -20,7 +21,7 @@ public class AnalyzeFuelStatusHandler extends BaseQueryAnalyzer implements Query
         ShipLoadOutDto loadout = playerSession.getShipLoadout();
 
         if (loadout == null) {
-            return process("Data not available");
+            return process(StringUtls.localizedLlm("query.noData"));
         }
 
         Double currentFuel = null;

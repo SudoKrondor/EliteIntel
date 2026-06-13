@@ -7,6 +7,7 @@ import elite.intel.db.managers.SquadronCarrierRouteManager;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -28,7 +29,7 @@ public class AnalyzeSquadronCarrierRouteHandler extends BaseQueryAnalyzer implem
         int fuelReserve = squadronCarrierManager.get().getFuelReserve();
 
         if (carrierData == null || carrierRoute == null) {
-            return process("No data available");
+            return process(StringUtls.localizedLlm("query.noData"));
         }
 
         int fuelSupply = carrierData.getFuelLevel() + fuelReserve;

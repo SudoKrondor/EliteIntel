@@ -8,6 +8,7 @@ import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -31,7 +32,7 @@ public class AnalyseMaterialsHandler extends BaseQueryAnalyzer implements QueryH
      */
     private String extractQueryFromInput(String input) {
         if (input == null || input.isBlank()) return null;
-        for (String token : input.toLowerCase().replaceAll("[^a-z\\s]", "").split("\\s+")) {
+        for (String token : input.toLowerCase().replaceAll("[^\\p{L}\\s]", "").split("\\s+")) {
             if (token.length() < 3 || SKIP_TOKENS.contains(token)) continue;
             if (FuzzySearch.fuzzyInventorySearch(token, 8) != null
                     || FuzzySearch.fuzzyCommodityMatch(token, 3) != null) {
@@ -49,7 +50,7 @@ public class AnalyseMaterialsHandler extends BaseQueryAnalyzer implements QueryH
             query = extractQueryFromInput(originalUserInput);
         }
         if (query == null || query.isBlank()) {
-            return process("Please specify which material or commodity you want to check.");
+            return process(StringUtls.localizedLlm("query.materials.specify"));
         }
 
         // 1. Try engineering materials first
@@ -93,13 +94,13 @@ public class AnalyseMaterialsHandler extends BaseQueryAnalyzer implements QueryH
                             """;
                     return process(new AiDataStruct(instructions, new CargoItemDto(commodityName, item.getCount(), item.getStolen())), originalUserInput);
                 } else {
-                    return process(commodityName + " is a commodity but is not currently in the cargo hold.");
+                    return process(StringUtls.localizedLlm("query.materials.notInCargo", commodityName));
                 }
             }
         }
 
         // 3. Not found in either
-        return process("Could not find '" + query + "' in engineering materials or cargo hold.");
+        return process(StringUtls.localizedLlm("query.materials.notFound", query));
     }
 
     record MaterialDataDto(MaterialsDao.Material materials) implements ToYamlConvertable {

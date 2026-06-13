@@ -1,9 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
@@ -28,13 +27,13 @@ public class DismissRecallShip implements CommandHandler {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.shipDismissRejected")));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
             return;
         }
         if (status.isLanded()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.shipDismissed")));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.shipRecall")));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
         }
     }
 }

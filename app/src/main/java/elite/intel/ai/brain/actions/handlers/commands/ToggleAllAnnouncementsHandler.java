@@ -4,13 +4,14 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class ToggleAllAnnouncementsHandler implements CommandHandler {
 
     @Override
     public void handle(String action, JsonObject params, String responseText) {
         if (params.get("state") == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("LLM Failed to extract on/off state parameter"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.llmParamFailed")));
             return;
         }
         boolean isOn = params.get("state").getAsBoolean();
@@ -21,6 +22,7 @@ public class ToggleAllAnnouncementsHandler implements CommandHandler {
         playerSession.setRadarContactAnnouncementOn(isOn);
         playerSession.setMiningAnnouncementOn(isOn);
         playerSession.setNavigationAnnouncementOn(isOn);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("All Announcements: " + (isOn ? "On" : "Off")));
+        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.all", state)));
     }
 }

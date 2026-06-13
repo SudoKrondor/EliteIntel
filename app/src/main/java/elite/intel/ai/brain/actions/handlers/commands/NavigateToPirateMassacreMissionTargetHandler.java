@@ -6,6 +6,7 @@ import elite.intel.db.managers.MissionManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.util.StringUtls;
 
 import java.util.Set;
 
@@ -20,7 +21,7 @@ public class NavigateToPirateMassacreMissionTargetHandler implements CommandHand
         Set<String> targetFactions = missionManager.getTargetFactions(missionTypes);
 
         if (targetFactions.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent("No pirate massacre mission providers found."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
             return;
         }
 

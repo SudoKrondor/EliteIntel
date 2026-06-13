@@ -7,6 +7,7 @@ import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.missions.pirates.PirateMassacreMissionSearch;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
 
@@ -25,27 +26,24 @@ public class LocatePirateHuntingGrounds implements CommandHandler {
 
         PirateMassacreMissionSearch missionSearch = PirateMassacreMissionSearch.getInstance();
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = missionSearch.findHuntingSpotsInRange(range);
-        
 
-        StringBuilder sb = new StringBuilder();
         if (huntingGrounds != null) {
+            String message;
             if (huntingGrounds.isEmpty()) {
-                sb.append("No mission providers found.");
+                message = StringUtls.localizedLlm("handler.pirate.noProviders");
             } else {
-                sb.append("Found ").append(huntingGrounds.size()).append(" mission provider");
-                if (huntingGrounds.size() > 1) sb.append("s");
-                sb.append(". ");
+                String providers = huntingGrounds.size() == 1
+                        ? StringUtls.localizedLlm("handler.pirate.foundProvidersOne")
+                        : StringUtls.localizedLlm("handler.pirate.foundProvidersMany", huntingGrounds.size());
                 boolean reconRequired = huntingGrounds.stream().anyMatch(data -> !data.getTarget().isHasResSite());
-                if (reconRequired) {
-                    sb.append(" Ask me to navigate to target system. ");
-                    sb.append(" Reconnaissance is required.");
-                } else {
-                    sb.append(" Ask me to navigate to mission provider. ");
-                }
+                String nav = reconRequired
+                        ? StringUtls.localizedLlm("handler.pirate.reconRequired")
+                        : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
+                message = providers + " " + nav;
             }
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No hunting grounds found in crowd data within " + range + " light years of this location. "));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
         }
     }
 }

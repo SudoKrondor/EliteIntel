@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.util.StringUtls;
 
 public class SetReminderHandler implements CommandHandler {
 
@@ -18,7 +19,7 @@ public class SetReminderHandler implements CommandHandler {
                     null
             );
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent("no reminder key parameter provided"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.noKey")));
         }
     }
 }

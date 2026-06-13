@@ -6,6 +6,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -22,7 +23,7 @@ public class AnalyzeMaterialsOnPlanetHandler extends BaseQueryAnalyzer implement
         //EventBusManager.publish(new AiVoxResponseEvent("Analyzing geological data. Stand by."));
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
-        if (currentLocation.getBodyId() < 0) return process("No location data available");
+        if (currentLocation.getBodyId() < 0) return process(StringUtls.localizedLlm("query.noLocationData"));
 
         List<MaterialDto> materials = currentLocation.getMaterials();
         String instructions = """
@@ -45,7 +46,7 @@ public class AnalyzeMaterialsOnPlanetHandler extends BaseQueryAnalyzer implement
                 """;
 
         if (materials.isEmpty()) {
-            return process(" no materials data available...");
+            return process(StringUtls.localizedLlm("query.planet.noMaterials"));
         } else {
             return process(new AiDataStruct(instructions, new DataDto(toMaterialData(materials))), originalUserInput);
         }

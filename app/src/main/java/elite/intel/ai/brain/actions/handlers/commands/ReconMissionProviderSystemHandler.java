@@ -14,6 +14,7 @@ import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -53,9 +54,9 @@ public class ReconMissionProviderSystemHandler implements CommandHandler {
 
             int size = providers.size();
             if (size == 1) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("There is " + size + " mission provider for " + pair.getTarget().getStarSystem()));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem())));
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("There are " + size + " mission providers for " + pair.getTarget().getStarSystem()));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem())));
             }
 
             provider = providers.stream().filter(p -> p.getMissionProviderFaction() == null).findFirst().orElse(null);
@@ -67,11 +68,7 @@ public class ReconMissionProviderSystemHandler implements CommandHandler {
             if (tryConfirmedMissionProvider()) {
                 return;
             }
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            "No mission providers targeting " + targetStarSystemName + " found. You need to be in target system or have an active pirate massacre type mission."
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noProviderForTarget", targetStarSystemName)));
             return;
         }
 
@@ -80,16 +77,12 @@ public class ReconMissionProviderSystemHandler implements CommandHandler {
         ).findFirst().map(PirateMissionTuple::getTarget);
 
         String starSystem = provider.getStarSystem();
-        EventBusManager.publish(
-                new MissionCriticalAnnouncementEvent(
-                        "Plotting route to " + starSystem + " when you get there look for factions targeting " + targetStarSystemName + " at local ports."
-                )
-        );
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.plottingToProvider", starSystem, targetStarSystemName)));
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(starSystem);
         ReminderManager.getInstance().setReminder(
-                " Seek mission providers in local ports with pirate massacre missions against " + targetStarSystemName + " system.",
+                StringUtls.localizedLlm("handler.pirate.seekProviderReminder", targetStarSystemName),
                 targetStarSystemName
         );
     }
@@ -108,13 +101,13 @@ public class ReconMissionProviderSystemHandler implements CommandHandler {
         }
 
         if (location.getStarName().equalsIgnoreCase(targetSystem)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Check ports and outposts around this star. Look for factions with missions against " + targetSystem + " star system."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem)));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Head to " + destination + " look for factions with missions against " + targetSystem + " system."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem)));
         }
 
         if (destination == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Knowing mission providers. Searching..."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noKnowingProviders")));
             EventBusManager.publish(new UserInputEvent(" find hunting grounds"));
             return false;
         } else {

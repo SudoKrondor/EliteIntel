@@ -8,7 +8,10 @@ import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import javax.swing.*;
+import javax.swing.border.AbstractBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import java.awt.event.KeyEvent;
 import java.awt.*;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -107,16 +110,36 @@ public final class CommandDetailsDialog extends JDialog {
     }
 
     private void buildUi() {
+        setUndecorated(true);
+
         JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        content.setBackground(AppTheme.HUD_BG);
+        content.setBackground(AppTheme.HUD_DIALOG_BODY);
         content.setOpaque(true);
-        content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        HudSection detailsSection = new HudSection(getText("actions.commands.details.section.metadata"), new BorderLayout());
+        content.setBorder(new EmptyBorder(AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2,
+                AppTheme.HUD_GAP * 2, AppTheme.HUD_GAP * 2));
+        HudSection detailsSection = HudSection.flat(getText("actions.commands.details.section.metadata"), new BorderLayout());
         detailsSection.body().add(details(), BorderLayout.CENTER);
         content.add(header(), BorderLayout.NORTH);
         content.add(detailsSection, BorderLayout.CENTER);
-        content.add(buttons(), BorderLayout.SOUTH);
-        setContentPane(content);
+
+        JScrollPane scroll = AppTheme.hudScrollPane(content);
+        scroll.getViewport().setBackground(AppTheme.HUD_DIALOG_BODY);
+
+        HudDialogHeader dialogHeader = new HudDialogHeader(dialogTitle(entry), this::dispose);
+
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setBackground(AppTheme.HUD_BG);
+        wrapper.add(dialogHeader, BorderLayout.NORTH);
+        wrapper.add(scroll, BorderLayout.CENTER);
+        wrapper.add(buttons(), BorderLayout.SOUTH);
+
+        setContentPane(wrapper);
+        getRootPane().setBorder(new LineBorder(AppTheme.HUD_ORANGE_FILL_HOVER, AppTheme.HUD_BORDER_THICKNESS_ACCENT));
+        getRootPane().registerKeyboardAction(
+                e -> dispose(),
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW
+        );
 
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         pack();
@@ -125,21 +148,7 @@ public final class CommandDetailsDialog extends JDialog {
     }
 
     private JPanel header() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setOpaque(false);
-
-        JLabel name = new JLabel(entry.name());
-        name.setForeground(AppTheme.FG);
-        name.setFont(name.getFont().deriveFont(Font.BOLD, name.getFont().getSize2D() + 5f));
-
-        JLabel id = new JLabel(entry.id());
-        id.setForeground(AppTheme.FG_MUTED);
-        id.setBorder(new EmptyBorder(4, 0, 0, 0));
-
-        panel.add(name);
-        panel.add(id);
-        return panel;
+        return AppTheme.commandTitleBlock(entry.name(), entry.id());
     }
 
     private JPanel details() {
@@ -148,12 +157,12 @@ public final class CommandDetailsDialog extends JDialog {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new Insets(5, 0, 5, 12);
+        gbc.insets = new Insets(5, 0, 5, AppTheme.HUD_GAP);
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name());
-        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id());
-        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()));
+        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), AppTheme.HUD_CYAN);
+        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), AppTheme.FG);
+        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), AppTheme.FG);
         addDescription(panel, gbc);
         addPhrases(panel, gbc);
         addParameters(panel, gbc);
@@ -166,7 +175,8 @@ public final class CommandDetailsDialog extends JDialog {
         return panel;
     }
 
-    private void addLabelValue(JPanel panel, GridBagConstraints gbc, String labelText, String value) {
+    private void addLabelValue(JPanel panel, GridBagConstraints gbc,
+                               String labelText, String value, Color valueColor) {
         gbc.gridx = 0;
         gbc.weightx = 0.0;
         gbc.fill = GridBagConstraints.NONE;
@@ -176,9 +186,7 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setForeground(AppTheme.FG);
-        panel.add(valueLabel, gbc);
+        panel.add(AppTheme.hudReadoutValue(value, valueColor), gbc);
         gbc.gridy++;
     }
 
@@ -291,23 +299,33 @@ public final class CommandDetailsDialog extends JDialog {
         JTextArea area = AppTheme.makeTextArea(0, 0);
         area.setText(text);
         area.setEditable(false);
+        area.setCaretColor(AppTheme.HUD_TABLE_ROW);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setBorder(new EmptyBorder(8, 8, 8, 8));
+        area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }
 
     private JLabel detailLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setForeground(AppTheme.FG_MUTED);
-        label.setMinimumSize(new Dimension(220, 24));
-        label.setPreferredSize(new Dimension(220, 24));
-        return label;
+        return AppTheme.hudReadoutLabel(text);
     }
 
     private JPanel buttons() {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
+        int gap = AppTheme.HUD_GAP;
+        int th  = AppTheme.HUD_BORDER_THICKNESS;
+        AbstractBorder topRule = new AbstractBorder() {
+            @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
+                g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
+                g.fillRect(x + gap, y, w - gap * 2, th);
+            }
+            @Override public Insets getBorderInsets(Component c) { return new Insets(th, 0, 0, 0); }
+            @Override public Insets getBorderInsets(Component c, Insets i) { i.set(th, 0, 0, 0); return i; }
+        };
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                topRule,
+                BorderFactory.createEmptyBorder(gap, gap, gap, gap)));
 
         JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         leftButtons.setOpaque(false);
@@ -331,7 +349,7 @@ public final class CommandDetailsDialog extends JDialog {
             rightButtons.add(delete);
         }
 
-        JButton close = AppTheme.makeButton(getText("actions.commands.details.close"));
+        JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
         close.addActionListener(event -> dispose());
         rightButtons.add(close);
         panel.add(rightButtons, BorderLayout.EAST);

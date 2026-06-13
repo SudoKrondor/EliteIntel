@@ -7,6 +7,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class NavigateToLandingZone implements CommandHandler {
 
@@ -18,7 +19,7 @@ public class NavigateToLandingZone implements CommandHandler {
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         TargetLocation targetLocation = new TargetLocation();
         if (currentLocation.getLandingCoordinates() == null || currentLocation.getLandingCoordinates().length == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent("Landing Zone Coordinates are not available"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable")));
             return;
         }
 
@@ -28,7 +29,7 @@ public class NavigateToLandingZone implements CommandHandler {
         targetLocation.setRequestedTime(System.currentTimeMillis());
         playerSession.setTracking(targetLocation);
 
-        EventBusManager.publish(new AiVoxResponseEvent("Starting navigation to landing zone."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone")));
     }
 
 }

@@ -6,6 +6,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.ShipyardDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -23,7 +24,7 @@ public class AnalyzeShipyardHandler extends BaseQueryAnalyzer implements QueryHa
         ShipyardDto shipyard = currentLocation.getShipyard();
 
         if (shipyard == null || shipyard.getData() == null) {
-            return process("No shipyard data available.");
+            return process(StringUtls.localizedLlm("query.shipyard.noData"));
         }
 
         String instructions = """

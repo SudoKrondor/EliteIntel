@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 
 import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.PLANETARY_RING;
+import static elite.intel.util.StringUtls.localizedEvent;
 
 public class SAASignalsFoundSubscriber {
 
@@ -57,9 +58,9 @@ public class SAASignalsFoundSubscriber {
 
             if (signalsFound > 0) {
                 int liveSignals = event.getGenuses() != null ? event.getGenuses().size() : 0;
-                sb.append(" Signal(s) found: ");
+                sb.append(" ").append(localizedEvent("event.signals.found")).append(" ");
                 for (SAASignalsFoundEvent.Signal signal : signals) {
-                    sb.append(" Type: ").append(signal.getType()).append(". ");
+                    sb.append(" ").append(localizedEvent("event.signals.type", signal.getType()));
                 }
 
                 if (liveSignals > 0) {
@@ -67,7 +68,7 @@ public class SAASignalsFoundSubscriber {
                     location.setGenus(toGenusDto(event.getGenuses(), location.isOurDiscovery(), location.getPlanetName()));
                     boolean hasBeenScanned = scanBioCompleted(event, playerSession);
 
-                    if (!hasBeenScanned) sb.append(" Exobiology signal(s) found ").append(liveSignals).append(": ");
+                    if (!hasBeenScanned) sb.append(" ").append(localizedEvent("event.signals.exobio", liveSignals));
 
                     long averageProjectedPayment = 0;
                     long averageFirstDiscoveryBonus = 0;
@@ -85,9 +86,9 @@ public class SAASignalsFoundSubscriber {
                         }
                     }
                     if (!hasBeenScanned) {
-                        sb.append("Average projected payment of: ").append(averageProjectedPayment).append(" credits.");
+                        sb.append(localizedEvent("event.signals.avgPayment", averageProjectedPayment));
                         if (location.isOurDiscovery()) {
-                            sb.append(" Plus average bonus of: ").append(averageFirstDiscoveryBonus).append(" credits for first discovery.");
+                            sb.append(" ").append(localizedEvent("event.signals.firstDiscoveryBonus", averageFirstDiscoveryBonus));
                         }
                     }
 
@@ -125,7 +126,7 @@ public class SAASignalsFoundSubscriber {
                 }
             } else {
                 if (playerSession.isDiscoveryAnnouncementOn()) {
-                    announce("No Signal(s) detected.");
+                    announce(localizedEvent("event.signals.none"));
                 }
             }
 

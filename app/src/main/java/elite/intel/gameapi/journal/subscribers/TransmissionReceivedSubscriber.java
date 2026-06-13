@@ -10,6 +10,8 @@ import elite.intel.session.PlayerSession;
 
 import java.util.*;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 @SuppressWarnings("unused")
 public class TransmissionReceivedSubscriber {
 
@@ -38,7 +40,7 @@ public class TransmissionReceivedSubscriber {
             boolean haveCargo = cargoHoldManager.get() != null && cargoHoldManager.get().getCount() > 0;
 
             if (isPirateMessage(event.getMessageLocalised()) && haveCargo && !isRadioOn) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Pirate Alert!!!"));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.pirate.alert")));
                 return;
             }
 
@@ -53,7 +55,7 @@ public class TransmissionReceivedSubscriber {
 
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
-                        EventBusManager.publish(new RadioTransmissionEvent("This is " + event.getFrom() + " traffic control. " + event.getMessageLocalised()));
+                        EventBusManager.publish(new RadioTransmissionEvent(localizedEvent("event.transmission.trafficControl", event.getFrom(), event.getMessageLocalised())));
                     }
                 } else {
                     EventBusManager.publish(new RadioTransmissionEvent(event.getMessageLocalised()));

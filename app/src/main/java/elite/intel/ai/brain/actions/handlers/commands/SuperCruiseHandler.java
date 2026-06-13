@@ -1,15 +1,15 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.ui.UINavigator;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
@@ -27,12 +27,12 @@ public class SuperCruiseHandler implements CommandHandler {
         if (status.isFsdCharging()) return;
 
         if (status.isFsdMassLocked()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("We are mass locked, FTL is not available."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
         } else if (status.isFsdCooldown()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("FSD is on cooldown."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
         } else if (status.isFighterOut()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Fighter is still out. Can not comply."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
         } else if (status.isInMainShip()) {
             if (status.isInSupercruise()) {
                 navigator.closeOpenPanel();
@@ -51,7 +51,7 @@ public class SuperCruiseHandler implements CommandHandler {
                     ));
                 }
             } else {
-                PreFtlChecks.preJumpCheck(status, "Preparing for Supercruise.");
+                PreFtlChecks.preJumpCheck(status, StringUtls.localizedLlm("handler.supercruise.preparing"));
                 if (settingsManager.getAutoSpeedUpForFtl()) {
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding()),
@@ -72,7 +72,7 @@ public class SuperCruiseHandler implements CommandHandler {
                 }
             }
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Get in to your ship, so we can blast out of here."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.notInShip")));
         }
     }
 

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class RouteAnnouncementsOnOffHandler implements CommandHandler {
 
@@ -11,6 +12,7 @@ public class RouteAnnouncementsOnOffHandler implements CommandHandler {
         boolean isOn = params.get("state").getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setRouteAnnouncementOn(isOn);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Route Announcements: " + (isOn ? "On" : "Off")));
+        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.route", state)));
     }
 }

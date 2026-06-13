@@ -13,17 +13,17 @@ public class SetFleetCarrierFuelReserveHandler implements CommandHandler {
     @Override public void handle(String action, JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Invalid fuel reserve value received."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
         }
         Integer reserve = StringUtls.getIntSafely(key.getAsString());
         if(reserve == null){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Invalid fuel reserve value received."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
             return;
         }
         FleetCarrierManager fleetCarrierManager = FleetCarrierManager.getInstance();
         CarrierDataDto dto = fleetCarrierManager.get();
         dto.setFuelReserve(reserve);
         fleetCarrierManager.save(dto);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Fuel reserve set to " + reserve));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve)));
     }
 }

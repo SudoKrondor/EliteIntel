@@ -6,6 +6,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.OutfittingDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -20,7 +21,7 @@ public class AnalyzeLocalOutfittingHandler extends BaseQueryAnalyzer implements 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         OutfittingDto outfitting = currentLocation.getOutfitting();
         if (outfitting == null || outfitting.getData() == null) {
-            return process("No outfitting data available for current location.");
+            return process(StringUtls.localizedLlm("query.outfitting.noData"));
         }
 
         String instructions = """

@@ -1,13 +1,13 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOGGLE;
 
@@ -18,14 +18,14 @@ public class RetractLandingGearHandler implements CommandHandler {
         Status status = Status.getInstance();
 
         if (status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Can not do that right now."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.cantDoThat")));
             return;
         }
 
         if (status.isInMainShip() && status.isLandingGearDown()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Landing gear already retracted."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.alreadyRetracted")));
         }
     }
 }

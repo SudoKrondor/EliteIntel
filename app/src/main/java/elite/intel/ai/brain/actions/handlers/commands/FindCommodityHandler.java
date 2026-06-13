@@ -11,6 +11,7 @@ import elite.intel.search.edsm.commodity.CommoditySearchResult;
 import elite.intel.search.edsm.commodity.EdsmCommoditySearch;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class FindCommodityHandler implements CommandHandler {
         String starName = playerSession.getPrimaryStarName();
 
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Please specify a commodity."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.specify")));
             return;
         }
 
@@ -46,12 +47,12 @@ public class FindCommodityHandler implements CommandHandler {
                 );
 
         if (commodity == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Sorry, I couldn't find any commodities matching " + key.getAsString()));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString())));
             return;
         }
 
-        String searchMode = returnClosest ? "nearest market" : "best price";
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Searching for " + searchMode + " for " + commodity + " within " + distance + " light years."));
+        String searchMode = StringUtls.localizedLlm(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
@@ -64,17 +65,14 @@ public class FindCommodityHandler implements CommandHandler {
                 returnClosest
         );
         if (results.isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No match found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noMatch")));
             return;
         }
         ReminderManager reminderManager = ReminderManager.getInstance();
         CommoditySearchResult result = results.getFirst();
-        String reminder = "Head to " + result.getStarSystem() + " star system, " + result.getStationName() + " " + result.getStationType() + ". Price per unit is " + result.getPrice() + " credits.";
+        String reminder = StringUtls.localizedLlm("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(reminder));
-        reminderManager.setReminder(
-                reminder,
-                result.getStarSystem()
-        );
+        reminderManager.setReminder(reminder, result.getStarSystem());
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(result.getStarSystem());

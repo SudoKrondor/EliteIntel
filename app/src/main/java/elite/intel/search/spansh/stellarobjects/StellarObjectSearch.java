@@ -6,6 +6,8 @@ import elite.intel.gameapi.EventBusManager;
 
 import java.util.Arrays;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 public class StellarObjectSearch {
 
     private static StellarObjectSearch instance;
@@ -50,7 +52,7 @@ public class StellarObjectSearch {
 
             StellarObjectSearchRequestDto.ReferenceCoords referenceCoords = new StellarObjectSearchRequestDto.ReferenceCoords();
             if(coords == null) {
-                EventBusManager.publish(new AiVoxResponseEvent("Local coordinates are not found."));
+                EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.search.stellar.noCoords")));
                 return null;
             }
             referenceCoords.setX(coords.x());

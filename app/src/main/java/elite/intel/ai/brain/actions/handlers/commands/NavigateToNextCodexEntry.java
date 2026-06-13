@@ -13,6 +13,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 import java.util.*;
 
@@ -31,13 +32,13 @@ public class NavigateToNextCodexEntry implements CommandHandler {
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
 
         if (currentLocation == null || status.getStatus() == null) {
-            EventBusManager.publish(new AiVoxResponseEvent("I don't know where you are yet."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.noLocation")));
             return;
         }
 
         List<CodexEntryDao.CodexEntry> codexEntries = getCodexEntries(currentLocation);
         if (codexEntries.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent("No codex entries found."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.codex.notFound")));
             return;
         }
 
@@ -60,7 +61,7 @@ public class NavigateToNextCodexEntry implements CommandHandler {
         playerSession.setTracking(nav);
         playerSession.setNavigationAnnouncementOn(true);
 
-        EventBusManager.publish(new AiVoxResponseEvent("Heading to " + target.getSample().getEntryName() + " sample."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.codex.heading", target.getSample().getEntryName())));
     }
 
     private List<CodexEntryDao.CodexEntry> getCodexEntries(LocationDto currentLocation) {
@@ -132,7 +133,7 @@ public class NavigateToNextCodexEntry implements CommandHandler {
             }
         }
 
-        if (best == null) return new Tuple<>(null, "No codex entry found for the tracked genus.");
+        if (best == null) return new Tuple<>(null, StringUtls.localizedLlm("handler.codex.noPartialTarget"));
         return new Tuple<>(best, "");
     }
 
@@ -184,7 +185,7 @@ public class NavigateToNextCodexEntry implements CommandHandler {
             }
         }
 
-        if (bestEntry == null) return new Tuple<>(null, "No codex entries found.");
+        if (bestEntry == null) return new Tuple<>(null, StringUtls.localizedLlm("handler.codex.notFound"));
         return new Tuple<>(bestEntry, "");
     }
 

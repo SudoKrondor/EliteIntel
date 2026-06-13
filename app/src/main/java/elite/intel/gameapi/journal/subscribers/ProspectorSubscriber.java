@@ -9,6 +9,7 @@ import elite.intel.session.PlayerSession;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
+import static elite.intel.util.StringUtls.localizedEvent;
 
 @SuppressWarnings("unused")
 public class ProspectorSubscriber {
@@ -30,8 +31,7 @@ public class ProspectorSubscriber {
                 if (miningTargets.contains(prospectedMaterial)) {
                     foundTargetMaterial = true;
                     double proportion = material.getProportion();
-                    String message = "Prospector detected " + String.format("%.2f", proportion) + " percent " + material.getName();
-                    sb.append(message);
+                    sb.append(localizedEvent("event.mining.prospectorDetected", String.format("%.2f", proportion), material.getName()));
                     break;
                 }
             }

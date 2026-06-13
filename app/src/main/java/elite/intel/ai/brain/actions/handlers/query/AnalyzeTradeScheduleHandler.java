@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.db.managers.TradeRouteManager;
 import elite.intel.search.spansh.station.marketstation.TradeStopDto;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -46,7 +47,7 @@ public class AnalyzeTradeScheduleHandler extends BaseQueryAnalyzer implements Qu
                     .append("\n");
         }
         if(allStops.isEmpty()){
-            return process("No trade schedule set.");
+            return process(StringUtls.localizedLlm("query.trade.noSchedule"));
         }
         return process(new AiDataStruct(INSTRUCTIONS, new DataDto(sb.toString())), originalUserInput);
     }

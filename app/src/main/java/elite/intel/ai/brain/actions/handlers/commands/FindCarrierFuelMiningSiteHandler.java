@@ -12,6 +12,7 @@ import elite.intel.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.Optional;
@@ -25,7 +26,7 @@ public class FindCarrierFuelMiningSiteHandler implements CommandHandler {
         Status status = Status.getInstance();
         if (status.isInSrv() || status.isInMainShip()) {
             Number range = GetNumberFromParam.extractRangeParameter(params, 1000);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Searching for Carrier Fuel Mining Site within " + range.intValue() + " light years. Stand by."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
 
             ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
             shipRouteManager.clearRoute();
@@ -39,30 +40,27 @@ public class FindCarrierFuelMiningSiteHandler implements CommandHandler {
                     );
 
             if (tritiumLocations == null || tritiumLocations.getResults().isEmpty()) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Tritium locations found."));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
                 return;
             }
 
             Optional<StellarObjectSearchResultDto.Result> result = tritiumLocations.getResults().stream().findFirst();
             double distance = NavigationUtils.calculateGalacticDistance(result.get().getX(), result.get().getY(), result.get().getZ(), coordinates.x(), coordinates.y(), coordinates.z());
             if(distance > range.intValue()){
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Tritium locations found within range."));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
                 return;
             }
 
 
-            String reminder = "Head to " + result.get().getSystemName() + " star system.";
+            String reminder = StringUtls.localizedLlm("handler.carrierFuel.headTo", result.get().getSystemName());
             EventBusManager.publish(new MissionCriticalAnnouncementEvent(reminder));
             ReminderManager reminderManager = ReminderManager.getInstance();
-            reminderManager.setReminder(
-                    reminder,
-                    result.get().getSystemName()
-            );
+            reminderManager.setReminder(reminder, result.get().getSystemName());
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(result.get().getSystemName());
 
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("You must be in SRV or Main Ship to use this command."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.mustBeInShipOrSrv")));
         }
     }
 }

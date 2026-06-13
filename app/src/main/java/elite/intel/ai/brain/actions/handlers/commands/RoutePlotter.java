@@ -1,15 +1,15 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.ui.UINavigator;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
@@ -29,7 +29,7 @@ public class RoutePlotter {
 
         String finalDestination = ShipRouteManager.getInstance().getDestination();
         if (finalDestination != null && finalDestination.equalsIgnoreCase(destination)) {
-            EventBusManager.publish(new AiVoxResponseEvent("Route already plotted to " + finalDestination + "."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.route.alreadyPlotted", finalDestination)));
             return;
         }
 

@@ -10,6 +10,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -31,7 +32,7 @@ public class FindBrainTreesHandler implements CommandHandler {
 
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Did not catch the material name."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
             return;
         }
 
@@ -45,22 +46,15 @@ public class FindBrainTreesHandler implements CommandHandler {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
         if (result == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Brain Tree locations found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
         } else {
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(
-                            "Found nearest Brain Tree at " + result.getSystemName()
-                                    + ". Located " + result.getDistance() + " light years away."
-                                    + " Head to planet " + result.getBodyName()
-                    )
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), result.getDistance(), result.getBodyName())));
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(result.getSystemName());
-            ReminderManager.getInstance()
-                    .setReminder(
-                            "Head to " + result.getSystemName() + " planet " + result.getBodyName(),
-                            result.getSystemName()
-                    );
+            ReminderManager.getInstance().setReminder(
+                    StringUtls.localizedLlm("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
+                    result.getSystemName()
+            );
         }
     }
 

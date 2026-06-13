@@ -11,6 +11,7 @@ import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.search.spansh.traderoute.TradeRouteTransaction;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 public class CalculateTradeRouteHandler implements CommandHandler {
 
@@ -21,12 +22,12 @@ public class CalculateTradeRouteHandler implements CommandHandler {
 
     @Override public void handle(String action, JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
-            EventBusManager.publish(new AiVoxResponseEvent("Please change to ship with cargo capacity"));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity")));
             return;
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
-        EventBusManager.publish(new AiVoxResponseEvent("Calculating trade route from station " + criteria.getStation() + "."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
 
         if (criteria == null) {
             return;
@@ -34,45 +35,30 @@ public class CalculateTradeRouteHandler implements CommandHandler {
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            StringBuilder sb = new StringBuilder();
-            sb.append(" There is no trading profile for ").append(shipName).append(" You will have to set one up once per cargo ship you own.");
-            sb.append(" To set a trading profile, say: Change trading profile, followed by profile parameter.");
-            sb.append(" Required parameters are -");
-            sb.append(" Starting Capital, Distance from entry, Maximum stops.");
-            sb.append(" Optional parameters are - Allow Permit protected systems, Allow Planetary Ports, Allow Fleet Carriers and Allow Prohibited cargo.");
-            sb.append(" Example: change trading profile, set Starting Capital 100000.");
-            sb.append(" Please set one parameter at a time. Ask me to list trade profile parameters if you need help.");
-            EventBusManager.publish(
-                    new MissionCriticalAnnouncementEvent(sb.toString())
-            );
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName)));
             return;
         }
 
         if (criteria.getMaxJumps() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("There is no number of stops set for " + shipName + ". Please set it with command: Change trade profile set maximum stops, followed by number of stops."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName)));
             return;
         }
 
 
         if (criteria.getMaxLsFromArrival() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("There is no maximum distance from star to port set for " + shipName + ". Please set it with command: Change trade profile set distance from entry, followed by a number of light seconds."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName)));
             return;
         }
 
         TradeRouteResponse route = tradeRouteManager.calculateTradeRoute(criteria);
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
-            String tryLandingAtStations = "";
-            if (status.isDocked()) {
-                tryLandingAtStations = "";
-            } else {
-                tryLandingAtStations = "Try landing at a station. ";
-            }
             if (criteria.getStation() != null) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found. "));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found. " + tryLandingAtStations + " Spansh call did not find a trade route."));
+                String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding)));
             }
             return;
         }
@@ -80,6 +66,6 @@ public class CalculateTradeRouteHandler implements CommandHandler {
                 .mapToLong(TradeRouteTransaction::getTotalProfit)
                 .sum();
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Calculated route with profit of " + totalProfit + " credits. Ask me to navigate to next trade station."));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit)));
     }
 }

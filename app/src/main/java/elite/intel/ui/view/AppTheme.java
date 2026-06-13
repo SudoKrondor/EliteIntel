@@ -31,6 +31,7 @@ public class AppTheme {
     public static final Color LOG_BG = new Color(0x171927);
     public static final Color BG_PANEL = new Color(0x1F2032);
     public static final Color FG = new Color(0xE6E6E6);
+    public static final Color HUD_DIALOG_TITLE_FG = new Color(0xC2C2C2);
     public static final Color BUTTON_FG = new Color(0xFFFFFF);
     public static final Color BUTTON_BG = new Color(0x03529F);
     public static final Color FG_MUTED = new Color(0x9A6A3C);
@@ -46,10 +47,16 @@ public class AppTheme {
     // -- HUD design tokens -----------------------------------------------------
 
     public static final Color HUD_BG = new Color(0x090D12);
+    /** Semi-transparent dark veil placed on the owner window's glass pane while a modal dialog is open (~55 % alpha). */
+    public static final Color HUD_SCRIM = new Color(0, 0, 0, 140);
     public static final Color HUD_SHELL_BACKGROUND = HUD_BG;
     public static final Color HUD_CONTENT_BACKGROUND = HUD_BG;
     public static final Color HUD_PANEL_BG = new Color(0x101721);
     public static final Color HUD_PANEL_BG_ALT = new Color(0x151E2B);
+    /** Warm-dark canvas for HUD modal dialog bodies; warmer and slightly lighter than cold HUD_BG, darker than panel BG. */
+    public static final Color HUD_DIALOG_BODY = new Color(0x100E0C);
+    /** Cool saturated blue for HUD modal dialog header strip; lighter and more saturated than HUD_PANEL_BG. */
+    public static final Color HUD_DIALOG_HEADER_BG = new Color(0x16223A);
     public static final Color HUD_BORDER = new Color(0x2D5C66);
     public static final Color HUD_BORDER_DIM = new Color(0x24313A);
     public static final Color HUD_ORANGE_SOFT = new Color(0xB85A14);
@@ -82,14 +89,19 @@ public class AppTheme {
     public static final int SCREEN_TOP_GAP = 12;
     public static final int HUD_PADDING = 10;
     public static final int HUD_PADDING_SMALL = 6;
+    /** Width of the HUD_BG separator stripe used between info-zone and content (checkbox, text field). */
+    public static final int HUD_SEP_W = 3;
     public static final int SUBTAB_CONTENT_GAP = HUD_GAP;
     public static final int HUD_BORDER_THICKNESS = 1;
+    /** Thickness for high-visibility accent borders — modal dialogs and similar prominent frames. */
+    public static final int HUD_BORDER_THICKNESS_ACCENT = 2;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
     public static final int HUD_FIELD_HEIGHT = 34;
     public static final int HUD_BUTTON_HEIGHT = 34;
     public static final int HUD_BUTTON_HEIGHT_COMPACT = 28;
+    public static final int HUD_DIALOG_HEADER_HEIGHT = 44;
     public static final int HUD_TABLE_ROW_HEIGHT = 34;
     public static final int HUD_TABLE_HEADER_HEIGHT = 30;
     public static final int HUD_TABLE_ROW_HEIGHT_COMPACT = 26;
@@ -153,10 +165,32 @@ public class AppTheme {
     }
 
     /**
+     * Creates a HUD-styled checkbox with an optional info-zone that runs {@code infoAction}
+     * on click without toggling the checkbox state.
+     * Pass {@code null} for {@code infoAction} to get identical behaviour to
+     * {@link #makeCheckBox(String, boolean)}.
+     */
+    public static HudCheckBox makeCheckBox(String label, boolean selected, Runnable infoAction) {
+        HudCheckBox cb = new HudCheckBox(label, selected);
+        cb.setInfoAction(infoAction);
+        return cb;
+    }
+
+    /**
      * Creates a HUD-styled single-line text field.
      */
     public static JTextField makeTextField() {
         return new HudTextField();
+    }
+
+    /**
+     * Creates a HUD-styled text field with an info-zone on the right that runs
+     * {@code infoAction} on click without interfering with text editing.
+     */
+    public static HudTextField makeTextField(Runnable infoAction) {
+        HudTextField tf = new HudTextField();
+        tf.setInfoAction(infoAction);
+        return tf;
     }
 
     /**
@@ -299,12 +333,82 @@ public class AppTheme {
     }
 
     /**
+     * Creates a muted key-label for readout rows (FG_MUTED, XS caps).
+     * Use for field labels inside settings rows, telemetry keys, and form prompts.
+     */
+    public static JLabel hudReadoutLabel(String text) {
+        JLabel lbl = new JLabel(text != null ? text.toUpperCase() : "");
+        lbl.setForeground(FG_MUTED);
+        lbl.setFont(lbl.getFont().deriveFont(HUD_FONT_READOUT_KEY));
+        lbl.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
+        return lbl;
+    }
+
+    /**
+     * Creates a plain value label for readout rows at {@link #HUD_FONT_READOUT_VALUE} size.
+     * Pair with {@link #hudReadoutLabel} for the key column. No border or background is set.
+     *
+     * @param value initial text
+     * @param color foreground colour — e.g. {@link #HUD_CYAN} for command names, {@link #FG} for plain values
+     */
+    public static JLabel hudReadoutValue(String value, Color color) {
+        JLabel l = new JLabel(value);
+        l.setForeground(color);
+        l.setFont(l.getFont().deriveFont(HUD_FONT_READOUT_VALUE));
+        l.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
+        return l;
+    }
+
+    /**
+     * Creates the standard HUD command title block: name in bold cyan at app-title size
+     * with the command id beneath in a muted readout-key font.
+     * Use above a details section in undecorated command dialogs.
+     *
+     * @param name command display name; converted to upper case
+     * @param id   command action key; rendered as-is
+     */
+    public static JPanel commandTitleBlock(String name, String id) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+        JLabel nameLabel = new JLabel(name.toUpperCase());
+        nameLabel.setForeground(HUD_CYAN);
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, HUD_FONT_APP_TITLE));
+        JLabel idLabel = new JLabel(id);
+        idLabel.setForeground(FG_MUTED);
+        idLabel.setFont(idLabel.getFont().deriveFont(HUD_FONT_READOUT_KEY));
+        idLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
+        panel.add(nameLabel);
+        panel.add(idLabel);
+        return panel;
+    }
+
+    /** Vertical inset inside the HUD field border (top and bottom padding). */
+    private static final int HUD_FIELD_INSET_V = 5;
+    /** Horizontal inset inside the HUD field border (left and right padding). */
+    private static final int HUD_FIELD_INSET_H = 8;
+
+    /**
      * Creates the standard HUD input border used by text fields and combo boxes.
      */
     public static Border hudFieldBorder() {
         return BorderFactory.createCompoundBorder(
                 new LineBorder(HUD_ORANGE_SOFT, HUD_BORDER_THICKNESS, false),
-                new EmptyBorder(5, 8, 5, 8)
+                new EmptyBorder(HUD_FIELD_INSET_V, HUD_FIELD_INSET_H,
+                        HUD_FIELD_INSET_V, HUD_FIELD_INSET_H)
+        );
+    }
+
+    /**
+     * Creates a HUD input border with an enlarged right inset that reserves space for the
+     * info-zone glyph ({@link #HUD_SEP_W} separator + {@link #HUD_TABLE_ROW_HEIGHT_COMPACT} zone).
+     * The outer {@code LineBorder} and all other insets are identical to {@link #hudFieldBorder()}.
+     */
+    public static Border hudFieldBorderWithInfo() {
+        return BorderFactory.createCompoundBorder(
+                new LineBorder(HUD_ORANGE_SOFT, HUD_BORDER_THICKNESS, false),
+                new EmptyBorder(HUD_FIELD_INSET_V, HUD_FIELD_INSET_H,
+                        HUD_FIELD_INSET_V, HUD_FIELD_INSET_H + HUD_SEP_W + HUD_TABLE_ROW_HEIGHT_COMPACT)
         );
     }
 
@@ -409,7 +513,7 @@ public class AppTheme {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
     }
 
-    private static void styleScrollBar(JScrollBar scrollBar) {
+    static void styleScrollBar(JScrollBar scrollBar) {
         scrollBar.setPreferredSize(new Dimension(9, 9));
         scrollBar.setBackground(HUD_BG);
         scrollBar.setUnitIncrement(16);
@@ -524,6 +628,28 @@ public class AppTheme {
     }
 
     /**
+     * Returns a copy of {@code src} composited at the given alpha (0 = transparent, 1 = opaque).
+     * Use to produce a visually receded version of a colourful icon without recolouring it.
+     *
+     * @param src   source icon (not modified)
+     * @param alpha opacity, clamped to [0, 1] by the compositing pipeline
+     * @return new {@link ImageIcon} backed by a {@link BufferedImage}
+     */
+    public static ImageIcon dimIcon(ImageIcon src, float alpha) {
+        int w = src.getIconWidth();
+        int h = src.getIconHeight();
+        BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = result.createGraphics();
+        try {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
+            g2.drawImage(src.getImage(), 0, 0, w, h, null);
+        } finally {
+            g2.dispose();
+        }
+        return new ImageIcon(result);
+    }
+
+    /**
      * Draws the flat ▼ triangle used by HUD combo boxes, centred within (x, y, w, h).
      * Shared between {@link HudComboBoxUI} arrow button and table cell renderers.
      *
@@ -547,6 +673,61 @@ public class AppTheme {
                 new int[]{ax, ax + aw, ax + aw / 2},
                 new int[]{ay, ay,      ay + ah},
                 3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws a lowercase «i» glyph (dot + stem) centred within the box (x, y, w, h).
+     * All geometry is relative — no hardcoded pixel sizes except proportional formulas.
+     * Suitable for info-affording controls; caller chooses colour based on component state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color fill colour for both dot and stem
+     */
+    public static void paintHudInfoGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int stemW = Math.max(2, w / 5);
+        int stemH = (int) Math.round(h * 0.55);
+        int gap   = Math.max(1, stemW / 2);
+        int totalH = stemW + gap + stemH;
+        int gx = x + (w - stemW) / 2;
+        int gy = y + (h - totalH) / 2;
+        g2.setColor(color);
+        g2.fillRect(gx, gy,              stemW, stemW); // dot
+        g2.fillRect(gx, gy + stemW + gap, stemW, stemH); // stem
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws an × glyph (two crossing diagonals) centred within the box (x, y, w, h).
+     * All geometry is proportional — no hardcoded pixel sizes except the proportional formulas.
+     * Suitable for close/dismiss affordances; caller chooses colour based on hover state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color fill colour for both diagonals
+     */
+    public static void paintHudCloseGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 8f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER));
+        int pad = (int) (w * 0.28);
+        int x1 = x + pad,     y1 = y + pad;
+        int x2 = x + w - pad, y2 = y + h - pad;
+        g2.setColor(color);
+        g2.drawLine(x1, y1, x2, y2); // top-left → bottom-right
+        g2.drawLine(x1, y2, x2, y1); // bottom-left → top-right
+        g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
     }
 
@@ -672,6 +853,39 @@ public class AppTheme {
             for (Component child : cont.getComponents()) {
                 applyDarkPalette(child);
             }
+        }
+    }
+
+    // -- Modal scrim -----------------------------------------------------------
+
+    /**
+     * Shows a {@link #HUD_SCRIM} veil on the owner's glass pane for the duration of a modal dialog.
+     * {@code showModal} must call {@code setVisible(true)} on an {@code APPLICATION_MODAL} dialog,
+     * which blocks until the dialog is closed. The scrim is guaranteed to be removed in a
+     * {@code finally} block even if {@code showModal} throws.
+     * Falls back to plain {@code showModal.run()} if {@code owner} is not a {@link RootPaneContainer}.
+     */
+    public static void runWithModalScrim(Window owner, Runnable showModal) {
+        if (!(owner instanceof RootPaneContainer rpc)) {
+            showModal.run();
+            return;
+        }
+        Component prevGlass = rpc.getGlassPane();
+        JComponent scrim = new JComponent() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                g.setColor(HUD_SCRIM);
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
+        };
+        scrim.setOpaque(false);
+        try {
+            rpc.setGlassPane(scrim);
+            scrim.setVisible(true);
+            showModal.run();
+        } finally {
+            scrim.setVisible(false);
+            if (prevGlass != null) rpc.setGlassPane(prevGlass);
         }
     }
 

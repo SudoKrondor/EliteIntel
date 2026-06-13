@@ -190,15 +190,17 @@ public class CustomCommandsTabPanel extends JPanel {
         }
 
         CustomCommandRow row = visibleRows.get(modelRow);
-        new CommandDetailsDialog(
-                this,
-                row.entry(),
-                row.phrases(),
-                false,
-                row.sequenceText(),
-                row.customCommand().getParameters(),
-                () -> editCustomCommand(row),
-                () -> deleteCustomCommand(row)).showDialog();
+        AppTheme.runWithModalScrim(
+                SwingUtilities.getWindowAncestor(this),
+                () -> new CommandDetailsDialog(
+                        this,
+                        row.entry(),
+                        row.phrases(),
+                        false,
+                        row.sequenceText(),
+                        row.customCommand().getParameters(),
+                        () -> editCustomCommand(row),
+                        () -> deleteCustomCommand(row)).showDialog());
     }
 
     private void exportCustomCommands() {

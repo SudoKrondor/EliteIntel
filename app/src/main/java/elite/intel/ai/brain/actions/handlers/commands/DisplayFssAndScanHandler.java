@@ -1,13 +1,13 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXPLORATION_FSSDISCOVERY_SCAN;
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED_ZERO;
@@ -21,12 +21,12 @@ public class DisplayFssAndScanHandler implements CommandHandler {
     public void handle(String action, JsonObject params, String responseText) {
 
         if (status.isScoopingFuel()) {
-            EventBusManager.publish(new AiVoxResponseEvent("We are scooping fuel, I can't do that right now."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.scooping")));
             return;
         }
 
         if (!status.isInSupercruise()) {
-            EventBusManager.publish(new AiVoxResponseEvent("We must be in supercruise to do that."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise")));
             return;
         }
 

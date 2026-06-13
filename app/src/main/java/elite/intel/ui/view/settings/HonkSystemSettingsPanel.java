@@ -1,5 +1,8 @@
 package elite.intel.ui.view.settings;
 
+import elite.intel.ui.view.HudCheckBox;
+import elite.intel.ui.view.HudComboBox;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -35,7 +38,6 @@ public class HonkSystemSettingsPanel implements SettingRow {
                                    List<Integer> triggerOptions,
                                    Supplier<Integer> triggerGetter,
                                    Consumer<Integer> triggerSetter
-
     ) {
         this.checkLabel = checkLabel;
         this.checkGetter = checkGetter;
@@ -55,16 +57,10 @@ public class HonkSystemSettingsPanel implements SettingRow {
         JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 4));
 
         boolean checked = checkGetter.getAsBoolean();
-        JCheckBox cb = makeCheckBox(checkLabel, checked);
+        HudCheckBox cb = new HudCheckBox(checkLabel, checked);
 
-        JComboBox<String> fireGroupComboBox = new JComboBox<>(fireGroupOptions.toArray(new String[0]));
-        styleComboBox(fireGroupComboBox);
-        fireGroupComboBox.setEnabled(checked);
-
-        JComboBox<Integer> triggerGroupComboBox = new JComboBox<>(triggerOptions.toArray(new Integer[0]));
-        styleComboBox(triggerGroupComboBox);
-        triggerGroupComboBox.setEnabled(checked);
-
+        HudComboBox<String> fireGroupComboBox = new HudComboBox<>(fireGroupOptions.toArray(new String[0]));
+        HudComboBox<Integer> triggerGroupComboBox = new HudComboBox<>(triggerOptions.toArray(new Integer[0]));
 
         String currentFireGroup = fireGroupGetter.get();
         if (currentFireGroup != null) fireGroupComboBox.setSelectedItem(currentFireGroup);
@@ -72,12 +68,20 @@ public class HonkSystemSettingsPanel implements SettingRow {
         Integer currentTrigger = triggerGetter.get();
         if (currentTrigger != null) triggerGroupComboBox.setSelectedItem(currentTrigger);
 
-        cb.addActionListener(e -> {
+        JLabel fgLabel  = hudReadoutLabel(getText("automation.fireGroup"));
+        JLabel trgLabel = hudReadoutLabel(getText("automation.trigger"));
+
+        Runnable applyEnabled = () -> {
             boolean on = cb.isSelected();
             fireGroupComboBox.setEnabled(on);
             triggerGroupComboBox.setEnabled(on);
-            checkSetter.accept(on);
-        });
+            Color c = on ? FG_MUTED : HUD_DISABLED;
+            fgLabel.setForeground(c);
+            trgLabel.setForeground(c);
+        };
+        applyEnabled.run();
+
+        cb.addActionListener(e -> { checkSetter.accept(cb.isSelected()); applyEnabled.run(); });
 
         fireGroupComboBox.addActionListener(e -> {
             if (fireGroupComboBox.isEnabled()) {
@@ -89,17 +93,14 @@ public class HonkSystemSettingsPanel implements SettingRow {
         triggerGroupComboBox.addActionListener(e -> {
             if (triggerGroupComboBox.isEnabled()) {
                 Integer val = (Integer) triggerGroupComboBox.getSelectedItem();
-                if (val != null) {
-                    triggerSetter.accept(val);
-                }
+                if (val != null) triggerSetter.accept(val);
             }
         });
 
-
-        row.add(cb); /// Check box has label that explain action
-        row.add(new JLabel(getText("automation.fireGroup")));
+        row.add(cb);
+        row.add(fgLabel);
         row.add(fireGroupComboBox);
-        row.add(new JLabel(getText("automation.trigger")));
+        row.add(trgLabel);
         row.add(triggerGroupComboBox);
 
         return row;

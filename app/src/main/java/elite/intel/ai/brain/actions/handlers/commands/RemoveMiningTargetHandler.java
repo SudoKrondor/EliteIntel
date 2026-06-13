@@ -7,6 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
 
@@ -18,22 +19,21 @@ public class RemoveMiningTargetHandler implements CommandHandler {
     public void handle(String action, JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MiningAnnouncementEvent("Sorry did not catch the material name."));
+            EventBusManager.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.didNotCatch")));
             return;
         }
         String target = capitalizeWords(
-                FuzzySearch.fuzzyMaterialNameSearch(
+                FuzzySearch.fuzzyCommodityMatch(
                         key.getAsString(), 3
                 )
         );
 
         if (target == null || target.isEmpty()) {
-            EventBusManager.publish(new MiningAnnouncementEvent("Unable to find " + key.getAsString() + " material in the database."));
+            EventBusManager.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString())));
             return;
         } else {
             playerSession.removeMiningTarget(target);
         }
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(target + " removed from mining targets."));
-
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetRemoved", target)));
     }
 }

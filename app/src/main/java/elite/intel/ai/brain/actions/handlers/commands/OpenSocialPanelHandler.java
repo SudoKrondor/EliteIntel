@@ -1,9 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.commands;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.GameControllerBus;
@@ -11,6 +10,7 @@ import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.CommsPanel;
 import elite.intel.session.ui.UINavigator;
+import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
@@ -35,7 +35,7 @@ public class OpenSocialPanelHandler implements CommandHandler {
                     GameInputStep.bindingTap(BINDING_CYCLE_NEXT_PANEL.getGameBinding())
             ));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent("Sorry, I can't do that right now."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
         }
     }
 }

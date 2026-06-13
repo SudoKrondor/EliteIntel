@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.NeutronStarRouteDao;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.util.StringUtls;
 
 public class PlotRouteToNextNeutronStarHandler implements CommandHandler {
 
@@ -14,11 +15,11 @@ public class PlotRouteToNextNeutronStarHandler implements CommandHandler {
     public void handle(String action, JsonObject params, String responseText) {
         NeutronStarRouteDao.Route route = neutronStarRouteManager.getNeutronStarRoute();
         if (route == null || route.getLegs().isEmpty() || route.getLegs().getFirst() == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No Neutron Star Route found"));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.notFound")));
         }
 
         String systemName = route.getLegs().getFirst().getSystemName();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Plotting route to " + systemName));
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.plotting", systemName)));
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(systemName);
     }

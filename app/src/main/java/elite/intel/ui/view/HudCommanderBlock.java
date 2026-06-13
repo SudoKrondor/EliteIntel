@@ -2,7 +2,6 @@ package elite.intel.ui.view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -37,7 +36,7 @@ public class HudCommanderBlock extends JPanel {
 
         // --- muted logo ---
         ImageIcon rawIcon = loadLogoSafe(72);
-        JLabel logoLabel = new JLabel(rawIcon != null ? muted(rawIcon, 0.45f) : null);
+        JLabel logoLabel = new JLabel(rawIcon != null ? AppTheme.dimIcon(rawIcon, 0.45f) : null);
         logoLabel.setAlignmentX(CENTER_ALIGNMENT);
         add(logoLabel);
 
@@ -115,18 +114,4 @@ public class HudCommanderBlock extends JPanel {
         }
     }
 
-    /** Returns a copy of {@code src} drawn at the given alpha (0 = transparent, 1 = opaque). */
-    private static ImageIcon muted(ImageIcon src, float alpha) {
-        int w = src.getIconWidth();
-        int h = src.getIconHeight();
-        BufferedImage result = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = result.createGraphics();
-        try {
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-            g2.drawImage(src.getImage(), 0, 0, w, h, null);
-        } finally {
-            g2.dispose();
-        }
-        return new ImageIcon(result);
-    }
 }

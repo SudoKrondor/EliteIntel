@@ -6,6 +6,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
 
 public class NavigateToMySquadronCarrier implements CommandHandler {
 
@@ -17,14 +18,14 @@ public class NavigateToMySquadronCarrier implements CommandHandler {
             CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
             if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Squadron carrier location not available."));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
                 return;
             }
 
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(squadronCarrier.getStarName());
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Route can only be plotted in SRV or Main Ship."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
     }
 }

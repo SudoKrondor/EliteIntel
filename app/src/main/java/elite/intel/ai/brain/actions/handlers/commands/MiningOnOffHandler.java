@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 public class MiningOnOffHandler implements CommandHandler {
 
@@ -13,6 +14,7 @@ public class MiningOnOffHandler implements CommandHandler {
 
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setMiningAnnouncementOn(isOn);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Mining Announcements: " + (isOn ? "On" : "Off")));
+        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.mining", state)));
     }
 }

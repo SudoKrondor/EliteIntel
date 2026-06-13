@@ -8,6 +8,7 @@ import elite.intel.gameapi.journal.events.dto.GenusDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.ExoBio;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -27,7 +28,7 @@ public class AnalyzeBioSamplesPlanetSurfaceHandler extends BaseQueryAnalyzer imp
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         if (currentLocation.getBodyId() < 0) {
-            return process("Current location data is not available");
+            return process(StringUtls.localizedLlm("query.bio.noLocation"));
         }
         List<BioSampleDto> partialScans = currentLocation.getPartialBioSamples();
         List<GenusDto> genusListForCurrentLocation = currentLocation.getGenus();

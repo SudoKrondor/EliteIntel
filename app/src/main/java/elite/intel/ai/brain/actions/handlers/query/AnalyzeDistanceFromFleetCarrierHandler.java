@@ -7,6 +7,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.NavigationUtils;
+import elite.intel.util.StringUtls;
 
 public class AnalyzeDistanceFromFleetCarrierHandler extends BaseQueryAnalyzer implements QueryHandler {
 
@@ -17,13 +18,13 @@ public class AnalyzeDistanceFromFleetCarrierHandler extends BaseQueryAnalyzer im
         //EventBusManager.publish(new AiVoxResponseEvent("Analyzing travel telemetry. Stand by."));
 
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-        if (carrierData == null) return process("No data available");
+        if (carrierData == null) return process(StringUtls.localizedLlm("query.noData"));
         double carrierLocationX = carrierData.getX();
         double carrierLocationY = carrierData.getY();
         double carrierDataZ = carrierData.getZ();
 
         if (carrierLocationX == 0 && carrierLocationY == 0 && carrierDataZ == 0) {
-            return process("Carrier coordinates are not available.");
+            return process(StringUtls.localizedLlm("query.carrier.noCoords"));
         }
 
         double x = 0, y = 0, z = 0;
@@ -33,7 +34,7 @@ public class AnalyzeDistanceFromFleetCarrierHandler extends BaseQueryAnalyzer im
         z = playerLocation.getZ();
         boolean arePlayerLocationCoordinatesAvailable = x == 0 && y == 0 && z == 0;
         if (arePlayerLocationCoordinatesAvailable) {
-            return process("Player location coordinates are not available.");
+            return process(StringUtls.localizedLlm("query.noPlayerCoords"));
         }
 
         ShipLoadOutDto shipLoadout = playerSession.getShipLoadout();
@@ -41,13 +42,6 @@ public class AnalyzeDistanceFromFleetCarrierHandler extends BaseQueryAnalyzer im
         double distance = NavigationUtils.calculateGalacticDistance(x, y, z, carrierLocationX, carrierLocationY, carrierDataZ);
 
         int numberOfJumps = (int) (distance / jumpRange) + 1;
-        StringBuilder sb = new StringBuilder();
-        sb.append("Distance is ").append((int) distance).append(" light years. It will take ").append(numberOfJumps).append(" Jump");
-        if (numberOfJumps > 1 || numberOfJumps == 0) {
-            sb.append("s");
-        }
-        sb.append(" to get there.");
-
-        return process(sb.toString());
+        return process(StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps));
     }
 }

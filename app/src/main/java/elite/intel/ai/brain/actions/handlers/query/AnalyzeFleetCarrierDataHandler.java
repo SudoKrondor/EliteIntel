@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
@@ -16,7 +17,7 @@ public class AnalyzeFleetCarrierDataHandler extends BaseQueryAnalyzer implements
         CarrierDataDto stats = playerSession.getFleetCarrierData();
 
         if (stats.getTotalBalance() == 0 && stats.getFuelLevel() == 0) {
-            return process("No data available. Please open carrier management panel.");
+            return process(StringUtls.localizedLlm("query.carrier.noDataOpenPanel"));
         } else {
             String instructions = """
                     Answer the user's question about fleet carrier status.

@@ -11,8 +11,10 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.spansh.station.marketstation.TradeStopDto;
 import elite.intel.search.spansh.traderoute.TradeCommodity;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class NavigateToNextTradeStopHandler implements CommandHandler {
 
@@ -26,7 +28,7 @@ public class NavigateToNextTradeStopHandler implements CommandHandler {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No trade route found."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
             return;
         }
 
@@ -35,7 +37,7 @@ public class NavigateToNextTradeStopHandler implements CommandHandler {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No more stops to visit."));
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
             return;
         }
 
@@ -44,47 +46,37 @@ public class NavigateToNextTradeStopHandler implements CommandHandler {
         String destinationSystem = nextStop.getTradeStopDto().getDestinationSystem();
         String destinationStation = nextStop.getTradeStopDto().getDestinationStation();
 
-        StringBuilder sb = new StringBuilder();
         List<TradeCommodity> commodities = nextStop.getTradeStopDto().getCommodities();
+        String commodityList = commodities.stream().map(TradeCommodity::getName).collect(Collectors.joining(", "));
+
+        String message;
         if (!cargoLoaded) {
             boolean notInSourceSystem = !location.getStarName().equalsIgnoreCase(sourceSystem);
             boolean notAtTheSourceStation = location.getStationName() != null && !location.getStationName().equalsIgnoreCase(sourceStation);
 
             if (notInSourceSystem) {
-                sb.append(" Travel to ").append(sourceSystem).append(", ");
-                sb.append( " visit " ).append(sourceStation).append(" and pick up ");
-            } else if(notAtTheSourceStation) {
-                sb.append(" In this star system visit ");
-                sb.append(sourceStation).append(" and pick up ");
-            } else {
-                sb.append(" At this station buy ");
-            }
-            commodities.forEach(commodity -> sb.append(commodity.getName()).append(", "));
-            sb.append(" and sell at ").append(destinationSystem).append(" star system, ").append(destinationStation).append(" port.");
-
-            if (notInSourceSystem) {
+                message = StringUtls.localizedLlm("handler.tradeStop.travelAndBuy", sourceSystem, sourceStation, commodityList, destinationSystem, destinationStation);
                 routePlotter.plotRoute(sourceSystem);
+            } else if (notAtTheSourceStation) {
+                message = StringUtls.localizedLlm("handler.tradeStop.inSystemBuyAtStation", sourceStation, commodityList, destinationSystem, destinationStation);
+            } else {
+                message = StringUtls.localizedLlm("handler.tradeStop.atStationBuy", commodityList, destinationSystem, destinationStation);
             }
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
         } else {
-
             boolean notInDestinationSystem = !location.getStarName().equalsIgnoreCase(destinationSystem);
             boolean notAtTheDestinationStation = !location.getStationName().equalsIgnoreCase(destinationStation);
 
             if (notInDestinationSystem) {
-                sb.append(" Travel to ").append(destinationSystem).append(", ").append(destinationStation).append(" to sell the freight.");
+                message = StringUtls.localizedLlm("handler.tradeStop.travelToSell", destinationSystem, destinationStation);
                 routePlotter.plotRoute(destinationSystem);
-            } else if( notAtTheDestinationStation) {
-                sb.append(" Head to ").append(destinationStation).append(" to sell the freight.");
+            } else if (notAtTheDestinationStation) {
+                message = StringUtls.localizedLlm("handler.tradeStop.headToStation", destinationStation);
             } else {
-                sb.append(" Sell freight here. ");
+                message = StringUtls.localizedLlm("handler.tradeStop.sellHere");
             }
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
         }
 
-        reminderManager.setReminder(
-                sb.toString(),
-                destinationSystem
-        );
+        EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
+        reminderManager.setReminder(message, destinationSystem);
     }
 }

@@ -1,6 +1,7 @@
 package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.ears.AudioCalibrator;
@@ -10,7 +11,10 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.*;
+import elite.intel.gameapi.AuxiliaryFilesMonitor;
+import elite.intel.gameapi.DeferredNotificationMonitor;
+import elite.intel.gameapi.EventBusManager;
+import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -211,7 +215,10 @@ public class AppController implements Runnable {
 
         Timer connectionCheckTimer = new Timer(2000, e -> {
             EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-            EventBusManager.publish(new SensorDataEvent(CONNECTION_CHECK_COMMAND, "Acknowledge connection, let use know we are on line and ready to go."));
+            JsonObject direct = new JsonObject();
+            direct.addProperty("action", CONNECTION_CHECK_COMMAND);
+            direct.add("params", new JsonObject());
+            ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
         });
         connectionCheckTimer.setRepeats(false);
         connectionCheckTimer.start();

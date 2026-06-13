@@ -350,7 +350,9 @@ public class GoogleTTSImpl implements MouthInterface {
                 }
             }
             currentLine.set(persistentLine);
-            vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, completionFuture));
+            ///NOTE: Can be null if the user stops the service
+            if (vocalizationQueue != null)
+                vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, completionFuture));
 
         } catch (Exception e) {
             log.error("Text-to-speech error: {}", e.getMessage(), e);
