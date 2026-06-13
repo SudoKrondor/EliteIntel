@@ -158,6 +158,8 @@ final class CustomCommandEditorDialog extends JDialog {
             paramsTable.getColumnModel().getColumn(i)
                     .setCellRenderer(new HudTable.ValueCellRenderer());
         }
+        paramsTable.getColumnModel().getColumn(2)
+                .setCellRenderer(new RequiredCellRenderer());
         paramsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -558,11 +560,46 @@ final class CustomCommandEditorDialog extends JDialog {
             return switch (col) {
                 case 0 -> spec.getName();
                 case 1 -> spec.getType();
-                case 2 -> spec.isRequired() ? "✓" : "";
+                case 2 -> spec.isRequired();
                 case 3 -> spec.getDescription();
                 case 4 -> String.join(", ", spec.getExamples());
                 default -> "";
             };
+        }
+    }
+
+    private static final class RequiredCellRenderer extends HudTable.ValueCellRenderer {
+        private boolean checked;
+
+        @Override
+        public java.awt.Component getTableCellRendererComponent(
+                javax.swing.JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column) {
+            java.awt.Component c = super.getTableCellRendererComponent(
+                    table, value, isSelected, hasFocus, row, column);
+            this.checked = Boolean.TRUE.equals(value);
+            if (c instanceof javax.swing.JLabel l) {
+                l.setText("");
+            }
+            return c;
+        }
+
+        @Override
+        protected void paintComponent(java.awt.Graphics g) {
+            super.paintComponent(g);
+            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            try {
+                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
+                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                int pad = getVerticalPadding();
+                int size = (int) Math.round((getHeight() - 2 * pad) * 0.8);  // smaller, with air
+                int x = (getWidth() - size) / 2;            // center horizontally
+                int y = (getHeight() - size) / 2;
+                java.awt.Color tint = getForeground();
+                AppTheme.paintHudCheckMarker(g2, x, y, size, tint, checked);
+            } finally {
+                g2.dispose();
+            }
         }
     }
 
