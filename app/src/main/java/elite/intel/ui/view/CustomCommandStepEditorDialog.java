@@ -117,10 +117,13 @@ final class CustomCommandStepEditorDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = new JPanel(new BorderLayout(0, 12));
-        content.setBackground(AppTheme.BG);
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        content.setOpaque(true);
+        content.setBackground(AppTheme.HUD_BG);
         content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        content.add(form(), BorderLayout.CENTER);
+        HudSection formSection = new HudSection(getText("actions.customCommands.editor.step.section.definition"), new BorderLayout());
+        formSection.body().add(form(), BorderLayout.CENTER);
+        content.add(formSection, BorderLayout.CENTER);
         content.add(buttons(), BorderLayout.SOUTH);
         setContentPane(content);
 
@@ -134,8 +137,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
     }
 
     private JPanel form() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
         GridBagConstraints gbc = AppTheme.baseGbc();
 
         addRow(panel, gbc, getText("actions.customCommands.editor.step.type"), typeCombo);
@@ -156,6 +158,9 @@ final class CustomCommandStepEditorDialog extends JDialog {
         addRow(panel, gbc, rawModLabel, rawModCombo);
         addRow(panel, gbc, durationLabel, durationSpinner);
         AppTheme.applyDarkPalette(panel);
+        AppTheme.styleTextComponent(valueField);
+        AppTheme.styleComboBox(typeCombo);
+        AppTheme.styleComboBox(rawModCombo);
         stylePicker(commandCombo);
         stylePicker(bindingCombo);
         stylePicker(rawKeyCombo);
@@ -411,8 +416,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
     }
 
     private static void stylePicker(JComboBox<CustomCommandStepPickerItem> combo) {
-        combo.setBackground(AppTheme.BG_PANEL);
-        combo.setForeground(AppTheme.FG);
+        AppTheme.styleComboBox(combo);
         combo.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(
@@ -424,7 +428,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
             ) {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 setText(value == null ? "" : value.toString());
-                setBackground(isSelected ? AppTheme.SEL_BG : AppTheme.BG_PANEL);
+                setBackground(isSelected ? AppTheme.ACCENT : AppTheme.HUD_TABLE_ROW);
                 setForeground(isSelected ? AppTheme.SEL_FG : AppTheme.FG);
                 setBorder(new EmptyBorder(5, 10, 5, 10));
                 return this;
@@ -433,11 +437,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
 
         Component editorComponent = combo.getEditor().getEditorComponent();
         if (editorComponent instanceof JTextComponent editor) {
-            editor.setBackground(AppTheme.BG_PANEL);
-            editor.setForeground(AppTheme.FG);
-            editor.setCaretColor(AppTheme.FG);
-            editor.setSelectionColor(AppTheme.SEL_BG);
-            editor.setSelectedTextColor(AppTheme.SEL_FG);
+            AppTheme.styleTextComponent(editor);
             editor.setBorder(new EmptyBorder(4, 10, 4, 8));
         }
     }
@@ -593,8 +593,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         BindingModifier.supportedKeyboardModifiers().forEach(bm ->
                 items.add(new RawModOption(bm.key().toUpperCase(), bm.key())));
         JComboBox<RawModOption> combo = new JComboBox<>(items.toArray(RawModOption[]::new));
-        combo.setBackground(AppTheme.BG_PANEL);
-        combo.setForeground(AppTheme.FG);
+        AppTheme.styleComboBox(combo);
         return combo;
     }
 
@@ -622,14 +621,9 @@ final class CustomCommandStepEditorDialog extends JDialog {
         header.add(stepParamsInfoButton);
         panel.add(header, BorderLayout.NORTH);
 
-        stepParamsTable.setBackground(AppTheme.BG_PANEL);
-        stepParamsTable.setForeground(AppTheme.FG);
-        stepParamsTable.setSelectionBackground(AppTheme.SEL_BG);
-        stepParamsTable.setSelectionForeground(AppTheme.SEL_FG);
-        stepParamsTable.getTableHeader().setBackground(AppTheme.BG);
-        stepParamsTable.getTableHeader().setForeground(AppTheme.FG);
+        HudTable.style(stepParamsTable);
         stepParamsTable.setRowHeight(24);
-        JScrollPane scroll = new JScrollPane(stepParamsTable);
+        JScrollPane scroll = HudTable.scrollPane(stepParamsTable);
         scroll.setPreferredSize(new Dimension(0, 90));
         panel.add(scroll, BorderLayout.CENTER);
 
@@ -661,7 +655,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         button.setForeground(AppTheme.FG_MUTED);
         button.setBackground(AppTheme.BG);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setFont(button.getFont().deriveFont(Font.PLAIN, button.getFont().getSize2D() + 2f));
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_ICON_BUTTON));
         Dimension size = new Dimension(28, 28);
         button.setPreferredSize(size);
         button.setMinimumSize(size);

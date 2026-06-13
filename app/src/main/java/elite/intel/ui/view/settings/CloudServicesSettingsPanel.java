@@ -5,9 +5,11 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.view.HudBanner;
+import elite.intel.ui.view.HudSection;
+import elite.intel.ui.view.StatusBadge;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.util.Objects;
 
@@ -48,17 +50,19 @@ public class CloudServicesSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
+        setBackground(HUD_BG);
 
-        JPanel fields = new JPanel(new GridBagLayout());
+        HudSection fieldsSection = new HudSection(getText("settings.cloud.section.credentials"), new GridBagLayout());
+        JPanel fields = fieldsSection.body();
         GridBagConstraints gc = baseGbc();
 
         addLabel(fields, getText("settings.cloud.llmKey"), gc);
-        llmApiKeyField = new JPasswordField();
+        llmApiKeyField = makePasswordField();
         llmApiKeyField.setPreferredSize(new Dimension(200, 42));
         addField(fields, llmApiKeyField, gc, 1, 0.8);
-        llmLockedCheck = new JCheckBox(getText("settings.cloud.locked"), true);
+        llmLockedCheck = makeCheckBox(getText("settings.cloud.locked"), true);
         addCheck(fields, llmLockedCheck, gc);
-        useCloudLlmCheck = new JCheckBox(getText("settings.cloud.use"), false);
+        useCloudLlmCheck = makeCheckBox(getText("settings.cloud.use"), false);
         useCloudLlmCheck.addActionListener(e -> onUseCloudLlm());
         gc.gridx = 3;
         gc.weightx = 0.2;
@@ -67,43 +71,35 @@ public class CloudServicesSettingsPanel extends JPanel {
 
         nextRow(gc);
         addLabel(fields, getText("settings.cloud.ttsKey"), gc);
-        ttsApiKeyField = new JPasswordField();
+        ttsApiKeyField = makePasswordField();
         ttsApiKeyField.setPreferredSize(new Dimension(200, 42));
         addField(fields, ttsApiKeyField, gc, 1, 0.8);
-        ttsLockedCheck = new JCheckBox(getText("settings.cloud.locked"), true);
+        ttsLockedCheck = makeCheckBox(getText("settings.cloud.locked"), true);
         addCheck(fields, ttsLockedCheck, gc);
-        useCloudTtsCheck = new JCheckBox(getText("settings.cloud.use"), false);
+        useCloudTtsCheck = makeCheckBox(getText("settings.cloud.use"), false);
         useCloudTtsCheck.addActionListener(e -> onUseCloudTts());
         gc.gridx = 3;
         gc.weightx = 0.2;
         gc.fill = GridBagConstraints.NONE;
         fields.add(useCloudTtsCheck, gc);
 
-        fields.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BUTTON_BG, 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.setOpaque(false);
+        JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
 
         JButton saveButton = makeButton(getText("button.save"));
         saveButton.addActionListener(e -> save());
         buttons.add(saveButton);
 
-        JPanel supportedLLMsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        supportedLLMsPanel.setOpaque(false);
-
-        buttons.add(Box.createVerticalGlue());
-        buttons.add(new JLabel(" " + getText("settings.cloud.supportedLlms")));
-        buttons.add(new JLabel(" " + getText("settings.cloud.supportedLlms.names")));
-        buttons.add(new JLabel(" " + getText("settings.cloud.modelAutoSelected")));
-
-
-        JPanel content = new JPanel();
+        JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(fields);
+        content.add(fieldsSection);
+        content.add(Box.createVerticalStrut(12));
+        content.add(new HudBanner(
+                getText("settings.cloud.supportedLlms") + " "
+                        + getText("settings.cloud.supportedLlms.names") + " "
+                        + getText("settings.cloud.modelAutoSelected"),
+                StatusBadge.State.INFO
+        ));
         content.add(Box.createVerticalStrut(12));
         content.add(buttons);
 

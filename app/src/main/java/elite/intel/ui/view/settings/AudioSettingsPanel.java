@@ -1,15 +1,15 @@
 package elite.intel.ui.view.settings;
 
-import elite.intel.ai.mouth.GoogleVoices;
+import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.*;
 import elite.intel.ui.view.AudioInterfaceDialog;
+import elite.intel.ui.view.HudSection;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -37,8 +37,10 @@ public class AudioSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
+        setBackground(HUD_BG);
 
-        JPanel grid = new JPanel(new GridBagLayout());
+        HudSection controlsSection = new HudSection(getText("settings.audio.section.levels"), new GridBagLayout());
+        JPanel grid = controlsSection.body();
         GridBagConstraints ag = baseGbc();
 
         // Row 0: Speech Volume | Beep Volume
@@ -111,42 +113,41 @@ public class AudioSettingsPanel extends JPanel {
         ag.gridwidth = 4;
         ag.weightx = 0;
         ag.fill = GridBagConstraints.NONE;
-        useLocalTTSCheck = new JCheckBox(getText("settings.audio.useLocalTts"), false);
+        useLocalTTSCheck = makeCheckBox(getText("settings.audio.useLocalTts"), false);
         useLocalTTSCheck.addActionListener(a -> saveLocalTts());
         grid.add(useLocalTTSCheck, ag);
 
         grid.setAlignmentX(Component.LEFT_ALIGNMENT);
-        grid.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BUTTON_BG, 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
 
-        JPanel content = new JPanel();
+        JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(grid);
+        content.add(controlsSection);
 
-        // -- Mic monitor ------------------------------------------------------
         content.add(Box.createVerticalStrut(8));
+        HudSection monitorSection = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout(0, HUD_GAP));
+        JPanel monitorBody = monitorSection.body();
         AudioWaveformPanel waveformPanel = new AudioWaveformPanel();
         waveformPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         waveformPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, AudioWaveformPanel.PANEL_HEIGHT));
-        content.add(waveformPanel);
+        monitorBody.add(waveformPanel, BorderLayout.NORTH);
 
-        content.add(Box.createVerticalStrut(8));
         JButton audioDevicesBtn = makeButton(getText("button.audioDevices"));
         audioDevicesBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
         audioDevicesBtn.addActionListener(e -> new AudioInterfaceDialog(this).setVisible(true));
-        content.add(audioDevicesBtn);
+        JPanel deviceRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        deviceRow.add(audioDevicesBtn);
+        monitorBody.add(deviceRow, BorderLayout.CENTER);
 
-        JPanel helpLabels = new JPanel();
+        JPanel helpLabels = transparentPanel(null);
         helpLabels.setLayout(new BoxLayout(helpLabels, BoxLayout.PAGE_AXIS));
-        helpLabels.setOpaque(false);
         helpLabels.setAlignmentX(Component.LEFT_ALIGNMENT);
         helpLabels.add(Box.createVerticalStrut(18));
         JLabel graphLabel = new JLabel(getText("settings.audio.micHelp"));
+        graphLabel.setForeground(FG_MUTED);
         helpLabels.add(graphLabel);
-        content.add(helpLabels);
+        monitorBody.add(helpLabels, BorderLayout.SOUTH);
+        content.add(monitorSection);
 
         add(content, BorderLayout.NORTH);
     }
@@ -196,6 +197,7 @@ public class AudioSettingsPanel extends JPanel {
         s.setSnapToTicks(true);
         s.setPaintTicks(false);
         s.setPaintLabels(true);
+        styleSlider(s);
         return s;
     }
 }

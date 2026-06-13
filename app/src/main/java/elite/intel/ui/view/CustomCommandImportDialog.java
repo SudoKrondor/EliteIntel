@@ -101,26 +101,23 @@ final class CustomCommandImportDialog extends JDialog {
     }
 
     private void buildUi(List<CustomCommandExportImportService.ImportCandidate> candidates) {
-        JPanel root = new JPanel(new BorderLayout(8, 8));
+        JPanel root = AppTheme.transparentPanel(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        root.setOpaque(true);
         root.setBorder(new EmptyBorder(12, 12, 12, 12));
-        root.setBackground(AppTheme.BG);
-        root.add(buildScrollPane(candidates), BorderLayout.CENTER);
+        root.setBackground(AppTheme.HUD_BG);
+        HudSection importSection = new HudSection(getText("actions.customCommands.import.section.review"), new BorderLayout());
+        importSection.body().add(buildScrollPane(candidates), BorderLayout.CENTER);
+        root.add(importSection, BorderLayout.CENTER);
         root.add(buildBottomBar(), BorderLayout.SOUTH);
         setContentPane(root);
-        getContentPane().setBackground(AppTheme.BG);
+        getContentPane().setBackground(AppTheme.HUD_BG);
     }
 
     private JScrollPane buildScrollPane(List<CustomCommandExportImportService.ImportCandidate> candidates) {
         JTable table = new JTable(tableModel);
-        table.setBackground(AppTheme.BG_PANEL);
-        table.setForeground(AppTheme.FG);
-        table.setGridColor(AppTheme.BG);
-        table.setSelectionBackground(AppTheme.SEL_BG);
-        table.setSelectionForeground(AppTheme.SEL_FG);
+        HudTable.style(table);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(true);
-        table.getTableHeader().setBackground(AppTheme.BG);
-        table.getTableHeader().setForeground(AppTheme.FG);
         table.getTableHeader().setReorderingAllowed(false);
         table.setFillsViewportHeight(true);
         table.setRowHeight(28);
@@ -144,9 +141,7 @@ final class CustomCommandImportDialog extends JDialog {
             }
         });
 
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.getViewport().setBackground(AppTheme.BG_PANEL);
-        return scroll;
+        return HudTable.scrollPane(table);
     }
 
     private JPanel buildBottomBar() {
@@ -190,6 +185,7 @@ final class CustomCommandImportDialog extends JDialog {
             this.allSelectedQuery = allSelectedQuery;
             checkBox.setOpaque(false);
             wrapper.setOpaque(true);
+            wrapper.setBackground(AppTheme.HUD_PANEL_BG_ALT);
             wrapper.add(checkBox);
         }
 
@@ -252,9 +248,9 @@ final class CustomCommandImportDialog extends JDialog {
             CustomCommandExportImportService.ImportCandidate c = candidates.get(row);
 
             if (!isSelected) {
-                label.setBackground(row % 2 == 0 ? AppTheme.BG_PANEL : AppTheme.LOG_BG);
+                label.setBackground(row % 2 == 0 ? AppTheme.HUD_TABLE_BG : AppTheme.HUD_ROW_ALT);
                 if (!c.isValid()) {
-                    label.setForeground(AppTheme.DISABLED_FG);
+                    label.setForeground(AppTheme.HUD_DANGER);
                 } else if (c.hasConflict()) {
                     label.setForeground(AppTheme.ACCENT);
                 } else {

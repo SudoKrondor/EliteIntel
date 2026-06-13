@@ -14,20 +14,30 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Executes a {@link CustomCommandDefinition} step-by-step.
- * <p>
- * Always invoked from the background thread already spawned by {@code ResponseRouter.handleCommand()},
- * so blocking operations (DELAY sleep, SPEAK wait) are safe.
- * <p>
- * A single static fair {@link ReentrantLock} serializes <em>all</em> custom command executions globally
- * (not per-customCommand) so that two customCommands triggered nearly simultaneously cannot interleave their
- * input or speech steps — from the user's perspective each customCommand must run atomically end-to-end.
- * Fair ordering (FIFO) ensures the second customCommand starts only after the first completes.
- * The lock is released in {@code finally} regardless of error or interruption.
+ * A handler for executing custom commands defined by {@code CustomCommandDefinition}.
+ * This class is responsible for processing a series of custom command steps,
+ * managing parameter resolution, handling errors, and synchronizing the execution flow
+ * using a reentrant lock to ensure thread safety.
+ *
+ * Responsibilities:
+ * - Ensures First-In-First-Out (FIFO) execution of custom commands.
+ * - Validates and resolves required parameters for each custom command execution.
+ * - Supports execution of multiple step types, including key bindings, delays, speech, and nested command calls.
+ * - Handles interruptions and errors gracefully during execution, logging abort or error details as necessary.
+ * - Blocks cross-delegation of nested {@code CustomCommandHandler} instances to prevent recursion.
+ *
+ * Thread Safety and Locking:
+ * - Execution is synchronized using a global {@code ReentrantLock} with fair ordering.
+ * - Locking ensures that no two threads can execute custom commands simultaneously.
+ *
+ * Dependencies:
+ * - Uses {@code CustomCommandDefinition} for defining the custom command's structure.
+ * - Relies on {@code CustomCommandSpeakExecutor} for speech execution steps.
+ * - Integrates with {@code EventBusManager} to log and publish events during execution.
  */
 public final class CustomCommandHandler implements CommandHandler {
 
@@ -72,7 +82,7 @@ public final class CustomCommandHandler implements CommandHandler {
                     log.warn("Custom command '{}' interrupted at step {}", customCommand.getName(), i);
                     return;
                 } catch (UnresolvedCustomCommandParamException e) {
-                    log.error("Custom command '{}' step {} ({}): {} — step skipped",
+                    log.error("Custom command '{}' step {} ({}): {}  step skipped",
                             customCommand.getName(), i, step.getType(), e.getMessage());
                     EventBusManager.publish(new AppLogEvent(
                             "Custom command step error: " + e.getMessage() + " (step skipped)"));
@@ -123,7 +133,7 @@ public final class CustomCommandHandler implements CommandHandler {
             case RAW_KEY -> {
                 Integer keyCode = KeyBindingExecutor.resolveKeyCode(step.getRawKey());
                 if (keyCode == null) {
-                    log.warn("Custom command '{}' step {}: unknown rawKey '{}' — step skipped",
+                    log.warn("Custom command '{}' step {}: unknown rawKey '{}'  step skipped",
                             customCommand.getName(), index, step.getRawKey());
                     EventBusManager.publish(new AppLogEvent(
                             "Custom command step: RAW_KEY " + step.getRawKey() + " (unknown key - skipped)"));
@@ -134,7 +144,7 @@ public final class CustomCommandHandler implements CommandHandler {
                 if (rawMod != null && !rawMod.isBlank()) {
                     Integer resolved = KeyBindingExecutor.resolveKeyCode(rawMod);
                     if (resolved == null) {
-                        log.warn("Custom command '{}' step {}: unknown rawKeyModifier '{}' — executing without modifier",
+                        log.warn("Custom command '{}' step {}: unknown rawKeyModifier '{}'  executing without modifier",
                                 customCommand.getName(), index, rawMod);
                     } else {
                         modCode = resolved;

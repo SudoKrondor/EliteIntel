@@ -4,27 +4,22 @@ import elite.intel.ai.brain.actions.Commands;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.session.Status;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Validates custom command definitions.
- * <p>
- * Two public entry points:
- * <ul>
- *   <li>{@link #validateFormat} — self-contained format checks (actionKey pattern, length,
- *       built-in collision). Used by the load path to reject individually malformed customCommands
- *       without requiring cross-custom command context.</li>
- *   <li>{@link #validate} — full contextual validation including actionKey uniqueness,
- *       phrase collision, parameter and step cross-references. Used by the custom command editor
- *       before saving.</li>
- * </ul>
+ * Utility class for validating custom command definitions. Provides methods to validate
+ * actionKey formatting, uniqueness, parameter integrity, and step configurations.
+ * This class is used to enforce proper custom command rules both at the context-independent
+ * level (individual command validation) and context-dependent level (cross-command validation).
+ *
+ * The following validation aspects are supported:
+ * - Action key format: patterns, length constraints, and collision detection with built-in commands.
+ * - Cross-reference validation: uniqueness of action keys, phrase collisions, and step parameter references.
+ * - Parameter validation: parameter names, types, and declared usage in templates.
+ *
+ * The class is not instantiable.
  */
 public final class CustomCommandValidator {
 

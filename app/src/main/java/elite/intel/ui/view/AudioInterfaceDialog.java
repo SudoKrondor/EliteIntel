@@ -28,8 +28,7 @@ public class AudioInterfaceDialog extends JDialog {
         JComboBox<String> inputCombo = buildCombo(AudioDeviceEnumerator.getInputDevices(), savedInput);
         JComboBox<String> outputCombo = buildCombo(AudioDeviceEnumerator.getOutputDevices(), savedOutput);
 
-        JPanel form = new JPanel(new GridBagLayout());
-        form.setBackground(BG);
+        JPanel form = transparentPanel(new GridBagLayout());
         form.setBorder(new EmptyBorder(12, 16, 8, 16));
 
         GridBagConstraints gbc = baseGbc();
@@ -79,7 +78,7 @@ public class AudioInterfaceDialog extends JDialog {
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        btnPanel.setBackground(BG);
+        btnPanel.setOpaque(false);
         JButton cancelBtn = makeButton(getText("button.cancel"));
         JButton saveBtn = makeButton(getText("button.save"));
         btnPanel.add(cancelBtn);
@@ -102,7 +101,14 @@ public class AudioInterfaceDialog extends JDialog {
         );
         getRootPane().setDefaultButton(saveBtn);
 
-        setContentPane(form);
+        HudSection section = new HudSection(getText("audio.devices.section.devices"), new BorderLayout());
+        section.body().add(form, BorderLayout.CENTER);
+        JPanel root = transparentPanel(new BorderLayout());
+        root.setOpaque(true);
+        root.setBackground(HUD_BG);
+        root.setBorder(new EmptyBorder(HUD_PADDING, HUD_PADDING, HUD_PADDING, HUD_PADDING));
+        root.add(section, BorderLayout.CENTER);
+        setContentPane(root);
         pack();
         setMinimumSize(new Dimension(500, getHeight()));
         setLocationRelativeTo(parent);
@@ -117,6 +123,7 @@ public class AudioInterfaceDialog extends JDialog {
             model.addElement(info.getName());
         }
         JComboBox<String> combo = new JComboBox<>(model);
+        styleComboBox(combo);
         if (savedName != null && !savedName.isBlank()) {
             combo.setSelectedItem(savedName);
         }

@@ -1,0 +1,59 @@
+package elite.intel.ai.brain.i18n;
+
+import elite.intel.ai.brain.i18n.de.GermanInputNormalizerRules;
+import elite.intel.ai.brain.i18n.en.EnglishInputNormalizerRules;
+import elite.intel.ai.brain.i18n.es.SpanishInputNormalizerRules;
+import elite.intel.ai.brain.i18n.fr.FrenchInputNormalizerRules;
+import elite.intel.ai.brain.i18n.ru.RussianInputNormalizerRules;
+import elite.intel.ai.brain.i18n.uk.UkrainianInputNormalizerRules;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
+
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+
+/**
+ * Factory that supplies the correct {@link InputNormalizerProvider} for the current
+ * session language and caches the built synonym map per language.
+ * <p>
+ * Mirrors the structure of {@link AiActionLocalizations} so each language lives in
+ * its own file and two localizers can work on different languages simultaneously
+ * without conflicts.
+ */
+public final class InputNormalizerLocalizations {
+
+    private static final EnumMap<Language, CachedRules> CACHE = new EnumMap<>(Language.class);
+
+    private InputNormalizerLocalizations() {
+    }
+
+    public static LinkedHashMap<String, String> synonymMap() {
+        return rules().synonymMap;
+    }
+
+    public static String noiseWordPattern() {
+        return rules().noiseWordPattern;
+    }
+
+    private static CachedRules rules() {
+        Language lang = SystemSession.getInstance().getLanguage();
+        return CACHE.computeIfAbsent(lang, l -> new CachedRules(providerFor(l)));
+    }
+
+    private static InputNormalizerProvider providerFor(Language lang) {
+        return switch (lang) {
+            case EN -> new EnglishInputNormalizerRules();
+            case RU -> new RussianInputNormalizerRules();
+            case UK -> new UkrainianInputNormalizerRules();
+            case DE -> new GermanInputNormalizerRules();
+            case FR -> new FrenchInputNormalizerRules();
+            case ES -> new SpanishInputNormalizerRules();
+        };
+    }
+
+    private record CachedRules(LinkedHashMap<String, String> synonymMap, String noiseWordPattern) {
+        CachedRules(InputNormalizerProvider provider) {
+            this(provider.buildSynonymMap(), provider.noiseWordPattern());
+        }
+    }
+}

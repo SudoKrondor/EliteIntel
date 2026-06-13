@@ -2,6 +2,7 @@ package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ui.view.AppTheme;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.JournalPreScanner;
@@ -47,6 +48,11 @@ public class App {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(new FlatLightLaf());
+                // FlatLaf paints hover/pressed over the renderer; neutralise it here.
+                UIManager.put("TableHeader.hoverBackground", AppTheme.HUD_BG);
+                UIManager.put("TableHeader.hoverForeground", AppTheme.FG_MUTED);
+                UIManager.put("TableHeader.pressedBackground", AppTheme.HUD_BG);
+                UIManager.put("TableHeader.pressedForeground", AppTheme.FG_MUTED);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -56,10 +56,13 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = new JPanel(new BorderLayout(0, 12));
-        content.setBackground(AppTheme.BG);
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        content.setOpaque(true);
+        content.setBackground(AppTheme.HUD_BG);
         content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        content.add(formPanel(), BorderLayout.CENTER);
+        HudSection section = new HudSection(getText("actions.commands.suggest.section.correction"), new BorderLayout());
+        section.body().add(formPanel(), BorderLayout.CENTER);
+        content.add(section, BorderLayout.CENTER);
         content.add(buttonPanel(), BorderLayout.SOUTH);
         setContentPane(content);
 
@@ -71,7 +74,7 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
 
     private JPanel formPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -118,13 +121,7 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
-        JScrollPane scrollPane = new JScrollPane(area);
-        scrollPane.getViewport().setBackground(AppTheme.BG_PANEL);
-        scrollPane.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(AppTheme.ACCENT, 1, true),
-                new EmptyBorder(0, 0, 0, 0)
-        ));
-        panel.add(scrollPane, gbc);
+        panel.add(AppTheme.hudScrollPane(area), gbc);
         gbc.gridy++;
     }
 
@@ -178,9 +175,7 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
     }
 
     private static void styleEditor(JTextComponent component) {
-        component.setBackground(AppTheme.BG_PANEL);
-        component.setForeground(AppTheme.FG);
-        component.setCaretColor(AppTheme.FG);
+        AppTheme.styleTextComponent(component);
         component.setBorder(new EmptyBorder(8, 8, 8, 8));
     }
 

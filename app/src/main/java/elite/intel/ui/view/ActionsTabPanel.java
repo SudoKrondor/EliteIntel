@@ -20,11 +20,11 @@ public class ActionsTabPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(AppTheme.BG);
+        setBackground(AppTheme.HUD_BG);
+        setBorder(AppTheme.hudScreenBorder());
 
-        JTabbedPane tabs = new JTabbedPane();
+        JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
-        AppTheme.styleTabbedPane(tabs);
         tabs.addTab(getText("actions.tab.bindings"), bindingsTabPanel);
         tabs.addTab(getText("actions.tab.commands"), commandCatalogTablePanel);
         tabs.addTab(getText("actions.tab.customCommands"), customCommandsTabPanel);

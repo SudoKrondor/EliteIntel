@@ -9,13 +9,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Extracts known command parameter keys from two sources:
- * <ol>
- *   <li>Action alias phrases — placeholders like {@code {lat:number, lon:number}} in alias groups</li>
- *   <li>JSON examples in {@code PromptFactory.buildCommandRules()} — provide more accurate types
- *       (e.g. JSON {@code -10.5} is inferred as {@code number}, overriding a prior {@code string} guess)</li>
- * </ol>
- * Used by the custom command step editor to auto-suggest known parameter keys when a command is selected.
+ * Utility class to extract and manage action parameter hints from various sources such as alias placeholders
+ * and inline JSON blocks. This class is responsible for parsing and consolidating information about
+ * action parameters and their associated types, ensuring consistency and providing discovery mechanisms.
+ * <br>
+ * The extractor is a singleton that can be accessed via {@link #getInstance()}.
  */
 public final class ActionParameterKeyExtractor {
 

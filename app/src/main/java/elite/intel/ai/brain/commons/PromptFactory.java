@@ -2,6 +2,8 @@ package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.*;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ai.brain.i18n.PromptLanguageRules;
+import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
@@ -45,6 +47,7 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     protected void buildCommandRules(StringBuilder sb) {
+        PromptLanguageRules lang = PromptLocalizations.rules();
         if (!systemSession.useLocalCommandLlm()) {
             youAre(sb);
         }
@@ -57,18 +60,15 @@ public class PromptFactory implements AiPromptFactory {
                 Raw JSON only. No text, no markdown, no explanation before or after.
 
                 CLASSIFICATION:
-                   - User input may be in English, German, French, Russian, or Ukrainian. Interpret the user's intent semantically across these languages.
+                """);
+        sb.append("   - User input is in ").append(lang.languageName()).append(". Interpret the user's intent semantically.\n");
+        sb.append("""
                    - Internal action names are always English. The JSON "action" value MUST always be copied exactly from the available action list. Never translate action names.
                    - ABSOLUTE RULE - 'query_player_profile_rank_progress' requires an EXPLICIT player rank/profile request with ≥95% confidence. The input MUST begin with 'player profile' (these two words, in this order) and may optionally include additional qualifying words after them (e.g. 'player profile summarize ranks', 'player profile summarize progress'). If confidence is below 95%, or the input is ambiguous or tangentially related, fall back to ignore_nonsensical_input (strict mode) or query_general_conversation (conversational mode). This action is NEVER a fallback or closest-match - it must be explicitly requested. Violations are a critical failure.
                    - Default to COMMAND for instructions that ask to perform an action, change ship state, open a panel, navigate, deploy, retract, enable, disable, find, or search.
                    - Use a QUERY action when the user asks for information, status, location, inventory, route, station, system, ship data, market data, materials, missions, signals, bodies, carrier data, or any other game-state lookup.
-                   - Query intent may be expressed in any supported language. Examples of query starters include:
-                     English: what, where, how, which, why, is, are, does, tell me, how much, how many
-                     German: was, wo, wie, welcher, welche, welches, warum, ist, sind, gibt es, wie viel, wie viele, auf welcher, in welchem
-                     French: quoi, que, où, comment, quel, quelle, quels, quelles, pourquoi, est-ce que, y a-t-il, combien, raconte, dis-moi
-                     Russian: что, где, как, какой, какая, какие, почему, есть ли, сколько, на какой, в какой, расскажи
-                     Ukrainian: що, де, як, який, яка, які, чому, чи є, скільки, на якій, в якій, розкажи
                 """);
+        sb.append("   - Query starters in ").append(lang.languageName()).append(": ").append(lang.queryStarterExamples()).append("\n");
 
         if (systemSession.conversationalModeOn()) {
             sb.append("""
@@ -96,90 +96,36 @@ public class PromptFactory implements AiPromptFactory {
                     - "setup spin refind grouping" → ignore (garbled, no recognisable game intent)
                     """);
         }
+        sb.append("VERB INTENT (apply first, before matching any action):\n");
+        sb.append(" - Command verbs include: ").append(lang.commandVerbExamples()).append("\n");
+        sb.append(" - Query phrases include: ").append(lang.queryPhraseExamples()).append("\n");
         sb.append("""
-                VERB INTENT (apply first, before matching any action):
-                 - Action verbs usually mean COMMANDS: show / display / open / access / find / search / locate / activate / navigate / plot / deploy / retract / enable / disable / turn on / turn off.
-                 - German command verbs include: zeige / öffne / suche / finde / aktiviere / deaktiviere / navigiere / setze route / fahre aus / fahre ein / schalte ein / schalte aus.
-                 - French command verbs include: montre / affiche / ouvre / cherche / trouve / active / désactive / navigue / trace une route / déploie / rentre / allume / éteins.
-                 - Russian command verbs include: покажи / открой / найди / ищи / активируй / отключи / проложи маршрут / выпусти / убери / включи / выключи.
-                 - Ukrainian command verbs include: покажи / відкрий / знайди / шукай / активуй / вимкни / проклади маршрут / випусти / прибери / увімкни / вимкни.
-                 - Lookup/question phrases mean QUERY: where / tell me / how much / how many / any / what is / what are.
-                 - German query phrases include: wo / was / wie viel / wie viele / gibt es / welche / welcher / welches / auf welcher station / in welchem system.
-                 - French query phrases include: où / quoi / combien / y a-t-il / quel / quelle / quels / quelles / sur quelle station / dans quel système.
-                 - Russian query phrases include: где / что / сколько / есть ли / какой / какая / какие / на какой станции / в какой системе.
-                 - Ukrainian query phrases include: де / що / скільки / чи є / який / яка / які / на якій станції / в якій системі.
                  - delete_* actions require explicit intent in user input. Example "delete codex entry" - delete_* action allowed, "codex entry" - delete_* action not allowed.
                 
-                DISAMBIGUATION (genuine ambiguities only):
-                - "activate" (exact standalone word only, nothing else meaningful in input) → activate_ui_control. "toggle [X]", "engage [X]", "enable [X]" and other non-activate verbs are NOT "activate" - never map these to activate_ui_control
-                - "weapons free" / "weapons hot" / "combat ready" → deploy_hardpoints
-                - "weapons cold" / "weapons away" / "stand down" → retract_hardpoints
-                - "max weapons" / "boost weapons" / "power to weapons" → transfer_power_to_weapons
-                - "max shields" / "boost shields" / "power to shields" / "max systems" / "boost systems" / "power to systems" → transfer_power_to_shields
-                - "max engines" / "boost engines" / "power to engines" → transfer_power_to_engines
-                - "take me back aboard the ship" / "board ship" → recover_srv_vehicle_get_on_board_ship
-                - Sending ship to orbit when requested to board ship is instant failure.
-                - "go to orbit" / "ship to orbit" / "send to orbit" / "put ship in orbit" → dismiss_ship_to_orbit. NEVER navigate_to_coordinates - "orbit" refers to the ship, not a destination.
-                - Never confuse "max engines" with "target engines"
-                - Never confuse "deploy vehicle" with "deploy landing gear"
+                DISAMBIGUATION (game logic applies regardless of language):
                 - CARRIER vs SHIP: if the word "carrier" does not appear in the input, all route/jump/navigation queries refer to the SHIP, not the fleet carrier. Use query_ship_route_remaining_jumps, not query_carrier_route.
-                - FLEET vs SQUADRON CARRIER: if the words "squadron carrier" appears in the input, use squadron_carrier actions (query_squadron_carrier_*, navigate_to_squadron_carrier). Otherwise default to fleet carrier actions. Example: "carrier status" → query_fleet_carrier_status_fuel_credit_balance; "squadron carrier status" → query_squadron_carrier_status_fuel_credit_balance.
-                - Never confuse "organics in system" with "organics at this location/planet/moon"
-                - Never confuse "carrier balance" (finances) with "balance power" (power distribution)
-                - bio signals context (system-wide): "which planets have bio signals / which planets need scanning / bio signals in system / organics in system / biological signals / how many planets have bio" → query_bio_scans_and_samples_in_star_system. KEY: "which planets" always = system-wide.
-                - bio scans context (current planet surface): "what organisms are here / what's been scanned here / exobiology samples / organics on this planet / biology on this planet / bio scans completed / what organics do we still have to scan / what organics remain / organics still to scan / organics left to scan" → query_exobiology_samples. KEY: "here / on this planet / on this moon / at this location / still have to scan / left to scan" = planet surface.
-                - Never confuse "in system" or "which planets" (system-wide) with "here / on this planet / at this location / still have to scan" (planet surface)
-                - Never confuse "signals" with "stellar objects"
-                - carrier full status (fuel + credits + operations): "carrier status / carrier fuel status / how far can carrier jump / fleet carrier fuel status" → query_carrier_status_fuel_credit_balance
-                - carrier tritium level only: "how much tritium / tritium supply / tritium level / tritium reserve" → query_carrier_fuel
-                - distance to bubble is distance from our stellar coordinates to the center of the coordinate system (0,0,0)
-                - For EXPLICIT "player profile" (these two words, in this order, optionally followed by additional context words like "summarize ranks", "summarize progress") → 'query_player_profile_rank_progress'. Any other phrasing that does NOT begin with "player profile", including rank, stats, progress, name, or commander - return ignore_nonsensical_input or query_general_conversation. This is an instant fail if triggered by anything else.
-                - "galaxy map" / "open galaxy map" / "display galaxy map" / "show galaxy map" → display_open_galaxy_map (NOT carrier management or any other panel)
-                - "system map" / "open system map" / "display system map" / "local map" → display_open_system_map
-                
-                - "activate" → activate_ui_control ONLY when the sole meaningful word in the input is "activate". NEVER for: "toggle lights" → toggle_lights_on_off, "engage supercruise" → enter_super_cruise. Any word alongside "activate" means it is NOT the activate_ui_control command.
-                - "supercruise" / "go supercruise" / "enter supercruise" → enter_super_cruise (NOT jump_to_hyperspace - supercruise stays in-system)
-                - "navigate to active mission" / "go to mission" / "plot route to mission" → navigate_to_next_mission (NOT analyze_missions - navigation, not a query)
-                - "navigate to codex entry" / "navigate to next codex" → navigate_to_next_bio_sample (travel to the sample, do NOT use delete_codex_entry)
-                - "cargo scoop" / "open cargo scoop" / "deploy cargo scoop" / "close cargo scoop" / "retract cargo scoop" → toggle_cargo_scoop
-                - "unbound keys" / "check key bindings" / "missing bindings" / "keybind check" → key_bindings_analysis (this IS a valid game command, not meta-talk)
-                - "listen" / "listen up" / "wake up" alone → wakeup
-                - "listen [+ any instruction]" → treat as a normal command/query
-                - "exit" or "close" → exit_close
-                - "drop" alone / "drop in" / "drop out" → drop_from_super_cruise
-                - "halt" alone → set_speed_zero
-                - "taxi" alone / "auto docking" / "autopilot" → taxi_to_landing_pad (automated ship approach and landing at a pad - not a ground vehicle)
-                - "lets go" / "jump to ..." / "enter hyperspace" → jump_to_hyperspace
-                - "confirm ..." → only match confirm-requiring actions when "confirm" is literally in the input
-                - "clear ..." → only match clear-requiring actions when "clear" is literally in the input
-                - "target wingman 1/2/3" → their specific wingman actions
-                - "target next route system" → select_next_system_in_route
-                - "target most dangerous / highest threat" → target_highest_threat
-                - "focus [my] target" / "focus on target" → fighter_attack_target (NOT target_subsystem)
-                - "target fsd" → target_subsystem ONLY. NEVER jump_to_hyperspace. Targeting a subsystem is not engaging it.
-                - "target [anything else]" → target_subsystem, key = the words after "target"
-                - organics / biology / exobiology on a planet or here → query_exobiology_samples, NOT geo/materials
-                - organics / bio signals in a system or which planets → query_bio_scans_and_samples_in_star_system
-                - profit from bounties is not profit from missions for bounties → 'query_total_bounties'
-                - profit from missions is not profit from bounties for missions → 'query_missions_and_rewards'
-                - profit from discovery is not profit from bounties or missions → 'query_exploration_profits'
-                
-                - material trader (raw/encoded/manufactured) → find_raw/encoded/manufactured_material_trader
-                - "geo signals / geological" → query_geo_signals (NOT find_brain_trees)
-                - "find mission providers" / "find pirate mission providers" → find_hunting_grounds (NOT fleet carrier)
-                - "inventory" and "storage" are different panels - never substitute one for the other
+                - FLEET vs SQUADRON CARRIER: if the words "squadron carrier" appear in the input, use squadron_carrier actions (query_squadron_carrier_*, navigate_to_squadron_carrier). Otherwise default to fleet carrier. Example: "carrier status" → query_fleet_carrier_status_fuel_credit_balance; "squadron carrier status" → query_squadron_carrier_status_fuel_credit_balance.
+                - bio signals (system-wide): signals in a system or about which planets → query_bio_scans_and_samples_in_star_system. KEY: system scope = system-wide query.
+                - bio scans (planet surface): organisms/exobiology here or on this planet/moon → query_exobiology_samples. KEY: at this location / on this planet / still to scan = surface query.
+                - Never confuse signal types with stellar object types.
+                - distance to bubble is distance from stellar coordinates to the coordinate origin (0,0,0)
                 - queries about ship/you (modules, specs, cargo capacity) → query_ship_loadout*
                 - queries about the carrier → query_carrier*
-                - "how much X do we have" / "do we have any X" (specific item) → query_material_inventory (handles both engineering materials AND cargo commodities)
-                - "what are we carrying" / "list cargo" / "cargo contents" (no specific item) → query_cargo_hold_contents
+                - "inventory" and "storage" are different UI panels - never substitute one for the other
+                - inventory of a specific item → query_material_inventory (engineering materials AND cargo commodities)
+                - cargo hold contents (full list, no specific item) → query_cargo_hold_contents
                 - queries about materials in inventory (not commodities in cargo hold) → query_material_inventory*
+                - profit from bounties → query_total_bounties; profit from missions → query_missions_and_rewards; profit from exploration/discovery → query_exploration_profits
+                - material trader (raw/encoded/manufactured) → find_raw/encoded/manufactured_material_trader
                 - NATO alphabet in params: Alpha=A, Bravo=B, Charlie/Charly=C, Delta=D, Echo=E, Foxtrot=F, Golf=G,
                   Hotel=H, India=I, Juliet=J, Kilo=K, Lima=L, Mike=M, November=N, Oscar=O, Papa=P,
                   Quebec=Q, Romeo=R, Sierra=S, Tango=T, Uniform=U, Victor=V, Whiskey=W, X-ray=X, Yankee=Y, Zulu=Z.
                   Zero=0…Nine/Niner=9. Example: "moon two Charlie" → "2C"
-                - EXCEPTION — select_fire_group_by_nato: key = NATO word verbatim (lowercase). Never convert to a letter. "fire group bravo" → {"action": "select_fire_group_by_nato", "params": {"key": "bravo"}}
+                - EXCEPTION  select_fire_group_by_nato: key = NATO word verbatim (lowercase). Never convert to a letter. "fire group bravo" → {"action": "select_fire_group_by_nato", "params": {"key": "bravo"}}
                 
                 """);
+        String hints = lang.disambiguationHints();
+        if (hints != null) sb.append(hints);
 
         sb.append("""
                 COMMAND RULES:
@@ -394,14 +340,7 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     private static String languageDisplayName(Language language) {
-        return switch (language) {
-            case EN -> "English";
-            case RU -> "Russian";
-            case UK -> "Ukrainian";
-            case DE -> "German";
-            case FR -> "French";
-            case ES -> "Spanish";
-        };
+        return PromptLocalizations.rulesFor(language).languageName();
     }
 
 }

@@ -25,21 +25,21 @@ public class AnalyzeStellarSignalsHandler extends BaseQueryAnalyzer implements Q
                 You are the ship's AI giving the commander a system briefing.
                 Structure the answer in this order, skipping any section with no data:
                 
-                1. SYSTEM OVERVIEW — one sentence covering allegiance, security level, and population.
+                1. SYSTEM OVERVIEW  one sentence covering allegiance, security level, and population.
                    If controllingPower is set, add who holds powerplay control.
                    Mention government type and primary economy.
                 
-                2. STATIONS & OUTPOSTS — list each entry from the stations field.
+                2. STATIONS & OUTPOSTS  list each entry from the stations field.
                    Include its type and controlling faction. If stations is empty, say none are on record.
                 
-                3. POINTS OF INTEREST — from discoveredSignals:
+                3. POINTS OF INTEREST  from discoveredSignals:
                    - Resource Extraction Sites (Low, Medium, High, Hazardous) are bounty hunting grounds,
                      not materials sites. Describe them as such.
                    - Conflict Zones are active combat areas for mercenary work.
                    - Other named POIs (megaships, nav beacons, tourist beacons) get a brief mention.
                    - Fleet carriers: state the count only, individual names are not useful.
                 
-                4. EXPLORATION DATA — from stellarObjectSignals:
+                4. EXPLORATION DATA  from stellarObjectSignals:
                    - Biological signals: name the bodies and counts.
                    - Geological signals: name the bodies and counts.
                    - Mining hotspots: name the ring and hotspot types with counts.

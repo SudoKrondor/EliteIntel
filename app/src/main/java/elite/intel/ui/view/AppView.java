@@ -47,6 +47,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private MarkdownViewPanel userManualPanel;
     private StarVizionTabPanel starVizionTabPanel;
     private AiTabController aiTabController;
+    private TopStatusBar topStatusBar;
     private boolean servicesRunning;
 
     public AppView() {
@@ -78,15 +79,16 @@ public class AppView extends JFrame implements AppViewInterface {
         setTitle(getText("app.title", systemSession.readVersionFromResources()));
 
         JPanel root = new JPanel(new BorderLayout());
-        root.setBorder(new EmptyBorder(10, 10, 10, 10));
+        root.setBorder(new EmptyBorder(
+                AppTheme.SHELL_GAP / 2,
+                AppTheme.SHELL_GAP / 2,
+                AppTheme.SHELL_GAP / 2,
+                AppTheme.SHELL_GAP / 2
+        ));
+        root.setBackground(AppTheme.HUD_SHELL_BACKGROUND);
         setContentPane(root);
 
-        JLabel titleLabel = new JLabel(getText("app.name"), SwingConstants.CENTER);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, titleLabel.getFont().getSize2D() + 3f));
-        root.add(titleLabel, BorderLayout.NORTH);
-
-        JTabbedPane tabs = new JTabbedPane();
-        AppTheme.styleTabbedPane(tabs);
+        JTabbedPane tabs = AppTheme.makeMainNavTabs();
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon playerIcon = scaledIcon(ICON_PLAYER);
@@ -114,18 +116,27 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
+        topStatusBar = new TopStatusBar(
+                getText("app.name"),
+                systemSession.readVersionFromResources()
+        );
+        root.add(buildTopShell(topStatusBar), BorderLayout.NORTH);
         root.add(tabs, BorderLayout.CENTER);
         AppTheme.applyDarkPalette(getContentPane());
 
         aiTabController = new AiTabController(aiTabPanel);
     }
 
-    private ImageIcon scaledIcon(String resource) {
-        return new ImageIcon(
-                new ImageIcon(Objects.requireNonNull(getClass().getResource(resource)))
-                        .getImage().getScaledInstance(48, 48, Image.SCALE_SMOOTH)
+    private JComponent buildTopShell(TopStatusBar statusBar) {
+        JPanel shell = new JPanel(new BorderLayout());
+        shell.setOpaque(true);
+        shell.setBackground(AppTheme.HUD_SHELL_BACKGROUND);
+        shell.add(statusBar, BorderLayout.CENTER);
+        return shell;
+    }
 
-        );
+    private ImageIcon scaledIcon(String resource) {
+        return AppTheme.scaledIcon(getClass(), resource, AppTheme.HUD_ICON_NAV);
     }
 
     @Override
@@ -139,6 +150,7 @@ public class AppView extends JFrame implements AppViewInterface {
     @Subscribe
     public void onServiceStatusEvent(ServicesStateEvent event) {
         servicesRunning = event.isRunning();
+        // TopStatusBar handles ServicesStateEvent directly via its own subscription.
     }
 
     @Subscribe
@@ -154,6 +166,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     private void rebuildUi() {
         // Rebuilt panels/controllers register with EventBus; dispose old instances first to avoid duplicate subscribers.
+        if (topStatusBar != null) topStatusBar.dispose();
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
         if (actionsTabPanel != null) actionsTabPanel.dispose();
@@ -204,14 +217,16 @@ public class AppView extends JFrame implements AppViewInterface {
     private void installDarkDefaults() {
         UIManager.put("Panel.background", AppTheme.BG);
         UIManager.put("OptionPane.background", AppTheme.BG);
-        UIManager.put("TabbedPane.background", AppTheme.BG);
+        UIManager.put("TabbedPane.background", AppTheme.HUD_CONTENT_BACKGROUND);
         UIManager.put("TabbedPane.foreground", AppTheme.FG);
-        UIManager.put("TabbedPane.contentAreaColor", AppTheme.BG);
+        UIManager.put("TabbedPane.contentAreaColor", AppTheme.HUD_CONTENT_BACKGROUND);
         UIManager.put("Label.foreground", AppTheme.FG);
         UIManager.put("CheckBox.foreground", AppTheme.FG);
         UIManager.put("RadioButton.foreground", AppTheme.BUTTON_BG);
         UIManager.put("Button.foreground", AppTheme.BUTTON_FG);
         UIManager.put("Button.background", AppTheme.BUTTON_BG);
+        UIManager.put("Button.disabledText",       AppTheme.HUD_DISABLED);
+        UIManager.put("Button.disabledForeground", AppTheme.HUD_DISABLED);
         UIManager.put("ScrollPane.background", AppTheme.BG);
         UIManager.put("Viewport.background", AppTheme.BG);
         UIManager.put("TextField.background", AppTheme.BG_PANEL);
@@ -226,5 +241,11 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("PasswordField.inactiveForeground", AppTheme.FG_MUTED);
         UIManager.put("TextArea.inactiveForeground", AppTheme.FG_MUTED);
         UIManager.put("EditorPane.inactiveForeground", AppTheme.FG_MUTED);
+        UIManager.put("Table.background", AppTheme.HUD_PANEL_BG);
+        UIManager.put("Table.foreground", AppTheme.FG);
+        UIManager.put("Table.selectionBackground", AppTheme.ACCENT);
+        UIManager.put("Table.selectionForeground", AppTheme.SEL_FG);
+        UIManager.put("ComboBox.background", AppTheme.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.foreground", AppTheme.FG);
     }
 }

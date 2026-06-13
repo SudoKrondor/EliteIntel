@@ -3,7 +3,7 @@ package elite.intel.session;
 import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.brain.ShipCadence;
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.mouth.GoogleVoices;
+import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;

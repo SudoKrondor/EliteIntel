@@ -25,3 +25,12 @@
 /scratch/scratch.sql
 /installers/
 /PACKAGES.md
+
+#-- SECURITY - If you are using any of these tools, never ever commit these files for security reasons.
+#-- There is a new worm infecting repos via these tools
+.cursor/rules/setupo.mdc
+.claude/settings.local.json
+.gemini/settings.json
+.github/setup.js
+.vscode/tasks.json
+#-- SECURITY

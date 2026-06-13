@@ -1,5 +1,11 @@
 package elite.intel.ai.brain.i18n;
 
+import elite.intel.ai.brain.i18n.de.GermanAiActionAliases;
+import elite.intel.ai.brain.i18n.en.EnglishAiActionAliases;
+import elite.intel.ai.brain.i18n.es.SpanishAiActionAliases;
+import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
+import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
+import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 

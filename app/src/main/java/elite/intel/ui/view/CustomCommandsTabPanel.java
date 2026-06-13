@@ -11,12 +11,8 @@ import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.util.AppPaths;
 
 import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -34,7 +30,8 @@ import java.util.stream.Collectors;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Read-only customCommand catalog view backed by the loaded customCommand registry.
+ * Read-only customCommand catalog view backed by the loaded customCommand
+ * registry.
  */
 public class CustomCommandsTabPanel extends JPanel {
 
@@ -50,20 +47,21 @@ public class CustomCommandsTabPanel extends JPanel {
         initData();
     }
 
-    private void buildUi() {
-        setLayout(new BorderLayout(8, 8));
-        setBorder(new EmptyBorder(10, 10, 10, 10));
-        setBackground(AppTheme.BG);
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        SwingUtilities.invokeLater(() -> styleTable(table));
+    }
 
-        JPanel controls = new JPanel(new BorderLayout(8, 0));
-        controls.setOpaque(false);
-        controls.add(searchPanel(), BorderLayout.CENTER);
-        controls.add(actionPanel(), BorderLayout.EAST);
-        add(controls, BorderLayout.NORTH);
+    private void buildUi() {
+        setLayout(new BorderLayout(0, 0));
+        setBorder(AppTheme.hudSubtabContentBorder());
+        setBackground(AppTheme.HUD_BG);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
         styleTable(table);
+        installRowHover(table);
         table.addMouseListener(new CustomCommandTableMouseListener());
         table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
                 .put(KeyStroke.getKeyStroke("ENTER"), "openCustomCommandDetails");
@@ -74,16 +72,36 @@ public class CustomCommandsTabPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.getViewport().setBackground(AppTheme.BG_PANEL);
+        JScrollPane scrollPane = HudTable.dataPlaneScrollPane(table);
+
+        add(controlsToolbar(), BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
+    }
+
+    /**
+     * Builds the connected toolbar row: search field on the left, action buttons on
+     * the right.
+     */
+    private HudConnectedToolbar controlsToolbar() {
+        HudConnectedToolbar toolbar = new HudConnectedToolbar();
+
+        HudSearchField searchPanel = new HudSearchField(
+                getText("actions.customCommands.search.placeholder"),
+                getText("actions.commands.search.clearTooltip"),
+                HudSearchField.Variant.TABLE_FILTER);
+        searchField = searchPanel.textField();
+        searchField.getDocument().addDocumentListener(new SearchDocumentListener());
+        toolbar.add(searchPanel, BorderLayout.CENTER);
+
+        toolbar.add(actionPanel(), BorderLayout.EAST);
+        return toolbar;
     }
 
     public void initData() {
         tableModel.setRowCount(0);
         visibleRows = filteredRows();
         for (CustomCommandRow row : visibleRows) {
-            tableModel.addRow(new Object[]{
+            tableModel.addRow(new Object[] {
                     new CustomCommandNameCell(row.entry().name(), row.entry().id()),
                     row.phrasesText()
             });
@@ -91,74 +109,27 @@ public class CustomCommandsTabPanel extends JPanel {
     }
 
     private JPanel actionPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        panel.setOpaque(false);
-        addActionButton(panel, "actions.customCommands.action.import", this::importCustomCommands);
-        addActionButton(panel, "actions.customCommands.action.export", this::exportCustomCommands);
-        addActionButton(panel, "actions.customCommands.action.new", this::newCustomCommand);
+        JPanel panel = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 0));
+        panel.add(secondaryButton("actions.customCommands.action.import", this::importCustomCommands));
+        panel.add(secondaryButton("actions.customCommands.action.export", this::exportCustomCommands));
+        panel.add(primaryButton("actions.customCommands.action.new", this::newCustomCommand));
         return panel;
     }
 
-    private void addActionButton(JPanel panel, String key, Runnable action) {
-        JButton button = AppTheme.makeButtonSubtle(getText(key));
-        button.addActionListener(event -> action.run());
-        panel.add(button);
+    private JButton primaryButton(String key, Runnable action) {
+        JButton btn = AppTheme.makeButton(getText(key));
+        btn.addActionListener(e -> action.run());
+        return btn;
     }
 
-    private JPanel searchPanel() {
-        JPanel panel = new JPanel(new BorderLayout(8, 0));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel(getText("actions.commands.search.label"));
-        label.setForeground(AppTheme.FG);
-        panel.add(label, BorderLayout.WEST);
-
-        // Wrapper that owns the ACCENT border so the clear button appears inside the field.
-        JPanel fieldWrapper = new JPanel(new BorderLayout());
-        fieldWrapper.setBackground(AppTheme.BG_PANEL);
-        fieldWrapper.setBorder(new LineBorder(AppTheme.ACCENT, 1, true));
-
-        searchField = new PlaceholderTextField(getText("actions.customCommands.search.placeholder"));
-        searchField.setOpaque(false);
-        searchField.getDocument().addDocumentListener(new SearchDocumentListener());
-
-        // When applyDarkPalette sets CompoundBorder(LineBorder, EmptyBorder) on the field,
-        // redirect the outer LineBorder to fieldWrapper so the button appears inside the border.
-        boolean[] redirecting = {false};
-        searchField.addPropertyChangeListener("border", evt -> {
-            if (redirecting[0]) return;
-            if (evt.getNewValue() instanceof CompoundBorder cb
-                    && cb.getOutsideBorder() instanceof LineBorder lb) {
-                redirecting[0] = true;
-                try {
-                    fieldWrapper.setBorder(lb);
-                    searchField.setBorder(cb.getInsideBorder());
-                } finally {
-                    redirecting[0] = false;
-                }
-            }
-        });
-
-        JButton clearButton = new JButton("×");
-        clearButton.setToolTipText(getText("actions.commands.search.clearTooltip"));
-        clearButton.setOpaque(false);
-        clearButton.setContentAreaFilled(false);
-        clearButton.setBorderPainted(false);
-        clearButton.setFocusable(false);
-        clearButton.setForeground(AppTheme.FG_MUTED);
-        clearButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        clearButton.setMargin(new Insets(0, 8, 0, 8));
-        clearButton.addActionListener(event -> resetSearch());
-
-        fieldWrapper.add(searchField, BorderLayout.CENTER);
-        fieldWrapper.add(clearButton, BorderLayout.EAST);
-        panel.add(fieldWrapper, BorderLayout.CENTER);
-
-        return panel;
+    private JButton secondaryButton(String key, Runnable action) {
+        JButton btn = AppTheme.makeButtonSubtle(getText(key));
+        btn.addActionListener(e -> action.run());
+        return btn;
     }
 
     private String[] columnNames() {
-        return new String[]{
+        return new String[] {
                 getText("actions.customCommands.column.name"),
                 getText("actions.customCommands.column.phrases")
         };
@@ -171,8 +142,7 @@ public class CustomCommandsTabPanel extends JPanel {
                         CustomCommandDefinition::getActionKey,
                         Function.identity(),
                         (first, second) -> second,
-                        LinkedHashMap::new
-                ));
+                        LinkedHashMap::new));
 
         return commandCatalog.entries(customCommands).stream()
                 .filter(CommandCatalogEntry::isCustomCommand)
@@ -228,17 +198,16 @@ public class CustomCommandsTabPanel extends JPanel {
                 row.sequenceText(),
                 row.customCommand().getParameters(),
                 () -> editCustomCommand(row),
-                () -> deleteCustomCommand(row)
-        ).showDialog();
+                () -> deleteCustomCommand(row)).showDialog();
     }
 
     private void exportCustomCommands() {
         List<CustomCommandDefinition> commands = CustomCommandRegistry.getInstance().getCustomCommands();
         if (commands.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.export.noSelection"),
-                getText("actions.customCommands.export.title"),
-                JOptionPane.INFORMATION_MESSAGE);
+                    getText("actions.customCommands.export.noSelection"),
+                    getText("actions.customCommands.export.title"),
+                    JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         new CustomCommandExportDialog(this, commands).showDialog();
@@ -253,36 +222,40 @@ public class CustomCommandsTabPanel extends JPanel {
 
         // Overwrite existing commands that share an actionKey with an imported command
         Set<String> importKeys = toImport.stream()
-            .map(d -> d.getActionKey().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
+                .map(d -> d.getActionKey().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
         List<CustomCommandDefinition> merged = new ArrayList<>(existing);
         merged.removeIf(e -> importKeys.contains(e.getActionKey().toLowerCase(Locale.ROOT)));
         merged.addAll(toImport);
 
         persistAndRefresh(merged);
         JOptionPane.showMessageDialog(this,
-            getText("actions.customCommands.import.success", toImport.size()),
-            getText("actions.customCommands.import.title"),
-            JOptionPane.INFORMATION_MESSAGE);
+                getText("actions.customCommands.import.success", toImport.size()),
+                getText("actions.customCommands.import.title"),
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void newCustomCommand() {
-        CustomCommandDefinition saved = new CustomCommandEditorDialog(this, null, CustomCommandRegistry.getInstance().getCustomCommands()).showDialog();
+        CustomCommandDefinition saved = new CustomCommandEditorDialog(this, null,
+                CustomCommandRegistry.getInstance().getCustomCommands()).showDialog();
         if (saved == null) {
             return;
         }
-        List<CustomCommandDefinition> customCommands = new java.util.ArrayList<>(CustomCommandRegistry.getInstance().getCustomCommands());
+        List<CustomCommandDefinition> customCommands = new java.util.ArrayList<>(
+                CustomCommandRegistry.getInstance().getCustomCommands());
         customCommands.add(saved);
         persistAndRefresh(customCommands);
     }
 
     private void editCustomCommand(CustomCommandRow row) {
-        CustomCommandDefinition saved = new CustomCommandEditorDialog(this, row.customCommand(), CustomCommandRegistry.getInstance().getCustomCommands()).showDialog();
+        CustomCommandDefinition saved = new CustomCommandEditorDialog(this, row.customCommand(),
+                CustomCommandRegistry.getInstance().getCustomCommands()).showDialog();
         if (saved == null) {
             return;
         }
         List<CustomCommandDefinition> customCommands = CustomCommandRegistry.getInstance().getCustomCommands().stream()
-                .map(customCommand -> customCommand.getId().equalsIgnoreCase(row.customCommand().getId()) ? saved : customCommand)
+                .map(customCommand -> customCommand.getId().equalsIgnoreCase(row.customCommand().getId()) ? saved
+                        : customCommand)
                 .toList();
         persistAndRefresh(customCommands);
     }
@@ -293,8 +266,7 @@ public class CustomCommandsTabPanel extends JPanel {
                 getText("actions.customCommands.delete.confirm", row.entry().name()),
                 getText("actions.customCommands.delete.title"),
                 JOptionPane.OK_CANCEL_OPTION,
-                JOptionPane.WARNING_MESSAGE
-        );
+                JOptionPane.WARNING_MESSAGE);
         if (result != JOptionPane.OK_OPTION) {
             return;
         }
@@ -311,8 +283,7 @@ public class CustomCommandsTabPanel extends JPanel {
                     this,
                     getText("actions.customCommands.save.error", AppPaths.CUSTOM_COMMANDS_FILE_NAME),
                     getText("actions.customCommands.title"),
-                    JOptionPane.ERROR_MESSAGE
-            );
+                    JOptionPane.ERROR_MESSAGE);
             return;
         }
         CustomCommandRegistry.getInstance().replaceCustomCommands(customCommands);
@@ -321,24 +292,15 @@ public class CustomCommandsTabPanel extends JPanel {
     }
 
     private void styleTable(JTable table) {
-        table.setFillsViewportHeight(true);
-        table.setRowHeight(56);
+        HudTable.style(table);
+        table.setBackground(AppTheme.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
+        table.setRowHeight(48);
         table.setAutoCreateRowSorter(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowSelectionAllowed(true);
         table.setColumnSelectionAllowed(false);
-        table.setBackground(AppTheme.BG_PANEL);
-        table.setForeground(AppTheme.FG);
-        table.setGridColor(AppTheme.BG);
-        table.setSelectionBackground(AppTheme.SEL_BG);
-        table.setSelectionForeground(AppTheme.SEL_FG);
-        table.setShowVerticalLines(false);
-        table.setShowHorizontalLines(true);
-        table.getTableHeader().setBackground(AppTheme.BG);
-        table.getTableHeader().setForeground(AppTheme.FG);
-        table.getTableHeader().setReorderingAllowed(false);
-        table.getTableHeader().setDefaultRenderer(new HeaderRenderer());
         table.setDefaultRenderer(Object.class, new CellRenderer());
+        table.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
 
         table.getColumnModel().getColumn(0).setPreferredWidth(220);
         table.getColumnModel().getColumn(1).setPreferredWidth(520);
@@ -376,18 +338,69 @@ public class CustomCommandsTabPanel extends JPanel {
             }
             String label = CustomCommandStepEditorDialog.stepTypeLabel(step.getType()) + ": ";
             return switch (step.getType()) {
-                case SPEAK        -> label + "\"" + step.getText() + "\"";
-                case DELAY        -> label + step.getDurationMs() + " ms";
-                case BINDING_TAP  -> label + step.getBindingId();
+                case SPEAK -> label + "\"" + step.getText() + "\"";
+                case DELAY -> label + step.getDurationMs() + " ms";
+                case BINDING_TAP -> label + step.getBindingId();
                 case BINDING_HOLD -> label + step.getBindingId() + " (" + step.getDurationMs() + " ms)";
-                case RUN_COMMAND  -> label + step.getActionId();
+                case RUN_COMMAND -> label + step.getActionId();
                 case RAW_KEY -> {
-                    String combo = new BindingSlotDisplayFormatter().formatRawKeyStep(step.getRawKey(), step.getRawKeyModifier());
+                    String combo = new BindingSlotDisplayFormatter().formatRawKeyStep(step.getRawKey(),
+                            step.getRawKeyModifier());
                     yield label + combo + (step.getDurationMs() > 0 ? " (" + step.getDurationMs() + " ms)" : "");
                 }
             };
         }
 
+    }
+
+    private void installRowHover(JTable table) {
+        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, -1);
+        table.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent event) {
+                setHoveredRow(table, rowUnderPoint(table, event.getPoint()));
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent event) {
+                setHoveredRow(table, -1);
+            }
+        });
+    }
+
+    private int rowUnderPoint(JTable table, Point point) {
+        int row = table.rowAtPoint(point);
+        if (row >= 0) {
+            return row;
+        }
+        Point up = new Point(point.x, point.y - 2);
+        row = table.rowAtPoint(up);
+        if (row >= 0) {
+            return row;
+        }
+        Point down = new Point(point.x, point.y + 2);
+        return table.rowAtPoint(down);
+    }
+
+    private void setHoveredRow(JTable table, int row) {
+        Object current = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
+        int currentRow = current instanceof Integer value ? value : -1;
+        if (currentRow == row) {
+            return;
+        }
+        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, row);
+        repaintTableRow(table, currentRow);
+        repaintTableRow(table, row);
+    }
+
+    private void repaintTableRow(JTable table, int row) {
+        if (row < 0 || row >= table.getRowCount()) {
+            return;
+        }
+        Rectangle rect = table.getCellRect(row, 0, true);
+        rect.width = table.getWidth();
+        table.repaint(rect);
     }
 
     private static final class ReadOnlyTableModel extends DefaultTableModel {
@@ -401,31 +414,9 @@ public class CustomCommandsTabPanel extends JPanel {
         }
     }
 
-    private static final class HeaderRenderer extends DefaultTableCellRenderer {
-        private HeaderRenderer() {
-            setOpaque(true);
-        }
+    private static final class CellRenderer extends HudTable.CellRenderer {
+        private final HudCommandNameCellRenderer commandNameRenderer = new HudCommandNameCellRenderer();
 
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table,
-                Object value,
-                boolean isSelected,
-                boolean hasFocus,
-                int row,
-                int column
-        ) {
-            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            label.setBackground(AppTheme.BG);
-            label.setForeground(AppTheme.FG);
-            label.setFont(label.getFont().deriveFont(Font.BOLD));
-            label.setBorder(new EmptyBorder(6, 8, 6, 8));
-            label.setHorizontalAlignment(SwingConstants.LEFT);
-            return label;
-        }
-    }
-
-    private static final class CellRenderer extends DefaultTableCellRenderer {
         private CellRenderer() {
             setOpaque(true);
         }
@@ -437,78 +428,29 @@ public class CustomCommandsTabPanel extends JPanel {
                 boolean isSelected,
                 boolean hasFocus,
                 int row,
-                int column
-        ) {
-            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                int column) {
             if (value instanceof CustomCommandNameCell customCommandNameCell) {
-                label.setText(customCommandNameCell.toHtml());
-                label.setToolTipText(customCommandNameCell.toString());
-            } else {
-                String text = String.valueOf(value);
-                label.setText(text);
-                label.setToolTipText(text);
+                Component component = commandNameRenderer.getTableCellRendererComponent(
+                        table, customCommandNameCell, isSelected, hasFocus, row, column);
+                if (component instanceof JComponent jComponent) {
+                    jComponent.setToolTipText(customCommandNameCell.toString());
+                }
+                return component;
             }
-            if (!isSelected) {
-                label.setBackground(row % 2 == 0 ? AppTheme.BG_PANEL : AppTheme.LOG_BG);
-                label.setForeground(AppTheme.FG);
-            } else {
-                label.setBackground(table.getSelectionBackground());
-                label.setForeground(table.getSelectionForeground());
-            }
-            label.setBorder(new EmptyBorder(4, 8, 4, 8));
-            label.setHorizontalAlignment(SwingConstants.LEFT);
+
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row,
+                    column);
+            String text = String.valueOf(value);
+            label.setText(text);
+            label.setToolTipText(text);
             return label;
         }
     }
 
-    private record CustomCommandNameCell(String name, String id) {
-        private String toHtml() {
-            return "<html><div>"
-                    + escapeHtml(name)
-                    + "<br><span style='font-size:10px;color:#8f96a3;'>"
-                    + escapeHtml(id)
-                    + "</span></div></html>";
-        }
-
+    private record CustomCommandNameCell(String name, String id) implements HudCommandNameCellRenderer.Value {
         @Override
         public String toString() {
             return name + " " + id;
-        }
-    }
-
-    private static String escapeHtml(String value) {
-        return value
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
-    }
-
-    private static final class PlaceholderTextField extends JTextField {
-        private final String placeholder;
-
-        private PlaceholderTextField(String placeholder) {
-            this.placeholder = placeholder;
-            setToolTipText(placeholder);
-        }
-
-        @Override
-        protected void paintComponent(Graphics graphics) {
-            super.paintComponent(graphics);
-            if (!getText().isEmpty() || placeholder == null || placeholder.isBlank()) {
-                return;
-            }
-
-            Graphics2D g2 = (Graphics2D) graphics.create();
-            try {
-                g2.setColor(AppTheme.FG_MUTED);
-                FontMetrics metrics = g2.getFontMetrics();
-                Insets insets = getInsets();
-                int x = insets.left + 2;
-                int y = (getHeight() - metrics.getHeight()) / 2 + metrics.getAscent();
-                g2.drawString(placeholder, x, y);
-            } finally {
-                g2.dispose();
-            }
         }
     }
 

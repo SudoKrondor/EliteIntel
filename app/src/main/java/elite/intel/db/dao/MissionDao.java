@@ -46,6 +46,9 @@ public interface MissionDao {
     @SqlQuery("SELECT * FROM missions WHERE LOWER(keywords) LIKE '%' || LOWER(:keyword) || '%'")
     List<Mission> findByKeyword(@Bind("keyword") String keyword);
 
+    @SqlUpdate("delete from missions where id > 0")
+    void clear();
+
 
     class MissionMapper implements RowMapper<Mission> {
 

@@ -71,8 +71,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = new JPanel(new GridBagLayout());
-        content.setBackground(BG);
+        JPanel content = transparentPanel(new GridBagLayout());
         content.setBorder(new EmptyBorder(10, 14, 8, 14));
         GridBagConstraints gbc = baseGbc();
         gbc.insets = new Insets(3, 6, 3, 6);
@@ -125,16 +124,21 @@ public class AssignKeyboardBindingDialog extends JDialog {
         JButton cancelButton = makeButtonSubtle(getText("button.cancel"));
         cancelButton.addActionListener(e -> dispose());
         saveButton.addActionListener(e -> saveSelection());
-        alreadyInUseLabel.setForeground(new Color(0xFF5A5F));
+        alreadyInUseLabel.setForeground(HUD_DANGER);
         alreadyInUseLabel.setFont(alreadyInUseLabel.getFont().deriveFont(Font.BOLD));
         alreadyInUseLabel.setVisible(false);
         buttons.add(alreadyInUseLabel);
         buttons.add(cancelButton);
         buttons.add(saveButton);
 
-        JPanel wrapper = new JPanel(new BorderLayout(0, 6));
-        wrapper.setBackground(BG);
-        wrapper.add(content, BorderLayout.CENTER);
+        HudSection bindingSection = new HudSection(getText("bindings.assign.section.assignment"), new BorderLayout());
+        bindingSection.body().add(content, BorderLayout.CENTER);
+
+        JPanel wrapper = transparentPanel(new BorderLayout(0, HUD_GAP));
+        wrapper.setOpaque(true);
+        wrapper.setBackground(HUD_BG);
+        wrapper.setBorder(new EmptyBorder(HUD_PADDING, HUD_PADDING, HUD_PADDING, HUD_PADDING));
+        wrapper.add(bindingSection, BorderLayout.CENTER);
         wrapper.add(buttons, BorderLayout.SOUTH);
         setContentPane(wrapper);
 
@@ -153,10 +157,9 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JTextField field = new JTextField(value);
+        JTextField field = makeTextField();
+        field.setText(value);
         field.setEditable(false);
-        field.setBackground(BG_PANEL);
-        field.setForeground(FG);
         panel.add(field, gbc);
     }
 
@@ -352,8 +355,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void styleCombo(JComboBox<?> combo) {
-        combo.setBackground(BG_PANEL);
-        combo.setForeground(FG);
+        styleComboBox(combo);
     }
 
     private String formatKeyToken(String token) {
@@ -413,6 +415,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
                     label.setForeground(FG_MUTED);
                 }
             }
+            label.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
+            if (!isSelected && !(value instanceof KeyOption option && option.placeholder())) {
+                label.setForeground(FG);
+            }
             return label;
         }
     }
@@ -430,6 +436,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
             if (value instanceof ModifierOption option) {
                 label.setText(option.label());
             }
+            label.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
+            label.setForeground(isSelected ? SEL_FG : FG);
             return label;
         }
     }

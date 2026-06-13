@@ -14,13 +14,12 @@ import java.util.Map;
 
 import static elite.intel.ai.hands.KeyProcessor.NATIVE_BASE;
 
+
 /**
- * Linux X11 implementation of NativeKeyInput using libX11 + libXtst (XTest extension).
- * Uses XTestFakeKeyEvent to inject hardware-level key events that correctly distinguish
- * left/right modifier keysyms (XK_Control_L vs XK_Control_R, etc.).
- * <p>
- * Falls back gracefully if X11 display is unavailable (pure Wayland without XWayland).
- * In that case isAvailable() returns false and the factory will use the Robot fallback.
+ * The {@code LinuxX11NativeKeyInput} class provides a native implementation of the {@code NativeKeyInput} interface
+ * using the X11 library and its XTest extension on Linux. This implementation directly interacts with the X11
+ * server to inject key events and perform low-level key handling. The class is designed for advanced keyboard
+ * control, including support for modifier keys (like Shift or Control) through X11's native APIs.
  */
 class LinuxX11NativeKeyInput implements NativeKeyInput {
     private static final Logger log = LogManager.getLogger(LinuxX11NativeKeyInput.class);

@@ -1,22 +1,13 @@
 package elite.intel.ui.view;
 
-import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.ui.event.AppLogEvent;
-import elite.intel.ui.event.SystemShutDownEvent;
-import elite.intel.ui.event.UpdateAvailableEvent;
 import elite.intel.ui.view.settings.AudioSettingsPanel;
 import elite.intel.ui.view.settings.CloudServicesSettingsPanel;
 import elite.intel.ui.view.settings.InputSettingsPanel;
 import elite.intel.ui.view.settings.LocalLlmSettingsPanel;
-import elite.intel.util.Updater;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.Objects;
 
-import static elite.intel.ui.view.AppTheme.makeButtonSubtle;
-import static elite.intel.ui.view.AppTheme.styleTabbedPane;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class SettingsTabPanel extends JPanel {
@@ -25,11 +16,11 @@ public class SettingsTabPanel extends JPanel {
     private final AudioSettingsPanel audioPanel = new AudioSettingsPanel();
     private final InputSettingsPanel inputPanel = new InputSettingsPanel();
     private final CloudServicesSettingsPanel cloudPanel = new CloudServicesSettingsPanel();
+    private final CustomSettingsTabPanel customPanel = new CustomSettingsTabPanel();
 
-    private JButton updateAppButton;
+    private HudUpdateButton updateAppButton;
 
     public SettingsTabPanel() {
-        EventBusManager.register(this);
         buildUi();
         cloudPanel.setOnCloudLlmUsed(() -> localLlmPanel.deactivateLocalLlm());
         cloudPanel.setOnCloudTtsUsed(() -> audioPanel.activateCloudTts());
@@ -39,45 +30,31 @@ public class SettingsTabPanel extends JPanel {
 
     public void dispose() {
         inputPanel.dispose();
-        EventBusManager.unregister(this);
+        if (updateAppButton != null) updateAppButton.dispose();
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        setBackground(AppTheme.HUD_BG);
+        setBorder(AppTheme.hudScreenBorder());
 
-        JTabbedPane tabs = new JTabbedPane();
+        JTabbedPane tabs = AppTheme.makeStandardTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
-        styleTabbedPane(tabs);
         tabs.addTab(getText("settings.tab.localLlm"), scaledIcon("/images/local-llm.png"), localLlmPanel);
         tabs.addTab(getText("settings.tab.audio"), scaledIcon("/images/audio.png"), audioPanel);
         tabs.addTab(getText("settings.tab.input"), scaledIcon("/images/controller.png"), inputPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), scaledIcon("/images/cloud.png"), cloudPanel);
+        // TODO: replace controller.png with a dedicated custom-settings icon
+        tabs.addTab(getText("settings.tab.custom"), scaledIcon("/images/controller.png"), customPanel);
 
-        updateAppButton = makeButtonSubtle(getText("settings.update.upToDate"));
-        updateAppButton.setEnabled(false);
-        updateAppButton.setIcon(scaledIcon("/images/update.png"));
-        updateAppButton.addActionListener(e -> {
-            updateAppButton.setEnabled(false);
-            updateAppButton.setText(getText("settings.update.updating"));
-            Updater.performUpdateAsync().thenAccept(launched -> {
-                if (launched) {
-                    EventBusManager.publish(new SystemShutDownEvent());
-                } else {
-                    SwingUtilities.invokeLater(() -> {
-                        updateAppButton.setEnabled(true);
-                        updateAppButton.setText(getText("settings.update.available"));
-                    });
-                    EventBusManager.publish(new AppLogEvent(
-                            "Could not launch updater - is elite_intel_updater.jar present?"));
-                }
-            });
-        });
+        updateAppButton = new HudUpdateButton();
 
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        footer.setOpaque(false);
+        JPanel footer = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 4));
         footer.add(updateAppButton);
 
-        add(tabs, BorderLayout.CENTER);
+        HudSection section = new HudSection(getText("settings.section.systemConfiguration"), new BorderLayout());
+        section.body().add(tabs, BorderLayout.CENTER);
+        add(section, BorderLayout.CENTER);
         add(footer, BorderLayout.SOUTH);
     }
 
@@ -86,19 +63,10 @@ public class SettingsTabPanel extends JPanel {
         audioPanel.initData();
         inputPanel.initData();
         cloudPanel.initData();
-    }
-
-    @Subscribe
-    public void onUpdateAvailableEvent(UpdateAvailableEvent event) {
-        SwingUtilities.invokeLater(() -> {
-            updateAppButton.setEnabled(true);
-            updateAppButton.setText(getText("settings.update.available"));
-        });
+        customPanel.initData();
     }
 
     private ImageIcon scaledIcon(String resource) {
-        return new ImageIcon(
-                new ImageIcon(Objects.requireNonNull(getClass().getResource(resource)))
-                        .getImage().getScaledInstance(42, 42, Image.SCALE_SMOOTH));
+        return AppTheme.scaledIcon(getClass(), resource, AppTheme.HUD_ICON_MAIN);
     }
 }

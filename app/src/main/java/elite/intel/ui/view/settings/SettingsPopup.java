@@ -7,8 +7,12 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 
-import static elite.intel.ui.view.AppTheme.BG;
+import elite.intel.ui.view.HudSection;
+
 import static elite.intel.ui.view.AppTheme.FG_MUTED;
+import static elite.intel.ui.view.AppTheme.HUD_BG;
+import static elite.intel.ui.view.AppTheme.hudScrollPane;
+import static elite.intel.ui.view.AppTheme.transparentPanel;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class SettingsPopup extends JDialog {
@@ -20,9 +24,8 @@ public class SettingsPopup extends JDialog {
     public SettingsPopup(Component parent, String title, List<SettingRow> rows, Runnable onClose) {
         super(SwingUtilities.getWindowAncestor(parent), title, ModalityType.APPLICATION_MODAL);
 
-        JPanel content = new JPanel();
+        JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
-        content.setBackground(BG);
         content.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         if (rows.isEmpty()) {
@@ -39,14 +42,15 @@ public class SettingsPopup extends JDialog {
             }
         }
 
-        JScrollPane scroll = new JScrollPane(content);
+        HudSection section = new HudSection(title, new BorderLayout());
+        section.body().add(content, BorderLayout.CENTER);
+
+        JScrollPane scroll = hudScrollPane(section);
         scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.setBackground(BG);
-        scroll.getViewport().setBackground(BG);
         scroll.setBorder(BorderFactory.createEmptyBorder());
 
         setContentPane(scroll);
-        getContentPane().setBackground(BG);
+        getContentPane().setBackground(HUD_BG);
 
         int height = Math.clamp(60 + rows.size() * 40L, 140, 520);
         setPreferredSize(new Dimension(parent.getWidth() - 120, height));

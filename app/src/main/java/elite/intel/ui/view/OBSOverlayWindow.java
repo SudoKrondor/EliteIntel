@@ -20,7 +20,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public class OBSOverlayWindow extends JFrame {
 
     private static final Color BG = new Color(0, 0, 0);
-    private static final Color FG = new Color(0xFF8C00);
+    private static final Color FG = AppTheme.ACCENT;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
     private static final int TYPEWRITER_DELAY_MS = 50;

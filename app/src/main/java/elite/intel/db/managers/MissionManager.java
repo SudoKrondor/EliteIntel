@@ -3,7 +3,6 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.MissionDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.MissionType;
-import elite.intel.gameapi.journal.events.MissionsEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.json.GsonFactory;
 
@@ -112,5 +111,11 @@ public class MissionManager {
         });
     }
 
+    public void clear() {
+        Database.withDao(MissionDao.class, dao -> {
+            dao.clear();
+            return Void.TYPE;
+        });
+    }
 }
 

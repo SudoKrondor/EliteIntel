@@ -2,8 +2,6 @@ package elite.intel.ai.mouth.google;
 
 import com.google.cloud.texttospeech.v1.SsmlVoiceGender;
 import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
-import elite.intel.ai.mouth.GoogleVoices;
-import elite.intel.ai.mouth.VoiceProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 

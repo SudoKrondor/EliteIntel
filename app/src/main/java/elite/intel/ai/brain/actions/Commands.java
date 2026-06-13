@@ -18,6 +18,7 @@ public enum Commands {
     FIND_RAW_MATERIAL_TRADER                            ("find_raw_material_trader", null, FindRawMaterialTraderHandler.class),
     FIND_ENCODED_MATERIAL_TRADER                        ("find_encoded_material_trader", null, FindEncodedMaterialTraderHandler.class),
     FIND_MANUFACTURED_MATERIAL_TRADER                   ("find_manufactured_material_trader", null, FindManufacturedMaterialTraderHandler.class),
+    FIND_INTERSTELLAR_FACTOR                            ("find_interstellar_factor", null, PlotRouteToInterstellarFactorsHandler.class),
 
     FIND_HUNTING_GROUNDS                                ("find_hunting_grounds", null,  LocatePirateHuntingGrounds.class),
     RECON_TARGET_SYSTEM                                 ("recon_hunting_ground", null,  ReconPirateMissionTargetSystemHandler.class),
@@ -30,6 +31,7 @@ public enum Commands {
     NAVIGATE_TO_PIRATE_MISSION_PROVIDER                 ("navigate_to_pirate_mission_provider", null,  NavigateToToKnownPirateMassacreMissionProvider.class),
     NAVIGATE_TO_NEXT_TRADE_STOP                         ("navigate_to_trade_stop", null,  NavigateToNextTradeStopHandler.class),
     NAVIGATE_TO_ADDRESS_FROM_MEMORY                     ("navigate_from_memory", null, PasteFromMemoryHandler.class),
+    CLEAR_ALL_ACTIVE_MISSIONS                           ("clear_active_missions", null,  ClearActiveMissionHandler.class),
 
     MONETIZE_ROUTE                                      ("monetize_route", null,  MonetizeRouteHandler.class),
 
@@ -58,7 +60,7 @@ public enum Commands {
     MINING_ON_OFF                                       ("toggle_mining_announcements", null, MiningOnOffHandler.class),
     ROUTE_ON_OFF                                        ("toggle_route_announcements", null, RouteAnnouncementsOnOffHandler.class),
     TOGGLE_ALL_ANNOUNCEMENTS                            ("toggle_all_announcements", null, ToggleAllAnnouncementsHandler.class),
-    HONK_THE_SYSTEM                                     ("honk_the_system", null, HonkTheSystemHandler.class),
+    HONK_THE_SYSTEM                                     ("honk", null, HonkTheSystemHandler.class),
 
     INCREASE_SPEED_BY                                   ("increase_speed", BINDING_INCREASE_SPEED.getGameBinding(),  SpeedPlusControlHandler.class),
     DECREASE_SPEED_BY                                   ("decrease_speed", BINDING_DECREASE_SPEED.getGameBinding(),  SpeedMinusControlHandler.class),
@@ -94,7 +96,10 @@ public enum Commands {
     NAVIGATE_TO_SQUADRON_CARRIER                        ("navigate_to_squadron_carrier", null,  NavigateToMySquadronCarrier.class),
     SET_OPTIMAL_SPEED                                   ("set_optimal_speed", null,  SetOptimalSpeedHandler.class),
     TAKE_ME_HOME                                        ("navigate_to_home_system", null,  NavigateToHomeHandler.class),
-    OPEN_FSS_AND_SCAN                                   ("open_fss_scan_system", null,  DisplayFssAndScanHandler.class),
+    OPEN_FSS                                            ("open_fss_scan_system", null,  DisplayFssAndScanHandler.class),
+    CALCULATE_NEUTRON_STAR_ROUTE                        ("calculate_neutron_star_route", null,  CalculateNeutronStarRouteHandler.class),
+    PLOT_ROUTE_TO_NEXT_NEUTRON_STAR                     ("plot_route_next_neutron_star_waypoint", null,PlotRouteToNextNeutronStarHandler.class),
+    CLEAR_NEUTRON_ROUTE                                ("clear_neutron_route", null, ClearNeutronRouteHandler.class),
 
     GET_HEADING_TO_LZ                                   ("navigate_to_landing_zone", null,  NavigateToLandingZone.class),
     DEPLOY_SRV                                          ("deploy_vehicle_srv", null,  DeploySrvHandler.class),

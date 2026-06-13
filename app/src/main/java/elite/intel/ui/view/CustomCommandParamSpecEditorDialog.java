@@ -50,10 +50,13 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = new JPanel(new BorderLayout(0, 12));
-        content.setBackground(AppTheme.BG);
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        content.setOpaque(true);
+        content.setBackground(AppTheme.HUD_BG);
         content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        content.add(form(), BorderLayout.CENTER);
+        HudSection section = new HudSection(getText("actions.customCommands.editor.param.section.definition"), new BorderLayout());
+        section.body().add(form(), BorderLayout.CENTER);
+        content.add(section, BorderLayout.CENTER);
         content.add(buttons(), BorderLayout.SOUTH);
         setContentPane(content);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -64,7 +67,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
 
     private JPanel form() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        panel.setOpaque(false);
         GridBagConstraints gbc = AppTheme.baseGbc();
 
         addRow(panel, gbc, getText("actions.customCommands.editor.param.name"), nameField);
@@ -75,6 +78,12 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
         addRow(panel, gbc, getText("actions.customCommands.editor.param.extractionHint"), extractionHintField);
 
         AppTheme.applyDarkPalette(panel);
+        AppTheme.styleTextComponent(nameField);
+        AppTheme.styleComboBox(typeCombo);
+        AppTheme.styleCheckBox(requiredCheck);
+        AppTheme.styleTextComponent(descriptionField);
+        AppTheme.styleTextComponent(examplesField);
+        AppTheme.styleTextComponent(extractionHintField);
         return panel;
     }
 

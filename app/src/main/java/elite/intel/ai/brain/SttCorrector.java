@@ -101,6 +101,7 @@ public class SttCorrector {
     // -------------------------------------------------------------------------
 
     private static String correctToken(String token, Set<String> vocabulary) {
+        if (token.contains("-")) return token;     // hyphenated phrases are intentional constructs, not mishearings
         String lower = token.toLowerCase().replaceAll("[^a-z]", "");
         int threshold = maxDistance(lower);
         if (threshold == 0) return token;          // too short - collision risk too high

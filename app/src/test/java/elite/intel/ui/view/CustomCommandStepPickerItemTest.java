@@ -5,9 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CustomCommandStepPickerItemTest {
 
@@ -49,7 +47,7 @@ class CustomCommandStepPickerItemTest {
     @Test
     void builtInCommandItemsDoNotExposeCustomCommandEntries() {
         CommandCatalog catalog = new CommandCatalog();
-
+        //just for test
         assertFalse(catalog.entries().stream().anyMatch(entry -> entry.isCustomCommand()));
         assertEquals(catalog.entries().size(), CustomCommandStepPickerItem.builtInCommandItems().size());
     }

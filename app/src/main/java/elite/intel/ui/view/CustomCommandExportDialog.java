@@ -49,26 +49,23 @@ final class CustomCommandExportDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel root = new JPanel(new BorderLayout(8, 8));
+        JPanel root = AppTheme.transparentPanel(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        root.setOpaque(true);
         root.setBorder(new EmptyBorder(12, 12, 12, 12));
-        root.setBackground(AppTheme.BG);
-        root.add(buildScrollPane(), BorderLayout.CENTER);
+        root.setBackground(AppTheme.HUD_BG);
+        HudSection exportSection = new HudSection(getText("actions.customCommands.export.section.selection"), new BorderLayout());
+        exportSection.body().add(buildScrollPane(), BorderLayout.CENTER);
+        root.add(exportSection, BorderLayout.CENTER);
         root.add(buildBottomBar(), BorderLayout.SOUTH);
         setContentPane(root);
-        getContentPane().setBackground(AppTheme.BG);
+        getContentPane().setBackground(AppTheme.HUD_BG);
     }
 
     private JScrollPane buildScrollPane() {
         JTable table = new JTable(tableModel);
-        table.setBackground(AppTheme.BG_PANEL);
-        table.setForeground(AppTheme.FG);
-        table.setGridColor(AppTheme.BG);
-        table.setSelectionBackground(AppTheme.SEL_BG);
-        table.setSelectionForeground(AppTheme.SEL_FG);
+        HudTable.style(table);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(true);
-        table.getTableHeader().setBackground(AppTheme.BG);
-        table.getTableHeader().setForeground(AppTheme.FG);
         table.getTableHeader().setReorderingAllowed(false);
         table.setFillsViewportHeight(true);
         table.setRowHeight(28);
@@ -90,9 +87,7 @@ final class CustomCommandExportDialog extends JDialog {
             }
         });
 
-        JScrollPane scroll = new JScrollPane(table);
-        scroll.getViewport().setBackground(AppTheme.BG_PANEL);
-        return scroll;
+        return HudTable.scrollPane(table);
     }
 
     private JPanel buildBottomBar() {
@@ -162,6 +157,7 @@ final class CustomCommandExportDialog extends JDialog {
             this.allSelectedQuery = allSelectedQuery;
             checkBox.setOpaque(false);
             wrapper.setOpaque(true);
+            wrapper.setBackground(AppTheme.HUD_PANEL_BG_ALT);
             wrapper.add(checkBox);
         }
 

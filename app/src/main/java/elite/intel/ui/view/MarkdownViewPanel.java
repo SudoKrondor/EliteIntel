@@ -31,7 +31,8 @@ public class MarkdownViewPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(AppTheme.BG);
+        setBackground(AppTheme.HUD_BG);
+        setBorder(AppTheme.hudScreenBorder());
 
         editorPane = new JEditorPane();
         editorPane.setContentType("text/html");
@@ -48,21 +49,21 @@ public class MarkdownViewPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = new JScrollPane(editorPane);
+        JScrollPane scrollPane = AppTheme.hudScrollPane(editorPane);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setBackground(AppTheme.BG);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
         JButton reloadButton = AppTheme.makeButtonSubtle(getText("button.reload"));
         reloadButton.addActionListener(e -> loadContent());
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 4));
-        toolbar.setOpaque(false);
+        JPanel toolbar = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 4));
         toolbar.add(reloadButton);
 
-        add(toolbar, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        HudSection documentSection = new HudSection(getText("manual.section.document"), new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        documentSection.body().add(toolbar, BorderLayout.NORTH);
+        documentSection.body().add(scrollPane, BorderLayout.CENTER);
+        add(documentSection, BorderLayout.CENTER);
 
         // applyDarkPalette (called later in AppView) forces JEditorPane to white.
         // Re-apply our dark background after the palette pass completes.
@@ -283,17 +284,17 @@ public class MarkdownViewPanel extends JPanel {
 
     private String wrapHtml(String body) {
         // Colors from AppTheme palette
-        // BG_PANEL #1F2032, FG #E6E6E6, ACCENT #FF8C00, BUTTON_BG #03529F,
+        // BG_PANEL #1F2032, FG #E6E6E6, ACCENT #FF7100, BUTTON_BG #03529F,
         // BG #141622, CONSOLE_FG #E0FFEF, FG_MUTED #B0B0B0
         return """
                 <html>
                 <head>
                 <style type="text/css">
                 body   { background-color: #1F2032; color: #E6E6E6; margin: 20px; font-size: 18pt; }
-                h1     { color: #FF8C00; font-size: 30pt; }
-                h2     { color: #FF8C00; font-size: 26pt; }
-                h3     { color: #FF8C00; font-size: 22pt; }
-                h4     { color: #FF8C00; font-size: 20pt; }
+                h1     { color: #FF7100; font-size: 30pt; }
+                h2     { color: #FF7100; font-size: 26pt; }
+                h3     { color: #FF7100; font-size: 22pt; }
+                h4     { color: #FF7100; font-size: 20pt; }
                 a      { color: #4E9AF1; }
                 b      { color: #FFFFFF; }
                 code   { font-family: monospace; color: #E0FFEF; background-color: #141622; }

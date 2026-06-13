@@ -87,8 +87,13 @@ public class SpanshClient {
         if (resp.statusCode() == 400) {
             log.warn("POST failed: {}", body);
             EventBusManager.publish(new SensorDataEvent(
-                    "Unable to complete search request. Spansh failed with error message: " + body,
-                    "Issue a warning with exact error message returned from API. format for Speech to Text")
+                            "Unable to complete search request. Spansh.co.uk failed with error message: " + body,
+                            """
+                                    Issue a warning with exact error message returned from API, let user know that Spansh failed to give us any data.
+                                    Make that point clear. 
+                                    Format your response for Speech to Text
+                                    """
+                    )
             );
         }
 

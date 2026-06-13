@@ -200,7 +200,7 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
         } catch (IOException e) {
             log.error("Failed to read file: {}", filePath, e);
         } catch (JsonParseException e) {
-            log.error("Failed to parse JSON in file: {}", filePath);
+            log.warn("Skipping mid-write read of {}", filePath);
         }
         return null;
     }

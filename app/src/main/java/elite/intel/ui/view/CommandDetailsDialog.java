@@ -25,7 +25,6 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public final class CommandDetailsDialog extends JDialog {
 
     private static final Pattern PARAMETER_BLOCK = Pattern.compile("\\{([^}]+)}");
-    private static final Color RUN_BUTTON_BG = new Color(0x1F8F3A);
     private final CommandCatalogEntry entry;
     private final List<String> phrases;
     private final boolean showPhraseCorrection;
@@ -108,11 +107,14 @@ public final class CommandDetailsDialog extends JDialog {
     }
 
     private void buildUi() {
-        JPanel content = new JPanel(new BorderLayout(0, 12));
-        content.setBackground(AppTheme.BG);
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        content.setBackground(AppTheme.HUD_BG);
+        content.setOpaque(true);
         content.setBorder(new EmptyBorder(16, 18, 12, 18));
+        HudSection detailsSection = new HudSection(getText("actions.commands.details.section.metadata"), new BorderLayout());
+        detailsSection.body().add(details(), BorderLayout.CENTER);
         content.add(header(), BorderLayout.NORTH);
-        content.add(details(), BorderLayout.CENTER);
+        content.add(detailsSection, BorderLayout.CENTER);
         content.add(buttons(), BorderLayout.SOUTH);
         setContentPane(content);
 
@@ -142,7 +144,7 @@ public final class CommandDetailsDialog extends JDialog {
 
     private JPanel details() {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        panel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -191,7 +193,7 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JTextArea description = readOnlyTextArea(entry.description());
         description.setRows(3);
-        panel.add(description, gbc);
+        panel.add(AppTheme.hudScrollPane(description), gbc);
         gbc.gridy++;
     }
 
@@ -250,9 +252,7 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.fill = GridBagConstraints.BOTH;
         JTextArea sequence = readOnlyTextArea(sequenceText);
         sequence.setRows(Math.min(10, Math.max(4, sequenceText.split("\\R").length)));
-        JScrollPane scrollPane = new JScrollPane(sequence);
-        scrollPane.getViewport().setBackground(AppTheme.BG_PANEL);
-        panel.add(scrollPane, gbc);
+        panel.add(AppTheme.hudScrollPane(sequence), gbc);
         gbc.gridy++;
         gbc.weighty = 0.0;
     }
@@ -284,18 +284,15 @@ public final class CommandDetailsDialog extends JDialog {
 
         JTextArea area = readOnlyTextArea(String.join(System.lineSeparator(), phrases));
         area.setRows(Math.min(10, Math.max(4, phrases.size())));
-        JScrollPane scrollPane = new JScrollPane(area);
-        scrollPane.getViewport().setBackground(AppTheme.BG_PANEL);
-        return scrollPane;
+        return AppTheme.hudScrollPane(area);
     }
 
     private JTextArea readOnlyTextArea(String text) {
-        JTextArea area = new JTextArea(text);
+        JTextArea area = AppTheme.makeTextArea(0, 0);
+        area.setText(text);
         area.setEditable(false);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setBackground(AppTheme.BG_PANEL);
-        area.setForeground(AppTheme.FG);
         area.setBorder(new EmptyBorder(8, 8, 8, 8));
         return area;
     }
@@ -348,33 +345,8 @@ public final class CommandDetailsDialog extends JDialog {
     }
 
     private JButton runButton() {
-        JButton button = new JButton(getText("actions.commands.details.run"), new PlayIcon()) {
-            @Override
-            protected void paintComponent(Graphics graphics) {
-                Graphics2D g2 = (Graphics2D) graphics.create();
-                try {
-                    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    Color base = RUN_BUTTON_BG;
-                    ButtonModel model = getModel();
-                    if (model.isPressed()) {
-                        base = base.darker();
-                    } else if (model.isRollover()) {
-                        base = base.brighter();
-                    }
-                    g2.setColor(base);
-                    g2.fillRoundRect(0, 0, getWidth(), getHeight(), 8, 8);
-                } finally {
-                    g2.dispose();
-                }
-                super.paintComponent(graphics);
-            }
-        };
-        AppTheme.styleButton(button);
-        button.setBackground(RUN_BUTTON_BG);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(RUN_BUTTON_BG, 1, true),
-                new EmptyBorder(6, 12, 6, 12)
-        ));
+        JButton button = AppTheme.makeButton(getText("actions.commands.details.run"));
+        button.setIcon(new PlayIcon());
         button.setIconTextGap(8);
         return button;
     }
@@ -406,8 +378,8 @@ public final class CommandDetailsDialog extends JDialog {
             return params;
         }
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
+        panel.setBorder(new EmptyBorder(AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING));
         Map<CommandParameter, JComponent> fields = new LinkedHashMap<>();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -425,10 +397,9 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.gridx = 1;
             gbc.weightx = 1.0;
             JComponent field = parameter.isBoolean()
-                    ? new JComboBox<>(new String[]{"", "true", "false"})
-                    : new JTextField(24);
+                    ? AppTheme.makeComboBox(new String[]{"", "true", "false"})
+                    : AppTheme.makeTextField();
             field.setToolTipText(parameter.hint());
-            AppTheme.applyDarkPalette(field);
             panel.add(field, gbc);
             fields.put(parameter, field);
             gbc.gridy++;
@@ -464,8 +435,8 @@ public final class CommandDetailsDialog extends JDialog {
     }
 
     private JsonObject promptForCustomCommandParams() {
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
+        panel.setBorder(new EmptyBorder(AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING));
         Map<CustomCommandParameterSpec, JComponent> fields = new LinkedHashMap<>();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -487,12 +458,11 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.gridx = 1;
             gbc.weightx = 1.0;
             JComponent field = "boolean".equals(spec.getType())
-                    ? new JComboBox<>(new String[]{"", "true", "false"})
-                    : new JTextField(24);
+                    ? AppTheme.makeComboBox(new String[]{"", "true", "false"})
+                    : AppTheme.makeTextField();
             if (!spec.getExamples().isEmpty()) {
                 field.setToolTipText("E.g.: " + String.join(", ", spec.getExamples()));
             }
-            AppTheme.applyDarkPalette(field);
             panel.add(field, gbc);
             fields.put(spec, field);
             gbc.gridy++;

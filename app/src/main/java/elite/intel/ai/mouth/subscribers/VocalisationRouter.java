@@ -2,7 +2,7 @@ package elite.intel.ai.mouth.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.IsSpeakingEvent;
-import elite.intel.ai.mouth.GoogleVoices;
+import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.db.managers.ShipManager;

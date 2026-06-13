@@ -54,11 +54,8 @@ public class TradeProfileSettingsPanel {
 
     private static SettingRow sectionHeader(String title) {
         return () -> {
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 6));
-            row.setBackground(BG);
-            JLabel lbl = new JLabel(title.toUpperCase());
-            lbl.setForeground(ACCENT);
-            lbl.setFont(lbl.getFont().deriveFont(Font.BOLD, 11f));
+            JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 6));
+            JLabel lbl = hudSectionLabel(title.toUpperCase());
             row.add(lbl);
             return row;
         };
@@ -66,13 +63,8 @@ public class TradeProfileSettingsPanel {
 
     private static SettingRow checkRow(String label, BooleanSupplier getter, Consumer<Boolean> setter, String commandKey) {
         return () -> {
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-            row.setBackground(BG);
-            JCheckBox cb = new JCheckBox(label);
-            cb.setSelected(getter.getAsBoolean());
-            cb.setBackground(BG);
-            cb.setForeground(FG);
-            cb.setFocusPainted(false);
+            JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 4));
+            JCheckBox cb = makeCheckBox(label, getter.getAsBoolean());
             cb.addActionListener(e -> setter.accept(cb.isSelected()));
             row.add(cb);
             if (commandKey != null) {
@@ -84,18 +76,15 @@ public class TradeProfileSettingsPanel {
 
     private static SettingRow intRow(String label, Supplier<Integer> getter, Consumer<Integer> setter, String commandKey) {
         return () -> {
-            JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-            row.setBackground(BG);
+            JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 4));
 
             JLabel lbl = new JLabel(label);
             lbl.setForeground(FG);
             lbl.setPreferredSize(new Dimension(LABEL_WIDTH, lbl.getPreferredSize().height));
 
-            JTextField field = new JTextField(String.valueOf(getter.get()));
+            JTextField field = makeTextField();
+            field.setText(String.valueOf(getter.get()));
             field.setPreferredSize(new Dimension(FIELD_WIDTH, field.getPreferredSize().height));
-            field.setBackground(BG_PANEL);
-            field.setForeground(FG);
-            field.setCaretColor(FG);
             field.addFocusListener(new FocusAdapter() {
                 @Override
                 public void focusLost(FocusEvent e) {

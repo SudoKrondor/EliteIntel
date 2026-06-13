@@ -5,9 +5,9 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
+import elite.intel.ui.view.HudSection;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 
 import static elite.intel.ui.view.AppTheme.*;
@@ -38,51 +38,49 @@ public class LocalLlmSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
+        setBackground(HUD_BG);
 
-        JPanel fields = new JPanel(new GridBagLayout());
+        HudSection fieldsSection = new HudSection(getText("settings.localLlm.section.models"), new GridBagLayout());
+        JPanel fields = fieldsSection.body();
         GridBagConstraints gc = baseGbc();
 
         addLabel(fields, getText("settings.localLlm.address"), gc);
-        localLlmAddressField = new JTextField();
+        localLlmAddressField = makeTextField();
         addField(fields, localLlmAddressField, gc, 1, 1.0);
 
         nextRow(gc);
         addLabel(fields, getText("settings.localLlm.command"), gc);
-        localLlmModelCommandField = new JTextField();
+        localLlmModelCommandField = makeTextField();
         addField(fields, localLlmModelCommandField, gc, 1, 1.0);
-        useLocalCommandLLMCheck = new JCheckBox(getText("settings.cloud.use"), false);
+        useLocalCommandLLMCheck = makeCheckBox(getText("settings.cloud.use"), false);
         useLocalCommandLLMCheck.addActionListener(e -> onCheckboxToggled());
         addCheck(fields, useLocalCommandLLMCheck, gc);
 
         nextRow(gc);
         addLabel(fields, getText("settings.localLlm.query"), gc);
-        localLlmModelQueryField = new JTextField();
+        localLlmModelQueryField = makeTextField();
         addField(fields, localLlmModelQueryField, gc, 1, 1.0);
-        useLocalQueryLLMCheck = new JCheckBox(getText("settings.cloud.use"), false);
+        useLocalQueryLLMCheck = makeCheckBox(getText("settings.cloud.use"), false);
         useLocalQueryLLMCheck.addActionListener(e -> onCheckboxToggled());
         addCheck(fields, useLocalQueryLLMCheck, gc);
 
-        fields.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BUTTON_BG, 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-
         ollamaRadio = new JRadioButton(getText("settings.localLlm.ollama"));
         lmStudioRadio = new JRadioButton(getText("settings.localLlm.lmStudio"));
+        styleCheckBox(ollamaRadio);
+        styleCheckBox(lmStudioRadio);
         ButtonGroup providerGroup = new ButtonGroup();
         providerGroup.add(ollamaRadio);
         providerGroup.add(lmStudioRadio);
         ollamaRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.OLLAMA));
         lmStudioRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.LMSTUDIO));
 
-        JPanel providerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        providerPanel.setOpaque(false);
+        HudSection providerSection = new HudSection(getText("settings.localLlm.section.provider"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
+        JPanel providerPanel = providerSection.body();
         providerPanel.add(new JLabel(getText("settings.localLlm.host")));
         providerPanel.add(ollamaRadio);
         providerPanel.add(lmStudioRadio);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.setOpaque(false);
+        JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
 
         JButton saveButton = makeButton(getText("button.save"));
         saveButton.addActionListener(e -> save());
@@ -95,13 +93,13 @@ public class LocalLlmSettingsPanel extends JPanel {
         buttons.add(saveButton);
         buttons.add(restoreButton);
 
-        JPanel content = new JPanel();
+        JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(fields);
+        content.add(fieldsSection);
         content.add(Box.createVerticalStrut(12));
-        content.add(providerPanel);
-        content.add(Box.createVerticalStrut(4));
+        content.add(providerSection);
+        content.add(Box.createVerticalStrut(12));
         content.add(buttons);
 
         add(content, BorderLayout.NORTH);

@@ -3,35 +3,23 @@ package elite.intel.ui.view;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.LlmUsageEvent;
+import elite.intel.ui.event.LlmSessionStatsChangedEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.ServicesStateEvent;
+import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
+import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class UsageStatsTabPanel extends JPanel {
 
-    private Instant sessionStart = Instant.now();
-    // Only ever read/written on the EDT
-    private final Set<String> seenModels = new LinkedHashSet<>();
-
-    private volatile int lastPrompt = 0;
-    private volatile int lastCompletion = 0;
-    private volatile double lastTps = 0.0;
-    private final AtomicInteger totalPrompt = new AtomicInteger();
-    private final AtomicInteger totalCompletion = new AtomicInteger();
-    private final AtomicInteger totalCachedHits = new AtomicInteger();
-    private final AtomicInteger totalCacheWritten = new AtomicInteger();
     private final SystemSession systemSession = SystemSession.getInstance();
+    private final LlmSessionStatsTracker statsTracker = LlmSessionStatsTracker.getInstance();
 
     private JLabel providerLabel;
     private JLabel sessionTimeLabel;
@@ -57,6 +45,7 @@ public class UsageStatsTabPanel extends JPanel {
 
     @Subscribe
     public void onServicesState(ServicesStateEvent event) {
+        // Tracker handles state reset; panel rebuilds UI because usingLocalLLMs may change.
         if (event.isRunning()) {
             SwingUtilities.invokeLater(this::reset);
         }
@@ -67,16 +56,12 @@ public class UsageStatsTabPanel extends JPanel {
         SwingUtilities.invokeLater(this::reset);
     }
 
+    @Subscribe
+    public void onStatsChanged(LlmSessionStatsChangedEvent event) {
+        SwingUtilities.invokeLater(() -> refreshFromSnapshot(event.snapshot()));
+    }
+
     private void reset() {
-        lastPrompt = 0;
-        lastCompletion = 0;
-        lastTps = 0.0;
-        totalPrompt.set(0);
-        totalCompletion.set(0);
-        totalCachedHits.set(0);
-        totalCacheWritten.set(0);
-        seenModels.clear();
-        sessionStart = Instant.now();
         removeAll();
         buildUi();
         revalidate();
@@ -84,18 +69,20 @@ public class UsageStatsTabPanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(new EmptyBorder(16, 2, 16, 20));
-        setOpaque(false);
+        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        setBorder(AppTheme.hudScreenBorder());
+        setBackground(AppTheme.HUD_BG);
         boolean usingLocalLLMs = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
-        // Header
-        JPanel header = new JPanel();
+
+        JPanel dashboard = AppTheme.transparentPanel(null);
+        dashboard.setLayout(new BoxLayout(dashboard, BoxLayout.Y_AXIS));
+
+        HudSection telemetrySection = new HudSection(getText("stats.section.llmTelemetry"), new BorderLayout());
+        JPanel header = AppTheme.transparentPanel(null);
         header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
-        header.setOpaque(false);
-        header.setBorder(new EmptyBorder(8, 0, 0, 0));
 
         providerLabel = new JLabel(getText("stats.llm.na"));
-        providerLabel.setFont(providerLabel.getFont().deriveFont(Font.BOLD, 16f));
+        providerLabel.setFont(providerLabel.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_STAT_LG));
         providerLabel.setForeground(AppTheme.FG);
 
         sessionTimeLabel = new JLabel(getText("stats.sessionTime.initial"));
@@ -104,18 +91,14 @@ public class UsageStatsTabPanel extends JPanel {
         header.add(providerLabel);
         header.add(Box.createHorizontalGlue());
         header.add(sessionTimeLabel);
-        header.setAlignmentX(Component.LEFT_ALIGNMENT);
+        telemetrySection.body().add(header, BorderLayout.CENTER);
 
-        // Chart
         chart = new BarChart(usingLocalLLMs);
+        HudSection tokenSection = new HudSection(getText("stats.section.tokenUsage"), new BorderLayout());
+        tokenSection.body().add(chart, BorderLayout.CENTER);
 
-        // Footer
-        JPanel footer = new JPanel();
+        JPanel footer = AppTheme.transparentPanel(null);
         footer.setLayout(new BoxLayout(footer, BoxLayout.Y_AXIS));
-        footer.setOpaque(false);
-        footer.setBorder(new EmptyBorder(8, 0, 0, 0));
-        footer.setBackground(AppTheme.LOG_BG);
-        footer.setPreferredSize(new Dimension(super.getPreferredSize().width, 180));
 
         if (usingLocalLLMs) {
             totalLabel = new JLabel(getText("stats.total.free", 0));
@@ -135,52 +118,38 @@ public class UsageStatsTabPanel extends JPanel {
         savedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         tphLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        footer.add(Box.createVerticalGlue());
         footer.add(totalLabel);
+        footer.add(Box.createVerticalStrut(6));
         if (!usingLocalLLMs) footer.add(savedLabel);
+        if (!usingLocalLLMs) footer.add(Box.createVerticalStrut(6));
         footer.add(tphLabel);
 
-        /// put it all together
-        add(header);
-        add(chart);
+        HudSection summarySection = new HudSection(getText("stats.section.sessionSummary"), new BorderLayout());
+        summarySection.body().add(footer, BorderLayout.CENTER);
+
+        dashboard.add(telemetrySection);
+        dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+        dashboard.add(tokenSection);
         if (usingLocalLLMs) {
-            add(new JLabel(getText("stats.localCacheNote")));
+            dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+            dashboard.add(new HudBanner(getText("stats.localCacheNote"), StatusBadge.State.INFO));
         }
-        add(Box.createVerticalGlue());
-        add(footer);
+        dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+        dashboard.add(summarySection);
+        dashboard.add(Box.createVerticalGlue());
+
+        add(dashboard, BorderLayout.CENTER);
     }
 
-    @Subscribe
-    public void onLlmUsage(LlmUsageEvent event) {
-        lastPrompt = event.promptTokens();
-        lastCompletion = event.completionTokens();
-        lastTps = event.tps();
-        totalPrompt.addAndGet(event.promptTokens());
-        totalCompletion.addAndGet(event.completionTokens());
-        totalCachedHits.addAndGet(event.cachedTokens());
-        totalCacheWritten.addAndGet(event.cacheWrittenTokens());
-        SwingUtilities.invokeLater(() -> {
-            seenModels.add(event.provider() + "  [" + event.model() + "]");
-            refresh();
-        });
-    }
-
-    private void tickClock() {
-        Duration d = Duration.between(sessionStart, Instant.now());
-        sessionTimeLabel.setText(getText("stats.sessionTime", String.format("%02d:%02d:%02d",
-                d.toHours(), d.toMinutesPart(), d.toSecondsPart())));
-        refreshTph();
-    }
-
-    private void refresh() {
-        if (!seenModels.isEmpty()) {
-            providerLabel.setText(getText("stats.llm", String.join(" / ", seenModels)));
+    private void refreshFromSnapshot(LlmSessionStatsSnapshot snap) {
+        if (snap.hasData()) {
+            providerLabel.setText(getText("stats.llm", snap.modelDisplay()));
         }
-        int hits = totalCachedHits.get();
-        int written = totalCacheWritten.get();
-        int total = totalPrompt.get() + totalCompletion.get();
+        int hits = snap.totalCachedHits();
+        int written = snap.totalCacheWritten();
+        int total = snap.totalPromptTokens() + snap.totalCompletionTokens();
 
-        chart.update(lastPrompt, lastCompletion, hits, written, lastTps);
+        chart.update(snap.lastPromptTokens(), snap.lastCompletionTokens(), hits, written, snap.lastTps());
         if (systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm()) {
             totalLabel.setText(getText("stats.total.free.upper", total));
         } else {
@@ -189,16 +158,21 @@ public class UsageStatsTabPanel extends JPanel {
         savedLabel.setText(hits > 0
                 ? getText("stats.cacheSavedReduced", hits)
                 : getText("stats.cacheSaved", 0));
-        refreshTph();
+        refreshTph(snap);
     }
 
-    private void refreshTph() {
+    private void tickClock() {
+        LlmSessionStatsSnapshot snap = statsTracker.getSnapshot();
+        Duration d = Duration.between(snap.sessionStart(), Instant.now());
+        sessionTimeLabel.setText(getText("stats.sessionTime", String.format("%02d:%02d:%02d",
+                d.toHours(), d.toMinutesPart(), d.toSecondsPart())));
+        refreshTph(snap);
+    }
+
+    private void refreshTph(LlmSessionStatsSnapshot snap) {
         // promptTokens = API input_tokens (excludes cache reads), so add all three buckets
-        int prompt = totalPrompt.get();
-        int completion = totalCompletion.get();
-        int hits = totalCachedHits.get();
-        int total = prompt + completion + hits;
-        long elapsedSeconds = Duration.between(sessionStart, Instant.now()).toSeconds();
+        int total = snap.totalPromptTokens() + snap.totalCompletionTokens() + snap.totalCachedHits();
+        long elapsedSeconds = Duration.between(snap.sessionStart(), Instant.now()).toSeconds();
         if (elapsedSeconds < 600) {
             tphLabel.setText(getText("stats.tokensPerHour.collecting"));
         } else if (total > 0) {
@@ -219,13 +193,14 @@ public class UsageStatsTabPanel extends JPanel {
                 getText("stats.chart.cacheHitsTotal"),
                 getText("stats.chart.cacheWrittenTotal")
         };
+        private static final String TPS_LABEL = getText("stats.chart.lastSpeed");
         private static final Color[] COLORS = {
-                new Color(0x03529F),   // blue   – prompt
-                new Color(0x2E8B57),   // green  – completion
-                new Color(0xFF8C00),   // orange – cache hits
-                new Color(0x6A6A8A)    // grey   – cache written
+                AppTheme.HUD_CYAN,
+                AppTheme.HUD_OK,
+                AppTheme.ACCENT,
+                AppTheme.HUD_DISABLED
         };
-        private static final Color TPS_COLOR = new Color(0x20B2AA); // teal – speed
+        private static final Color TPS_COLOR = AppTheme.HUD_CYAN;
 
         private final boolean localMode;
         private int[] values = new int[4];
@@ -277,7 +252,7 @@ public class UsageStatsTabPanel extends JPanel {
                 int maxVal = 1;
                 for (int i = 0; i < tokenBars; i++) maxVal = Math.max(maxVal, values[i]);
 
-                Font font = g2.getFont().deriveFont(18f);
+                Font font = g2.getFont().deriveFont(AppTheme.HUD_FONT_LG);
                 g2.setFont(font);
                 FontMetrics fm = g2.getFontMetrics(font);
                 int baseline = barH / 2 + fm.getAscent() / 2 - 1;
@@ -289,7 +264,7 @@ public class UsageStatsTabPanel extends JPanel {
                     g2.setColor(AppTheme.FG_MUTED);
                     g2.drawString(LABELS[i], 0, y + baseline);
 
-                    g2.setColor(AppTheme.BG_PANEL);
+                    g2.setColor(AppTheme.HUD_PANEL_BG_ALT);
                     g2.fillRoundRect(labelW, y, barAreaW, barH, 6, 6);
 
                     if (values[i] > 0) {
@@ -302,12 +277,12 @@ public class UsageStatsTabPanel extends JPanel {
                     g2.drawString(formatTokens(values[i]), labelW + barAreaW + 8, y + baseline);
                 }
 
-                // TPS bar – independent scale: max observed TPS = full width
+                // TPS bar uses its own observed scale so token volume cannot flatten speed changes.
                 int tpsY = startY + tokenBars * rowH;
                 g2.setColor(AppTheme.FG_MUTED);
-                g2.drawString("Last Speed (t/s)", 0, tpsY + baseline);
+                g2.drawString(TPS_LABEL, 0, tpsY + baseline);
 
-                g2.setColor(AppTheme.BG_PANEL);
+                g2.setColor(AppTheme.HUD_PANEL_BG_ALT);
                 g2.fillRoundRect(labelW, tpsY, barAreaW, barH, 6, 6);
 
                 if (lastTps > 0) {

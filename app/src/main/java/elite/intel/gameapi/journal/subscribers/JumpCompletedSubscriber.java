@@ -1,9 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.db.dao.DestinationReminderDao;
@@ -47,11 +46,14 @@ public class JumpCompletedSubscriber {
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
     private final ReminderManager destinationReminderManager = ReminderManager.getInstance();
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();
+    private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final Status status = Status.getInstance();
 
     @Subscribe
     public void onFSDJumpEvent(FSDJumpEvent event) {
         Thread.ofVirtual().start(() -> {
+            neutronStarRouteManager.removeLeg(event.getSystemAddress());
+
             SystemBodiesDto systemBodiesDto = EdsmApiClient.searchSystemBodies(event.getStarSystem());
             processEdsmData(systemBodiesDto, event.getSystemAddress(), event.getStarPos());
 

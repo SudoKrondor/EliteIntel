@@ -1,24 +1,26 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
 import elite.intel.ai.brain.InputNormalizer;
+import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.gameapi.EventBusManager;
+import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Singleton coordinator for user-defined customCommands.
- * <p>
- * Call {@link #load()} once at application startup before {@code ResponseRouter} is initialized.
- * After that the registry is read-only and thread-safe without locking.
+ * A singleton registry for managing custom commands, providing the ability to load, retrieve,
+ * replace, and interact with custom command definitions. This class manages runtime custom command
+ * state and integrates them with various application components.
+ *
+ * <h2>Responsibilities</h2>
+ * 1. Loading custom command definitions from a predefined source file.
+ * 2. Returning immutable snapshots of the loaded custom commands.
+ * 3. Maintaining and exposing the status of the most recent load operation, including skipped commands and backup restoration.
+ * 4. Allowing integration of custom command data into the related runtime structures such as action maps, parameter rules, and handler maps.
+ * 5. Supporting controlled modification of the in-memory custom commands without performing persistence operations.
  */
 public final class CustomCommandRegistry {
 
@@ -72,6 +74,7 @@ public final class CustomCommandRegistry {
     public void replaceCustomCommands(List<CustomCommandDefinition> customCommands) {
         setCustomCommands(customCommands);
         log.info("Custom command registry: {} command(s) active after replace", this.customCommands.size());
+        EventBusManager.publish(new CustomCommandsSummaryChangedEvent(this.customCommands.size()));
     }
 
     /**
@@ -115,11 +118,14 @@ public final class CustomCommandRegistry {
     }
 
     /**
-     * Appends a {@code CUSTOM COMMAND PARAMS} section to {@code sb} for any parameterized customCommands
-     * whose IDs appear as values in the already-reduced action map.
-     * Called from {@code PromptFactory.generateUserInputSystemPrompt()} after
-     * {@code Reducer.formatActions()} so the LLM sees parameter rules only for customCommands
-     * that survived reduction — avoids sending param rules for unrelated customCommands and reduces token usage.
+     * Appends the rules for custom command parameters to the provided {@code StringBuilder}.
+     * This includes a description of required parameters for active custom commands
+     * based on the given mapping of reduced actions.
+     *
+     * @param reducedActions A map associating string keys (e.g., action phrases) to their corresponding
+     *                       action IDs for filtering relevant custom commands.
+     * @param sb             A {@code StringBuilder} object to which the constructed rules for
+     *                       custom command parameters will be appended.
      */
     public void appendCustomCommandParamRules(Map<String, String> reducedActions, StringBuilder sb) {
         Set<String> activeIds = new HashSet<>(reducedActions.values());
@@ -129,7 +135,10 @@ public final class CustomCommandRegistry {
                 .toList();
         if (activeCustomCommands.isEmpty()) return;
 
-        sb.append("\nCUSTOM COMMAND PARAMS (required for custom command actions above — include ALL required params):\n\n");
+        sb.append("""      
+                CUSTOM COMMAND PARAMS (required for custom command actions above include ALL required params):
+                
+                """);
         for (CustomCommandDefinition customCommand : activeCustomCommands) {
             sb.append("  ").append(customCommand.getActionKey()).append(":\n");
             for (CustomCommandParameterSpec param : customCommand.getParameters()) {
@@ -138,7 +147,7 @@ public final class CustomCommandRegistry {
                 if (param.isRequired()) sb.append(", required");
                 sb.append(")");
                 if (!param.getDescription().isBlank()) {
-                    sb.append(" — ").append(param.getDescription());
+                    sb.append(" - ").append(param.getDescription());
                 }
                 List<String> examples = param.getExamples();
                 if (!examples.isEmpty()) {

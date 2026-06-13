@@ -4,7 +4,6 @@ import com.google.cloud.texttospeech.v1.*;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.GoogleVoices;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.*;
@@ -66,12 +65,10 @@ public class GoogleTTSImpl implements MouthInterface {
 
     @Override
     public synchronized void start() {
-        EventBusManager.register(this);
         if (ttsProcessingThread != null && ttsProcessingThread.isAlive()) {
             log.warn("VoiceGenerator is already running");
             return;
         }
-
 
         try {
             String apiKey = systemSession.getTtsApiKey();
@@ -89,6 +86,7 @@ public class GoogleTTSImpl implements MouthInterface {
         }
 
         running = true;
+        EventBusManager.register(this);
         ttsProcessingThread = new Thread(this::processTTSQueue, "TTSThread");
         ttsProcessingThread.start();
 
@@ -105,7 +103,7 @@ public class GoogleTTSImpl implements MouthInterface {
 
     @Override
     public synchronized void stop() {
-        EventBusManager.unregister(this);
+        if (running) EventBusManager.unregister(this);
         if (ttsProcessingThread == null || !ttsProcessingThread.isAlive()) {
             log.warn("VoiceGenerator is not running");
             return;

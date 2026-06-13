@@ -52,24 +52,17 @@ public class HonkSystemSettingsPanel implements SettingRow {
 
     @Override
     public JPanel build() {
-        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        row.setBackground(BG);
+        JPanel row = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 4));
 
-        JCheckBox cb = new JCheckBox(checkLabel);
         boolean checked = checkGetter.getAsBoolean();
-        cb.setSelected(checked);
-        cb.setBackground(BG);
-        cb.setForeground(FG);
-        cb.setFocusPainted(false);
+        JCheckBox cb = makeCheckBox(checkLabel, checked);
 
         JComboBox<String> fireGroupComboBox = new JComboBox<>(fireGroupOptions.toArray(new String[0]));
-        fireGroupComboBox.setBackground(BG_PANEL);
-        fireGroupComboBox.setForeground(FG);
+        styleComboBox(fireGroupComboBox);
         fireGroupComboBox.setEnabled(checked);
 
         JComboBox<Integer> triggerGroupComboBox = new JComboBox<>(triggerOptions.toArray(new Integer[0]));
-        triggerGroupComboBox.setBackground(BG_PANEL);
-        triggerGroupComboBox.setForeground(FG);
+        styleComboBox(triggerGroupComboBox);
         triggerGroupComboBox.setEnabled(checked);
 
 

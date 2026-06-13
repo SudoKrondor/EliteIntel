@@ -5,6 +5,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.ui.event.*;
 import elite.intel.ui.view.AiTabPanel;
 
+import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AiTabController {
@@ -29,13 +30,13 @@ public class AiTabController {
     @Subscribe
     public void onAppLogDebugEvent(AppLogDebugEvent event) {
         if (!showDetailedLog.get()) return;
-        view.addSystemMessage(event.getData());
+        view.addSystemMessage(event.getTimestamp(), event.getData());
     }
 
     @Subscribe
     public void onAppLogEvent(AppLogEvent event) {
         if (event.getData() == null || event.getData().isBlank()) return;
-        view.addSystemMessage(event.getData());
+        view.addSystemMessage(event.getTimestamp(), event.getData());
     }
 
     @Subscribe

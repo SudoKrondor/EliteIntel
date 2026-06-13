@@ -52,6 +52,7 @@ final class CustomCommandEditorDialog extends JDialog {
     private final StepsTableModel stepsModel = new StepsTableModel();
     private final JTable stepsTable = new JTable(stepsModel);
     private final JTextArea errorsArea = textArea(4);
+    private JScrollPane errorsScrollPane;
     private CustomCommandDefinition result;
 
     CustomCommandEditorDialog(Component parent, CustomCommandDefinition customCommand, List<CustomCommandDefinition> existingCustomCommands) {
@@ -88,13 +89,15 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private void buildUi(boolean existing) {
-        JPanel content = new JPanel(new BorderLayout(0, 12));
-        content.setBackground(AppTheme.BG);
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        content.setOpaque(true);
+        content.setBackground(AppTheme.HUD_BG);
         content.setBorder(new EmptyBorder(16, 18, 12, 18));
-        content.add(form(existing), BorderLayout.NORTH);
+        HudSection identitySection = new HudSection(getText("actions.customCommands.editor.section.identity"), new BorderLayout());
+        identitySection.body().add(form(existing), BorderLayout.CENTER);
+        content.add(identitySection, BorderLayout.NORTH);
 
-        JPanel center = new JPanel(new BorderLayout(0, 12));
-        center.setOpaque(false);
+        JPanel center = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
         center.add(paramsPanel(), BorderLayout.NORTH);
         center.add(stepsPanel(), BorderLayout.CENTER);
         content.add(center, BorderLayout.CENTER);
@@ -110,7 +113,7 @@ final class CustomCommandEditorDialog extends JDialog {
 
     private JPanel form(boolean existing) {
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(AppTheme.BG);
+        panel.setOpaque(false);
         GridBagConstraints gbc = AppTheme.baseGbc();
         idField.setEditable(false);
         idField.setForeground(AppTheme.FG_MUTED);
@@ -123,38 +126,27 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel paramsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel(getText("actions.customCommands.editor.parameters"));
-        label.setForeground(AppTheme.FG_MUTED);
-        panel.add(label, BorderLayout.NORTH);
+        HudSection panel = new HudSection(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, AppTheme.HUD_GAP));
 
         paramsTable.setFillsViewportHeight(true);
         paramsTable.setRowHeight(26);
         paramsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        paramsTable.setBackground(AppTheme.BG_PANEL);
-        paramsTable.setForeground(AppTheme.FG);
-        paramsTable.setSelectionBackground(AppTheme.SEL_BG);
-        paramsTable.setSelectionForeground(AppTheme.SEL_FG);
-        paramsTable.getTableHeader().setBackground(AppTheme.BG);
-        paramsTable.getTableHeader().setForeground(AppTheme.FG);
+        HudTable.style(paramsTable);
         paramsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) editParam();
             }
         });
-        JScrollPane scroll = new JScrollPane(paramsTable);
+        JScrollPane scroll = HudTable.scrollPane(paramsTable);
         scroll.setPreferredSize(new Dimension(0, 130));
-        panel.add(scroll, BorderLayout.CENTER);
+        panel.body().add(scroll, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.setOpaque(false);
+        JPanel buttons = AppTheme.transparentPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
         addStepButton(buttons, "actions.customCommands.editor.param.add", this::addParam);
         addStepButton(buttons, "actions.customCommands.editor.param.edit", this::editParam);
         addStepButton(buttons, "actions.customCommands.editor.param.remove", this::removeParam);
-        panel.add(buttons, BorderLayout.SOUTH);
+        panel.body().add(buttons, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -187,38 +179,27 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel stepsPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 8));
-        panel.setOpaque(false);
-
-        JLabel label = new JLabel(getText("actions.customCommands.editor.steps"));
-        label.setForeground(AppTheme.FG_MUTED);
-        panel.add(label, BorderLayout.NORTH);
+        HudSection panel = new HudSection(getText("actions.customCommands.editor.steps"), new BorderLayout(0, AppTheme.HUD_GAP));
 
         stepsTable.setFillsViewportHeight(true);
         stepsTable.setRowHeight(30);
         stepsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        stepsTable.setBackground(AppTheme.BG_PANEL);
-        stepsTable.setForeground(AppTheme.FG);
-        stepsTable.setSelectionBackground(AppTheme.SEL_BG);
-        stepsTable.setSelectionForeground(AppTheme.SEL_FG);
-        stepsTable.getTableHeader().setBackground(AppTheme.BG);
-        stepsTable.getTableHeader().setForeground(AppTheme.FG);
+        HudTable.style(stepsTable);
         stepsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) editStep();
             }
         });
-        panel.add(new JScrollPane(stepsTable), BorderLayout.CENTER);
+        panel.body().add(HudTable.scrollPane(stepsTable), BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.setOpaque(false);
+        JPanel buttons = AppTheme.transparentPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
         addStepButton(buttons, "actions.customCommands.editor.step.add", this::addStep);
         addStepButton(buttons, "actions.customCommands.editor.step.edit", this::editStep);
         addStepButton(buttons, "actions.customCommands.editor.step.remove", this::removeStep);
         addStepButton(buttons, "actions.customCommands.editor.step.up", () -> moveSelected(-1));
         addStepButton(buttons, "actions.customCommands.editor.step.down", () -> moveSelected(1));
-        panel.add(buttons, BorderLayout.SOUTH);
+        panel.body().add(buttons, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -228,7 +209,9 @@ final class CustomCommandEditorDialog extends JDialog {
 
         errorsArea.setEditable(false);
         errorsArea.setVisible(false);
-        panel.add(errorsArea, BorderLayout.CENTER);
+        errorsScrollPane = AppTheme.hudScrollPane(errorsArea);
+        errorsScrollPane.setVisible(false);
+        panel.add(errorsScrollPane, BorderLayout.CENTER);
 
         JPanel buttons = new JPanel(new BorderLayout());
         buttons.setOpaque(false);
@@ -249,9 +232,7 @@ final class CustomCommandEditorDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        field.setBackground(AppTheme.BG_PANEL);
-        field.setForeground(AppTheme.FG);
-        field.setCaretColor(AppTheme.FG);
+        AppTheme.styleTextComponent(field);
         panel.add(field, gbc);
         gbc.gridy++;
     }
@@ -261,9 +242,7 @@ final class CustomCommandEditorDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JScrollPane scrollPane = new JScrollPane(area);
-        scrollPane.getViewport().setBackground(AppTheme.BG_PANEL);
-        panel.add(scrollPane, gbc);
+        panel.add(AppTheme.hudScrollPane(area), gbc);
         gbc.gridy++;
     }
 
@@ -428,6 +407,9 @@ final class CustomCommandEditorDialog extends JDialog {
     private void showErrors(List<String> errors) {
         errorsArea.setText(String.join(System.lineSeparator(), errors));
         errorsArea.setVisible(true);
+        if (errorsScrollPane != null) {
+            errorsScrollPane.setVisible(true);
+        }
         pack();
     }
 
@@ -435,9 +417,7 @@ final class CustomCommandEditorDialog extends JDialog {
         JTextArea area = new JTextArea(rows, 36);
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
-        area.setBackground(AppTheme.BG_PANEL);
-        area.setForeground(AppTheme.FG);
-        area.setCaretColor(AppTheme.FG);
+        AppTheme.styleTextComponent(area);
         area.setBorder(new EmptyBorder(8, 8, 8, 8));
         installPlainTextPaste(area);
         return area;

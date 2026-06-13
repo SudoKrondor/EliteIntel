@@ -1,14 +1,12 @@
 package elite.intel.ui.view;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 
-import static elite.intel.ui.view.AppTheme.BG_PANEL;
-import static elite.intel.ui.view.AppTheme.FG;
-import static elite.intel.ui.view.AppTheme.FG_MUTED;
-import static elite.intel.ui.view.AppTheme.SEL_BG;
-import static elite.intel.ui.view.AppTheme.SEL_FG;
+import static elite.intel.ui.view.AppTheme.ACCENT;
+import static elite.intel.ui.view.AppTheme.HUD_DISABLED;
+import static elite.intel.ui.view.AppTheme.HUD_TABLE_ROW;
+import static elite.intel.ui.view.AppTheme.HUD_TABLE_ROW_HOVER;
 
 /**
  * Table renderer for binding rows.
@@ -16,10 +14,9 @@ import static elite.intel.ui.view.AppTheme.SEL_FG;
  * The comparison uses the localized "Not defined" text because the table model
  * stores already formatted display values, not raw slot objects.
  */
-class BindingSlotCellRenderer extends DefaultTableCellRenderer {
-    private static final Color HOVER_BG = new Color(0x282A40);
-
+class BindingSlotCellRenderer extends HudTable.CellRenderer {
     BindingSlotCellRenderer() {
+        super(2);
         setOpaque(true);
     }
 
@@ -33,22 +30,16 @@ class BindingSlotCellRenderer extends DefaultTableCellRenderer {
             int column
     ) {
         JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+        label.setHorizontalAlignment(column == 0 ? SwingConstants.LEFT : SwingConstants.RIGHT);
         boolean notDefined = elite.intel.ui.i18n.MultiLingualTextProvider
                 .getText("bindings.status.notDefined")
                 .equals(value);
-        if (isSelected) {
-            label.setBackground(SEL_BG);
-            label.setForeground(SEL_FG);
-            return label;
+        if (!isSelected) {
+            Object hoveredObj = table.getClientProperty(BindingsGroupTableFactory.HOVER_ROW_PROPERTY);
+            boolean hovered = hoveredObj instanceof Integer h && h == row;
+            label.setBackground(hovered ? HUD_TABLE_ROW_HOVER : HUD_TABLE_ROW);
+            label.setForeground(notDefined ? HUD_DISABLED : ACCENT);
         }
-
-        label.setBackground(isHovered(table, row) ? HOVER_BG : BG_PANEL);
-        label.setForeground(notDefined ? FG_MUTED : FG);
         return label;
-    }
-
-    private boolean isHovered(JTable table, int row) {
-        Object value = table.getClientProperty(BindingsGroupTableFactory.HOVER_ROW_PROPERTY);
-        return value instanceof Integer hoveredRow && hoveredRow == row;
     }
 }
