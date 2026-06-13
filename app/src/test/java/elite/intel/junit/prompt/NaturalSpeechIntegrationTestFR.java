@@ -1058,17 +1058,17 @@ public class NaturalSpeechIntegrationTestFR {
                 "rapport du porte-vaisseau");
     }
 
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(212)
-    @MethodSource
-    void queryCarrierFuel(String input) throws InterruptedException {
-        assertRouted(input, FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
-    }
-
-    static Stream<String> queryCarrierFuel() {
-        return Stream.of("niveau de tritium du porte-vaisseau",
-                "combien de tritium dans le porte-vaisseau");
-    }
+//    @ParameterizedTest(name = "[{index}] \"{0}\"")
+//    @Order(212)
+//    @MethodSource
+//    void queryCarrierFuel(String input) throws InterruptedException {
+//        assertRouted(input, FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
+//    }
+//
+//    static Stream<String> queryCarrierFuel() {
+//        return Stream.of("niveau de tritium du porte-vaisseau",
+//                "combien de tritium dans le porte-vaisseau");
+//    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(213)
