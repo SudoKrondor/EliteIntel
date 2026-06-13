@@ -18,7 +18,7 @@ public class FrenchPromptRules implements PromptLanguageRules {
 
     @Override
     public String commandVerbExamples() {
-        return "montre / ouvre / trouve / cherche / active / désactive / navigue / trace / déploie / rentre / allume / éteins";
+        return "montre / ouvre / trouve / cherche / active / désactive / navigue / trace / déploie / rentre / allume / éteins / mode / monte /relève /entre /sors";
     }
 
     @Override
