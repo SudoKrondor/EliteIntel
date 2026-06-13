@@ -112,7 +112,6 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
-        tabs.addTab(getText("tab.starvizion"), null, starVizionTabPanel);
         tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
