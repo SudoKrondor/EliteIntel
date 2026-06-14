@@ -19,7 +19,7 @@ import static elite.intel.ui.view.AppTheme.*;
 
 /**
  * "Input" settings tab — lets the user map a controller button to push-to-talk, monitored via
- * the shared SDL3 poll loop in {@link DeviceService}. Session-only, no DB persistence.
+ * the shared SDL3 poll loop in {@link DeviceService}.
  */
 public class InputSettingsPanel extends JPanel {
 
@@ -35,6 +35,14 @@ public class InputSettingsPanel extends JPanel {
     private volatile int selectedButtonIndex = -1; // 0-based SDL button index, -1 = none
     private volatile boolean toggleMode = true;
 
+    // Name of the controller persisted in game_session, used to re-select it once it appears
+    // in the connected-devices list (initial load, or reconnect after a disconnect).
+    private volatile String persistedControllerName = null;
+
+    // Suppresses SystemSession writes while combo selections are being driven programmatically
+    // (initial load, or reacting to DeviceConnected/DeviceDisconnectedEvent) rather than by the user.
+    private boolean suppressPersistence = false;
+
     public InputSettingsPanel() {
         EventBusManager.register(this);
         buildUi();
@@ -45,7 +53,21 @@ public class InputSettingsPanel extends JPanel {
     }
 
     public void initData() {
-        refreshControllerCombo();
+        SystemSession session = SystemSession.getInstance();
+        pushToTalkEnabled = session.isPushToTalkEnabled();
+        toggleMode = session.isPushToTalkToggleMode();
+        persistedControllerName = session.getPushToTalkControllerName();
+
+        enablePushToTalkCheck.setSelected(pushToTalkEnabled);
+        setControlsEnabled(pushToTalkEnabled);
+        toggleModeRadio.setSelected(toggleMode);
+        holdModeRadio.setSelected(!toggleMode);
+
+        if (pushToTalkEnabled) {
+            DeviceService.getInstance().start();
+        }
+
+        reconcileControllerSelection();
     }
 
     private void buildUi() {
@@ -84,8 +106,14 @@ public class InputSettingsPanel extends JPanel {
         ButtonGroup modeGroup = new ButtonGroup();
         modeGroup.add(toggleModeRadio);
         modeGroup.add(holdModeRadio);
-        toggleModeRadio.addActionListener(e -> toggleMode = true);
-        holdModeRadio.addActionListener(e -> toggleMode = false);
+        toggleModeRadio.addActionListener(e -> {
+            toggleMode = true;
+            SystemSession.getInstance().setPushToTalkToggleMode(true);
+        });
+        holdModeRadio.addActionListener(e -> {
+            toggleMode = false;
+            SystemSession.getInstance().setPushToTalkToggleMode(false);
+        });
 
         nextRow(gc);
         gc.gridx = 0;
@@ -119,8 +147,9 @@ public class InputSettingsPanel extends JPanel {
         setControlsEnabled(enabled);
         if (enabled) {
             DeviceService.getInstance().start();
-            refreshControllerCombo();
+            reconcileControllerSelection();
         }
+        SystemSession.getInstance().setPushToTalkEnabled(enabled);
     }
 
     private void setControlsEnabled(boolean enabled) {
@@ -135,10 +164,17 @@ public class InputSettingsPanel extends JPanel {
         Device device = (selected instanceof Device d) ? d : null;
         selectedDevice = device;
         populateButtonCombo(device);
+        if (!suppressPersistence) {
+            persistedControllerName = device != null ? device.name() : null;
+            SystemSession.getInstance().setPushToTalkControllerName(persistedControllerName);
+        }
     }
 
     private void onButtonSelected() {
         selectedButtonIndex = buttonCombo.getSelectedIndex() - 1; // -1 = placeholder
+        if (!suppressPersistence) {
+            SystemSession.getInstance().setPushToTalkButtonIndex(selectedButtonIndex);
+        }
     }
 
     // -- Combo population --------------------------------------------------------
@@ -159,8 +195,38 @@ public class InputSettingsPanel extends JPanel {
                     return;
                 }
             }
+        } else if (persistedControllerName != null) {
+            for (int i = 1; i < controllerCombo.getItemCount(); i++) {
+                if (controllerCombo.getItemAt(i) instanceof Device d && d.name().equals(persistedControllerName)) {
+                    controllerCombo.setSelectedIndex(i);
+                    return;
+                }
+            }
         }
         controllerCombo.setSelectedIndex(0);
+    }
+
+    /**
+     * Refreshes the controller combo and, if a device matching {@link #persistedControllerName}
+     * becomes selected, restores the persisted button index. Runs with persistence suppressed so
+     * that the intermediate "no button selected" state hit while rebuilding the button combo does
+     * not overwrite the saved {@code pushToTalkButtonIndex}/{@code pushToTalkControllerName}.
+     */
+    private void reconcileControllerSelection() {
+        int targetButtonIndex = (selectedDevice != null)
+                ? selectedButtonIndex
+                : SystemSession.getInstance().getPushToTalkButtonIndex();
+
+        suppressPersistence = true;
+        try {
+            refreshControllerCombo();
+            if (selectedDevice != null && targetButtonIndex >= 0
+                    && targetButtonIndex < buttonCombo.getItemCount() - 1) {
+                buttonCombo.setSelectedIndex(targetButtonIndex + 1);
+            }
+        } finally {
+            suppressPersistence = false;
+        }
     }
 
     private void populateButtonCombo(Device device) {
@@ -178,18 +244,23 @@ public class InputSettingsPanel extends JPanel {
 
     @Subscribe
     public void onDeviceConnected(DeviceConnectedEvent event) {
-        SwingUtilities.invokeLater(this::refreshControllerCombo);
+        SwingUtilities.invokeLater(this::reconcileControllerSelection);
     }
 
     @Subscribe
     public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
         SwingUtilities.invokeLater(() -> {
-            if (selectedDevice != null && selectedDevice.id() == event.deviceId()) {
-                selectedDevice = null;
-                selectedButtonIndex = -1;
-                populateButtonCombo(null);
+            suppressPersistence = true;
+            try {
+                if (selectedDevice != null && selectedDevice.id() == event.deviceId()) {
+                    selectedDevice = null;
+                    selectedButtonIndex = -1;
+                    populateButtonCombo(null);
+                }
+                refreshControllerCombo();
+            } finally {
+                suppressPersistence = false;
             }
-            refreshControllerCombo();
         });
     }
 
