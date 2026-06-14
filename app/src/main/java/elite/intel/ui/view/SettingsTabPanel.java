@@ -6,6 +6,7 @@ import elite.intel.ui.view.settings.LocalLlmSettingsPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -45,8 +46,8 @@ public class SettingsTabPanel extends JPanel {
 
         updateAppButton = new HudUpdateButton();
 
-        JPanel footer = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 4));
-        footer.add(updateAppButton);
+        // Non-modal footer: no BACK, no status — just the update action on the right (shared rail).
+        JPanel footer = HudFooter.build(false, null, null, List.of(updateAppButton));
 
         HudSection section = new HudSection(getText("settings.section.systemConfiguration"), new BorderLayout());
         section.body().add(tabs, BorderLayout.CENTER);

@@ -347,21 +347,12 @@ public class AppTheme {
     }
 
     /**
-     * Creates a compact separator for bottom command/status strips.
+     * Canonical footer rule (§10) shared by modal dialogs and non-modal screen/tab footers:
+     * a full-width warm {@link #HUD_ORANGE_FILL_HOVER} rule of {@link #HUD_BORDER_THICKNESS}
+     * at the top, with {@link #HUD_GAP} padding above (after the rule) and below, zero side inset.
+     * Apply to the footer strip built by {@link HudFooter}.
      */
-    public static Border hudFooterSeparatorBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, HUD_BORDER),
-                new EmptyBorder(12, 0, 6, 0)
-        );
-    }
-
-    /**
-     * Canonical modal footer border (§7.2): warm {@link #HUD_ORANGE_FILL_HOVER} rule of
-     * {@link #HUD_BORDER_THICKNESS} with {@link #HUD_GAP} side insets (not full-width) and
-     * {@link #HUD_GAP} padding on all sides. Apply to the button panel of a modal footer.
-     */
-    public static Border hudModalFooterBorder() {
+    public static Border hudFooterBorder() {
         final int gap = HUD_GAP;
         final int th  = HUD_BORDER_THICKNESS;
         return new AbstractBorder() {
@@ -523,7 +514,9 @@ public class AppTheme {
         tc.setCaretColor(ACCENT);
         tc.setSelectionColor(ACCENT);
         tc.setSelectedTextColor(SEL_FG);
-        tc.setBorder(hudFieldBorder());
+        // Preserve the wider info border so the palette does not clobber the reserved info-«i» zone.
+        tc.setBorder(tc instanceof HudTextField htf && htf.hasInfoZone()
+                ? hudFieldBorderWithInfo() : hudFieldBorder());
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
     }
 

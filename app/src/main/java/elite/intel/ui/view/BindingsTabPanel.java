@@ -53,7 +53,6 @@ public class BindingsTabPanel extends JPanel {
     private final BindingsGroupTableFactory tableFactory;
     private final BindingsWorkingCopyRepository workingCopyRepo = new BindingsWorkingCopyRepository();
     private final BindingsApplyService applyService = new BindingsApplyService();
-    private final List<JButton> headerInfoButtons = new ArrayList<>();
 
     private JTextField profileField;
     private JTextField filePathField;
@@ -90,12 +89,6 @@ public class BindingsTabPanel extends JPanel {
 
     public void dispose() {
         EventBusManager.unregister(this);
-    }
-
-    @Override
-    public void addNotify() {
-        super.addNotify();
-        SwingUtilities.invokeLater(this::applyHeaderDisplayStyle);
     }
 
     @Subscribe
@@ -183,42 +176,46 @@ public class BindingsTabPanel extends JPanel {
         gbc.insets = new Insets(2, 0, 6, 7);
         gbc.anchor = GridBagConstraints.WEST;
 
-        addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0, 128);
+        // Single-column grid: [label | field | affordance]. All three rows share the label
+        // column width and the field right edge; ⋮ and the in-field «i» line up on the right.
+        // Row 0 — Bindings Directory + picker
+        addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0, LABEL_COL_WIDTH);
         bindingsDirField = readOnlyField();
         bindingsDirField.setToolTipText(getText("player.bindingsDirectory.tooltip"));
-        addProfileField(details, bindingsDirField, gbc, 1, 6, 1.0);
+        addProfileField(details, bindingsDirField, gbc, 1, 1, 1.0);
 
         JButton selectBindingsDirButton = compactDirectoryChooserButton();
         selectBindingsDirButton.addActionListener(e -> selectBindingsDirectory());
-        gbc.gridx = 7;
+        gbc.gridx = 2;
         gbc.gridwidth = 1;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
+        gbc.insets = new Insets(2, 0, 6, 7);
         details.add(selectBindingsDirButton, gbc);
 
+        // Row 1 — Profile (field spans the picker column so its right edge aligns)
         gbc.gridy = 1;
-        addProfileLabel(details, getText("bindings.profileName"), gbc, 0, 80);
-        profileField = readOnlyMetadataField();
-        addProfileField(details, profileField, gbc, 1, 1, 0.28);
-        addInfoButton(details, gbc, 2, "bindings.profileName.info");
+        addProfileLabel(details, getText("bindings.profileName"), gbc, 0, LABEL_COL_WIDTH);
+        profileField = readOnlyInfoField("bindings.profileName.info");
+        addProfileField(details, profileField, gbc, 1, 2, 1.0);
 
-        addProfileSpacer(details, gbc, 3, 24);
-        addProfileLabel(details, getText("bindings.filePath"), gbc, 4, 58);
-        filePathField = readOnlyMetadataField();
-        addProfileField(details, filePathField, gbc, 5, 2, 0.72);
-        addInfoButton(details, gbc, 7, "bindings.filePath.info");
+        // Row 2 — File
+        gbc.gridy = 2;
+        addProfileLabel(details, getText("bindings.filePath"), gbc, 0, LABEL_COL_WIDTH);
+        filePathField = readOnlyInfoField("bindings.filePath.info");
+        addProfileField(details, filePathField, gbc, 1, 2, 1.0);
 
         profileCardBody.add(details, BorderLayout.CENTER);
         return profileCardBody;
     }
 
     private JComponent bindingProfileCard(JPanel body) {
+        // Working zone of the tab → FLAT section (HUD §9), not a framed accent box.
         HudSection card = new HudSection(
                 getText("bindings.section.profile"),
                 new BorderLayout(),
-                HudPanel.Variant.FRAMED,
-                6,
-                HUD_ORANGE_SOFT);
+                HudPanel.Variant.FLAT,
+                6);
         card.body().add(body, BorderLayout.CENTER);
         card.setFooter(keyboardOnlyWarningStrip(), HUD_WARN_BG);
 
@@ -231,14 +228,6 @@ public class BindingsTabPanel extends JPanel {
     private JPanel buildFooter() {
         syncStatusBadge = new StatusBadge("", StatusBadge.State.INFO);
 
-        JPanel statusArea = transparentPanel(new GridBagLayout());
-        GridBagConstraints statusGbc = new GridBagConstraints();
-        statusGbc.anchor = GridBagConstraints.WEST;
-        statusGbc.weightx = 1.0;
-        statusGbc.weighty = 1.0;
-        statusGbc.fill = GridBagConstraints.NONE;
-        statusArea.add(syncStatusBadge, statusGbc);
-
         revertButton = makeButtonSubtle(getText("bindings.button.revert.short"));
         revertButton.setToolTipText(getText("bindings.button.revert.tooltip"));
         revertButton.addActionListener(e -> revertFromGame());
@@ -247,23 +236,8 @@ public class BindingsTabPanel extends JPanel {
         applyButton.setToolTipText(getText("bindings.button.apply.tooltip"));
         applyButton.addActionListener(e -> performApply());
 
-        JPanel footer = new JPanel(new BorderLayout(HUD_GAP, 0));
-        footer.setOpaque(true);
-        footer.setBackground(HUD_BG);
-        footer.setBorder(hudFooterSeparatorBorder());
-
-        JPanel buttonBar = transparentPanel(new GridBagLayout());
-        GridBagConstraints btnGbc = new GridBagConstraints();
-        btnGbc.anchor = GridBagConstraints.CENTER;
-        btnGbc.weighty = 1.0;
-        btnGbc.insets = new Insets(0, HUD_GAP, 0, 0);
-        buttonBar.add(revertButton, btnGbc);
-        btnGbc.gridx = 1;
-        buttonBar.add(applyButton, btnGbc);
-
-        footer.add(statusArea, BorderLayout.CENTER);
-        footer.add(buttonBar, BorderLayout.EAST);
-        return footer;
+        // Non-modal footer: sync status on the left, REVERT + APPLY (primary) on the right, no BACK.
+        return HudFooter.build(false, null, syncStatusBadge, List.of(revertButton, applyButton));
     }
 
     public void initData() {
@@ -421,9 +395,7 @@ public class BindingsTabPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(2, 0, 6, 7);
-        JLabel label = new JLabel(text);
-        label.setForeground(FG_MUTED);
-        label.setFont(label.getFont().deriveFont(Font.PLAIN, HUD_FONT_XS));
+        JLabel label = hudReadoutLabel(text);
         label.setPreferredSize(new Dimension(width, HEADER_ROW_HEIGHT));
         panel.add(label, gbc);
     }
@@ -445,120 +417,41 @@ public class BindingsTabPanel extends JPanel {
         panel.add(component, gbc);
     }
 
-    private void addProfileSpacer(JPanel panel, GridBagConstraints gbc, int column, int width) {
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        panel.add(Box.createHorizontalStrut(width), gbc);
-    }
-
-    private void addHeaderLabel(JPanel panel, String text, GridBagConstraints gbc) {
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        JLabel label = new JLabel(text);
-        label.setForeground(FG_MUTED);
-        label.setPreferredSize(new Dimension(180, HEADER_ROW_HEIGHT));
-        panel.add(label, gbc);
-    }
-
-    private void resetHeaderRow(GridBagConstraints gbc) {
-        gbc.gridx = 0;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-    }
-
     private static final int HEADER_ROW_HEIGHT = 24;
+
+    /** Shared width of the left label column so all rows align (fits the longest label). */
+    private static final int LABEL_COL_WIDTH = 180;
 
     private JTextField readOnlyField() {
         JTextField field = makeTextField();
         field.setEditable(false);
-        field.setFont(field.getFont().deriveFont(Font.PLAIN, HUD_FONT_FIELD_VALUE));
         field.setPreferredSize(new Dimension(0, HEADER_ROW_HEIGHT));
         return field;
     }
 
-    private JTextField readOnlyMetadataField() {
-        JTextField field = makeMetadataField();
+    /**
+     * Creates a read-only value field carrying an in-field info-\u00ABi\u00BB (HUD \u00A75.1) that opens the
+     * help text for {@code infoKey} on click \u2014 replaces the former external Unicode info button.
+     */
+    private JTextField readOnlyInfoField(String infoKey) {
+        HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
+        field.setEditable(false);
         field.setPreferredSize(new Dimension(0, HEADER_ROW_HEIGHT));
         return field;
+    }
+
+    private void showFieldInfo(String messageKey) {
+        JOptionPane.showMessageDialog(
+                this,
+                getText(messageKey),
+                getText("bindings.info.title"),
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private JButton compactDirectoryChooserButton() {
         JButton button = makeFieldButton(verticalEllipsisIcon(HEADER_ROW_HEIGHT), HEADER_ROW_HEIGHT);
         button.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
         return button;
-    }
-
-    private void addInfoButton(JPanel panel, GridBagConstraints gbc, String messageKey) {
-        addInfoButton(panel, gbc, 2, messageKey);
-    }
-
-    private void addInfoButton(JPanel panel, GridBagConstraints gbc, int column, String messageKey) {
-        JButton button = new JButton("\u24D8");
-        String message = getText(messageKey);
-        button.addActionListener(e -> JOptionPane.showMessageDialog(
-                this,
-                message,
-                getText("bindings.info.title"),
-                JOptionPane.INFORMATION_MESSAGE));
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder());
-        button.setForeground(FG_MUTED);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setFont(button.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_ICON_BUTTON));
-        Dimension size = new Dimension(HEADER_ROW_HEIGHT, HEADER_ROW_HEIGHT);
-        button.setPreferredSize(size);
-        button.setMinimumSize(size);
-        button.setMaximumSize(size);
-        headerInfoButtons.add(button);
-
-        gbc.gridx = column;
-        gbc.gridwidth = 1;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        gbc.insets = new Insets(2, 0, 6, 7);
-        panel.add(button, gbc);
-    }
-
-    private void applyHeaderDisplayStyle() {
-        styleReadOnlyValueField(profileField);
-        styleReadOnlyValueField(filePathField);
-        headerInfoButtons.forEach(this::styleHeaderInfoButton);
-    }
-
-    private void styleReadOnlyValueField(JTextField field) {
-        if (field == null) {
-            return;
-        }
-        if (field instanceof HudMetadataField) {
-            return;
-        }
-        field.setOpaque(false);
-        field.setBackground(HUD_PANEL_BG);
-        field.setForeground(FG_MUTED);
-        field.setCaretColor(FG_MUTED);
-        field.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
-    }
-
-    private void styleHeaderInfoButton(JButton button) {
-        button.setOpaque(false);
-        button.setContentAreaFilled(false);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createEmptyBorder());
-        button.setForeground(FG_MUTED);
-        button.setBackground(HUD_PANEL_BG);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setFont(button.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_ICON_BUTTON));
-        Dimension size = new Dimension(HEADER_ROW_HEIGHT, HEADER_ROW_HEIGHT);
-        button.setPreferredSize(size);
-        button.setMinimumSize(size);
-        button.setMaximumSize(size);
     }
 
     private JPanel keyboardOnlyWarningStrip() {
@@ -570,7 +463,7 @@ public class BindingsTabPanel extends JPanel {
         JLabel message = new JLabel("\u26A0  " + getText("bindings.keyboardOnlyHint"), SwingConstants.CENTER);
         message.setForeground(HUD_WARN);
         message.setFont(message.getFont().deriveFont(Font.BOLD, HUD_FONT_XS));
-        message.putClientProperty("eliteIntel.hud.lockedForeground", Boolean.TRUE);
+        message.putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
