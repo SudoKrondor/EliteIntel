@@ -1,20 +1,15 @@
 package elite.intel.ui.view;
 
-import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.session.SystemSession;
 
-import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.view.AppTheme.*;
 
 public class AudioInterfaceDialog extends JDialog {
-
-    private static final String SYSTEM_DEFAULT_LABEL = getText("audio.devices.systemDefault");
 
     public AudioInterfaceDialog(Component parent) {
         super(SwingUtilities.getWindowAncestor(parent), getText("audio.devices.title"), ModalityType.APPLICATION_MODAL);
@@ -25,8 +20,13 @@ public class AudioInterfaceDialog extends JDialog {
         String savedInput = session.getAudioInputDevice();
         String savedOutput = session.getAudioOutputDevice();
 
-        HudComboBox<String> inputCombo = buildCombo(AudioDeviceEnumerator.getInputDevices(), savedInput);
-        HudComboBox<String> outputCombo = buildCombo(AudioDeviceEnumerator.getOutputDevices(), savedOutput);
+        HudComboBox<String> inputCombo = AudioDeviceCombo.input(savedInput);
+        HudComboBox<String> outputCombo = AudioDeviceCombo.output(savedOutput);
+        // Persist on change — no Save button (listeners added after the initial selection is set).
+        inputCombo.addActionListener(e ->
+                session.setAudioInputDevice(AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem())));
+        outputCombo.addActionListener(e ->
+                session.setAudioOutputDevice(AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem())));
 
         JPanel form = transparentPanel(new GridBagLayout());
 
@@ -70,15 +70,7 @@ public class AudioInterfaceDialog extends JDialog {
         note.setFont(note.getFont().deriveFont(note.getFont().getSize() * 0.9f));
         form.add(note, gbc);
 
-        JButton saveBtn = makeButton(getText("button.save"));         // primary
         JButton back = makeButtonSubtle(getText("button.back"));      // dismiss = subtle
-        saveBtn.addActionListener(e -> {
-            String inSel = (String) inputCombo.getSelectedItem();
-            String outSel = (String) outputCombo.getSelectedItem();
-            session.setAudioInputDevice(SYSTEM_DEFAULT_LABEL.equals(inSel) ? null : inSel);
-            session.setAudioOutputDevice(SYSTEM_DEFAULT_LABEL.equals(outSel) ? null : outSel);
-            dispose();
-        });
         back.addActionListener(e -> dispose());
 
         HudSection section = HudSection.flat(getText("audio.devices.section.devices"), new BorderLayout());
@@ -89,7 +81,6 @@ public class AudioInterfaceDialog extends JDialog {
                 .onClose(this::dispose)
                 .body(section)
                 .scrollBody(false)
-                .primary(saveBtn)             // right side
                 .dismiss(back)                // left side
                 .build();
 
@@ -100,7 +91,7 @@ public class AudioInterfaceDialog extends JDialog {
                 KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
                 JComponent.WHEN_IN_FOCUSED_WINDOW
         );
-        getRootPane().setDefaultButton(saveBtn);
+        getRootPane().setDefaultButton(back);
         pack();
         setMinimumSize(new Dimension(500, getHeight()));
         setLocationRelativeTo(parent);
@@ -108,16 +99,4 @@ public class AudioInterfaceDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
     }
 
-    private static HudComboBox<String> buildCombo(List<Mixer.Info> devices, String savedName) {
-        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-        model.addElement(SYSTEM_DEFAULT_LABEL);
-        for (Mixer.Info info : devices) {
-            model.addElement(info.getName());
-        }
-        HudComboBox<String> combo = new HudComboBox<>(model);
-        if (savedName != null && !savedName.isBlank()) {
-            combo.setSelectedItem(savedName);
-        }
-        return combo;
-    }
 }

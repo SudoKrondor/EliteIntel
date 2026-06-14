@@ -11,6 +11,8 @@ import elite.intel.search.edsm.dto.StarSystemDto;
 import elite.intel.search.edsm.dto.TrafficDto;
 import elite.intel.session.PlayerSession;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 @SuppressWarnings("unused")
 public class FSDTargetSubscriber {
 
@@ -31,6 +33,6 @@ public class FSDTargetSubscriber {
     private String isFuelStarClause(String starClass) {
         if (starClass == null) return " unknown ";
         boolean isFuelStar = "KGBFOAM".toUpperCase().contains(starClass.toUpperCase());
-        return isFuelStar ? " Refuel possible. " : " No Fuel Available ";
+        return isFuelStar ? localizedEvent("event.jump.refuelPossible", playerSession.getVariablePlayerName()) : localizedEvent("event.jump.noFuelAvailable", playerSession.getVariablePlayerName());
     }
 }
