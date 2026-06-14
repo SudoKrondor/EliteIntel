@@ -1,10 +1,15 @@
 package elite.intel.ui.view.settings;
 
 import elite.intel.ai.brain.LocalLlmProvider;
+import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
+import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.view.HudSection;
 
 import javax.swing.*;
@@ -22,14 +27,20 @@ public class LocalLlmSettingsPanel extends JPanel {
     private JTextField localLlmModelQueryField;
     private JCheckBox useLocalCommandLLMCheck;
     private JCheckBox useLocalQueryLLMCheck;
+    private JCheckBox useLocalTtsCheck;
     private JRadioButton ollamaRadio;
     private JRadioButton lmStudioRadio;
 
     private LocalLlmProvider currentProvider;
     private Runnable onLocalLlmChanged;
+    private Runnable onLocalTtsChanged;
 
     public void setOnLocalLlmChanged(Runnable r) {
         onLocalLlmChanged = r;
+    }
+
+    public void setOnLocalTtsChanged(Runnable r) {
+        onLocalTtsChanged = r;
     }
 
     public LocalLlmSettingsPanel() {
@@ -93,9 +104,16 @@ public class LocalLlmSettingsPanel extends JPanel {
         buttons.add(saveButton);
         buttons.add(restoreButton);
 
+        useLocalTtsCheck = makeCheckBox(getText("settings.audio.useLocalTts"), false);
+        useLocalTtsCheck.addActionListener(a -> saveLocalTts());
+        JPanel ttsRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
+        ttsRow.add(useLocalTtsCheck);
+
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.add(ttsRow);
+        content.add(Box.createVerticalStrut(12));
         content.add(fieldsSection);
         content.add(Box.createVerticalStrut(12));
         content.add(providerSection);
@@ -124,6 +142,40 @@ public class LocalLlmSettingsPanel extends JPanel {
         loadProviderFieldsIntoUi(provider);
         useLocalCommandLLMCheck.setSelected(systemSession.useLocalCommandLlm());
         useLocalQueryLLMCheck.setSelected(systemSession.useLocalQueryLlm());
+        useLocalTtsCheck.setSelected(systemSession.useLocalTTS());
+    }
+
+    /**
+     * Called by CloudServicesSettingsPanel when the user activates cloud TTS. Delegates to
+     * {@link #saveLocalTts()} so the confirmation dialog and voice-reset logic fire identically
+     * to the user clicking the checkbox.
+     */
+    public void activateCloudTts() {
+        useLocalTtsCheck.setSelected(false);
+        saveLocalTts();
+    }
+
+    private void saveLocalTts() {
+        boolean newValue = useLocalTtsCheck.isSelected();
+        boolean oldValue = systemSession.useLocalTTS();
+        if (newValue != oldValue) {
+            String defaultVoice = newValue ? KokoroVoices.BELLA.name() : GoogleVoices.EMMA.name();
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    getText("settings.audio.switchTts.message"),
+                    getText("settings.audio.switchTts.title"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                useLocalTtsCheck.setSelected(oldValue);
+                return;
+            }
+            ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
+        }
+        systemSession.setUseLocalTTS(newValue);
+        EventBusManager.publish(new TTSProviderChangedEvent());
+        EventBusManager.publish(new RestartMouthEvent());
+        if (onLocalTtsChanged != null) onLocalTtsChanged.run();
     }
 
     private void loadProviderFieldsIntoUi(LocalLlmProvider provider) {

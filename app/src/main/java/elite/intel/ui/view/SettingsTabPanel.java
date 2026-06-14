@@ -23,9 +23,9 @@ public class SettingsTabPanel extends JPanel {
     public SettingsTabPanel() {
         buildUi();
         cloudPanel.setOnCloudLlmUsed(() -> localLlmPanel.deactivateLocalLlm());
-        cloudPanel.setOnCloudTtsUsed(() -> audioPanel.activateCloudTts());
+        cloudPanel.setOnCloudTtsUsed(() -> localLlmPanel.activateCloudTts());
         localLlmPanel.setOnLocalLlmChanged(() -> cloudPanel.syncUseCheckboxes());
-        audioPanel.setOnLocalTtsChanged(() -> cloudPanel.syncUseCheckboxes());
+        localLlmPanel.setOnLocalTtsChanged(() -> cloudPanel.syncUseCheckboxes());
     }
 
     public void dispose() {
@@ -43,7 +43,7 @@ public class SettingsTabPanel extends JPanel {
         tabs.addTab(getText("settings.tab.audio"), audioPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), cloudPanel);
 
-        updateAppButton = new HudUpdateButton();
+        updateAppButton = new HudUpdateButton(false);
 
         // Non-modal footer: no BACK, no status — just the update action on the right (shared rail).
         JPanel footer = HudFooter.build(false, null, null, List.of(updateAppButton));

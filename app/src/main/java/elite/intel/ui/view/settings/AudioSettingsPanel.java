@@ -1,8 +1,5 @@
 package elite.intel.ui.view.settings;
 
-import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
-import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.*;
@@ -25,22 +22,18 @@ public class AudioSettingsPanel extends JPanel {
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
+    /** Shared left label-column width so device and level controls start at the same x (fits the longest label). */
+    private static final int LABEL_COL_WIDTH = 170;
+
     private HudSlider voiceVolumeSlider;
     private HudSlider beepVolumeSlider;
     private HudSlider speechSpeedSlider;
     private HudSlider sttThreadsSlider;
-    private JCheckBox useLocalTTSCheck;
 
     private HudComboBox<String> inputCombo;
     private HudComboBox<String> outputCombo;
     /** Guards the combo listeners from persisting while we programmatically re-sync the selection. */
     private boolean syncingDevices;
-
-    private Runnable onLocalTtsChanged;
-
-    public void setOnLocalTtsChanged(Runnable r) {
-        onLocalTtsChanged = r;
-    }
 
     public AudioSettingsPanel() {
         buildUi();
@@ -59,15 +52,15 @@ public class AudioSettingsPanel extends JPanel {
         cc.fill = GridBagConstraints.BOTH;
         cc.anchor = GridBagConstraints.NORTHWEST;
 
-        // Left: wide settings column (devices over levels, help below).
+        // Left: settings column takes all the slack.
         cc.gridx = 0;
-        cc.weightx = 0.72;
+        cc.weightx = 1.0;
         cc.insets = new Insets(0, 0, 0, HUD_GAP);
         columns.add(buildSettingsColumn(), cc);
 
-        // Right: narrow full-height microphone monitor.
+        // Right: microphone monitor stays at its natural (narrow) width — no horizontal stretch.
         cc.gridx = 1;
-        cc.weightx = 0.28;
+        cc.weightx = 0;
         cc.insets = new Insets(0, 0, 0, 0);
         columns.add(buildMicColumn(), cc);
 
@@ -125,7 +118,7 @@ public class AudioSettingsPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel inLabel = hudReadoutLabel(getText("audio.devices.input"));
-        inLabel.setPreferredSize(new Dimension(170, HUD_FIELD_HEIGHT));
+        inLabel.setPreferredSize(new Dimension(LABEL_COL_WIDTH, HUD_FIELD_HEIGHT));
         form.add(inLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -137,7 +130,7 @@ public class AudioSettingsPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel outLabel = hudReadoutLabel(getText("audio.devices.output"));
-        outLabel.setPreferredSize(new Dimension(170, HUD_FIELD_HEIGHT));
+        outLabel.setPreferredSize(new Dimension(LABEL_COL_WIDTH, HUD_FIELD_HEIGHT));
         form.add(outLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -155,90 +148,39 @@ public class AudioSettingsPanel extends JPanel {
         return section;
     }
 
-    /** AUDIO LEVELS: four HUD sliders plus the local-TTS toggle. */
+    /** AUDIO LEVELS: four full-width HUD sliders stacked in one column, plus the local-TTS toggle. */
     private HudSection buildLevelsSection() {
         HudSection section = HudSection.flat(getText("settings.audio.section.levels"), new GridBagLayout());
         JPanel grid = section.body();
         GridBagConstraints ag = baseGbc();
 
-        // Row 0: Speech Volume | Beep Volume
-        ag.gridy = 0;
-        ag.gridx = 0;
-        ag.weightx = 0;
-        ag.fill = GridBagConstraints.NONE;
-        grid.add(sliderLabel(getText("settings.audio.speechVolume"), 140), ag);
-
         voiceVolumeSlider = makeSlider(0, 100, systemSession.getVoiceVolume());
         voiceVolumeSlider.addChangeListener(e -> EventBusManager.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
-        ag.gridx = 1;
-        ag.weightx = 1.0;
-        ag.fill = GridBagConstraints.HORIZONTAL;
-        grid.add(voiceVolumeSlider, ag);
-
-        ag.gridx = 2;
-        ag.weightx = 0;
-        ag.fill = GridBagConstraints.NONE;
-        ag.insets = new Insets(6, 24, 6, 6);
-        grid.add(sliderLabel(getText("settings.audio.beepVolume"), 120), ag);
-
-        beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
-        beepVolumeSlider.addChangeListener(e -> EventBusManager.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
-        ag.gridx = 3;
-        ag.weightx = 1.0;
-        ag.fill = GridBagConstraints.HORIZONTAL;
-        ag.insets = new Insets(6, 6, 6, 6);
-        grid.add(beepVolumeSlider, ag);
-
-        // Row 1: TTS Voice Speed | STT Threads
-        ag.gridy = 1;
-        ag.gridx = 0;
-        ag.weightx = 0;
-        ag.fill = GridBagConstraints.NONE;
-        grid.add(sliderLabel(getText("settings.audio.ttsVoiceSpeed"), 140), ag);
+        addLevelRow(grid, ag, 0, getText("settings.audio.speechVolume"), voiceVolumeSlider);
 
         speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100));
         speechSpeedSlider.addChangeListener(e -> EventBusManager.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
-        ag.gridx = 1;
-        ag.weightx = 1.0;
-        ag.fill = GridBagConstraints.HORIZONTAL;
-        grid.add(speechSpeedSlider, ag);
+        addLevelRow(grid, ag, 1, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
 
-        ag.gridx = 2;
-        ag.weightx = 0;
-        ag.fill = GridBagConstraints.NONE;
-        ag.insets = new Insets(6, 24, 6, 6);
-        grid.add(sliderLabel(getText("settings.audio.sttThreads"), 120), ag);
+        beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
+        beepVolumeSlider.addChangeListener(e -> EventBusManager.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
+        addLevelRow(grid, ag, 2, getText("settings.audio.beepVolume"), beepVolumeSlider);
 
         sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
         sttThreadsSlider.addChangeListener(e -> EventBusManager.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
-        ag.gridx = 3;
-        ag.weightx = 1.0;
-        ag.fill = GridBagConstraints.HORIZONTAL;
-        ag.insets = new Insets(6, 6, 6, 6);
-        grid.add(sttThreadsSlider, ag);
-
-        // Row 2: Use Local TTS
-        ag.gridy = 2;
-        ag.gridx = 0;
-        ag.gridwidth = 4;
-        ag.weightx = 0;
-        ag.fill = GridBagConstraints.NONE;
-        useLocalTTSCheck = makeCheckBox(getText("settings.audio.useLocalTts"), false);
-        useLocalTTSCheck.addActionListener(a -> saveLocalTts());
-        grid.add(useLocalTTSCheck, ag);
+        addLevelRow(grid, ag, 3, getText("settings.audio.sttThreads"), sttThreadsSlider);
 
         return section;
     }
 
-    /** Right column: MICROPHONE MONITOR holding the full-height segmented level meter. */
+    /** Right column: MICROPHONE MONITOR — a FRAMED accent card holding the full-height level meter. */
     private JComponent buildMicColumn() {
-        HudSection section = HudSection.flat(getText("settings.audio.section.microphoneMonitor"), new BorderLayout());
+        HudSection section = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout());
         section.body().add(new HudMicMeter(), BorderLayout.CENTER);
         return section;
     }
 
     public void initData() {
-        useLocalTTSCheck.setSelected(systemSession.useLocalTTS());
         syncDevices();
     }
 
@@ -258,38 +200,19 @@ public class AudioSettingsPanel extends JPanel {
                 ? AudioDeviceCombo.SYSTEM_DEFAULT_LABEL : savedName);
     }
 
-    /**
-     * Called by CloudServicesSettingsPanel when the user activates cloud TTS.
-     * Delegates to saveLocalTts() so the confirmation dialog and voice-reset
-     * logic fire identically to the user clicking the checkbox directly.
-     */
-    public void activateCloudTts() {
-        useLocalTTSCheck.setSelected(false);
-        saveLocalTts();
-    }
-
-    private void saveLocalTts() {
-        boolean newValue = useLocalTTSCheck.isSelected();
-        boolean oldValue = systemSession.useLocalTTS();
-        if (newValue != oldValue) {
-            String defaultVoice = newValue ? KokoroVoices.BELLA.name() : GoogleVoices.EMMA.name();
-            int confirm = JOptionPane.showConfirmDialog(
-                    this,
-                    getText("settings.audio.switchTts.message"),
-                    getText("settings.audio.switchTts.title"),
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.WARNING_MESSAGE);
-            if (confirm != JOptionPane.YES_OPTION) {
-                useLocalTTSCheck.setSelected(oldValue);
-                return;
-            }
-            ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
-        }
-        systemSession.setUseLocalTTS(newValue);
-        EventBusManager.publish(new TTSProviderChangedEvent());
-        EventBusManager.publish(new RestartMouthEvent());
-        if (newValue != oldValue) EventBusManager.publish(new RestartMouthEvent());
-        if (onLocalTtsChanged != null) onLocalTtsChanged.run();
+    /** Adds one full-width level row: label in the shared column + slider stretched to panel width. */
+    private static void addLevelRow(JPanel grid, GridBagConstraints ag, int row, String label, HudSlider slider) {
+        ag.gridy = row;
+        ag.gridx = 0;
+        ag.gridwidth = 1;
+        ag.weightx = 0;
+        ag.fill = GridBagConstraints.NONE;
+        ag.insets = new Insets(6, 6, 6, 6);
+        grid.add(sliderLabel(label, LABEL_COL_WIDTH), ag);
+        ag.gridx = 1;
+        ag.weightx = 1.0;
+        ag.fill = GridBagConstraints.HORIZONTAL;
+        grid.add(slider, ag);
     }
 
     /** Creates a HUD slider snapping to integer steps; the value is shown above the thumb. */
