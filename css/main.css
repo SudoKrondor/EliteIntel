@@ -1,0 +1,19 @@
+.title {
+    align-content: center;
+    color: orangered;
+    text-align: center;
+    font-family: Serif, serif;
+    font-size: xxx-large;
+}
+
+.paragraph {
+    text-align: center;
+    color: orangered;
+    font-family: Serif, serif;
+    font-size: large;
+}
+
+
+.body-style {
+    background: #0C0C10;
+}
