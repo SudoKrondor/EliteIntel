@@ -753,6 +753,63 @@ public class AppTheme {
     }
 
     /**
+     * Draws a left-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used by the discrete stepper ({@link HudStepper}).
+     */
+    public static void paintHudArrowLeft(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 5;
+        int ah = 8;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax + aw},
+                new int[]{ay + ah / 2, ay, ay + ah},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws a right-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used by the discrete stepper ({@link HudStepper}).
+     */
+    public static void paintHudArrowRight(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 5;
+        int ah = 8;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax},
+                new int[]{ay, ay + ah / 2, ay + ah},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws an up-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used for move-up affordances.
+     */
+    public static void paintHudArrowUp(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 8;
+        int ah = 5;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax + aw / 2},
+                new int[]{ay + ah, ay + ah, ay},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
      * Draws a lowercase «i» glyph (dot + stem) centred within the box (x, y, w, h).
      * All geometry is relative — no hardcoded pixel sizes except proportional formulas.
      * Suitable for info-affording controls; caller chooses colour based on component state.
@@ -845,6 +902,34 @@ public class AppTheme {
             @Override public int getIconHeight() { return boxSize; }
             @Override public void paintIcon(Component c, Graphics g, int x, int y) {
                 paintHudVerticalEllipsis((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
+    }
+
+    /**
+     * Returns an icon that paints an up-pointing triangle in the host component's foreground
+     * colour (so it follows button state). Use for move-up affordances on buttons (see HUD §13).
+     */
+    public static Icon arrowUpIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudArrowUp((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
+    }
+
+    /**
+     * Returns an icon that paints a down-pointing triangle in the host component's foreground
+     * colour (so it follows button state). Use for move-down affordances on buttons (see HUD §13).
+     */
+    public static Icon arrowDownIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudArrowDown((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
             }
         };
     }

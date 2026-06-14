@@ -132,9 +132,12 @@ final class CustomCommandEditorDialog extends JDialog {
         getRootPane().setDefaultButton(save);
         pack();
         setMinimumSize(new Dimension(1000, 560));
-        // Force the final (>= min) size before centering so the window doesn't drift when shown.
-        setSize(Math.max(getWidth(), 1000), Math.max(getHeight(), 560));
-        setLocationRelativeTo(getOwner());
+        // Match the main window width so the full-width table toolbars have room (no label clipping);
+        // force the final size before centering so the window doesn't drift.
+        Window owner = getOwner();
+        int targetWidth = owner != null && owner.getWidth() > 0 ? owner.getWidth() : 1000;
+        setSize(Math.max(targetWidth, 1000), Math.max(getHeight(), 560));
+        setLocationRelativeTo(owner);
     }
 
     private JPanel form(boolean existing) {
@@ -176,7 +179,8 @@ final class CustomCommandEditorDialog extends JDialog {
         scroll.setPreferredSize(new Dimension(0, 130));
         panel.body().add(scroll, BorderLayout.CENTER);
 
-        JPanel buttons = AppTheme.transparentPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
+        // Table toolbar: buttons stretch evenly across the full table width.
+        JPanel buttons = AppTheme.transparentPanel(new GridLayout(1, 0, AppTheme.HUD_GAP, 0));
         addStepButton(buttons, "actions.customCommands.editor.param.add", this::addParam);
         addStepButton(buttons, "actions.customCommands.editor.param.edit", this::editParam);
         addStepButton(buttons, "actions.customCommands.editor.param.remove", this::removeParam);
@@ -223,6 +227,9 @@ final class CustomCommandEditorDialog extends JDialog {
         stepsTable.getColumnModel().getColumn(1).setCellRenderer(new HudTable.ValueCellRenderer());
         stepsTable.getColumnModel().getColumn(2)
                 .setCellRenderer(new HudTable.ValueCellRenderer(null, SwingConstants.RIGHT));
+        // Duration is a short numeric column — cap it so Type/Value take the remaining width.
+        stepsTable.getColumnModel().getColumn(2).setPreferredWidth(110);
+        stepsTable.getColumnModel().getColumn(2).setMaxWidth(150);
         stepsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -231,12 +238,21 @@ final class CustomCommandEditorDialog extends JDialog {
         });
         panel.body().add(HudTable.scrollPane(stepsTable), BorderLayout.CENTER);
 
-        JPanel buttons = AppTheme.transparentPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
-        addStepButton(buttons, "actions.customCommands.editor.step.add", this::addStep);
-        addStepButton(buttons, "actions.customCommands.editor.step.edit", this::editStep);
-        addStepButton(buttons, "actions.customCommands.editor.step.remove", this::removeStep);
-        addStepButton(buttons, "actions.customCommands.editor.step.up", () -> moveSelected(-1));
-        addStepButton(buttons, "actions.customCommands.editor.step.down", () -> moveSelected(1));
+        // Table toolbar: text actions stretch to fill the width; the move arrows stay compact (square).
+        JPanel buttons = AppTheme.transparentPanel(new GridBagLayout());
+        GridBagConstraints bg = new GridBagConstraints();
+        bg.gridy = 0;
+        bg.fill = GridBagConstraints.HORIZONTAL;
+        bg.weightx = 1;
+        bg.insets = new Insets(0, 0, 0, AppTheme.HUD_GAP);
+        buttons.add(stepTextButton("actions.customCommands.editor.step.add", this::addStep), bg);
+        buttons.add(stepTextButton("actions.customCommands.editor.step.edit", this::editStep), bg);
+        buttons.add(stepTextButton("actions.customCommands.editor.step.remove", this::removeStep), bg);
+        bg.fill = GridBagConstraints.NONE;
+        bg.weightx = 0;
+        buttons.add(stepArrowButton(AppTheme.arrowUpIcon(16), "actions.customCommands.editor.step.up", () -> moveSelected(-1)), bg);
+        bg.insets = new Insets(0, 0, 0, 0);
+        buttons.add(stepArrowButton(AppTheme.arrowDownIcon(16), "actions.customCommands.editor.step.down", () -> moveSelected(1)), bg);
         panel.body().add(buttons, BorderLayout.SOUTH);
         return panel;
     }
@@ -276,6 +292,23 @@ final class CustomCommandEditorDialog extends JDialog {
         JButton button = AppTheme.makeButtonSubtle(getText(key));
         button.addActionListener(event -> action.run());
         panel.add(button);
+    }
+
+    /** Subtle stretchable text toolbar button. */
+    private JButton stepTextButton(String key, Runnable action) {
+        JButton button = AppTheme.makeButtonSubtle(getText(key));
+        button.addActionListener(event -> action.run());
+        return button;
+    }
+
+    /** Compact square subtle toolbar button with a glyph icon; {@code tooltipKey} labels it. */
+    private JButton stepArrowButton(Icon icon, String tooltipKey, Runnable action) {
+        HudButton button = (HudButton) AppTheme.makeButtonSubtle("");
+        button.setSquareSide(AppTheme.HUD_BUTTON_HEIGHT);   // square, ignores the min text-button width
+        button.setIcon(icon);
+        button.setToolTipText(getText(tooltipKey));
+        button.addActionListener(event -> action.run());
+        return button;
     }
 
     private void addStep() {

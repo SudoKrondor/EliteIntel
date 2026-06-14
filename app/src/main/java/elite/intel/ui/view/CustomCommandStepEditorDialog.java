@@ -59,7 +59,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
     private final HudComboBox<RawModOption> rawModCombo = buildRawModCombo();
 
     private final JLabel durationLabel = AppTheme.hudReadoutLabel(getText("actions.customCommands.editor.step.durationMs"));
-    private final JSpinner durationSpinner = new JSpinner(new SpinnerNumberModel(250, 0, Integer.MAX_VALUE, 50));
+    private final HudStepper durationStepper = new HudStepper(0, Integer.MAX_VALUE, 50, 250);
     private final JLabel stepParamsLabel = AppTheme.hudReadoutLabel(getText("actions.customCommands.editor.step.params"));
     private final JButton stepParamsInfoButton = new JButton("ⓘ");
     private final DefaultTableModel stepParamsModel = new DefaultTableModel(
@@ -108,7 +108,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
             return;
         }
         typeCombo.setSelectedItem(step.getType());
-        durationSpinner.setValue(Math.max(0, step.getDurationMs()));
+        durationStepper.setValue(Math.max(0, step.getDurationMs()));   // HudStepper.setValue(int)
         switch (step.getType()) {
             case SPEAK -> valueField.setText(step.getText());
             case BINDING_TAP, BINDING_HOLD ->
@@ -178,7 +178,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         addRow(panel, gbc, bindingLabel, bindingCombo);
         addRow(panel, gbc, rawKeyLabel, rawKeyCombo);
         addRow(panel, gbc, rawModLabel, rawModCombo);
-        addRow(panel, gbc, durationLabel, durationSpinner);
+        addRow(panel, gbc, durationLabel, durationStepper);
         AppTheme.applyDarkPalette(panel);
         // HudTextField and HudComboBox self-style via their constructors — no manual styleComboBox calls needed.
         styleInfoButton(stepParamsInfoButton);
@@ -198,10 +198,13 @@ final class CustomCommandStepEditorDialog extends JDialog {
         panel.add(label, gbc);
 
         gbc.gridx = 1;
-        boolean fixedWidthField = field instanceof JComboBox<?> || field instanceof JSpinner;
-        gbc.weightx = fixedWidthField ? 0 : 1;
-        gbc.fill = fixedWidthField ? GridBagConstraints.NONE : GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
+        // Uniform field size across the whole form so every row's right edge aligns.
+        Dimension fieldSize = new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT);
+        field.setPreferredSize(fieldSize);
+        field.setMinimumSize(fieldSize);
         panel.add(field, gbc);
         gbc.gridy++;
         gbc.anchor = GridBagConstraints.CENTER;
@@ -230,7 +233,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         rawModLabel.setVisible(isRawKey);
         rawModCombo.setVisible(isRawKey);
         durationLabel.setVisible(hasDuration);
-        durationSpinner.setVisible(hasDuration);
+        durationStepper.setVisible(hasDuration);
 
         // hudReadoutLabel caps only at construction time; setText must uppercase explicitly.
         valueLabel.setText(getText("actions.customCommands.editor.step.text").toUpperCase());
@@ -358,7 +361,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
     private CustomCommandStep buildStep() {
         CustomCommandStep.Type type = selectedType();
         String value = valueField.getText().trim();
-        int duration = ((Number) durationSpinner.getValue()).intValue();
+        int duration = durationStepper.getValue();
         return switch (type) {
             case SPEAK        -> new CustomCommandStep(type, null, 0, value, null);
             case BINDING_TAP  -> new CustomCommandStep(type, selectedPickerId(bindingCombo), 0, null, null);
@@ -481,7 +484,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         scroll.setPreferredSize(new Dimension(0, 90));
         panel.add(scroll, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         buttons.setOpaque(false);
         JButton add = AppTheme.makeButtonSubtle(getText("actions.customCommands.editor.step.params.add"));
         add.addActionListener(e -> stepParamsModel.addRow(new Object[]{"", ""}));
