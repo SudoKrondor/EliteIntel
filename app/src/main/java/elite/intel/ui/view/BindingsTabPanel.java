@@ -455,24 +455,9 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JPanel keyboardOnlyWarningStrip() {
-        JPanel strip = new JPanel(new GridBagLayout());
-        strip.setOpaque(false);
-        strip.setBackground(HUD_WARN_BG);
-        strip.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-
-        JLabel message = new JLabel("\u26A0  " + getText("bindings.keyboardOnlyHint"), SwingConstants.CENTER);
-        message.setForeground(HUD_WARN);
-        message.setFont(message.getFont().deriveFont(Font.BOLD, HUD_FONT_XS));
-        message.putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        strip.add(message, gbc);
-
-        keyboardOnlyBanner = strip;
+        // Centralised on HudBanner (\u00A77.3) with the leading warning glyph \u2014 no hand-rolled strip.
+        keyboardOnlyBanner = new HudBanner(getText("bindings.keyboardOnlyHint"),
+                StatusBadge.State.STANDBY, true);
         return keyboardOnlyBanner;
     }
 
