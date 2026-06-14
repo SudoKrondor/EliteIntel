@@ -79,6 +79,12 @@ public class AppTheme {
     public static final Color HUD_DISABLED = new Color(0x6E4A28);
     public static final Color HUD_TABLE_ROW = new Color(0x1A1206);
     public static final Color HUD_TABLE_ROW_HOVER = new Color(0x2A1B08);
+    /**
+     * Saturated red fill for the active (left-of-thumb) portion of a {@link HudSlider} track.
+     * Conscious exception to §1 (red = danger): here red is a level indicator mirroring the
+     * in-game ED slider, chosen for legibility against the warm track — not a danger signal.
+     */
+    public static final Color HUD_SLIDER_FILL = new Color(0xFF2E00);
     public static final Color HUD_HOVER = new Color(0x182838);
 
     /** Muted amber/warm-orange body text for USER_INPUT log readouts. */
@@ -127,6 +133,30 @@ public class AppTheme {
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
+    // HudSlider metrics (ED slider form, §4): brown track plaque, rail with edge inset,
+    // red fill, tall start tick, round thumb, value floating above the thumb.
+    /** Total row height reserving space for the value rendered above the thumb. */
+    public static final int HUD_SLIDER_HEIGHT = 44;
+    /** Height of the warm brown track plaque. */
+    public static final int HUD_SLIDER_TRACK_HEIGHT = 18;
+    /** Thickness of the dim full-width rail line. */
+    public static final int HUD_SLIDER_RAIL_THICKNESS = 2;
+    /** Thickness of the red active-fill line. */
+    public static final int HUD_SLIDER_FILL_THICKNESS = 3;
+    /** Horizontal inset of the rail/fill from the plaque edges (line does not touch the borders). */
+    public static final int HUD_SLIDER_EDGE_INSET = 10;
+    /** Inset of the start tick (origin) and the thumb travel range from the plaque edges. */
+    public static final int HUD_SLIDER_RANGE_INSET = 26;
+    /** Diameter of the round thumb. */
+    public static final int HUD_SLIDER_THUMB_DIAMETER = 16;
+    /** Ring thickness of the thumb (white outline around the accent core). */
+    public static final int HUD_SLIDER_THUMB_RING = 2;
+    /**
+     * Height reserved above the track for the value rendered over the thumb. The track band is
+     * centred in the remaining height; use this as a top inset on the row label so the label
+     * aligns with the slider track rather than the row top.
+     */
+    public static final int HUD_SLIDER_VALUE_AREA = 20;
     public static final float HUD_FONT_BASE = 12f;
     public static final float HUD_FONT_XS   = HUD_FONT_BASE - 1f;  // 11
     public static final float HUD_FONT_SM   = HUD_FONT_BASE;       // 12
@@ -644,15 +674,6 @@ public class AppTheme {
     }
 
     /**
-     * Applies the standard HUD treatment to sliders.
-     */
-    public static void styleSlider(JSlider slider) {
-        slider.setOpaque(false);
-        slider.setForeground(FG_MUTED);
-        slider.setBackground(HUD_PANEL_BG);
-    }
-
-    /**
      * Applies shared HUD table metrics and renderers to an existing table.
      */
     public static void styleTable(JTable table) {
@@ -1055,10 +1076,6 @@ public class AppTheme {
         if (c instanceof JTable table
                 && !Boolean.TRUE.equals(table.getClientProperty(HUD_TABLE_STYLE_LOCKED))) {
             styleTable(table);
-        }
-
-        if (c instanceof JSlider slider) {
-            styleSlider(slider);
         }
 
         if (c instanceof JTabbedPane tp) {
