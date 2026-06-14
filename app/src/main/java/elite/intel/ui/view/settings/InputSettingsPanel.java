@@ -1,7 +1,7 @@
 package elite.intel.ui.view.settings;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceConnectedEvent;
@@ -14,7 +14,7 @@ import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.SleepWakeStateChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
 import elite.intel.ui.view.HudSection;
-import elite.intel.util.StringUtls;
+import elite.intel.util.AudioPlayer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -318,9 +318,11 @@ public class InputSettingsPanel extends JPanel {
             if (event.pressed()) toggleSleepWake();
         } else {
             if (event.pressed()) {
-                EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.ignoreModeOff")));
+                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+                EventBusManager.publish(new TTSInterruptEvent(true));
                 EventBusManager.publish(new PttButtonStateEvent(true));
             } else {
+                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
                 EventBusManager.publish(new PttButtonStateEvent(false));
             }
         }
