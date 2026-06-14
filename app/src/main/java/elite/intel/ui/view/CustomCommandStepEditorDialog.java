@@ -94,7 +94,6 @@ final class CustomCommandStepEditorDialog extends JDialog {
         this.missingCustomCommandParamsConsumer = missingCustomCommandParamsConsumer == null ? missingParams -> {} : missingCustomCommandParamsConsumer;
         populate(step);
         buildUi();
-        updateFieldsForType();
     }
 
     CustomCommandStep showDialog() {
@@ -152,6 +151,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         commandCombo.addActionListener(event -> updateFieldsForSelectedCommand());
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         getRootPane().setDefaultButton(save);
+        updateFieldsForType();   // apply type-specific fields before measuring so centering is final
         pack();
         setMinimumSize(new Dimension(DIALOG_MIN_WIDTH, 260));
         setSize(Math.max(getWidth(), DIALOG_MIN_WIDTH), getHeight());
@@ -527,8 +527,15 @@ final class CustomCommandStepEditorDialog extends JDialog {
 
     private void packPreservingWidth() {
         int width = getWidth() > 0 ? getWidth() : DIALOG_MIN_WIDTH;
+        // Keep the dialog's center fixed across runtime resizes so it doesn't drift off-centre.
+        Point center = isShowing()
+                ? new Point(getX() + getWidth() / 2, getY() + getHeight() / 2)
+                : null;
         pack();
         setSize(Math.max(width, DIALOG_MIN_WIDTH), getHeight());
+        if (center != null) {
+            setLocation(center.x - getWidth() / 2, center.y - getHeight() / 2);
+        }
         revalidate();
         repaint();
     }

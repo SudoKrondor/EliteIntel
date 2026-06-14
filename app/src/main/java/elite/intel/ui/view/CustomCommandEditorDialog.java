@@ -94,9 +94,14 @@ final class CustomCommandEditorDialog extends JDialog {
                 getText("actions.customCommands.editor.section.identity"), new BorderLayout());
         identitySection.body().add(form(existing), BorderLayout.CENTER);
 
-        JPanel center = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        center.add(paramsPanel(), BorderLayout.NORTH);
-        center.add(stepsPanel(), BorderLayout.CENTER);
+        // Two columns: left = identity (top) + parameters (fills); right = steps (fills).
+        JPanel leftColumn = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        leftColumn.add(identitySection, BorderLayout.NORTH);
+        leftColumn.add(paramsPanel(), BorderLayout.CENTER);
+
+        JPanel columns = AppTheme.transparentPanel(new GridLayout(1, 2, AppTheme.HUD_GAP, 0));
+        columns.add(leftColumn);
+        columns.add(stepsPanel());
 
         // errors block: lives in body SOUTH (was in bottomPanel CENTER before migration)
         errorsArea.setEditable(false);
@@ -105,8 +110,7 @@ final class CustomCommandEditorDialog extends JDialog {
         errorsScrollPane.setVisible(false);
 
         JPanel body = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
-        body.add(identitySection, BorderLayout.NORTH);
-        body.add(center, BorderLayout.CENTER);
+        body.add(columns, BorderLayout.CENTER);
         body.add(errorsScrollPane, BorderLayout.SOUTH);
 
         JButton save = AppTheme.makeButton(getText("button.save"));
@@ -127,7 +131,9 @@ final class CustomCommandEditorDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         getRootPane().setDefaultButton(save);
         pack();
-        setMinimumSize(new Dimension(860, 860));
+        setMinimumSize(new Dimension(1000, 560));
+        // Force the final (>= min) size before centering so the window doesn't drift when shown.
+        setSize(Math.max(getWidth(), 1000), Math.max(getHeight(), 560));
         setLocationRelativeTo(getOwner());
     }
 
@@ -154,7 +160,7 @@ final class CustomCommandEditorDialog extends JDialog {
         HudTable.style(paramsTable);
         paramsTable.getColumnModel().getColumn(0)
                 .setCellRenderer(new HudTable.ValueCellRenderer());
-        for (int i = 1; i <= 4; i++) {
+        for (int i = 1; i <= 3; i++) {
             paramsTable.getColumnModel().getColumn(i)
                     .setCellRenderer(new HudTable.ValueCellRenderer());
         }
@@ -517,8 +523,7 @@ final class CustomCommandEditorDialog extends JDialog {
                 getText("actions.customCommands.editor.param.column.name"),
                 getText("actions.customCommands.editor.param.column.type"),
                 getText("actions.customCommands.editor.param.column.required"),
-                getText("actions.customCommands.editor.param.column.description"),
-                getText("actions.customCommands.editor.param.column.examples")
+                getText("actions.customCommands.editor.param.column.description")
         };
 
         void setParameters(List<CustomCommandParameterSpec> newParams) {
@@ -562,7 +567,6 @@ final class CustomCommandEditorDialog extends JDialog {
                 case 1 -> spec.getType();
                 case 2 -> spec.isRequired();
                 case 3 -> spec.getDescription();
-                case 4 -> String.join(", ", spec.getExamples());
                 default -> "";
             };
         }
