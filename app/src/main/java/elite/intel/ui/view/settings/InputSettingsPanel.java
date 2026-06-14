@@ -234,7 +234,7 @@ public class InputSettingsPanel extends JPanel {
         buttonCombo.addItem(getText("settings.input.button.placeholder"));
         if (device != null) {
             for (int i = 1; i <= device.buttonCount(); i++) {
-                buttonCombo.addItem("Button " + i);
+                buttonCombo.addItem(getText("settings.input.button.label", i));
             }
         }
         buttonCombo.setSelectedIndex(0);
