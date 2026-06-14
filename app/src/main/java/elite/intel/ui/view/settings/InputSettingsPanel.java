@@ -1,6 +1,7 @@
 package elite.intel.ui.view.settings;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceConnectedEvent;
@@ -8,10 +9,14 @@ import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.model.Device;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.event.PttButtonStateEvent;
+import elite.intel.ui.event.PttModeChangedEvent;
+import elite.intel.ui.event.SleepWakeStateChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
+import elite.intel.ui.view.HudSection;
+import elite.intel.util.StringUtls;
 
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -65,6 +70,9 @@ public class InputSettingsPanel extends JPanel {
 
         if (pushToTalkEnabled) {
             DeviceService.getInstance().start();
+            if (!toggleMode) {
+                EventBusManager.publish(new PttModeChangedEvent(true));
+            }
         }
 
         reconcileControllerSelection();
@@ -72,19 +80,26 @@ public class InputSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
+        setBackground(HUD_BG);
 
-        JPanel fields = new JPanel(new GridBagLayout());
+        // Section 1: controller binding
+        HudSection bindingSection = new HudSection(getText("settings.input.section.binding"), new GridBagLayout());
+        JPanel fields = bindingSection.body();
         GridBagConstraints gc = baseGbc();
 
-        // Row 0: Enable Push to Talk
+        // Row 0: Enable Push to Talk (full width)
         gc.gridx = 0;
         gc.gridwidth = 2;
-        enablePushToTalkCheck = new JCheckBox(getText("settings.input.enablePushToTalk"), false);
+        gc.fill = GridBagConstraints.HORIZONTAL;
+        gc.weightx = 1.0;
+        enablePushToTalkCheck = makeCheckBox(getText("settings.input.enablePushToTalk"), false);
         enablePushToTalkCheck.addActionListener(e -> onPushToTalkToggled());
         fields.add(enablePushToTalkCheck, gc);
         gc.gridwidth = 1;
+        gc.fill = GridBagConstraints.NONE;
+        gc.weightx = 0;
 
-        // Row 1: Controller
+        // Row 1: Controller combo
         nextRow(gc);
         addLabel(fields, getText("settings.input.controller"), gc);
         controllerCombo = new JComboBox<>();
@@ -92,7 +107,7 @@ public class InputSettingsPanel extends JPanel {
         controllerCombo.addActionListener(e -> onControllerSelected());
         addField(fields, controllerCombo, gc, 1, 1.0);
 
-        // Row 2: Button
+        // Row 2: Button combo
         nextRow(gc);
         addLabel(fields, getText("settings.input.button"), gc);
         buttonCombo = new JComboBox<>();
@@ -100,39 +115,39 @@ public class InputSettingsPanel extends JPanel {
         buttonCombo.addActionListener(e -> onButtonSelected());
         addField(fields, buttonCombo, gc, 1, 1.0);
 
-        // Row 3 & 4: Toggle / Hold radio buttons
+        // Section 2: mode selection
+        HudSection modeSection = new HudSection(getText("settings.input.section.mode"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
+        JPanel modePanel = modeSection.body();
+
         toggleModeRadio = new JRadioButton(getText("settings.input.mode.toggle"), true);
         holdModeRadio = new JRadioButton(getText("settings.input.mode.hold"), false);
+        styleCheckBox(toggleModeRadio);
+        styleCheckBox(holdModeRadio);
         ButtonGroup modeGroup = new ButtonGroup();
         modeGroup.add(toggleModeRadio);
         modeGroup.add(holdModeRadio);
         toggleModeRadio.addActionListener(e -> {
             toggleMode = true;
             SystemSession.getInstance().setPushToTalkToggleMode(true);
+            EventBusManager.publish(new PttModeChangedEvent(false));
         });
         holdModeRadio.addActionListener(e -> {
             toggleMode = false;
             SystemSession.getInstance().setPushToTalkToggleMode(false);
+            // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
+            SystemSession.getInstance().stopStartListening(true);
+            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
+            EventBusManager.publish(new PttModeChangedEvent(true));
         });
+        modePanel.add(toggleModeRadio);
+        modePanel.add(holdModeRadio);
 
-        nextRow(gc);
-        gc.gridx = 0;
-        gc.gridwidth = 2;
-        fields.add(toggleModeRadio, gc);
-
-        nextRow(gc);
-        fields.add(holdModeRadio, gc);
-        gc.gridwidth = 1;
-
-        fields.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BUTTON_BG, 1),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-
-        JPanel content = new JPanel();
+        JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(fields);
+        content.add(bindingSection);
+        content.add(Box.createVerticalStrut(12));
+        content.add(modeSection);
 
         add(content, BorderLayout.NORTH);
 
@@ -148,6 +163,9 @@ public class InputSettingsPanel extends JPanel {
         if (enabled) {
             DeviceService.getInstance().start();
             reconcileControllerSelection();
+            if (!toggleMode) EventBusManager.publish(new PttModeChangedEvent(true));
+        } else {
+            EventBusManager.publish(new PttModeChangedEvent(false));
         }
         SystemSession.getInstance().setPushToTalkEnabled(enabled);
     }
@@ -249,6 +267,10 @@ public class InputSettingsPanel extends JPanel {
 
     @Subscribe
     public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
+        if (selectedDevice != null && selectedDevice.id() == event.deviceId() && !toggleMode) {
+            // Release PTT if the controller disconnects while the button is held.
+            EventBusManager.publish(new PttButtonStateEvent(false));
+        }
         SwingUtilities.invokeLater(() -> {
             suppressPersistence = true;
             try {
@@ -276,12 +298,16 @@ public class InputSettingsPanel extends JPanel {
         if (toggleMode) {
             if (event.pressed()) toggleSleepWake();
         } else {
-            if (event.pressed()) wakeUp(); else sleep();
+            if (event.pressed()) {
+                EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.ignoreModeOff")));
+                EventBusManager.publish(new PttButtonStateEvent(true));
+            } else {
+                EventBusManager.publish(new PttButtonStateEvent(false));
+            }
         }
     }
 
-    // -- Sleep / Wake actions -----------------------------------------------------
-    // Same code paths as the WAKEUP/SLEEP voice commands (StartListeningHandler / IgnoreMeHandler).
+    // -- Sleep / Wake actions (toggle mode only) ----------------------------------
 
     private void toggleSleepWake() {
         if (SystemSession.getInstance().isSleepingModeOn()) wakeUp(); else sleep();

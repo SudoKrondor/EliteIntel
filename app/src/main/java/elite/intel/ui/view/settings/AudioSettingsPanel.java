@@ -139,14 +139,10 @@ public class AudioSettingsPanel extends JPanel {
         deviceRow.add(audioDevicesBtn);
         monitorBody.add(deviceRow, BorderLayout.CENTER);
 
-        JPanel helpLabels = transparentPanel(null);
-        helpLabels.setLayout(new BoxLayout(helpLabels, BoxLayout.PAGE_AXIS));
-        helpLabels.setAlignmentX(Component.LEFT_ALIGNMENT);
-        helpLabels.add(Box.createVerticalStrut(18));
+
+        ///Monitor
         JLabel graphLabel = new JLabel(getText("settings.audio.micHelp"));
         graphLabel.setForeground(FG_MUTED);
-        helpLabels.add(graphLabel);
-        monitorBody.add(helpLabels, BorderLayout.SOUTH);
         content.add(monitorSection);
 
         add(content, BorderLayout.NORTH);

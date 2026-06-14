@@ -42,7 +42,7 @@ public class SettingsTabPanel extends JPanel {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab(getText("settings.tab.localLlm"), scaledIcon("/images/local-llm.png"), localLlmPanel);
         tabs.addTab(getText("settings.tab.audio"), scaledIcon("/images/audio.png"), audioPanel);
-        tabs.addTab(getText("settings.tab.input"), scaledIcon("/images/controller.png"), inputPanel);
+        tabs.addTab(getText("settings.tab.comms"), scaledIcon("/images/communications.png"), inputPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), scaledIcon("/images/cloud.png"), cloudPanel);
         // TODO: replace controller.png with a dedicated custom-settings icon
         tabs.addTab(getText("settings.tab.custom"), scaledIcon("/images/controller.png"), customPanel);

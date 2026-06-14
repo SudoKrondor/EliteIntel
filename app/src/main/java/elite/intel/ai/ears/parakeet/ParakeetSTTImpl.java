@@ -11,6 +11,7 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.PttButtonStateEvent;
 import elite.intel.util.AppPaths;
 import elite.intel.util.SherpaOnnxNatives;
 import elite.intel.util.StringUtls;
@@ -53,6 +54,8 @@ public class ParakeetSTTImpl implements EarsInterface {
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
     private final AtomicBoolean isSpeaking = new AtomicBoolean(false);
+    private final AtomicBoolean pttHeld = new AtomicBoolean(false);
+    private final AtomicBoolean pttForceClose = new AtomicBoolean(false);
     private final java.util.concurrent.atomic.AtomicInteger pendingTranscriptions = new java.util.concurrent.atomic.AtomicInteger(0);
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ByteArrayOutputStream audioCollector = new ByteArrayOutputStream();
@@ -239,6 +242,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             byte[] buffer = new byte[bufferSize];
 
             boolean isActive = false;
+            boolean capturedWhileAwake = false;
             int consecutiveVoice = 0;
             int consecutiveSilence = 0;
             audioCollector.reset();
@@ -281,6 +285,7 @@ public class ParakeetSTTImpl implements EarsInterface {
                 if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES) {
                     isActive = true;
                     justActivated = true;
+                    capturedWhileAwake = pttHeld.get();
                     audioCollector.reset();
                     for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
                     preRoll.clear();
@@ -292,7 +297,13 @@ public class ParakeetSTTImpl implements EarsInterface {
                     isActive = false;
                     log.debug("VAD: speech ended");
                 }
+                boolean forceClose = pttForceClose.compareAndSet(true, false);
+                if (forceClose && isActive) {
+                    isActive = false;
+                    log.info("PTT: button released, closing VAD");
+                }
                 if (isActive && !justActivated) {
+                    if (pttHeld.get()) capturedWhileAwake = true; // latch: button pressed mid-utterance
                     audioCollector.write(audio, 0, audioLen);
                     if (audioCollector.size() >= MAX_UTTERANCE_BYTES) {
                         isActive = false;
@@ -302,19 +313,20 @@ public class ParakeetSTTImpl implements EarsInterface {
                 }
                 if (wasActive && !isActive && audioCollector.size() > 0) {
                     final byte[] utterance = audioCollector.toByteArray();
+                    final boolean awake = capturedWhileAwake;
                     DumpAudioForTesting.getInstance().dumpAudioAsWav(utterance, SAMPLE_RATE);
                     audioCollector.reset();
                     int pending = pendingTranscriptions.get();
                     if (pending > 0) log.warn("Transcription queue backed up: {} utterances waiting", pending);
                     pendingTranscriptions.incrementAndGet();
-                    submitWithTimeout(utterance);
+                    submitWithTimeout(utterance, awake);
                 }
             }
         }
     }
 
-    private void submitWithTimeout(byte[] utterance) {
-        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance));
+    private void submitWithTimeout(byte[] utterance, boolean capturedWhileAwake) {
+        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance, capturedWhileAwake));
         Thread watchdog = new Thread(() -> {
             try {
                 future.get(INFERENCE_TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -336,7 +348,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         watchdog.start();
     }
 
-    private void transcribeAndDispatch(byte[] pcmBytes) {
+    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWhileAwake) {
         pendingTranscriptions.decrementAndGet();
         try {
             float[] samples = pcm16ToFloat(Amplifier.amplify(padAudio(trimLeadingLowEnergy(pcmBytes))));
@@ -359,13 +371,16 @@ public class ParakeetSTTImpl implements EarsInterface {
 
                 EventBusManager.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                if (systemSession.isSleepingModeOn()) {
+                if (capturedWhileAwake) {
+                    String stripped = stripListenBypassPrefix(finalTranscript);
+                    sendToAi(stripped != null ? stripped : finalTranscript, true);
+                } else if (systemSession.isSleepingModeOn()) {
                     if (passThrough(finalTranscript)) {
                         String stripped = stripListenBypassPrefix(finalTranscript);
-                        sendToAi(stripped != null ? stripped : finalTranscript);
+                        sendToAi(stripped != null ? stripped : finalTranscript, false);
                     }
                 } else {
-                    sendToAi(finalTranscript);
+                    sendToAi(finalTranscript, false);
                 }
             } finally {
                 stream.release();
@@ -454,17 +469,22 @@ public class ParakeetSTTImpl implements EarsInterface {
         return null;
     }
 
-    private void sendToAi(String transcript) {
+    private void sendToAi(String transcript, boolean pttCapture) {
         if (isSpeaking.get()) {
-            if (isInterruptPhrase(transcript)) {
+            if (pttCapture) {
+                log.info("PTT: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
+                EventBusManager.publish(new TTSInterruptEvent());
+            } else if (isInterruptPhrase(transcript)) {
                 log.info("Interrupt phrase detected during TTS playback: {}", transcript);
                 EventBusManager.publish(new TTSInterruptEvent());
+                return;
             } else {
                 log.debug("Ignoring transcript while TTS is speaking: {}", transcript);
+                return;
             }
-            return;
+        } else {
+            EventBusManager.publish(new TTSInterruptEvent());
         }
-        EventBusManager.publish(new TTSInterruptEvent());
         //AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
         log.info("Dispatching transcript: {}", transcript.replace("computer", ""));
         EventBusManager.publish(new UserInputEvent(transcript.replace("computer", "")));
@@ -486,6 +506,12 @@ public class ParakeetSTTImpl implements EarsInterface {
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
         isSpeaking.set(event.isSpeaking());
+    }
+
+    @Subscribe
+    public void onPttButtonState(PttButtonStateEvent event) {
+        pttHeld.set(event.isHeld());
+        if (!event.isHeld()) pttForceClose.set(true);
     }
 
     private byte[] padAudio(byte[] pcm) {
