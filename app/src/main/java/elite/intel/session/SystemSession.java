@@ -447,4 +447,56 @@ public class SystemSession {
     public boolean conversationalModeOn() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
+
+    public boolean isPushToTalkEnabled() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkEnabled());
+    }
+
+    public void setPushToTalkEnabled(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkEnabled(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public String getPushToTalkControllerName() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getPushToTalkControllerName());
+    }
+
+    public void setPushToTalkControllerName(String controllerName) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkControllerName(controllerName == null || controllerName.isBlank() ? null : controllerName);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getPushToTalkButtonIndex() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getPushToTalkButtonIndex());
+    }
+
+    public void setPushToTalkButtonIndex(int buttonIndex) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkButtonIndex(buttonIndex);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isPushToTalkToggleMode() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkToggleMode());
+    }
+
+    public void setPushToTalkToggleMode(boolean toggleMode) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkToggleMode(toggleMode);
+            dao.save(session);
+            return null;
+        });
+    }
 }

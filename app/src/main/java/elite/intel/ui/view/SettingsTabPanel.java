@@ -1,9 +1,6 @@
 package elite.intel.ui.view;
 
-import elite.intel.ui.view.settings.AudioSettingsPanel;
-import elite.intel.ui.view.settings.CloudServicesSettingsPanel;
-import elite.intel.ui.view.settings.CommonSettingsPanel;
-import elite.intel.ui.view.settings.LocalLlmSettingsPanel;
+import elite.intel.ui.view.settings.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,6 +13,7 @@ public class SettingsTabPanel extends JPanel {
     private final CommonSettingsPanel commonPanel = new CommonSettingsPanel();
     private final LocalLlmSettingsPanel localLlmPanel = new LocalLlmSettingsPanel();
     private final AudioSettingsPanel audioPanel = new AudioSettingsPanel();
+    private final InputSettingsPanel inputPanel = new InputSettingsPanel();
     private final CloudServicesSettingsPanel cloudPanel = new CloudServicesSettingsPanel();
 
     private HudUpdateButton updateAppButton;
@@ -29,6 +27,7 @@ public class SettingsTabPanel extends JPanel {
     }
 
     public void dispose() {
+        inputPanel.dispose();
         if (updateAppButton != null) updateAppButton.dispose();
     }
 
@@ -41,6 +40,7 @@ public class SettingsTabPanel extends JPanel {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab(getText("settings.tab.localLlm"), localLlmPanel);
         tabs.addTab(getText("settings.tab.audio"), audioPanel);
+        tabs.addTab(getText("settings.tab.comms"), inputPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), cloudPanel);
 
         updateAppButton = new HudUpdateButton(false);
@@ -57,6 +57,7 @@ public class SettingsTabPanel extends JPanel {
         commonPanel.initData();
         localLlmPanel.initData();
         audioPanel.initData();
+        inputPanel.initData();
         cloudPanel.initData();
     }
 }

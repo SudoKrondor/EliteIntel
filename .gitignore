@@ -15,11 +15,26 @@
 ./build
 .gradle/
 ./distribution/elite_intel.jar
+/distribution/native/lwjgl/
+.gradle/*
+.gradle/*/*
+./.gradle/file-system.probe
+./.gradle/buildOutputCleanup/
 ./locations
 ./*.md
 /distribution/elite_intel_updater.jar
 /scratch/scratch.sql
 /installers/
+/PACKAGES.md
+
+#-- Local dev/build artifacts and secrets
+.idea/
+app/logs/
+build/
+distribution/elite_intel.jar
+identifier.sqlite
+updater/build/
+CLAUDE.md
 
 #-- SECURITY - If you are using any of these tools, never ever commit these files for security reasons.
 #-- There is a new worm infecting repos via these tools
