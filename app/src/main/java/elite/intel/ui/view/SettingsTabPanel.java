@@ -1,10 +1,6 @@
 package elite.intel.ui.view;
 
-import elite.intel.ui.view.settings.AudioSettingsPanel;
-import elite.intel.ui.view.settings.CloudServicesSettingsPanel;
-import elite.intel.ui.view.settings.CommonSettingsPanel;
-import elite.intel.ui.view.settings.InputSettingsPanel;
-import elite.intel.ui.view.settings.LocalLlmSettingsPanel;
+import elite.intel.ui.view.settings.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,7 +40,7 @@ public class SettingsTabPanel extends JPanel {
         tabs.setTabPlacement(JTabbedPane.TOP);
         tabs.addTab(getText("settings.tab.localLlm"), localLlmPanel);
         tabs.addTab(getText("settings.tab.audio"), audioPanel);
-        tabs.addTab(getText("settings.tab.comms"), scaledIcon("/images/communications.png"), inputPanel);
+        tabs.addTab(getText("settings.tab.comms"), inputPanel);
         tabs.addTab(getText("settings.tab.cloudServices"), cloudPanel);
 
         updateAppButton = new HudUpdateButton();
