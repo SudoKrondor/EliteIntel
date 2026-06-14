@@ -258,6 +258,17 @@ public class InputSettingsPanel extends JPanel {
         buttonCombo.setSelectedIndex(0);
     }
 
+    // -- PTT mode sync -----------------------------------------------------------
+
+    @Subscribe
+    public void onPttModeChanged(PttModeChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            toggleMode = SystemSession.getInstance().isPushToTalkToggleMode();
+            toggleModeRadio.setSelected(toggleMode);
+            holdModeRadio.setSelected(!toggleMode);
+        });
+    }
+
     // -- SDL event subscriptions -------------------------------------------------
 
     @Subscribe
