@@ -8,6 +8,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.event.*;
 import elite.intel.ui.view.AudioInterfaceDialog;
 import elite.intel.ui.view.HudSection;
+import elite.intel.ui.view.HudSlider;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,10 +20,10 @@ public class AudioSettingsPanel extends JPanel {
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
-    private JSlider voiceVolumeSlider;
-    private JSlider beepVolumeSlider;
-    private JSlider speechSpeedSlider;
-    private JSlider sttThreadsSlider;
+    private HudSlider voiceVolumeSlider;
+    private HudSlider beepVolumeSlider;
+    private HudSlider speechSpeedSlider;
+    private HudSlider sttThreadsSlider;
     private JCheckBox useLocalTTSCheck;
 
     private Runnable onLocalTtsChanged;
@@ -48,11 +49,10 @@ public class AudioSettingsPanel extends JPanel {
         ag.gridx = 0;
         ag.weightx = 0;
         ag.fill = GridBagConstraints.NONE;
-        JLabel lblSpeechVol = new JLabel(getText("settings.audio.speechVolume"));
-        lblSpeechVol.setPreferredSize(new Dimension(140, 42));
+        JLabel lblSpeechVol = sliderLabel(getText("settings.audio.speechVolume"), 140);
         grid.add(lblSpeechVol, ag);
 
-        voiceVolumeSlider = makeSlider(0, 100, systemSession.getVoiceVolume(), 25, 1);
+        voiceVolumeSlider = makeSlider(0, 100, systemSession.getVoiceVolume());
         voiceVolumeSlider.addChangeListener(e -> EventBusManager.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
         ag.gridx = 1;
         ag.weightx = 1.0;
@@ -63,11 +63,10 @@ public class AudioSettingsPanel extends JPanel {
         ag.weightx = 0;
         ag.fill = GridBagConstraints.NONE;
         ag.insets = new Insets(6, 24, 6, 6);
-        JLabel lblBeepVol = new JLabel(getText("settings.audio.beepVolume"));
-        lblBeepVol.setPreferredSize(new Dimension(120, 42));
+        JLabel lblBeepVol = sliderLabel(getText("settings.audio.beepVolume"), 120);
         grid.add(lblBeepVol, ag);
 
-        beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100), 25, 1);
+        beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
         beepVolumeSlider.addChangeListener(e -> EventBusManager.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
         ag.gridx = 3;
         ag.weightx = 1.0;
@@ -80,11 +79,10 @@ public class AudioSettingsPanel extends JPanel {
         ag.gridx = 0;
         ag.weightx = 0;
         ag.fill = GridBagConstraints.NONE;
-        JLabel lblTtsSpeed = new JLabel(getText("settings.audio.ttsVoiceSpeed"));
-        lblTtsSpeed.setPreferredSize(new Dimension(140, 42));
+        JLabel lblTtsSpeed = sliderLabel(getText("settings.audio.ttsVoiceSpeed"), 140);
         grid.add(lblTtsSpeed, ag);
 
-        speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100), 25, 1);
+        speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100));
         speechSpeedSlider.addChangeListener(e -> EventBusManager.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
         ag.gridx = 1;
         ag.weightx = 1.0;
@@ -95,11 +93,10 @@ public class AudioSettingsPanel extends JPanel {
         ag.weightx = 0;
         ag.fill = GridBagConstraints.NONE;
         ag.insets = new Insets(6, 24, 6, 6);
-        JLabel lblSttThreads = new JLabel(getText("settings.audio.sttThreads"));
-        lblSttThreads.setPreferredSize(new Dimension(120, 42));
+        JLabel lblSttThreads = sliderLabel(getText("settings.audio.sttThreads"), 120);
         grid.add(lblSttThreads, ag);
 
-        sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads(), 1, 1);
+        sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
         sttThreadsSlider.addChangeListener(e -> EventBusManager.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
         ag.gridx = 3;
         ag.weightx = 1.0;
@@ -190,14 +187,20 @@ public class AudioSettingsPanel extends JPanel {
         if (onLocalTtsChanged != null) onLocalTtsChanged.run();
     }
 
-    private static JSlider makeSlider(int min, int max, int value, int majorTick, int minorTick) {
-        JSlider s = new JSlider(min, max, value);
-        s.setMajorTickSpacing(majorTick);
-        s.setMinorTickSpacing(minorTick);
-        s.setSnapToTicks(true);
-        s.setPaintTicks(false);
-        s.setPaintLabels(true);
-        styleSlider(s);
-        return s;
+    /** Creates a HUD slider snapping to integer steps; the value is shown above the thumb. */
+    private static HudSlider makeSlider(int min, int max, int value) {
+        return new HudSlider(min, max, 1, value);
+    }
+
+    /**
+     * Builds a slider-row key label aligned to the slider track. The top inset of
+     * {@link AppTheme#HUD_SLIDER_VALUE_AREA} drops the text from the row top to the track level,
+     * matching the slider's internal layout (value above, track below).
+     */
+    private static JLabel sliderLabel(String text, int width) {
+        JLabel lbl = hudReadoutLabel(text);
+        lbl.setPreferredSize(new Dimension(width, HUD_SLIDER_HEIGHT));
+        lbl.setBorder(BorderFactory.createEmptyBorder(HUD_SLIDER_VALUE_AREA, 0, 0, 0));
+        return lbl;
     }
 }

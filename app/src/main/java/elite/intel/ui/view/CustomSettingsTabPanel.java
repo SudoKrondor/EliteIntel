@@ -66,10 +66,12 @@ public class CustomSettingsTabPanel extends JPanel {
         addLabel(journal, getText("player.journalDirectory"), jgbc);
         journalDirField = makeTextField();
         journalDirField.setEditable(false);
-        journalDirField.setPreferredSize(new Dimension(200, 42));
+        int fieldHeight = 42;
+        journalDirField.setPreferredSize(new Dimension(200, fieldHeight));
         journalDirField.setToolTipText(getText("player.journalDirectory.tooltip"));
         addField(journal, journalDirField, jgbc, 1, 0.8);
-        JButton selectJournalDirButton = makeButton(getText("button.select"));
+        JButton selectJournalDirButton = makeFieldButton(verticalEllipsisIcon(fieldHeight), fieldHeight);
+        selectJournalDirButton.setToolTipText(getText("button.select"));
         selectJournalDirButton.addActionListener(e -> {
             JFileChooser chooser = new JFileChooser();
             chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -83,7 +85,11 @@ public class CustomSettingsTabPanel extends JPanel {
                 EventBusManager.publish(new AppLogEvent("Journal directory updated"));
             }
         });
-        addField(journal, selectJournalDirButton, jgbc, 2, 0.2);
+        // Compact square picker — keep fixed size, do not stretch like a normal field.
+        jgbc.gridx = 2;
+        jgbc.weightx = 0;
+        jgbc.fill = GridBagConstraints.NONE;
+        journal.add(selectJournalDirButton, jgbc);
 
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
@@ -108,7 +114,7 @@ public class CustomSettingsTabPanel extends JPanel {
                 new LanguageOption(getText("language.ukrainian"), Language.UK),
                 new LanguageOption(getText("language.german"), Language.DE),
                 new LanguageOption(getText("language.french"), Language.FR),
-                new LanguageOption(getText("language.french"), Language.ES)
+                new LanguageOption(getText("language.spanish"), Language.ES)
         });
         selectLanguage(combo, selected);
         return combo;

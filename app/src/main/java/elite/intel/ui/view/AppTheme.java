@@ -45,7 +45,6 @@ public class AppTheme {
     public static final Color BUTTON_BG = new Color(0x03529F);
     public static final Color FG_MUTED = new Color(0x9A6A3C);
     public static final Color ACCENT = new Color(0xFF7100);
-    public static final Color ACCENT_CYAN = new Color(0x33D7E8);
     public static final Color CONSOLE_FG = new Color(0xE0FFEF);
     public static final Color SEL_BG = new Color(0xE0FFEF);
     public static final Color SEL_FG = new Color(0x13181D);
@@ -78,10 +77,14 @@ public class AppTheme {
     public static final Color HUD_WARN_BG = new Color(0x2A2114);
     public static final Color HUD_DANGER = new Color(0xD94F4F);
     public static final Color HUD_DISABLED = new Color(0x6E4A28);
-    public static final Color HUD_ROW_ALT = new Color(0x0F1622);
-    public static final Color HUD_TABLE_BG = new Color(0x0B1018);
     public static final Color HUD_TABLE_ROW = new Color(0x1A1206);
     public static final Color HUD_TABLE_ROW_HOVER = new Color(0x2A1B08);
+    /**
+     * Saturated red fill for the active (left-of-thumb) portion of a {@link HudSlider} track.
+     * Conscious exception to §1 (red = danger): here red is a level indicator mirroring the
+     * in-game ED slider, chosen for legibility against the warm track — not a danger signal.
+     */
+    public static final Color HUD_SLIDER_FILL = new Color(0xFF2E00);
     public static final Color HUD_HOVER = new Color(0x182838);
 
     /** Muted amber/warm-orange body text for USER_INPUT log readouts. */
@@ -130,6 +133,30 @@ public class AppTheme {
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
+    // HudSlider metrics (ED slider form, §4): brown track plaque, rail with edge inset,
+    // red fill, tall start tick, round thumb, value floating above the thumb.
+    /** Total row height reserving space for the value rendered above the thumb. */
+    public static final int HUD_SLIDER_HEIGHT = 44;
+    /** Height of the warm brown track plaque. */
+    public static final int HUD_SLIDER_TRACK_HEIGHT = 18;
+    /** Thickness of the dim full-width rail line. */
+    public static final int HUD_SLIDER_RAIL_THICKNESS = 2;
+    /** Thickness of the red active-fill line. */
+    public static final int HUD_SLIDER_FILL_THICKNESS = 3;
+    /** Horizontal inset of the rail/fill from the plaque edges (line does not touch the borders). */
+    public static final int HUD_SLIDER_EDGE_INSET = 10;
+    /** Inset of the start tick (origin) and the thumb travel range from the plaque edges. */
+    public static final int HUD_SLIDER_RANGE_INSET = 26;
+    /** Diameter of the round thumb. */
+    public static final int HUD_SLIDER_THUMB_DIAMETER = 16;
+    /** Ring thickness of the thumb (white outline around the accent core). */
+    public static final int HUD_SLIDER_THUMB_RING = 2;
+    /**
+     * Height reserved above the track for the value rendered over the thumb. The track band is
+     * centred in the remaining height; use this as a top inset on the row label so the label
+     * aligns with the slider track rather than the row top.
+     */
+    public static final int HUD_SLIDER_VALUE_AREA = 20;
     public static final float HUD_FONT_BASE = 12f;
     public static final float HUD_FONT_XS   = HUD_FONT_BASE - 1f;  // 11
     public static final float HUD_FONT_SM   = HUD_FONT_BASE;       // 12
@@ -167,6 +194,37 @@ public class AppTheme {
 
     public static JButton makeButtonSubtle(String label) {
         return new HudButton(label, false);
+    }
+
+    /**
+     * Creates a compact square HUD button for a trailing field action (e.g. a directory/file
+     * picker placed at the end of a form field). The button is sized
+     * {@code fieldHeight}×{@code fieldHeight} so it aligns with the neighbouring field height
+     * while staying narrow.
+     *
+     * @param glyph       the button glyph/label (e.g. the picker ellipsis)
+     * @param fieldHeight height of the adjacent field, used as the square side
+     */
+    public static JButton makeFieldButton(String glyph, int fieldHeight) {
+        HudButton button = new HudButton(glyph, true);
+        button.setSquareSide(fieldHeight);
+        return button;
+    }
+
+    /**
+     * Icon variant of {@link #makeFieldButton(String, int)} for glyph affordances painted as
+     * HUD primitives (e.g. {@link #verticalEllipsisIcon(int)}) rather than Unicode text.
+     *
+     * @param icon        glyph icon, painted in the button's state-driven foreground colour
+     * @param fieldHeight height of the adjacent field, used as the square side
+     */
+    public static JButton makeFieldButton(Icon icon, int fieldHeight) {
+        HudButton button = new HudButton(null, true);
+        button.setSquareSide(fieldHeight);
+        // Dark glyph on the bright primary fill (HUD inversion, §0.4); the icon reads getForeground().
+        button.setForeground(SEL_FG);
+        button.setIcon(icon);
+        return button;
     }
 
     /**
@@ -319,21 +377,12 @@ public class AppTheme {
     }
 
     /**
-     * Creates a compact separator for bottom command/status strips.
+     * Canonical footer rule (§10) shared by modal dialogs and non-modal screen/tab footers:
+     * a full-width warm {@link #HUD_ORANGE_FILL_HOVER} rule of {@link #HUD_BORDER_THICKNESS}
+     * at the top, with {@link #HUD_GAP} padding above (after the rule) and below, zero side inset.
+     * Apply to the footer strip built by {@link HudFooter}.
      */
-    public static Border hudFooterSeparatorBorder() {
-        return BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, HUD_BORDER),
-                new EmptyBorder(12, 0, 6, 0)
-        );
-    }
-
-    /**
-     * Canonical modal footer border (§7.2): warm {@link #HUD_ORANGE_FILL_HOVER} rule of
-     * {@link #HUD_BORDER_THICKNESS} with {@link #HUD_GAP} side insets (not full-width) and
-     * {@link #HUD_GAP} padding on all sides. Apply to the button panel of a modal footer.
-     */
-    public static Border hudModalFooterBorder() {
+    public static Border hudFooterBorder() {
         final int gap = HUD_GAP;
         final int th  = HUD_BORDER_THICKNESS;
         return new AbstractBorder() {
@@ -495,7 +544,9 @@ public class AppTheme {
         tc.setCaretColor(ACCENT);
         tc.setSelectionColor(ACCENT);
         tc.setSelectedTextColor(SEL_FG);
-        tc.setBorder(hudFieldBorder());
+        // Preserve the wider info border so the palette does not clobber the reserved info-«i» zone.
+        tc.setBorder(tc instanceof HudTextField htf && htf.hasInfoZone()
+                ? hudFieldBorderWithInfo() : hudFieldBorder());
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
     }
 
@@ -623,15 +674,6 @@ public class AppTheme {
     }
 
     /**
-     * Applies the standard HUD treatment to sliders.
-     */
-    public static void styleSlider(JSlider slider) {
-        slider.setOpaque(false);
-        slider.setForeground(FG_MUTED);
-        slider.setBackground(HUD_PANEL_BG);
-    }
-
-    /**
      * Applies shared HUD table metrics and renderers to an existing table.
      */
     public static void styleTable(JTable table) {
@@ -732,6 +774,63 @@ public class AppTheme {
     }
 
     /**
+     * Draws a left-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used by the discrete stepper ({@link HudStepper}).
+     */
+    public static void paintHudArrowLeft(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 5;
+        int ah = 8;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax + aw},
+                new int[]{ay + ah / 2, ay, ay + ah},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws a right-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used by the discrete stepper ({@link HudStepper}).
+     */
+    public static void paintHudArrowRight(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 5;
+        int ah = 8;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax},
+                new int[]{ay, ay + ah / 2, ay + ah},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws an up-pointing filled triangle centred within the box (x, y, w, h).
+     * Pair to {@link #paintHudArrowDown}; used for move-up affordances.
+     */
+    public static void paintHudArrowUp(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        int aw = 8;
+        int ah = 5;
+        int ax = x + (w - aw) / 2;
+        int ay = y + (h - ah) / 2;
+        g2.setColor(color);
+        g2.fillPolygon(
+                new int[]{ax, ax + aw, ax + aw / 2},
+                new int[]{ay + ah, ay + ah, ay},
+                3);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
      * Draws a lowercase «i» glyph (dot + stem) centred within the box (x, y, w, h).
      * All geometry is relative — no hardcoded pixel sizes except proportional formulas.
      * Suitable for info-affording controls; caller chooses colour based on component state.
@@ -784,6 +883,76 @@ public class AppTheme {
         g2.drawLine(x1, y2, x2, y1); // bottom-left → top-right
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws a vertical three-dot «more/options» glyph (three stacked squares) centred within
+     * the box (x, y, w, h). All geometry is proportional. Flat squares (not rounded dots) per
+     * the HUD flat-style rule; caller chooses colour based on component state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color fill colour for the three dots
+     */
+    public static void paintHudVerticalEllipsis(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        // Small dots with generous vertical breathing room — proportional so they scale with the box.
+        int dot = Math.max(3, Math.round(h / 7f));
+        int gap = Math.max(2, Math.round(h / 12f));
+        int totalH = dot * 3 + gap * 2;
+        int dx = x + (w - dot) / 2;
+        int dy = y + (h - totalH) / 2;
+        g2.setColor(color);
+        for (int i = 0; i < 3; i++) {
+            g2.fillRect(dx, dy + i * (dot + gap), dot, dot);
+        }
+    }
+
+    /**
+     * Returns an icon that paints a vertical three-dot glyph using the host component's
+     * foreground colour, so it follows the button's state-driven colour. Use for compact
+     * field-trailing «more/options/pick» buttons instead of a Unicode «⋮» (see HUD §13).
+     *
+     * @param boxSize square icon side in px (typically the field/button height)
+     */
+    public static Icon verticalEllipsisIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudVerticalEllipsis((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
+    }
+
+    /**
+     * Returns an icon that paints an up-pointing triangle in the host component's foreground
+     * colour (so it follows button state). Use for move-up affordances on buttons (see HUD §13).
+     */
+    public static Icon arrowUpIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudArrowUp((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
+    }
+
+    /**
+     * Returns an icon that paints a down-pointing triangle in the host component's foreground
+     * colour (so it follows button state). Use for move-down affordances on buttons (see HUD §13).
+     */
+    public static Icon arrowDownIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudArrowDown((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
     }
 
     /**
@@ -907,10 +1076,6 @@ public class AppTheme {
         if (c instanceof JTable table
                 && !Boolean.TRUE.equals(table.getClientProperty(HUD_TABLE_STYLE_LOCKED))) {
             styleTable(table);
-        }
-
-        if (c instanceof JSlider slider) {
-            styleSlider(slider);
         }
 
         if (c instanceof JTabbedPane tp) {
