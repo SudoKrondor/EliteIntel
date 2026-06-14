@@ -42,6 +42,7 @@ public class HudTabbedPane extends JTabbedPane {
         boolean flatContent = level != Level.STANDARD;
         boolean compact = level != Level.STANDARD;
         boolean mainNavigation = level == Level.MAIN_NAV;
+        boolean section = level == Level.SECTION;
 
         tp.putClientProperty(HUD_FLAT_TABS, flatContent);
         tp.setOpaque(true);
@@ -53,12 +54,12 @@ public class HudTabbedPane extends JTabbedPane {
         if (mainNavigation) {
             tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_MAIN));
         } else if (level == Level.COMPACT) {
-            tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_SECTION));
+            tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_COMPACT));
         } else if (level == Level.SECTION) {
             tp.setFont(tp.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_TAB_SECTION));
         }
 
-        tp.setUI(new HudTabbedPaneUi(flatContent, compact, mainNavigation));
+        tp.setUI(new HudTabbedPaneUi(flatContent, compact, mainNavigation, section));
     }
 
     private static class HudTabbedPaneUi extends BasicTabbedPaneUI {
@@ -70,14 +71,16 @@ public class HudTabbedPane extends JTabbedPane {
         private final boolean flatContent;
         private final boolean compact;
         private final boolean mainNavigation;
+        private final boolean section;
 
         /** Cache: original Icon → [active tint, inactive tint, disabled tint]. Keyed by identity. */
         private final Map<Icon, Icon[]> tintCache = new IdentityHashMap<>();
 
-        HudTabbedPaneUi(boolean flatContent, boolean compact, boolean mainNavigation) {
+        HudTabbedPaneUi(boolean flatContent, boolean compact, boolean mainNavigation, boolean section) {
             this.flatContent = flatContent;
             this.compact = compact;
             this.mainNavigation = mainNavigation;
+            this.section = section;
         }
 
         @Override
@@ -88,6 +91,11 @@ public class HudTabbedPane extends JTabbedPane {
                 // Zero out the LAF default top inset so the tab strip sits flush against whatever is above it.
                 tabAreaInsets = new Insets(0, 0, 0, 0);
                 tabInsets = new Insets(12, 14, 12, 14);
+            } else if (section) {
+                // Flush top/bottom so the active box meets the bottom rail; small left indent so the
+                // first tab label is offset from the rail's start. Roomier horizontal tab insets.
+                tabAreaInsets = new Insets(0, AppTheme.HUD_GAP, 0, 0);
+                tabInsets = new Insets(6, 14, 6, 14);
             } else if (compact) {
                 tabInsets = new Insets(3, 9, 3, 9);
             } else {
@@ -111,6 +119,11 @@ public class HudTabbedPane extends JTabbedPane {
                 // bottom rail — bright accent, 3px; flush to tab-area bottom
                 g.setColor(AppTheme.ACCENT);
                 g.fillRect(0, tabAreaHeight - 3, width, 3);
+            } else if (section) {
+                // Underline rail under the section tab row (§11): darker than the active box fill
+                // (box = HUD_ORANGE_SOFT) so the rail reads as a base line, not part of the box.
+                g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
+                g.fillRect(0, tabAreaHeight - 2, tabPane.getWidth(), 2);
             }
         }
 
@@ -127,6 +140,20 @@ public class HudTabbedPane extends JTabbedPane {
                     g.fillRect(x, y + gap, w, fillH);
                 }
                 // unselected: no fill — paintTabArea already painted HUD_SHELL_BACKGROUND
+                return;
+            }
+            if (section) {
+                // Active = filled box (inversion, §11) in the softer orange so it does not compete
+                // with the MAIN_NAV accent; box meets the bottom rail (no gap below the label).
+                if (isSelected) {
+                    int gap = 4;
+                    int bottomRail = 2;
+                    int fillH = h - gap - bottomRail;
+                    if (fillH < 1) fillH = 1;
+                    g.setColor(AppTheme.HUD_ORANGE_SOFT);
+                    g.fillRect(x, y + gap, w, fillH);
+                }
+                // unselected: leave the HUD_CONTENT_BACKGROUND painted by paintTabArea
                 return;
             }
             Color background = compact ? AppTheme.HUD_SHELL_BACKGROUND : AppTheme.HUD_CONTENT_BACKGROUND;
@@ -168,7 +195,7 @@ public class HudTabbedPane extends JTabbedPane {
         protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
                                       int x, int y, int w, int h, boolean isSelected) {
             if (!isSelected) return;
-            if (mainNavigation) return; // selection = fill (inversion), no underline needed
+            if (mainNavigation || section) return; // selection = filled box (inversion), no underline
             // Orange underline
             g.setColor(AppTheme.ACCENT);
             g.fillRect(x, y + h - 3, w, 3);
@@ -221,7 +248,7 @@ public class HudTabbedPane extends JTabbedPane {
             String upper = title != null ? title.toUpperCase() : "";
             if (!tabPane.isEnabled() || !tabPane.isEnabledAt(tabIndex)) {
                 g.setColor(AppTheme.HUD_DISABLED);
-            } else if (mainNavigation) {
+            } else if (mainNavigation || section) {
                 g.setColor(isSelected ? AppTheme.SEL_FG : AppTheme.FG_MUTED);
             } else {
                 g.setColor(isSelected ? AppTheme.ACCENT : AppTheme.FG_MUTED);

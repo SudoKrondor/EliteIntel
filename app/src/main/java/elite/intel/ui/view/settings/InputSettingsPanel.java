@@ -165,6 +165,11 @@ public class InputSettingsPanel extends JPanel {
             reconcileControllerSelection();
             if (!toggleMode) EventBusManager.publish(new PttModeChangedEvent(true));
         } else {
+            if (!toggleMode) {
+                // Hold mode forced the app to sleep; undo that now PTT is disabled.
+                SystemSession.getInstance().stopStartListening(false);
+                EventBusManager.publish(new SleepWakeStateChangedEvent(false));
+            }
             EventBusManager.publish(new PttModeChangedEvent(false));
         }
         SystemSession.getInstance().setPushToTalkEnabled(enabled);
@@ -263,7 +268,10 @@ public class InputSettingsPanel extends JPanel {
     @Subscribe
     public void onPttModeChanged(PttModeChangedEvent event) {
         SwingUtilities.invokeLater(() -> {
-            toggleMode = SystemSession.getInstance().isPushToTalkToggleMode();
+            if (!pushToTalkEnabled) return;
+            boolean newToggleMode = SystemSession.getInstance().isPushToTalkToggleMode();
+            if (newToggleMode == toggleMode) return;
+            toggleMode = newToggleMode;
             toggleModeRadio.setSelected(toggleMode);
             holdModeRadio.setSelected(!toggleMode);
         });

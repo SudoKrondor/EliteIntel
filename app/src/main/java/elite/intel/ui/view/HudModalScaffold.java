@@ -1,12 +1,14 @@
 package elite.intel.ui.view;
 
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.awt.FlowLayout;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Single modal scaffold (§7.2). Returns a wrapper JPanel for an undecorated
@@ -17,7 +19,7 @@ import java.awt.FlowLayout;
  *  - header HudDialogHeader(title, onClose) when title != null;
  *  - body inside side inset HUD_DIALOG_BODY_INSET (when scrollBody, wrapped in
  *    HudScrollPane with viewport bg overridden to HUD_DIALOG_BODY);
- *  - footer: dismiss on the left, primary+extra on the right, rule hudModalFooterBorder().
+ *  - footer: shared HudFooter (modal=true) — dismiss/BACK on the left, primary+extra on the right.
  *
  * Does NOT orchestrate showing or scrim (kept outside: runWithModalScrim(owner, showModal)).
  * The default button is set by the caller after setContentPane (the scaffold has no rootPane).
@@ -66,29 +68,19 @@ public final class HudModalScaffold {
     }
 
     private static JPanel buildFooter(HudModalSpec spec) {
-        JPanel footer = new JPanel(new BorderLayout());
-        footer.setOpaque(false);
-        footer.setBorder(AppTheme.hudModalFooterBorder());
-
-        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
-        west.setOpaque(false);
-        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 0));
-        east.setOpaque(false);
-
-        // EAST: extra buttons first (in insertion order), then primary - primary is outermost right
+        // Trailing actions left-to-right: extras first (insertion order), then primary outermost right.
+        List<AbstractButton> trailing = new ArrayList<>();
         for (HudModalSpec.FooterButton fb : spec.footerButtons()) {
-            if (fb.role() == HudModalSpec.Role.EXTRA) east.add(fb.button());
+            if (fb.role() == HudModalSpec.Role.EXTRA) trailing.add(fb.button());
         }
         for (HudModalSpec.FooterButton fb : spec.footerButtons()) {
-            if (fb.role() == HudModalSpec.Role.PRIMARY) east.add(fb.button());
+            if (fb.role() == HudModalSpec.Role.PRIMARY) trailing.add(fb.button());
         }
-        // WEST: dismiss
+        AbstractButton dismiss = null;
         for (HudModalSpec.FooterButton fb : spec.footerButtons()) {
-            if (fb.role() == HudModalSpec.Role.DISMISS) west.add(fb.button());
+            if (fb.role() == HudModalSpec.Role.DISMISS) dismiss = fb.button();
         }
-
-        footer.add(west, BorderLayout.WEST);
-        footer.add(east, BorderLayout.EAST);
-        return footer;
+        // Modal footer: BACK/dismiss on the left.
+        return HudFooter.build(true, dismiss, null, trailing);
     }
 }

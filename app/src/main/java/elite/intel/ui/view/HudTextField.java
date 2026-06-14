@@ -31,6 +31,11 @@ public class HudTextField extends JTextField {
      * is painted in the right margin; clicking it runs {@code action} without moving the
      * caret. Pass {@code null} to remove the info-zone and restore default behaviour.
      */
+    /** @return true when an info-zone is active and the field needs the wider info border. */
+    public boolean hasInfoZone() {
+        return infoAction != null;
+    }
+
     public void setInfoAction(Runnable action) {
         this.infoAction = action;
         setBorder(action != null ? AppTheme.hudFieldBorderWithInfo() : AppTheme.hudFieldBorder());
