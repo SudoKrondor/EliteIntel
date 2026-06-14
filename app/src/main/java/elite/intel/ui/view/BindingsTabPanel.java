@@ -488,12 +488,8 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JButton compactDirectoryChooserButton() {
-        JButton button = makeButton("⋮");
+        JButton button = makeFieldButton(verticalEllipsisIcon(HEADER_ROW_HEIGHT), HEADER_ROW_HEIGHT);
         button.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
-        Dimension size = new Dimension(HEADER_ROW_HEIGHT, HEADER_ROW_HEIGHT);
-        button.setPreferredSize(size);
-        button.setMinimumSize(size);
-        button.setMaximumSize(size);
         return button;
     }
 

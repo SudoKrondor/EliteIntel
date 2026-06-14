@@ -45,7 +45,6 @@ public class AppTheme {
     public static final Color BUTTON_BG = new Color(0x03529F);
     public static final Color FG_MUTED = new Color(0x9A6A3C);
     public static final Color ACCENT = new Color(0xFF7100);
-    public static final Color ACCENT_CYAN = new Color(0x33D7E8);
     public static final Color CONSOLE_FG = new Color(0xE0FFEF);
     public static final Color SEL_BG = new Color(0xE0FFEF);
     public static final Color SEL_FG = new Color(0x13181D);
@@ -78,8 +77,6 @@ public class AppTheme {
     public static final Color HUD_WARN_BG = new Color(0x2A2114);
     public static final Color HUD_DANGER = new Color(0xD94F4F);
     public static final Color HUD_DISABLED = new Color(0x6E4A28);
-    public static final Color HUD_ROW_ALT = new Color(0x0F1622);
-    public static final Color HUD_TABLE_BG = new Color(0x0B1018);
     public static final Color HUD_TABLE_ROW = new Color(0x1A1206);
     public static final Color HUD_TABLE_ROW_HOVER = new Color(0x2A1B08);
     public static final Color HUD_HOVER = new Color(0x182838);
@@ -167,6 +164,37 @@ public class AppTheme {
 
     public static JButton makeButtonSubtle(String label) {
         return new HudButton(label, false);
+    }
+
+    /**
+     * Creates a compact square HUD button for a trailing field action (e.g. a directory/file
+     * picker placed at the end of a form field). The button is sized
+     * {@code fieldHeight}×{@code fieldHeight} so it aligns with the neighbouring field height
+     * while staying narrow.
+     *
+     * @param glyph       the button glyph/label (e.g. the picker ellipsis)
+     * @param fieldHeight height of the adjacent field, used as the square side
+     */
+    public static JButton makeFieldButton(String glyph, int fieldHeight) {
+        HudButton button = new HudButton(glyph, true);
+        button.setSquareSide(fieldHeight);
+        return button;
+    }
+
+    /**
+     * Icon variant of {@link #makeFieldButton(String, int)} for glyph affordances painted as
+     * HUD primitives (e.g. {@link #verticalEllipsisIcon(int)}) rather than Unicode text.
+     *
+     * @param icon        glyph icon, painted in the button's state-driven foreground colour
+     * @param fieldHeight height of the adjacent field, used as the square side
+     */
+    public static JButton makeFieldButton(Icon icon, int fieldHeight) {
+        HudButton button = new HudButton(null, true);
+        button.setSquareSide(fieldHeight);
+        // Dark glyph on the bright primary fill (HUD inversion, §0.4); the icon reads getForeground().
+        button.setForeground(SEL_FG);
+        button.setIcon(icon);
+        return button;
     }
 
     /**
@@ -784,6 +812,48 @@ public class AppTheme {
         g2.drawLine(x1, y2, x2, y1); // bottom-left → top-right
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws a vertical three-dot «more/options» glyph (three stacked squares) centred within
+     * the box (x, y, w, h). All geometry is proportional. Flat squares (not rounded dots) per
+     * the HUD flat-style rule; caller chooses colour based on component state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color fill colour for the three dots
+     */
+    public static void paintHudVerticalEllipsis(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        // Small dots with generous vertical breathing room — proportional so they scale with the box.
+        int dot = Math.max(3, Math.round(h / 7f));
+        int gap = Math.max(2, Math.round(h / 12f));
+        int totalH = dot * 3 + gap * 2;
+        int dx = x + (w - dot) / 2;
+        int dy = y + (h - totalH) / 2;
+        g2.setColor(color);
+        for (int i = 0; i < 3; i++) {
+            g2.fillRect(dx, dy + i * (dot + gap), dot, dot);
+        }
+    }
+
+    /**
+     * Returns an icon that paints a vertical three-dot glyph using the host component's
+     * foreground colour, so it follows the button's state-driven colour. Use for compact
+     * field-trailing «more/options/pick» buttons instead of a Unicode «⋮» (see HUD §13).
+     *
+     * @param boxSize square icon side in px (typically the field/button height)
+     */
+    public static Icon verticalEllipsisIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudVerticalEllipsis((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
     }
 
     /**

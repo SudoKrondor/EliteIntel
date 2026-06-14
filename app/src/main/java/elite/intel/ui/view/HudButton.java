@@ -14,6 +14,9 @@ public class HudButton extends JButton {
 
     private final boolean primary;
 
+    /** When > 0, the button uses a fixed square footprint instead of the default action sizing. */
+    private int squareSide = 0;
+
     /**
      * Creates a reusable HUD button.
      *
@@ -38,10 +41,35 @@ public class HudButton extends JButton {
         }
     }
 
+    /**
+     * Switches the button to a fixed {@code side}×{@code side} footprint, used for compact
+     * trailing field actions (e.g. pickers) that must align with a field's height and stay
+     * narrow. Pass 0 to restore the default action-button sizing.
+     */
+    public void setSquareSide(int side) {
+        this.squareSide = side;
+        // Drop the wide text-button insets so the glyph/label centres in the square footprint.
+        setBorder(side > 0 ? BorderFactory.createEmptyBorder() : BorderFactory.createEmptyBorder(4, 14, 4, 14));
+        revalidate();
+    }
+
     @Override
     public Dimension getPreferredSize() {
+        if (squareSide > 0) {
+            return new Dimension(squareSide, squareSide);
+        }
         Dimension d = super.getPreferredSize();
         return new Dimension(Math.max(90, d.width), AppTheme.HUD_BUTTON_HEIGHT);
+    }
+
+    @Override
+    public Dimension getMinimumSize() {
+        return squareSide > 0 ? getPreferredSize() : super.getMinimumSize();
+    }
+
+    @Override
+    public Dimension getMaximumSize() {
+        return squareSide > 0 ? getPreferredSize() : super.getMaximumSize();
     }
 
     @Override
