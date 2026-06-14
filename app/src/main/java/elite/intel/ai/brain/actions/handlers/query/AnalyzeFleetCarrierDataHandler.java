@@ -25,7 +25,7 @@ public class AnalyzeFleetCarrierDataHandler extends BaseQueryAnalyzer implements
                     Data fields:
                     - reserveBalance: credits reserved for weekly operations
                     - totalBalance: total credits in carrier bank (includes reserveBalance)
-                    - marketBalance: credits available for market purchases
+                    - marketBalance: credits available for market purchases. Negative balance is the money reserved for purchases not dept
                     - fuelSupply: current tritium fuel in supply depot
                     - fuelSupplyReserve: tritium held in reserve
                     - totalFuelAvailable: fuelSupply and fuelSupplyReserve combined
