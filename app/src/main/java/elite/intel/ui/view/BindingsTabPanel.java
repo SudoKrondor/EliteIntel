@@ -396,7 +396,7 @@ public class BindingsTabPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(2, 0, 6, 7);
         JLabel label = hudReadoutLabel(text);
-        label.setPreferredSize(new Dimension(width, HEADER_ROW_HEIGHT));
+        label.setPreferredSize(new Dimension(width, HUD_FIELD_HEIGHT));
         panel.add(label, gbc);
     }
 
@@ -417,15 +417,13 @@ public class BindingsTabPanel extends JPanel {
         panel.add(component, gbc);
     }
 
-    private static final int HEADER_ROW_HEIGHT = 24;
-
     /** Shared width of the left label column so all rows align (fits the longest label). */
     private static final int LABEL_COL_WIDTH = 180;
 
     private JTextField readOnlyField() {
         JTextField field = makeTextField();
         field.setEditable(false);
-        field.setPreferredSize(new Dimension(0, HEADER_ROW_HEIGHT));
+        field.setPreferredSize(new Dimension(0, HUD_FIELD_HEIGHT));
         return field;
     }
 
@@ -436,7 +434,7 @@ public class BindingsTabPanel extends JPanel {
     private JTextField readOnlyInfoField(String infoKey) {
         HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
         field.setEditable(false);
-        field.setPreferredSize(new Dimension(0, HEADER_ROW_HEIGHT));
+        field.setPreferredSize(new Dimension(0, HUD_FIELD_HEIGHT));
         return field;
     }
 
@@ -449,7 +447,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JButton compactDirectoryChooserButton() {
-        JButton button = makeFieldButton(verticalEllipsisIcon(HEADER_ROW_HEIGHT), HEADER_ROW_HEIGHT);
+        JButton button = makeFieldButton(verticalEllipsisIcon(HUD_FIELD_HEIGHT), HUD_FIELD_HEIGHT);
         button.setToolTipText(getText("player.bindingsDirectory.select.tooltip"));
         return button;
     }

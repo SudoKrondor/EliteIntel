@@ -53,7 +53,7 @@ public class HudTabbedPane extends JTabbedPane {
         if (mainNavigation) {
             tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_MAIN));
         } else if (level == Level.COMPACT) {
-            tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_SECTION));
+            tp.setFont(tp.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_TAB_COMPACT));
         } else if (level == Level.SECTION) {
             tp.setFont(tp.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_TAB_SECTION));
         }

@@ -116,7 +116,7 @@ public class AppTheme {
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
-    public static final int HUD_FIELD_HEIGHT = 34;
+    public static final int HUD_FIELD_HEIGHT = 30;
     /** Preferred width for searchable editable picker combo boxes. */
     public static final int HUD_PICKER_FIELD_WIDTH  = 500;
     /** Preferred height for searchable editable picker combo boxes. */
@@ -189,7 +189,8 @@ public class AppTheme {
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_SECTION_TITLE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_TAB_MAIN       = HUD_FONT_LG;   // 16
-    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_SM;   // 12
+    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_MD;   // 14 — second-level section tabs
+    public static final float HUD_FONT_TAB_COMPACT    = HUD_FONT_SM;   // 12 — dense inner (compact) tabs
     public static final float HUD_FONT_BUTTON         = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_CHECKBOX       = HUD_FONT_SM;   // 12f — форм-контрол чекбокса (§4.1)
     public static final float HUD_FONT_ICON_BUTTON    = HUD_FONT_LG;  // 16f — символ-кнопки (ⓘ и т.п.) в боксе 24×24
