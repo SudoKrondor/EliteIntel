@@ -156,9 +156,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JTextField field = makeTextField();
-        field.setText(value);
-        field.setEditable(false);
+        JLabel field = hudReadoutValue(value, FG);
         panel.add(field, gbc);
     }
 

@@ -214,6 +214,9 @@ public class HudTabbedPane extends JTabbedPane {
         @Override
         protected void paintText(Graphics g, int tabPlacement, Font font, FontMetrics metrics,
                                  int tabIndex, String title, Rectangle textRect, boolean isSelected) {
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+            g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
             g.setFont(font);
             String upper = title != null ? title.toUpperCase() : "";
             if (!tabPane.isEnabled() || !tabPane.isEnabledAt(tabIndex)) {

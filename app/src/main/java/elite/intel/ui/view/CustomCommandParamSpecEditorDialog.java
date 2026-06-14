@@ -18,12 +18,13 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
 
     private static final String[] TYPES = {"string", "number", "boolean"};
 
-    private final JTextField nameField = new JTextField(28);
+    private final JTextField nameField = AppTheme.makeTextField();
     private final HudComboBox<String> typeCombo = new HudComboBox<>(TYPES);
-    private final JCheckBox requiredCheck = new JCheckBox();
-    private final JTextField descriptionField = new JTextField(28);
-    private final JTextField examplesField = new JTextField(28);
-    private final JTextField extractionHintField = new JTextField(28);
+    private final JCheckBox requiredCheck =
+            AppTheme.makeCheckBox(getText("actions.customCommands.editor.param.required"), false);
+    private final JTextField descriptionField = AppTheme.makeTextField();
+    private final JTextField examplesField = AppTheme.makeTextField();
+    private final JTextField extractionHintField = AppTheme.makeTextField();
     private CustomCommandParameterSpec result;
 
     CustomCommandParamSpecEditorDialog(Component parent, CustomCommandParameterSpec spec) {
@@ -84,18 +85,12 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
 
         addRow(panel, gbc, getText("actions.customCommands.editor.param.name"), nameField);
         addRow(panel, gbc, getText("actions.customCommands.editor.param.type"), typeCombo);
-        addRow(panel, gbc, getText("actions.customCommands.editor.param.required"), requiredCheck);
+        addRow(panel, gbc, requiredCheck);
         addRow(panel, gbc, getText("actions.customCommands.editor.param.description"), descriptionField);
         addRow(panel, gbc, getText("actions.customCommands.editor.param.examples"), examplesField);
         addRow(panel, gbc, getText("actions.customCommands.editor.param.extractionHint"), extractionHintField);
 
         AppTheme.applyDarkPalette(panel);
-        AppTheme.styleTextComponent(nameField);
-
-        AppTheme.styleCheckBox(requiredCheck);
-        AppTheme.styleTextComponent(descriptionField);
-        AppTheme.styleTextComponent(examplesField);
-        AppTheme.styleTextComponent(extractionHintField);
         return panel;
     }
 
@@ -103,11 +98,18 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        JLabel label = new JLabel(labelText);
-        label.setForeground(AppTheme.FG_MUTED);
+        JLabel label = AppTheme.hudReadoutLabel(labelText);
         label.setBorder(new EmptyBorder(0, 0, 0, 12));
         panel.add(label, gbc);
 
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(field, gbc);
+        gbc.gridy++;
+    }
+
+    private void addRow(JPanel panel, GridBagConstraints gbc, JComponent field) {
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
