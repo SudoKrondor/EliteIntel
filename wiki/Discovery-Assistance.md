@@ -29,6 +29,9 @@ If you have left a planet or the star system, progress is retained and can be re
 - **Glide Assistance**: Upon reaching the Glide Zone, EliteIntel prompts you to initiate glide and suggests a safe descent angle. The maximum safe angle is -35 degrees. If repositioning is needed for a safe glide angle, EliteIntel advises accordingly. After gliding, EliteIntel guides you to within 1 km of the target for landing.
 - **Surface Navigation**: In the SRV, EliteIntel guides you to within 25 meters of the target coordinates.
 
+
+[[youtube:C9IcRAqY6ww]]
+
 ## Navigating by Coordinates
 
 To navigate to specific coordinates, say "Navigate to 23.456 latitude and -43.87 longitude." EliteIntel activates navigation from orbital cruise or from the surface.

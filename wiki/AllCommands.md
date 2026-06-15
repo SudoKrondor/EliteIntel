@@ -1,26 +1,26 @@
 # EliteIntel AI Queries & Commands Guide
 
-This document is a reference for queries and commands supported by **Elite Intel**.
-Memorizing specific phrases is not required. Speak naturally and the app determines your intent.
-This list shows what is possible, not a script to recite.
+Hey Commander! This is a reference for the kinds of things you can ask or tell your **Elite Intel** sidekick.
+**Ideally - You don't need to memorize any of these** - just speak naturally, and the app figures out what you mean. This
+list exists so you know what's possible, not so you can recite scripts.
 
-## Troubleshooting
+## First thing first. Having trouble?
 
-- Random commands fire without cause: brain problem (the LLM is weak or the configuration is incorrect)
-- Commands fire but do not activate: hands problem (key bindings)
-- Poor speech recognition: ears problem (noisy environment, low noise-to-RMS ratio, audio not calibrated)
-- App does not speak: mouth problem. The audio is not routed correctly, or is routed to an endpoint you are not monitoring. Check audio routing at the OS level.
-
-### [Full Wiki](https://github.com/stone-alex/EliteIntel/wiki)
+- If app is firing random commands for no reason: brain problem (LLM is weak or configuration is wonky)
+- If app is firing commands, but they do not activate: hands problem (Key bindings)
+- If app can't hear you well: ears problem (noisy room low noise-to-rms ratio, audio not calibrated etc)
+- If app does not speak: mouth problem. Audio connection is not routed properly or routed to an audio end point that you are not monitoring check audio routing at OS level.
 
 ## Audio Input
 
-**Calibrate audio in the app.** If the difference between Noise Floor and RMS is below 400, the app will struggle to recognize speech. A ratio of 800 to 1000 or higher is recommended. Speakers and microphone used together cause interference. Use headphones with a dedicated microphone.
+**Calibrate the audio in the app**. If the difference between Noise Floor and RMS is too low (e.g. less than 400) the
+app will have hard time understanding you. A good ratio is at least 800-1000. Speakers and mic do not go together.
+Headphones and mic are recommended.
 
 ## App
 
 - Check missing or unbound key bindings.
-- Sleep / Wake Up (Sleep mode ignores voice input. Say "Listen Up" to pass a single command, or say "Wake up" to resume.)
+- Sleep / Wake Up (Ignores user voice input in sleep mode, by pass by saying 'Listen Up', or switch back by saying 'Wake up')
 
 ## Exploration & Location
 
@@ -55,7 +55,7 @@ This list shows what is possible, not a script to recite.
 
 ## Fleet Carrier
 
-Include the word "carrier" to distinguish from ship commands.
+Make sure you mention carrier, else it might think you are talking about the ship!
 
 - What is our carrier range (includes reserve fuel if manually set) / stats / fuel.
 - Set carrier fuel reserve [amount] (sets the fleet carrier tritium reserve)
@@ -90,7 +90,7 @@ Include the word "carrier" to distinguish from ship commands.
 - Where do I need to go to buy/sell [commodity]?
 - What's in the local market?
 - Data for stations, ports, and settlements in system.
-- Remind me \<blah\> (reads reminders set during trade route run, tells you what station to go to etc.)
+- Remind me [blah] (reads reminders set during trade route run, tells you what station to go to etc.)
 - What is our current trade plan / trade route / trade legs?
 
 ## Trade Profile Setup
@@ -228,7 +228,7 @@ Other panel commands:
 
 - **"Ignore me" / "do not monitor" / "sleep"** → puts the app to sleep (ignores all input).
 - **"Wake up"** → resumes normal listening.
-- **"Listen up \<command\>"** → bypass: passes a single command or query through while the app stays asleep. The "listen up" prefix is stripped before the command reaches the AI. Example: *"Listen up, jump to hyperspace"* executes the jump without waking the app.
+- **"Listen up [command]"** → bypass: passes a single command or query through while the app stays asleep. The "listen up" prefix is stripped before the command reaches the AI. Example: *"Listen up, jump to hyperspace"* executes the jump without waking the app.
 - Set reminder [text]. / Remind me [text].
 - Clear reminders.
 - Toggle route announcements on / off.
@@ -245,18 +245,19 @@ Other panel commands:
 ## 💬 General Chat (Conversation Mode must be ON)
 
 By default the app runs in **Strict Mode**: if input doesn't match a known command or query it is silently ignored.
-This is intentional. It prevents speech-to-text noise and background chatter from triggering random actions mid-flight.
+This is intentional — it prevents STT noise and background chatter from triggering random actions mid-flight.
 
-Enable **Conversation Mode** in the Settings tab to allow free-form chat. When enabled, any input that does not match a command falls back to general conversation, including game lore, real-world topics, ship builds, and other subjects. The AI functions as more than a command parser when this mode is active.
+Enable **Conversation Mode** in the Settings tab to turn on free-form chat. When on, anything that doesn't match a
+command falls back to general conversation — game lore, real-world topics, ship builds, whatever. The AI is not just
+a command parser when you want it to be more.
 
-Local LLMs will respond but with limited conversational quality. Cloud LLMs (Claude, OpenAI, xAI) are recommended for conversation.
+Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mistral, Deepseek) are recommended for conversation.
 
 ---
 
-[More commands here](https://github.com/stone-alex/EliteIntel/wiki/Obscure-System-Commands)
+[More commands here](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
 
 Fly Dangerous, Commander! o7
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub
-**](https://github.com/stone-alex/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Cretive Commons License |
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Cretive Commons License |
