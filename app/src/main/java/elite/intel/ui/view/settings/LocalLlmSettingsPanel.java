@@ -11,6 +11,7 @@ import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.view.HudSection;
+import elite.intel.ui.view.HudSegmentedControl;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,8 +29,11 @@ public class LocalLlmSettingsPanel extends JPanel {
     private JCheckBox useLocalCommandLLMCheck;
     private JCheckBox useLocalQueryLLMCheck;
     private JCheckBox useLocalTtsCheck;
-    private JRadioButton ollamaRadio;
-    private JRadioButton lmStudioRadio;
+    private HudSegmentedControl providerControl;
+
+    // Segment indices for the Ollama/LM Studio provider selector.
+    private static final int PROVIDER_OLLAMA = 0;
+    private static final int PROVIDER_LMSTUDIO = 1;
 
     private LocalLlmProvider currentProvider;
     private Runnable onLocalLlmChanged;
@@ -75,21 +79,18 @@ public class LocalLlmSettingsPanel extends JPanel {
         useLocalQueryLLMCheck.addActionListener(e -> onCheckboxToggled());
         addCheck(fields, useLocalQueryLLMCheck, gc);
 
-        ollamaRadio = new JRadioButton(getText("settings.localLlm.ollama"));
-        lmStudioRadio = new JRadioButton(getText("settings.localLlm.lmStudio"));
-        styleCheckBox(ollamaRadio);
-        styleCheckBox(lmStudioRadio);
-        ButtonGroup providerGroup = new ButtonGroup();
-        providerGroup.add(ollamaRadio);
-        providerGroup.add(lmStudioRadio);
-        ollamaRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.OLLAMA));
-        lmStudioRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.LMSTUDIO));
+        providerControl = new HudSegmentedControl(
+                new String[]{getText("settings.localLlm.ollama"), getText("settings.localLlm.lmStudio")},
+                PROVIDER_OLLAMA);
+        providerControl.addChangeListener(e -> onProviderSelected(
+                providerControl.getSelectedIndex() == PROVIDER_OLLAMA
+                        ? LocalLlmProvider.OLLAMA
+                        : LocalLlmProvider.LMSTUDIO));
 
         HudSection providerSection = new HudSection(getText("settings.localLlm.section.provider"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
         JPanel providerPanel = providerSection.body();
         providerPanel.add(new JLabel(getText("settings.localLlm.host")));
-        providerPanel.add(ollamaRadio);
-        providerPanel.add(lmStudioRadio);
+        providerPanel.add(providerControl);
 
         JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
 
@@ -125,7 +126,7 @@ public class LocalLlmSettingsPanel extends JPanel {
 
     private void setDefaults() {
         currentProvider = LocalLlmProvider.LMSTUDIO;
-        lmStudioRadio.setSelected(true);
+        providerControl.setSelectedIndex(PROVIDER_LMSTUDIO);
         useLocalCommandLLMCheck.setSelected(true);
         useLocalQueryLLMCheck.setSelected(true);
         localLlmAddressField.setText(LocalLlmProvider.LMSTUDIO.getDefaultUrl());
@@ -137,8 +138,7 @@ public class LocalLlmSettingsPanel extends JPanel {
     public void initData() {
         LocalLlmProvider provider = systemSession.getLocalLlmProvider();
         currentProvider = provider;
-        ollamaRadio.setSelected(provider == LocalLlmProvider.OLLAMA);
-        lmStudioRadio.setSelected(provider == LocalLlmProvider.LMSTUDIO);
+        providerControl.setSelectedIndex(provider == LocalLlmProvider.OLLAMA ? PROVIDER_OLLAMA : PROVIDER_LMSTUDIO);
         loadProviderFieldsIntoUi(provider);
         useLocalCommandLLMCheck.setSelected(systemSession.useLocalCommandLlm());
         useLocalQueryLLMCheck.setSelected(systemSession.useLocalQueryLlm());
@@ -235,7 +235,8 @@ public class LocalLlmSettingsPanel extends JPanel {
     }
 
     private void save() {
-        LocalLlmProvider provider = lmStudioRadio.isSelected() ? LocalLlmProvider.LMSTUDIO : LocalLlmProvider.OLLAMA;
+        LocalLlmProvider provider = providerControl.getSelectedIndex() == PROVIDER_LMSTUDIO
+                ? LocalLlmProvider.LMSTUDIO : LocalLlmProvider.OLLAMA;
         saveProviderFields(provider);
         systemSession.setLocalLlmProvider(provider);
         systemSession.setUseLocalCommandLlm(useLocalCommandLLMCheck.isSelected());
