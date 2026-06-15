@@ -215,15 +215,6 @@ public class AiServicesSettingsPanel extends JPanel {
         add(content, BorderLayout.NORTH);
     }
 
-    private void addSpanComponent(JPanel panel, JComponent comp, GridBagConstraints gc) {
-        gc.gridx = 0;
-        gc.weightx = 1.0;
-        gc.gridwidth = 3;
-        gc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(comp, gc);
-        gc.gridwidth = 1;
-    }
-
     private void wireListeners() {
         llmSourceControl.addChangeListener(e -> {
             recomputeDirty();

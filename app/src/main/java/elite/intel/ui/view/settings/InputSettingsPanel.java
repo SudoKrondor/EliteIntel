@@ -13,8 +13,10 @@ import elite.intel.ui.event.PttButtonStateEvent;
 import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.SleepWakeStateChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
+import elite.intel.ui.view.HudComboBox;
 import elite.intel.ui.view.HudSection;
 import elite.intel.ui.view.HudSegmentedControl;
+import elite.intel.ui.view.HudTwoColumns;
 import elite.intel.util.AudioPlayer;
 
 import javax.swing.*;
@@ -30,8 +32,8 @@ import static elite.intel.ui.view.AppTheme.*;
 public class InputSettingsPanel extends JPanel {
 
     private JCheckBox enablePushToTalkCheck;
-    private JComboBox<Object> controllerCombo;
-    private JComboBox<String> buttonCombo;
+    private HudComboBox<Object> controllerCombo;
+    private HudComboBox<String> buttonCombo;
     private HudSegmentedControl modeControl;
 
     // Mode segment indices — order matches the segments built in buildUi().
@@ -85,72 +87,76 @@ public class InputSettingsPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_BG);
 
-        // Section 1: controller binding
-        HudSection bindingSection = new HudSection(getText("settings.input.section.binding"), new GridBagLayout());
-        JPanel fields = bindingSection.body();
-        GridBagConstraints gc = baseGbc();
+        // Single flat working section (§9). Two-column body (§10): left column holds the master enable
+        // slab and the mode switch (both stretched to the column width, no labels); right column holds
+        // the controller/button pickers as aligned rows.
+        HudSection section = HudSection.flat(getText("settings.input.section.binding"), new BorderLayout());
+        JPanel body = section.body();
 
-        // Row 0: Enable Push to Talk (full width)
-        gc.gridx = 0;
-        gc.gridwidth = 2;
-        gc.fill = GridBagConstraints.HORIZONTAL;
-        gc.weightx = 1.0;
         enablePushToTalkCheck = makeCheckBox(getText("settings.input.enablePushToTalk"), false);
         enablePushToTalkCheck.addActionListener(e -> onPushToTalkToggled());
-        fields.add(enablePushToTalkCheck, gc);
-        gc.gridwidth = 1;
-        gc.fill = GridBagConstraints.NONE;
-        gc.weightx = 0;
-
-        // Row 1: Controller combo
-        nextRow(gc);
-        addLabel(fields, getText("settings.input.controller"), gc);
-        controllerCombo = new JComboBox<>();
-        controllerCombo.addItem(getText("settings.input.controller.placeholder"));
-        controllerCombo.addActionListener(e -> onControllerSelected());
-        addField(fields, controllerCombo, gc, 1, 1.0);
-
-        // Row 2: Button combo
-        nextRow(gc);
-        addLabel(fields, getText("settings.input.button"), gc);
-        buttonCombo = new JComboBox<>();
-        buttonCombo.addItem(getText("settings.input.button.placeholder"));
-        buttonCombo.addActionListener(e -> onButtonSelected());
-        addField(fields, buttonCombo, gc, 1, 1.0);
-
-        // Section 2: mode selection
-        HudSection modeSection = new HudSection(getText("settings.input.section.mode"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
-        JPanel modePanel = modeSection.body();
 
         modeControl = new HudSegmentedControl(
                 new String[]{getText("settings.input.mode.toggle"), getText("settings.input.mode.hold")},
                 MODE_TOGGLE);
-        modeControl.addChangeListener(e -> {
-            if (modeControl.getSelectedIndex() == MODE_TOGGLE) {
-                toggleMode = true;
-                SystemSession.getInstance().setPushToTalkToggleMode(true);
-                EventBusManager.publish(new PttModeChangedEvent(false));
-            } else {
-                toggleMode = false;
-                SystemSession.getInstance().setPushToTalkToggleMode(false);
-                // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
-                SystemSession.getInstance().stopStartListening(true);
-                EventBusManager.publish(new SleepWakeStateChangedEvent(true));
-                EventBusManager.publish(new PttModeChangedEvent(true));
-            }
-        });
-        modePanel.add(modeControl);
+        modeControl.addChangeListener(e -> onModeChanged());
+
+        // Left column — enable slab + mode switch, both full-width (span) and label-less. GridBag + baseGbc
+        // so its row insets come from the same shared source as the right column (no hand-tuned border).
+        JPanel leftCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints lgc = baseGbc();
+        addSpanComponent(leftCol, enablePushToTalkCheck, lgc);
+        nextRow(lgc);
+        addSpanComponent(leftCol, modeControl, lgc);
+        JPanel leftWrap = transparentPanel(new BorderLayout());
+        leftWrap.add(leftCol, BorderLayout.NORTH);
+
+        // Right column — controller / button as aligned label→control rows.
+        JPanel rightCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints gc = baseGbc();
+
+        addLabel(rightCol, getText("settings.input.controller"), gc, 0);
+        controllerCombo = new HudComboBox<>(new Object[0]);
+        controllerCombo.addItem(getText("settings.input.controller.placeholder"));
+        controllerCombo.addActionListener(e -> onControllerSelected());
+        addField(rightCol, controllerCombo, gc, 1, 1.0);
+
+        nextRow(gc);
+        addLabel(rightCol, getText("settings.input.button"), gc, 0);
+        buttonCombo = new HudComboBox<>(new String[0]);
+        buttonCombo.addItem(getText("settings.input.button.placeholder"));
+        buttonCombo.addActionListener(e -> onButtonSelected());
+        addField(rightCol, buttonCombo, gc, 1, 1.0);
+
+        JPanel rightWrap = transparentPanel(new BorderLayout());
+        rightWrap.add(rightCol, BorderLayout.NORTH);
+
+        body.add(new HudTwoColumns(leftWrap, rightWrap), BorderLayout.CENTER);
 
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
-        content.add(bindingSection);
-        content.add(Box.createVerticalStrut(12));
-        content.add(modeSection);
+        content.add(section);
 
         add(content, BorderLayout.NORTH);
 
         setControlsEnabled(false);
+    }
+
+    /** Applies the selected PTT mode: toggle (sleep/wake) vs hold-to-talk, and syncs session + events. */
+    private void onModeChanged() {
+        if (modeControl.getSelectedIndex() == MODE_TOGGLE) {
+            toggleMode = true;
+            SystemSession.getInstance().setPushToTalkToggleMode(true);
+            EventBusManager.publish(new PttModeChangedEvent(false));
+        } else {
+            toggleMode = false;
+            SystemSession.getInstance().setPushToTalkToggleMode(false);
+            // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
+            SystemSession.getInstance().stopStartListening(true);
+            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
+            EventBusManager.publish(new PttModeChangedEvent(true));
+        }
     }
 
     // -- UI handlers -----------------------------------------------------------

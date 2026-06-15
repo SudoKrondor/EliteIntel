@@ -79,6 +79,21 @@ public class HudComboBox<E> extends JComboBox<E> {
         setRenderer(new HudComboRenderer<>(labelFn, mutedWhen));
     }
 
+    /**
+     * Caps a non-editable combo to the shared field height ({@link AppTheme#HUD_FIELD_HEIGHT}, the same
+     * token {@link HudTextField} uses) so combos line up with text fields in form rows. FlatLaf otherwise
+     * makes combos a few px taller than fields. Editable pickers and any explicit {@code setPreferredSize}
+     * (e.g. {@code addField}, {@link #picker}) are honoured untouched; width stays dynamic.
+     */
+    @Override
+    public Dimension getPreferredSize() {
+        Dimension d = super.getPreferredSize();
+        if (!isPreferredSizeSet() && !isEditable()) {
+            return new Dimension(d.width, AppTheme.HUD_FIELD_HEIGHT);
+        }
+        return d;
+    }
+
     // -- Renderer -------------------------------------------------------------
 
     /**

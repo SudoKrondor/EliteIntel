@@ -194,6 +194,7 @@ public class AppTheme {
     public static final float HUD_FONT_TABLE_ROW      = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_TABLE_HEADER   = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_SM;   // 12
+    public static final float HUD_FONT_FIELD_LABEL    = HUD_FONT_SM + 1f; // 13 — form/readout key labels (§5.1)
     public static final float HUD_FONT_READOUT_KEY    = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_SECTION_TITLE  = HUD_FONT_SM;   // 12
@@ -451,9 +452,9 @@ public class AppTheme {
      * so every form label looks identical.
      */
     private static void styleFieldLabel(JLabel label) {
-        // Vanilla-ED form labels are light (FG), not muted, at a comfortable SM size (§5.1).
+        // Vanilla-ED form labels are light (FG), not muted, at the field-label size (§5.1).
         label.setForeground(FG);
-        label.setFont(label.getFont().deriveFont(HUD_FONT_SM));
+        label.setFont(label.getFont().deriveFont(HUD_FONT_FIELD_LABEL));
         label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
 
@@ -1342,6 +1343,21 @@ public class AppTheme {
         gbc.weightx = 0.2;
         gbc.fill = GridBagConstraints.NONE;
         panel.add(check, gbc);
+    }
+
+    /**
+     * Adds a full-width component spanning the whole form grid (label + field + check columns) at the
+     * current row. Use for label-less, full-width controls inside a {@link #baseGbc} grid — e.g. a
+     * section-wide segmented switch or banner — so the component shares the same row insets as labelled
+     * rows instead of needing a hand-tuned border.
+     */
+    public static void addSpanComponent(JPanel panel, JComponent comp, GridBagConstraints gbc) {
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
+        gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(comp, gbc);
+        gbc.gridwidth = 1;
     }
 
     public static void addNestedPanel(JPanel parent, JPanel child, String title) {
