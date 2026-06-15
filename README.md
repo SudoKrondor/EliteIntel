@@ -1,8 +1,10 @@
+## ⚙️ [INSTALL](https://www.elite-intel.org/Installation.html) | 🎓 [**WIKI**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
+
 # Elite Intel
 ## V1.0 English only - require English game.
 ## V1.1 Multi lingual in the active development.
 
-### ⚙️ [INSTALL](https://www.elite-intel.org/Installation.html) | 🎓 [**WIKI**](https://www.elite-intel.org) | 💻[TECH STUFF](https://github.com/stone-alex/EliteIntel/blob/master/TECHNICAL.md)
+
 
 --- 
 
