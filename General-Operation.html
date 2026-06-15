@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Intel — EliteIntel</title>
-    <meta name="description" content="Elite Intel connects your voice to your ship. No command lists to memorize, no rigid syntax to learn. Just say what you mean, and the AI handles the rest. Wheth">
-    <link rel="canonical" href="https://www.elite-intel.org/">
-    <meta property="og:title" content="Elite Intel — EliteIntel">
-    <meta property="og:description" content="Elite Intel connects your voice to your ship. No command lists to memorize, no rigid syntax to learn. Just say what you mean, and the AI handles the rest. Wheth">
-    <meta property="og:url" content="https://www.elite-intel.org/">
+    <title>General Operation — EliteIntel</title>
+    <meta name="description" content="Elite Intel is designed for natural interaction. This page describes the key concepts for effective use. Memorizing specific commands is not required. Speak nat">
+    <link rel="canonical" href="https://www.elite-intel.org/General-Operation.html">
+    <meta property="og:title" content="General Operation — EliteIntel">
+    <meta property="og:description" content="Elite Intel is designed for natural interaction. This page describes the key concepts for effective use. Memorizing specific commands is not required. Speak nat">
+    <meta property="og:url" content="https://www.elite-intel.org/General-Operation.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -34,7 +34,7 @@
     <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
         <nav class="wiki-nav">
 
-            <a href="index.html" class="nav-link active"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
 
             <div class="nav-section">App</div>
             <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
@@ -49,7 +49,7 @@
             <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
 
             <div class="nav-section">How Do I…?</div>
-            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="General-Operation.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
             <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
@@ -69,40 +69,27 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Elite Intel</h1>
-<h2>AI Voice Assistant for Elite Dangerous</h2>
-<p><img src="images/app.png" alt="EliteIntel app"></p>
-<h2>Speak Naturally. Fly Better.</h2>
-<p>Elite Intel connects your voice to your ship. No command lists to memorize, no rigid syntax to learn. Just say what you mean, and the AI handles the rest. Whether you are managing ship systems, plotting a route, or scanning a system for signals, Elite Intel understands your intent and acts on it.</p>
-<p>Data is sourced in real time from <a href="https://spansh.co.uk/">Spansh</a> and <a href="https://www.edsm.net/">EDSM</a>.</p>
-<p><strong>Supported languages:</strong> English, Spanish, French, Ukrainian, German, Russian</p>
+<h1>General Operation</h1>
+<p>Elite Intel is designed for natural interaction. This page describes the key concepts for effective use. Memorizing specific commands is not required. Speak naturally and the AI determines your intent.</p>
+<h2>Game Controls and Commands</h2>
+<p>Elite Intel handles tasks such as deploying landing gear, heat sinks, and hardpoints; toggling supercruise; initiating hyperspace jumps; opening cargo scoops; displaying maps; activating the Filtered Spectrum Scanner (FSS); switching between combat and analysis modes; opening UI panels; playing GalNet news; and issuing commands to deployed fighters. It cannot fire weapons or operate a controller, HOTAS, or mouse. Only keyboard-mapped controls are accessible.</p>
+<p>Be direct for best results. &quot;Deploy landing gear&quot; executes immediately. Vague requests such as &quot;prepare for landing&quot; may result in a verbal acknowledgment without action. The AI interprets intent, so clear phrasing produces more reliable results.</p>
+<h2>Queries</h2>
+<p>Elite Intel performs data analysis from in-game journal files, EDSM, and session data such as FSS scans. Specific queries return detailed answers. Broad queries return summaries.</p>
+<ul>
+<li><strong>Exploration</strong>: After scanning a system, ask about life, rings, minerals, or terraformable worlds. Scans must be completed before querying, as the AI requires scan data. &quot;What is in this system?&quot; returns a summary. &quot;Any terraformable planets?&quot; returns specific results.</li>
+<li><strong>In the Bubble</strong>: Ask about security, threat assessments, or points of interest. For example, &quot;Are there hazardous resource sites here?&quot; may return &quot;No hazardous sites, but there are low and high resource sites,&quot; or only &quot;No hazardous sites found&quot; if the query was specifically about hazardous sites. Broader questions such as &quot;Any resource sites around?&quot; return broader answers. The AI does not list every signal unless asked.</li>
+<li><strong>EDSM Data</strong>: The AI uses EDSM data for markets and points of interest. EDSM is crowd-sourced and may not be current.</li>
+<li><strong>Missions</strong>: For pirate massacre missions, ask &quot;How many kills left?&quot; or &quot;What is the potential profit?&quot; The AI tracks progress and bounties collected.</li>
+<li><strong>Carrier Stats</strong>: Query carrier status with commands such as &quot;Use reserve balance, how long can we run the carrier with 31 million credits per week?&quot; The AI does not know which balance is used for carrier upkeep. Specify the balance when querying. Specific questions return precise answers. Broad queries such as &quot;How is the carrier doing?&quot; return general summaries of credits and fuel levels.</li>
+</ul>
+<p>The AI also supports general knowledge queries beyond Elite Dangerous.</p>
+<h2>Chats and Conversation</h2>
+<p>In modes other than Professional, Elite Intel supports general conversation. In Professional Mode, it responds only to commands and queries. Other modes allow open-ended conversation. Rogue Mode includes casual and off-topic dialogue.</p>
+<h2>Final Notes</h2>
+<p>Experiment with commands and queries to discover Elite Intel&#39;s full capabilities. Clear phrasing produces the most reliable results. Report issues or questions on Matrix. Contributions are welcome.</p>
 <hr>
-<h2>Intelligence, Not Just Automation</h2>
-<p>Elite Intel does more than press keys on your behalf. The language model applies domain knowledge to give you meaningful analysis. Ask it to evaluate your current loadout and it will break down strengths, weaknesses, and trade-offs - not recite a spec sheet.</p>
-<p>Session data from auto-scans and FSS results feeds directly into queries like <em>&quot;What is on the scanners?&quot;</em> or <em>&quot;Analyze local signals.&quot;</em> The AI works with what the game exposes. Where data is unavailable - because it exists only on a panel and not in the journal - it will say so.</p>
-<hr>
-<h2>Your Ship. Your Hardware. Your Rules.</h2>
-<p>Elite Intel runs entirely on your machine. The full pipeline (speech recognition, language model, and voice synthesis) operates offline. No cloud account, no subscription, no data leaving your system.</p>
-<p>Prefer a hybrid setup? Mix and match freely: local speech recognition with a cloud language model, or cloud voice synthesis with local inference. The choice is yours.</p>
-<hr>
-<h2>Speech Recognition That Actually Works</h2>
-<p>Elite Intel uses the <strong>NVIDIA Parakeet</strong> transducer model for speech-to-text - the same class of technology used in professional transcription tools. It runs on both Windows and Linux with no additional setup or training required.</p>
-<p>If you have used voice recognition software with Elite Dangerous before, expect a noticeable difference in accuracy.</p>
-<hr>
-<h2>A Voice That Fits the Cockpit</h2>
-<p><strong>Kokoro TTS</strong> is built in and works out of the box. No downloads, no API keys, no configuration. It provides 53 voices across English, Spanish, and French, and supports the full personality system.</p>
-<p>For all other supported languages, <strong>Google TTS</strong> delivers natural-sounding speech in every language Elite Intel supports. An API key is required and can be configured under Settings / Cloud Services.</p>
-<hr>
-<h2>Choose Your LLM</h2>
-<p>Elite Intel works with the language model that suits your setup:</p>
-<p><strong>Free and offline</strong> - <a href="https://lmstudio.ai/">LM Studio</a> or <a href="https://ollama.com/">Ollama</a> running a local model<br><strong>Free cloud</strong> - <a href="https://console.mistral.ai/home">Mistral</a><br><strong>Paid cloud</strong> - Anthropic, OpenAI, xAI, Gemini, DeepSeek</p>
-<p>Switch providers at any time in settings. No reinstallation required.</p>
-<hr>
-<h2>Community</h2>
-<p>Elite Intel is open source. Bug reports, feature requests, and pull requests are welcome.</p>
-<p>Join the community on Matrix: 👉 <a href="https://matrix.to/#/#krondor:matrix.org"><strong>#krondor:matrix.org</strong></a> 👈</p>
-<hr>
-<p><em>Maintain manual control of critical ship systems at all times.</em></p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>

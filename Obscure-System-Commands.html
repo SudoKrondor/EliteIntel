@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Obscure System Commands — EliteIntel</title>
+    <meta name="description" content="EliteIntel uses a minimal interface with no menus or complex settings panels. A full set of features is available via voice commands. All settings and functions">
+    <link rel="canonical" href="https://www.elite-intel.org/Obscure-System-Commands.html">
+    <meta property="og:title" content="Obscure System Commands — EliteIntel">
+    <meta property="og:description" content="EliteIntel uses a minimal interface with no menus or complex settings panels. A full set of features is available via voice commands. All settings and functions">
+    <meta property="og:url" content="https://www.elite-intel.org/Obscure-System-Commands.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Obscure System Commands</h1>
+<p>EliteIntel uses a minimal interface with no menus or complex settings panels. A full set of features is available via voice commands. All settings and functions are accessible through natural speech.</p>
+<h2>Toggleable Settings</h2>
+<p>Toggle these settings using voice commands:</p>
+<ul>
+<li><strong>Route Announcements [On/Off]</strong>: &quot;Turn Route Announcements On.&quot; EliteIntel announces details about your next jump, including whether the star is scoopable, system security, and other relevant information. When disabled, announcements stop. Manual queries remain available. <em>Default: On</em></li>
+<li><strong>Discovery Announcements [On/Off]</strong>: &quot;Turn Discovery Announcements On.&quot; EliteIntel announces first-mapped systems, high-value planets, bio signals, and similar discoveries. <em>Default: On</em></li>
+<li><strong>Mining and Material Announcements [On/Off]</strong>: &quot;Turn Mining Announcements On.&quot; EliteIntel flags prospector limpet hits and material finds. <em>Default: Off</em></li>
+<li><strong>Add Mining Target [Material Name]</strong>: &quot;Add Mining Target Painite.&quot; EliteIntel flags hits for that specific material. No effect if no target is set. <em>Default: Off</em></li>
+<li><strong>Radio Chatter [On/Off]</strong>: &quot;Turn On the Radio.&quot; EliteIntel announces relevant radio transmissions such as pirate threats, while filtering routine traffic like commercial broadcasts. Useful for cargo runs. <em>Default: Off</em></li>
+<li><strong>Streaming Mode [On/Off]</strong>: &quot;Set Streaming Mode On.&quot; EliteIntel only responds to commands prefixed with &quot;Computer.&quot; Useful for streaming or when in a wing. Say &quot;Computer, turn streaming mode off&quot; to disable.</li>
+<li><strong>Night Vision [On/Off]</strong>: &quot;Night vision on.&quot; Toggles night vision in the ship or SRV.</li>
+<li><strong>Headlights [On/Off]</strong>: &quot;Headlights on.&quot;</li>
+<li><strong>Drive Assist [On/Off]</strong>: &quot;Drive assist off.&quot;</li>
+</ul>
+<h2>Navigation &amp; Finding Things</h2>
+<p>Beyond basic route plotting, EliteIntel supports targeted navigation:</p>
+<ul>
+<li><strong>Navigate to Coordinates</strong>: &quot;Navigate to latitude 41.4325 longitude -75.2309.&quot; EliteIntel guides you from orbit to within 50 meters. Dark side navigation requires instrument flight.</li>
+<li><strong>Navigate to Bio Sample / Codex Entry</strong>: &quot;Navigate to next bio sample&quot; or &quot;Navigate to nearest codex entry.&quot; EliteIntel navigates to the nearest tagged biological. It prioritizes the active genus if one is being tracked.</li>
+<li><strong>Navigate to Landing Zone</strong>: &quot;Navigate to landing zone.&quot; Navigates to your last known ground landing coordinates.</li>
+<li><strong>Navigate to Fleet Carrier</strong>: &quot;Navigate to carrier&quot; or &quot;Return to base.&quot; Plots a route to the carrier&#39;s last known system.</li>
+<li><strong>Take Me Home</strong>: &quot;Take me home.&quot; Plots a route to your configured home system.</li>
+<li><strong>Set Home System</strong>: &quot;Set as home system.&quot; Marks your current system as the home system.</li>
+<li><strong>Plot Fleet Carrier Route</strong>: Open the galaxy map and select a star. Copy its name using the last button on the right in the Galaxy Map UI. Say &quot;Calculate Fleet Carrier Route.&quot; EliteIntel builds the route if the system is in Spansh.</li>
+<li><strong>Enter Next Fleet Carrier Destination</strong>: Open the Fleet Carrier galaxy map and click the top text field. Say &quot;Enter next Fleet Carrier destination.&quot; EliteIntel pastes the next system name into the field.</li>
+<li><strong>Find Nearest Human/Guardian Tech Broker</strong>: &quot;Find nearest Human tech broker.&quot; EliteIntel plots a route. After arriving, say &quot;Remind me where we need to go&quot; for a station reminder.</li>
+<li><strong>Find Nearest Material Trader</strong>: &quot;Find nearest raw material trader&quot; / &quot;encoded&quot; / &quot;manufactured.&quot; EliteIntel finds and plots a route.</li>
+<li><strong>Find Brain Trees</strong>: &quot;Find brain trees within 500 light years.&quot; EliteIntel scouts Guardian biology locations.</li>
+<li><strong>Find Mining Location</strong>: &quot;Find where we can mine some Osmium within 200 light years.&quot; EliteIntel finds a system with suitable rings and plots the route.</li>
+<li><strong>Find Carrier Fuel (Tritium)</strong>: &quot;Find where we can mine some carrier fuel within 300 light years.&quot; EliteIntel searches for ring systems containing Tritium.</li>
+<li><strong>Find Commodity</strong>: &quot;Find where we can buy Bromellite within 150 light years.&quot; EliteIntel queries EDSM and plots a route to the best market.</li>
+<li><strong>Find Nearest Vista Genomics</strong>: &quot;Find nearest Vista Genomics.&quot; Plots a route to the nearest Vista Genomics for bio sample redemption.</li>
+<li><strong>Find Nearest Fleet Carrier</strong>: &quot;Find nearest Fleet Carrier.&quot; Useful when a Fleet Carrier is needed nearby.</li>
+</ul>
+<h2>Combat &amp; Mission Commands</h2>
+<ul>
+<li><strong>Find Hunting Grounds</strong>: &quot;Find hunting grounds.&quot; EliteIntel scouts nearby Hazardous Resource Extraction Sites or combat zones matching mission parameters.</li>
+<li><strong>Plot Reconnaissance Route</strong>: &quot;Navigate / plot recon route to hunting ground.&quot; EliteIntel plots a scouting path to the target system.</li>
+<li><strong>Navigate to Mission Provider</strong>: &quot;Navigate to system with matching mission provider&quot; or &quot;Navigate to a confirmed pirate massacre mission provider.&quot; EliteIntel plots a route to the mission provider.</li>
+<li><strong>Navigate to Active Mission</strong>: &quot;Navigate to active mission.&quot; Navigates to the current mission objective.</li>
+<li><strong>Confirm / Ignore Hunting Ground</strong>: &quot;Confirm hunting ground&quot; or &quot;Ignore hunting ground.&quot; Tells EliteIntel whether to use or skip that location.</li>
+</ul>
+<h2>Ship Control Shortcuts</h2>
+<ul>
+<li><strong>Power Distribution</strong>: &quot;All power to shields,&quot; &quot;engines,&quot; &quot;weapons,&quot; or &quot;Equalize power.&quot; One command rebalances all power pips. This is especially useful in VR, where cloud processing delays increase response time.</li>
+<li><strong>Exit to HUD</strong>: &quot;Exit to HUD.&quot; Exits nested menus in a single command.</li>
+<li><strong>FSS Scan / Honk</strong>: &quot;Open FSS and scan&quot; or &quot;Honk.&quot; Triggers the discovery scan.</li>
+<li><strong>Set Optimal Speed</strong>: &quot;Set optimal speed.&quot; Sets throttle to 75% for supercruise. Issue this command approximately 20 seconds from the target to avoid orbital looping.</li>
+<li><strong>Target Next System in Route</strong>: &quot;Target next system in route.&quot; EliteIntel selects the next waypoint on the plotted route.</li>
+<li><strong>Wing Nav Lock</strong>: &quot;Wing nav lock.&quot; Locks onto a wingman&#39;s navigation.</li>
+<li><strong>Target Subsystem</strong>: &quot;Target power plant.&quot; Locks subsystem targeting.</li>
+<li><strong>Dismiss Ship / Get Extracted</strong>: &quot;Dismiss ship&quot; / &quot;Go to orbit&quot; / &quot;Return to surface, requesting extraction.&quot;</li>
+</ul>
+<h2>Utility &amp; Session Commands</h2>
+<ul>
+<li><strong>Set a Reminder</strong>: &quot;Set reminder, pick up Painite from Hutton Orbital.&quot; EliteIntel stores the reminder for the session. Say &quot;Remind me&quot; to retrieve it.</li>
+<li><strong>Clear Reminders</strong>: &quot;Clear reminders.&quot; Clears the reminder queue.</li>
+<li><strong>Clear Codex Entries</strong>: &quot;Clear codex entries.&quot; Clears all scanned bio entries. Use with caution.</li>
+<li><strong>Delete Codex Entry</strong>: &quot;Delete codex entry.&quot; Removes the most recent entry.</li>
+<li><strong>Clear Cache</strong>: &quot;Clear cache.&quot; Clears the entire session cache. Use only when the session is in an unrecoverable state.</li>
+<li><strong>Monetize Route</strong>: &quot;Monetize route.&quot; EliteIntel analyzes the plotted route for trade or exploration profit opportunities.</li>
+<li><strong>Verify LLM Connection</strong>: &quot;Verify LLM connection.&quot; Confirms that the AI backend is reachable and responding.</li>
+<li><strong>Interrupt / Silence</strong>: &quot;Interrupt,&quot; &quot;Silence,&quot; or &quot;Cancel.&quot; Stops active text-to-speech output.</li>
+<li><strong>Biome Analysis</strong>: &quot;Run biome analysis on [star system / planet name].&quot; EliteIntel reports probable species at that location before landing.</li>
+<li><strong>Fleet Carrier Financials</strong>: &quot;Open fleet carrier data and tell me how long we can operate.&quot; EliteIntel calculates the number of weeks of operation from the current balance.</li>
+<li><strong>Fleet Carrier Range</strong>: &quot;What is the range of our fleet carrier?&quot; EliteIntel calculates the worst-case range from tritium in the depot and carrier storage.</li>
+<li><strong>How Long Can the Carrier Operate?</strong>: &quot;Use reserve balance, how long can we run the carrier with 31 million credits per week?&quot; Specify which balance to use. EliteIntel performs the calculation.</li>
+</ul>
+<h2>Usage Notes</h2>
+<ul>
+<li><strong>Natural Language</strong>: Formal command syntax is not required. Natural speech is supported.</li>
+<li><strong>VR Users</strong>: Power distribution and Exit to HUD commands reduce the impact of cloud processing delays in VR.</li>
+<li><strong>Dark Side Navigation</strong>: Navigating to coordinates on a planet&#39;s dark side requires instrument flight.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

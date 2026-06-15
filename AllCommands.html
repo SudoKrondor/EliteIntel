@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EliteIntel AI Queries &amp; Commands Guide — EliteIntel</title>
+    <meta name="description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell your Elite Intel sidekick.">
+    <link rel="canonical" href="https://www.elite-intel.org/AllCommands.html">
+    <meta property="og:title" content="EliteIntel AI Queries &amp; Commands Guide — EliteIntel">
+    <meta property="og:description" content="Hey Commander! This is a reference for the kinds of things you can ask or tell your Elite Intel sidekick.">
+    <meta property="og:url" content="https://www.elite-intel.org/AllCommands.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>EliteIntel AI Queries &amp; Commands Guide</h1>
+<p>Hey Commander! This is a reference for the kinds of things you can ask or tell your <strong>Elite Intel</strong> sidekick.
+<strong>Ideally - You don&#39;t need to memorize any of these</strong> - just speak naturally, and the app figures out what you mean. This
+list exists so you know what&#39;s possible, not so you can recite scripts.</p>
+<hr>
+<h2>App</h2>
+<ul>
+<li>Check missing or unbound key bindings.</li>
+<li>Sleep / Wake Up (Ignores user voice input in sleep mode, by pass by saying &#39;Listen Up&#39;, or switch back by saying &#39;Wake up&#39;)</li>
+</ul>
+<h2>Exploration &amp; Location</h2>
+<ul>
+<li>Enable / Disable discovery announcements.</li>
+<li>Where are we right now?</li>
+<li>How far are we from the Bubble / our fleet carrier / last bio-sample?</li>
+<li>How far to a specific planet, moon, or station?</li>
+<li>What materials are available on this planet / moon?</li>
+<li>Analyze the most recent scan / body data.</li>
+<li>What&#39;s the ETA for our fleet carrier jump?</li>
+<li>What time is it / current UTC time? (real-time clock query)</li>
+<li>Analyze the biome for this star system.</li>
+<li>Which planets still need bio or organic scans?</li>
+<li>What bio scans have we completed?</li>
+<li>What organics do we still have to scan?</li>
+<li>What landable planets or moons are in this system?</li>
+<li>What signals are in this system?</li>
+<li>Which planets have geo signals?</li>
+<li>Open FSS and scan. / Perform filtered spectrum scan.</li>
+<li>System security, who controls this system, faction control?</li>
+<li>What is our player profile / ranks / stats?</li>
+</ul>
+<h2>Exobiology</h2>
+<ul>
+<li>What bio scans have we completed? / current star system (completed, partial, remaining).</li>
+<li>Exploration profit potential in this system.</li>
+<li>Last bio-sample location and distance. (requires codex entry scan with composition analyzer)</li>
+<li>Navigate to next bio-sample / organic / codex entry. (requires codex entry scan with composition analyzer)</li>
+<li>What organics or biology is on this planet / moon?</li>
+<li>Navigate to next organic / sample / codex entry.</li>
+<li>Biome analysis for [star system / planet / moon name].</li>
+</ul>
+<h2>Fleet Carrier</h2>
+<p>Make sure you mention carrier, else it might think you are talking about the ship!</p>
+<ul>
+<li>What is our carrier range (includes reserve fuel if manually set) / stats / fuel.</li>
+<li>Set carrier fuel reserve [amount] (sets the fleet carrier tritium reserve)</li>
+<li>Where is our carrier jumping next?</li>
+<li>How long until carrier arrival? (Fleet carrier ETA)</li>
+<li>What&#39;s my fleet carrier fuel status / jump range / fuel reserve?</li>
+<li>How long can we operate on current funds?</li>
+<li>How far can carrier jump with current tritium?</li>
+<li>What&#39;s on the carrier route? / How many jumps remaining on carrier route?</li>
+<li>Distance from the fleet carrier?</li>
+<li>Fleet carriers in this system?</li>
+</ul>
+<h2>Ship &amp; Systems</h2>
+<ul>
+<li>Enable / Disable route announcements.</li>
+<li>Is the next star scoopable?</li>
+<li>Analyze FSD target (allegiance, traffic, security, geo/bio data, etc.).</li>
+<li>What&#39;s in my cargo hold?</li>
+<li>What&#39;s your loadout?</li>
+<li>Analyze our route. (summary of the route, fuel availability)</li>
+<li>Fuel availability on route / next fuel stop.</li>
+<li>Do we have [material]? / How much [material] do we have? / Material inventory.</li>
+<li>What rank are we / player profile?</li>
+</ul>
+<h2>Stations &amp; Markets</h2>
+<ul>
+<li>What services are at local stations?</li>
+<li>Outfitting / ship parts / modules for sale here?</li>
+<li>Any ships for sale at this station?</li>
+<li>Monetize my route (requires a trade profile set see Trade Profile Setup)</li>
+<li>Calculate trade route (requires a trade profile set see Trade Profile Setup)</li>
+<li>Where do I need to go to buy/sell [commodity]?</li>
+<li>What&#39;s in the local market?</li>
+<li>Data for stations, ports, and settlements in system.</li>
+<li>Remind me [blah] (reads reminders set during trade route run, tells you what station to go to etc.)</li>
+<li>What is our current trade plan / trade route / trade legs?</li>
+</ul>
+<h2>Trade Profile Setup</h2>
+<ul>
+<li>Change trade profile starting budget [amount]. (sets the starting capital for the trade route)</li>
+<li>Change trade profile max distance [X]. (will filter stations for this range from entry)</li>
+<li>Change trade profile max stops [N]. (route will be no longer than N stops)</li>
+<li>Change trade profile allow prohibited cargo [on/off].</li>
+<li>Change trade profile allow planetary port [on/off].</li>
+<li>Change trade profile allow permit systems [on/off].</li>
+<li>Change trade profile allow strongholds [on/off].</li>
+<li>Trade profile / trade settings / trade configuration. (describe current profile)</li>
+<li>List trade route parameters.</li>
+</ul>
+<h2>⚔️ Combat &amp; Missions</h2>
+<ul>
+<li>Radar contact on/off (turns the radar announcements on and off)</li>
+<li>Find hunting grounds (Will find target/mission provider pairs. Will tell you to fly to a target system and confirm the presence of the resource extraction site)</li>
+<li>Recon hunting ground / navigate to hunting ground (navigate to the target star system to scout it)</li>
+<li>Ignore hunting ground (skip the current hunting ground candidate)</li>
+<li>Confirm hunting ground (will manually confirm the presence of the resource extraction site, might be needed if we didn&#39;t detect it from beacon or auto-discovery)</li>
+<li>Navigate to mission provider system. / Navigate to pirate mission provider.</li>
+<li>Navigate to an active mission / plot route to active mission. (will navigate to the active mission star system)</li>
+<li>How many pirate kills left? (calculates the stack)</li>
+<li>Massacre mission progress / kills remaining / bounty hunt progress.</li>
+<li>What active missions do I have? (any missions, not just pirate)</li>
+<li>Total bounties collected this session.</li>
+<li>Target Subsystems commands: &#39;target drive&#39;, &#39;target fsd&#39;, &#39;target power distributor&#39;, &#39;target powerplant&#39;, &#39;target life support&#39;. NOTE: optional subsystems are not included in the list.</li>
+<li>Target wingman 1 (wingman alpha) / wingman 2 (wingman bravo) / wingman 3 (wingman charlie).</li>
+<li>Priority target / target highest threat / next enemy / select hostile.</li>
+</ul>
+<h2>🧭 Navigation Commands</h2>
+<ul>
+<li>Navigate to coordinates [latitude] [longitude]. (will guide you from orbit to location within 1 km, once landed within 100m)</li>
+<li>Navigate to landing zone. (will give you GPS nav back to where your ship landed last time)</li>
+<li>Navigate to next bio sample / codex entry.</li>
+<li>Navigate to nearest Fleet Carrier.</li>
+<li>Navigate to carrier / go to carrier / return to carrier.</li>
+<li>Navigate to / go to / head to / fly to / take me to / set course to / guide me to / plot route to [destination].</li>
+<li>Navigate to next trade stop / go to next trade stop.</li>
+<li>Calculate Fleet Carrier route. <em>(Open galaxy map, select star, copy name to clipboard first.)</em></li>
+<li>Enter carrier destination / set carrier destination. <em>(Open Fleet Carrier galaxy map first.)</em></li>
+<li>Calculate trade route / plot profitable trade route.</li>
+<li>Find nearest Vista Genomics.</li>
+<li>Find nearest human / guardian tech broker.</li>
+<li>Find nearest raw / encoded / manufactured material trader.</li>
+<li>Find / locate / search for brain trees [within X light years].</li>
+<li>Find mining location for [material] [within X light years].</li>
+<li>Find where we can mine Tritium [within X light years].</li>
+<li>Find where we can buy [commodity] [within X light years].</li>
+<li>Find hunting grounds.</li>
+<li>Cancel navigation.</li>
+<li>Plot route to Fleet Carrier.</li>
+<li>Take me home / navigate to home system.</li>
+<li>Set as home system.</li>
+<li>Set optimal speed. <em>(Sets throttle to 75% for supercruise approach.)</em></li>
+<li>Increase / Decrease speed by [amount]. 1-10</li>
+<li>Set carrier fuel reserve to [amount]. (sets the fleet carrier tritium reserve)</li>
+<li>Select FDS destination / target destination. (selects the next system in the plotted route)</li>
+<li>Wing nav lock / lock wingman nav.</li>
+<li>Select / target highest threat / next hostile / target enemy.</li>
+<li>Navigate from memory. (This will open the galaxy map and navigate to the location you have copied from somewhere via Ctrl+C.)</li>
+</ul>
+<h2>🎮 Ship Controls</h2>
+<ul>
+<li>Gear up / down | deploy / retract landing gear.</li>
+<li>Deploy / retract hardpoints / weapons.</li>
+<li>Weapons Hot! (same as deploy hardpoints)</li>
+<li>Deploy heat sink.</li>
+<li>Deploy / recover SRV / car / buggy.</li>
+<li>Board ship / return SRV / SRV dock. (recovers SRV while in SRV mode)</li>
+<li>Disembark. (exit ship on foot)</li>
+<li>Open / close cargo scoop, cargo bay, cargo hatch.</li>
+<li>Request docking. / Contact tower, get a landing pad, parking spot etc.</li>
+<li>Launch ship / leave station / detach from station.</li>
+<li>Taxi to landing / auto land / autopilot landing.</li>
+<li>Engage Supercruise / enter supercruise / go supercruise.</li>
+<li>Jump to hyperspace / enter hyperspace / lets go / next waypoint. (actual jump, not supercruise)</li>
+<li>Drop out / drop here / drop ftl / leave supercruise / drop from supercruise.</li>
+<li>Full stop / engine stop / set speed zero / kill engines.</li>
+<li>Set speed to: quarter / half / three-quarter / full throttle.</li>
+<li>Set speed plus / minus [amount].</li>
+<li>All power to shields / engines / weapons. Equalize power. / max shields, max engines, max weapons.</li>
+<li>Combat mode / switch to combat mode → switches to combat HUD.</li>
+<li>Analysis mode / switch to analysis mode / explorer mode → switches to analysis HUD.</li>
+<li>Night vision (on / off).</li>
+<li>Headlights (on / off).</li>
+<li>Drive assist on / off. (SRV mode)</li>
+<li>Dismiss ship / go to orbit / go play.</li>
+<li>Return to the surface / pick me up.</li>
+<li>Open FSS and scan / honk / scan system / run a scan / discovery scan / system scan / full spectrum scan. (Will open the full FSS UI and honk)</li>
+<li>Show / display - galaxy map / local map / close map.</li>
+<li>Exit / close (Exits menus / tabs / sub-menus and drops you to HUD).</li>
+<li>Interrupt / shut up / silence / cancel [stops TTS mid-sentence].</li>
+<li>Activate (activates whatever is selected in the UI).</li>
+</ul>
+<h2>🎙️ Fighter Commands</h2>
+<ul>
+<li>Deploy fighter / launch fighter / send out fighter.</li>
+<li>Order fighters to defend the ship.</li>
+<li>Order fighter to focus on my target / attack my target / fire at will / fighter open orders.</li>
+<li>Order fighter to hold fire / fighter cease fire.</li>
+<li>Order fighter to return to mothership / recall fighter / fighter dock.</li>
+</ul>
+<h2>📺 UI Panels</h2>
+<p>Say <strong>show</strong>, <strong>open</strong>, or <strong>display</strong> followed by the panel name:</p>
+<ul>
+<li>Navigation panel</li>
+<li>Transactions panel</li>
+<li>Contacts panel</li>
+<li>Chat panel / comms panel</li>
+<li>Email inbox panel</li>
+<li>Social panel</li>
+<li>History panel</li>
+<li>Squadron panel</li>
+<li>Status panel</li>
+<li>Commander panel / role panel / knee board</li>
+<li>Crew panel</li>
+<li>Home panel (internal panel)</li>
+<li>Modules panel</li>
+<li>Fire groups</li>
+<li>Inventory panel</li>
+<li>Storage panel</li>
+<li>Fighter panel</li>
+<li>Carrier management panel</li>
+<li>Galaxy map</li>
+<li>Local / system map</li>
+<li>Services panel (SRV docked at station)</li>
+</ul>
+<p>Other panel commands:</p>
+<ul>
+<li>Exit / close panel (exits menus and returns to HUD).</li>
+</ul>
+<h2>⚙️ App &amp; Session Commands</h2>
+<ul>
+<li><strong>&quot;Ignore me&quot; / &quot;do not monitor&quot; / &quot;sleep&quot;</strong> → puts the app to sleep (ignores all input).</li>
+<li><strong>&quot;Wake up&quot;</strong> → resumes normal listening.</li>
+<li><strong>&quot;Listen up [command]&quot;</strong> → bypass: passes a single command or query through while the app stays asleep. The &quot;listen up&quot; prefix is stripped before the command reaches the AI. Example: <em>&quot;Listen up, jump to hyperspace&quot;</em> executes the jump without waking the app.</li>
+<li>Set reminder [text]. / Remind me [text].</li>
+<li>Clear reminders.</li>
+<li>Toggle route announcements on / off.</li>
+<li>Toggle discovery announcements on / off.</li>
+<li>Toggle mining and material announcements on / off.</li>
+<li>Toggle radio chatter / radio traffic on / off.</li>
+<li>Disable all announcements.</li>
+<li>Radar contact announcement on / off.</li>
+<li>Add mining target [material name].</li>
+<li>Remove mining target [material name].</li>
+<li>Clear mining targets.</li>
+<li>Delete codex entry. (Deletes the codex entry you are GPS tracking)</li>
+</ul>
+<h2>💬 General Chat (Conversation Mode must be ON)</h2>
+<p>By default the app runs in <strong>Strict Mode</strong>: if input doesn&#39;t match a known command or query it is silently ignored.
+This is intentional — it prevents STT noise and background chatter from triggering random actions mid-flight.</p>
+<p>Enable <strong>Conversation Mode</strong> in the Settings tab to turn on free-form chat. When on, anything that doesn&#39;t match a
+command falls back to general conversation — game lore, real-world topics, ship builds, whatever. The AI is not just
+a command parser when you want it to be more.</p>
+<p>Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mistral, Deepseek) are recommended for conversation.</p>
+<hr>
+<p><a href="Obscure-System-Commands.html">More commands here</a></p>
+<p>Fly Dangerous, Commander! o7</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈 | Open Source <a href="https://github.com/SudoKrondor/EliteIntel"><strong>GitHub</strong></a> | <a href="https://www.youtube.com/@SudoKrondor">YouTube</a> | <a href="https://www.twitch.tv/sudokrondor">Twitch</a> | Cretive Commons License |</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

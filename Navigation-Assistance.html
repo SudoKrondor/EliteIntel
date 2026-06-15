@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Assistance — EliteIntel</title>
+    <meta name="description" content="EliteIntel (EI) provides navigation assistance in Elite Dangerous. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for">
+    <link rel="canonical" href="https://www.elite-intel.org/Navigation-Assistance.html">
+    <meta property="og:title" content="Navigation Assistance — EliteIntel">
+    <meta property="og:description" content="EliteIntel (EI) provides navigation assistance in Elite Dangerous. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for">
+    <meta property="og:url" content="https://www.elite-intel.org/Navigation-Assistance.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Navigation Assistance</h1>
+<p>EliteIntel (EI) provides navigation assistance in <em>Elite Dangerous</em>. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for planets and moons, and exobiology sample tracking.</p>
+<h2>Fleet Carrier Route Planning</h2>
+<p>EliteIntel uses <a href="https://spansh.co.uk">Spansh</a> to plan Fleet Carrier jump routes. To calculate a route:</p>
+<ol>
+<li><strong>Open the Galaxy Map</strong>: Any galaxy map view works. The Fleet Carrier map is not required for this step.</li>
+<li><strong>Copy the Destination Name</strong>: Select the target star system. Click the copy button (the last button on the right in the Galaxy Map UI). The system name is now on your clipboard.</li>
+<li><strong>Request Route Calculation</strong>: Say &quot;Calculate Fleet Carrier Route.&quot; EliteIntel reads the system name from the clipboard, checks the carrier&#39;s current position, and queries Spansh to generate a route. The route is saved to the current session.</li>
+</ol>
+<p><strong>Note</strong>: Spansh&#39;s database may not include all systems. If the carrier&#39;s current system is unknown to Spansh, EliteIntel selects the nearest known star within jump range as the starting point. If the destination system is not in Spansh, a nearby alternative may be required.</p>
+<h3>Executing the Route</h3>
+<p>After the route is calculated:</p>
+<ol>
+<li><strong>Open the Fleet Carrier Galaxy Map</strong>: Access the map from the carrier management menu and click the top text field.</li>
+<li><strong>Retrieve the Next Destination</strong>: Say &quot;Enter next Fleet Carrier destination.&quot; EliteIntel pastes the next system name into the field.</li>
+<li><strong>Schedule the Jump</strong>: Confirm the jump in-game. Repeat for each leg of the route.</li>
+</ol>
+<h2>Surface Coordinate Navigation</h2>
+<p>EliteIntel provides voice-guided navigation to specific coordinates on a planet or moon. No navigation marker is required.</p>
+<ol>
+<li><strong>Begin Navigation</strong>: Say &quot;Navigate to latitude 41.4325 longitude -75.2309&quot; (replace with your target coordinates). EliteIntel guides you from orbit to the surface.</li>
+<li><strong>Orbital Approach</strong>: Maintain a moderate speed in supercruise. There is a slight text-to-speech delay, so avoid excessive speed to ensure you can follow guidance accurately. Too slow, and the ship may drop out of supercruise prematurely. Navigating the dark side of a planet requires instrument flight.</li>
+<li><strong>Glide Phase</strong>: When approximately 400 km from the surface, EliteIntel provides glide angle updates such as &quot;Steep glide angle, -40 degrees.&quot; The decision to glide or reposition for a better angle is the pilot&#39;s choice. EliteIntel provides guidance only.</li>
+<li><strong>Surface Navigation</strong>: After landing, EliteIntel guides you to within 1,000 meters of the target and prompts you to find a landing spot. From that point, EliteIntel continues directing you in the SRV or on foot until you are within 50 meters of the target.</li>
+<li><strong>Cancel Navigation</strong>: Say &quot;Cancel navigation&quot; at any time to stop. Natural phrasing is accepted.</li>
+</ol>
+<h2>Exobiology Navigation</h2>
+<p>When collecting bio samples in difficult terrain, EliteIntel tracks tagged samples and guides you between them.</p>
+<ol>
+<li><strong>Tag Samples</strong>: Fly low and slow over the terrain to locate bio colonies. Approach each colony and scan it with the Composition Analyzer to create a Codex Entry. Remain close to the sample when scanning. This logs the ship&#39;s coordinates in EliteIntel and may earn a credit reward. Tag all visible species before landing.</li>
+<li><strong>Land</strong>: Find a landing spot within 2 km of the samples if possible. If no suitable spot is available within that range, EliteIntel will guide you via SRV.</li>
+<li><strong>Navigate to Samples</strong>: Say &quot;Navigate to nearest codex entry&quot; or &quot;Navigate to next bio sample.&quot; EliteIntel routes you to the nearest tagged location. After scanning a species (for example, Frutexa), EliteIntel records the type. Subsequent navigation requests prioritize that species if additional tags of the same type exist.</li>
+<li><strong>Continue</strong>: Repeat until all scans are complete. EliteIntel provides continuous voice guidance during extended SRV traversal.</li>
+</ol>
+<p><strong>Note</strong>: EliteIntel uses coordinates from Codex tags. Remaining close to the sample during scanning improves coordinate accuracy. More tags provide more navigation options.</p>
+<h2>Usage Notes</h2>
+<ul>
+<li><strong>Natural Language</strong>: Formal command syntax is not required. Natural speech is accepted.</li>
+<li><strong>Dark Side Navigation</strong>: Navigating to coordinates on a planet&#39;s dark side requires instrument flight.</li>
+<li><strong>Spansh Limitations</strong>: If Spansh does not recognize your current system, try an adjacent star to initiate the route.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

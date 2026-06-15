@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add this to your ~/.bashrc — EliteIntel</title>
+    <meta name="description" content="Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.">
+    <link rel="canonical" href="https://www.elite-intel.org/Install-LM-Studio-Linux.html">
+    <meta property="og:title" content="Add this to your ~/.bashrc — EliteIntel">
+    <meta property="og:description" content="Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.">
+    <meta property="og:url" content="https://www.elite-intel.org/Install-LM-Studio-Linux.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub active"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h2>Local LLM - Linux Setup (LM Studio)</h2>
+<p>Running a local LLM keeps all data private and offline. There are no subscription fees. Hardware and electricity costs apply.</p>
+<p>LM Studio is an alternative to Ollama. It uses the same models and the same OpenAI-compatible API. The choice can be changed in settings at any time.</p>
+<p>It requires <a href="https://lmstudio.ai">LM Studio</a> and a capable GPU.</p>
+<hr>
+<h3>Minimum Hardware</h3>
+<p>To run Elite Dangerous and the LLM on the <strong>same machine</strong>, a minimum of an <strong>NVIDIA RTX 3060 with 12 GB VRAM</strong> is required. Performance headroom is limited at this specification.</p>
+<blockquote>
+<p><strong>Tip:</strong> Elite Intel can be pointed at an LM Studio instance running on a <strong>separate PC</strong> on your network. If a second machine with a capable GPU is available, the game PC carries no inference load in this configuration.</p>
+</blockquote>
+<hr>
+<h3>Recommended Model</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>VRAM Required</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
+<td>~5 GB</td>
+<td>✅ Recommended. Fast, accurate, works great for commands and queries.</td>
+</tr>
+<tr>
+<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
+<td>~8.5 GB</td>
+<td>Higher quality, if VRAM headroom is available.</td>
+</tr>
+<tr>
+<td><code>qwen3</code> 8B</td>
+<td>~8 GB</td>
+<td>Experimental. Expect occasional missed commands and hallucinations.</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Step 1 - Install LM Studio</h3>
+<pre><code class="language-shell">curl -fsSL https://lmstudio.ai/install.sh | bash
+</code></pre>
+<p>The installer drops everything into <code>~/.lmstudio/</code> and adds the <code>lms</code> CLI tool. After it finishes, add the CLI to your PATH:</p>
+<pre><code class="language-shell"># Add this to your ~/.bashrc
+export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
+</code></pre>
+<p>Then reload your shell:</p>
+<pre><code class="language-shell">source ~/.bashrc
+</code></pre>
+<p>Verify it worked:</p>
+<pre><code class="language-shell">lms --help
+</code></pre>
+<hr>
+<h3>Step 2 - Download the Model</h3>
+<pre><code class="language-shell">lms get tulu3.1
+Searching for models with the term tulu3.1
+No exact match found. Please choose a model from the list below.
+
+? Select a model to download
+❯ QuantFactory/Tulu-3.1-8B-SuperNova-GGUF
+  mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF
+  QuantFactory/Tulu-3.1-8B-SuperNova-Smart-GGUF
+  mradermacher/Tulu-3.1-8B-SuperNova-GGUF
+  bunnycore/Tulu-3.1-8B-SuperNova-Smart-IQ4_XS-GGUF
+  mradermacher/Tulu-3.1-8B-SuperNova-Smart-GGUF
+  mradermacher/Tulu-3.1-8B-SuperNova-Smart-i1-GGUF
+  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_0-GGUF
+  matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+
+↑↓ navigate • ⏎ select
+</code></pre>
+<p>Use the arrow keys to navigate and Enter to select. Select <code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code>.</p>
+<p>To list downloaded models:</p>
+<pre><code class="language-shell">lms ls
+</code></pre>
+<p>That is the standard path. However, <a href="https://github.com/lmstudio-ai/lmstudio-bug-tracker/issues/917">LM Studio has a known bug</a>. In some cases the download fails with:
+<code>Error: No staff picks found with the specified search criteria.</code></p>
+<p>If that occurs, download the model manually:</p>
+<pre><code class="language-shell">curl -s &quot;https://huggingface.co/api/models/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF&quot; | grep -o &#39;&quot;rfilename&quot;:&quot;[^&quot;]*\.gguf&quot;&#39;
+</code></pre>
+<p>Then import it:</p>
+<pre><code class="language-shell">lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
+</code></pre>
+<hr>
+<h3>Step 3 - Start the Server</h3>
+<p>Load the model and start the inference server:</p>
+<pre><code class="language-shell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+lms server start
+</code></pre>
+<p><code>--gpu max</code> offloads inference to the GPU for maximum performance.</p>
+<p>Verify it is running:</p>
+<pre><code class="language-shell">curl http://localhost:1234/v1/models
+</code></pre>
+<p>You should receive a JSON list of loaded models. The model ID string in that response is what you will enter in Elite Intel&#39;s <strong>LLM Model</strong> field.</p>
+<p>To stop the server:</p>
+<pre><code class="language-shell">lms server stop
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>Important:</strong> The LM Studio server does <strong>not</strong> survive reboots. Run <code>lms server start</code> again after each restart, or set up the optional auto-start below.</p>
+</blockquote>
+<hr>
+<h3>Step 4 - (Optional) Auto-Start on Boot</h3>
+<p>To start LM Studio automatically, set it up as a <strong>user</strong> systemd service. This runs under your own session rather than as a system service. It starts after the desktop environment is up. No root access is required.</p>
+<p>find your user id. (replace the user name with your actual user name)</p>
+<pre><code class="language-shell">id -u YOUR_USER_NAME
+</code></pre>
+<p>Remember this number. You will need it for the config later.</p>
+<p>Create the user systemd directory if it does not exist:</p>
+<pre><code class="language-shell">mkdir -p ~/.config/systemd/user
+</code></pre>
+<p>Create the service file:</p>
+<pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio.service
+</code></pre>
+<p>Paste this in:</p>
+<pre><code class="language-ini">[Unit]
+Description=LM Studio Server
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Environment=&quot;HOME=/home/YOUR_USERNAME&quot;
+Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin&quot;
+Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load matrixportalx/tulu-3.1-8b-supernova --yes --context-length 8192
+ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
+ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
+ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down
+
+[Install]
+WantedBy=default.target
+</code></pre>
+<p>Replace <code>YOUR_USERNAME</code> with your Linux username and <code>YOUR_UID</code> with your user ID. To find your UID:</p>
+<pre><code class="language-shell">id -u
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>Why <code>XDG_RUNTIME_DIR</code>?</strong> User services run in a stripped-down environment that may not include session variables. LM Studio uses <code>XDG_RUNTIME_DIR</code> for IPC. Without it, the service can fail silently even when <code>lms</code> works correctly from the terminal. This is the most common cause of service failure when manual execution succeeds.</p>
+</blockquote>
+<p>Enable and start it:</p>
+<pre><code class="language-shell">systemctl --user daemon-reload
+systemctl --user enable lmstudio.service
+systemctl --user start lmstudio.service
+</code></pre>
+<p>Verify it is running:</p>
+<pre><code class="language-shell">systemctl --user status lmstudio.service
+curl http://localhost:1234/v1/models
+</code></pre>
+<blockquote>
+<p><strong>Troubleshooting:</strong> If the service fails, check the journal:</p>
+<pre><code class="language-shell">journalctl --user -xeu lmstudio.service --no-pager | tail -40
+</code></pre>
+<p>If it reports &quot;Failed to load model&quot;, run <code>lms ls</code> and confirm the model name matches exactly what is in the service file.</p>
+</blockquote>
+<hr>
+<h3>Step 4b - (Optional) Fix Slow Inference After Boot</h3>
+<p>Some users experience slow inference responses when LM Studio starts at boot. The issue resolves immediately after a manual service restart. This is caused by a quirk in LM Studio&#39;s daemon initialization. The first cold start may leave the inference runtime in a degraded state.</p>
+<p>If slow responses appear after a reboot and resolve after a manual restart, this timer automates the fix.</p>
+<p>Create a companion service:</p>
+<pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.service
+</code></pre>
+<pre><code class="language-ini">[Unit]
+Description=LM Studio post-boot restart
+After=lmstudio.service
+
+[Service]
+Type=oneshot
+ExecStart=systemctl --user restart lmstudio.service
+</code></pre>
+<p>Create the timer:</p>
+<pre><code class="language-shell">nano ~/.config/systemd/user/lmstudio-restart.timer
+</code></pre>
+<pre><code class="language-ini">[Unit]
+Description=Restart LM Studio 2 minutes after login
+
+[Timer]
+OnBootSec=2min
+Unit=lmstudio-restart.service
+
+[Install]
+WantedBy=timers.target
+</code></pre>
+<p>Enable the timer:</p>
+<pre><code class="language-shell">systemctl --user daemon-reload
+systemctl --user enable --now lmstudio-restart.timer
+</code></pre>
+<p>The timer waits 2 minutes after login, restarts the LM Studio service once, and then stays inactive. If you do not experience slow inference, this step is not needed.</p>
+<hr>
+<h3>Disable Ollama Auto-Start (if installed)</h3>
+<p>Ollama installs itself as an enabled systemd service by default. To run LM Studio instead and start Ollama only on demand:</p>
+<pre><code class="language-shell">sudo systemctl disable ollama.service
+sudo systemctl stop ollama.service
+</code></pre>
+<hr>
+<h3>Step 5 - Configure Elite Intel</h3>
+<p>Open the <strong>Settings tab</strong> in Elite Intel:</p>
+<ul>
+<li>Leave the <strong>LLM Key</strong> field blank (local LM Studio does not require one).</li>
+<li><strong>LLM Address</strong>: set to <code>http://localhost:1234/v1/chat/completions</code>. If LM Studio is on another machine, replace <code>localhost</code> with that machine&#39;s IP.</li>
+<li><strong>LLM Model</strong>: paste in the model ID string from <code>curl http://localhost:1234/v1/models</code>.</li>
+<li><strong>Command LLM</strong>: set to the same model ID.</li>
+<li><strong>Query LLM</strong>: set to the same model ID.</li>
+<li>Click <strong>Stop</strong> then <strong>Start</strong> on the AI tab to apply changes.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

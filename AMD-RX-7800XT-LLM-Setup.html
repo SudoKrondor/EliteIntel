@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Running LLMs on AMD RX 7800 XT (ROCm Guide) — EliteIntel</title>
+    <meta name="description" content="&gt; Guide is provided by Ian Wirtz">
+    <link rel="canonical" href="https://www.elite-intel.org/AMD-RX-7800XT-LLM-Setup.html">
+    <meta property="og:title" content="Running LLMs on AMD RX 7800 XT (ROCm Guide) — EliteIntel">
+    <meta property="og:description" content="&gt; Guide is provided by Ian Wirtz">
+    <meta property="og:url" content="https://www.elite-intel.org/AMD-RX-7800XT-LLM-Setup.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub active"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Running LLMs on AMD RX 7800 XT (ROCm Guide)</h1>
+<blockquote>
+<p>Guide is provided by <strong>Ian Wirtz</strong></p>
+</blockquote>
+<blockquote>
+<p><strong>Recommended:</strong> LM Studio (<code>lms</code>) tends to give the best results, but Ollama is a viable alternative.</p>
+</blockquote>
+<hr>
+<h2>Prerequisites</h2>
+<h3>Step 1 - Install <code>rocm-hip-runtime</code></h3>
+<p>Before LM Studio or Ollama can use your GPU via ROCm, the system needs the base user-space HIP libraries to communicate with the kernel driver.</p>
+<p><strong>Arch Linux / CachyOS:</strong></p>
+<pre><code class="language-bash">sudo pacman -S rocm-hip-runtime
+</code></pre>
+<p><strong>Ubuntu / Debian:</strong></p>
+<pre><code class="language-bash">sudo apt install rocm-hip-runtime
+</code></pre>
+<p><strong>Fedora:</strong></p>
+<pre><code class="language-bash">sudo dnf install rocm-hip-runtime
+</code></pre>
+<blockquote>
+<p><strong>GPU access permissions:</strong> Your user must belong to the <code>render</code> and <code>video</code> groups. Check with:</p>
+<pre><code class="language-bash">groups
+</code></pre>
+<p>If either group is missing, add yourself:</p>
+<pre><code class="language-bash">sudo usermod -aG video,render $USER
+</code></pre>
+<p>You must <strong>fully log out and back in</strong> (or reboot) for the group change to take effect.</p>
+</blockquote>
+<hr>
+<h3>Step 2 - Install <code>rocm-smi</code> <em>(may be optional)</em></h3>
+<p>On fast-moving distributions like Arch, the management tools are not always pulled in as a strict dependency of <code>rocm-hip-runtime</code>. Install them explicitly to avoid library version mismatches.</p>
+<p><strong>Arch Linux / CachyOS:</strong></p>
+<pre><code class="language-bash">sudo pacman -S rocm-smi-lib
+</code></pre>
+<p><strong>Ubuntu / Debian:</strong></p>
+<p>Debian splits the CLI tool and its runtime library into separate packages.</p>
+<pre><code class="language-bash"># Command-line monitoring tool
+sudo apt update &amp;&amp; sudo apt install rocm-smi
+
+# Runtime libraries
+sudo apt update &amp;&amp; sudo apt install librocm-smi64-1
+</code></pre>
+<blockquote>
+<p><strong>Tip:</strong> If the exact package name is uncertain, type <code>sudo apt install librocm-smi64</code> and press <strong>Tab</strong> to autocomplete the current version suffix.</p>
+</blockquote>
+<p><strong>Fedora:</strong></p>
+<pre><code class="language-bash"># CLI tool
+sudo dnf install rocm-smi
+
+# C/C++ development libraries and headers (equivalent to rocm-smi-lib on Arch)
+sudo dnf install rocm-smi-devel
+</code></pre>
+<hr>
+<h2>Running a Model</h2>
+<h3>Step 3 - Load a Model with ROCm Acceleration</h3>
+<p>When invoking <code>lms load</code>, pass the hardware acceleration flags explicitly. The <code>--gpu max</code> flag instructs the runtime to load the entire model into VRAM.</p>
+<pre><code class="language-bash">HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+</code></pre>
+<p>The <code>HSA_OVERRIDE_GFX_VERSION=11.0.0</code> prefix tells the ROCm stack to treat the RX 7800 XT as a natively supported compute target, bypassing silent fallback failures.</p>
+<hr>
+<h3>Step 4 - Make the Configuration Permanent</h3>
+<p>To avoid prefixing every command with the environment variable, add it to your shell profile.</p>
+<p><strong>Bash:</strong></p>
+<pre><code class="language-bash">echo &#39;export HSA_OVERRIDE_GFX_VERSION=11.0.0&#39; &gt;&gt; ~/.bashrc
+source ~/.bashrc
+</code></pre>
+<p><strong>Fish (CachyOS default) - Option A: Universal Variable (recommended)</strong></p>
+<p>Set it once; Fish persists it automatically across reboots with no further configuration needed:</p>
+<pre><code class="language-fish">set -Ux HSA_OVERRIDE_GFX_VERSION 11.0.0
+</code></pre>
+<p><strong>Fish - Option B: Explicit config file entry</strong></p>
+<pre><code class="language-fish">echo &#39;set -gx HSA_OVERRIDE_GFX_VERSION 11.0.0&#39; &gt;&gt; ~/.config/fish/config.fish
+source ~/.config/fish/config.fish
+</code></pre>
+<p><strong>Ollama (systemd service):</strong></p>
+<p>Because Ollama runs under its own <code>ollama</code> system user, the variable must be injected via a systemd drop-in:</p>
+<pre><code class="language-bash">sudo mkdir -p /etc/systemd/system/ollama.service.d
+sudo nano /etc/systemd/system/ollama.service.d/override.conf
+</code></pre>
+<p>Paste the following, then save and exit (<code>Ctrl+O</code>, <code>Enter</code>, <code>Ctrl+X</code>):</p>
+<pre><code class="language-ini">[Service]
+Environment=&quot;HSA_OVERRIDE_GFX_VERSION=11.0.0&quot;
+</code></pre>
+<p>Then reload and restart the service:</p>
+<pre><code class="language-bash">sudo systemctl daemon-reload
+sudo systemctl restart ollama
+</code></pre>
+<hr>
+<h2>Verification</h2>
+<h3>Step 5 - Confirm the Kernel Compute Driver is Loaded</h3>
+<p>If a command hangs, the kernel compute layer (<code>amdkfd</code>) may not be initialised. Check whether the system exposes your GPU as a ROCm compute platform:</p>
+<pre><code class="language-bash">rocminfo
+</code></pre>
+<p>Scroll to the top of the output. If you see <code>Can&#39;t open /dev/kfd</code> or a crash, the Linux kernel is not exposing the compute interface to user space. If you are running a custom or bleeding-edge kernel, try booting into the stock or LTS kernel (<code>linux-lts</code>) to rule out a driver regression.</p>
+<hr>
+<h3>Step 6 - Start the Server and Verify VRAM Usage</h3>
+<p><strong>LM Studio:</strong></p>
+<pre><code class="language-bash">lms server start
+</code></pre>
+<p><strong>Ollama:</strong></p>
+<pre><code class="language-bash">ollama serve
+</code></pre>
+<p>Then confirm the model is loaded into VRAM:</p>
+<pre><code class="language-bash">rocm-smi
+</code></pre>
+<p><strong>Idle (no model loaded):</strong></p>
+<p><img src="images/rocm-smi-without-game-running-example.png" alt="rocm-smi output with no model running"></p>
+<p>At idle the GPU draws minimal power (<del>9W), clocks are near-floor, and VRAM usage is low (</del>44%).</p>
+<p><strong>Under load (model + game running simultaneously):</strong></p>
+<p><img src="images/rocm-smi-with-game-and-Elite-Intel-running-example.png" alt="rocm-smi output with Elite Dangerous and EliteIntel running"></p>
+<p>Under combined load you should see VRAM usage climb significantly (71% in this example), GPU utilisation rise, and power draw increase accordingly (~147W). This confirms the model is resident in VRAM and inference is running on the GPU.</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

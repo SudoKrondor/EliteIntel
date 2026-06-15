@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI and Configuration Options — EliteIntel</title>
+    <meta name="description" content="- Start / Stop Services: Toggles the AI stack on/off. Stop and restart here after any service setting change. Services do not reload automatically.">
+    <link rel="canonical" href="https://www.elite-intel.org/UI-and-Configuration-Options.html">
+    <meta property="og:title" content="UI and Configuration Options — EliteIntel">
+    <meta property="og:description" content="- Start / Stop Services: Toggles the AI stack on/off. Stop and restart here after any service setting change. Services do not reload automatically.">
+    <meta property="og:url" content="https://www.elite-intel.org/UI-and-Configuration-Options.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link active"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>UI and Configuration Options</h1>
+<h3>AI Tab <img src="images/ai.png" class="inline" height="20" alt="AI"></h3>
+<p>This is the main/default tab.</p>
+<ul>
+<li><strong>Start / Stop Services</strong>: Toggles the AI stack on/off. Stop and restart here after any service setting change. Services do not reload automatically.</li>
+<li><strong>Calibrate</strong>: Calibrates the app to your room noise level, microphone, and audio setup. Run on first use and after any hardware change.</li>
+<li><strong>OBS Overlay</strong>: When ON, the app displays an animated black window showing text from your input and AI responses. Add it to OBS as a screen capture, apply a Chroma Key filter, set the color to black, and set Similarity, Smoothness, and Key Color Spill Reduction to 0. Note: if the window is relaunched, it must be re-added in OBS.</li>
+<li><strong>Listen to me / Ignore me</strong>: Toggles input monitoring. When ignoring, the app does not respond unless trigger words such as &quot;ship&quot; or &quot;listen&quot; are detected. Say &quot;stop ignoring me&quot; to resume.</li>
+<li><strong>Detailed log on/off</strong>: Toggles detailed logging.</li>
+</ul>
+<hr>
+<h3>Player Tab <img src="images/controller.png" class="inline" height="20" alt="Player"></h3>
+<ul>
+<li><strong>Commander Name</strong>: If your in-game name is difficult for Text-to-Speech to pronounce, enter an easier alternative here.</li>
+<li><strong>Journal and Bindings Directory</strong>: On Windows this defaults to the standard location automatically. On Linux, set up symlinks as described in the <a href="Installation-and-Configuration.html">installation guide</a>.</li>
+<li><strong>Fleet Management</strong>: Assign voices, personalities, and cadence to individual ships. Personality and cadence require a cloud LLM. Settings can also be changed via voice command: &quot;Change Name to George.&quot;</li>
+</ul>
+<h3>Actions Tab <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"></h3>
+<ul>
+<li><strong>Commander Name</strong>: If your in-game name is difficult for Text-to-Speech to pronounce, enter an easier alternative here.</li>
+<li><strong>Journal and Bindings Directory</strong>: On Windows this defaults to the standard location automatically. On Linux, set up symlinks as described in the <a href="Installation-and-Configuration.html">installation guide</a>.</li>
+<li><strong>Fleet Management</strong>: Assign voices, personalities, and cadence to individual ships. Personality and cadence require a cloud LLM. Settings can also be changed via voice command: &quot;Change Name to George.&quot;</li>
+</ul>
+<hr>
+<h3>Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings"></h3>
+<ul>
+<li>Set the address of your inference server. Defaults to <code>localhost</code> with the Ollama URL.</li>
+<li>Provide the names of the models to use. See the <a href="installing-local-llms.html">Local LLM guide</a>.</li>
+<li><strong>LLM host</strong> radio buttons: Select between Ollama and LM Studio.</li>
+<li><strong>Use checkbox</strong>: Enable to use the local model instead of the cloud.</li>
+</ul>
+<hr>
+<h3>Settings / Audio <img src="images/mic.png" class="inline" height="20" alt="Audio"></h3>
+<ul>
+<li><strong>Speech Volume</strong>: Controls the volume of speech synthesis.</li>
+<li><strong>TTS Voice Speed</strong>: Controls the speed of speech synthesis.</li>
+<li><strong>Beep Volume</strong>: Controls the volume of the beep indicator. Indicates that STT has finished processing and the LLM has received input.</li>
+<li><strong>STT Threads</strong>: Sets the thread allocation for STT processing. This is a min/max setting. The app requests the minimum but uses what the processor provides. Threads are released after processing completes.</li>
+<li><strong>Use Local Text To Speech</strong>: Overrides the cloud TTS key and uses local TTS.</li>
+<li><strong>Audio Wave Visualizer</strong>: Displays a dynamic graph of the audio input. Shows the noise floor, audio signal, gate zones, and clipping if present.</li>
+</ul>
+<h3>Settings / Cloud LLM Tab <img src="images/cloud.png" class="inline" height="20" alt="Cloud"></h3>
+<ul>
+<li><strong>Cloud LLM Key</strong>: Enter your API key. Supported providers: Gemini, OpenAI, Grok, Mistral, Deepseek, and Anthropic/Claude.</li>
+<li><strong>Cloud TTS Key</strong>: Enter your API key. Supported provider: Google.</li>
+<li><strong>Note</strong>: Uncheck the &quot;Use&quot; checkbox in Local LLM. It overrides the cloud LLM key.</li>
+</ul>
+<hr>
+<p><strong>LLM (AI Brain)</strong></p>
+<p><em>Cloud option:</em> Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:</p>
+<ul>
+<li><strong>Mistral</strong>: &#39;mistral-small-2506&#39; (Free with hourly limit)</li>
+<li><strong>xAI</strong>: <code>grok-4-1-fast-non-reasoning</code></li>
+<li><strong>OpenAI</strong>: <code>gpt-4.1-mini</code> (commands) / <code>gpt-5.2</code> (queries)</li>
+<li><strong>Gemini Generative Language API</strong>: <code>gemini-3.1-flash-lite-preview</code> for commands and queries</li>
+<li><strong>Anthropic/Claude</strong></li>
+</ul>
+<p><em>Local option:</em> Leave the key blank, fill in the local LLM fields below, and check <strong>☑ Use</strong> next to the local LLM. See <a href="Install-Ollama-Local-LLM-Linux.html">Local LLM guide (Linux)</a> / <a href="Install-Ollama-Local-LLM-Windows.html">Local LLM guide (Windows)</a>.</p>
+<ul>
+<li><strong>LLM Address</strong>: defaults to <code>localhost</code>. Replace with the IP of another PC if Ollama runs on a separate machine.</li>
+<li><strong>Command LLM</strong>: handles voice command interpretation.</li>
+<li><strong>Query LLM</strong>: handles data analysis. <code>tulu3:8b</code> is the minimum. Larger models produce better results.</li>
+</ul>
+<hr>
+<h1>No local hardware? Use a cloud LLM.</h1>
+<p>Cost will be different depending on which Cloud service you choose, and how long you play.</p>
+<h3>FREE CLOUD Option: Mistral</h3>
+<ol>
+<li>Go to <a href="https://console.mistral.ai/home">Mistral Console</a></li>
+<li>Create account with a valid email you can verify.</li>
+<li>NO CREDIT CARD NECESSARY</li>
+<li>Create a &quot;Organisation&quot; (Call it whatever you want. For example &quot;Elite Intel&quot;)</li>
+<li>Generate an API key. Enter that key in to the app and restart the app.</li>
+</ol>
+<h3>Option A: xAI API Key</h3>
+<ol>
+<li>Go to the <a href="https://console.x.ai/">xAI Console</a>.</li>
+<li>Sign up or log in.</li>
+<li>Navigate to the API section and generate a new API key.</li>
+<li>Add credits to your account.</li>
+<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+</ol>
+<h3>Option B: OpenAI API Key</h3>
+<ol>
+<li>Go to the <a href="https://platform.openai.com/">OpenAI Platform</a>.</li>
+<li>Sign up or log in.</li>
+<li>Navigate to the API section and generate a new API key.</li>
+<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+</ol>
+<h3>Option C: Anthropic/Claude API Key</h3>
+<ol>
+<li>Go to the <a href="https://platform.claude.com">Claude Platform</a>.</li>
+<li>Sign in with email or Google. Note: authentication uses a magic link sent to your email.</li>
+<li>Go to <strong>Settings → Billing</strong> and add credits before creating a key. A key created on an unfunded account does not function even if credits are added afterward.</li>
+<li>Go to <strong>API Keys</strong> and create a key.</li>
+<li>Paste it into the <strong>LLM</strong> field, check the lock box, and start or restart services on the AI tab.</li>
+</ol>
+<h3>Getting a Google TTS Key (14 voices)</h3>
+<ol>
+<li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
+<li>Sign in or create an account.</li>
+<li>Create a new project.</li>
+<li>Enable the <strong>Generative Language API</strong> for LLM and/or <strong>Cloud Text-to-Speech API</strong> for TTS.</li>
+<li>Go to <strong>Credentials</strong>, create an API key, and copy it.</li>
+<li><strong>Restrict the key</strong>: Click the key you just created. On the key detail page, click <strong>Restrict key</strong>. A dropdown appears. Check each API you enabled (STT and/or TTS), then click <strong>Save</strong>.</li>
+<li>Paste the key into the <strong>Speech to Text</strong> and/or <strong>Text to Speech</strong> fields in the app. Check the lock boxes.</li>
+</ol>
+<hr>
+<h2>App Settings and Data Directory</h2>
+<p>App settings and data are stored in a SQLite database located at:</p>
+<ul>
+<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
+<li><strong>Windows:</strong> <code>%APPDATA%\elite-intel\db\</code></li>
+</ul>
+<hr>
+<p>For issues, contact via Matrix. Bug reports and pull requests are welcome.</p>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

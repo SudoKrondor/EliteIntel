@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choosing a Local Inference Server — EliteIntel</title>
+    <meta name="description" content="To run a local LLM with Elite Intel, an inference server is required. This is software that loads the AI model and serves it over a local API. It is the local e">
+    <link rel="canonical" href="https://www.elite-intel.org/installing-local-llms.html">
+    <meta property="og:title" content="Choosing a Local Inference Server — EliteIntel">
+    <meta property="og:description" content="To run a local LLM with Elite Intel, an inference server is required. This is software that loads the AI model and serves it over a local API. It is the local e">
+    <meta property="og:url" content="https://www.elite-intel.org/installing-local-llms.html">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
+
+            <div class="nav-section">App</div>
+            <a href="Installation-and-Configuration.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link active"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> Ollama &mdash; Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> LM Studio &mdash; Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">How Do I…?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
+            <a href="Commodity-Searching.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Commodity Search</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="images/communications.png" class="inline" height="20" alt=""> Matrix Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Privacy Policy</a>
+            <a href="Contact.html" class="nav-link">📧 Contact Developer</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Choosing a Local Inference Server</h1>
+<p>To run a local LLM with Elite Intel, an <strong>inference server</strong> is required. This is software that loads the AI model and serves it over a local API. It is the local equivalent of a cloud AI service, running entirely on your own hardware.</p>
+<p>Elite Intel supports two inference servers: <strong>Ollama</strong> and <strong>LM Studio</strong>. Both are compatible and use the same models. The choice can be changed in settings at any time.</p>
+<p><img src="images/local-llm.png" alt="loca llm ui"></p>
+<h2>GPU Requirements</h2>
+<p>Hardware requirements to run game and LLM on the same machine:</p>
+<ul>
+<li>RTX 3090 24GB VRAM</li>
+<li>AMD RX 7800 XT</li>
+</ul>
+<p>If you do not have enough hardware, use <strong><a href="https://v2.auth.mistral.ai/login">Free Cloud service</a></strong></p>
+<p>A GPU reference table provided by <strong>Kevin Rank</strong> is available here:
+<a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">GPU Reference Guide</a></p>
+<hr>
+<h3>Install Guides</h3>
+<table>
+<thead>
+<tr>
+<th>Inference Server</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="Install-LM-Studio-Linux.html">✅ LM Studio - Linux</a></td>
+<td>Fast, more model flexibility - guide shows how to setup as a server</td>
+</tr>
+<tr>
+<td><a href="Install-LM-Studio-Windows.html">✅ LM Studio - Windows</a></td>
+<td>Fast, more model flexibility - got GUI</td>
+</tr>
+<tr>
+<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
+<td>Recommended if you have the hardware to run it</td>
+</tr>
+<tr>
+<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
+<td>Recommended if you have the hardware to run it</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Ollama vs. LM Studio at a Glance</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ollama</th>
+<th>LM Studio</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Speed</strong></td>
+<td>Slower</td>
+<td>Faster</td>
+</tr>
+<tr>
+<td><strong>Preferred model</strong></td>
+<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+</tr>
+<tr>
+<td><strong>Best for</strong></td>
+<td>Simple setup, minimal maintenance</td>
+<td>More control over model loading</td>
+</tr>
+<tr>
+<td><strong>Install</strong></td>
+<td>One script, done</td>
+<td>One script, done</td>
+</tr>
+<tr>
+<td><strong>Runs as</strong></td>
+<td>System service (auto-starts on boot)</td>
+<td>Manual start, or opt-in auto-start</td>
+</tr>
+<tr>
+<td><strong>Model tuning</strong></td>
+<td>Modelfile baked into the model</td>
+<td>Flags at load time</td>
+</tr>
+<tr>
+<td><strong>Windows auto-start</strong></td>
+<td>✅ Works out of the box</td>
+<td>Requires desktop app or Task Scheduler</td>
+</tr>
+<tr>
+<td><strong>Linux auto-start</strong></td>
+<td>✅ systemd service included</td>
+<td>Manual systemd setup</td>
+</tr>
+<tr>
+<td><strong>Model source</strong></td>
+<td>Ollama library</td>
+<td>HuggingFace (GGUF)</td>
+</tr>
+<tr>
+<td><strong>API port</strong></td>
+<td><code>11434</code></td>
+<td><code>1234</code></td>
+</tr>
+<tr>
+<td><strong>GUI</strong></td>
+<td>None (CLI only)</td>
+<td>Optional desktop app</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Selection Guide</h3>
+<p><strong>Use Ollama when:</strong></p>
+<ul>
+<li>You want a simple install with minimal ongoing configuration</li>
+<li>You are on Windows and prefer not to configure startup manually</li>
+<li>You are new to local LLMs</li>
+</ul>
+<p><strong>Use LM Studio when:</strong></p>
+<ul>
+<li>You want a desktop GUI to browse, download, and manage models</li>
+<li>You are already familiar with HuggingFace and GGUF model files</li>
+<li>You want to experiment with different models without writing Modelfiles</li>
+<li>You are running a dedicated inference machine and need a clean headless server</li>
+</ul>
+<p><strong>Either option works when:</strong></p>
+<ul>
+<li>You have an NVIDIA RTX 3090 24 GB equivalent or better. VRAM is the critical factor, not GPU speed. A GPU with only 12 GB VRAM is insufficient regardless of generation.</li>
+<li>You are running Elite Dangerous and the LLM on the same machine</li>
+<li>You want to point Elite Intel at a separate PC on your network</li>
+</ul>
+<hr>
+<h2>Developer Recommendation</h2>
+<p>The developer uses LM Studio with <a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF"><code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code></a>. This model provides fast inference. The same model on Ollama runs noticeably slower. The app is optimized for this model. Other models may work but are not guaranteed. Report compatibility findings on Matrix.</p>
+<h2>Why tulu3.1:8b Supernova specifically?</h2>
+<p>Elite Intel is a command parser and data analysis tool, not a conversational chatbot. This imposes specific model requirements. Generating natural-sounding banter is insufficient. The model must correctly infer actions from voice input and perform structured data analysis. It must return results in formatted JSON, not a markup essay or HTML. Not all models of this size perform this task reliably.</p>
+<h2>Tulu 3 (the base training recipe) is genuinely exceptional</h2>
+<p><a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF/tree/main">Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</a></p>
+<p>Most instructed models are trained with RLHF, which uses a learned reward model to judge outputs. That reward model is itself a neural network, so it inherits all the usual biases and inconsistencies. Tulu 3 replaced this with RLVR (Reinforcement Learning with Verifiable Rewards). Instead of a learned reward model, the training uses a deterministic scoring function: the answer is either correct or it is not. Binary, no bias. This is particularly impactful for instruction-following tasks, where the reward signal is objective.</p>
+<p>The training pipeline is a four-stage approach: data curation targeting core skills, supervised fine-tuning, Direct Preference Optimization, and RLVR on top to sharpen verifiable task performance. Each stage builds on the last. This is why Tulu 3 on the 8B Llama base achieves results surpassing the instruct versions of Llama 3.1, Qwen 2.5, Mistral, and even closed models like GPT-4o-mini and Claude 3.5 Haiku.</p>
+<p>For EliteIntel, the command classification stage is an instruction-following task with verifiable correct answers (JSON action X vs. Y). This is precisely the task type that RLVR optimizes. The model is trained specifically for deterministic structured output.</p>
+<h2>Why the &quot;Supernova&quot; Variant</h2>
+<p>The Supernova variant differs from standard Tulu 3. Tulu-3.1-8B-SuperNova is created via a linear merge of three models: Llama-3.1-MedIT-SUN-8B (medical/reasoning), Llama-3.1-Tulu-3-8B (instruction following), and Llama-3.1-SuperNova-Lite (Arcee&#39;s distilled model), each contributing equally at weight 1.0 using mergekit.</p>
+<p>The SuperNova-Lite parent is a distilled model from a larger Arcee base, providing knowledge density beyond a standard 8B model. The linear merge averages weight tensors directly, combining knowledge without additional training compute. This achieves particularly strong results on instruction-following tasks, as demonstrated by its IFEval score.</p>
+<p><strong>Performance</strong>: The model uses an 8B Llama architecture. At Q4_K_M quantization on a 3090 24 GB, it fits in VRAM alongside the game with headroom. This avoids CPU offload and maintains maximum inference throughput. Comparable Qwen models use different attention head configurations (such as Qwen2.5&#39;s GQA ratio) that may run slower in llama.cpp&#39;s GGUF backend.</p>
+<p>It also runs on a 12 GB VRAM card if no other VRAM-consuming workloads are present. This requires the game to run on a separate GPU or machine.</p>
+<h2>Can I use a different model?</h2>
+<p>Alternative models may be used but are unlikely to match the speed and accuracy of tulu3.1-supernova.</p>
+<p>Common issues with alternative models include an incorrect response format.
+The most frequent error is the model returning a markup essay instead of a structured action or analysis result.</p>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>
