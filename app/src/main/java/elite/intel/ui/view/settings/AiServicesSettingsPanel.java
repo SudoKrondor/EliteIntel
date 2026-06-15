@@ -201,7 +201,9 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel buttons = transparentPanel(new BorderLayout());
         buttons.add(restoreButton, BorderLayout.WEST);
         buttons.add(rightGroup, BorderLayout.EAST);
-        buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, saveButton.getPreferredSize().height));
+        // Footer buttons anchor to the bottom of the tab, just above the SettingsTabPanel footer rail,
+        // with the standard padding: HUD_PADDING sides (aligns with content) + a gap above the rail.
+        buttons.setBorder(BorderFactory.createEmptyBorder(0, HUD_PADDING, HUD_PADDING, HUD_PADDING));
 
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
@@ -209,10 +211,9 @@ public class AiServicesSettingsPanel extends JPanel {
         content.add(llmSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
         content.add(speechSection);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-        content.add(buttons);
 
         add(content, BorderLayout.NORTH);
+        add(buttons, BorderLayout.SOUTH);
     }
 
     private void wireListeners() {
