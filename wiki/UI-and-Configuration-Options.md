@@ -1,7 +1,6 @@
 # UI and Configuration Options
 
-### AI Tab
-![AI tab](images/ai-services-started.png)
+### AI Tab <img src="images/ai.png" class="inline" height="20" alt="AI">
 This is the main/default tab.
 - **Start / Stop Services**: Toggles the AI stack on/off. Stop and restart here after any service setting change. Services do not reload automatically.
 - **Calibrate**: Calibrates the app to your room noise level, microphone, and audio setup. Run on first use and after any hardware change.
@@ -11,16 +10,22 @@ This is the main/default tab.
 
 ---
 
-### Player Tab
-![Player](images/Player.png)
+### Player Tab <img src="images/controller.png" class="inline" height="20" alt="Player">
 - **Commander Name**: If your in-game name is difficult for Text-to-Speech to pronounce, enter an easier alternative here.
 - **Journal and Bindings Directory**: On Windows this defaults to the standard location automatically. On Linux, set up symlinks as described in the [installation guide](Installation-and-Configuration).
 - **Fleet Management**: Assign voices, personalities, and cadence to individual ships. Personality and cadence require a cloud LLM. Settings can also be changed via voice command: "Change Name to George."
 
+
+### Actions Tab <img src="images/keys-binding.png" class="inline" height="20" alt="Actions">
+- **Commander Name**: If your in-game name is difficult for Text-to-Speech to pronounce, enter an easier alternative here.
+- **Journal and Bindings Directory**: On Windows this defaults to the standard location automatically. On Linux, set up symlinks as described in the [installation guide](Installation-and-Configuration).
+- **Fleet Management**: Assign voices, personalities, and cadence to individual ships. Personality and cadence require a cloud LLM. Settings can also be changed via voice command: "Change Name to George."
+
+
+
 ---
 
-### Settings / Local LLM Tab
-![Settings - Local LLM](images/Settings-local-llm.png)
+### Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings">
 - Set the address of your inference server. Defaults to `localhost` with the Ollama URL.
 - Provide the names of the models to use. See the [Local LLM guide](installing-local-llms).
 - **LLM host** radio buttons: Select between Ollama and LM Studio.
@@ -28,8 +33,7 @@ This is the main/default tab.
 
 ---
 
-### Settings / Audio
-![Settings - audio](images/Settings-Audio.png)
+### Settings / Audio <img src="images/mic.png" class="inline" height="20" alt="Audio">
 - **Speech Volume**: Controls the volume of speech synthesis.
 - **TTS Voice Speed**: Controls the speed of speech synthesis.
 - **Beep Volume**: Controls the volume of the beep indicator. Indicates that STT has finished processing and the LLM has received input.
@@ -38,8 +42,7 @@ This is the main/default tab.
 - **Audio Wave Visualizer**: Displays a dynamic graph of the audio input. Shows the noise floor, audio signal, gate zones, and clipping if present.
 
 
-### Settings / Cloud LLM Tab
-![Settings - Cloud LLM](images/Settings-CloudServices.png)
+### Settings / Cloud LLM Tab <img src="images/cloud.png" class="inline" height="20" alt="Cloud">
 - **Cloud LLM Key**: Enter your API key. Supported providers: Gemini, OpenAI, Grok, Mistral, Deepseek, and Anthropic/Claude.
 - **Cloud TTS Key**: Enter your API key. Supported provider: Google.
 - **Note**: Uncheck the "Use" checkbox in Local LLM. It overrides the cloud LLM key.

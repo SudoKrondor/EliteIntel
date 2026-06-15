@@ -426,6 +426,14 @@ body {
   display: block;
   border-radius: 4px;
 }
+.markdown-body img.inline {
+  display: inline;
+  vertical-align: middle;
+  border-radius: 0;
+  height: 1.1em;
+  width: auto;
+  max-width: unset;
+}
 
 /* ── Blockquotes ── */
 .markdown-body blockquote {

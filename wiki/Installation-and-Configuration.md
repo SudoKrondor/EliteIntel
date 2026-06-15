@@ -1,6 +1,7 @@
 This guide covers installation and initial configuration for Elite Intel on Windows and Linux.
 
-## Windows 🪟
+## <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
+
 1. Download the [👉**installer**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Run the installer and follow the on-screen prompts.
    - **Parakeet STT** (local speech recognition) and **Kokoro TTS** (local text-to-speech) are both included. No additional steps or services are required.
@@ -10,8 +11,8 @@ This guide covers installation and initial configuration for Elite Intel on Wind
 
 ---
 
-## Linux 🐧
-### Installation (no sudo required)
+## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux
+### Installation (any desktop distro - no sudo required)
 1. Download the installer script:
 
 ```shell
