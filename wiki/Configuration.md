@@ -1,5 +1,5 @@
 
-### Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings">
+### <img src="images/settings.png" class="inline" height="20" alt="Settings"> Settings / Local LLM Tab
 
 ![tab-settings-ai-services.png](images/tab-settings-ai-services.png)
 
@@ -37,7 +37,7 @@ If you do not have hardware to run a local LLM you can use a cloud instance inst
 ---
 
 
-### Settings / Audio <img src="images/mic.png" class="inline" height="20" alt="Audio">
+### <img src="images/mic.png" class="inline" height="20" alt="Audio"> Settings / Audio
 
 Configure your audio settings
 
@@ -56,7 +56,7 @@ Configure your audio settings
 - CLIP indicates you are melting the mic if your input goes above that line. If it does the transcription will be inaccurate.
 
 
-### Settings / Push To Talk <img src="images/controller.png" class="inline" height="20" alt="PTT">
+### <img src="images/controller.png" class="inline" height="20" alt="1PTT"> Settings / Push To Talk
 
 ![tab-settings-push-to-talk.png](images/tab-settings-push-to-talk.png)
 
@@ -71,7 +71,7 @@ PTT Settings have two modes.
 
 ---
 
-### Settings / Statistics <img src="images/stats.png" class="inline" height="20" alt="Stats">
+### <img src="images/stats.png" class="inline" height="20" alt="Stats"> Settings / Statistics
 
 ![tab-stats.png](images/tab-stats.png)
 
