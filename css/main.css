@@ -29,6 +29,7 @@ html, body {
 body {
   background-color: var(--ed-bg);
   background-image: radial-gradient(ellipse at 50% 0%, #0f1825 0%, var(--ed-bg) 70%);
+  background-attachment: fixed;
   color: var(--ed-text);
   font-family: 'Rajdhani', 'Segoe UI', sans-serif;
   font-size: 16px;
