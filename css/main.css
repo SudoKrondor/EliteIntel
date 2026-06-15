@@ -1,19 +1,239 @@
-.title {
-    align-content: center;
-    color: orangered;
-    text-align: center;
-    font-family: Serif, serif;
-    font-size: xxx-large;
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --ed-orange:        #ff6600;
+  --ed-orange-dim:    #cc4400;
+  --ed-orange-bright: #ff9944;
+  --ed-orange-glow:   rgba(255, 102, 0, 0.45);
+  --ed-orange-subtle: rgba(255, 102, 0, 0.08);
+  --ed-bg:            #080a0f;
+  --ed-bg-panel:      #0d1018;
+  --ed-bg-code:       #0a0c14;
+  --ed-text:          #bfc4ce;
+  --ed-text-dim:      #7a8090;
+  --ed-border:        rgba(255, 102, 0, 0.28);
 }
 
-.paragraph {
-    text-align: center;
-    color: orangered;
-    font-family: Serif, serif;
-    font-size: large;
+* {
+  box-sizing: border-box;
 }
 
-
+/* ── Body ── */
 .body-style {
-    background: #0C0C10;
+  background-color: var(--ed-bg);
+  background-image: radial-gradient(ellipse at top center, #0f1825 0%, #080a0f 65%);
+  color: var(--ed-text);
+  font-family: 'Rajdhani', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Page title ── */
+.title {
+  color: var(--ed-orange);
+  text-align: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 18px var(--ed-orange-glow),
+    0 0 45px rgba(255, 102, 0, 0.2),
+    0 0 90px rgba(255, 102, 0, 0.08);
+  margin: 2.2rem 0 0.6rem;
+  padding: 0 1rem;
+}
+
+/* ── Dividers ── */
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--ed-orange) 40%, var(--ed-orange) 60%, transparent);
+  opacity: 0.45;
+  margin: 2.2rem 0;
+}
+
+/* ── Article container ── */
+.markdown-body {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 1rem 2rem 5rem;
+  color: var(--ed-text);
+}
+
+/* ── Suppress the duplicate H1 inside the article ── */
+.markdown-body > .markdown-heading:first-child {
+  display: none;
+}
+
+/* ── Headings ── */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.heading-element {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.markdown-body h2 {
+  color: var(--ed-orange);
+  font-size: 1.55rem;
+  border-bottom: 1px solid var(--ed-border);
+  padding-bottom: 0.35rem;
+  margin-top: 2.8rem;
+  text-shadow: 0 0 12px var(--ed-orange-glow);
+}
+
+.markdown-body h3 {
+  color: var(--ed-orange-bright);
+  font-size: 1.2rem;
+  margin-top: 2rem;
+}
+
+/* ── Links ── */
+a {
+  color: var(--ed-orange-bright);
+  text-decoration: none;
+  transition: color 0.18s ease, text-shadow 0.18s ease;
+}
+
+a:hover {
+  color: #fff;
+  text-shadow: 0 0 10px var(--ed-orange-glow);
+}
+
+/* ── Paragraphs ── */
+.markdown-body p {
+  margin: 0.7rem 0 1rem;
+}
+
+/* ── Strong ── */
+.markdown-body strong {
+  color: #e8eaf0;
+  font-weight: 600;
+}
+
+/* ── Lists ── */
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.8rem;
+}
+
+.markdown-body li {
+  margin: 0.35rem 0;
+}
+
+.markdown-body li::marker {
+  color: var(--ed-orange);
+}
+
+/* ── Code blocks ── */
+.highlight {
+  background: var(--ed-bg-code) !important;
+  border: 1px solid var(--ed-border);
+  border-left: 3px solid var(--ed-orange-dim);
+  border-radius: 4px;
+  padding: 1rem 1.2rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  position: relative;
+}
+
+.highlight pre {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+
+pre {
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.88rem;
+  color: var(--ed-orange-bright);
+  line-height: 1.6;
+}
+
+/* ── Inline code ── */
+p code,
+li code {
+  background: var(--ed-bg-panel);
+  border: 1px solid var(--ed-border);
+  border-radius: 3px;
+  padding: 0.08em 0.45em;
+  color: var(--ed-orange-bright);
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 0.87em;
+}
+
+/* ── Clipboard button ── */
+.ClipboardButton {
+  background: transparent !important;
+  border: 1px solid var(--ed-border) !important;
+  color: var(--ed-text-dim) !important;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  padding: 4px !important;
+}
+
+.ClipboardButton:hover {
+  background: var(--ed-orange-subtle) !important;
+  border-color: var(--ed-orange-dim) !important;
+  color: var(--ed-orange) !important;
+}
+
+.ClipboardButton svg path {
+  fill: currentColor;
+}
+
+/* ── Anchor links on headings ── */
+.anchor {
+  opacity: 0;
+  color: var(--ed-orange-dim) !important;
+  margin-left: 0.4rem;
+  transition: opacity 0.15s;
+}
+
+.heading-element:hover > .anchor,
+h1:hover .anchor,
+h2:hover .anchor,
+h3:hover .anchor {
+  opacity: 1;
+}
+
+/* ── Octicon SVGs ── */
+.octicon {
+  fill: var(--ed-text-dim);
+  vertical-align: middle;
+}
+
+/* ── paragraph class (kept for compatibility) ── */
+.paragraph {
+  text-align: center;
+  color: var(--ed-orange);
+  font-family: 'Rajdhani', serif;
+  font-size: 1.1rem;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ed-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ed-orange-dim);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ed-orange);
 }
