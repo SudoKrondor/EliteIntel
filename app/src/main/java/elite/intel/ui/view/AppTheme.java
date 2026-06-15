@@ -116,7 +116,7 @@ public class AppTheme {
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
-    public static final int HUD_FIELD_HEIGHT = 34;
+    public static final int HUD_FIELD_HEIGHT = 30;
     /** Preferred width for searchable editable picker combo boxes. */
     public static final int HUD_PICKER_FIELD_WIDTH  = 500;
     /** Preferred height for searchable editable picker combo boxes. */
@@ -157,6 +157,21 @@ public class AppTheme {
      * aligns with the slider track rather than the row top.
      */
     public static final int HUD_SLIDER_VALUE_AREA = 20;
+    // HudMicMeter metrics (segmented vertical LED-VU mic level meter, §4): LIVE + PEAK-trail columns.
+    /** Number of discrete segments in each meter column. */
+    public static final int HUD_METER_SEG_COUNT = 32;
+    /** Vertical gap between segments. */
+    public static final int HUD_METER_SEG_GAP = 2;
+    /** Width of the live-level column. */
+    public static final int HUD_METER_LIVE_W = 22;
+    /** Width of the slim peak-hold trail column. */
+    public static final int HUD_METER_PEAK_W = 8;
+    /** Horizontal gap between the live and peak columns. */
+    public static final int HUD_METER_COL_GAP = 4;
+    /** Left gutter width for the zone scale labels (MAX/GATE/FLOOR/0). */
+    public static final int HUD_METER_SCALE_W = 72;
+    /** Bottom strip height reserving room for the big current-value readout + status sub-line. */
+    public static final int HUD_METER_READOUT_H = 42;
     public static final float HUD_FONT_BASE = 12f;
     public static final float HUD_FONT_XS   = HUD_FONT_BASE - 1f;  // 11
     public static final float HUD_FONT_SM   = HUD_FONT_BASE;       // 12
@@ -174,7 +189,8 @@ public class AppTheme {
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_SECTION_TITLE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_TAB_MAIN       = HUD_FONT_LG;   // 16
-    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_SM;   // 12
+    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_MD;   // 14 — second-level section tabs
+    public static final float HUD_FONT_TAB_COMPACT    = HUD_FONT_SM;   // 12 — dense inner (compact) tabs
     public static final float HUD_FONT_BUTTON         = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_CHECKBOX       = HUD_FONT_SM;   // 12f — форм-контрол чекбокса (§4.1)
     public static final float HUD_FONT_ICON_BUTTON    = HUD_FONT_LG;  // 16f — символ-кнопки (ⓘ и т.п.) в боксе 24×24
@@ -951,6 +967,60 @@ public class AppTheme {
             @Override public int getIconHeight() { return boxSize; }
             @Override public void paintIcon(Component c, Graphics g, int x, int y) {
                 paintHudArrowDown((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
+            }
+        };
+    }
+
+    /**
+     * Draws the HUD warning glyph — a triangle outline with a centred exclamation — within
+     * (x, y, w, h). Primitive replacement for the Unicode "⚠" (HUD §13); the caller chooses the
+     * colour (state-driven, typically {@link #HUD_WARN}).
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke/fill colour for the glyph
+     */
+    public static void paintHudWarningGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        int size = Math.min(w, h);
+        int inset = Math.max(1, Math.round(size * 0.10f));
+        int left = x + (w - size) / 2 + inset;
+        int right = x + (w + size) / 2 - inset;
+        int top = y + (h - size) / 2 + inset;
+        int bottom = y + (h + size) / 2 - inset;
+        int cx = (left + right) / 2;
+        float stroke = Math.max(1.5f, size / 11f);
+        g2.setColor(color);
+        g2.setStroke(new BasicStroke(stroke, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.drawPolygon(new int[]{left, right, cx}, new int[]{bottom, bottom, top}, 3);
+        // Exclamation mark: vertical bar + dot, centred in the triangle.
+        int barTop = top + Math.round((bottom - top) * 0.40f);
+        int barBot = top + Math.round((bottom - top) * 0.66f);
+        g2.drawLine(cx, barTop, cx, barBot);
+        int gap = Math.max(2, Math.round((bottom - top) * 0.08f));
+        int dot = Math.max(2, Math.round(stroke));
+        g2.fillRect(cx - dot / 2, barBot + gap, dot, dot);
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Returns an icon that paints the HUD warning glyph using the host component's foreground
+     * colour. Use as a leading glyph on {@link HudBanner} warnings instead of a Unicode "⚠" (§13).
+     *
+     * @param boxSize square icon side in px
+     */
+    public static Icon warningGlyphIcon(int boxSize) {
+        return new Icon() {
+            @Override public int getIconWidth() { return boxSize; }
+            @Override public int getIconHeight() { return boxSize; }
+            @Override public void paintIcon(Component c, Graphics g, int x, int y) {
+                paintHudWarningGlyph((Graphics2D) g, x, y, boxSize, boxSize, c.getForeground());
             }
         };
     }

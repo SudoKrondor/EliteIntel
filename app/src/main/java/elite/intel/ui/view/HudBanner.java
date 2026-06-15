@@ -15,6 +15,18 @@ public class HudBanner extends HudPanel {
      * @param state semantic state colour
      */
     public HudBanner(String text, StatusBadge.State state) {
+        this(text, state, false);
+    }
+
+    /**
+     * Creates a banner with an optional leading warning glyph. Use {@code leadingWarnGlyph=true}
+     * for caution hints (replaces hand-rolled "⚠" warning strips) so they render consistently.
+     *
+     * @param text            localized message text
+     * @param state           semantic state colour
+     * @param leadingWarnGlyph draw the HUD warning glyph (§13) before the text
+     */
+    public HudBanner(String text, StatusBadge.State state, boolean leadingWarnGlyph) {
         super(new BorderLayout(), colorFor(state), Variant.FLAT);
         setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 2, 0, 0, colorFor(state)),
@@ -24,6 +36,11 @@ public class HudBanner extends HudPanel {
         label.setForeground(colorFor(state));
         label.setFont(label.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_BANNER));
         label.putClientProperty("eliteIntel.hud.lockedForeground", Boolean.TRUE);
+        if (leadingWarnGlyph) {
+            int glyph = Math.round(AppTheme.HUD_FONT_BANNER * 1.4f);
+            label.setIcon(AppTheme.warningGlyphIcon(glyph));
+            label.setIconTextGap(AppTheme.HUD_GAP);
+        }
         add(label, BorderLayout.CENTER);
     }
 

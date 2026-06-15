@@ -52,6 +52,8 @@
 
         <!-- Specific logger levels -->
         <Logger name="elite.intel" level="error"/>
+        <!-- More specific than elite.intel above, so this wins for the StarVizion subtree -->
+        <Logger name="elite.intel.starvizion" level="debug"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>

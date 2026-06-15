@@ -1,11 +1,17 @@
 package elite.intel.ui.view.settings;
 
 import elite.intel.ai.brain.LocalLlmProvider;
+import elite.intel.ai.mouth.google.GoogleVoices;
+import elite.intel.ai.mouth.kokoro.KokoroVoices;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
+import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.view.HudSection;
+import elite.intel.ui.view.HudSegmentedControl;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,14 +28,23 @@ public class LocalLlmSettingsPanel extends JPanel {
     private JTextField localLlmModelQueryField;
     private JCheckBox useLocalCommandLLMCheck;
     private JCheckBox useLocalQueryLLMCheck;
-    private JRadioButton ollamaRadio;
-    private JRadioButton lmStudioRadio;
+    private JCheckBox useLocalTtsCheck;
+    private HudSegmentedControl providerControl;
+
+    // Segment indices for the Ollama/LM Studio provider selector.
+    private static final int PROVIDER_OLLAMA = 0;
+    private static final int PROVIDER_LMSTUDIO = 1;
 
     private LocalLlmProvider currentProvider;
     private Runnable onLocalLlmChanged;
+    private Runnable onLocalTtsChanged;
 
     public void setOnLocalLlmChanged(Runnable r) {
         onLocalLlmChanged = r;
+    }
+
+    public void setOnLocalTtsChanged(Runnable r) {
+        onLocalTtsChanged = r;
     }
 
     public LocalLlmSettingsPanel() {
@@ -64,21 +79,18 @@ public class LocalLlmSettingsPanel extends JPanel {
         useLocalQueryLLMCheck.addActionListener(e -> onCheckboxToggled());
         addCheck(fields, useLocalQueryLLMCheck, gc);
 
-        ollamaRadio = new JRadioButton(getText("settings.localLlm.ollama"));
-        lmStudioRadio = new JRadioButton(getText("settings.localLlm.lmStudio"));
-        styleCheckBox(ollamaRadio);
-        styleCheckBox(lmStudioRadio);
-        ButtonGroup providerGroup = new ButtonGroup();
-        providerGroup.add(ollamaRadio);
-        providerGroup.add(lmStudioRadio);
-        ollamaRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.OLLAMA));
-        lmStudioRadio.addActionListener(e -> onProviderSelected(LocalLlmProvider.LMSTUDIO));
+        providerControl = new HudSegmentedControl(
+                new String[]{getText("settings.localLlm.ollama"), getText("settings.localLlm.lmStudio")},
+                PROVIDER_OLLAMA);
+        providerControl.addChangeListener(e -> onProviderSelected(
+                providerControl.getSelectedIndex() == PROVIDER_OLLAMA
+                        ? LocalLlmProvider.OLLAMA
+                        : LocalLlmProvider.LMSTUDIO));
 
         HudSection providerSection = new HudSection(getText("settings.localLlm.section.provider"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
         JPanel providerPanel = providerSection.body();
         providerPanel.add(new JLabel(getText("settings.localLlm.host")));
-        providerPanel.add(ollamaRadio);
-        providerPanel.add(lmStudioRadio);
+        providerPanel.add(providerControl);
 
         JPanel buttons = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
 
@@ -93,9 +105,16 @@ public class LocalLlmSettingsPanel extends JPanel {
         buttons.add(saveButton);
         buttons.add(restoreButton);
 
+        useLocalTtsCheck = makeCheckBox(getText("settings.audio.useLocalTts"), false);
+        useLocalTtsCheck.addActionListener(a -> saveLocalTts());
+        JPanel ttsRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
+        ttsRow.add(useLocalTtsCheck);
+
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
         content.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        content.add(ttsRow);
+        content.add(Box.createVerticalStrut(12));
         content.add(fieldsSection);
         content.add(Box.createVerticalStrut(12));
         content.add(providerSection);
@@ -107,7 +126,7 @@ public class LocalLlmSettingsPanel extends JPanel {
 
     private void setDefaults() {
         currentProvider = LocalLlmProvider.LMSTUDIO;
-        lmStudioRadio.setSelected(true);
+        providerControl.setSelectedIndex(PROVIDER_LMSTUDIO);
         useLocalCommandLLMCheck.setSelected(true);
         useLocalQueryLLMCheck.setSelected(true);
         localLlmAddressField.setText(LocalLlmProvider.LMSTUDIO.getDefaultUrl());
@@ -119,11 +138,44 @@ public class LocalLlmSettingsPanel extends JPanel {
     public void initData() {
         LocalLlmProvider provider = systemSession.getLocalLlmProvider();
         currentProvider = provider;
-        ollamaRadio.setSelected(provider == LocalLlmProvider.OLLAMA);
-        lmStudioRadio.setSelected(provider == LocalLlmProvider.LMSTUDIO);
+        providerControl.setSelectedIndex(provider == LocalLlmProvider.OLLAMA ? PROVIDER_OLLAMA : PROVIDER_LMSTUDIO);
         loadProviderFieldsIntoUi(provider);
         useLocalCommandLLMCheck.setSelected(systemSession.useLocalCommandLlm());
         useLocalQueryLLMCheck.setSelected(systemSession.useLocalQueryLlm());
+        useLocalTtsCheck.setSelected(systemSession.useLocalTTS());
+    }
+
+    /**
+     * Called by CloudServicesSettingsPanel when the user activates cloud TTS. Delegates to
+     * {@link #saveLocalTts()} so the confirmation dialog and voice-reset logic fire identically
+     * to the user clicking the checkbox.
+     */
+    public void activateCloudTts() {
+        useLocalTtsCheck.setSelected(false);
+        saveLocalTts();
+    }
+
+    private void saveLocalTts() {
+        boolean newValue = useLocalTtsCheck.isSelected();
+        boolean oldValue = systemSession.useLocalTTS();
+        if (newValue != oldValue) {
+            String defaultVoice = newValue ? KokoroVoices.BELLA.name() : GoogleVoices.EMMA.name();
+            int confirm = JOptionPane.showConfirmDialog(
+                    this,
+                    getText("settings.audio.switchTts.message"),
+                    getText("settings.audio.switchTts.title"),
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                useLocalTtsCheck.setSelected(oldValue);
+                return;
+            }
+            ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
+        }
+        systemSession.setUseLocalTTS(newValue);
+        EventBusManager.publish(new TTSProviderChangedEvent());
+        EventBusManager.publish(new RestartMouthEvent());
+        if (onLocalTtsChanged != null) onLocalTtsChanged.run();
     }
 
     private void loadProviderFieldsIntoUi(LocalLlmProvider provider) {
@@ -183,7 +235,8 @@ public class LocalLlmSettingsPanel extends JPanel {
     }
 
     private void save() {
-        LocalLlmProvider provider = lmStudioRadio.isSelected() ? LocalLlmProvider.LMSTUDIO : LocalLlmProvider.OLLAMA;
+        LocalLlmProvider provider = providerControl.getSelectedIndex() == PROVIDER_LMSTUDIO
+                ? LocalLlmProvider.LMSTUDIO : LocalLlmProvider.OLLAMA;
         saveProviderFields(provider);
         systemSession.setLocalLlmProvider(provider);
         systemSession.setUseLocalCommandLlm(useLocalCommandLLMCheck.isSelected());

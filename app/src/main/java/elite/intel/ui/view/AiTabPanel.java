@@ -48,6 +48,7 @@ public class AiTabPanel extends JPanel {
     private HudStatusReadout commandsBadge;
     private HudStatusReadout keymapBadge;
     private boolean sleeping;
+    private boolean pttModeActive;
     private String lastLlmProvider;
 
     // SYSTEM SUMMARY telemetry blocks
@@ -272,7 +273,7 @@ public class AiTabPanel extends JPanel {
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(true);
         recalibrateAudioButton.setEnabled(running);
-        wakeWordButton.setEnabled(running);
+        wakeWordButton.setEnabled(running && !pttModeActive);
         refreshSttBadge();
         refreshLlmBadge();
         refreshTtsBadge();
@@ -333,6 +334,19 @@ public class AiTabPanel extends JPanel {
             sleeping = event.sleeping();
             wakeWordButton.setText(wakeWordText());
             refreshSttBadge();
+        });
+    }
+
+    @Subscribe
+    public void onPttModeChanged(PttModeChangedEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            pttModeActive = event.isActive();
+            wakeWordButton.setEnabled(isServiceRunning.get() && !pttModeActive);
+            if (pttModeActive) {
+                sleeping = true;
+                wakeWordButton.setText(wakeWordText());
+                refreshSttBadge();
+            }
         });
     }
 
