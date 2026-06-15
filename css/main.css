@@ -413,6 +413,14 @@ body {
 }
 .markdown-body tr:hover td { background: var(--ed-orange-subtle); }
 
+/* ── Images ── */
+.markdown-body img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+}
+
 /* ── Blockquotes ── */
 .markdown-body blockquote {
   border-left: 3px solid var(--ed-orange-dim);

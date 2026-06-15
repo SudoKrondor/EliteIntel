@@ -1,4 +1,5 @@
-# Elite Intel: AI Assistant for Elite Dangerous
+# Elite Intel
+## AI Assistant for Elite Dangerous
 
 ![EliteIntel app](images/app.png)
 
