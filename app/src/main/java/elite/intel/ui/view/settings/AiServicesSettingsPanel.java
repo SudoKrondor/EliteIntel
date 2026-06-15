@@ -15,6 +15,7 @@ import elite.intel.ui.view.HudConfirmDialog;
 import elite.intel.ui.view.HudSection;
 import elite.intel.ui.view.HudSegmentedControl;
 import elite.intel.ui.view.HudTwoColumns;
+import elite.intel.ui.view.HudUnsavedHint;
 import elite.intel.ui.view.StatusBadge;
 
 import javax.swing.*;
@@ -65,7 +66,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private JPanel rightCol;
     private JPanel ttsRightCol;
     private JButton saveButton;
-    private HudBanner unsavedBanner;
+    private JLabel unsavedLabel;
 
     // -- Working copy (in memory, committed only by save) ----------------------
     private String ollamaAddress = "", ollamaCommand = "", ollamaQuery = "";
@@ -189,21 +190,18 @@ public class AiServicesSettingsPanel extends JPanel {
         saveButton.setEnabled(false); // nothing to save until something changes
         JButton restoreButton = makeButtonSubtle(getText("button.restoreDefaults"));
         restoreButton.addActionListener(e -> SwingUtilities.invokeLater(this::restoreDefaults));
-        // Restore on the left, Save (primary) on the right edge (§10).
+
+        // Unsaved-changes hint as a footer status (§10): shared HudUnsavedHint, just left of SAVE.
+        unsavedLabel = new HudUnsavedHint();
+
+        // Restore on the left; the status + Save (primary) grouped at the right edge (§10).
+        JPanel rightGroup = transparentPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
+        rightGroup.add(unsavedLabel);
+        rightGroup.add(saveButton);
         JPanel buttons = transparentPanel(new BorderLayout());
         buttons.add(restoreButton, BorderLayout.WEST);
-        buttons.add(saveButton, BorderLayout.EAST);
+        buttons.add(rightGroup, BorderLayout.EAST);
         buttons.setMaximumSize(new Dimension(Integer.MAX_VALUE, saveButton.getPreferredSize().height));
-
-        unsavedBanner = new HudBanner(getText("settings.ai.unsaved"), StatusBadge.State.STANDBY);
-        unsavedBanner.setVisible(false);
-        // Reserve the banner's height so the buttons don't jump when it toggles.
-        JPanel bannerHolder = transparentPanel(new BorderLayout());
-        bannerHolder.add(unsavedBanner, BorderLayout.CENTER);
-        int bannerH = unsavedBanner.getPreferredSize().height;
-        bannerHolder.setPreferredSize(new Dimension(0, bannerH));
-        bannerHolder.setMinimumSize(new Dimension(0, bannerH));
-        bannerHolder.setMaximumSize(new Dimension(Integer.MAX_VALUE, bannerH));
 
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
@@ -211,8 +209,6 @@ public class AiServicesSettingsPanel extends JPanel {
         content.add(llmSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
         content.add(speechSection);
-        content.add(Box.createVerticalStrut(HUD_GAP));
-        content.add(bannerHolder);
         content.add(Box.createVerticalStrut(HUD_GAP));
         content.add(buttons);
 
@@ -398,7 +394,7 @@ public class AiServicesSettingsPanel extends JPanel {
     private void setDirty(boolean modified) {
         if (dirty == modified) return;
         dirty = modified;
-        unsavedBanner.setVisible(modified);
+        unsavedLabel.setVisible(modified);
         saveButton.setEnabled(modified); // SAVE is only meaningful when there are unsaved edits
         revalidate();
         repaint();
