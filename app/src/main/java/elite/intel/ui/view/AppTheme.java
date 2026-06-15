@@ -1,5 +1,6 @@
 package elite.intel.ui.view;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
@@ -435,15 +436,25 @@ public class AppTheme {
     }
 
     /**
-     * Creates a muted key-label for readout rows (FG_MUTED, XS caps).
-     * Use for field labels inside settings rows, telemetry keys, and form prompts.
+     * Light form field label (§5.1): {@code FG}, SM caps — the key column next to inputs.
+     * Shares {@link #styleFieldLabel} with {@link #addLabel}.
      */
     public static JLabel hudReadoutLabel(String text) {
         JLabel lbl = new JLabel(text != null ? text.toUpperCase() : "");
-        lbl.setForeground(FG_MUTED);
-        lbl.setFont(lbl.getFont().deriveFont(HUD_FONT_READOUT_KEY));
-        lbl.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
+        styleFieldLabel(lbl);
         return lbl;
+    }
+
+    /**
+     * Single source of truth for field/readout key-label styling (§5.1): {@code FG_MUTED}, XS caps,
+     * foreground locked against the dark palette. Shared by {@link #hudReadoutLabel} and {@link #addLabel}
+     * so every form label looks identical.
+     */
+    private static void styleFieldLabel(JLabel label) {
+        // Vanilla-ED form labels are light (FG), not muted, at a comfortable SM size (§5.1).
+        label.setForeground(FG);
+        label.setFont(label.getFont().deriveFont(HUD_FONT_SM));
+        label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
 
     /**
@@ -581,7 +592,10 @@ public class AppTheme {
             return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
         tc.setBackground(HUD_TABLE_ROW);
-        tc.setForeground(FG);
+        // Field value text — ACCENT (vanilla-ED: light label, orange value), the same for single-line
+        // and multi-line FIELD areas; only enabled/disabled differs. The live console/log is a
+        // separate role (HudLogArea, a JPanel) and is not styled here.
+        tc.setForeground(ACCENT);
         tc.setDisabledTextColor(HUD_DISABLED); // §0.6: disabled text dims to the warm muted tone
         tc.setCaretColor(ACCENT);
         tc.setSelectionColor(ACCENT);
@@ -634,10 +648,48 @@ public class AppTheme {
             comboBox.setUI(new HudComboBoxUI());
         }
         comboBox.setBackground(HUD_TABLE_ROW);
-        comboBox.setForeground(FG);
+        comboBox.setForeground(ACCENT); // collapsed value — same ACCENT as the popup items (§5.3)
         comboBox.setBorder(hudFieldBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
+    }
+
+    /**
+     * Applies the canonical HUD treatment to the live editor of an editable combo (picker).
+     *
+     * <p>An editable combo paints its collapsed value through a FlatLaf-managed {@link JTextField}
+     * editor, not through the renderer used by non-editable combos. This is the single place that
+     * subdues that editor to the HUD canon so both combo types read identically (§5.3):
+     * <ul>
+     *   <li>Value colour {@link #ACCENT} (enabled) / {@link #HUD_DISABLED} (disabled) — matches the
+     *       renderer-painted value of non-editable combos.</li>
+     *   <li>Text inset {@link #HUD_COMBO_ITEM_INSET_H}/{@link #HUD_COMBO_ITEM_INSET_V}, equal to the
+     *       renderer item inset. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
+     *       on top of our border — FlatLaf computes that padding once, before our border exists, and
+     *       would otherwise shift the value text to the right.</li>
+     *   <li>{@link #HUD_COMBO_EDITOR_LOCKED} + {@link #HUD_LOCKED_FOREGROUND} so {@link #applyDarkPalette}
+     *       and {@link #styleTextComponent} do not overwrite the border/foreground during the palette walk.</li>
+     * </ul>
+     *
+     * <p>Invoked from {@link HudComboBoxUI} after every FlatLaf editor (re)configuration, so the HUD
+     * border is already in place when the FlatLaf padding is neutralised.
+     */
+    public static void styleComboEditor(JTextComponent editor) {
+        editor.setBackground(HUD_TABLE_ROW);
+        editor.setForeground(ACCENT);
+        editor.setDisabledTextColor(HUD_DISABLED);
+        editor.setCaretColor(ACCENT);
+        editor.setSelectionColor(ACCENT);
+        editor.setSelectedTextColor(SEL_FG);
+        // Border carries the full text inset; equals the non-editable renderer item inset.
+        editor.setBorder(new EmptyBorder(
+                HUD_COMBO_ITEM_INSET_V, HUD_COMBO_ITEM_INSET_H,
+                HUD_COMBO_ITEM_INSET_V, HUD_COMBO_ITEM_INSET_H));
+        // Neutralise FlatLaf's injected editor padding so only our border defines the inset.
+        editor.putClientProperty(FlatClientProperties.TEXT_FIELD_PADDING, new Insets(0, 0, 0, 0));
+        editor.setFont(editor.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
+        editor.putClientProperty(HUD_COMBO_EDITOR_LOCKED, Boolean.TRUE);
+        editor.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
 
     /**
@@ -1250,6 +1302,15 @@ public class AppTheme {
     }
 
     public static void addLabel(JPanel panel, String text, GridBagConstraints gbc) {
+        addLabel(panel, text, gbc, 220);
+    }
+
+    /**
+     * Adds a dim-aware field label (§5.1) at column 0. {@code labelWidth} fixes the label-column
+     * width for aligned single-column forms; pass {@code <= 0} to size the label to its text so the
+     * field hugs it (tight two-column forms — avoids the large gap after short labels).
+     */
+    public static void addLabel(JPanel panel, String text, GridBagConstraints gbc, int labelWidth) {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
@@ -1258,23 +1319,14 @@ public class AppTheme {
         JLabel label = new JLabel(text.toUpperCase()) {
             @Override public void setEnabled(boolean enabled) {
                 super.setEnabled(enabled);
-                setForeground(enabled ? FG_MUTED : HUD_DISABLED);
+                setForeground(enabled ? FG : HUD_DISABLED);
             }
         };
-        label.setForeground(FG_MUTED);
-        label.setFont(label.getFont().deriveFont(HUD_FONT_SM));
-        label.setPreferredSize(new Dimension(220, HUD_TABLE_ROW_HEIGHT_COMPACT));
+        styleFieldLabel(label); // shared §5.1 field-label styling (FG_MUTED, XS caps, locked)
+        if (labelWidth > 0) {
+            label.setPreferredSize(new Dimension(labelWidth, HUD_TABLE_ROW_HEIGHT_COMPACT));
+        }
         panel.add(label, gbc);
-    }
-
-    public static void addLabel(JPanel panel, String text, GridBagConstraints gbc, int col, double weightX) {
-        gbc.gridx = col;
-        gbc.weightx = weightX;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel comp = new JLabel(text);
-        comp.setFont(comp.getFont().deriveFont(HUD_FONT_SM));
-        comp.setPreferredSize(new Dimension(0, comp.getPreferredSize().height));
-        panel.add(comp, gbc);
     }
 
     public static void addField(JPanel panel, JComponent comp, GridBagConstraints gbc, int col, double weightX) {

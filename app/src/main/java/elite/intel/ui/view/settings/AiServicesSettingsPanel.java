@@ -114,22 +114,22 @@ public class AiServicesSettingsPanel extends JPanel {
         GridBagConstraints gc = baseGbc();
         providerControl = new HudSegmentedControl(
                 new String[]{getText("settings.localLlm.ollama"), getText("settings.localLlm.lmStudio")}, PROV_LMSTUDIO);
-        addLabel(localCol, getText("settings.ai.host"), gc);
+        addLabel(localCol, getText("settings.ai.host"), gc, 0);
         addField(localCol, providerControl, gc, 1, 1.0);
 
         addressField = makeTextField();
         nextRow(gc);
-        addLabel(localCol, getText("settings.ai.address"), gc);
+        addLabel(localCol, getText("settings.ai.address"), gc, 0);
         addField(localCol, addressField, gc, 1, 1.0);
 
         commandModelField = makeTextField();
         nextRow(gc);
-        addLabel(localCol, getText("settings.ai.commandModel"), gc);
+        addLabel(localCol, getText("settings.ai.commandModel"), gc, 0);
         addField(localCol, commandModelField, gc, 1, 1.0);
 
         queryModelField = makeTextField();
         nextRow(gc);
-        addLabel(localCol, getText("settings.ai.queryModel"), gc);
+        addLabel(localCol, getText("settings.ai.queryModel"), gc, 0);
         addField(localCol, queryModelField, gc, 1, 1.0);
 
         // Right column — CLOUD SETUP.
@@ -142,7 +142,7 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel apiKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
         apiKeyRow.add(apiKeyField, BorderLayout.CENTER);
         apiKeyRow.add(llmLockCheck, BorderLayout.EAST);
-        addLabel(rightCol, getText("settings.ai.apiKey"), rgc);
+        addLabel(rightCol, getText("settings.ai.apiKey"), rgc, 0);
         addField(rightCol, apiKeyRow, rgc, 1, 1.0);
 
         nextRow(rgc);
@@ -177,7 +177,7 @@ public class AiServicesSettingsPanel extends JPanel {
         JPanel ttsKeyRow = transparentPanel(new BorderLayout(HUD_SEP_W, 0));
         ttsKeyRow.add(ttsKeyField, BorderLayout.CENTER);
         ttsKeyRow.add(ttsLockCheck, BorderLayout.EAST);
-        addLabel(ttsRightCol, getText("settings.ai.googleTtsKey"), tgc);
+        addLabel(ttsRightCol, getText("settings.ai.googleTtsKey"), tgc, 0);
         addField(ttsRightCol, ttsKeyRow, tgc, 1, 1.0);
 
         JPanel ttsRightWrap = transparentPanel(new BorderLayout());

@@ -3,6 +3,7 @@ package elite.intel.ui.view;
 import com.formdev.flatlaf.ui.FlatComboBoxUI;
 
 import javax.swing.*;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 
 /**
@@ -44,6 +45,21 @@ class HudComboBoxUI extends FlatComboBoxUI {
             AppTheme.styleScrollBar(scroller.getVerticalScrollBar());
         }
         return popup;
+    }
+
+    /**
+     * Subdues the FlatLaf-managed editor of an editable combo to the HUD canon. Runs after FlatLaf's
+     * own editor configuration so the HUD border is in place when {@link AppTheme#styleComboEditor}
+     * neutralises FlatLaf's injected {@code JTextField.padding}. Called on every editor (re)configuration
+     * (initial install, look-and-feel update), keeping the editor styling from going stale.
+     */
+    @Override
+    protected void configureEditor() {
+        super.configureEditor();
+        Component ec = comboBox.getEditor().getEditorComponent();
+        if (ec instanceof JTextComponent editor) {
+            AppTheme.styleComboEditor(editor);
+        }
     }
 
     @Override

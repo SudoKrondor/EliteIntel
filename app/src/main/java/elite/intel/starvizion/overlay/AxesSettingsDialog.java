@@ -161,10 +161,7 @@ public class AxesSettingsDialog extends JDialog {
     private static void nextRow(GridBagConstraints gbc) { gbc.gridy++; gbc.gridwidth = 1; }
 
     private static void addLabel(JPanel p, String text, GridBagConstraints gbc) {
-        gbc.gridx = 0; gbc.weightx = 0; gbc.fill = GridBagConstraints.NONE;
-        JLabel lbl = new JLabel(text);
-        lbl.setPreferredSize(new Dimension(160, 32));
-        p.add(lbl, gbc);
+        AppTheme.addLabel(p, text, gbc, 160); // central §5.1 field label
     }
 
     private static void addField(JPanel p, JComponent c, GridBagConstraints gbc) {

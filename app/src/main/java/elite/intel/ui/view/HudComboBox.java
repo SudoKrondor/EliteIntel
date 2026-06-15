@@ -129,7 +129,7 @@ public class HudComboBox<E> extends JComboBox<E> {
                     @SuppressWarnings("unchecked") E item = (E) value;
                     muted = mutedWhen.test(item);
                 }
-                label.setForeground(muted ? AppTheme.FG_MUTED : AppTheme.FG);
+                label.setForeground(muted ? AppTheme.FG_MUTED : AppTheme.ACCENT);
             }
 
             label.setBorder(new EmptyBorder(
@@ -165,22 +165,11 @@ public class HudComboBox<E> extends JComboBox<E> {
             BiPredicate<? super E, String> matches) {
 
         HudComboBox<E> combo = new HudComboBox<>(items, labelFn);
+        // setEditable(true) triggers FlatLaf's addEditor()/configureEditor(); HudComboBoxUI.configureEditor()
+        // subdues the editor to the HUD canon (colour, inset, locks). No manual editor styling needed here.
         combo.setEditable(true);
         combo.setPreferredSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT));
         combo.setMinimumSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT));
-
-        Component ec = combo.getEditor().getEditorComponent();
-        if (ec instanceof JTextComponent editor) {
-            AppTheme.styleTextComponent(editor);              // first pass: full styling
-            // Picker editor uses a tighter left/right inset than the standard field border.
-            // TODO: tokenize as HUD_PICKER_EDITOR_INSET_V/H when consolidating field insets.
-            editor.setBorder(new EmptyBorder(4, 10, 4, 8));   // tight inset, no line border
-            // Lock AFTER styling so this initial pass applies; the flag only suppresses the
-            // later applyDarkPalette re-call that would overwrite the border with hudFieldBorder().
-            if (editor instanceof JComponent jc) {
-                jc.putClientProperty(AppTheme.HUD_COMBO_EDITOR_LOCKED, Boolean.TRUE);
-            }
-        }
 
         configureSearch(combo, items, labelFn, matches);
         return combo;
