@@ -84,7 +84,7 @@ public class AiTabPanel extends JPanel {
     private void buildUi() {
         setLayout(new BorderLayout(HUD_GAP, HUD_GAP));
         setBackground(HUD_BG);
-        setBorder(hudDenseScreenBorder());
+        setBorder(hudScreenBorder());
 
         // --- Controls wired up, placed in right sidebar SHORTCUTS ---
         startStopServicesButton = makeButtonSubtle(getText("button.startServices"));

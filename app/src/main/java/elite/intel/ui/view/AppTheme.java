@@ -70,6 +70,14 @@ public class AppTheme {
     public static final Color HUD_ORANGE_SOFT = new Color(0xB85A14);
     public static final Color HUD_ORANGE_FILL = new Color(0x3A1E0A);
     public static final Color HUD_ORANGE_FILL_HOVER = new Color(0x532A0D);
+    /** Active MAIN_NAV tab box fill (§11.1). Slightly softer/warmer than the global {@code ACCENT}
+     *  used for rails and other accents, so the navbar box reads as the source the SECTION tone shifts from. */
+    public static final Color HUD_TAB_MAIN_FILL = new Color(0xF5820E);
+    /** Active SECTION tab box fill — orange nudged slightly toward red (22°), kept bright so the
+     *  active tab reads as live, while the warmer hue separates it from the MAIN_NAV box (§11). */
+    public static final Color HUD_TAB_SECTION_FILL = new Color(0xF26412);
+    /** Section tab-row underline rail — a touch redder again (20°), pairs with the box fill. */
+    public static final Color HUD_TAB_SECTION_RAIL = new Color(0xF25D12);
     public static final Color HUD_CYAN = new Color(0x33D7E8);
     public static final Color HUD_CYAN_SOFT = new Color(0x49AFC7);
     public static final Color HUD_OK = new Color(0x4FC56B);
@@ -350,14 +358,6 @@ public class AppTheme {
         return new EmptyBorder(SCREEN_TOP_GAP, SHELL_GAP, SHELL_GAP, SHELL_GAP);
     }
 
-    /**
-     * Creates a denser outer spacing for high-density screens that need more room for content.
-     * Use instead of {@link #hudScreenBorder()} when the screen is content-heavy and the standard
-     * screen gap feels too spacious.
-     */
-    public static Border hudDenseScreenBorder() {
-        return new EmptyBorder(HUD_GAP, HUD_PADDING_SMALL, HUD_PADDING_SMALL, HUD_PADDING_SMALL);
-    }
 
     /**
      * Creates the compact spacing between a screen sub-tab row and its first content surface.

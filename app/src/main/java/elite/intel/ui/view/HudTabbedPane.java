@@ -88,14 +88,17 @@ public class HudTabbedPane extends JTabbedPane {
             super.installDefaults();
             contentBorderInsets = flatContent ? new Insets(0, 0, 0, 0) : new Insets(1, 1, 1, 1);
             if (mainNavigation) {
-                // Zero out the LAF default top inset so the tab strip sits flush against whatever is above it.
-                tabAreaInsets = new Insets(0, 0, 0, 0);
+                // Top/bottom flush; left/right inset by SHELL_GAP so the first/last tab box lines up
+                // with the inner panels' content inset from the window edge (hudScreenBorder). The
+                // rail still spans full width, so the boxes read as inset from the line.
+                tabAreaInsets = new Insets(0, AppTheme.SHELL_GAP, 0, AppTheme.SHELL_GAP);
                 tabInsets = new Insets(12, 14, 12, 14);
             } else if (section) {
-                // Flush top/bottom so the active box meets the bottom rail; small left indent so the
-                // first tab label is offset from the rail's start. Roomier horizontal tab insets.
+                // Small left indent so the first tab label is offset from the rail's start. The extra
+                // bottom inset makes the row 5px taller so a transparent gap opens between the active
+                // box and the bottom rail while the box keeps its height. Roomier horizontal tab insets.
                 tabAreaInsets = new Insets(0, AppTheme.HUD_GAP, 0, 0);
-                tabInsets = new Insets(6, 14, 6, 14);
+                tabInsets = new Insets(6, 14, 11, 14);
             } else if (compact) {
                 tabInsets = new Insets(3, 9, 3, 9);
             } else {
@@ -116,13 +119,13 @@ public class HudTabbedPane extends JTabbedPane {
                 // top rail — muted warm, 2px
                 g.setColor(AppTheme.HUD_ORANGE_SOFT);
                 g.fillRect(0, 0, width, 2);
-                // bottom rail — bright accent, 3px; flush to tab-area bottom
-                g.setColor(AppTheme.ACCENT);
+                // bottom rail — same fill as the active tab box, 3px; flush to tab-area bottom
+                g.setColor(AppTheme.HUD_TAB_MAIN_FILL);
                 g.fillRect(0, tabAreaHeight - 3, width, 3);
             } else if (section) {
-                // Underline rail under the section tab row (§11): darker than the active box fill
-                // (box = HUD_ORANGE_SOFT) so the rail reads as a base line, not part of the box.
-                g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
+                // Underline rail under the section tab row (§11): warm red-orange, paired with the
+                // active box fill so the active tab reads as live (not the old muted/dim box).
+                g.setColor(AppTheme.HUD_TAB_SECTION_RAIL);
                 g.fillRect(0, tabAreaHeight - 2, tabPane.getWidth(), 2);
             }
         }
@@ -134,23 +137,25 @@ public class HudTabbedPane extends JTabbedPane {
                 if (isSelected) {
                     int gap = 8;
                     int bottomRail = 3;
-                    int fillH = h - gap * 2 - bottomRail;
+                    int bottomGap = gap - 2; // box extends 2px lower, closing the gap to the rail (nav height unchanged)
+                    int fillH = h - gap - bottomGap - bottomRail;
                     if (fillH < 1) fillH = 1;
-                    g.setColor(AppTheme.ACCENT);
+                    g.setColor(AppTheme.HUD_TAB_MAIN_FILL);
                     g.fillRect(x, y + gap, w, fillH);
                 }
                 // unselected: no fill — paintTabArea already painted HUD_SHELL_BACKGROUND
                 return;
             }
             if (section) {
-                // Active = filled box (inversion, §11) in the softer orange so it does not compete
-                // with the MAIN_NAV accent; box meets the bottom rail (no gap below the label).
+                // Active = filled box (inversion, §11) in a bright red-shifted orange so the active
+                // tab reads as live; the warmer hue separates it from the MAIN_NAV accent box.
                 if (isSelected) {
                     int gap = 4;
                     int bottomRail = 2;
-                    int fillH = h - gap - bottomRail;
+                    int separator = 5;   // transparent gap between the box and the bottom rail
+                    int fillH = h - gap - separator - bottomRail;
                     if (fillH < 1) fillH = 1;
-                    g.setColor(AppTheme.HUD_ORANGE_SOFT);
+                    g.setColor(AppTheme.HUD_TAB_SECTION_FILL);
                     g.fillRect(x, y + gap, w, fillH);
                 }
                 // unselected: leave the HUD_CONTENT_BACKGROUND painted by paintTabArea
@@ -209,9 +214,11 @@ public class HudTabbedPane extends JTabbedPane {
                     title != null ? title.toUpperCase() : title,
                     icon, tabRect, iconRect, textRect, isSelected);
 
-            if (!mainNavigation) return;
+            if (!mainNavigation && !section) return;
 
-            // Re-center the icon+label group vertically in the usable area above the 3px orange underline.
+            // Re-center the icon+label group vertically in the active box. The `- 3` exclusion matches
+            // both MAIN_NAV (3px underline at the bottom) and SECTION (whose top gap minus bottom
+            // separator+rail nets the same offset), keeping the label centered in the visible box.
             boolean hasIcon = icon != null && iconRect.width > 0;
             boolean hasText = title != null && !title.isEmpty() && textRect.width > 0;
             int groupTop, groupBottom;
@@ -261,7 +268,10 @@ public class HudTabbedPane extends JTabbedPane {
             if (mainNavigation) {
                 int count = Math.max(1, tabPane.getTabCount());
                 Insets pi = tabPane.getInsets();
-                int available = tabPane.getWidth() - pi.left - pi.right;
+                // Subtract tabAreaInsets too, otherwise the even-width tabs sum to the full pane
+                // width and overflow past the left inset, forcing a second WRAP row.
+                int available = tabPane.getWidth() - pi.left - pi.right
+                        - tabAreaInsets.left - tabAreaInsets.right;
                 if (available > 0) {
                     int slot = available / count;
                     // Last tab absorbs any pixel remainder from integer division.
