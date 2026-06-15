@@ -56,6 +56,29 @@ Configure your audio settings
 - CLIP indicates you are melting the mic if your input goes above that line. If it does the transcription will be inaccurate.
 
 
----
+### Settings / Push To Talk <img src="images/controller.png" class="inline" height="20" alt="PTT">
+
+![tab-settings-push-to-talk.png](images/tab-settings-push-to-talk.png)
+
+**Configure PTT (Push To Talk)**
+
+Push To Talk only works with a controller, not a keyboard. Yes, you would have to sacrifice a button on your controller, but you gain access to over 200 commands/queries.
+
+PTT Settings have two modes.
+
+- **Toggle Sleep/Wake** This option simply switches the app between Sleep and Wake mode. In Sleep mode the app will ignore all your voice input except "Wake Up!" command. The "listen" or "listen up" bypass word will bypass the sleep mode. _"Listen up!, Lower the landing gear."_ will go though
+- **PTT Mode** In pure Push To Talk mode the app is "sleeping" ignoring all your input. When PTT button on the controller is pressed and held you will hear a beep, say your command, or query and release the button. You will hear another beep indicating that your input is being processed.
 
 ---
+
+### Settings / Statistics <img src="images/stats.png" class="inline" height="20" alt="Stats">
+
+![tab-stats.png](images/tab-stats.png)
+
+The statistics tab shows you your token usage. Tokens are basic units of LLM compute. A token is a single word or number.
+
+Cloud model integration is tuned per-provider for maximum token caching. Cached tokens are either free or billed at a lower rate. This depends on the provider. On Average the app uses around 250k tokens per hour total. Some cloud providers can cache up to 80% of it, others around 40%. It depends on the cloud you choose.
+
+The estimate will be shown based on your usage once you run your session for longer than 15 minutes. It is an approximate calculation.
+
+Local LLM does not display cached tokens. That information is not relevant to local LLM.

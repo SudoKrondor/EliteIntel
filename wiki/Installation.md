@@ -36,7 +36,7 @@ Both **Parakeet STT** and **Kokoro TTS** are bundled with the app. No additional
    - **Local LLM** (free, offline): See the [**Local LLM guide**](installing-local-llms). Requires capable GPU hardware.
    - **Cloud LLM** (easier to set up): See the [**Configure the app**](UI-and-Configuration-Options) guide for API key setup.
 
-Setup complete. See [**Configure the app**](UI-and-Configuration-Options) for next steps.
+Setup complete. See [**Configure the app**](Configuration) for next steps.
 
 ---
 
