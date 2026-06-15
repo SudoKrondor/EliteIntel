@@ -7,7 +7,6 @@
   * ### [🆓 Install LM Studio Linux](Install-LM-Studio-Linux)
   * ### [🆓 Install LM Studio Windows](Install-LM-Studio-Windows)
   * ### [🆓 LLMs on AMD-RX Series](AMD-RX-7800XT-LLM-Setup)
-  * ### [🧐 Privacy Policy](Privacy)
 * ## [Manual](#)
   * ### [👤 General Operation](General-Operation)
   * ### [🛠️ Customize you AI](Customizing-your-AI)
@@ -18,6 +17,6 @@
   * ### [🏴‍☠️ Pirate Missions](Pirate-Massacre-Mission-Tracking)
   * ### [❔All Commands](AllCommands)
   * ### [👨‍🔧 System-Commands](Obscure-System-Commands)
-
+  * ### [🧐 Privacy Policy](Privacy)
 * ## [Contacts](#)
   * ### [📧 Contact Developer](Contact)   

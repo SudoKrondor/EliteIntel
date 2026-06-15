@@ -1,59 +1,69 @@
 # Elite Intel
-## AI Assistant for Elite Dangerous
+## AI Voice Assistant for Elite Dangerous
 
 ![EliteIntel app](images/app.png)
 
-This page provides an overview of Elite Intel: its capabilities, limitations, and core components.
+## Speak Naturally. Fly Better.
 
-## Overview
+Elite Intel connects your voice to your ship. No command lists to memorize, no rigid syntax to learn. Just say what you mean, and the AI handles the rest. Whether you are managing ship systems, plotting a route, or scanning a system for signals, Elite Intel understands your intent and acts on it.
 
-Elite Intel is an AI assistant for Elite Dangerous. It understands natural language and does not require memorizing command lists. It interprets intent from spoken input. Natural phrasing is accepted. Formal command syntax is not required.
+Data is sourced in real time from [Spansh](https://spansh.co.uk/) and [EDSM](https://www.edsm.net/).
 
-Clear, unambiguous phrasing produces more reliable results.
+**Supported languages:** English, Spanish, French, Ukrainian, German, Russian
 
-The full stack (Speech-to-Text, LLM, and Text-to-Speech) can run completely offline on local hardware. No cloud connection, subscription, or data transmission is required in offline mode. Components can also be mixed: local STT with a cloud LLM, or cloud TTS with local inference.
+---
 
-## Speech-to-Text (STT)
+## Intelligence, Not Just Automation
 
-STT converts microphone input into text for the AI to process. Microphone quality significantly affects recognition accuracy.
+Elite Intel does more than press keys on your behalf. The language model applies domain knowledge to give you meaningful analysis. Ask it to evaluate your current loadout and it will break down strengths, weaknesses, and trade-offs - not recite a spec sheet.
 
-The app auto-detects audio settings. Run **Recalibrate Audio** on the AI tab before the first session. This calibrates the engine to room noise and microphone characteristics.
+Session data from auto-scans and FSS results feeds directly into queries like *"What is on the scanners?"* or *"Analyze local signals."* The AI works with what the game exposes. Where data is unavailable - because it exists only on a panel and not in the journal - it will say so.
 
-**Parakeet STT**: Elite Intel includes the NVIDIA Parakeet speech recognition engine on both Windows and Linux. No additional downloads are required. Enable it by checking the **Built In Speech Recognition ☑ Use** checkbox on the Settings tab. No API keys or cloud connection are required.
+---
 
-STT accuracy is not guaranteed. Some Elite Dangerous commodity and system names are difficult for STT to recognize accurately. If recurring errors occur, add corrections to the dictionary file in the EliteIntel install directory. Format: `"grande"="grandidierite"`. Corrections are applied automatically. Share new corrections on Matrix for inclusion in the default dictionary.
+## Your Ship. Your Hardware. Your Rules.
 
-Once converted to text, the AI classifies input as a command, query, or conversation. For example, "lower the landing gear" triggers the corresponding key binding. Vague input such as "prepare for landing" may result in a verbal acknowledgment without action. The AI interprets intent. Clear phrasing produces more reliable results.
+Elite Intel runs entirely on your machine. The full pipeline (speech recognition, language model, and voice synthesis) operates offline. No cloud account, no subscription, no data leaving your system.
 
-## Text-to-Speech (TTS)
+Prefer a hybrid setup? Mix and match freely: local speech recognition with a cloud language model, or cloud voice synthesis with local inference. The choice is yours.
 
-Two TTS options are available:
+---
 
-**Google TTS (cloud)**: 14 voices to choose from, full personality and profile support. Requires a Google Cloud API key and internet connection.
+## Speech Recognition That Actually Works
 
-**Kokoro TTS (built-in, offline)**: Runs locally with no setup, no extra downloads, and no external service. It supports the full voice and personality system. Enable it via the **☑ Use** checkbox on the Settings tab.
+Elite Intel uses the **NVIDIA Parakeet** transducer model for speech-to-text - the same class of technology used in professional transcription tools. It runs on both Windows and Linux with no additional setup or training required.
 
-Short commands such as "deploy hardpoints" typically produce a brief acknowledgment and immediate action. Detailed queries such as "What is the security status of our next jump?" return a full response, provided a system is targeted in the nav panel.
+If you have used voice recognition software with Elite Dangerous before, expect a noticeable difference in accuracy.
 
-## Large Language Model (LLM)
+---
 
-The LLM provides reasoning, intent interpretation, and response generation. It can run locally via Ollama (free, offline) or through a cloud provider such as Mistral (Free with hourly limit) or Paid such as xAI, Gemini, OpenAI, or Anthropic.
+## A Voice That Fits the Cockpit
 
-The LLM does more than trigger key bindings. It applies domain knowledge to provide analysis. For example, asking to analyze the ship's loadout returns a breakdown of strengths and weaknesses. These assessments are informational and based on general knowledge.
+**Kokoro TTS** is built in and works out of the box. No downloads, no API keys, no configuration. It provides 53 voices across English, Spanish, and French, and supports the full personality system.
 
-Queries such as "Analyze local signals" or "What is on the scanners?" draw from in-app session data including auto-scans and FSS results. Not all in-game information is accessible. If data is visible on in-game panels but not present in journal files or EDSM, the AI will report "No data available." Elite Intel complies with the game's Terms of Service and does not read in-game memory. Some information visible to the player may not be accessible to the AI.
+For all other supported languages, **Google TTS** delivers natural-sounding speech in every language Elite Intel supports. An API key is required and can be configured under Settings / Cloud Services.
 
-## User Interface
+---
 
-The interface is minimal. It contains fields for API keys (required for cloud services only), buttons to start and stop services, and no other configuration panels. All other interaction occurs through voice.
 
-Elite Intel does not fly the ship autonomously. Maintain direct control over critical systems: speed, heading, FTL, countermeasures, and weapons. Network latency, STT errors, unsupported commands, or software bugs may cause unexpected behavior.
+## Choose Your LLM
+
+Elite Intel works with the language model that suits your setup:
+
+**Free and offline** - [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/) running a local model  
+**Free cloud** - [Mistral](https://console.mistral.ai/home)  
+**Paid cloud** - Anthropic, OpenAI, xAI, Gemini, DeepSeek
+
+Switch providers at any time in settings. No reinstallation required.
+
+---
 
 ## Community
 
-To report bugs, suggest features, or share feedback: the project community is active on Matrix. Bug reports and pull requests are welcome. Contributions improve the experience for all users.
+Elite Intel is open source. Bug reports, feature requests, and pull requests are welcome.
 
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
+Join the community on Matrix: 👉 [**#krondor:matrix.org**](https://matrix.to/#/#krondor:matrix.org) 👈
 
-----
-Experiment with queries and commands to discover available capabilities. Maintain manual control of critical ship systems at all times.
+---
+
+*Maintain manual control of critical ship systems at all times.*

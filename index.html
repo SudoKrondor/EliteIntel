@@ -9,7 +9,7 @@
 </head>
 <body>
 
-  <!-- ── Top bar ── -->
+  <!-- -- Top bar -- -->
   <header class="site-header">
     <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -21,13 +21,13 @@
     </nav>
   </header>
 
-  <!-- ── Overlay (mobile) ── -->
+  <!-- -- Overlay (mobile) -- -->
   <div class="sidebar-overlay" id="overlay"></div>
 
-  <!-- ── Layout ── -->
+  <!-- -- Layout -- -->
   <div class="layout">
 
-    <!-- ── Sidebar ── -->
+    <!-- -- Sidebar -- -->
     <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
       <nav class="wiki-nav">
 
@@ -65,7 +65,7 @@
       </nav>
     </aside>
 
-    <!-- ── Main content ── -->
+    <!-- -- Main content -- -->
     <main class="content" id="content" role="main">
       <div class="content-inner markdown-body" id="content-inner">
         <div class="loading">Loading…</div>
@@ -89,7 +89,7 @@
 
     marked.use({ gfm: true, breaks: false });
 
-    /* ── routing ── */
+    /* -- routing -- */
     function pageFromHash() {
       const h = decodeURIComponent(location.hash.slice(1));
       return h || DEFAULT_PAGE;
@@ -168,7 +168,7 @@
       return str.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
     }
 
-    /* ── sidebar toggle (mobile) ── */
+    /* -- sidebar toggle (mobile) -- */
     const hamburger = document.getElementById('hamburger');
     const sidebar   = document.getElementById('sidebar');
     const overlay   = document.getElementById('overlay');
@@ -199,7 +199,7 @@
       });
     });
 
-    /* ── hash routing ── */
+    /* -- hash routing -- */
     window.addEventListener('hashchange', () => loadPage(pageFromHash()));
     loadPage(pageFromHash());
 
