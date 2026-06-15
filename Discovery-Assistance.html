@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Discovery Assistance — EliteIntel</title>
-    <meta name="description" content="This guide describes the discovery and exploration features in Elite Intel (EI). The sections below cover undiscovered system detection, surface exploration, ex">
+    <meta name="description" content="This guide describes the discovery and exploration features in EliteIntel.">
     <link rel="canonical" href="https://www.elite-intel.org/Discovery-Assistance.html">
     <meta property="og:title" content="Discovery Assistance — EliteIntel">
-    <meta property="og:description" content="This guide describes the discovery and exploration features in Elite Intel (EI). The sections below cover undiscovered system detection, surface exploration, ex">
+    <meta property="og:description" content="This guide describes the discovery and exploration features in EliteIntel.">
     <meta property="og:url" content="https://www.elite-intel.org/Discovery-Assistance.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
@@ -53,11 +53,11 @@
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
-            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the galaxy</a>
-            <a href="Discovery-Assistance.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Discovery-Assistance.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery & ExoBiology</a>
             <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
             <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
-            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands</a>
+            <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands & Queries</a>
             <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
 
             <div class="nav-section">Community</div>
@@ -72,43 +72,93 @@
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
 <h1>Discovery Assistance</h1>
-<p>This guide describes the discovery and exploration features in Elite Intel (EI). The sections below cover undiscovered system detection, surface exploration, exobiology navigation, coordinate routing, and system-wide tracking.</p>
+<p>This guide describes the discovery and exploration features in EliteIntel. 
+The sections below cover undiscovered system detection, surface exploration, exobiology navigation,
+coordinate routing, and system-wide tracking.</p>
 <h2>Exploring the Unknown</h2>
+<p>Ask the app to <code>enable discovery announcements</code>. Same as always speak naturally, but be precise about what 
+you mean. </p>
 <p>When entering an undiscovered system:</p>
 <ul>
-<li><strong>Undiscovered Systems</strong>: Upon exiting hyperspace, EliteIntel checks whether the system has been previously discovered. If it is uncharted and discovery announcements are enabled, EliteIntel announces the discovery.</li>
-<li><strong>Toggle Announcements</strong>: Say &quot;Discovery announcements ON&quot; or &quot;Discovery announcements OFF&quot; to control automated exploration announcements.</li>
-<li><strong>FSS Scanning</strong>: Fly a safe distance from the parent star. Say &quot;Open FSS and give us a good scan.&quot; Commands containing &quot;FSS&quot; and &quot;Scan&quot; activate the Filtered Spectrum Scanner. Use the FSS to locate planets, moons, and signals.</li>
-<li><strong>Post-Scan Analysis</strong>: After identifying all bodies in the system, EliteIntel analyzes the data. Ask &quot;Which planets have bio signals?&quot; or &quot;Any geological sites?&quot; EliteIntel summarizes the most significant worlds. For example, it may report a planet with seven bio species and another with six, enabling prioritization.</li>
+<li><strong>Undiscovered Systems</strong>: Upon exiting hyperspace, EliteIntel checks whether the system has been previously 
+discovered. If it is uncharted and discovery announcements are enabled, EliteIntel announces the new discovery.</li>
+<li><strong>Honk</strong> If auto-honk is enabled, your ship will perform the preliminary frequency sweep on exit from hyperspace. </li>
+<li><strong>FSS Scanning</strong>: Fly a safe distance from the parent star. Say <code>Open FSS</code> or <code>Scan the sytem</code> or something to 
+that effect and FSS screen will be opened for you. Perform your scans as usual. The app will announce if you find 
+something worth finding such as high-value worlds, or bio/geo signals. </li>
+<li><strong>Post-Scan Analysis</strong>: After identifying all bodies in the system, EliteIntel can analyze the data on your request. <ul>
+<li>Ask <code>Which planets have bio signals?</code> or <code>Any geological sites?</code> or <code>Is planet X landable</code>. Note for planet 
+names you can skip the star name prefix. For example <code>StarName-23</code> has a planet <code>StarName-23-2b</code> you can just ask 
+<code>is bravo two landable?</code>. </li>
+<li>If there are bio signals present, you can ask the app to perform prelimenary biome 
+analysis <code>analyze biome for this star system</code>. the app will attempt to guess what exo-bio might be present based 
+on what we know about the organisms and their preferred habitats. This is an educated guess and not a gospel, so do a 
+detailed scan of the planet and perform surface scans for the exo-bio colonies if you fancy.</li>
+</ul>
+</li>
 </ul>
 <h2>Surface Exploration</h2>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/C9IcRAqY6ww" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
 
-
+<h2>Exobiology Navigation</h2>
+<p>When collecting bio samples in challenging terrain, EliteIntel tracks tagged samples and guides you between them.</p>
+<ol>
+<li><strong>Tag Samples</strong>: Fly low and slow over the terrain to locate bio colonies. Approach each colony and scan it with
+the Composition Analyzer to create a Codex Entry. Remain close to the sample when scanning. This logs the ship&#39;s
+coordinates in EliteIntel and may earn a credit reward. Tag all visible species before landing.</li>
+<li><strong>Land</strong>: Find a landing spot within 2 km of the samples if possible. If no suitable spot is available within
+that range, EliteIntel will guide you via SRV.</li>
+<li><strong>Navigate to Samples</strong>: Say <code>Navigate to nearest codex entry</code> or <code>Navigate to next bio sample.</code> EliteIntel
+routes you to the nearest tagged location. After scanning a species (for example, Frutexa), EliteIntel records
+the type. Subsequent navigation requests prioritize that species if additional tags of the same type exist.</li>
+<li><strong>Continue</strong>: Repeat until all scans are complete. EliteIntel provides continuous voice guidance during extended
+SRV traversal.</li>
+</ol>
+<p><strong>Note</strong>: EliteIntel uses coordinates from Codex tags. Remaining close to the sample during scanning improves
+coordinate accuracy. More tags provide more navigation options.</p>
 <p>When a planet with bio signals is identified, EliteIntel provides surface exploration support:</p>
 <ul>
-<li><strong>Detailed Surface Scan</strong>: After a detailed surface scan, EliteIntel gathers data including gravity, temperature, and available genera.</li>
-<li><strong>Spotting and Scanning</strong>: Fly low over the surface. Locate biological specimens such as Fungoida or Frutexa, which may be found in terrain such as mountain ranges. Scan a specimen from the ship to create a Codex entry and potentially earn a credit reward. EliteIntel records the coordinates for that genus and variant.</li>
-<li><strong>SRV Navigation</strong>: Find a landing spot near the scan points. Enter the SRV and say &quot;Navigate to the nearest bio sample.&quot; EliteIntel selects the nearest tagged sample and provides bearing and distance. It provides spoken directions to within close range of the sample.</li>
-<li><strong>Smart Codex Management</strong>: Scan a sample with the bio scanner. EliteIntel removes the corresponding Codex entry for that genus within the colony range. Tag colonies far apart to avoid clearing multiple entries with a single scan. EliteIntel reports the minimum distance to the next sample and estimates the Vista Genomics payout for a complete set of three.</li>
-<li><strong>Persistence Across Sessions</strong>: Progress is preserved between sessions. EliteIntel retains collected samples, remaining targets, and coordinates even after leaving the system. Exploration progress is saved until manually reset or the system&#39;s data collection is completed.</li>
+<li><strong>Detailed Surface Scan</strong>: After a detailed surface scan, EliteIntel gathers data including gravity, temperature, 
+and available genera.</li>
+<li><strong>Spotting and Scanning</strong>: Fly low over the surface. Locate biological specimens such as Fungoida or Frutexa, 
+which may be found in terrain such as mountain ranges. Scan a specimen from the ship to create a Codex entry and 
+potentially earn a credit reward. EliteIntel records the coordinates for that genus and variant.</li>
+<li><strong>SRV Navigation</strong>: Find a landing spot near the scan points. Enter the SRV and say <code>Navigate to the nearest bio  sample.</code> EliteIntel selects the nearest tagged sample and provides bearing and distance. It provides spoken 
+directions to within close range of the sample.</li>
+<li><strong>Smart Codex Management</strong>: Scan a sample with the bio scanner. EliteIntel removes the corresponding Codex entry 
+for that genus within the colony range. Tag colonies far apart to avoid clearing multiple entries with a single 
+scan. EliteIntel reports the minimum distance to the next sample and estimates the Vista Genomics payout for a 
+complete set of three.</li>
+<li><strong>Persistence Across Sessions</strong>: Progress is preserved between sessions. EliteIntel retains collected samples, 
+remaining targets, and coordinates even after leaving the system. Exploration progress is saved until manually 
+reset or the system&#39;s data collection is completed.</li>
 </ul>
 <h2>Returning to Finish the Job</h2>
 <p>If you have left a planet or the star system, progress is retained and can be resumed at any time.</p>
 <ul>
-<li><strong>Orbital Navigation</strong>: As you approach the planet, request navigation from EliteIntel. It guides you from orbit to the Glide Zone, approximately 300 to 400 km from the target coordinates. EliteIntel provides bearing and distance to the Glide Zone threshold, not the surface target. Instrument flight is required for approaches on the dark side of a planet.</li>
-<li><strong>Glide Assistance</strong>: Upon reaching the Glide Zone, EliteIntel prompts you to initiate glide and suggests a safe descent angle. The maximum safe angle is -35 degrees. If repositioning is needed for a safe glide angle, EliteIntel advises accordingly. After gliding, EliteIntel guides you to within 1 km of the target for landing.</li>
+<li><strong>Orbital Navigation</strong>: As you approach the planet, request navigation from EliteIntel. It guides you from orbit 
+to the Glide Zone, approximately 300 to 400 km from the target coordinates. EliteIntel provides bearing and 
+distance to the Glide Zone threshold, not the surface target. Instrument flight is required for approaches on the 
+dark side of a planet.</li>
+<li><strong>Glide Assistance</strong>: Upon reaching the Glide Zone, EliteIntel prompts you to initiate glide and suggests a safe 
+descent angle. The maximum safe angle is -35 degrees. If repositioning is needed for a safe glide angle, 
+EliteIntel advises accordingly. After gliding, EliteIntel guides you to within 1 km of the target for landing.</li>
 <li><strong>Surface Navigation</strong>: In the SRV, EliteIntel guides you to within 25 meters of the target coordinates.</li>
 </ul>
 <h2>Navigating by Coordinates</h2>
-<p>To navigate to specific coordinates, say &quot;Navigate to 23.456 latitude and -43.87 longitude.&quot; EliteIntel activates navigation from orbital cruise or from the surface.</p>
+<p>To navigate to specific coordinates, say <code>Navigate to 23.456 latitude and -43.87 longitude.</code> EliteIntel activates 
+navigation from orbital cruise or from the surface.</p>
 <h2>System-Wide Insights</h2>
 <p>EliteIntel provides system-wide tracking and analysis:</p>
 <ul>
-<li><strong>Sample Tracking</strong>: Ask &quot;What bio samples have we collected?&quot; EliteIntel reports collected samples, remaining targets, and locations by planet. This data persists across system re-entries.</li>
-<li><strong>Profit Estimates</strong>: Ask &quot;What is the potential profit from this system?&quot; EliteIntel estimates earnings based on available scan data.</li>
-<li><strong>EDSM Integration</strong>: For discovered systems, EliteIntel queries EDSM for available data. If data is found, you can query EliteIntel about system details.</li>
-<li><strong>Route Analysis</strong>: EliteIntel can analyze a planned route, reporting the number of jumps remaining, scoopable stars, and actual travel distance versus straight-line distance.</li>
+<li><strong>Sample Tracking</strong>: Ask <code>What bio samples have we collected?</code> EliteIntel reports collected samples, remaining 
+targets, and locations by planet. This data persists across system re-entries.</li>
+<li><strong>Profit Estimates</strong>: Ask <code>What is the potential profit from this system?</code> EliteIntel estimates earnings based 
+on available scan data.</li>
+<li><strong>EDSM Integration</strong>: For discovered systems, EliteIntel queries EDSM for available data. If data is found, you 
+can query EliteIntel about system details.</li>
+<li><strong>Route Analysis</strong>: EliteIntel can analyze a planned route, reporting the number of jumps remaining, scoopable 
+stars, and actual travel distance versus straight-line distance.</li>
 </ul>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>

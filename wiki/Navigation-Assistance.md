@@ -30,17 +30,6 @@ EliteIntel provides voice-guided navigation to specific coordinates on a planet 
 4. **Surface Navigation**: After landing, EliteIntel guides you to within 1,000 meters of the target and prompts you to find a landing spot. From that point, EliteIntel continues directing you in the SRV or on foot until you are within 50 meters of the target.
 5. **Cancel Navigation**: Say "Cancel navigation" at any time to stop. Natural phrasing is accepted.
 
-## Exobiology Navigation
-
-When collecting bio samples in difficult terrain, EliteIntel tracks tagged samples and guides you between them.
-
-1. **Tag Samples**: Fly low and slow over the terrain to locate bio colonies. Approach each colony and scan it with the Composition Analyzer to create a Codex Entry. Remain close to the sample when scanning. This logs the ship's coordinates in EliteIntel and may earn a credit reward. Tag all visible species before landing.
-2. **Land**: Find a landing spot within 2 km of the samples if possible. If no suitable spot is available within that range, EliteIntel will guide you via SRV.
-3. **Navigate to Samples**: Say "Navigate to nearest codex entry" or "Navigate to next bio sample." EliteIntel routes you to the nearest tagged location. After scanning a species (for example, Frutexa), EliteIntel records the type. Subsequent navigation requests prioritize that species if additional tags of the same type exist.
-4. **Continue**: Repeat until all scans are complete. EliteIntel provides continuous voice guidance during extended SRV traversal.
-
-**Note**: EliteIntel uses coordinates from Codex tags. Remaining close to the sample during scanning improves coordinate accuracy. More tags provide more navigation options.
-
 ## Usage Notes
 
 - **Natural Language**: Formal command syntax is not required. Natural speech is accepted.
