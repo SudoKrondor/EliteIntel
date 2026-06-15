@@ -1,8 +1,8 @@
 # Elite Intel: AI Assistant for Elite Dangerous
 
-This page provides an overview of Elite Intel: its capabilities, limitations, and core components.
-
 ![EliteIntel app](images/app.png)
+
+This page provides an overview of Elite Intel: its capabilities, limitations, and core components.
 
 ## Overview
 
