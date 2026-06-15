@@ -493,9 +493,34 @@ public class AppTheme {
     /**
      * Creates the standard HUD input border used by text fields and combo boxes.
      */
+    /**
+     * Outer field line that follows the component's enabled state: warm {@code HUD_ORANGE_SOFT}
+     * when enabled, dimmed {@code HUD_DISABLED} when disabled (§0.6). Shared by all HUD fields and
+     * combo boxes so the disabled look is consistent app-wide.
+     */
+    private static Border hudFieldLine() {
+        return new javax.swing.border.AbstractBorder() {
+            @Override public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
+                g.setColor(c.isEnabled() ? HUD_ORANGE_SOFT : HUD_DISABLED);
+                for (int i = 0; i < HUD_BORDER_THICKNESS; i++) {
+                    g.drawRect(x + i, y + i, width - 1 - 2 * i, height - 1 - 2 * i);
+                }
+            }
+            @Override public Insets getBorderInsets(Component c) {
+                int t = HUD_BORDER_THICKNESS;
+                return new Insets(t, t, t, t);
+            }
+            @Override public Insets getBorderInsets(Component c, Insets insets) {
+                int t = HUD_BORDER_THICKNESS;
+                insets.set(t, t, t, t);
+                return insets;
+            }
+        };
+    }
+
     public static Border hudFieldBorder() {
         return BorderFactory.createCompoundBorder(
-                new LineBorder(HUD_ORANGE_SOFT, HUD_BORDER_THICKNESS, false),
+                hudFieldLine(),
                 new EmptyBorder(HUD_FIELD_INSET_V, HUD_FIELD_INSET_H,
                         HUD_FIELD_INSET_V, HUD_FIELD_INSET_H)
         );
@@ -508,7 +533,7 @@ public class AppTheme {
      */
     public static Border hudFieldBorderWithInfo() {
         return BorderFactory.createCompoundBorder(
-                new LineBorder(HUD_ORANGE_SOFT, HUD_BORDER_THICKNESS, false),
+                hudFieldLine(),
                 new EmptyBorder(HUD_FIELD_INSET_V, HUD_FIELD_INSET_H,
                         HUD_FIELD_INSET_V, HUD_FIELD_INSET_H + HUD_SEP_W + HUD_TABLE_ROW_HEIGHT_COMPACT)
         );
@@ -557,6 +582,7 @@ public class AppTheme {
         }
         tc.setBackground(HUD_TABLE_ROW);
         tc.setForeground(FG);
+        tc.setDisabledTextColor(HUD_DISABLED); // §0.6: disabled text dims to the warm muted tone
         tc.setCaretColor(ACCENT);
         tc.setSelectionColor(ACCENT);
         tc.setSelectedTextColor(SEL_FG);
@@ -1163,8 +1189,9 @@ public class AppTheme {
             ep.setForeground(Color.BLACK);
         }
 
-        // TopStatusBar owns all colours of its children — do not recurse into it.
-        if (c instanceof Container cont && !(c instanceof TopStatusBar)) {
+        // TopStatusBar and HudBanner own all colours of their children — do not recurse into them
+        // (HudBanner's inner label/JTextArea must keep its banner styling, not get the field border).
+        if (c instanceof Container cont && !(c instanceof TopStatusBar) && !(c instanceof HudBanner)) {
             for (Component child : cont.getComponents()) {
                 applyDarkPalette(child);
             }
@@ -1226,7 +1253,14 @@ public class AppTheme {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        JLabel label = new JLabel(text.toUpperCase());
+        // Dim-aware field label: follows its enabled state (§0.6) so a disabled row's
+        // label greys out together with its field, centrally for every form.
+        JLabel label = new JLabel(text.toUpperCase()) {
+            @Override public void setEnabled(boolean enabled) {
+                super.setEnabled(enabled);
+                setForeground(enabled ? FG_MUTED : HUD_DISABLED);
+            }
+        };
         label.setForeground(FG_MUTED);
         label.setFont(label.getFont().deriveFont(HUD_FONT_SM));
         label.setPreferredSize(new Dimension(220, HUD_TABLE_ROW_HEIGHT_COMPACT));

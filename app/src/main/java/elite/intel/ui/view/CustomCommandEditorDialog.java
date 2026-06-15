@@ -99,9 +99,7 @@ final class CustomCommandEditorDialog extends JDialog {
         leftColumn.add(identitySection, BorderLayout.NORTH);
         leftColumn.add(paramsPanel(), BorderLayout.CENTER);
 
-        JPanel columns = AppTheme.transparentPanel(new GridLayout(1, 2, AppTheme.HUD_GAP, 0));
-        columns.add(leftColumn);
-        columns.add(stepsPanel());
+        JPanel columns = new HudTwoColumns(leftColumn, stepsPanel());
 
         // errors block: lives in body SOUTH (was in bottomPanel CENTER before migration)
         errorsArea.setEditable(false);

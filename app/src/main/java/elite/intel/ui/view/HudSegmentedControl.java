@@ -85,7 +85,7 @@ public class HudSegmentedControl extends JComponent {
 
     @Override
     public Dimension getPreferredSize() {
-        Font f = getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
+        Font f = baseFont();
         FontMetrics fm = getFontMetrics(f);
         int maxLabel = 0;
         for (String label : labels) {
@@ -116,7 +116,7 @@ public class HudSegmentedControl extends JComponent {
             g2.setColor(AppTheme.HUD_BG);
             g2.fillRect(0, 0, w, h);
 
-            Font f = getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
+            Font f = baseFont();
             g2.setFont(f);
             FontMetrics fm = g2.getFontMetrics();
             int baseline = (h - fm.getHeight()) / 2 + fm.getAscent();
@@ -230,5 +230,17 @@ public class HudSegmentedControl extends JComponent {
 
     private int clamp(int index) {
         return Math.max(0, Math.min(labels.length - 1, index));
+    }
+
+    /**
+     * Bold checkbox-role font, null-safe: as a bare {@link JComponent} this control has no UI,
+     * so {@link #getFont()} can be null before it is added to a hierarchy (e.g. when a layout
+     * helper queries {@link #getPreferredSize()} at build time).
+     */
+    private Font baseFont() {
+        Font f = getFont();
+        if (f == null) f = UIManager.getFont("Label.font");
+        if (f == null) f = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
+        return f.deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
     }
 }
