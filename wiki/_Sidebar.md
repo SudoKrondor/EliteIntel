@@ -1,5 +1,6 @@
 * ## [App](#)
-  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Installation](Installation-and-Configuration)
+  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Installation](Installation)
+  * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Configuration](UI-and-Configuration-Options)
   * ### <img src="images/settings.png" class="inline" height="20" alt="Settings"> [Configuration](UI-and-Configuration-Options)
 * ## [wiki](#)
   * ### [Choose your LLM player](installing-local-llms)

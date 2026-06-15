@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Installation and Configuration — EliteIntel</title>
-    <meta name="description" content="This guide covers installation and initial configuration for Elite Intel on Windows and Linux.">
-    <link rel="canonical" href="https://www.elite-intel.org/Installation-and-Configuration.html">
-    <meta property="og:title" content="Installation and Configuration — EliteIntel">
-    <meta property="og:description" content="This guide covers installation and initial configuration for Elite Intel on Windows and Linux.">
-    <meta property="og:url" content="https://www.elite-intel.org/Installation-and-Configuration.html">
+    <title>UI and Configuration Options — EliteIntel</title>
+    <meta name="description" content="- Commander Name: Use this field to override your in-game name for Text-to-Speech.">
+    <link rel="canonical" href="https://www.elite-intel.org/Options.html">
+    <meta property="og:title" content="UI and Configuration Options — EliteIntel">
+    <meta property="og:description" content="- Commander Name: Use this field to override your in-game name for Text-to-Speech.">
+    <meta property="og:url" content="https://www.elite-intel.org/Options.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -37,8 +37,9 @@
             <a href="index.html" class="nav-link"><img src="images/elite-logo.png" class="inline" height="20" alt=""> Home</a>
 
             <div class="nav-section">App</div>
-            <a href="Installation-and-Configuration.html" class="nav-link active"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
-            <a href="UI-and-Configuration-Options.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+            <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="Configuration.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+            <a href="Options.html" class="nav-link active"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Options</a>
 
             <div class="nav-section">Wiki</div>
             <a href="installing-local-llms.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Choose your LLM</a>
@@ -69,60 +70,57 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<p>This guide covers installation and initial configuration for Elite Intel on Windows and Linux.</p>
-<h2><img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
-<ol>
-<li>Download the <a href="https://github.com/stone-alex/EliteIntel/releases">👉<strong>installer</strong>👈</a>.</li>
-<li>Run the installer and follow the on-screen prompts.<ul>
-<li><strong>Parakeet STT</strong> (local speech recognition) and <strong>Kokoro TTS</strong> (local text-to-speech) are both included. No additional steps or services are required.</li>
+<h1>UI and Configuration Options</h1>
+<h3>AI Tab <img src="images/ai.png" class="inline" height="20" alt="AI"></h3>
+<p>This is the main/default tab.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><img src="images/tab-ai-buttons.png" alt="tab-ai-buttons.png"></td>
+<td>- <strong>Start / Stop Services</strong>: Toggles the AI stack on/off.<br/>- <strong>Wake/Sleep</strong>: In wake mode app listens all the time, in Sleep mode app will ignore input unless PTT button pressed,  &quot;Listen&quot; bypass word is used or &quot;Wake up!&quot; command issued.<br/>- <strong>OBS Overlay</strong>: Displays a black overlay window with Commander / AI interraction. Add to OBS, key-off black background<br/>- <strong>Audio Devices</strong>: Select audio device for input/output- <strong>Calibrate Audio</strong>: Run Audio Calibration for better performance.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Player Tab <img src="images/controller.png" class="inline" height="20" alt="Player"></h3>
+<p><img src="images/tab-player.png" alt="playertab"></p>
+<ul>
+<li><strong>Commander Name</strong>: Use this field to override your in-game name for Text-to-Speech.</li>
+<li><strong>Ship Options</strong>: You can toggle these automations on and off. Useful for commanders with disabilities</li>
+<li><strong>Fleet Management</strong>: Assign voices, personalities, and cadence to individual ships. Personality only works with cloud LLMs. The gear icon opens up ship&#39;s proeperties such as auto-honk and trade profile&quot;</li>
 </ul>
-</li>
-<li>Set up an LLM. Two options are available:<ul>
-<li><strong>Local LLM</strong> (free, offline): See the <a href="installing-local-llms.html"><strong>Local LLM guide</strong></a>. Requires capable GPU hardware.</li>
-<li><strong>Cloud LLM</strong> (easier to set up): See the <a href="UI-and-Configuration-Options.html"><strong>Configure the app</strong></a> guide for API key setup.</li>
+<p><img src="images/popup-ship-properties.png" alt="popup-ship-properties.png"></p>
+<ul>
+<li><strong>Honk System On Entry</strong>: Select fire group and trigger. If this option is checked the ship will perform discovery scan on entry. If your HUD is in Combat mode, it will swap to Analysis, perform the scan and swap back.</li>
+<li><strong>Customize your trade profile</strong>: These parameters can be set on the user interface, or via voise commands: &quot;alter/change trade profile set [parameter] to [value]&quot;</li>
 </ul>
-</li>
-</ol>
 <hr>
-<h2><img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux</h2>
-<h3>Installation (any desktop distro - no sudo required)</h3>
-<ol>
-<li>Download the installer script:</li>
-</ol>
-<pre><code class="language-shell">curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-</code></pre>
-<ol start="2">
-<li>Make the script executable and run it:</li>
-</ol>
-<pre><code class="language-shell">chmod +x installer.sh
-./installer.sh
-</code></pre>
-<p>The app installs to <code>~/.var/app/elite.intel.app</code>.
-Both <strong>Parakeet STT</strong> and <strong>Kokoro TTS</strong> are bundled with the app. No additional installation is needed. Enable them in the app via the <strong>Settings tab ☑ Use</strong> checkboxes.</p>
-<ol start="3">
-<li>Set up an LLM. Two options are available:<ul>
-<li><strong>Local LLM</strong> (free, offline): See the <a href="installing-local-llms.html"><strong>Local LLM guide</strong></a>. Requires capable GPU hardware.</li>
-<li><strong>Cloud LLM</strong> (easier to set up): See the <a href="UI-and-Configuration-Options.html"><strong>Configure the app</strong></a> guide for API key setup.</li>
+<h3>Actions Tab <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"></h3>
+<p><img src="images/tab-actions.png" alt="tab-actions.png"></p>
+<p><strong>Actions / Bindings</strong> tab has three sections. Bindings, Built-in Commands and Custom commands.</p>
+<ul>
+<li><strong>Bindings</strong> directory is where you game bindigs file located. Without it the app can&#39;t operate in game controls</li>
+<li><strong>Profile</strong> is your current in-game bindings profile.</li>
+<li><strong>File</strong> is the file that contains the bindings you are currently using</li>
 </ul>
-</li>
-</ol>
-<p>Setup complete. See <a href="UI-and-Configuration-Options.html"><strong>Configure the app</strong></a> for next steps.</p>
+<p>You can modify your bindigs using this screen and save it as a new profile.</p>
+<p><strong>NOTE- HOTAS/CONTROLLERS are displayed but cannot be set through this screen. Keboard binds only (subject to change in the future)</strong></p>
+<p><strong>Actions / Built-In Commands</strong></p>
+<p><img src="images/tab-action-build-in-commands.png" alt="tab-action-build-in-commands.png"></p>
+<p>Provides a list of built-in commands. Double-clicking on one will show a dialog box with information about the command and allow you to propose a better translation for localization.</p>
+<p><strong>Custom Commands</strong></p>
+<p><img src="images/tab-actions-custom-commands.png" alt="acttions cuystom commands"></p>
+<p>This screen allows you to define a custom action that app will execute on your command.</p>
 <hr>
-<h3>Uninstall</h3>
-<p>Use the <code>-d</code> flag to remove the app. The installer will prompt before deleting configuration and API key data.</p>
-<pre><code class="language-shell">bash installer.sh -d
-</code></pre>
-<hr>
-<h2>First Run Checklist</h2>
-<p>Locate the Elite Intel icon in your desktop environment. It may appear under Games or Utilities depending on your DE.</p>
-<p>Once installed and configured, complete the following before the first session:</p>
-<ol>
-<li>Start the app and open the <strong>Player tab</strong>. Set the Journal and Bindings directory path. The app requires these to process game data. Restart services after setting the paths.</li>
-<li>Start Services.</li>
-<li>Run <strong>Recalibrate Audio</strong>. This calibrates the engine to room noise and microphone characteristics. Recalibrate whenever hardware changes. The oscilloscope on the Settings/Audio tab turns green while speaking and red when silent.</li>
-</ol>
-<hr>
-<p>For issues, report on Matrix. Bug reports and pull requests are welcome.</p>
+<p>For issues, contact via Matrix. Bug reports and pull requests are welcome.</p>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>

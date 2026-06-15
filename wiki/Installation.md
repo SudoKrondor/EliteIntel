@@ -43,17 +43,6 @@ Use the `-d` flag to remove the app. The installer will prompt before deleting c
 bash installer.sh -d
 ```
 
----
-
-## First Run Checklist
-
-Locate the Elite Intel icon in your desktop environment. It may appear under Games or Utilities depending on your DE.
-
-Once installed and configured, complete the following before the first session:
-1. Start the app and open the **Player tab**. Set the Journal and Bindings directory path. The app requires these to process game data. Restart services after setting the paths.
-2. Start Services.
-3. Run **Recalibrate Audio**. This calibrates the engine to room noise and microphone characteristics. Recalibrate whenever hardware changes. The oscilloscope on the Settings/Audio tab turns green while speaking and red when silent.
-
 ----
 For issues, report on Matrix. Bug reports and pull requests are welcome.
 

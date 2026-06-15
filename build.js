@@ -155,8 +155,9 @@ function buildSidebar(activePage) {
             ${navLink('Home',                            img('elite-logo.png','')    + ' Home')}
 
             <div class="nav-section">App</div>
-            ${navLink('Installation-and-Configuration',  img('release.png','')       + ' Installation')}
-            ${navLink('UI-and-Configuration-Options',    img('settings.png','')      + ' Configuration')}
+            ${navLink('Installation',  img('release.png','')       + ' Installation')}
+            ${navLink('Configuration',    img('settings.png','')      + ' Configuration')}
+            ${navLink('Options',    img('microchip-ai.png','')      + ' Options')}
 
             <div class="nav-section">Wiki</div>
             ${navLink('installing-local-llms',           img('microchip-ai.png','')  + ' Choose your LLM')}

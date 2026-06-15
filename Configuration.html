@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UI and Configuration Options — EliteIntel</title>
-    <meta name="description" content="- Commander Name: Use this field to override your in-game name for Text-to-Speech.">
-    <link rel="canonical" href="https://www.elite-intel.org/UI-and-Configuration-Options.html">
-    <meta property="og:title" content="UI and Configuration Options — EliteIntel">
-    <meta property="og:description" content="- Commander Name: Use this field to override your in-game name for Text-to-Speech.">
-    <meta property="og:url" content="https://www.elite-intel.org/UI-and-Configuration-Options.html">
+    <title>No local hardware? Use a cloud LLM. — EliteIntel</title>
+    <meta name="description" content="- Set the address of your inference server. Defaults to `localhost` with the Ollama URL.">
+    <link rel="canonical" href="https://www.elite-intel.org/Configuration.html">
+    <meta property="og:title" content="No local hardware? Use a cloud LLM. — EliteIntel">
+    <meta property="og:description" content="- Set the address of your inference server. Defaults to `localhost` with the Ollama URL.">
+    <meta property="og:url" content="https://www.elite-intel.org/Configuration.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -38,7 +38,7 @@
 
             <div class="nav-section">App</div>
             <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
-            <a href="Configuration.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+            <a href="Configuration.html" class="nav-link active"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
             <a href="Options.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Options</a>
 
             <div class="nav-section">Wiki</div>
@@ -70,53 +70,6 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>UI and Configuration Options</h1>
-<h3>AI Tab <img src="images/ai.png" class="inline" height="20" alt="AI"></h3>
-<p>This is the main/default tab.</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody><tr>
-<td><img src="images/tab-ai-buttons.png" alt="tab-ai-buttons.png"></td>
-<td>- <strong>Start / Stop Services</strong>: Toggles the AI stack on/off.<br/>- <strong>Wake/Sleep</strong>: In wake mode app listens all the time, in Sleep mode app will ignore input unless PTT button pressed,  &quot;Listen&quot; bypass word is used or &quot;Wake up!&quot; command issued.<br/>- <strong>OBS Overlay</strong>: Displays a black overlay window with Commander / AI interraction. Add to OBS, key-off black background<br/>- <strong>Audio Devices</strong>: Select audio device for input/output- <strong>Calibrate Audio</strong>: Run Audio Calibration for better performance.</td>
-</tr>
-<tr>
-<td></td>
-<td></td>
-</tr>
-</tbody></table>
-<hr>
-<h3>Player Tab <img src="images/controller.png" class="inline" height="20" alt="Player"></h3>
-<p><img src="images/tab-player.png" alt="playertab"></p>
-<ul>
-<li><strong>Commander Name</strong>: Use this field to override your in-game name for Text-to-Speech.</li>
-<li><strong>Ship Options</strong>: You can toggle these automations on and off. Useful for commanders with disabilities </li>
-<li><strong>Fleet Management</strong>: Assign voices, personalities, and cadence to individual ships. Personality only works with cloud LLMs. The gear icon opens up ship&#39;s proeperties such as auto-honk and trade profile&quot;</li>
-</ul>
-<p><img src="images/popup-ship-properties.png" alt="popup-ship-properties.png"></p>
-<ul>
-<li><strong>Honk System On Entry</strong>: Select fire group and trigger. If this option is checked the ship will perform discovery scan on entry. If your HUD is in Combat mode, it will swap to Analysis, perform the scan and swap back.</li>
-<li><strong>Customize your trade profile</strong>: These parameters can be set on the user interface, or via voise commands: &quot;alter/change trade profile set [parameter] to [value]&quot;</li>
-</ul>
-<hr>
-<h3>Actions Tab <img src="images/keys-binding.png" class="inline" height="20" alt="Actions"></h3>
-<p><img src="images/tab-actions.png" alt="tab-actions.png"></p>
-<p><strong>Actions / Bindings</strong> tab has three sections. Bindings, Built-in Commands and Custom commands.</p>
-<ul>
-<li><strong>Bindings</strong> directory is where you game bindigs file located. Without it the app can&#39;t operate in game controls</li>
-<li><strong>Profile</strong> is your current in-game bindings profile.</li>
-<li><strong>File</strong> is the file that contains the bindings you are currently using</li>
-</ul>
-<p>You can modify your bindigs using this screen and save it as a new profile.</p>
-<p><strong>NOTE- HOTAS/CONTROLLERS are displayed but cannot be set through this screen. Keboard binds only (subject to change in the future)</strong></p>
-<p><strong>Actions / Built-In Commands</strong></p>
-<p><img src="images/tab-action-build-in-commands.png" alt="tab-action-build-in-commands.png"></p>
-<p>Provides a list of built-in commands. Double-clicking on one will show a dialog box with information about the command and allow you to propose a better translation for localization.</p>
-<hr>
 <h3>Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings"></h3>
 <ul>
 <li>Set the address of your inference server. Defaults to <code>localhost</code> with the Ollama URL.</li>
@@ -201,15 +154,6 @@
 <li>Paste the key into the <strong>Speech to Text</strong> and/or <strong>Text to Speech</strong> fields in the app. Check the lock boxes.</li>
 </ol>
 <hr>
-<h2>App Settings and Data Directory</h2>
-<p>App settings and data are stored in a SQLite database located at:</p>
-<ul>
-<li><strong>Linux:</strong> <code>~/.local/share/elite-intel/elite-intel/db/</code></li>
-<li><strong>Windows:</strong> <code>%APPDATA%\elite-intel\db\</code></li>
-</ul>
-<hr>
-<p>For issues, contact via Matrix. Bug reports and pull requests are welcome.</p>
-<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
         </div>
     </main>
