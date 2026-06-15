@@ -1,4 +1,8 @@
-This guide covers installation and initial configuration for Elite Intel on Windows and Linux.
+### The released version is V1.0. 
+### Version V1.0 is different from the one you see on screenshots.
+### If you want version V1.1 join the beta test team. 👉[**Join the Beta Test Team here V1.1**](https://matrix.to/#/#krondor:matrix.org)👈
+
+---
 
 ## <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
 

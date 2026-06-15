@@ -1,85 +1,61 @@
 
 ### Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings">
-- Set the address of your inference server. Defaults to `localhost` with the Ollama URL.
-- Provide the names of the models to use. See the [Local LLM guide](installing-local-llms).
-- **LLM host** radio buttons: Select between Ollama and LM Studio.
-- **Use checkbox**: Enable to use the local model instead of the cloud.
+
+![tab-settings-ai-services.png](images/tab-settings-ai-services.png)
+
+**Language**
+- Select your language. Supported languages are English, Spanish, French, German, Ukrainian and Russian.
+
+**Conversation Mode (on/off)**
+- "Conversation Mode" allows you to have a chat with LLM. When off (default) the LLM runs in strict command mode. It will only parse commands and perform queries and actions, but will ignore all non sensical input.
+
+**Journal Directory**
+- Location of your game journal directory. This is how Elite Intel knows your game session.
 
 ---
 
+### LLM Options
+**Local LLM**
+
+- Choose an inference engine host. Ollama or LMStudio (faster option)
+- In the ADDRESS field, enter the address of your inference server. Either local host if you run it on the same machine or an IP address of the computer on your local area network. Provide port number, and URI for the API endpoint
+- Enter the name of the model in the Command Model field. This will be the model used for user input classification
+- Enter the name of the model in the Query Model field. This will be the model usd for queries and natural language response
+- NOTE: You can use the same model for both. Especially if you do not have hardware to run more than one model
+
+**Cloud LLM**
+
+If you do not have hardware to run a local LLM you can use a cloud instance instead.
+
+- [**Mistral Console**](https://console.mistral.ai/home) has a **free tear** and easy to setup
+- Alternatively, you can use Claude, Gemini, Grok (xAi), Open AI or DeepSeek. Login to the api console of your LLM provider of choise and create an API key.
+- Enter the key in to the API key field, lock the field and click "use" to let the app know you are using a cloud LLM. 
+- Restart the services on the front tab for the changes to take effect.
+
+**NOTE** 👉 [See more on cloud LLMs here](cloud-llm-options) 👈
+
+---
+
+
 ### Settings / Audio <img src="images/mic.png" class="inline" height="20" alt="Audio">
+
+Configure your audio settings
+
+![tab-settings-audio.png](images/tab-settings-audio.png)
+
+**Microphone** and **Speakers** drop downs let you select the audio in and out lines. The change will take effect when you restart the services on the front tab.
+
 - **Speech Volume**: Controls the volume of speech synthesis.
 - **TTS Voice Speed**: Controls the speed of speech synthesis.
 - **Beep Volume**: Controls the volume of the beep indicator. Indicates that STT has finished processing and the LLM has received input.
 - **STT Threads**: Sets the thread allocation for STT processing. This is a min/max setting. The app requests the minimum but uses what the processor provides. Threads are released after processing completes.
-- **Use Local Text To Speech**: Overrides the cloud TTS key and uses local TTS.
-- **Audio Wave Visualizer**: Displays a dynamic graph of the audio input. Shows the noise floor, audio signal, gate zones, and clipping if present.
 
-
-### Settings / Cloud LLM Tab <img src="images/cloud.png" class="inline" height="20" alt="Cloud">
-- **Cloud LLM Key**: Enter your API key. Supported providers: Gemini, OpenAI, Grok, Mistral, Deepseek, and Anthropic/Claude.
-- **Cloud TTS Key**: Enter your API key. Supported provider: Google.
-- **Note**: Uncheck the "Use" checkbox in Local LLM. It overrides the cloud LLM key.
+- **Microphone Monitor** 
+- FLOOR level (the noise level when you are not speaking), 
+- GATE level, indicates the audio gate level. When audio is above the gate, the data is sent to for to Parakeet for transcription. When audio drops below the gate level the audio received is transcribed to text and sent to LLM for classification
+- CLIP indicates you are melting the mic if your input goes above that line. If it does the transcription will be inaccurate.
 
 
 ---
-
-**LLM (AI Brain)**
-
-*Cloud option:* Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:
-- **Mistral**: 'mistral-small-2506' (Free with hourly limit)
-- **xAI**: `grok-4-1-fast-non-reasoning`
-- **OpenAI**: `gpt-4.1-mini` (commands) / `gpt-5.2` (queries)
-- **Gemini Generative Language API**: `gemini-3.1-flash-lite-preview` for commands and queries
-- **Anthropic/Claude**
-
-*Local option:* Leave the key blank, fill in the local LLM fields below, and check **☑ Use** next to the local LLM. See [Local LLM guide (Linux)](Install-Ollama-Local-LLM-Linux) / [Local LLM guide (Windows)](Install-Ollama-Local-LLM-Windows).
-- **LLM Address**: defaults to `localhost`. Replace with the IP of another PC if Ollama runs on a separate machine.
-- **Command LLM**: handles voice command interpretation.
-- **Query LLM**: handles data analysis. `tulu3:8b` is the minimum. Larger models produce better results.
-
----
-
-# No local hardware? Use a cloud LLM.
-
-Cost will be different depending on which Cloud service you choose, and how long you play.
-
-### FREE CLOUD Option: Mistral
-1. Go to [Mistral Console](https://console.mistral.ai/home)
-2. Create account with a valid email you can verify.
-3. NO CREDIT CARD NECESSARY
-4. Create a "Organisation" (Call it whatever you want. For example "Elite Intel")
-5. Generate an API key. Enter that key in to the app and restart the app.
-
-
-### Option A: xAI API Key
-1. Go to the [xAI Console](https://console.x.ai/).
-2. Sign up or log in.
-3. Navigate to the API section and generate a new API key.
-4. Add credits to your account.
-5. Paste the key into the **LLM** field and check the lock box.
-
-### Option B: OpenAI API Key
-1. Go to the [OpenAI Platform](https://platform.openai.com/).
-2. Sign up or log in.
-3. Navigate to the API section and generate a new API key.
-4. Paste the key into the **LLM** field and check the lock box.
-
-### Option C: Anthropic/Claude API Key
-1. Go to the [Claude Platform](https://platform.claude.com).
-2. Sign in with email or Google. Note: authentication uses a magic link sent to your email.
-3. Go to **Settings → Billing** and add credits before creating a key. A key created on an unfunded account does not function even if credits are added afterward.
-4. Go to **API Keys** and create a key.
-5. Paste it into the **LLM** field, check the lock box, and start or restart services on the AI tab.
-
-### Getting a Google TTS Key (14 voices)
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Sign in or create an account.
-3. Create a new project.
-4. Enable the **Generative Language API** for LLM and/or **Cloud Text-to-Speech API** for TTS.
-5. Go to **Credentials**, create an API key, and copy it.
-6. **Restrict the key**: Click the key you just created. On the key detail page, click **Restrict key**. A dropdown appears. Check each API you enabled (STT and/or TTS), then click **Save**.
-7. Paste the key into the **Speech to Text** and/or **Text to Speech** fields in the app. Check the lock boxes.
 
 ---

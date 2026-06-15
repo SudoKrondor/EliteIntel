@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuration — EliteIntel</title>
-    <meta name="description" content="- Select your language. Supported languages are English, Spanish, French, German, Ukrainian and Russian.">
-    <link rel="canonical" href="https://www.elite-intel.org/Configuration.html">
-    <meta property="og:title" content="Configuration — EliteIntel">
-    <meta property="og:description" content="- Select your language. Supported languages are English, Spanish, French, German, Ukrainian and Russian.">
-    <meta property="og:url" content="https://www.elite-intel.org/Configuration.html">
+    <title>No local hardware? Use a cloud LLM. — EliteIntel</title>
+    <meta name="description" content="Cloud option: Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:">
+    <link rel="canonical" href="https://www.elite-intel.org/cloud-llm-options.html">
+    <meta property="og:title" content="No local hardware? Use a cloud LLM. — EliteIntel">
+    <meta property="og:description" content="Cloud option: Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:">
+    <meta property="og:url" content="https://www.elite-intel.org/cloud-llm-options.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -38,7 +38,7 @@
 
             <div class="nav-section">App</div>
             <a href="Installation.html" class="nav-link"><img src="images/release.png" class="inline" height="20" alt=""> Installation</a>
-            <a href="Configuration.html" class="nav-link active"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
+            <a href="Configuration.html" class="nav-link"><img src="images/settings.png" class="inline" height="20" alt=""> Configuration</a>
             <a href="Options.html" class="nav-link"><img src="images/microchip-ai.png" class="inline" height="20" alt=""> Options</a>
 
             <div class="nav-section">Wiki</div>
@@ -70,64 +70,59 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h3>Settings / Local LLM Tab <img src="images/settings.png" class="inline" height="20" alt="Settings"></h3>
-<p><img src="images/tab-settings-ai-services.png" alt="tab-settings-ai-services.png"></p>
-<p><strong>Language</strong></p>
+<h1>No local hardware? Use a cloud LLM.</h1>
+<p><strong>LLM (AI Brain)</strong></p>
+<p><em>Cloud option:</em> Enter your API key for Mistral, xAI, OpenAI, or Anthropic/Claude. The app uses a fixed model per provider:</p>
 <ul>
-<li>Select your language. Supported languages are English, Spanish, French, German, Ukrainian and Russian.</li>
+<li><strong>Mistral</strong>: &#39;mistral-small-2506&#39; <strong>(Free Tear)</strong></li>
+<li><strong>xAI</strong>: <code>grok-4-1-fast-non-reasoning</code></li>
+<li><strong>OpenAI</strong>: <code>gpt-4.1-mini</code> (commands) / <code>gpt-5.2</code> (queries)</li>
+<li><strong>Gemini Generative Language API</strong>: <code>gemini-3.1-flash-lite-preview</code> for commands and queries</li>
+<li><strong>Anthropic/Claude</strong></li>
+<li><strong>DeepSeek</strong></li>
 </ul>
-<p><strong>Conversation Mode (on/off)</strong></p>
-<ul>
-<li>&quot;Conversation Mode&quot; allows you to have a chat with LLM. When off (default) the LLM runs in strict command mode. It will only parse commands and perform queries and actions, but will ignore all non sensical input.</li>
-</ul>
-<p><strong>Journal Directory</strong></p>
-<ul>
-<li>Location of your game journal directory. This is how Elite Intel knows your game session.</li>
-</ul>
-<hr>
-<h3>LLM Options</h3>
-<p><strong>Local LLM</strong></p>
-<ul>
-<li>Choose an inference engine host. Ollama or LMStudio (faster option)</li>
-<li>In the ADDRESS field, enter the address of your inference server. Either local host if you run it on the same machine or an IP address of the computer on your local area network. Provide port number, and URI for the API endpoint</li>
-<li>Enter the name of the model in the Command Model field. This will be the model used for user input classification</li>
-<li>Enter the name of the model in the Query Model field. This will be the model usd for queries and natural language response</li>
-<li>NOTE: You can use the same model for both. Especially if you do not have hardware to run more than one model</li>
-</ul>
-<p><strong>Cloud LLM</strong></p>
-<p>If you do not have hardware to run a local LLM you can use a cloud instance instead.</p>
-<ul>
-<li><a href="https://console.mistral.ai/home"><strong>Mistral Console</strong></a> has a <strong>free tear</strong> and easy to setup</li>
-<li>Alternatively, you can use Claude, Gemini, Grok (xAi), Open AI or DeepSeek. Login to the api console of your LLM provider of choise and create an API key.</li>
-<li>Enter the key in to the API key field, lock the field and click &quot;use&quot; to let the app know you are using a cloud LLM. </li>
-<li>Restart the services on the front tab for the changes to take effect.</li>
-</ul>
-<p><strong>NOTE</strong> 👉 <a href="cloud-llm-options.html">See more on cloud LLMs here</a> 👈</p>
-<hr>
-<h3>Settings / Audio <img src="images/mic.png" class="inline" height="20" alt="Audio"></h3>
-<p>Configure your audio settings</p>
-<p><img src="images/tab-settings-audio.png" alt="tab-settings-audio.png"></p>
-<p><strong>Microphone</strong> and <strong>Speakers</strong> drop downs let you select the audio in and out lines. The change will take effect when you restart the services on the front tab.</p>
-<ul>
-<li><p><strong>Speech Volume</strong>: Controls the volume of speech synthesis.</p>
-</li>
-<li><p><strong>TTS Voice Speed</strong>: Controls the speed of speech synthesis.</p>
-</li>
-<li><p><strong>Beep Volume</strong>: Controls the volume of the beep indicator. Indicates that STT has finished processing and the LLM has received input.</p>
-</li>
-<li><p><strong>STT Threads</strong>: Sets the thread allocation for STT processing. This is a min/max setting. The app requests the minimum but uses what the processor provides. Threads are released after processing completes.</p>
-</li>
-<li><p><strong>Microphone Monitor</strong> </p>
-</li>
-<li><p>FLOOR level (the noise level when you are not speaking), </p>
-</li>
-<li><p>GATE level, indicates the audio gate level. When audio is above the gate, the data is sent to for to Parakeet for transcription. When audio drops below the gate level the audio received is transcribed to text and sent to LLM for classification</p>
-</li>
-<li><p>CLIP indicates you are melting the mic if your input goes above that line. If it does the transcription will be inaccurate.</p>
-</li>
-</ul>
-<hr>
-<hr>
+<p>Cost will be different depending on which Cloud service you choose, and how long you play.</p>
+<h3>FREE CLOUD Option: Mistral</h3>
+<ol>
+<li>Go to <a href="https://console.mistral.ai/home">Mistral Console</a></li>
+<li>Create account with a valid email you can verify.</li>
+<li>NO CREDIT CARD NECESSARY</li>
+<li>Create a &quot;Organisation&quot; (Call it whatever you want. For example &quot;Elite Intel&quot;)</li>
+<li>Generate an API key. Enter that key in to the app and restart the app.</li>
+</ol>
+<h3>Option A: xAI API Key</h3>
+<ol>
+<li>Go to the <a href="https://console.x.ai/">xAI Console</a>.</li>
+<li>Sign up or log in.</li>
+<li>Navigate to the API section and generate a new API key.</li>
+<li>Add credits to your account.</li>
+<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+</ol>
+<h3>Option B: OpenAI API Key</h3>
+<ol>
+<li>Go to the <a href="https://platform.openai.com/">OpenAI Platform</a>.</li>
+<li>Sign up or log in.</li>
+<li>Navigate to the API section and generate a new API key.</li>
+<li>Paste the key into the <strong>LLM</strong> field and check the lock box.</li>
+</ol>
+<h3>Option C: Anthropic/Claude API Key</h3>
+<ol>
+<li>Go to the <a href="https://platform.claude.com">Claude Platform</a>.</li>
+<li>Sign in with email or Google. Note: authentication uses a magic link sent to your email.</li>
+<li>Go to <strong>Settings → Billing</strong> and add credits before creating a key. A key created on an unfunded account does not function even if credits are added afterward.</li>
+<li>Go to <strong>API Keys</strong> and create a key.</li>
+<li>Paste it into the <strong>LLM</strong> field, check the lock box, and start or restart services on the AI tab.</li>
+</ol>
+<h3>Getting a Google TTS Key (14 voices)</h3>
+<ol>
+<li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
+<li>Sign in or create an account.</li>
+<li>Create a new project.</li>
+<li>Enable the <strong>Generative Language API</strong> for LLM and/or <strong>Cloud Text-to-Speech API</strong> for TTS.</li>
+<li>Go to <strong>Credentials</strong>, create an API key, and copy it.</li>
+<li><strong>Restrict the key</strong>: Click the key you just created. On the key detail page, click <strong>Restrict key</strong>. A dropdown appears. Check each API you enabled (STT and/or TTS), then click <strong>Save</strong>.</li>
+<li>Paste the key into the <strong>Speech to Text</strong> and/or <strong>Text to Speech</strong> fields in the app. Check the lock boxes.</li>
+</ol>
 
         </div>
     </main>
