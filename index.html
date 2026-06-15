@@ -1,139 +1,209 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EliteIntel</title>
-    <link rel="stylesheet" href="css/main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EliteIntel — AI Companion for Elite Dangerous</title>
+  <meta name="description" content="EliteIntel is an AI-powered voice assistant for Elite Dangerous. Natural language commands, offline-capable, fully open-source.">
+  <link rel="stylesheet" href="css/main.css">
 </head>
-<body class="body-style">
-<h1 class="title">EliteIntel</h1>
-<div style="text-align: center;">
-    <img src="images/app.png">
-</div>
-<hr/>
+<body>
 
-<article class="markdown-body entry-content container-lg" itemprop="text"><div class="markdown-heading" dir="auto"><h1 tabindex="-1" class="heading-element" dir="auto">Elite Intel</h1><a id="user-content-elite-intel" class="anchor" aria-label="Permalink: Elite Intel" href="#elite-intel"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">V1.0 English only - require English game.</h2><a id="user-content-v10-english-only---require-english-game" class="anchor" aria-label="Permalink: V1.0 English only - require English game." href="#v10-english-only---require-english-game"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">V1.1 Multi lingual in the active development.</h2><a id="user-content-v11-multi-lingual-in-the-active-development" class="anchor" aria-label="Permalink: V1.1 Multi lingual in the active development." href="#v11-multi-lingual-in-the-active-development"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">⚙️ <a href="https://github.com/SudoKrondor/EliteIntel/wiki/Installation-and-Configuration">INSTALL</a> | 🎓 <a href="https://github.com/SudoKrondor/EliteIntel/wiki"><strong>WIKI</strong></a> | 💻<a href="https://github.com/SudoKrondor/EliteIntel/blob/master/TECHNICAL.md">TECH STUFF</a></h3><a id="user-content-️-install---wiki--tech-stuff" class="anchor" aria-label="Permalink: ⚙️ INSTALL | 🎓 WIKI | 💻TECH STUFF" href="#️-install---wiki--tech-stuff"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <hr>
-    <p dir="auto">Can be ran 100% off-line or with various cloud services</p>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Windows 🪟</h3><a id="user-content-windows-" class="anchor" aria-label="Permalink: Windows 🪟" href="#windows-"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <ol dir="auto">
-        <li>Download the <a href="https://github.com/SudoKrondor/EliteIntel/releases">👉<strong>installer</strong>👈</a>.</li>
-        <li>Run the installer and follow the on-screen prompts.</li>
-    </ol>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Linux 🐧</h3><a id="user-content-linux-" class="anchor" aria-label="Permalink: Linux 🐧" href="#linux-"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
+  <!-- ── Top bar ── -->
+  <header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="#Home">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+      <a class="btn-primary" href="https://github.com/stone-alex/EliteIntel/releases" target="_blank" rel="noopener">Download</a>
+      <a class="btn-ghost" href="https://github.com/stone-alex/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </header>
 
-    <ul dir="auto">
-        <li>Do not use zip file from the artifacts. That is for updates.</li>
-        <li>NO sudo required!</li>
-    </ul>
-    <ol dir="auto">
-        <li>Download the installer script:</li>
-    </ol>
-    <div class="highlight highlight-source-shell notranslate position-relative overflow-auto" dir="auto"><pre>curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh</pre><div class="zeroclipboard-container">
-        <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn btn-invisible js-clipboard-copy m-2 p-0 d-flex flex-justify-center flex-items-center" data-copy-feedback="Copied!" data-tooltip-direction="w" value="curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh" tabindex="0" role="button">
-            <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
-                <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-            </svg>
-            <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none">
-                <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
-            </svg>
-        </clipboard-copy>
-    </div></div>
-    <ol start="2" dir="auto">
-        <li>Make the script executable and run it:</li>
-    </ol>
-    <div class="highlight highlight-source-shell notranslate position-relative overflow-auto" dir="auto"><pre>chmod +x installer.sh
-./installer.sh</pre><div class="zeroclipboard-container">
-        <clipboard-copy aria-label="Copy code to clipboard" class="ClipboardButton btn btn-invisible js-clipboard-copy m-2 p-0 d-flex flex-justify-center flex-items-center" data-copy-feedback="Copied!" data-tooltip-direction="w" value="chmod +x installer.sh
-./installer.sh" tabindex="0" role="button">
-            <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-copy js-clipboard-copy-icon">
-                <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path>
-            </svg>
-            <svg aria-hidden="true" data-component="Octicon" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-check js-clipboard-check-icon color-fg-success d-none">
-                <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path>
-            </svg>
-        </clipboard-copy>
-    </div></div>
-    <p dir="auto">The app installs to <code>~/.var/app/elite.intel.app</code>.
-        Setup complete. Look for shortcut under games or utilities called Elite Intel.</p>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">👉<a href="https://console.mistral.ai/home" rel="nofollow">Free cloud if you don't have hardware for local LLM</a>👈</h3><a id="user-content-free-cloud-if-you-dont-have-hardware-for-local-llm" class="anchor" aria-label="Permalink: 👉Free cloud if you don't have hardware for local LLM👈" href="#free-cloud-if-you-dont-have-hardware-for-local-llm"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <ul dir="auto">
-        <li>You may experience some occasional timeouts or lag, but for the most part it is fine.</li>
-    </ul>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Paid cloud services</h3><a id="user-content-paid-cloud-services" class="anchor" aria-label="Permalink: Paid cloud services" href="#paid-cloud-services"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <ul dir="auto">
-        <li>Claude | claude-haiku-4-5</li>
-        <li>Grok | grok-4-1-fast-non-reasoning</li>
-        <li>Open AI | gpt-5.2</li>
-        <li>Google Gemini | gemini-3.1-flash-lite</li>
-        <li>Deepseek | deepseek-v4-flash</li>
-    </ul>
-    <p dir="auto">The cost will very depending on which one you choose.</p>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Local LLM</h3><a id="user-content-local-llm" class="anchor" aria-label="Permalink: Local LLM" href="#local-llm"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <ul dir="auto">
-        <li><strong>LMStudio (Local off-line Model matrixportalx/tulu-3.1-8b-supernova)</strong></li>
-        <li><strong>Ollama (Local off-line Model matrixportalx/tulu-3.1-8b-supernova)</strong></li>
-    </ul>
-    <p dir="auto"><a href="https://github.com/SudoKrondor/EliteIntel/wiki/Why-Tulu3.1-supernova">Why tulu-3.1-8b Supernova specifically</a></p>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Minimum requirements for <strong>running the game and the Local LLM on the same GPU</strong></h3><a id="user-content-minimum-requirements-for-running-the-game-and-the-local-llm-on-the-same-gpu" class="anchor" aria-label="Permalink: Minimum requirements for running the game and the Local LLM on the same GPU" href="#minimum-requirements-for-running-the-game-and-the-local-llm-on-the-same-gpu"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <ul dir="auto">
-        <li>
-            <p dir="auto">NVIDIA RTX 3090 <strong>24GB VRAM</strong> or equivalent.</p>
-        </li>
-        <li>
-            <p dir="auto">RTX 5090 with only <strong>12GB VRAM will not do</strong>. Not enough VRAM.</p>
-            <ul dir="auto">
-                <li>Game takes 8GB (or more)</li>
-                <li>LLM takes 6.5GB
-                    See <a href="/SudoKrondor/EliteIntel/blob/master/UI-and-Configuration-Options"><strong>Configure the app</strong></a> for next steps.</li>
-            </ul>
-        </li>
-        <li>
-            <p dir="auto">👉 Video by DawnTreader for <a href="https://www.youtube.com/watch?v=F5RgRRePrTo" rel="nofollow">Windows Users on how to setup LMStudio on Windows</a></p>
-        </li>
-        <li>
-            <p dir="auto">👉 Video by Sudo Krondor for <a href="https://www.youtube.com/watch?v=2HGFmlZGK1g" rel="nofollow">Linux Users on how to setup LMStudio on Linux</a></p>
-        </li>
-    </ul>
-    <hr>
-    <div class="markdown-heading" dir="auto"><h3 tabindex="-1" class="heading-element" dir="auto">Realtek users</h3><a id="user-content-realtek-users" class="anchor" aria-label="Permalink: Realtek users" href="#realtek-users"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <p dir="auto">Realtek's "enhancements" are a legitimate source of audio problems with Java's javax.sound.sampled.
-        The auto noise suppression, equalizer, and "audio enhancements" Realtek enables by default can interfere with raw
-        PCM capture because they process the audio stream at the driver level before Java ever sees it.
-        That could and often does manifest as degraded STT quality or audio cutting out.</p>
-    <hr>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">Overview</h2><a id="user-content-overview" class="anchor" aria-label="Permalink: Overview" href="#overview"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <p dir="auto"><strong>✅ The off-line TTS. (Linux and Windows)</strong>
-        Powered by Kokoro. built-in / included.</p>
-    <p dir="auto"><strong>✅ The off-line STT. (Linux and Windows)</strong>
-        Powered by NVIDIA Parakeet. built-in / included.</p>
-    <p dir="auto"><strong>✅ Local off-line private LLM</strong>
-        <a href="https://github.com/SudoKrondor/EliteIntel/wiki/installing-local-llms">Installing local LLM</a></p>
-    <p dir="auto">Elite Intel is your AI-powered, sidekick for <em>Elite Dangerous</em>.
-        It's a Quality of Life (QoL) app that enhances gameplay with voice-activated commands
-        <strong>uttered in natural language</strong>,</p>
-    <p dir="auto">real-time journal parsing, and smart AI assistance-all while staying fully compliant
-        with Frontier Developments' Terms of Service. No AFK play, and no unfair advantages;
-        everything requires your input.</p>
-    <p dir="auto">The app uses Speech-to-Text (STT) and Text-to-Speech (TTS) for <strong>natural voice interactions</strong>,
-        and LLM for handling commands, queries, and chats. It processes game data from journal
-        and auxiliary files, pulls in info from EDSM when needed, and keeps things responsive.</p>
-    <hr>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">Contributing</h2><a id="user-content-contributing" class="anchor" aria-label="Permalink: Contributing" href="#contributing"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <p dir="auto">Fork it and submit pull requests! Keep things modular and event-driven, and test your changes. For dev
-        details, check out <code>DEVELOPERS.md</code> in the root. It covers the architecture (decoupled, multithreaded, event registry via
-        reflection) and principles like DRY and SRP. All PRs go through review.</p>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">License</h2><a id="user-content-license" class="anchor" aria-label="Permalink: License" href="#license"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <p dir="auto">The project is open-source under a <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="nofollow">Creative Commons license CC BY-NC-SA 4.0</a>,
-        so feel free to check out the code and contribute. (see <a href="/SudoKrondor/EliteIntel/blob/master/DEVELOPERS.md">DEVELOPERS.md</a> for details)</p>
-    <div class="markdown-heading" dir="auto"><h2 tabindex="-1" class="heading-element" dir="auto">Contact Developer / Join the Community</h2><a id="user-content-contact-developer--join-the-community" class="anchor" aria-label="Permalink: Contact Developer / Join the Community" href="#contact-developer--join-the-community"><svg data-component="Octicon" class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="m7.775 3.275 1.25-1.25a3.5 3.5 0 1 1 4.95 4.95l-2.5 2.5a3.5 3.5 0 0 1-4.95 0 .751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018 1.998 1.998 0 0 0 2.83 0l2.5-2.5a2.002 2.002 0 0 0-2.83-2.83l-1.25 1.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042Zm-4.69 9.64a1.998 1.998 0 0 0 2.83 0l1.25-1.25a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042l-1.25 1.25a3.5 3.5 0 1 1-4.95-4.95l2.5-2.5a3.5 3.5 0 0 1 4.95 0 .751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018 1.998 1.998 0 0 0-2.83 0l-2.5 2.5a1.998 1.998 0 0 0 0 2.83Z"></path></svg></a></div>
-    <p dir="auto">If you run into issues, hit us up on GitHub issues or Feedback and bug reports are super welcome!
-        To get in touch: 👉<a href="https://matrix.to/#/#krondor:matrix.org" rel="nofollow"><strong>Matrix</strong></a>👈</p>
-</article>
+  <!-- ── Overlay (mobile) ── -->
+  <div class="sidebar-overlay" id="overlay"></div>
 
+  <!-- ── Layout ── -->
+  <div class="layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+      <nav class="wiki-nav">
+
+        <a href="#Home" class="nav-link" data-page="Home">🏠 Home</a>
+
+        <div class="nav-section">About</div>
+        <a href="#Installation-and-Configuration" class="nav-link" data-page="Installation-and-Configuration">🛠️ Installation</a>
+        <a href="#UI-and-Configuration-Options" class="nav-link" data-page="UI-and-Configuration-Options">⚙️ Configuration</a>
+        <a href="#installing-local-llms" class="nav-link" data-page="installing-local-llms">🤖 Choose your LLM</a>
+        <a href="#Install-Ollama-Local-LLM-Linux" class="nav-link nav-sub" data-page="Install-Ollama-Local-LLM-Linux">🆓 Ollama — Linux</a>
+        <a href="#Install-Ollama-Local-LLM-Windows" class="nav-link nav-sub" data-page="Install-Ollama-Local-LLM-Windows">🆓 Ollama — Windows</a>
+        <a href="#Install-LM-Studio-Linux" class="nav-link nav-sub" data-page="Install-LM-Studio-Linux">🆓 LM Studio — Linux</a>
+        <a href="#Install-LM-Studio-Windows" class="nav-link nav-sub" data-page="Install-LM-Studio-Windows">🆓 LM Studio — Windows</a>
+        <a href="#AMD-RX-7800XT-LLM-Setup" class="nav-link nav-sub" data-page="AMD-RX-7800XT-LLM-Setup">🆓 AMD RX Series</a>
+        <a href="#Privacy" class="nav-link" data-page="Privacy">🔒 Privacy Policy</a>
+
+        <div class="nav-section">Manual</div>
+        <a href="#General-Operation" class="nav-link" data-page="General-Operation">👤 General Operation</a>
+        <a href="#Customizing-your-AI" class="nav-link" data-page="Customizing-your-AI">🎨 Customize your AI</a>
+        <a href="#Discovery-Assistance" class="nav-link" data-page="Discovery-Assistance">🌠 Discovery</a>
+        <a href="#TradeRoutePlotting" class="nav-link" data-page="TradeRoutePlotting">💰 Trade &amp; Profit</a>
+        <a href="#Commodity-Searching" class="nav-link" data-page="Commodity-Searching">📦 Commodity Search</a>
+        <a href="#Navigation-Assistance" class="nav-link" data-page="Navigation-Assistance">🧭 Navigation</a>
+        <a href="#Pirate-Massacre-Mission-Tracking" class="nav-link" data-page="Pirate-Massacre-Mission-Tracking">🏴‍☠️ Pirate Missions</a>
+        <a href="#AllCommands" class="nav-link" data-page="AllCommands">📋 All Commands</a>
+        <a href="#Obscure-System-Commands" class="nav-link" data-page="Obscure-System-Commands">🔧 System Commands</a>
+        <a href="#Why-Tulu3.1-supernova" class="nav-link" data-page="Why-Tulu3.1-supernova">🧪 Why Tulu 3.1?</a>
+
+        <div class="nav-section">Community</div>
+        <a href="#Contact" class="nav-link" data-page="Contact">📧 Contact Developer</a>
+        <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener">💬 Matrix Chat ↗</a>
+        <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">▶ YouTube ↗</a>
+        <a href="https://github.com/stone-alex/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">⎇ GitHub ↗</a>
+
+      </nav>
+    </aside>
+
+    <!-- ── Main content ── -->
+    <main class="content" id="content" role="main">
+      <div class="content-inner markdown-body" id="content-inner">
+        <div class="loading">Loading…</div>
+      </div>
+    </main>
+
+  </div><!-- /.layout -->
+
+  <!-- marked.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@15/marked.min.js"></script>
+  <script>
+  (function () {
+
+    const WIKI_BASE = 'wiki/';
+    const DEFAULT_PAGE = 'Home';
+
+    // Inline wiki link patterns → rewrite to hash links
+    const INTERNAL_LINK_RE = /https?:\/\/github\.com\/(?:SudoKrondor|stone-alex)\/EliteIntel\/wiki\/([^\s"')]+)/g;
+    // Also handles bare relative links like [text](PageName) rendered by marked as href="PageName"
+    // We post-process the DOM instead of the raw HTML string for that.
+
+    marked.use({ gfm: true, breaks: false });
+
+    /* ── routing ── */
+    function pageFromHash() {
+      const h = decodeURIComponent(location.hash.slice(1));
+      return h || DEFAULT_PAGE;
+    }
+
+    async function loadPage(page) {
+      const inner = document.getElementById('content-inner');
+      inner.innerHTML = '<div class="loading">Loading…</div>';
+
+      // Scroll content to top
+      const contentEl = document.getElementById('content');
+      contentEl.scrollTo(0, 0);
+      window.scrollTo(0, 0);
+
+      let md;
+      try {
+        const res = await fetch(WIKI_BASE + page + '.md');
+        if (!res.ok) throw new Error(res.status);
+        md = await res.text();
+      } catch (e) {
+        inner.innerHTML = '<p class="error">Page not found: <code>' + escHtml(page) + '</code></p>';
+        return;
+      }
+
+      // Rewrite GitHub wiki absolute URLs in the markdown text before parsing
+      md = md.replace(INTERNAL_LINK_RE, (_, pageName) => '#' + pageName);
+
+      let html = marked.parse(md);
+
+      // Suppress duplicate H1 that matches the page title (same as the top heading)
+      inner.innerHTML = html;
+
+      // Rewrite remaining relative internal links (markdown rendered as bare hrefs)
+      inner.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        // Skip anchors, absolute URLs, mailto:, hash links already rewritten
+        if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:')) return;
+        // Bare page names like "installing-local-llms" or "UI-and-Configuration-Options"
+        if (!href.includes('/') && !href.includes('.') || href.match(/^[A-Za-z0-9_\-\.]+$/)) {
+          a.setAttribute('href', '#' + href);
+        }
+      });
+
+      // Add copy buttons to all <pre><code> blocks
+      inner.querySelectorAll('pre').forEach(pre => {
+        const btn = document.createElement('button');
+        btn.className = 'copy-btn';
+        btn.setAttribute('aria-label', 'Copy code');
+        btn.innerHTML = '<svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>';
+        btn.addEventListener('click', () => {
+          const code = pre.querySelector('code');
+          navigator.clipboard.writeText(code ? code.textContent : pre.textContent).then(() => {
+            btn.classList.add('copied');
+            setTimeout(() => btn.classList.remove('copied'), 1600);
+          });
+        });
+        pre.style.position = 'relative';
+        pre.appendChild(btn);
+      });
+
+      // Update page title
+      const firstH = inner.querySelector('h1, h2');
+      document.title = (firstH ? firstH.textContent.trim() + ' — ' : '') + 'EliteIntel';
+
+      // Highlight active nav link
+      setActiveNav(page);
+    }
+
+    function setActiveNav(page) {
+      document.querySelectorAll('.nav-link[data-page]').forEach(a => {
+        a.classList.toggle('active', a.dataset.page === page);
+      });
+    }
+
+    function escHtml(str) {
+      return str.replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    /* ── sidebar toggle (mobile) ── */
+    const hamburger = document.getElementById('hamburger');
+    const sidebar   = document.getElementById('sidebar');
+    const overlay   = document.getElementById('overlay');
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      overlay.classList.add('active');
+      hamburger.setAttribute('aria-expanded', 'true');
+      hamburger.classList.add('is-open');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('active');
+      hamburger.setAttribute('aria-expanded', 'false');
+      hamburger.classList.remove('is-open');
+    }
+
+    hamburger.addEventListener('click', () => {
+      sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+
+    // Close sidebar on nav link click (mobile)
+    document.querySelectorAll('.nav-link').forEach(a => {
+      a.addEventListener('click', () => {
+        if (window.innerWidth < 900) closeSidebar();
+      });
+    });
+
+    /* ── hash routing ── */
+    window.addEventListener('hashchange', () => loadPage(pageFromHash()));
+    loadPage(pageFromHash());
+
+  })();
+  </script>
 </body>
 </html>
