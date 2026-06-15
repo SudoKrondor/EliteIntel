@@ -12,7 +12,7 @@
   * ### [👤 General Operation](General-Operation)
   * ### [🛠️ Customize you AI](Customizing-your-AI)
   * ### [🌠 Discovery](Discovery-Assistance)
-  * ### [💰 Commodity Searching](Commodity-Searching)
+  * ### [💰 Commodity Searching](Search-galaxy-with-EliteIntel)
   * ### [💰 Trade and Profit](TradeRoutePlotting)
   * ### [⤵️ Navigation](Navigation-Assistance)
   * ### [🏴‍☠️ Pirate Missions](Pirate-Massacre-Mission-Tracking)

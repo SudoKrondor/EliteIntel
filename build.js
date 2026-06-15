@@ -170,7 +170,7 @@ function buildSidebar(activePage) {
             <div class="nav-section">How Do I…?</div>
             ${navLink('General-Operation',               img('manual.png','')        + ' General Operation')}
             ${navLink('TradeRoutePlotting',              img('manual.png','')        + ' Trade &amp; Profit')}
-            ${navLink('Commodity-Searching',             img('manual.png','')        + ' Commodity Search')}
+            ${navLink('Search-galaxy-with-EliteIntel',             img('manual.png','')        + ' Search the galaxy')}
             ${navLink('Discovery-Assistance',            img('manual.png','')        + ' Discovery')}
             ${navLink('Navigation-Assistance',           img('manual.png','')        + ' Navigation')}
             ${navLink('Pirate-Massacre-Mission-Tracking',img('manual.png','')        + ' Pirate Missions')}
