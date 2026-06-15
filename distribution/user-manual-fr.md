@@ -1,7 +1,7 @@
 # Guide des requêtes et commandes IA – EliteIntel (Français)
 
-Hey Commander ! Voici une référence pour les types de choses que tu peux demander ou dire à ton assistant **Elite Intel**.
-**L'idéal : tu n'as pas besoin de mémoriser tout ça** – parle naturellement, et l'appli comprend ce que tu veux dire. Cette liste existe pour que tu saches ce qui est possible, pas pour que tu récites des scripts.
+Salutations Commandant ! Voici une référence pour les types de requêtes disponibles à soumettre à votre assistant **Elite Intel**.
+**L'idéal : Vous n'avez pas besoin de mémoriser tout ça** – parler naturellement, et l'appli comprendra. Cette liste existe pour que vous sachiez ce qui est possible, pas pour récter des scripts.
 
 ## Avant tout. Des problèmes ?
 
@@ -14,7 +14,7 @@ Hey Commander ! Voici une référence pour les types de choses que tu peux deman
 
 ## Entrée audio
 
-**Calibre l'audio dans l'appli.** Si la différence entre le plancher de bruit et le RMS est trop faible (p. ex. moins de 400), l'appli aura du mal à te comprendre. Un bon ratio est au moins 800–1000. Haut-parleurs et micro ne font pas bon ménage. Casque avec micro recommandé.
+**Calibrer l'audio dans l'appli.** Si la différence entre le plancher de bruit et le RMS est trop faible (p. ex. moins de 400), l'appli aura du mal à vous comprendre. Un bon ratio est au moins 800–1000. Haut-parleurs et micro ne font pas bon ménage. Casque avec micro recommandé.
 
 ## Application
 
@@ -26,11 +26,11 @@ Hey Commander ! Voici une référence pour les types de choses que tu peux deman
 
 - Activer/désactiver les annonces de découverte : **« annonces de découverte »**
 - Où sommes-nous ? **« position actuelle »** / **« où sommes-nous »** / **« dans quel système sommes-nous »**
-- À quelle distance de la Bulle / notre porte-vaisseau / le dernier échantillon bio ? **« distance de la Bulle »** / **« distance au porte-vaisseau »** / **« distance au dernier échantillon biologique »**
+- À quelle distance de la Bulle / notre porte-vaisseaux / le dernier échantillon bio ? **« distance de la Bulle »** / **« distance au porte-vaisseaux »** / **« distance au dernier échantillon biologique »**
 - Distance d'une planète, lune ou station précise ? **« distance planète [Nom] »**
 - Quels matériaux sont disponibles sur cette planète ? **« matériaux planète »** / **« matériaux ici »**
 - Analyser le dernier scan : **« dernier scan »**
-- Quelle est l'ETA du saut du porte-vaisseau ? **« ETA porte-vaisseau »** / **« quand arrive le porte-vaisseau »**
+- Quelle est l'ETA du saut du porte-vaisseaux ? **« ETA porte-vaisseaux »** / **« quand arrive le porte-vaisseaux »**
 - Quelle heure est-il / heure UTC ? **« heure actuelle »** / **« quelle heure est-il »**
 - Analyser le biome du système stellaire : **« analyse biome »** / **« quel biome [Nom] »**
 - Quelles planètes nécessitent encore des scans bio ? **« signaux biologique traités dans le système »** / **« quelles planètes restent à scanner »**
@@ -51,20 +51,20 @@ Hey Commander ! Voici une référence pour les types de choses que tu peux deman
 - Quels organismes sont sur cette planète ? **« organiques ici »** / **« que reste-t-il à scanner »**
 - Analyse biome pour [système / planète] : **« analyse biome »** / **« quel biome [Nom] »**
 
-## Porte-vaisseau (Fleet Carrier)
+## porte-vaisseaux (Fleet Carrier)
 
-Assure-toi de mentionner « porte-vaisseau », sinon l'appli pourrait croire que tu parles de ton vaisseau !
+Assure-toi de mentionner « porte-vaisseaux », sinon l'appli pourrait croire que tu parles de ton vaisseau !
 
-- Portée / statut / carburant du porte-vaisseau : **« statut porte-vaisseau »** / **« portée de saut porte-vaisseau »**
-- Définir la réserve de carburant : **« réserve tritium du porte-vaisseau [quantité] »**
-- Où va le porte-vaisseau ? **« où va le porte-vaisseau »** / **« cap porte-vaisseau »**
-- Combien de temps avant l'arrivée du porte-vaisseau ? **« ETA porte-vaisseau »** / **« quand arrive le porte-vaisseau »**
-- Statut carburant / portée de saut : **« statut porte-vaisseau »**
-- Combien de temps peut-on opérer avec les fonds actuels ? **« combien de temps peut fonctionner le porte-vaisseau »**
-- Quelle portée avec le tritium actuel ? **« portée porte-vaisseau avec tritium actuel »**
-- Que contient la route du porte-vaisseau ? **« route porte-vaisseau »** / **« combien de sauts sur la route porte-vaisseau »**
-- Distance au porte-vaisseau : **« distance au porte-vaisseau »** / **« à quelle distance se trouve le porte-vaisseau »**
-- Porte-vaisseaux dans ce système ? **« porte-vaisseau dans le système »** / **« porte-vaisseau ici »**
+- Portée / statut / carburant du porte-vaisseaux : **« statut porte-vaisseaux »** / **« portée de saut porte-vaisseaux »**
+- Définir la réserve de carburant : **« réserve tritium du porte-vaisseaux [quantité] »**
+- Où va le porte-vaisseaux ? **« où va le porte-vaisseaux »** / **« cap porte-vaisseaux »**
+- Combien de temps avant l'arrivée du porte-vaisseaux ? **« ETA porte-vaisseaux »** / **« quand arrive le porte-vaisseaux »**
+- Statut carburant / portée de saut : **« statut porte-vaisseaux »**
+- Combien de temps peut-on opérer avec les fonds actuels ? **« combien de temps peut fonctionner le porte-vaisseaux »**
+- Quelle portée avec le tritium actuel ? **« portée porte-vaisseaux avec tritium actuel »**
+- Que contient la route du porte-vaisseaux ? **« route porte-vaisseaux »** / **« combien de sauts sur la route porte-vaisseaux »**
+- Distance au porte-vaisseaux : **« distance au porte-vaisseaux »** / **« à quelle distance se trouve le porte-vaisseaux »**
+- Porte-vaisseaux dans ce système ? **« porte-vaisseaux dans le système »** / **« porte-vaisseaux ici »**
 
 ## Vaisseau & Systèmes
 
@@ -126,12 +126,12 @@ Assure-toi de mentionner « porte-vaisseau », sinon l'appli pourrait croire que
 - Naviguer vers des coordonnées : **« navigue vers les coordonnées [Lat] [Lon] »**
 - Naviguer vers la zone d'atterrissage : **« navigue vers la zone d'atterrissage »** / **« direction la ZA »**
 - Naviguer vers le prochain bio-sample : **« navigue vers prochain échantillon biologique »**
-- Trouver le porte-vaisseau le plus proche : **« trouve le porte-vaisseau le plus proche »**
-- Naviguer vers le porte-vaisseau : **« navigue vers le porte-vaisseau »** / **« retourne au porte vaisseau »**
+- Trouver le porte-vaisseaux le plus proche : **« trouve le porte-vaisseaux le plus proche »**
+- Naviguer vers le porte-vaisseaux : **« navigue vers le porte-vaisseaux »** / **« retourne au porte vaisseau »**
 - Naviguer vers / aller à / cap sur [destination] : **« navigue vers [destination] »** / **« cap sur [destination] »** / **« va à [destination] »**
 - Prochaine étape commerciale : **« navigue vers le prochain arrêt commercial »**
-- Calculer une route pour le porte-vaisseau : **« calcule route vers porte-vaisseau »**
-- Entrer la destination du porte-vaisseau : **« entre destination porte-vaisseau »**
+- Calculer une route pour le porte-vaisseaux : **« calcule route vers porte-vaisseaux »**
+- Entrer la destination du porte-vaisseaux : **« entre destination porte-vaisseaux »**
 - Calculer une route commerciale : **« calcule route commerciale »**
 - Trouver Vista Genomics : **« trouve vista genomics le plus proche »**
 - Trouver un courtier tech humain / guardian : **« trouve courtier de technologies humaines »** / **« trouve courtier de technologies gardiennes »**
@@ -145,7 +145,7 @@ Assure-toi de mentionner « porte-vaisseau », sinon l'appli pourrait croire que
 - Définir le système de base : **« définis le système de base »**
 - Vitesse optimale : **« règle la vitesse optimale »**
 - Augmenter / Diminuer la vitesse de [X] : **« augmente la vitesse de [X] »** / **« réduis la vitesse de [X] »**
-- Réserve carburant porte-vaisseau : **« réserve tritium du porte-vaisseau [quantité] »**
+- Réserve carburant porte-vaisseaux : **« réserve tritium du porte-vaisseaux [quantité] »**
 - Sélectionner la destination FSD : **« prochaine destination du FSD »**
 - Verrouillage nav escadre : **« verrouillage navigation escadre »**
 - Naviguer depuis la mémoire : **« navigue depuis la mémoire »**
@@ -211,7 +211,7 @@ Dis **« montre »**, **« ouvre »** ou **« affiche »** suivi du nom du panne
 - Panneau inventaire : **« montre l'inventaire »**
 - Panneau stockage : **« montre le stockage »**
 - Panneau chasseur : **« montre le panneau chasseur »**
-- Gestion porte-vaisseau : **« montre gestion carrier »**
+- Gestion porte-vaisseaux : **« montre gestion carrier »**
 - Carte galactique : **« ouvre carte galactique »**
 - Carte du système : **« ouvre carte du système »**
 - Services (SRV amarré) : **« montre le panneau services »**
@@ -249,7 +249,7 @@ Les LLMs locaux répondront mais seront rigides. Les LLMs cloud (Claude, OpenAI,
 
 [Plus de commandes ici](https://github.com/SudoKrondor/EliteIntel/EliteIntel/wiki/Obscure-System-Commands)
 
-Fly Dangerous, Commander ! o7
+Fly Dangerous, Commandant ! o7
 
 ----
 Communauté 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Creative Commons License |

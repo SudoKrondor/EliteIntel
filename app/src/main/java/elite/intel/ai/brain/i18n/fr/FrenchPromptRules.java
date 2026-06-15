@@ -13,19 +13,18 @@ public class FrenchPromptRules implements PromptLanguageRules {
 
     @Override
     public String queryStarterExamples() {
-        return "quoi, où, comment, quel, quelle, quels, pourquoi, y a-t-il, combien, dis-moi";
+        return "quoi, qui, où, comment, quel, quelle, quels, quelles, pourquoi, combien, y a-t-il, que, qu'est-ce que, avons-nous, sommes-nous, dis-moi, statut, état, rapport, analyse, distance, position, niveau";
     }
 
     @Override
     public String commandVerbExamples() {
-        return "montre / ouvre / trouve / cherche / active / désactive / navigue / trace / déploie / rentre / allume / éteins / mode / monte /relève /entre /sors";
+        return "montre / ouvre / trouve / cherche / active / désactive / navigue / trace / déploie / rentre / replie / allume / éteins / monte / relève / entre / sors /configure";
     }
 
     @Override
     public String queryPhraseExamples() {
-        return "où / quoi / combien / y a-t-il / quel / quelle / quelle station / quel système";
+        return "quel est le statut / combien de sauts / quelle distance / quel cap / y a-t-il des signaux / que transportons-nous / sommes-nous arrivés / quelle station /rapport";
     }
-
 
     @Override
     public String disambiguationHints() {
