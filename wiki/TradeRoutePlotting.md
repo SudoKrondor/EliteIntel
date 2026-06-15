@@ -4,6 +4,9 @@ Elite Intel calculates trade routes and guides cargo operations leg by leg. Say 
 
 ### How Trade Route Calculation Works
 
+[[youtube:lQU5wnCS0rQ]]
+
+
 1. **Cargo capacity is required.**
    If the current ship has no cargo capacity, the app will prompt you to switch to a ship with at least one cargo rack.
 

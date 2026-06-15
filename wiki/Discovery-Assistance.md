@@ -13,6 +13,9 @@ When entering an undiscovered system:
 
 ## Surface Exploration
 
+[[youtube:C9IcRAqY6ww]]
+
+
 When a planet with bio signals is identified, EliteIntel provides surface exploration support:
 
 - **Detailed Surface Scan**: After a detailed surface scan, EliteIntel gathers data including gravity, temperature, and available genera.
@@ -28,9 +31,6 @@ If you have left a planet or the star system, progress is retained and can be re
 - **Orbital Navigation**: As you approach the planet, request navigation from EliteIntel. It guides you from orbit to the Glide Zone, approximately 300 to 400 km from the target coordinates. EliteIntel provides bearing and distance to the Glide Zone threshold, not the surface target. Instrument flight is required for approaches on the dark side of a planet.
 - **Glide Assistance**: Upon reaching the Glide Zone, EliteIntel prompts you to initiate glide and suggests a safe descent angle. The maximum safe angle is -35 degrees. If repositioning is needed for a safe glide angle, EliteIntel advises accordingly. After gliding, EliteIntel guides you to within 1 km of the target for landing.
 - **Surface Navigation**: In the SRV, EliteIntel guides you to within 25 meters of the target coordinates.
-
-
-[[youtube:C9IcRAqY6ww]]
 
 ## Navigating by Coordinates
 

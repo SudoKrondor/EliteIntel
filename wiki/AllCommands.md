@@ -4,18 +4,7 @@ Hey Commander! This is a reference for the kinds of things you can ask or tell y
 **Ideally - You don't need to memorize any of these** - just speak naturally, and the app figures out what you mean. This
 list exists so you know what's possible, not so you can recite scripts.
 
-## First thing first. Having trouble?
-
-- If app is firing random commands for no reason: brain problem (LLM is weak or configuration is wonky)
-- If app is firing commands, but they do not activate: hands problem (Key bindings)
-- If app can't hear you well: ears problem (noisy room low noise-to-rms ratio, audio not calibrated etc)
-- If app does not speak: mouth problem. Audio connection is not routed properly or routed to an audio end point that you are not monitoring check audio routing at OS level.
-
-## Audio Input
-
-**Calibrate the audio in the app**. If the difference between Noise Floor and RMS is too low (e.g. less than 400) the
-app will have hard time understanding you. A good ratio is at least 800-1000. Speakers and mic do not go together.
-Headphones and mic are recommended.
+---
 
 ## App
 
