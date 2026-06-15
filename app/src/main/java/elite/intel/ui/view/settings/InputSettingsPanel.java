@@ -14,6 +14,7 @@ import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.SleepWakeStateChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
 import elite.intel.ui.view.HudSection;
+import elite.intel.ui.view.HudSegmentedControl;
 import elite.intel.util.AudioPlayer;
 
 import javax.swing.*;
@@ -31,8 +32,11 @@ public class InputSettingsPanel extends JPanel {
     private JCheckBox enablePushToTalkCheck;
     private JComboBox<Object> controllerCombo;
     private JComboBox<String> buttonCombo;
-    private JRadioButton toggleModeRadio;
-    private JRadioButton holdModeRadio;
+    private HudSegmentedControl modeControl;
+
+    // Mode segment indices — order matches the segments built in buildUi().
+    private static final int MODE_TOGGLE = 0;
+    private static final int MODE_HOLD = 1;
 
     // Mirrors of the Swing selection state above, read from the SDL poll thread.
     private volatile boolean pushToTalkEnabled = false;
@@ -65,8 +69,7 @@ public class InputSettingsPanel extends JPanel {
 
         enablePushToTalkCheck.setSelected(pushToTalkEnabled);
         setControlsEnabled(pushToTalkEnabled);
-        toggleModeRadio.setSelected(toggleMode);
-        holdModeRadio.setSelected(!toggleMode);
+        modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
 
         if (pushToTalkEnabled) {
             DeviceService.getInstance().start();
@@ -119,28 +122,24 @@ public class InputSettingsPanel extends JPanel {
         HudSection modeSection = new HudSection(getText("settings.input.section.mode"), new FlowLayout(FlowLayout.LEFT, HUD_GAP, 0));
         JPanel modePanel = modeSection.body();
 
-        toggleModeRadio = new JRadioButton(getText("settings.input.mode.toggle"), true);
-        holdModeRadio = new JRadioButton(getText("settings.input.mode.hold"), false);
-        styleCheckBox(toggleModeRadio);
-        styleCheckBox(holdModeRadio);
-        ButtonGroup modeGroup = new ButtonGroup();
-        modeGroup.add(toggleModeRadio);
-        modeGroup.add(holdModeRadio);
-        toggleModeRadio.addActionListener(e -> {
-            toggleMode = true;
-            SystemSession.getInstance().setPushToTalkToggleMode(true);
-            EventBusManager.publish(new PttModeChangedEvent(false));
+        modeControl = new HudSegmentedControl(
+                new String[]{getText("settings.input.mode.toggle"), getText("settings.input.mode.hold")},
+                MODE_TOGGLE);
+        modeControl.addChangeListener(e -> {
+            if (modeControl.getSelectedIndex() == MODE_TOGGLE) {
+                toggleMode = true;
+                SystemSession.getInstance().setPushToTalkToggleMode(true);
+                EventBusManager.publish(new PttModeChangedEvent(false));
+            } else {
+                toggleMode = false;
+                SystemSession.getInstance().setPushToTalkToggleMode(false);
+                // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
+                SystemSession.getInstance().stopStartListening(true);
+                EventBusManager.publish(new SleepWakeStateChangedEvent(true));
+                EventBusManager.publish(new PttModeChangedEvent(true));
+            }
         });
-        holdModeRadio.addActionListener(e -> {
-            toggleMode = false;
-            SystemSession.getInstance().setPushToTalkToggleMode(false);
-            // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
-            SystemSession.getInstance().stopStartListening(true);
-            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
-            EventBusManager.publish(new PttModeChangedEvent(true));
-        });
-        modePanel.add(toggleModeRadio);
-        modePanel.add(holdModeRadio);
+        modePanel.add(modeControl);
 
         JPanel content = transparentPanel(null);
         content.setLayout(new BoxLayout(content, BoxLayout.PAGE_AXIS));
@@ -178,8 +177,7 @@ public class InputSettingsPanel extends JPanel {
     private void setControlsEnabled(boolean enabled) {
         controllerCombo.setEnabled(enabled);
         buttonCombo.setEnabled(enabled);
-        toggleModeRadio.setEnabled(enabled);
-        holdModeRadio.setEnabled(enabled);
+        modeControl.setEnabled(enabled);
     }
 
     private void onControllerSelected() {
@@ -272,8 +270,7 @@ public class InputSettingsPanel extends JPanel {
             boolean newToggleMode = SystemSession.getInstance().isPushToTalkToggleMode();
             if (newToggleMode == toggleMode) return;
             toggleMode = newToggleMode;
-            toggleModeRadio.setSelected(toggleMode);
-            holdModeRadio.setSelected(!toggleMode);
+            modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
         });
     }
 
