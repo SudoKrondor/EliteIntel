@@ -174,23 +174,8 @@ public class LocationTrackingSubscriber {
         // Keep commit-point angle in log for reference
         double commitAngle = computeRequiredDescentAngle(altitude, distanceToTarget, planetRadius);
 
-        // Left/right correction: meaningful only within ±30° (wider deviations require an orbital pass).
-        // Near poles, great-circle bearing spins fast as meridians converge (cos(lat) → 0).
-        // Widen the dead-band inversely with cos(lat) so corrections suppress before they become chattery.
-        // cos(0°)=1 → threshold=5°, cos(60°)=0.5 → threshold=10°, cos(80°)=0.17 → threshold=29° (suppressed).
         int bearingToTarget = navigator.bearingToTarget();
         int userHeading = navigator.userHeading();
-        String headingCorrection = "";
-        if (userHeading > 0) {
-            int offset = bearingToTarget - userHeading;
-            if (offset > 180) offset -= 360;
-            if (offset < -180) offset += 360;
-            double cosLat = Math.max(Math.cos(Math.toRadians(Math.abs(event.getLatitude()))), 0.1);
-            int correctionThreshold = (int) Math.ceil(5.0 / cosLat);
-            if (Math.abs(offset) > correctionThreshold && Math.abs(offset) <= 30) {
-                headingCorrection = localizedEvent(offset > 0 ? "event.nav.adjustRight" : "event.nav.adjustLeft", Math.abs(offset)) + " ";
-            }
-        }
 
         String orbLog = String.format(
                 "[ORB] alt=%.0fkm | dist=%.0fkm | proj=%.0fkm | commit=%.0fkm | speed=%.0fm/s | " +
@@ -221,7 +206,7 @@ public class LocationTrackingSubscriber {
         if (altitude < 100_000 && distanceToTarget > commitDist * 3) {
             if (levelFlight) {
                 levelOffCued = false; // pilot levelled off - reset so we can warn again if they descend
-                vocalize(headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
+                vocalize(NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
             } else if (!levelOffCued) {
                 vocalize(localizedEvent("event.nav.levelOff") + " " + NavigationUtils.formatDistance(distanceToTarget) + bearingLabel(bearingToTarget), 0, 0, true);
                 levelOffCued = true;
@@ -238,25 +223,25 @@ public class LocationTrackingSubscriber {
                 double scaleFactor = planetRadius / (planetRadius + altitude);
                 int geoAngle = (int) Math.round(Math.toDegrees(Math.atan((altitude / distanceToTarget) * scaleFactor)));
                 boolean urgent = commitAngle > 20.0 || speed > 15_000;
-                vocalize(localizedEvent("event.nav.pitchMinus", geoAngle) + " " + headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, urgent);
+                vocalize(localizedEvent("event.nav.pitchMinus", geoAngle) + " " + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, urgent);
             } else if (commitAngle >= 5.0 && commitAngle <= 45.0) {
                 // Comfortable descent window - cue the pilot with the required angle.
                 boolean urgent = commitAngle > 20.0 || speed > 15_000;
-                vocalize(localizedEvent("event.nav.pitchMinus", (int) Math.round(commitAngle)) + " " + headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, !beginDescentCued || urgent);
+                vocalize(localizedEvent("event.nav.pitchMinus", (int) Math.round(commitAngle)) + " " + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, !beginDescentCued || urgent);
                 beginDescentCued = true;
             } else if (commitAngle > 45.0 && altitude < 400_000) {
                 // Too steep from here - orbit for a better pass.
-                vocalize(localizedEvent("event.nav.circleForApproach") + " " + headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
+                vocalize(localizedEvent("event.nav.circleForApproach") + " " + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
                 beginDescentCued = false;
             } else {
-                // Too far or still entering orbit - distance + any heading nudge.
+                // Too far or still entering orbit.
                 beginDescentCued = false;
-                vocalize(headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
+                vocalize(NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
             }
         } else {
             // Actively descending - confirm actual angle so pilot can compare with HUD.
             beginDescentCued = false;
-            vocalize(localizedEvent("event.nav.pitchMinus", (int) Math.round(actualDescentAngle)) + " " + headingCorrection + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
+            vocalize(localizedEvent("event.nav.pitchMinus", (int) Math.round(actualDescentAngle)) + " " + NavigationUtils.formatDistance(projectedDistance) + bearingLabel(bearingToTarget), 0, 0, false);
         }
     }
 
@@ -347,7 +332,7 @@ public class LocationTrackingSubscriber {
         boolean headingDeviation = isHeadingDeviation(navigator);
         boolean glideAngleOk = isGlideAngleOk(event, navigator);
 
-        int glideAngle = -calculateGlideAngle(event.getAltitude(), navigator.distanceToTarget());
+        int glideAngle = calculateGlideAngle(event.getAltitude(), navigator.distanceToTarget());
         boolean movingAway = navigator.distanceToTarget() > lastDistance;
 
         if (isOnSurface(event)) {
