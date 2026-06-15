@@ -1,6 +1,7 @@
-### The released version is V1.0. 
-### Version V1.0 is different from the one you see on screenshots.
-### If you want version V1.1 join the beta test team. 👉[**Join the Beta Test Team here V1.1**](https://matrix.to/#/#krondor:matrix.org)👈
+### The released version is V1.0 is different from what you see on screenshots.
+
+### If you want version V1.1 join the beta test team. 
+### 👉[**Join the Beta Test Team here V1.1**](https://matrix.to/#/#krondor:matrix.org)👈
 
 ---
 
