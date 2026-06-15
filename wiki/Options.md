@@ -57,6 +57,16 @@ Provides a list of built-in commands. Double-clicking on one will show a dialog 
 
 This screen allows you to define a custom action that app will execute on your command.
 
+- Click NEW button this will open a popup window where you can define your custom action.
+
+![popup-custom-action.png](images/popup-custom-action.png)
+
+- Enter action name. NOTE: The action name must contain words (tokens) separated by underscores _
+- Provide a name for your custom action
+- Provide desccription for your custom action
+- Enter training words, those are meaning tokens. The LLM will attempt to match the sopken command to the action using highest probability. The more probable your tokens to match the action to more changes it will be returned.
+
+To use custom actions speak normally, you do not need to memorize the exact words, but you must convey a presise meaning for LLM to match it to your command with highest probability.
 
 ---
 
