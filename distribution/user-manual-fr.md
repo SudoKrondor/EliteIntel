@@ -10,7 +10,7 @@ Salutations Commandant ! Voici une référence pour les types de requêtes dispo
 - Si l'appli ne t'entend pas bien : problème d'oreilles (pièce bruyante, rapport bruit/RMS trop faible, audio non calibré, etc.)
 - Si l'appli ne parle pas : problème de bouche. Vérifie le routage audio au niveau du système d'exploitation.
 
-### [Wiki complet ici](https://github.com/SudoKrondor/EliteIntel/wiki)
+### [Wiki complet ici](https://www.elite-intel.org/fr)
 
 ## Entrée audio
 
@@ -247,7 +247,7 @@ Les LLMs locaux répondront mais seront rigides. Les LLMs cloud (Claude, OpenAI,
 
 ---
 
-[Plus de commandes ici](https://github.com/SudoKrondor/EliteIntel/EliteIntel/wiki/Obscure-System-Commands)
+[Plus de commandes ici](https://www.elite-intel.org/fr)
 
 Fly Dangerous, Commandant ! o7
 

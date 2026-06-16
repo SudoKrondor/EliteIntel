@@ -10,7 +10,7 @@ Hey Commander! Dies ist eine Referenz für die Arten von Dingen, die du deinem *
 - Wenn die App dich schlecht hört: Ears-Problem (lauter Raum, schlechter Noise-to-RMS-Abstand, Audio nicht kalibriert usw.)
 - Wenn die App nicht spricht: Mouth-Problem. Audio-Routing prüfen (Betriebssystemebene).
 
-### [Vollständiges Wiki](https://github.com/SudoKrondor/EliteIntel/wiki)
+### [Vollständiges Wiki](https://www.elite-intel.org/de)
 
 ## Audio-Eingang
 
@@ -245,7 +245,7 @@ Lokale LLMs antworten, wirken aber steif. Cloud-LLMs (Claude, OpenAI, xAI, Mistr
 
 ---
 
-[Weitere Befehle hier](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
+[Weitere Befehle hier](https://www.elite-intel.org/de)
 
 Fly Dangerous, Commander! o7
 

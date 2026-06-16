@@ -10,7 +10,7 @@
 - Si la aplicación no te escucha bien: problema de oídos (sala ruidosa, ratio ruido/RMS bajo, audio sin calibrar, etc.)
 - Si la aplicación no habla: problema de boca. Verifica el enrutamiento de audio a nivel del sistema operativo.
 
-### [Wiki completo aquí](https://github.com/SudoKrondor/EliteIntel/wiki)
+### [Wiki completo aquí](https://www.elite-intel.org/es)
 
 ## Entrada de audio
 
@@ -248,7 +248,7 @@ Los LLMs locales responderán pero serán rígidos. Se recomiendan LLMs en la nu
 
 ---
 
-[Más comandos aquí](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
+[Más comandos aquí](https://www.elite-intel.org/es)
 
 ¡Vuela peligroso, Comandante! o7
 
