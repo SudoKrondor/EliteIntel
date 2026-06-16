@@ -62,7 +62,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
             map.put("увеличь скорость на {key:X}, прибавь скорость на {key:X}", INCREASE_SPEED_BY.getAction());
             map.put("уменьши скорость на {key:X}, сбавь скорость на {key:X}", DECREASE_SPEED_BY.getAction());
             map.put("установи оптимальную скорость, оптимальная скорость подхода, оптимизируй скорость подхода", SET_OPTIMAL_SPEED.getAction());
-            map.put("шасси, шасси вниз, выпусти шасси, опусти посадочное шасси", DEPLOY_LANDING_GEAR.getAction());
+            map.put("шасси, шасси вниз, выпусти шасси, опусти посадочное шасси, готовся к посадке, приготовится к посадке", DEPLOY_LANDING_GEAR.getAction());
             map.put("убери шасси, шасси вверх, подними шасси, сложи посадочное шасси", RETRACT_LANDING_GEAR.getAction());
             map.put("запроси стыковку, стыковка со станцией, запроси посадку, запрос посадки, запроси парковку, попроси площадку, запроси площадку", REQUEST_DOCKING.getAction());
 
@@ -80,7 +80,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
             map.put("приоритетная цель, цель с наибольшей угрозой, самая опасная цель, выбрать врага, следующий враг", SELECT_HIGHEST_THREAT.getAction());
 
             // vehicle deployment
-            map.put("выпусти срв, выпусти тачку, запусти мамашину, запусти автомобиль, запусти срв, выпусти транспорт, разверни SRV, высади срв", DEPLOY_SRV.getAction());
+            map.put("выпусти срв, выпусти тачку, запусти/выкати мамашину, запусти автомобиль, запусти срв, выпусти транспорт, разверни SRV, высади срв", DEPLOY_SRV.getAction());
             map.put("выпусти теплоотвод, запусти теплоотвод, сбрось тепло, сброс тепла", DEPLOY_HEAT_SINK.getAction());
 
             // fighter orders
@@ -123,11 +123,12 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
 
             // power
             map.put("энергию на щиты, питание на системы, питание на щиты, максимум щитов, усилить щиты", INCREASE_SHIELDS_POWER.getAction());
+            map.put("энергию на щиты, питание на системы", INCREASE_SYSTEMS_POWER.getAction());
             map.put("энергию на двигатели, питание на двигатели максимум двигателей, усилить двигатели", INCREASE_ENGINES_POWER.getAction());
             map.put("энергию на оружие, питание на оружия, энергию на лазеры, максимум оружия, усилить оружие", INCREASE_WEAPONS_POWER.getAction());
 
             // vehicle deployment
-            map.put("выйти из корабля, высадиться, покинуть корабль", DISEMBARK.getAction());
+            map.put("выйти из корабля, выйти из машины, высадиться, покинуть корабль", DISEMBARK.getAction());
             map.put("сбалансируй энергию, баланс энергии, сбрось распределение энергии, распределить энергию поровну, уравновесить питание, сброс питания", RESET_POWER.getAction());
         }
 

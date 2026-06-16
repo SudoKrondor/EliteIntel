@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
@@ -128,7 +127,8 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
-                    EventBusManager.publish(new RouteAnnouncementEvent(sb.toString()));
+                    //EventBusManager.publish(new RouteAnnouncementEvent(sb.toString()));
+                    EventBusManager.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
                 }
                 if (isSellerSystem && station != null) {
                     EventBusManager.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));

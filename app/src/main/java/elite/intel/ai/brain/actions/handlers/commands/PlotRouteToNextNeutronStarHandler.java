@@ -16,6 +16,7 @@ public class PlotRouteToNextNeutronStarHandler implements CommandHandler {
         NeutronStarRouteDao.Route route = neutronStarRouteManager.getNeutronStarRoute();
         if (route == null || route.getLegs().isEmpty() || route.getLegs().getFirst() == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.notFound")));
+            return;
         }
 
         String systemName = route.getLegs().getFirst().getSystemName();

@@ -1,10 +1,5 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudSegmentedControl;
-import elite.intel.ui.widget.HudTwoColumns;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.devices.DeviceService;
@@ -18,15 +13,20 @@ import elite.intel.ui.event.PttButtonStateEvent;
 import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.SleepWakeStateChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
+import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudSegmentedControl;
+import elite.intel.ui.widget.HudTwoColumns;
 import elite.intel.util.AudioPlayer;
 
 import javax.swing.*;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.AppTheme.makeCheckBox;
+import static elite.intel.ui.theme.AppTheme.transparentPanel;
 import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 /**
  * "Input" settings tab - lets the user map a controller button to push-to-talk, monitored via
@@ -321,7 +321,11 @@ public class InputSettingsPanel extends JPanel {
         if (event.deviceId() != device.id() || event.buttonIndex() != buttonIndex) return;
 
         if (toggleMode) {
-            if (event.pressed()) toggleSleepWake();
+            if (event.pressed()) {
+                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+                EventBusManager.publish(new TTSInterruptEvent(true));
+                toggleSleepWake();
+            }
         } else {
             if (event.pressed()) {
                 AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
