@@ -236,7 +236,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         stepsTable.getColumnModel().getColumn(1).setCellRenderer(new HudTable.ValueCellRenderer());
         stepsTable.getColumnModel().getColumn(2)
                 .setCellRenderer(new HudTable.ValueCellRenderer(null, SwingConstants.RIGHT));
-        // Duration is a short numeric column — cap it so Type/Value take the remaining width.
+        // Duration is a short numeric column - cap it so Type/Value take the remaining width.
         stepsTable.getColumnModel().getColumn(2).setPreferredWidth(110);
         stepsTable.getColumnModel().getColumn(2).setMaxWidth(150);
         stepsTable.addMouseListener(new MouseAdapter() {

@@ -86,13 +86,13 @@ public class BindingsTabPanel extends JPanel {
     private JButton revertButton;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
-    /** Working copy file currently loaded in the editor — used for stale checks. */
+    /** Working copy file currently loaded in the editor - used for stale checks. */
     private File activeBindingsFile;
     private FileTime activeBindingsLastModified;
     private long activeBindingsFileSize = -1;
-    /** The actual game binds file — source for Apply and for the file-path display field. */
+    /** The actual game binds file - source for Apply and for the file-path display field. */
     private File gameBindingsFile;
-    /** The preset file name (e.g. {@code Custom.3.0.binds}) — key for the working copy. */
+    /** The preset file name (e.g. {@code Custom.3.0.binds}) - key for the working copy. */
     private String activePresetFileName;
     private boolean assignDialogOpen;
 
@@ -194,8 +194,8 @@ public class BindingsTabPanel extends JPanel {
         gbc.anchor = GridBagConstraints.WEST;
 
         // Single-column grid: [label | field | affordance]. All three rows share the label
-        // column width and the field right edge; ⋮ and the in-field «i» line up on the right.
-        // Row 0 — Bindings Directory + picker
+        // column width and the field right edge; vertical-ellipsis and the in-field "i" line up on the right.
+        // Row 0 - Bindings Directory + picker
         addProfileLabel(details, getText("player.bindingsDirectory"), gbc, 0, LABEL_COL_WIDTH);
         bindingsDirField = readOnlyField();
         bindingsDirField.setToolTipText(getText("player.bindingsDirectory.tooltip"));
@@ -210,13 +210,13 @@ public class BindingsTabPanel extends JPanel {
         gbc.insets = new Insets(2, 0, 6, 7);
         details.add(selectBindingsDirButton, gbc);
 
-        // Row 1 — Profile (field spans the picker column so its right edge aligns)
+        // Row 1 - Profile (field spans the picker column so its right edge aligns)
         gbc.gridy = 1;
         addProfileLabel(details, getText("bindings.profileName"), gbc, 0, LABEL_COL_WIDTH);
         profileField = readOnlyInfoField("bindings.profileName.info");
         addProfileField(details, profileField, gbc, 1, 2, 1.0);
 
-        // Row 2 — File
+        // Row 2 - File
         gbc.gridy = 2;
         addProfileLabel(details, getText("bindings.filePath"), gbc, 0, LABEL_COL_WIDTH);
         filePathField = readOnlyInfoField("bindings.filePath.info");
@@ -227,7 +227,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JComponent bindingProfileCard(JPanel body) {
-        // Working zone of the tab → FLAT section (HUD §9), not a framed accent box.
+        // Working zone of the tab -> FLAT section (HUD section 9), not a framed accent box.
         HudSection card = new HudSection(
                 getText("bindings.section.profile"),
                 new BorderLayout(),
@@ -443,8 +443,8 @@ public class BindingsTabPanel extends JPanel {
     }
 
     /**
-     * Creates a read-only value field carrying an in-field info-«i» (HUD §5.1) that opens the
-     * help text for {@code infoKey} on click — replaces the former external Unicode info button.
+     * Creates a read-only value field carrying an in-field info-"i" (HUD section 5.1) that opens the
+     * help text for {@code infoKey} on click - replaces the former external Unicode info button.
      */
     private JTextField readOnlyInfoField(String infoKey) {
         HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
@@ -467,7 +467,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JPanel keyboardOnlyWarningStrip() {
-        // Centralised on HudBanner (§7.3) with the leading warning glyph — no hand-rolled strip.
+        // Centralised on HudBanner (section 7.3) with the leading warning glyph - no hand-rolled strip.
         keyboardOnlyBanner = new HudBanner(getText("bindings.keyboardOnlyHint"),
                 StatusBadge.State.STANDBY, true);
         return keyboardOnlyBanner;

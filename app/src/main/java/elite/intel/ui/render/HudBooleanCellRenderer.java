@@ -15,7 +15,7 @@ import java.awt.*;
  * HUD table cell renderer for Boolean selector columns.
  * Paints the row background matching {@link HudTable.CellRenderer} and centres a
  * HUD checkbox marker via {@link AppTheme#paintHudCheckMarker}.
- * Does not render text or an info-zone — intended for narrow selector columns only.
+ * Does not render text or an info-zone - intended for narrow selector columns only.
  */
 public class HudBooleanCellRenderer extends JComponent implements TableCellRenderer {
 

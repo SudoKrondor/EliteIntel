@@ -42,7 +42,7 @@ public class HudButton extends JButton {
     }
 
     /**
-     * Switches the button to a fixed {@code side}×{@code side} footprint, used for compact
+     * Switches the button to a fixed {@code side}x{@code side} footprint, used for compact
      * trailing field actions (e.g. pickers) that must align with a field's height and stay
      * narrow. Pass 0 to restore the default action-button sizing.
      */

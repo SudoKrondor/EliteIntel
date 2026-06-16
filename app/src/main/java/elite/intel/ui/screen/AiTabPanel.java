@@ -377,7 +377,7 @@ public class AiTabPanel extends JPanel {
         SwingUtilities.invokeLater(this::refreshTtsBadge);
     }
 
-    // ── QUICK STATUS badge build and refresh ──────────────────────────────────
+    // -- QUICK STATUS badge build and refresh ----------------------------------
 
     /**
      * Builds the QUICK STATUS panel with live STT / LLM / TTS status rows.
@@ -491,7 +491,7 @@ public class AiTabPanel extends JPanel {
     }
 
     private String wakeWordText() {
-        // sleeping → offer to wake up; listening → offer to sleep
+        // sleeping -> offer to wake up; listening -> offer to sleep
         return getText(sleeping ? "ai.action.wake" : "ai.action.sleep");
     }
 
@@ -529,7 +529,7 @@ public class AiTabPanel extends JPanel {
             if (src.getWidth() == target && src.getHeight() == target) {
                 return new ImageIcon(src);
             }
-            // High-quality one-time scale; not needed for current 32×32 PNGs but kept as a safety net.
+            // High-quality one-time scale; not needed for current 32x32 PNGs but kept as a safety net.
             BufferedImage scaled = new BufferedImage(target, target, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = scaled.createGraphics();
             try {

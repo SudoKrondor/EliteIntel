@@ -26,11 +26,11 @@ public class HudBanner extends HudPanel {
 
     /**
      * Creates a banner with an optional leading warning glyph. Use {@code leadingWarnGlyph=true}
-     * for caution hints (replaces hand-rolled "⚠" warning strips) so they render consistently.
+     * for caution hints (replaces hand-rolled "warning" warning strips) so they render consistently.
      *
      * @param text            localized message text
      * @param state           semantic state colour
-     * @param leadingWarnGlyph draw the HUD warning glyph (§13) before the text
+     * @param leadingWarnGlyph draw the HUD warning glyph (section 13) before the text
      */
     public HudBanner(String text, StatusBadge.State state, boolean leadingWarnGlyph) {
         this(text, state, leadingWarnGlyph, false);
@@ -38,7 +38,7 @@ public class HudBanner extends HudPanel {
 
     /**
      * Multiline banner whose text wraps to the available width instead of clipping. Use for long
-     * informational hints in narrow columns (canon §7.3). Single-line glyph/warn banners stay on
+     * informational hints in narrow columns (canon section 7.3). Single-line glyph/warn banners stay on
      * the {@link #HudBanner(String, StatusBadge.State, boolean)} path.
      *
      * @param text  localized message text
@@ -93,7 +93,7 @@ public class HudBanner extends HudPanel {
         );
     }
 
-    /** Dims the rail and text to {@code HUD_COLOR_ROLE_DISABLED} when disabled (§0.6), restores the state colour when enabled. */
+    /** Dims the rail and text to {@code HUD_COLOR_ROLE_DISABLED} when disabled (section 0.6), restores the state colour when enabled. */
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);

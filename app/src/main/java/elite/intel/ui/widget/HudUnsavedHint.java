@@ -11,8 +11,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Standard footer "unsaved changes" status (§10): {@code HUD_COLOR_ROLE_WARNING} caution text with a leading
- * ⚠ glyph, hidden by default. Place it just left of a SAVE button (grouped at the right edge) and
+ * Standard footer "unsaved changes" status (section 10): {@code HUD_COLOR_ROLE_WARNING} caution text with a leading
+ * warning glyph, hidden by default. Place it just left of a SAVE button (grouped at the right edge) and
  * toggle visibility with the screen's dirty flag, so every SAVE footer reads the same.
  */
 public class HudUnsavedHint extends JLabel {

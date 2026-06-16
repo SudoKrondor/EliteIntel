@@ -11,12 +11,12 @@ import java.awt.FlowLayout;
 import java.util.List;
 
 /**
- * Shared footer strip for both modal dialogs and non-modal screen/tab panels (HUD §10).
+ * Shared footer strip for both modal dialogs and non-modal screen/tab panels (HUD section 10).
  * The layout and the warm {@link AppTheme#hudFooterBorder()} rule are identical for both; the
  * only difference is the left slot:
  * <ul>
  *   <li>modal: a BACK/dismiss button;</li>
- *   <li>non-modal: a status/info component — BACK is NOT allowed.</li>
+ *   <li>non-modal: a status/info component - BACK is NOT allowed.</li>
  * </ul>
  * The {@code modal} flag selects which left component is shown, structurally preventing a BACK
  * button from ever appearing in a non-modal footer.
@@ -30,8 +30,8 @@ public final class HudFooter {
      *
      * @param modal    true for a modal dialog footer (shows {@code back} on the left);
      *                 false for a non-modal screen/tab footer (shows {@code status} on the left, no BACK)
-     * @param back     the BACK/dismiss button — used only when {@code modal} is true; may be null
-     * @param status   a status/info component for the left slot — used only when {@code modal} is
+     * @param back     the BACK/dismiss button - used only when {@code modal} is true; may be null
+     * @param status   a status/info component for the left slot - used only when {@code modal} is
      *                 false; may be null
      * @param trailing right-aligned action buttons in visual left-to-right order (primary last); may be null
      */

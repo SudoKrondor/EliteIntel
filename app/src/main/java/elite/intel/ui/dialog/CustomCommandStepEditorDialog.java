@@ -193,7 +193,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         addRow(panel, gbc, rawModLabel, rawModCombo);
         addRow(panel, gbc, durationLabel, durationStepper);
         AppTheme.applyDarkPalette(panel);
-        // HudTextField and HudComboBox self-style via their constructors — no manual styleComboBox calls needed.
+        // HudTextField and HudComboBox self-style via their constructors - no manual styleComboBox calls needed.
         styleInfoButton(stepParamsInfoButton);
         return panel;
     }
@@ -215,7 +215,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
         // Dialog owns only the uniform field WIDTH (so every row's right edge aligns); HEIGHT comes from
-        // the control itself (HUD layer) — HudTextField/HudStepper/HudComboBox all size to HUD_FIELD_HEIGHT.
+        // the control itself (HUD layer) - HudTextField/HudStepper/HudComboBox all size to HUD_FIELD_HEIGHT.
         Dimension fieldSize = new Dimension(HudPalette.HUD_PICKER_FIELD_WIDTH, field.getPreferredSize().height);
         field.setPreferredSize(fieldSize);
         field.setMinimumSize(fieldSize);

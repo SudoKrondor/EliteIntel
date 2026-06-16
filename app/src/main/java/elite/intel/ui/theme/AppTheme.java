@@ -51,7 +51,7 @@ public class AppTheme {
      * NOT restyle this scroll pane (keeps its own viewport bg / border). Use for
      * data-plane table scrolls that must keep the warm HUD_COLOR_ROLE_APPLICATION_BACKGROUND viewport instead of
      * the cold HUD_COLOR_ROLE_PANEL_BACKGROUND that styleScrollPane applies. Mirrors
-     * HUD_TABLE_STYLE_LOCKED for tables (ED_HUD_REFERENCE §8.6).
+     * HUD_TABLE_STYLE_LOCKED for tables (ED_HUD_REFERENCE section 8.6).
      */
     public static final String HUD_SCROLL_STYLE_LOCKED = "eliteIntel.hud.scrollStyleLocked";
     /**
@@ -77,7 +77,7 @@ public class AppTheme {
     /**
      * Creates a compact square HUD button for a trailing field action (e.g. a directory/file
      * picker placed at the end of a form field). The button is sized
-     * {@code fieldHeight}×{@code fieldHeight} so it aligns with the neighbouring field height
+     * {@code fieldHeight}x{@code fieldHeight} so it aligns with the neighbouring field height
      * while staying narrow.
      *
      * @param glyph       the button glyph/label (e.g. the picker ellipsis)
@@ -99,7 +99,7 @@ public class AppTheme {
     public static JButton makeFieldButton(Icon icon, int fieldHeight) {
         HudButton button = new HudButton(null, true);
         button.setSquareSide(fieldHeight);
-        // Dark glyph on the bright primary fill (HUD inversion, §0.4); the icon reads getForeground().
+        // Dark glyph on the bright primary fill (HUD inversion, section 0.4); the icon reads getForeground().
         button.setForeground(HUD_COLOR_ROLE_SELECTED_TEXT);
         button.setIcon(icon);
         return button;
@@ -247,7 +247,7 @@ public class AppTheme {
     }
 
     /**
-     * Canonical footer rule (§10) shared by modal dialogs and non-modal screen/tab footers:
+     * Canonical footer rule (section 10) shared by modal dialogs and non-modal screen/tab footers:
      * a full-width warm {@link #HUD_COLOR_ROLE_PANEL_SEPARATOR} rule of {@link #HUD_BORDER_THICKNESS}
      * at the top, with {@link #HUD_GAP} padding above (after the rule) and below, zero side inset.
      * Apply to the footer strip built by {@link HudFooter}.
@@ -289,7 +289,7 @@ public class AppTheme {
     }
 
     /**
-     * Light form field label (§5.1): {@code HUD_COLOR_ROLE_PRIMARY_TEXT}, SM caps — the key column next to inputs.
+     * Light form field label (section 5.1): {@code HUD_COLOR_ROLE_PRIMARY_TEXT}, SM caps - the key column next to inputs.
      * Shares {@link #styleFieldLabel} with {@link #addLabel}.
      */
     public static JLabel hudReadoutLabel(String text) {
@@ -299,12 +299,12 @@ public class AppTheme {
     }
 
     /**
-     * Single source of truth for field/readout key-label styling (§5.1): {@code HUD_COLOR_ROLE_SECONDARY_TEXT}, XS caps,
+     * Single source of truth for field/readout key-label styling (section 5.1): {@code HUD_COLOR_ROLE_SECONDARY_TEXT}, XS caps,
      * foreground locked against the dark palette. Shared by {@link #hudReadoutLabel} and {@link #addLabel}
      * so every form label looks identical.
      */
     static void styleFieldLabel(JLabel label) {
-        // Vanilla-ED form labels are light (HUD_COLOR_ROLE_PRIMARY_TEXT), not muted, at the field-label size (§5.1).
+        // Vanilla-ED form labels are light (HUD_COLOR_ROLE_PRIMARY_TEXT), not muted, at the field-label size (section 5.1).
         label.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         label.setFont(label.getFont().deriveFont(HUD_FONT_FIELD_LABEL));
         label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
@@ -315,7 +315,7 @@ public class AppTheme {
      * Pair with {@link #hudReadoutLabel} for the key column. No border or background is set.
      *
      * @param value initial text
-     * @param color foreground colour — e.g. {@link #HUD_COLOR_ROLE_INFORMATION} for command names, {@link #HUD_COLOR_ROLE_PRIMARY_TEXT} for plain values
+     * @param color foreground colour - e.g. {@link #HUD_COLOR_ROLE_INFORMATION} for command names, {@link #HUD_COLOR_ROLE_PRIMARY_TEXT} for plain values
      */
     public static JLabel hudReadoutValue(String value, Color color) {
         JLabel l = new JLabel(value);
@@ -356,7 +356,7 @@ public class AppTheme {
 
     /**
      * Outer field line that follows the component's enabled state: warm {@code HUD_COLOR_ROLE_CONTROL_DECORATION}
-     * when enabled, dimmed {@code HUD_COLOR_ROLE_DISABLED} when disabled (§0.6). Shared by all HUD fields and
+     * when enabled, dimmed {@code HUD_COLOR_ROLE_DISABLED} when disabled (section 0.6). Shared by all HUD fields and
      * combo boxes so the disabled look is consistent app-wide.
      */
     private static Border hudFieldLine() {
@@ -420,7 +420,7 @@ public class AppTheme {
     }
 
     /**
-     * Builds and returns the wrapper JPanel for an undecorated modal dialog using the HUD canon (§7.2).
+     * Builds and returns the wrapper JPanel for an undecorated modal dialog using the HUD canon (section 7.2).
      * Call {@code dialog.setContentPane(AppTheme.hudModalScaffold(spec))} after constructing the dialog.
      */
     public static JPanel hudModalScaffold(HudModalSpec spec) {
@@ -445,15 +445,15 @@ public class AppTheme {
             return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
         tc.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        // Field value text — HUD_COLOR_ROLE_PRIMARY_ACTION (vanilla-ED: light label, orange value), the same for single-line
+        // Field value text - HUD_COLOR_ROLE_PRIMARY_ACTION (vanilla-ED: light label, orange value), the same for single-line
         // and multi-line FIELD areas; only enabled/disabled differs. The live console/log is a
         // separate role (HudLogArea, a JPanel) and is not styled here.
         tc.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
-        tc.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED); // §0.6: disabled text dims to the warm muted tone
+        tc.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED); // section 0.6: disabled text dims to the warm muted tone
         tc.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         tc.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
         tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
-        // Preserve the wider info border so the palette does not clobber the reserved info-«i» zone.
+        // Preserve the wider info border so the palette does not clobber the reserved info-"i" zone.
         tc.setBorder(tc instanceof HudTextField htf && htf.hasInfoZone()
                 ? hudFieldBorderWithInfo() : hudFieldBorder());
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
@@ -494,7 +494,7 @@ public class AppTheme {
      */
     public static void styleComboBox(JComboBox<?> comboBox) {
         comboBox.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
-        comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value — same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (§5.3)
+        comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value - same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (section 5.3)
         comboBox.setBorder(hudFieldBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
@@ -505,13 +505,13 @@ public class AppTheme {
      *
      * <p>An editable combo paints its collapsed value through a FlatLaf-managed {@link JTextField}
      * editor, not through the renderer used by non-editable combos. This is the single place that
-     * subdues that editor to the HUD canon so both combo types read identically (§5.3):
+     * subdues that editor to the HUD canon so both combo types read identically (section 5.3):
      * <ul>
-     *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) — matches the
+     *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) - matches the
      *       renderer-painted value of non-editable combos.</li>
      *   <li>Text inset {@link #HUD_COMBO_ITEM_INSET_H}/{@link #HUD_COMBO_ITEM_INSET_V}, equal to the
      *       renderer item inset. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
-     *       on top of our border — FlatLaf computes that padding once, before our border exists, and
+     *       on top of our border - FlatLaf computes that padding once, before our border exists, and
      *       would otherwise shift the value text to the right.</li>
      *   <li>{@link #HUD_COMBO_EDITOR_LOCKED} + {@link #HUD_LOCKED_FOREGROUND} so {@link #applyDarkPalette}
      *       and {@link #styleTextComponent} do not overwrite the border/foreground during the palette walk.</li>
@@ -678,7 +678,7 @@ public class AppTheme {
         if (c instanceof TopStatusBar || c instanceof HudPanel || c instanceof StatusBadge) {
             // HUD primitives own their painting and state colours.
         } else if (c instanceof JScrollPane && lockScroll) {
-            // data-plane scroll owns its viewport bg/border — leave it untouched
+            // data-plane scroll owns its viewport bg/border - leave it untouched
         } else if (c instanceof JPanel || c instanceof JTabbedPane || c instanceof JScrollPane) {
             c.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             if (!lockForeground) c.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
@@ -729,7 +729,7 @@ public class AppTheme {
             ep.setForeground(Color.BLACK);
         }
 
-        // TopStatusBar and HudBanner own all colours of their children — do not recurse into them
+        // TopStatusBar and HudBanner own all colours of their children - do not recurse into them
         // (HudBanner's inner label/JTextArea must keep its banner styling, not get the field border).
         if (c instanceof Container cont && !(c instanceof TopStatusBar) && !(c instanceof HudBanner)) {
             for (Component child : cont.getComponents()) {

@@ -35,7 +35,7 @@ public class HudDialogHeader extends JPanel {
                 BorderFactory.createEmptyBorder(0, HUD_PADDING, 0, HUD_PADDING)));
         putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
 
-        // Icon (left) — elite-logo at nav size, dimmed to 55 %
+        // Icon (left) - elite-logo at nav size, dimmed to 55 %
         ImageIcon logo = null;
         try {
             logo = scaledIcon(HudDialogHeader.class, "/images/elite-logo.png", HUD_ICON_NAV);
@@ -53,7 +53,7 @@ public class HudDialogHeader extends JPanel {
         add(titleLabel, BorderLayout.CENTER);
         add(new CloseGlyphButton(onClose), BorderLayout.EAST);
 
-        // Window drag — registered on the panel so empty areas and both labels forward events here
+        // Window drag - registered on the panel so empty areas and both labels forward events here
         MouseAdapter drag = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {

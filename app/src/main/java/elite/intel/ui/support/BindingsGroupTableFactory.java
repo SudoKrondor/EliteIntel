@@ -120,8 +120,8 @@ public class BindingsGroupTableFactory {
         if (row >= 0) {
             return row;
         }
-        // Point landed in intercellSpacing gap — rowAtPoint returns -1.
-        // Probe adjacent rows within ±3px (sufficient for a 2px gap).
+        // Point landed in intercellSpacing gap - rowAtPoint returns -1.
+        // Probe adjacent rows within +/-3px (sufficient for a 2px gap).
         for (int dy = 1; dy <= 3; dy++) {
             int up = table.rowAtPoint(new Point(point.x, point.y - dy));
             if (up >= 0) {

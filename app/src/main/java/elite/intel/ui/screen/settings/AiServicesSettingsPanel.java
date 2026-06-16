@@ -34,7 +34,7 @@ import static elite.intel.ui.theme.HudForms.*;
 /**
  * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
- * configuration highlighted and the unused one dimmed (§0.6).
+ * configuration highlighted and the unused one dimmed (section 0.6).
  * <p>
  * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
  * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
@@ -103,7 +103,7 @@ public class AiServicesSettingsPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        // ----- Section: LANGUAGE MODEL (flat working zone, §9) -----
+        // ----- Section: LANGUAGE MODEL (flat working zone, section 9) -----
         HudSection llmSection = HudSection.flat(getText("settings.ai.section.llm"), new BorderLayout(0, HUD_GAP));
         JPanel llm = llmSection.body();
 
@@ -112,7 +112,7 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.localSetup"), getText("settings.ai.cloudSetup")}, SRC_LOCAL);
         llm.add(llmSourceControl, BorderLayout.NORTH);
 
-        // Left column — LOCAL SETUP.
+        // Left column - LOCAL SETUP.
         localCol = transparentPanel(new GridBagLayout());
         GridBagConstraints gc = baseGbc();
         providerControl = new HudSegmentedControl(
@@ -135,7 +135,7 @@ public class AiServicesSettingsPanel extends JPanel {
         addLabel(localCol, getText("settings.ai.queryModel"), gc, 0);
         addField(localCol, queryModelField, gc, 1, 1.0);
 
-        // Right column — CLOUD SETUP.
+        // Right column - CLOUD SETUP.
         rightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints rgc = baseGbc();
         apiKeyField = makePasswordField();
@@ -162,7 +162,7 @@ public class AiServicesSettingsPanel extends JPanel {
         llmRightWrap.add(rightCol, BorderLayout.NORTH);
         llm.add(new HudTwoColumns(llmLeftWrap, llmRightWrap), BorderLayout.CENTER);
 
-        // ----- Section: SPEECH (TTS) (flat working zone, §9) -----
+        // ----- Section: SPEECH (TTS) (flat working zone, section 9) -----
         HudSection speechSection = HudSection.flat(getText("settings.ai.section.speech"), new BorderLayout(0, HUD_GAP));
         JPanel tts = speechSection.body();
 
@@ -171,7 +171,7 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column — LOCAL (Kokoro has no configuration). Right column — CLOUD Google TTS key.
+        // Left column - LOCAL (Kokoro has no configuration). Right column - CLOUD Google TTS key.
         JPanel ttsLeftCol = transparentPanel(new BorderLayout());
         ttsRightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
@@ -194,10 +194,10 @@ public class AiServicesSettingsPanel extends JPanel {
         JButton restoreButton = makeButtonSubtle(getText("button.restoreDefaults"));
         restoreButton.addActionListener(e -> SwingUtilities.invokeLater(this::restoreDefaults));
 
-        // Unsaved-changes hint as a footer status (§10): shared HudUnsavedHint, just left of SAVE.
+        // Unsaved-changes hint as a footer status (section 10): shared HudUnsavedHint, just left of SAVE.
         unsavedLabel = new HudUnsavedHint();
 
-        // Restore on the left; the status + Save (primary) grouped at the right edge (§10).
+        // Restore on the left; the status + Save (primary) grouped at the right edge (section 10).
         JPanel rightGroup = transparentPanel(new FlowLayout(FlowLayout.RIGHT, HUD_GAP, 0));
         rightGroup.add(unsavedLabel);
         rightGroup.add(saveButton);
@@ -334,10 +334,10 @@ public class AiServicesSettingsPanel extends JPanel {
         queryModelField.setText(ollama ? ollamaQuery : lmQuery);
     }
 
-    /** Enables the active source's controls and dims the unused source (§0.6). */
+    /** Enables the active source's controls and dims the unused source (section 0.6). */
     private void updateEnablement() {
         // Whole left column dims together (labels, provider switch, fields) via each control's
-        // own §0.6 disabled rendering.
+        // own section 0.6 disabled rendering.
         boolean local = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
         for (Component c : localCol.getComponents()) {
             c.setEnabled(local);

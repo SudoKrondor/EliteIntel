@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spec for HudModalScaffold (§7.2). The scaffold assembles the
+ * Spec for HudModalScaffold (section 7.2). The scaffold assembles the
  * frame + header + body + footer; this spec carries data only.
  * Buttons are passed READY-MADE (the caller creates them and attaches
  * listeners). The default button (getRootPane().setDefaultButton) is set

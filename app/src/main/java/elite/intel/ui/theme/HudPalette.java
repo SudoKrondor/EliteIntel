@@ -98,7 +98,7 @@ public final class HudPalette {
     public static final int HUD_COMBO_ITEM_INSET_H = 8;
     public static final int SUBTAB_CONTENT_GAP = HUD_GAP;
     public static final int HUD_BORDER_THICKNESS = 1;
-    /** Thickness for high-visibility accent borders â€” modal dialogs and similar prominent frames. */
+    /** Thickness for high-visibility accent borders - modal dialogs and similar prominent frames. */
     public static final int HUD_BORDER_THICKNESS_ACCENT = 2;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
@@ -118,7 +118,7 @@ public final class HudPalette {
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
-    // HudSlider metrics (ED slider form, Â§4): brown track plaque, rail with edge inset,
+    // HudSlider metrics (ED slider form, section 4): brown track plaque, rail with edge inset,
     // red fill, tall start tick, round thumb, value floating above the thumb.
     /** Total row height reserving space for the value rendered above the thumb. */
     public static final int HUD_SLIDER_HEIGHT = 44;
@@ -142,7 +142,7 @@ public final class HudPalette {
      * aligns with the slider track rather than the row top.
      */
     public static final int HUD_SLIDER_VALUE_AREA = 20;
-    // HudMicMeter metrics (segmented vertical LED-VU mic level meter, Â§4): LIVE + PEAK-trail columns.
+    // HudMicMeter metrics (segmented vertical LED-VU mic level meter, section 4): LIVE + PEAK-trail columns.
     /** Number of discrete segments in each meter column. */
     public static final int HUD_METER_SEG_COUNT = 32;
     /** Vertical gap between segments. */
@@ -165,32 +165,32 @@ public final class HudPalette {
 
     /**
      * Semantic font roles. Reference roles in code, not steps or literals.
-     * To change a specific element's size â€” update the role here; to shift all UI globally â€” change {@link #HUD_FONT_BASE}.
+     * To change a specific element's size - update the role here; to shift all UI globally - change {@link #HUD_FONT_BASE}.
      */
     public static final float HUD_FONT_TABLE_ROW      = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_TABLE_HEADER   = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_SM;   // 12
-    public static final float HUD_FONT_FIELD_LABEL    = HUD_FONT_SM + 1f; // 13 â€” form/readout key labels (Â§5.1)
+    public static final float HUD_FONT_FIELD_LABEL    = HUD_FONT_SM + 1f; // 13 - form/readout key labels (section 5.1)
     public static final float HUD_FONT_READOUT_KEY    = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_SECTION_TITLE  = HUD_FONT_SM;   // 12
     public static final float HUD_FONT_TAB_MAIN       = HUD_FONT_LG;   // 16
-    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_MD;   // 14 â€” second-level section tabs
-    public static final float HUD_FONT_TAB_COMPACT    = HUD_FONT_SM;   // 12 â€” dense inner (compact) tabs
+    public static final float HUD_FONT_TAB_SECTION    = HUD_FONT_MD;   // 14 - second-level section tabs
+    public static final float HUD_FONT_TAB_COMPACT    = HUD_FONT_SM;   // 12 - dense inner (compact) tabs
     public static final float HUD_FONT_BUTTON         = HUD_FONT_SM;   // 12
-    public static final float HUD_FONT_CHECKBOX       = HUD_FONT_SM;   // 12f â€” Ñ„Ð¾Ñ€Ð¼-ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð» Ñ‡ÐµÐºÐ±Ð¾ÐºÑÐ° (Â§4.1)
-    public static final float HUD_FONT_ICON_BUTTON    = HUD_FONT_LG;  // 16f â€” ÑÐ¸Ð¼Ð²Ð¾Ð»-ÐºÐ½Ð¾Ð¿ÐºÐ¸ (â“˜ Ð¸ Ñ‚.Ð¿.) Ð² Ð±Ð¾ÐºÑÐµ 24Ã—24
+    public static final float HUD_FONT_CHECKBOX       = HUD_FONT_SM;   // 12f - checkbox form-control (section 4.1)
+    public static final float HUD_FONT_ICON_BUTTON    = HUD_FONT_LG;  // 16f - icon buttons (info, etc.) in a 24x24 box
     public static final float HUD_FONT_BADGE_ROLE     = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
-    public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 â€” app title in top bar
-    public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 â€” banner message text
+    public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
+    public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 - banner message text
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;
-    /** LAF defaultFont â€” Ð±Ð°Ð·Ð¾Ð²Ñ‹Ð¹ ÐºÐµÐ³Ð»ÑŒ UI-Ð¼ÐµÑ‚Ð¾Ðº Ð²Ð½Ðµ HUD-Ñ€Ð¾Ð»ÐµÐ¹ (AppView). */
+    /** LAF defaultFont - base font size for UI labels outside HUD roles (AppView). */
     public static final float HUD_FONT_UI_DEFAULT = 18f;
-    /** LAF monospaceFont â€” Ð±Ð°Ð·Ð¾Ð²Ñ‹Ð¹ Ð¼Ð¾Ð½Ð¾ÐºÐµÐ³Ð»ÑŒ Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ñ (AppView). */
+    /** LAF monospaceFont - base monospace font of the application (AppView). */
     public static final float HUD_FONT_MONO_BASE  = 20f;
-    /** Ð¢ÐµÐºÑÑ‚ OBS-Ð¾Ð²ÐµÑ€Ð»ÐµÑ (Electrolize), Ð¾Ñ‚Ð´ÐµÐ»ÑŒÐ½Ñ‹Ð¹ ÑÐ°Ð¹Ñ‚ Ð¾Ñ‚ MONO_BASE. */
+    /** OBS overlay text (Electrolize), separate size from MONO_BASE. */
     public static final float HUD_FONT_OVERLAY    = 20f;
 }

@@ -29,7 +29,7 @@ public class AudioInterfaceDialog extends JDialog {
 
         HudComboBox<String> inputCombo = AudioDeviceCombo.input(savedInput);
         HudComboBox<String> outputCombo = AudioDeviceCombo.output(savedOutput);
-        // Persist on change — no Save button (listeners added after the initial selection is set).
+        // Persist on change - no Save button (listeners added after the initial selection is set).
         inputCombo.addActionListener(e ->
                 session.setAudioInputDevice(AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem())));
         outputCombo.addActionListener(e ->

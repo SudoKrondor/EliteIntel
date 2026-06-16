@@ -230,7 +230,7 @@ public class HudComboBox<E> extends JComboBox<E> {
             @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
                 // Restore the full list only on a genuine user-initiated open (empty/selected
-                // field), NOT during programmatic re-open from filter() — that would wipe the
+                // field), NOT during programmatic re-open from filter() - that would wipe the
                 // filtered model. updating[] marks programmatic model changes.
                 if (!updating[0] && combo.getModel().getSize() != sourceItems.length) {
                     Object prev = combo.getSelectedItem();
@@ -251,7 +251,7 @@ public class HudComboBox<E> extends JComboBox<E> {
 
             private void filter() {
                 // updating[] guards against re-entrancy from programmatic setModel/setSelectedItem;
-                // hasFocus() check absent — FlatLaf editable combos report focus on the container.
+                // hasFocus() check absent - FlatLaf editable combos report focus on the container.
                 if (updating[0]) return;
                 SwingUtilities.invokeLater(() -> {
                     String query = editor.getText();

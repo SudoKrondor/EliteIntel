@@ -20,7 +20,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
 /**
- * Segmented vertical mic-level meter in the HUD visual language (HUD §4).
+ * Segmented vertical mic-level meter in the HUD visual language (HUD section 4).
  * <p>
  * Two columns: a <b>LIVE</b> column whose segments light up to the current RMS, coloured by zone
  * ({@link AppTheme#HUD_COLOR_ROLE_DANGER} below the noise floor, {@link AppTheme#HUD_COLOR_ROLE_WARNING} between floor and
@@ -38,13 +38,13 @@ import java.awt.RenderingHints;
  */
 public class HudMicMeter extends JComponent {
 
-    /** 16-bit samples at/above this magnitude are treated as hardware clipping (≈97.7% of full scale). */
+    /** 16-bit samples at/above this magnitude are treated as hardware clipping (~97.7% of full scale). */
     private static final short CLIP_THRESHOLD = (short) 32000;
     /** Keep the clip ("HOT") state for this long after the last saturated sample. */
     private static final long CLIP_HOLD_MS = 1500;
     /** Per-frame multiplicative decay of the held peak (slow fall-back). */
     private static final double PEAK_DECAY = 0.985;
-    /** Gate position on the scale (gate at 30% → full scale = gate / 0.30). */
+    /** Gate position on the scale (gate at 30% -> full scale = gate / 0.30). */
     private static final double GATE_POS = 0.30;
     /** Clip ("too hot") threshold position on the scale (85% of full scale). */
     private static final double CLIP_POS = 0.85;
@@ -56,7 +56,7 @@ public class HudMicMeter extends JComponent {
     /** Grey peak-hold trail (dimmed white toward the background). */
     private static final Color PEAK_TRAIL = mix(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT, HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND, 0.60);
 
-    // Frame state — written on the audio-monitor bus thread, read on the EDT.
+    // Frame state - written on the audio-monitor bus thread, read on the EDT.
     private volatile double currentRms = 0;
     private volatile double noiseFloor = 0;
     private volatile double gate = 0;
@@ -131,7 +131,7 @@ public class HudMicMeter extends JComponent {
 
     /**
      * @return zone colour for a segment at {@code level}, per the app's mic legend: red below the
-     * gate (closed, not sending), amber in a narrow band straddling the gate (marginal — opens
+     * gate (closed, not sending), amber in a narrow band straddling the gate (marginal - opens
      * intermittently), green from there up to {@code clip} (open), red again at/above clip (too hot).
      */
     private Color zoneColor(double level, double clip) {
@@ -167,8 +167,8 @@ public class HudMicMeter extends JComponent {
             int segGap = HudPalette.HUD_METER_SEG_GAP;
             int segH = Math.max(1, (meterH - (n - 1) * segGap) / n);
 
-            // Gate-anchored scale: gate at 30%, clip at 85%, max = top — matches the design mockup
-            // (gate 300 → clip 850 → max 1000). Falls back to a peak scale if gate is uncalibrated.
+            // Gate-anchored scale: gate at 30%, clip at 85%, max = top - matches the design mockup
+            // (gate 300 -> clip 850 -> max 1000). Falls back to a peak scale if gate is uncalibrated.
             double rms = currentRms;
             double peak = peakHold;
             double fullScale = gate > 0 ? gate / GATE_POS : Math.max(peak * 1.15, 1.0);

@@ -55,7 +55,7 @@ public class TradeProfileSettingsPanel {
             gbc.anchor = GridBagConstraints.NORTHWEST;
             gbc.insets = new Insets(2, 6, 2, 6);
 
-            // Left column — labels (col 0) + fields (col 1), rows 0-2
+            // Left column - labels (col 0) + fields (col 1), rows 0-2
             gbc.gridy = 0;
             addLabel(root, getText("trade.profile.maxLsFromArrival"), gbc);
             gbc.gridx = 1;
@@ -77,7 +77,7 @@ public class TradeProfileSettingsPanel {
             root.add(buildField(profile::getStartingBudget, profile::setStartingBudget,
                     "trade_profile_set_budget"), gbc);
 
-            // Right column — checkboxes in a nested panel so their vertical rhythm is
+            // Right column - checkboxes in a nested panel so their vertical rhythm is
             // independent of the taller HudTextField rows in the left column.
             HudCheckBox cbPlanetary    = buildCheck(getText("trade.profile.allowPlanetary"),    profile::isAllowPlanetary,    profile::setAllowPlanetary,    "trade_profile_toggle_planetary_ports");
             HudCheckBox cbProhibited   = buildCheck(getText("trade.profile.allowProhibited"),   profile::isAllowProhibited,   profile::setAllowProhibited,   "trade_profile_toggle_prohibited_cargo");

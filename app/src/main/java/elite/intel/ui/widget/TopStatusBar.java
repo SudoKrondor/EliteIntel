@@ -54,7 +54,7 @@ public class TopStatusBar extends HudPanel {
         EventBusManager.unregister(this);
     }
 
-    // ── Event handlers ────────────────────────────────────────────────────────
+    // -- Event handlers --------------------------------------------------------
 
     @Subscribe
     public void onCommanderChanged(CommanderChangedEvent event) {
@@ -66,7 +66,7 @@ public class TopStatusBar extends HudPanel {
         SwingUtilities.invokeLater(() -> shipValue.setText(resolvedOrDash(event.shipName())));
     }
 
-    // ── Build ─────────────────────────────────────────────────────────────────
+    // -- Build -----------------------------------------------------------------
 
     /** App name and version, left-aligned. */
     private static JPanel buildLeftGroup(String appName, String version) {
@@ -96,7 +96,7 @@ public class TopStatusBar extends HudPanel {
     private JPanel buildRightGroup() {
         JPanel row = opaqueRow();
 
-        // Commander — label muted caps, value accent
+        // Commander - label muted caps, value accent
         row.add(keyLabel(getText("hud.cmdr")));
         row.add(hgap());
         cmdrValue = valueLabel(initCommanderName());
@@ -104,7 +104,7 @@ public class TopStatusBar extends HudPanel {
 
         row.add(Box.createHorizontalStrut(20));
 
-        // Ship — label muted caps, value white caps
+        // Ship - label muted caps, value white caps
         row.add(keyLabel(getText("hud.ship")));
         row.add(hgap());
         shipValue = valueLabel(initShipName());
@@ -113,12 +113,12 @@ public class TopStatusBar extends HudPanel {
         return row;
     }
 
-    // ── Initial state reads ───────────────────────────────────────────────────
+    // -- Initial state reads ---------------------------------------------------
 
     private static String initCommanderName() {
         try {
             String name = PlayerSession.getInstance().getConfiguredPlayerName();
-            // getConfiguredPlayerName() returns "Commander" as the default fallback — treat as unknown
+            // getConfiguredPlayerName() returns "Commander" as the default fallback - treat as unknown
             return (name != null && !name.isBlank() && !"Commander".equals(name)) ? name : "—";
         } catch (Exception ignored) {
             return "—";
@@ -135,7 +135,7 @@ public class TopStatusBar extends HudPanel {
         }
     }
 
-    // ── Component factories ───────────────────────────────────────────────────
+    // -- Component factories ---------------------------------------------------
 
     private static JPanel opaqueRow() {
         JPanel row = new JPanel();

@@ -12,7 +12,7 @@ import java.awt.geom.RoundRectangle2D;
  */
 public class HudSection extends HudPanel {
 
-    /** Shared horizontal inset for header text and decorative dots — mirrors title left ↔ dots right. */
+    /** Shared horizontal inset for header text and decorative dots - mirrors title left <-> dots right. */
     private static final int HEADER_H_INSET = 8;
 
     private final JPanel body;

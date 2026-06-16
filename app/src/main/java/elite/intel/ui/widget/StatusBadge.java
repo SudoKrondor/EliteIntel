@@ -17,7 +17,7 @@ public class StatusBadge extends JLabel {
         STANDBY(HudPalette.HUD_COLOR_ROLE_WARNING),
         OFFLINE(HudPalette.HUD_COLOR_ROLE_DANGER),
         INFO(HudPalette.HUD_COLOR_ROLE_INFORMATION),
-        /** Muted/inactive: service is off or sleeping — no action required. */
+        /** Muted/inactive: service is off or sleeping - no action required. */
         IDLE(HudPalette.HUD_COLOR_ROLE_DISABLED);
 
         private final Color color;

@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Single modal scaffold (§7.2). Returns a wrapper JPanel for an undecorated
+ * Single modal scaffold (section 7.2). Returns a wrapper JPanel for an undecorated
  * dialog's setContentPane(). Composition, not a base class.
  *
  * Assembles:
@@ -23,7 +23,7 @@ import java.util.List;
  *  - header HudDialogHeader(title, onClose) when title != null;
  *  - body inside side inset HUD_DIALOG_BODY_INSET (when scrollBody, wrapped in
  *    HudScrollPane with viewport bg overridden to HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
- *  - footer: shared HudFooter (modal=true) — dismiss/BACK on the left, primary+extra on the right.
+ *  - footer: shared HudFooter (modal=true) - dismiss/BACK on the left, primary+extra on the right.
  *
  * Does NOT orchestrate showing or scrim (kept outside: runWithModalScrim(owner, showModal)).
  * The default button is set by the caller after setContentPane (the scaffold has no rootPane).

@@ -9,7 +9,7 @@ import java.awt.*;
 
 /**
  * Two equal-width columns separated by a centred vertical divider in the warm subordinate rail
- * tone ({@link AppTheme#HUD_COLOR_ROLE_PANEL_SEPARATOR} — quieter than a section header rail). Shared HUD
+ * tone ({@link AppTheme#HUD_COLOR_ROLE_PANEL_SEPARATOR} - quieter than a section header rail). Shared HUD
  * layout for side-by-side form/section columns (e.g. local/cloud setup, command identity vs steps).
  * <p>
  * Columns are exactly equal ({@link GridLayout}); each child fills its half. If a child's content

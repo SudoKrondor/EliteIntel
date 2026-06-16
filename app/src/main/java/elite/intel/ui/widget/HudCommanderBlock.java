@@ -22,7 +22,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * and CMDR credit balance (hidden when zero).
  *
  * <p>Clock updates via {@link #tickClock()}, called from the parent panel's shared
- * 1-second timer — this component does not own a timer.
+ * 1-second timer - this component does not own a timer.
  * Credits update via {@link #setCredits(long)} on LoadGame events.
  */
 public class HudCommanderBlock extends JPanel {

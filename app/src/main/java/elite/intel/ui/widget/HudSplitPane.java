@@ -11,7 +11,7 @@ import java.awt.*;
 
 /**
  * HUD-styled JSplitPane. Divider background is painted using {@link AppTheme#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} so it
- * blends with the main window shell. Grip dots use {@link AppTheme#HUD_COLOR_ROLE_DISABLED} — muted but
+ * blends with the main window shell. Grip dots use {@link AppTheme#HUD_COLOR_ROLE_DISABLED} - muted but
  * functional. Supports {@link JSplitPane#HORIZONTAL_SPLIT} and {@link JSplitPane#VERTICAL_SPLIT}.
  */
 public class HudSplitPane extends JSplitPane {

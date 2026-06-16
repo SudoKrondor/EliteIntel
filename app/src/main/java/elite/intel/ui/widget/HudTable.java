@@ -50,7 +50,7 @@ public final class HudTable {
         table.setFillsViewportHeight(true);
         table.setRowHeight(rowHeight);
         table.setFont(table.getFont().deriveFont(Font.PLAIN, fontSize));
-        table.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);   // table body = window colour; darker than HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND tile → gap reads as dark slot (§2)
+        table.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);   // table body = window colour; darker than HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND tile -> gap reads as dark slot (section 2)
         table.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         table.setGridColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
@@ -92,7 +92,7 @@ public final class HudTable {
      * gap colour, no cold cant around/below rows) and a data-plane frame.
      * Marked HUD_SCROLL_STYLE_LOCKED so applyDarkPalette will not reset it to the
      * cold HUD_COLOR_ROLE_PANEL_BACKGROUND viewport. Use this for table panels instead of
-     * scrollPane(JTable) + manual restore-after-palette (ED_HUD_REFERENCE §8.6).
+     * scrollPane(JTable) + manual restore-after-palette (ED_HUD_REFERENCE section 8.6).
      *
      * @param table table to wrap
      */

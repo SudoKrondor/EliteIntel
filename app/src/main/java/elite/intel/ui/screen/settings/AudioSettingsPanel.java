@@ -62,7 +62,7 @@ public class AudioSettingsPanel extends JPanel {
         cc.insets = new Insets(0, 0, 0, HUD_GAP);
         columns.add(buildSettingsColumn(), cc);
 
-        // Right: microphone monitor stays at its natural (narrow) width — no horizontal stretch.
+        // Right: microphone monitor stays at its natural (narrow) width - no horizontal stretch.
         cc.gridx = 1;
         cc.weightx = 0;
         cc.insets = new Insets(0, 0, 0, 0);
@@ -79,7 +79,7 @@ public class AudioSettingsPanel extends JPanel {
         });
     }
 
-    /** Left column: AUDIO DEVICES over AUDIO LEVELS, with the help block beneath. All FLAT (§9). */
+    /** Left column: AUDIO DEVICES over AUDIO LEVELS, with the help block beneath. All FLAT (section 9). */
     private JComponent buildSettingsColumn() {
         JPanel column = transparentPanel(null);
         column.setLayout(new BoxLayout(column, BoxLayout.PAGE_AXIS));
@@ -177,7 +177,7 @@ public class AudioSettingsPanel extends JPanel {
         return section;
     }
 
-    /** Right column: MICROPHONE MONITOR — a FRAMED accent card holding the full-height level meter. */
+    /** Right column: MICROPHONE MONITOR - a FRAMED accent card holding the full-height level meter. */
     private JComponent buildMicColumn() {
         HudSection section = new HudSection(getText("settings.audio.section.microphoneMonitor"), new BorderLayout());
         section.body().add(new HudMicMeter(), BorderLayout.CENTER);

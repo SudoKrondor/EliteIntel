@@ -10,7 +10,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  * GridBag form-layout helpers: a shared {@link GridBagConstraints} seed and the row builders
  * (labels, fields, checkboxes, full-width spans) used to assemble HUD forms. Split out of
  * {@link AppTheme} so layout plumbing lives apart from palette tokens and component factories.
- * Field-label styling itself is owned by {@link AppTheme#styleFieldLabel(JLabel)} (§5.1).
+ * Field-label styling itself is owned by {@link AppTheme#styleFieldLabel(JLabel)} (section 5.1).
  */
 public final class HudForms {
 
@@ -49,15 +49,15 @@ public final class HudForms {
     }
 
     /**
-     * Adds a dim-aware field label (§5.1) at column 0. {@code labelWidth} fixes the label-column
+     * Adds a dim-aware field label (section 5.1) at column 0. {@code labelWidth} fixes the label-column
      * width for aligned single-column forms; pass {@code <= 0} to size the label to its text so the
-     * field hugs it (tight two-column forms — avoids the large gap after short labels).
+     * field hugs it (tight two-column forms - avoids the large gap after short labels).
      */
     public static void addLabel(JPanel panel, String text, GridBagConstraints gbc, int labelWidth) {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
-        // Dim-aware field label: follows its enabled state (§0.6) so a disabled row's
+        // Dim-aware field label: follows its enabled state (section 0.6) so a disabled row's
         // label greys out together with its field, centrally for every form.
         JLabel label = new JLabel(text.toUpperCase()) {
             @Override public void setEnabled(boolean enabled) {
@@ -65,7 +65,7 @@ public final class HudForms {
                 setForeground(enabled ? HUD_COLOR_ROLE_PRIMARY_TEXT : HUD_COLOR_ROLE_DISABLED);
             }
         };
-        AppTheme.styleFieldLabel(label); // shared §5.1 field-label styling (HUD_COLOR_ROLE_SECONDARY_TEXT, XS caps, locked)
+        AppTheme.styleFieldLabel(label); // shared section 5.1 field-label styling (HUD_COLOR_ROLE_SECONDARY_TEXT, XS caps, locked)
         if (labelWidth > 0) {
             sizeFieldLabel(label, labelWidth);
         }
@@ -89,8 +89,8 @@ public final class HudForms {
 
     /**
      * Adds a full-width component spanning the whole form grid (label + field + check columns) at the
-     * current row. Use for label-less, full-width controls inside a {@link #baseGbc} grid — e.g. a
-     * section-wide segmented switch or banner — so the component shares the same row insets as labelled
+     * current row. Use for label-less, full-width controls inside a {@link #baseGbc} grid - e.g. a
+     * section-wide segmented switch or banner - so the component shares the same row insets as labelled
      * rows instead of needing a hand-tuned border.
      */
     public static void addSpanComponent(JPanel panel, JComponent comp, GridBagConstraints gbc) {

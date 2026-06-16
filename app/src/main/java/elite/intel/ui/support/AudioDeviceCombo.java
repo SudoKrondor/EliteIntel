@@ -15,7 +15,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * Shared factory for the audio input/output device pickers used by both the inline AUDIO DEVICES
  * settings panel and the AI-tab {@link AudioInterfaceDialog}. Centralises the "(System Default)"
  * sentinel, the combo model build (sentinel first, then enumerated devices), and the
- * sentinel→{@code null} normalization applied before persisting a selection.
+ * sentinel->{@code null} normalization applied before persisting a selection.
  */
 public final class AudioDeviceCombo {
 

@@ -16,7 +16,7 @@ import java.awt.*;
  * vertical lines, with {@code HUD_COLOR_ROLE_INFORMATION_MARK} L-shaped corner marks painted over the outer border.
  * <p>
  * {@link Variant#TABLE_FILTER_CONNECTED} is the same segmented layout but without a bottom
- * border line — it instead draws a dim separator. Use it with a data table directly below so
+ * border line - it instead draws a dim separator. Use it with a data table directly below so
  * that the shared side borders create one continuous framed block.
  * <p>
  * {@link Variant#EMBEDDED} uses the same segmented layout as {@code TABLE_FILTER} but paints
@@ -81,7 +81,7 @@ public class HudSearchField extends JPanel {
         setBackground(filter ? HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND : HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
         // TABLE_FILTER variants paint their own border in paintBorder(); use a 1 px inset so
         // child panels don't bleed over the painted border line.
-        // EMBEDDED has no outer border — the host container provides the frame.
+        // EMBEDDED has no outer border - the host container provides the frame.
         if (this.variant == Variant.EMBEDDED) {
             setBorder(new EmptyBorder(0, 0, 0, 0));
         } else {
@@ -175,7 +175,7 @@ public class HudSearchField extends JPanel {
                 g2.drawLine(1, h-2, 1+m, h-2);     g2.drawLine(1, h-2-m, 1, h-2);         // BL
                 g2.drawLine(w-2-m, h-2, w-2, h-2); g2.drawLine(w-2, h-2-m, w-2, h-2);    // BR
             } else {
-                // TABLE_FILTER_CONNECTED: top/left/right border only — the table provides the bottom
+                // TABLE_FILTER_CONNECTED: top/left/right border only - the table provides the bottom
                 g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
                 g2.drawLine(0, 0, w - 1, 0);           // top
                 g2.drawLine(0, 0, 0, h - 1);           // left

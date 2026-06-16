@@ -61,7 +61,7 @@ public class MarkdownViewPanel extends JPanel {
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Working zone of the tab → FLAT section (HUD §9), not a framed accent box.
+        // Working zone of the tab -> FLAT section (HUD section 9), not a framed accent box.
         HudSection documentSection = new HudSection(
                 getText("manual.section.document"),
                 new BorderLayout(),
@@ -69,7 +69,7 @@ public class MarkdownViewPanel extends JPanel {
                 HudPalette.HUD_GAP);
         documentSection.body().add(scrollPane, BorderLayout.CENTER);
 
-        // RELOAD belongs in the shared tab footer (HUD §10), not a top toolbar.
+        // RELOAD belongs in the shared tab footer (HUD section 10), not a top toolbar.
         JButton reloadButton = AppTheme.makeButtonSubtle(getText("button.reload"));
         reloadButton.addActionListener(e -> loadContent());
         JPanel footer = HudFooter.build(false, null, null, List.of(reloadButton));
@@ -134,7 +134,7 @@ public class MarkdownViewPanel extends JPanel {
 
     /**
      * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
-     * {@code ("user-manual.md", "ru")} → {@code "user-manual-ru.md"}. The English base tag and a
+     * {@code ("user-manual.md", "ru")} -> {@code "user-manual-ru.md"}. The English base tag and a
      * blank tag return the base name unchanged.
      */
     private static String localizedName(String base, String tag) {
@@ -166,7 +166,7 @@ public class MarkdownViewPanel extends JPanel {
         return null;
     }
 
-    // -- Markdown → HTML converter ---------------------------------------------
+    // -- Markdown -> HTML converter ---------------------------------------------
 
     private String convertToHtml(String md) {
         String[] lines = md.split("\r?\n", -1);
@@ -288,7 +288,7 @@ public class MarkdownViewPanel extends JPanel {
 
             // -- Regular paragraph text -------------------------------------
             if (inUl || inOl) {
-                // indented continuation → treat as new paragraph after closing list
+                // indented continuation -> treat as new paragraph after closing list
                 closeLists(out, inUl, inOl);
                 inUl = inOl = false;
             }

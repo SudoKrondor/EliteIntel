@@ -78,7 +78,7 @@ public class HudTabbedPane extends JTabbedPane {
         private final boolean mainNavigation;
         private final boolean section;
 
-        /** Cache: original Icon → [active tint, inactive tint, disabled tint]. Keyed by identity. */
+        /** Cache: original Icon -> [active tint, inactive tint, disabled tint]. Keyed by identity. */
         private final Map<Icon, Icon[]> tintCache = new IdentityHashMap<>();
 
         HudTabbedPaneUi(boolean flatContent, boolean compact, boolean mainNavigation, boolean section) {
@@ -121,14 +121,14 @@ public class HudTabbedPane extends JTabbedPane {
             super.paintTabArea(g, tabPlacement, selectedIndex);
             if (mainNavigation) {
                 int width = tabPane.getWidth();
-                // top rail — muted warm, 2px
+                // top rail - muted warm, 2px
                 g.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
                 g.fillRect(0, 0, width, 2);
-                // bottom rail — same accent as the active tab box, 3px; flush to tab-area bottom
+                // bottom rail - same accent as the active tab box, 3px; flush to tab-area bottom
                 g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
                 g.fillRect(0, tabAreaHeight - 3, width, 3);
             } else if (section) {
-                // Underline rail under the section tab row (§11), paired with the active box fill.
+                // Underline rail under the section tab row (section 11), paired with the active box fill.
                 g.setColor(HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
                 g.fillRect(0, tabAreaHeight - 2, tabPane.getWidth(), 2);
             }
@@ -147,11 +147,11 @@ public class HudTabbedPane extends JTabbedPane {
                     g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
                     g.fillRect(x, y + gap, w, fillH);
                 }
-                // unselected: no fill — paintTabArea already painted HUD_COLOR_ROLE_APPLICATION_BACKGROUND
+                // unselected: no fill - paintTabArea already painted HUD_COLOR_ROLE_APPLICATION_BACKGROUND
                 return;
             }
             if (section) {
-                // Active = filled accent box (inversion, §11).
+                // Active = filled accent box (inversion, section 11).
                 if (isSelected) {
                     int gap = 4;
                     int bottomRail = 2;

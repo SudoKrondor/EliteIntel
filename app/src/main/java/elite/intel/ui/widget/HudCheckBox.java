@@ -15,7 +15,7 @@ import java.awt.event.MouseEvent;
  * in one solid slab. No LAF rendering is used; super.paintComponent is not called.
  * <p>
  * Optional info-zone: call {@link #setInfoAction(Runnable)} to append a square
- * info-glyph (ⓘ) zone on the right. Clicking it runs the action without toggling
+ * info-glyph (info) zone on the right. Clicking it runs the action without toggling
  * the checkbox state.
  */
 public class HudCheckBox extends JCheckBox {
@@ -124,7 +124,7 @@ public class HudCheckBox extends JCheckBox {
                 textColor   = HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT;
             }
 
-            // Slab fill — no border outline on the control itself
+            // Slab fill - no border outline on the control itself
             g2.setColor(fill);
             g2.fillRect(0, 0, w, h);
 

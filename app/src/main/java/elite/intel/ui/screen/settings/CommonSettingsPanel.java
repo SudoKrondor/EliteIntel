@@ -25,7 +25,7 @@ import static elite.intel.ui.theme.HudForms.*;
 /**
  * COMMON settings shown above the SETTINGS sub-tabs (settings shared across all of them):
  * command language and journal directory (left, wider column) plus the conversation-mode toggle
- * (right column). Moved here from the now-removed CUSTOM tab. FLAT section (§9).
+ * (right column). Moved here from the now-removed CUSTOM tab. FLAT section (section 9).
  */
 public class CommonSettingsPanel extends JPanel {
 
@@ -48,7 +48,7 @@ public class CommonSettingsPanel extends JPanel {
         JPanel body = section.body();
         int fieldHeight = HUD_FIELD_HEIGHT;
 
-        // Row 0 — command language (wide first column, cols 0–2) + conversation mode (right, col 3).
+        // Row 0 - command language (wide first column, cols 0-2) + conversation mode (right, col 3).
         GridBagConstraints g = baseGbc();
         addLabel(body, getText("player.commandLanguage"), g);
 
@@ -83,7 +83,7 @@ public class CommonSettingsPanel extends JPanel {
         cg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
         body.add(conversationModeCheckBox, cg);
 
-        // Row 1 — journal directory under language (label + field + compact picker).
+        // Row 1 - journal directory under language (label + field + compact picker).
         GridBagConstraints jg = baseGbc();
         jg.gridy = 1;
         addLabel(body, getText("player.journalDirectory"), jg);
@@ -96,7 +96,7 @@ public class CommonSettingsPanel extends JPanel {
         JButton selectJournalDirButton = makeFieldButton(verticalEllipsisIcon(fieldHeight), fieldHeight);
         selectJournalDirButton.setToolTipText(getText("button.select"));
         selectJournalDirButton.addActionListener(e -> chooseJournalDir());
-        // Compact square picker — fixed size, do not stretch like a field.
+        // Compact square picker - fixed size, do not stretch like a field.
         jg.gridx = 2;
         jg.weightx = 0;
         jg.fill = GridBagConstraints.NONE;

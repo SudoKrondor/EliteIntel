@@ -16,17 +16,17 @@ import java.util.List;
  * Canvas-rendered HUD readout that displays messages bottom-up with a typewriter animation.
  * Each entry is prefixed with a style-specific marker drawn in the style's accent color;
  * continuation lines indent to align with the message text, not the marker.
- * No title strip — intended to be placed inside a titled {@link HudSection}.
+ * No title strip - intended to be placed inside a titled {@link HudSection}.
  */
 public class HudLogArea extends JPanel {
 
     /** Visual style variant controlling the marker glyph, its color, and the body text color. */
     public enum Style {
-        /** Pilot command input: {@code »} marker in muted orange; amber body text. */
+        /** Pilot command input: {@code "} marker in muted orange; amber body text. */
         USER_INPUT("»", HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT),
-        /** Ship-computer response stream: {@code »} marker in cyan; soft blue-grey body text. */
+        /** Ship-computer response stream: {@code "} marker in cyan; soft blue-grey body text. */
         AI_RESPONSE("»", HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT),
-        /** System diagnostics readout: {@code ·} marker in subdued gray; dim neutral-grey body text. */
+        /** System diagnostics readout: {@code -} marker in subdued gray; dim neutral-grey body text. */
         SYSTEM_LOG("·", HudPalette.HUD_COLOR_ROLE_DISABLED, HudPalette.HUD_COLOR_ROLE_SYSTEM_LOG_TEXT);
 
         final String marker;
@@ -97,7 +97,7 @@ public class HudLogArea extends JPanel {
         }
         addMouseWheelListener(e -> {
             int lineHeight = getFontMetrics(hudFont()).getHeight();
-            // Negated: wheel-up → older entries (higher scrollOffset), wheel-down → newest/bottom
+            // Negated: wheel-up -> older entries (higher scrollOffset), wheel-down -> newest/bottom
             scrollOffset -= (int) (e.getPreciseWheelRotation() * lineHeight * 3);
             clampScroll();
             repaint();
@@ -220,8 +220,8 @@ public class HudLogArea extends JPanel {
         int maxW = w - textX - PAD_X - SCROLLBAR_W;
 
         // USER_INPUT keeps a virtual "bottom input row" pinned to the panel bottom at all times.
-        //   idle:   the row shows the blinking » | prompt.
-        //   active: the animating message occupies the row — its last wrapped line is pinned to
+        //   idle:   the row shows the blinking " | prompt.
+        //   active: the animating message occupies the row - its last wrapped line is pinned to
         //           the same baseline; additional lines from wrapping extend upward into history.
         // History messages always render above this input row.
         // For AI_RESPONSE / SYSTEM_LOG there is no input row (cursorZoneH = 0).

@@ -9,8 +9,8 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 
 /**
- * Reusable HUD modal confirm dialog (§10/§10.1) — the canon replacement for raw
- * {@code JOptionPane} confirms. Shows a title, a wrapped message and 2–3 buttons
+ * Reusable HUD modal confirm dialog (section 10/section 10.1) - the canon replacement for raw
+ * {@code JOptionPane} confirms. Shows a title, a wrapped message and 2-3 buttons
  * (primary right, optional extra left of primary, dismiss left) and reports which the user chose.
  * Built on {@link AppTheme#hudModalScaffold(HudModalSpec)}; ESC and the close glyph map to DISMISS.
  */

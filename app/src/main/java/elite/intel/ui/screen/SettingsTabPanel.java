@@ -55,7 +55,7 @@ public class SettingsTabPanel extends JPanel {
 
         updateAppButton = new HudUpdateButton(false);
 
-        // Non-modal footer: no BACK, no status — just the update action on the right (shared rail).
+        // Non-modal footer: no BACK, no status - just the update action on the right (shared rail).
         JPanel footer = HudFooter.build(false, null, null, List.of(updateAppButton));
 
         add(commonPanel, BorderLayout.NORTH);

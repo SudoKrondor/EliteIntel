@@ -29,7 +29,7 @@ import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
 
 /**
- * "Input" settings tab — lets the user map a controller button to push-to-talk, monitored via
+ * "Input" settings tab - lets the user map a controller button to push-to-talk, monitored via
  * the shared SDL3 poll loop in {@link DeviceService}.
  */
 public class InputSettingsPanel extends JPanel {
@@ -39,7 +39,7 @@ public class InputSettingsPanel extends JPanel {
     private HudComboBox<String> buttonCombo;
     private HudSegmentedControl modeControl;
 
-    // Mode segment indices — order matches the segments built in buildUi().
+    // Mode segment indices - order matches the segments built in buildUi().
     private static final int MODE_TOGGLE = 0;
     private static final int MODE_HOLD = 1;
 
@@ -90,7 +90,7 @@ public class InputSettingsPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
-        // Single flat working section (§9). Two-column body (§10): left column holds the master enable
+        // Single flat working section (section 9). Two-column body (section 10): left column holds the master enable
         // slab and the mode switch (both stretched to the column width, no labels); right column holds
         // the controller/button pickers as aligned rows.
         HudSection section = HudSection.flat(getText("settings.input.section.binding"), new BorderLayout());
@@ -104,7 +104,7 @@ public class InputSettingsPanel extends JPanel {
                 MODE_TOGGLE);
         modeControl.addChangeListener(e -> onModeChanged());
 
-        // Left column — enable slab + mode switch, both full-width (span) and label-less. GridBag + baseGbc
+        // Left column - enable slab + mode switch, both full-width (span) and label-less. GridBag + baseGbc
         // so its row insets come from the same shared source as the right column (no hand-tuned border).
         JPanel leftCol = transparentPanel(new GridBagLayout());
         GridBagConstraints lgc = baseGbc();
@@ -114,7 +114,7 @@ public class InputSettingsPanel extends JPanel {
         JPanel leftWrap = transparentPanel(new BorderLayout());
         leftWrap.add(leftCol, BorderLayout.NORTH);
 
-        // Right column — controller / button as aligned label→control rows.
+        // Right column - controller / button as aligned label->control rows.
         JPanel rightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints gc = baseGbc();
 
@@ -155,7 +155,7 @@ public class InputSettingsPanel extends JPanel {
         } else {
             toggleMode = false;
             SystemSession.getInstance().setPushToTalkToggleMode(false);
-            // Lock the system to sleeping — PTT button is the only wake trigger in this mode.
+            // Lock the system to sleeping - PTT button is the only wake trigger in this mode.
             SystemSession.getInstance().stopStartListening(true);
             EventBusManager.publish(new SleepWakeStateChangedEvent(true));
             EventBusManager.publish(new PttModeChangedEvent(true));

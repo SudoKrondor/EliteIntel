@@ -53,7 +53,7 @@ public class UINavigator {
      */
     public void openAndNavigate(GuiFocus panel, PanelTab target) {
         // If we already have this panel open and the game confirms it, just navigate.
-        // Verify GuiFocus too — lastOpenedPanel can be stale if the player closed it externally.
+        // Verify GuiFocus too - lastOpenedPanel can be stale if the player closed it externally.
         if (tracker.getLastOpenedPanel() == panel && status.getGuiFocus() == panel) {
             navigateToTargetTab(panel, target);
             return;
@@ -68,7 +68,7 @@ public class UINavigator {
 
         tracker.notifyEliteIntelOpeningPanel(panel);
         // Only send the open keystroke if the game doesn't already report this panel open.
-        // openPanel() is a toggle — sending it while the panel is open would close it.
+        // openPanel() is a toggle - sending it while the panel is open would close it.
         if (status.getGuiFocus() != panel) {
             for (int attempt = 1; attempt <= PANEL_OPEN_MAX_ATTEMPTS; attempt++) {
                 openPanel(panel);
@@ -147,7 +147,7 @@ public class UINavigator {
 
     /**
      * Retrace steps back to the default tab, then close the panel.
-     * Always retraces regardless of how far navigation went — the user
+     * Always retraces regardless of how far navigation went - the user
      * expects panels to be left on the default tab after every close.
      */
     public void closeAndRestore(GuiFocus panel) {

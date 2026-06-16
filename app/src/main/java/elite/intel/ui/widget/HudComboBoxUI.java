@@ -12,8 +12,8 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 
 /**
- * HUD-styled combo box UI: flat ▼ glyph in {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}, warm dark field background.
- * Replaces FlatLaf's arrow-button box with a plain filled triangle — no gradient, no rounded box.
+ * HUD-styled combo box UI: flat down glyph in {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}, warm dark field background.
+ * Replaces FlatLaf's arrow-button box with a plain filled triangle - no gradient, no rounded box.
  * Install via {@link AppTheme#styleComboBox(JComboBox)}.
  */
 class HudComboBoxUI extends FlatComboBoxUI {
@@ -33,7 +33,7 @@ class HudComboBoxUI extends FlatComboBoxUI {
         buttonFocusedBackground  = null;
         buttonEditableBackground = null;
         focusedBackground        = null;
-        popupBackground         = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;   // тёплый фон JList и popup-окна
+        popupBackground         = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;   // warm background of the JList and popup window
     }
 
     /** Replaces FlatLaf's default (white/bright) popup border with the HUD warm accent frame. */
@@ -87,7 +87,7 @@ class HudComboBoxUI extends FlatComboBoxUI {
         g.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
-    /** Draws a flat ▼ triangle with no background or border box. */
+    /** Draws a flat down triangle with no background or border box. */
     private final class ArrowButton extends JButton {
         @Override
         protected void paintComponent(Graphics g) {

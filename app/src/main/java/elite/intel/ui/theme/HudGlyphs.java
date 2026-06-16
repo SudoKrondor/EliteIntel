@@ -82,7 +82,7 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws the flat ▼ triangle used by HUD combo boxes, centred within (x, y, w, h).
+     * Draws the flat down triangle used by HUD combo boxes, centred within (x, y, w, h).
      * Shared with the combo box UI delegate arrow button and table cell renderers.
      *
      * @param g2    graphics context (not disposed by this method)
@@ -95,7 +95,7 @@ public final class HudGlyphs {
     public static void paintHudArrowDown(Graphics2D g2, int x, int y, int w, int h, Color color) {
         Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // Local geometry — not a colour/font/height token.
+        // Local geometry - not a colour/font/height token.
         int aw = 8;
         int ah = 5;
         int ax = x + (w - aw) / 2;
@@ -166,8 +166,8 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws a lowercase «i» glyph (dot + stem) centred within the box (x, y, w, h).
-     * All geometry is relative — no hardcoded pixel sizes except proportional formulas.
+     * Draws a lowercase "i" glyph (dot + stem) centred within the box (x, y, w, h).
+     * All geometry is relative - no hardcoded pixel sizes except proportional formulas.
      * Suitable for info-affording controls; caller chooses colour based on component state.
      *
      * @param g2    graphics context (not disposed by this method)
@@ -193,8 +193,8 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws an × glyph (two crossing diagonals) centred within the box (x, y, w, h).
-     * All geometry is proportional — no hardcoded pixel sizes except the proportional formulas.
+     * Draws an x glyph (two crossing diagonals) centred within the box (x, y, w, h).
+     * All geometry is proportional - no hardcoded pixel sizes except the proportional formulas.
      * Suitable for close/dismiss affordances; caller chooses colour based on hover state.
      *
      * @param g2    graphics context (not disposed by this method)
@@ -214,14 +214,14 @@ public final class HudGlyphs {
         int x1 = x + pad,     y1 = y + pad;
         int x2 = x + w - pad, y2 = y + h - pad;
         g2.setColor(color);
-        g2.drawLine(x1, y1, x2, y2); // top-left → bottom-right
-        g2.drawLine(x1, y2, x2, y1); // bottom-left → top-right
+        g2.drawLine(x1, y1, x2, y2); // top-left -> bottom-right
+        g2.drawLine(x1, y2, x2, y1); // bottom-left -> top-right
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
     }
 
     /**
-     * Draws a vertical three-dot «more/options» glyph (three stacked squares) centred within
+     * Draws a vertical three-dot "more/options" glyph (three stacked squares) centred within
      * the box (x, y, w, h). All geometry is proportional. Flat squares (not rounded dots) per
      * the HUD flat-style rule; caller chooses colour based on component state.
      *
@@ -233,7 +233,7 @@ public final class HudGlyphs {
      * @param color fill colour for the three dots
      */
     public static void paintHudVerticalEllipsis(Graphics2D g2, int x, int y, int w, int h, Color color) {
-        // Small dots with generous vertical breathing room — proportional so they scale with the box.
+        // Small dots with generous vertical breathing room - proportional so they scale with the box.
         int dot = Math.max(3, Math.round(h / 7f));
         int gap = Math.max(2, Math.round(h / 12f));
         int totalH = dot * 3 + gap * 2;
@@ -248,7 +248,7 @@ public final class HudGlyphs {
     /**
      * Returns an icon that paints a vertical three-dot glyph using the host component's
      * foreground colour, so it follows the button's state-driven colour. Use for compact
-     * field-trailing «more/options/pick» buttons instead of a Unicode «⋮» (see HUD §13).
+     * field-trailing "more/options/pick" buttons instead of a Unicode "vertical-ellipsis" (see HUD section 13).
      *
      * @param boxSize square icon side in px (typically the field/button height)
      */
@@ -264,7 +264,7 @@ public final class HudGlyphs {
 
     /**
      * Returns an icon that paints an up-pointing triangle in the host component's foreground
-     * colour (so it follows button state). Use for move-up affordances on buttons (see HUD §13).
+     * colour (so it follows button state). Use for move-up affordances on buttons (see HUD section 13).
      */
     public static Icon arrowUpIcon(int boxSize) {
         return new Icon() {
@@ -278,7 +278,7 @@ public final class HudGlyphs {
 
     /**
      * Returns an icon that paints a down-pointing triangle in the host component's foreground
-     * colour (so it follows button state). Use for move-down affordances on buttons (see HUD §13).
+     * colour (so it follows button state). Use for move-down affordances on buttons (see HUD section 13).
      */
     public static Icon arrowDownIcon(int boxSize) {
         return new Icon() {
@@ -291,8 +291,8 @@ public final class HudGlyphs {
     }
 
     /**
-     * Draws the HUD warning glyph — a triangle outline with a centred exclamation — within
-     * (x, y, w, h). Primitive replacement for the Unicode "⚠" (HUD §13); the caller chooses the
+     * Draws the HUD warning glyph - a triangle outline with a centred exclamation - within
+     * (x, y, w, h). Primitive replacement for the Unicode "warning" (HUD section 13); the caller chooses the
      * colour (state-driven, typically {@link #HUD_COLOR_ROLE_WARNING}).
      *
      * @param g2    graphics context (not disposed by this method)
@@ -330,7 +330,7 @@ public final class HudGlyphs {
 
     /**
      * Returns an icon that paints the HUD warning glyph using the host component's foreground
-     * colour. Use as a leading glyph on {@link HudBanner} warnings instead of a Unicode "⚠" (§13).
+     * colour. Use as a leading glyph on {@link HudBanner} warnings instead of a Unicode "warning" (section 13).
      *
      * @param boxSize square icon side in px
      */

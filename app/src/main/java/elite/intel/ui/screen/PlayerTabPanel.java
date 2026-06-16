@@ -304,13 +304,13 @@ public class PlayerTabPanel extends JPanel {
 
     /**
      * Cell renderer for editable combo columns (Voice/Personality/Cadence).
-     * Optionally localizes enum values and draws a muted ▼ affordance at the right edge.
+     * Optionally localizes enum values and draws a muted down affordance at the right edge.
      */
     private static final class ComboColumnRenderer extends HudTable.CellRenderer {
-        /** null → raw value (Voice); non-null → i18n key prefix (Personality/Cadence). */
+        /** null -> raw value (Voice); non-null -> i18n key prefix (Personality/Cadence). */
         private final String i18nPrefix;
         private boolean selectedRow;
-        // Local pixel geometry — not a colour/font/component-height token.
+        // Local pixel geometry - not a colour/font/component-height token.
         private static final int ARROW_AREA = 18;
 
         ComboColumnRenderer(String i18nPrefix) {
@@ -328,7 +328,7 @@ public class PlayerTabPanel extends JPanel {
                     .toUpperCase(Locale.ROOT)
                     : value;
             super.getTableCellRendererComponent(table, display, isSelected, hasFocus, row, col);
-            // Restore vpad from super, widen right side to reserve space for ▼.
+            // Restore vpad from super, widen right side to reserve space for down.
             int vpad = getVerticalPadding();
             setBorder(new EmptyBorder(vpad, 8, vpad, ARROW_AREA));
             return this;
@@ -359,7 +359,7 @@ public class PlayerTabPanel extends JPanel {
         public Component getTableCellEditorComponent(
                 JTable table, Object value, boolean isSelected, int row, int col) {
             Component c = super.getTableCellEditorComponent(table, value, isSelected, row, col);
-            c.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND); // §3: input field stays warm on any row state
+            c.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND); // section 3: input field stays warm on any row state
             c.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
             return c;
         }
@@ -367,8 +367,8 @@ public class PlayerTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
-    /** Общий вид gear-ячейки флота (§6: borderless растр-иконка + tint по строке).
-     *  Композиция: renderer и editor держат GearCell и делегируют отрисовку. */
+    /** Shared appearance of a fleet gear cell (section 6: borderless raster icon + per-row tint).
+     *  Composition: the renderer and editor hold a GearCell and delegate the painting to it. */
     private static class GearCell {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
@@ -397,7 +397,7 @@ public class PlayerTabPanel extends JPanel {
             return gearOrange;
         }
 
-        /** Применить вид ячейки под состояние выбора и вернуть готовую панель. */
+        /** Applies the cell appearance for the current selection state and returns the ready panel. */
         JPanel apply(boolean isSelected) {
             panel.setBackground(isSelected ? HUD_COLOR_ROLE_PRIMARY_ACTION : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             panel.setOpaque(true);
