@@ -549,3 +549,40 @@ body {
   .markdown-body h1 { font-size: 1.5rem; }
   .markdown-body h2 { font-size: 1.2rem; }
 }
+
+/* ── locale switcher ──────────────────────────────────────── */
+.locale-switcher {
+  display: flex;
+  gap: 0.15rem;
+  align-items: center;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.locale-link,
+.locale-current {
+  padding: 0.2rem 0.45rem;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.locale-link {
+  color: rgba(255,255,255,0.55);
+}
+.locale-link:hover {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+.locale-current {
+  background: var(--ed-orange);
+  color: #000;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .locale-switcher { font-size: 0.7rem; }
+  .locale-link, .locale-current { padding: 0.15rem 0.3rem; }
+}

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install LM Studio Windows  EliteIntel</title>
+    <meta name="description" content="Запуск локальної LLM зберігає всі дані приватними та офлайн. Плата за підписку відсутня. Застосовуються витрати на обладнання та електроенергію.">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-LM-Studio-Windows.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-LM-Studio-Windows.html">
+    <meta property="og:title" content="Install LM Studio Windows  EliteIntel">
+    <meta property="og:description" content="Запуск локальної LLM зберігає всі дані приватними та офлайн. Плата за підписку відсутня. Застосовуються витрати на обладнання та електроенергію.">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/Install-LM-Studio-Windows.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Install-LM-Studio-Windows.html" class="locale-link">EN</a><a href="../fr/Install-LM-Studio-Windows.html" class="locale-link">FR</a><a href="../es/Install-LM-Studio-Windows.html" class="locale-link">ES</a><a href="../de/Install-LM-Studio-Windows.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/Install-LM-Studio-Windows.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Налаштування</a>
+            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметри</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h2>Локальна LLM  налаштування на Windows (LM Studio)</h2>
+<p>Запуск локальної LLM зберігає всі дані приватними та офлайн. Плата за підписку відсутня. Застосовуються витрати на обладнання та електроенергію.</p>
+<p>LM Studio є альтернативою Ollama. Вона використовує ті самі моделі та той самий OpenAI-сумісний API. Вибір можна змінити в налаштуваннях будь-коли.</p>
+<p>Для роботи потрібні <a href="https://lmstudio.ai">LM Studio</a> та здатний GPU.</p>
+<hr>
+<h3>Мінімальні вимоги до обладнання</h3>
+<p>Щоб запустити Elite Dangerous та LLM на <strong>одній машині</strong>, потрібен мінімум <strong>NVIDIA RTX 3060 з 24 GB VRAM</strong>.</p>
+<blockquote>
+<p><strong>Порада:</strong> Elite Intel можна спрямувати на екземпляр LM Studio, що працює на <strong>окремому ПК</strong> у вашій мережі. Якщо доступна друга машина зі здатним GPU, ігровий ПК не несе жодного навантаження від інференсу в цій конфігурації.</p>
+</blockquote>
+<hr>
+<h3>Рекомендована модель</h3>
+<table>
+<thead>
+<tr>
+<th>Модель</th>
+<th>Потрібно VRAM</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
+<td>~5 GB</td>
+<td>✅ Рекомендована. Швидка, точна, відмінно підходить для команд і запитів.</td>
+</tr>
+<tr>
+<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
+<td>~8.5 GB</td>
+<td>Вища якість, якщо є запас VRAM.</td>
+</tr>
+<tr>
+<td><code>qwen3</code> 8B</td>
+<td>~8 GB</td>
+<td>Експериментальна. Очікуйте випадкових пропущених команд та галюцинацій.</td>
+</tr>
+</tbody></table>
+<hr>
+<p>Детальний (дуже детальний) відеопосібник від @DawnTreaderToolsoftheElite</p>
+<div class="yt-embed"><iframe src="https://www.youtube.com/embed/F5RgRRePrTo" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
+
+<hr>
+<h3>Крок 1  Встановлення LM Studio</h3>
+<p>Відкрийте <strong>PowerShell</strong> та виконайте:</p>
+<pre><code class="language-powershell">irm https://lmstudio.ai/install.ps1 | iex
+</code></pre>
+<p>Це встановлює CLI <code>lms</code> та середовище виконання LM Studio. Після встановлення відкрийте <strong>нове</strong> вікно PowerShell, щоб зміни набули чинності.</p>
+<p>Перевірте, що все працює:</p>
+<pre><code class="language-powershell">lms --help
+</code></pre>
+<blockquote>
+<p><strong>Примітка:</strong> Якщо настільний додаток LM Studio вже встановлено, CLI <code>lms</code> може бути вже доступний. Виконайте <code>lms --help</code> перед запуском скрипта встановлення.</p>
+</blockquote>
+<hr>
+<h3>Крок 2  Завантаження моделі</h3>
+<pre><code class="language-powershell">lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+</code></pre>
+<p>або</p>
+<pre><code class="language-powershell">lms get Tulu-3.1
+</code></pre>
+<p>та виберіть варіант <code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code> (може бути вказаний як <code>Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code>).</p>
+<p>Щоб переглянути завантажені моделі:</p>
+<pre><code class="language-powershell">lms ls
+</code></pre>
+<hr>
+<h3>Крок 3  Запуск сервера</h3>
+<p>Завантажте модель та запустіть сервер інференсу:</p>
+<pre><code class="language-powershell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+lms server start
+</code></pre>
+<p><strong>ПРИМІТКА</strong>: Прапорець <code>--context-length 8192</code> є обов&#39;язковим. Без нього вікно контексту може бути надто малим, що спричиняє обрізання запитів, помилки та галюцинації.</p>
+<p>Перевірте, що сервер запущений, відкривши браузер або інше вікно PowerShell і перейшовши до:</p>
+<pre><code>http://localhost:1234/v1/models
+</code></pre>
+<p>Ви отримаєте JSON-список завантажених моделей. Рядок ідентифікатора моделі у цій відповіді  це те, що ви введете у поле <strong>LLM Model</strong> в Elite Intel.</p>
+<p>Щоб зупинити сервер:</p>
+<pre><code class="language-powershell">lms server stop
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>Важливо:</strong> Сервер LM Studio <strong>не</strong> переживає перезавантажень. Виконуйте <code>lms server start</code> після кожного перезапуску або скористайтесь одним із варіантів автозапуску нижче.</p>
+</blockquote>
+<hr>
+<h3>Крок 4  (Необов&#39;язково) Автозапуск при завантаженні</h3>
+<p>Доступні два варіанти для підтримки роботи сервера після перезавантажень.</p>
+<h4>Варіант A  Настільний додаток</h4>
+<p>Якщо встановлено настільний додаток LM Studio, це найпростіший підхід:</p>
+<ol>
+<li>Відкрийте LM Studio та натисніть <strong>Ctrl + ,</strong> для відкриття налаштувань.</li>
+<li>Поставте галочку <strong>«Run LLM server on login»</strong>.</li>
+<li>Закриття додатка згортає його до системного трею та залишає сервер запущеним. При наступному вході він відновлюється автоматично.</li>
+</ol>
+<h4>Варіант B  Планувальник завдань (без графічного інтерфейсу)</h4>
+<ol>
+<li>Натисніть <strong>Win + R</strong>, введіть <code>taskschd.msc</code>, натисніть Enter.</li>
+<li>Натисніть <strong>Create Task</strong> на правій панелі.</li>
+<li>Вкладка <strong>General</strong>: назвіть <code>LM Studio Server</code>. Поставте галочку <strong>«Run with highest privileges»</strong>.</li>
+<li>Вкладка <strong>Triggers</strong>: натисніть New → <strong>«At log on»</strong> → OK.</li>
+<li>Вкладка <strong>Actions</strong>: натисніть New → <strong>«Start a program»</strong>.<ul>
+<li>Program/script: <code>%USERPROFILE%\.lmstudio\bin\lms.exe</code></li>
+<li>Add arguments: <code>server start</code></li>
+</ul>
+</li>
+</ol>
+<p>Щоб також завантажувати модель автоматично, створіть замість цього пакетний файл:</p>
+<pre><code class="language-batch">@echo off
+%USERPROFILE%\.lmstudio\bin\lms.exe daemon up
+%USERPROFILE%\.lmstudio\bin\lms.exe load tulu-3.1-8b-supernova --yes --context-length 8192 --gpu max
+%USERPROFILE%\.lmstudio\bin\lms.exe server start
+</code></pre>
+<p>Збережіть як <code>start-lmstudio.bat</code> у постійному місці (наприклад, <code>C:\Scripts\</code>) та вкажіть цей файл у дії планувальника завдань.</p>
+<hr>
+<h3>Крок 5  Налаштування Elite Intel</h3>
+<p>Відкрийте вкладку <strong>Settings</strong> в Elite Intel:</p>
+<ul>
+<li>Залиште поле <strong>LLM Key</strong> порожнім (локальна LM Studio не потребує ключа).</li>
+<li><strong>LLM Address</strong>: встановіть <code>http://localhost:1234/v1/chat/completions</code>. Якщо LM Studio знаходиться на іншій машині, замініть <code>localhost</code> на IP-адресу тієї машини.</li>
+<li><strong>LLM Model</strong>: вставте рядок ідентифікатора моделі з <code>http://localhost:1234/v1/models</code>.</li>
+<li><strong>Command LLM</strong>: встановіть той самий ідентифікатор моделі.</li>
+<li><strong>Query LLM</strong>: встановіть той самий ідентифікатор моделі.</li>
+<li>Натисніть <strong>Stop</strong>, а потім <strong>Start</strong> на вкладці AI для застосування змін.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

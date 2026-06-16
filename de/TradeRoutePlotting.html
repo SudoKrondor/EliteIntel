@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Handelsrouten-Planung  EliteIntel</title>
+    <meta name="description" content="Elite Intel berechnet Handelsrouten und leitet Frachtoperationen Abschnitt für Abschnitt. Sag „Berechne mir eine profitable Handelsroute&quot;, um zu beginnen.">
+    <link rel="canonical" href="https://www.elite-intel.org/de/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/TradeRoutePlotting.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/TradeRoutePlotting.html">
+    <meta property="og:title" content="Handelsrouten-Planung  EliteIntel">
+    <meta property="og:description" content="Elite Intel berechnet Handelsrouten und leitet Frachtoperationen Abschnitt für Abschnitt. Sag „Berechne mir eine profitable Handelsroute&quot;, um zu beginnen.">
+    <meta property="og:url" content="https://www.elite-intel.org/de/TradeRoutePlotting.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../TradeRoutePlotting.html" class="locale-link">EN</a><a href="../fr/TradeRoutePlotting.html" class="locale-link">FR</a><a href="../es/TradeRoutePlotting.html" class="locale-link">ES</a><span class="locale-current">DE</span><a href="../uk/TradeRoutePlotting.html" class="locale-link">UK</a><a href="../ru/TradeRoutePlotting.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Startseite</a>
+
+            <div class="nav-section">Anwendung</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Konfiguration</a>
+            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Optionen</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> LLM auswählen</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Wie mache ich...?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="TradeRoutePlotting.html" class="nav-link active"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Piraten-Missionen</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Alle Befehle</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Systembefehle</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Matrix-Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Datenschutzrichtlinie</a>
+            <a href="Contact.html" class="nav-link">📧 Entwickler kontaktieren</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Handelsrouten-Planung</h1>
+<p>Elite Intel berechnet Handelsrouten und leitet Frachtoperationen Abschnitt für Abschnitt. Sag „Berechne mir eine profitable Handelsroute&quot;, um zu beginnen.</p>
+<h3>Wie die Handelsrouten-Berechnung funktioniert</h3>
+<div class="yt-embed"><iframe src="https://www.youtube.com/embed/lQU5wnCS0rQ" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
+
+
+<ol>
+<li><p><strong>Frachtkapazität ist erforderlich.</strong>
+Wenn das aktuelle Schiff keine Frachtkapazität hat, fordert die App dich auf, zu einem Schiff mit mindestens einem Frachtgestell zu wechseln.</p>
+</li>
+<li><p><strong>Handelsprofil (pro Schiff)</strong>
+Jedes Schiff hat sein eigenes Handelsprofil. Richte es einmalig ein. Elite Intel behält das Profil für zukünftige Sitzungen.</p>
+</li>
+<li><p><strong>Profil einrichten oder ändern</strong> (nur Sprachbefehle)
+Sag „Handelsprofil ändern&quot; gefolgt von dem Parameter, den du ändern möchtest.</p>
+<p><strong>Beispiel für die Ersteinrichtung</strong> (Mindestanforderung):</p>
+<ul>
+<li>„Handelsprofil ändern, Startkapital zwanzig Millionen&quot;</li>
+<li>„Handelsprofil ändern, maximale Entfernung vom Stern sechstausend Lichtsekunden&quot;</li>
+<li>„Handelsprofil ändern, maximale Stopps acht&quot;</li>
+</ul>
+<blockquote>
+<p>Hinweis: Sag „maximale Stopps acht&quot;, nicht „auf acht&quot;. Die Spracherkennung kann Präpositionen als Zahlen transkribieren, was zu einer falschen Stoppanzahl führt.</p>
+</blockquote>
+<p>Optionale Parameter:</p>
+<ul>
+<li>„Handelsprofil ändern, Erlaubnissysteme zulassen&quot;</li>
+<li>„Handelsprofil ändern, Planetenhäfen zulassen&quot;</li>
+<li>„Handelsprofil ändern, Flottenträger zulassen&quot; (Hinweis: Die Position des Flottenträgers kann sich vor der Ankunft ändern)</li>
+<li>„Handelsprofil ändern, verbotene Waren zulassen&quot;</li>
+</ul>
+</li>
+<li><p><strong>Route berechnen</strong>
+Sag „Handelsroute berechnen&quot; oder „Profitable Handelsroute planen&quot;.
+Die Berechnung dauert in der Regel 30 bis 60 Sekunden.</p>
+</li>
+<li><p><strong>Abschnitt für Abschnitt navigieren</strong>
+Sag „Route zum nächsten Handelsstopp planen&quot;, wenn du bereit bist. Synonyme für den Stationstyp werden akzeptiert. Der Befehl erfordert <strong>Planen</strong> + <strong>Handels</strong> + ein Stations-Synonym.</p>
+</li>
+<li><p><strong>Bei der Ankunft</strong>
+Elite Intel gibt die Andockstation und die zu kaufende oder zu verkaufende Ware bekannt.
+Im Zweifelsfall frage „Was kaufe ich hier?&quot; oder „Wo verkaufe ich diese Fracht?&quot; Gib Kaufen oder Verkaufen an, um Mehrdeutigkeiten zu vermeiden.</p>
+</li>
+<li><p><strong>Nach dem Beladen</strong>
+Sag erneut „Route zum nächsten Handelsstopp planen&quot;. Elite Intel plant die Route zum Verkaufsort mit der höchsten Gewinnspanne.</p>
+</li>
+<li><p><strong>Routenpersistenz</strong>
+Die Route bleibt bestehen, bis sie abgeschlossen, überschrieben oder abgebrochen wird. Um eine neue Route zu starten, leere zuerst den Frachtraum.
+(Geplante Funktion: automatische Frachtliquidation an den Meistbietenden.)</p>
+</li>
+</ol>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

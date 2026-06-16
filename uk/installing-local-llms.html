@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вибір локального сервера інференції  EliteIntel</title>
+    <meta name="description" content="Для запуску локального LLM з Elite Intel потрібен сервер інференції. Це програмне забезпечення, яке завантажує модель ШІ та надає до неї доступ через локальний ">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/installing-local-llms.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/installing-local-llms.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/installing-local-llms.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/installing-local-llms.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/installing-local-llms.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/installing-local-llms.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/installing-local-llms.html">
+    <meta property="og:title" content="Вибір локального сервера інференції  EliteIntel">
+    <meta property="og:description" content="Для запуску локального LLM з Elite Intel потрібен сервер інференції. Це програмне забезпечення, яке завантажує модель ШІ та надає до неї доступ через локальний ">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/installing-local-llms.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../installing-local-llms.html" class="locale-link">EN</a><a href="../fr/installing-local-llms.html" class="locale-link">FR</a><a href="../es/installing-local-llms.html" class="locale-link">ES</a><a href="../de/installing-local-llms.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/installing-local-llms.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Налаштування</a>
+            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметри</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link active"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h1>Вибір локального сервера інференції</h1>
+<p>Для запуску локального LLM з Elite Intel потрібен <strong>сервер інференції</strong>. Це програмне забезпечення, яке завантажує модель ШІ та надає до неї доступ через локальний API. Це локальний еквівалент хмарного сервісу ШІ, що працює повністю на твоєму власному залізі.</p>
+<p>Elite Intel підтримує два сервери інференції: <strong>Ollama</strong> та <strong>LM Studio</strong>. Обидва сумісні та використовують однакові моделі. Вибір можна змінити в налаштуваннях у будь-який час.</p>
+<p><img src="../images/local-llm.png" alt="loca llm ui"></p>
+<h2>Вимоги до GPU</h2>
+<p>Вимоги до заліза для запуску гри та LLM на одній машині:</p>
+<ul>
+<li>RTX 3090 24 ГБ VRAM</li>
+<li>AMD RX 7800 XT</li>
+</ul>
+<p>Якщо у тебе недостатньо заліза, скористайся <strong><a href="https://v2.auth.mistral.ai/login">безкоштовним хмарним сервісом</a></strong></p>
+<p>Таблиця порівняння GPU від <strong>Kevin Rank</strong> доступна тут:
+<a href="https://docs.google.com/spreadsheets/d/1ZyPgTvlVg7ueemHEV-3J3j3tAynShIyxTs8rd59rips/edit?usp=sharing">Довідник з GPU</a></p>
+<hr>
+<h3>Посібники з встановлення</h3>
+<table>
+<thead>
+<tr>
+<th>Сервер інференції</th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="Install-LM-Studio-Linux.html">✅ LM Studio - Linux</a></td>
+<td>Швидкий, більша гнучкість моделей  посібник показує налаштування як сервера</td>
+</tr>
+<tr>
+<td><a href="Install-LM-Studio-Windows.html">✅ LM Studio - Windows</a></td>
+<td>Швидкий, більша гнучкість моделей  є графічний інтерфейс</td>
+</tr>
+<tr>
+<td><a href="Install-Ollama-Local-LLM-Linux.html">Ollama - Linux</a></td>
+<td>Рекомендовано, якщо є достатньо заліза</td>
+</tr>
+<tr>
+<td><a href="Install-Ollama-Local-LLM-Windows.html">Ollama - Windows</a></td>
+<td>Рекомендовано, якщо є достатньо заліза</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Ollama vs. LM Studio: коротке порівняння</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Ollama</th>
+<th>LM Studio</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Швидкість</strong></td>
+<td>Повільніший</td>
+<td>Швидший</td>
+</tr>
+<tr>
+<td><strong>Рекомендована модель</strong></td>
+<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+<td><a href="https://huggingface.co/mradermacher/Tulu-3.1-8B-SuperNova-i1-GGUF">tulu-3.1-8b-supernova Q4_K_M</a></td>
+</tr>
+<tr>
+<td><strong>Найкраще підходить для</strong></td>
+<td>Проста установка, мінімальне обслуговування</td>
+<td>Більший контроль над завантаженням моделей</td>
+</tr>
+<tr>
+<td><strong>Встановлення</strong></td>
+<td>Один скрипт  і готово</td>
+<td>Один скрипт  і готово</td>
+</tr>
+<tr>
+<td><strong>Запускається як</strong></td>
+<td>Системний сервіс (автозапуск при старті)</td>
+<td>Ручний запуск або опціональний автозапуск</td>
+</tr>
+<tr>
+<td><strong>Налаштування моделі</strong></td>
+<td>Modelfile вбудований у модель</td>
+<td>Параметри при завантаженні</td>
+</tr>
+<tr>
+<td><strong>Автозапуск Windows</strong></td>
+<td>✅ Працює з коробки</td>
+<td>Потребує десктопного додатку або планувальника завдань</td>
+</tr>
+<tr>
+<td><strong>Автозапуск Linux</strong></td>
+<td>✅ Сервіс systemd включено</td>
+<td>Ручне налаштування systemd</td>
+</tr>
+<tr>
+<td><strong>Джерело моделей</strong></td>
+<td>Бібліотека Ollama</td>
+<td>HuggingFace (GGUF)</td>
+</tr>
+<tr>
+<td><strong>Порт API</strong></td>
+<td><code>11434</code></td>
+<td><code>1234</code></td>
+</tr>
+<tr>
+<td><strong>Графічний інтерфейс</strong></td>
+<td>Відсутній (тільки CLI)</td>
+<td>Опціональний десктопний додаток</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Посібник з вибору</h3>
+<p><strong>Використовуй Ollama, якщо:</strong></p>
+<ul>
+<li>Тобі потрібна проста установка з мінімальним поточним налаштуванням</li>
+<li>Ти на Windows і не хочеш вручну налаштовувати автозапуск</li>
+<li>Ти тільки починаєш роботу з локальними LLM</li>
+</ul>
+<p><strong>Використовуй LM Studio, якщо:</strong></p>
+<ul>
+<li>Тобі потрібен графічний інтерфейс для перегляду, завантаження та управління моделями</li>
+<li>Ти вже знайомий з HuggingFace і файлами моделей GGUF</li>
+<li>Хочеш експериментувати з різними моделями без написання Modelfiles</li>
+<li>Запускаєш виділену машину для інференції та потребуєш чистого headless-сервера</li>
+</ul>
+<p><strong>Будь-який варіант підходить, якщо:</strong></p>
+<ul>
+<li>У тебе є NVIDIA RTX 3090 24 ГБ або аналог чи краще. VRAM  критичний фактор, а не швидкість GPU. GPU лише з 12 ГБ VRAM є недостатнім незалежно від покоління.</li>
+<li>Ти запускаєш Elite Dangerous та LLM на одній машині</li>
+<li>Хочеш вказати Elite Intel на окремий ПК у своїй мережі</li>
+</ul>
+<hr>
+<h2>Рекомендація розробника</h2>
+<p>Розробник використовує LM Studio з <a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF"><code>matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</code></a>. Ця модель забезпечує швидку інференцію. Та сама модель на Ollama працює помітно повільніше. Застосунок оптимізований під цю модель. Інші моделі можуть працювати, але це не гарантується. Повідомляй про результати сумісності в Matrix.</p>
+<h2>Чому саме tulu3.1:8b Supernova?</h2>
+<p>Elite Intel  це аналізатор команд і інструмент аналізу даних, а не розмовний чатбот. Це висуває специфічні вимоги до моделі. Генерувати природно звучачу розмову  недостатньо. Модель повинна правильно визначати дії з голосового вводу та виконувати структурований аналіз даних. Вона повинна повертати результати у форматованому JSON, а не у вигляді есе або HTML. Не всі моделі такого розміру надійно виконують це завдання.</p>
+<h2>Tulu 3 (базовий рецепт навчання) є справді видатним</h2>
+<p><a href="https://huggingface.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF/tree/main">Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF</a></p>
+<p>Більшість навчальних моделей тренуються за допомогою RLHF, який використовує навчену модель винагороди для оцінки виходів. Ця модель винагороди сама є нейронною мережею і успадковує всі типові упередження та непослідовності. Tulu 3 замінив це на RLVR (навчання з підкріпленням з верифікованими винагородами). Замість навченої моделі винагороди навчання використовує детерміновану функцію оцінки: відповідь або правильна, або ні. Бінарно, без упереджень. Це особливо ефективно для завдань дотримання інструкцій, де сигнал винагороди є об&#39;єктивним.</p>
+<p>Конвеєр навчання  це чотиристадійний підхід: куріація даних для основних навичок, кероване тонке налаштування, оптимізація прямих переваг і RLVR поверх для підвищення точності на верифікованих завданнях. Кожна стадія будується на попередній. Саме тому Tulu 3 на базі Llama 8B досягає результатів, що перевершують instruct-версії Llama 3.1, Qwen 2.5, Mistral і навіть закриті моделі, такі як GPT-4o-mini і Claude 3.5 Haiku.</p>
+<p>Для EliteIntel стадія класифікації команд є завданням дотримання інструкцій з верифікованими правильними відповідями (JSON-дія X або Y). Це саме той тип завдань, який оптимізує RLVR. Модель навчена спеціально для детермінованого структурованого виводу.</p>
+<h2>Чому варіант «Supernova»</h2>
+<p>Варіант Supernova відрізняється від стандартного Tulu 3. Tulu-3.1-8B-SuperNova створюється шляхом лінійного злиття трьох моделей: Llama-3.1-MedIT-SUN-8B (медицина/міркування), Llama-3.1-Tulu-3-8B (дотримання інструкцій) і Llama-3.1-SuperNova-Lite (дистильована модель Arcee), кожна з однаковою вагою 1.0 за допомогою mergekit.</p>
+<p>Батьківська модель SuperNova-Lite  це дистильована модель з більшої бази Arcee, що забезпечує щільність знань вище, ніж у стандартної моделі 8B. Лінійне злиття безпосередньо усереднює тензори ваг, поєднуючи знання без додаткових обчислень навчання. Це дозволяє досягти особливо сильних результатів у завданнях дотримання інструкцій, що підтверджується оцінкою IFEval.</p>
+<p><strong>Продуктивність</strong>: Модель використовує архітектуру Llama 8B. При квантизації Q4_K_M на 3090 з 24 ГБ вона поміщається у VRAM разом із грою із запасом. Це дозволяє уникнути вивантаження на CPU і підтримує максимальну пропускну здатність інференції. Порівнянні моделі Qwen використовують інші конфігурації головок уваги (наприклад, коефіцієнт GQA у Qwen2.5), які можуть працювати повільніше у бекенді GGUF від llama.cpp.</p>
+<p>Вона також працює на карті з 12 ГБ VRAM за умови відсутності інших навантажень, що споживають VRAM. Для цього потрібно, щоб гра запускалася на окремому GPU або машині.</p>
+<h2>Чи можу я використовувати іншу модель?</h2>
+<p>Альтернативні моделі можуть використовуватися, але навряд чи зрівняються за швидкістю та точністю з tulu3.1-supernova.</p>
+<p>Типові проблеми з альтернативними моделями включають неправильний формат відповіді.
+Найчастіша помилка  модель повертає есе замість структурованої дії або результату аналізу.</p>
+<hr>
+<p>Спільнота 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install Ollama Local LLM Linux  EliteIntel</title>
+    <meta name="description" content="Запуск локальної мовної моделі забезпечує повну конфіденційність даних та роботу офлайн. Підписка не потрібна. Враховуються витрати на обладнання та електроенер">
+    <link rel="canonical" href="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Linux.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-Ollama-Local-LLM-Linux.html">
+    <meta property="og:title" content="Install Ollama Local LLM Linux  EliteIntel">
+    <meta property="og:description" content="Запуск локальної мовної моделі забезпечує повну конфіденційність даних та роботу офлайн. Підписка не потрібна. Враховуються витрати на обладнання та електроенер">
+    <meta property="og:url" content="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Linux.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Install-Ollama-Local-LLM-Linux.html" class="locale-link">EN</a><a href="../fr/Install-Ollama-Local-LLM-Linux.html" class="locale-link">FR</a><a href="../es/Install-Ollama-Local-LLM-Linux.html" class="locale-link">ES</a><a href="../de/Install-Ollama-Local-LLM-Linux.html" class="locale-link">DE</a><span class="locale-current">UK</span><a href="../ru/Install-Ollama-Local-LLM-Linux.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Головна</a>
+
+            <div class="nav-section">Застосунок</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Встановлення</a>
+            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Налаштування</a>
+            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Параметри</a>
+
+            <div class="nav-section">Вікі</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Обрати LLM</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Як це зробити?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Загальне використання</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Торгівля та прибуток</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Пошук по галактиці</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Дослідження</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Навігація</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Піратські місії</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Всі команди</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Системні команди</a>
+
+            <div class="nav-section">Спільнота</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Чат Matrix ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Політика конфіденційності</a>
+            <a href="Contact.html" class="nav-link">📧 Зв&#39;язатися з розробником</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h2>Локальна мовна модель  налаштування Linux (Ollama)</h2>
+<p>Запуск локальної мовної моделі забезпечує повну конфіденційність даних та роботу офлайн. Підписка не потрібна. Враховуються витрати на обладнання та електроенергію.</p>
+<p>Необхідні <a href="https://ollama.com">Ollama</a> і потужний GPU.</p>
+<hr>
+<h3>Мінімальні вимоги до обладнання</h3>
+<p>Для запуску Elite Dangerous і мовної моделі на <strong>одній машині</strong> потрібна щонайменше <strong>NVIDIA RTX 3060 з 12 ГБ VRAM</strong>. Запас продуктивності при цій конфігурації обмежений.</p>
+<blockquote>
+<p><strong>Порада:</strong> Elite Intel можна спрямувати на екземпляр Ollama, що працює на <strong>окремому ПК</strong> у вашій мережі. Якщо доступна друга машина з потужним GPU, ігровий ПК не несе навантаження інференсу в цій конфігурації.</p>
+</blockquote>
+<hr>
+<h3>Рекомендована модель</h3>
+<table>
+<thead>
+<tr>
+<th>Модель</th>
+<th>Необхідно VRAM</th>
+<th>Примітки</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Tulu-3.1-8B-SuperNova-Q4_K_M</code></td>
+<td>~5 ГБ</td>
+<td>✅ Рекомендується. Надійна робота з командами та запитами.</td>
+</tr>
+<tr>
+<td><code>qwen3</code> 8B</td>
+<td>~8 ГБ</td>
+<td>Експериментальна. Можливі пропущені команди та галюцинації.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Примітка:</strong> Для найшвидшого локального інференсу розгляньте <a href="Install-LM-Studio-Linux.html">LM Studio</a> з <code>matrixportalx/tulu-3.1-8b-supernova</code>. За результатами тестування, він помітно швидший за Ollama на тому самому обладнанні з тією самою моделлю.</p>
+</blockquote>
+<hr>
+<h3>Крок 1  Встановлення Ollama</h3>
+<pre><code class="language-shell">curl -fsSL https://ollama.com/install.sh | sh
+</code></pre>
+<p>Ollama встановлюється як служба systemd і запускається автоматично.</p>
+<hr>
+<h3>Крок 2  Завантаження рекомендованої моделі</h3>
+<pre><code class="language-shell">ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+</code></pre>
+<p>Або експериментальні альтернативи:</p>
+<pre><code class="language-shell">ollama pull qwen3:8b
+</code></pre>
+<hr>
+<h3>Крок 3  (Необов&#39;язково) Налаштування служби Ollama</h3>
+<p>Ollama працює без додаткового налаштування. Наведена конфігурація покращує керування VRAM при спільному запуску з Elite Dangerous.</p>
+<pre><code class="language-shell">sudo nano /etc/systemd/system/ollama.service.d/override.conf
+</code></pre>
+<p>Вставте наступне:</p>
+<pre><code class="language-ini">[Service]
+Environment=&quot;OLLAMA_MAX_VRAM=14000000000&quot;
+Environment=&quot;OLLAMA_DEBUG=0&quot;
+Environment=&quot;OLLAMA_NUM_PARALLEL=3&quot;
+Environment=&quot;OLLAMA_MAX_LOADED_MODELS=1&quot;
+Environment=&quot;OLLAMA_FLASH_ATTENTION=1&quot;
+Environment=&quot;OLLAMA_KEEP_ALIVE=-1&quot;
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=5
+</code></pre>
+<p>Потім перезавантажте конфігурацію та перезапустіть службу:</p>
+<pre><code class="language-shell">sudo systemctl daemon-reload
+sudo systemctl restart ollama.service
+</code></pre>
+<h4>Що роблять ці налаштування</h4>
+<p><strong><code>OLLAMA_MAX_VRAM</code></strong>: Жорсткий ліміт VRAM, яку може використовувати Ollama, у байтах. <code>14000000000</code> = 14 ГБ. Решта залишається для Elite Dangerous. Скоригуйте відповідно до вашого GPU та вимог гри.</p>
+<p><strong><code>OLLAMA_NUM_PARALLEL</code></strong>: Кількість запитів, що обробляються одночасно. Elite Intel виконує асинхронні виклики, тому занадто низьке значення спричинить збої. <code>3</code> покриває типове перекриття команд і запитів без надмірного виділення ресурсів.</p>
+<p><strong><code>OLLAMA_MAX_LOADED_MODELS</code></strong>: Тримає в VRAM лише одну модель одночасно.</p>
+<p><strong><code>OLLAMA_FLASH_ATTENTION</code></strong>: Вмикає Flash Attention, що знижує використання пропускної здатності пам&#39;яті під час інференсу. Як правило, швидше  особливо для повторюваних запитів.</p>
+<p><strong><code>OLLAMA_KEEP_ALIVE=-1</code></strong>: Тримає модель завантаженою у VRAM безстроково. Без цього Ollama може вивантажити модель після певного часу бездіяльності, що призведе до затримки при наступному запиті.</p>
+<hr>
+<h3>Крок 4  Налаштування Elite Intel</h3>
+<p>Відкрийте <strong>вкладку «Settings»</strong> в Elite Intel:</p>
+<ul>
+<li>Залиште поле <strong>LLM Key</strong> порожнім (локальний Ollama ключ не потребує).</li>
+<li><strong>LLM Address</strong> за замовчуванням: <code>http://localhost:11434/api/chat</code>. Якщо Ollama працює на іншій машині, замініть <code>localhost</code> на IP-адресу тієї машини.</li>
+<li><strong>Command LLM</strong>: задайте <code>hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
+<li><strong>Query LLM</strong>: задайте <code>hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
+<li>Натисніть <strong>Stop</strong>, а потім <strong>Start</strong> на вкладці AI, щоб застосувати зміни.</li>
+</ul>
+<hr>
+<p>Спільнота 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

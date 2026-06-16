@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Install Ollama Local LLM Windows  EliteIntel</title>
+    <meta name="description" content="Ein lokales LLM zu betreiben hält alle Daten privat und offline. Es gibt keine Abonnementgebühren. Hardware- und Stromkosten fallen an.">
+    <link rel="canonical" href="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="en" href="https://www.elite-intel.org/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="fr" href="https://www.elite-intel.org/fr/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="es" href="https://www.elite-intel.org/es/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="de" href="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="uk" href="https://www.elite-intel.org/uk/Install-Ollama-Local-LLM-Windows.html">
+    <link rel="alternate" hreflang="ru" href="https://www.elite-intel.org/ru/Install-Ollama-Local-LLM-Windows.html">
+    <meta property="og:title" content="Install Ollama Local LLM Windows  EliteIntel">
+    <meta property="og:description" content="Ein lokales LLM zu betreiben hält alle Daten privat und offline. Es gibt keine Abonnementgebühren. Hardware- und Stromkosten fallen an.">
+    <meta property="og:url" content="https://www.elite-intel.org/de/Install-Ollama-Local-LLM-Windows.html">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://www.elite-intel.org/images/site-preview.png">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+<body>
+
+<header class="site-header">
+    <button class="hamburger" id="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+    </button>
+    <a class="site-logo" href="../index.html">ELITE<span>INTEL</span></a>
+    <nav class="header-actions">
+        <img src="../images/windows.png" alt="Windows" class="os-icon" title="Windows">
+        <img src="../images/linux.png" alt="Linux" class="os-icon" title="Linux">
+        <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
+        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
+        <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
+        <div class="locale-switcher"><a href="../Install-Ollama-Local-LLM-Windows.html" class="locale-link">EN</a><a href="../fr/Install-Ollama-Local-LLM-Windows.html" class="locale-link">FR</a><a href="../es/Install-Ollama-Local-LLM-Windows.html" class="locale-link">ES</a><span class="locale-current">DE</span><a href="../uk/Install-Ollama-Local-LLM-Windows.html" class="locale-link">UK</a><a href="../ru/Install-Ollama-Local-LLM-Windows.html" class="locale-link">RU</a></div>
+    </nav>
+</header>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="layout">
+    <aside class="sidebar" id="sidebar" aria-label="Wiki navigation">
+        <nav class="wiki-nav">
+
+            <a href="index.html" class="nav-link"><img src="../images/elite-logo.png" class="inline" height="20" alt=""> Startseite</a>
+
+            <div class="nav-section">Anwendung</div>
+            <a href="Installation.html" class="nav-link"><img src="../images/release.png" class="inline" height="20" alt=""> Installation</a>
+            <a href="Configuration.html" class="nav-link"><img src="../images/settings.png" class="inline" height="20" alt=""> Konfiguration</a>
+            <a href="Options.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> Optionen</a>
+
+            <div class="nav-section">Wiki</div>
+            <a href="installing-local-llms.html" class="nav-link"><img src="../images/microchip-ai.png" class="inline" height="20" alt=""> LLM auswählen</a>
+            <a href="Install-Ollama-Local-LLM-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Linux</a>
+            <a href="Install-Ollama-Local-LLM-Windows.html" class="nav-link nav-sub active"><img src="../images/ai.png" class="inline" height="20" alt=""> Ollama  Windows</a>
+            <a href="Install-LM-Studio-Linux.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Linux</a>
+            <a href="Install-LM-Studio-Windows.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> LM Studio  Windows</a>
+            <a href="AMD-RX-7800XT-LLM-Setup.html" class="nav-link nav-sub"><img src="../images/ai.png" class="inline" height="20" alt=""> AMD RX Series</a>
+
+            <div class="nav-section">Wie mache ich...?</div>
+            <a href="General-Operation.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Allgemeiner Betrieb</a>
+            <a href="TradeRoutePlotting.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Handel &amp; Profit</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Galaxie erkunden</a>
+            <a href="Discovery-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Entdeckung &amp; Exobiologie</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Piraten-Missionen</a>
+            <a href="AllCommands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Alle Befehle</a>
+            <a href="Obscure-System-Commands.html" class="nav-link"><img src="../images/manual.png" class="inline" height="20" alt=""> Systembefehle</a>
+
+            <div class="nav-section">Community</div>
+            <a href="https://matrix.to/#/#krondor:matrix.org" class="nav-link nav-external" target="_blank" rel="noopener"><img src="../images/communications.png" class="inline" height="20" alt=""> Matrix-Chat ↗</a>
+            <a href="https://www.youtube.com/@SudoKrondor" class="nav-link nav-external" target="_blank" rel="noopener">&#9654; YouTube &#8599;</a>
+            <a href="https://github.com/SudoKrondor/EliteIntel" class="nav-link nav-external" target="_blank" rel="noopener">&#8903; GitHub &#8599;</a>
+
+            <a href="Privacy.html" class="nav-link">🔒 Datenschutzrichtlinie</a>
+            <a href="Contact.html" class="nav-link">📧 Entwickler kontaktieren</a>
+        </nav>
+    </aside>
+    <main class="content" id="content" role="main">
+        <div class="content-inner markdown-body" id="content-inner">
+<h2>Lokales LLM – Windows-Setup (Ollama)</h2>
+<p>Ein lokales LLM zu betreiben hält alle Daten privat und offline. Es gibt keine Abonnementgebühren. Hardware- und Stromkosten fallen an.</p>
+<p>Es erfordert <a href="https://ollama.com">Ollama</a> und eine leistungsfähige GPU.</p>
+<hr>
+<h3>Mindest-Hardware</h3>
+<p>Um Elite Dangerous und das LLM auf <strong>demselben Rechner</strong> zu betreiben, ist mindestens eine <strong>NVIDIA RTX 3060 mit 12 GB VRAM</strong> erforderlich. Bei dieser Spezifikation ist der Leistungsspielraum begrenzt.</p>
+<blockquote>
+<p><strong>Tipp:</strong> Elite Intel kann auf eine Ollama-Instanz verweisen, die auf einem <strong>separaten PC</strong> in deinem Netzwerk läuft. Wenn ein zweiter Rechner mit einer leistungsfähigen GPU verfügbar ist, trägt der Spiele-PC in dieser Konfiguration keine Inferenzlast.</p>
+</blockquote>
+<hr>
+<h3>Empfohlenes Modell</h3>
+<table>
+<thead>
+<tr>
+<th>Modell</th>
+<th>Benötigter VRAM</th>
+<th>Hinweise</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tulu3:8b</code> Q4_K_M</td>
+<td>~5 GB</td>
+<td>✅ Empfohlen. Zuverlässig für Befehle und Abfragen.</td>
+</tr>
+<tr>
+<td><code>qwen3</code> 8B</td>
+<td>~8 GB</td>
+<td>Experimentell. Gelegentlich verpasste Befehle und Halluzinationen möglich.</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Hinweis:</strong> Für die schnellste lokale Inferenz empfiehlt sich <a href="Install-LM-Studio-Windows.html">LM Studio</a> mit <code>matrixportalx/tulu-3.1-8b-supernova</code>. In Tests war es auf derselben Hardware mit demselben Modell deutlich schneller als Ollama.</p>
+</blockquote>
+<hr>
+<h3>Schritt 1 – Ollama installieren</h3>
+<ul>
+<li>Gehe zu <a href="https://ollama.com/download">https://ollama.com/download</a></li>
+<li>Lade <code>OllamaSetup.exe</code> herunter und führe es aus. Keine Administratorrechte erforderlich.</li>
+<li>Ollama installiert sich und läuft in der Taskleiste. Es startet automatisch beim Login.</li>
+</ul>
+<hr>
+<h3>Schritt 2 – Ein Modell herunterladen</h3>
+<p>Öffne die <strong>Eingabeaufforderung</strong> oder <strong>PowerShell</strong> und führe aus:</p>
+<pre><code class="language-shell">ollama pull tulu3:8b
+</code></pre>
+<p>Oder experimentelle Alternativen:</p>
+<pre><code class="language-shell">ollama pull qwen3:8b
+</code></pre>
+<hr>
+<h3>Schritt 3 – (Optional) Die Konfiguration anpassen</h3>
+<p>Ollama funktioniert ohne Anpassung. Die folgende Konfiguration verbessert das VRAM-Management beim parallelen Betrieb mit Elite Dangerous.</p>
+<p>Unter Windows liest Ollama die Konfiguration aus <strong>Benutzer-Umgebungsvariablen</strong>.</p>
+<ol>
+<li>Klicke mit der rechten Maustaste auf das Ollama-Taskleistensymbol und wähle <strong>Beenden</strong>.</li>
+<li>Öffne <strong>Einstellungen</strong> und suche nach „Umgebungsvariablen&quot;.</li>
+<li>Klicke auf <strong>„Umgebungsvariablen für dieses Konto bearbeiten&quot;</strong>.</li>
+<li>Füge jede Variable unten mit <strong>Neu</strong> hinzu:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Wert</th>
+<th>Hinweise</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>OLLAMA_MAX_VRAM</code></td>
+<td><code>14000000000</code></td>
+<td>14-GB-Obergrenze. Nach GPU und Spielanforderungen anpassen.</td>
+</tr>
+<tr>
+<td><code>OLLAMA_NUM_PARALLEL</code></td>
+<td><code>3</code></td>
+<td>Deckt das asynchrone Aufrufmuster von Elite Intel ohne Überbelegung ab.</td>
+</tr>
+<tr>
+<td><code>OLLAMA_MAX_LOADED_MODELS</code></td>
+<td><code>1</code></td>
+<td>Ein Modell gleichzeitig im VRAM.</td>
+</tr>
+<tr>
+<td><code>OLLAMA_FLASH_ATTENTION</code></td>
+<td><code>1</code></td>
+<td>Schnellere Inferenz.</td>
+</tr>
+<tr>
+<td><code>OLLAMA_KEEP_ALIVE</code></td>
+<td><code>-1</code></td>
+<td>Hält das Modell dauerhaft geladen.</td>
+</tr>
+</tbody></table>
+<ol start="5">
+<li><strong>OK</strong> klicken. Ollama vom Startmenü aus neu starten.</li>
+</ol>
+<h4>Was diese Einstellungen bewirken</h4>
+<p><strong><code>OLLAMA_MAX_VRAM</code></strong>: Harte Obergrenze für den VRAM, den Ollama nutzen kann, in Bytes. Lässt den Rest für Elite Dangerous. Nach GPU und Spielanforderungen anpassen.</p>
+<p><strong><code>OLLAMA_NUM_PARALLEL</code></strong>: Anzahl der gleichzeitig verarbeiteten Anfragen. Elite Intel stellt asynchrone Aufrufe, daher verursacht ein zu niedriger Wert Fehler. <code>3</code> deckt die typische Überschneidung von Befehlen und Abfragen ohne Überbelegung ab.</p>
+<p><strong><code>OLLAMA_MAX_LOADED_MODELS</code></strong>: Hält nur ein Modell gleichzeitig im VRAM.</p>
+<p><strong><code>OLLAMA_FLASH_ATTENTION</code></strong>: Aktiviert Flash Attention, was den Speicherbandbreitenverbrauch während der Inferenz reduziert. Generell schneller, besonders bei wiederholten Anfragen.</p>
+<p><strong><code>OLLAMA_KEEP_ALIVE=-1</code></strong>: Hält das Modell dauerhaft im VRAM geladen. Ohne diese Einstellung kann Ollama das Modell nach einer Inaktivitätsperiode entladen, was beim nächsten Aufruf eine Neuladelatenz verursacht.</p>
+<hr>
+<h3>Schritt 4 – Elite Intel konfigurieren</h3>
+<p>Öffne den <strong>Einstellungs-Tab</strong> in Elite Intel:</p>
+<ul>
+<li>Das Feld <strong>LLM-Schlüssel</strong> leer lassen (lokales Ollama benötigt keinen Schlüssel).</li>
+<li><strong>LLM-Adresse</strong> ist standardmäßig <code>http://localhost:11434/api/chat</code>. Wenn Ollama auf einem anderen Rechner läuft, <code>localhost</code> durch die IP dieses Rechners ersetzen.</li>
+<li><strong>LLM-Modell</strong>: auf <code>tulu3:8b</code> setzen.</li>
+<li><strong>Befehls-LLM</strong>: auf <code>tulu3:8b</code> setzen.</li>
+<li><strong>Abfrage-LLM</strong>: auf <code>tulu3:8b</code> setzen.</li>
+<li>Auf dem KI-Tab auf <strong>Stop</strong> und dann auf <strong>Start</strong> klicken, um Änderungen zu übernehmen.</li>
+</ul>
+<hr>
+<p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
+
+        </div>
+    </main>
+</div>
+
+<script>
+(function(){
+    var h=document.getElementById('hamburger'),s=document.getElementById('sidebar'),o=document.getElementById('overlay');
+    function open(){s.classList.add('open');o.classList.add('active');h.setAttribute('aria-expanded','true');h.classList.add('is-open');}
+    function close(){s.classList.remove('open');o.classList.remove('active');h.setAttribute('aria-expanded','false');h.classList.remove('is-open');}
+    h.addEventListener('click',function(){s.classList.contains('open')?close():open();});
+    o.addEventListener('click',close);
+    document.querySelectorAll('.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<900)close();});});
+})();
+</script>
+</body>
+</html>

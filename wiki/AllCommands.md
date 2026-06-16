@@ -234,10 +234,10 @@ Other panel commands:
 ## 💬 General Chat (Conversation Mode must be ON)
 
 By default the app runs in **Strict Mode**: if input doesn't match a known command or query it is silently ignored.
-This is intentional — it prevents STT noise and background chatter from triggering random actions mid-flight.
+This is intentional  it prevents STT noise and background chatter from triggering random actions mid-flight.
 
 Enable **Conversation Mode** in the Settings tab to turn on free-form chat. When on, anything that doesn't match a
-command falls back to general conversation — game lore, real-world topics, ship builds, whatever. The AI is not just
+command falls back to general conversation  game lore, real-world topics, ship builds, whatever. The AI is not just
 a command parser when you want it to be more.
 
 Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mistral, Deepseek) are recommended for conversation.
