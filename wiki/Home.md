@@ -1,7 +1,10 @@
 # Elite Intel
 ## AI Voice Assistant for Elite Dangerous
 
-![EliteIntel app](images/app.png)
+| V1.0                               | V1.1                               |
+|------------------------------------|------------------------------------|
+| ![EliteIntel app](images/v1.0.png) | ![EliteIntel app](images/v1.1.png) |
+
 
 The **released version is V1.0 is different** from what you see on screenshots. 
 
