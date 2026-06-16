@@ -78,6 +78,9 @@ public class AppTheme {
     // -- HUD design tokens -----------------------------------------------------
 
     public static final Color HUD_BG = new Color(0x090D12);
+    /** Подложка OBS-оверлея: ЧИСТЫЙ чёрный (контраст/luma-key на стриме),
+     *  НЕ путать с HUD_BG — это не фон тела HUD-окна. */
+    public static final Color HUD_OVERLAY_BG = new Color(0, 0, 0);
     /** Semi-transparent dark veil placed on the owner window's glass pane while a modal dialog is open (~55 % alpha). */
     public static final Color HUD_SCRIM = new Color(0, 0, 0, 140);
     public static final Color HUD_SHELL_BACKGROUND = HUD_BG;
@@ -93,6 +96,10 @@ public class AppTheme {
     public static final Color HUD_ORANGE_SOFT = new Color(0xB85A14);
     public static final Color HUD_ORANGE_FILL = new Color(0x3A1E0A);
     public static final Color HUD_ORANGE_FILL_HOVER = new Color(0x532A0D);
+    /** Заливка primary-кнопки HudButton: покой / hover / нажатие (§4). */
+    public static final Color HUD_BUTTON_FILL         = new Color(0xB04000);
+    public static final Color HUD_BUTTON_FILL_HOVER   = new Color(0xCC4D00);
+    public static final Color HUD_BUTTON_FILL_PRESSED = new Color(0xFF6000);
     /** Active MAIN_NAV tab box fill (§11.1). Slightly softer/warmer than the global {@code ACCENT}
      *  used for rails and other accents, so the navbar box reads as the source the SECTION tone shifts from. */
     public static final Color HUD_TAB_MAIN_FILL = new Color(0xF5820E);
@@ -231,6 +238,12 @@ public class AppTheme {
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;
+    /** LAF defaultFont — базовый кегль UI-меток вне HUD-ролей (AppView). */
+    public static final float HUD_FONT_UI_DEFAULT = 18f;
+    /** LAF monospaceFont — базовый монокегль приложения (AppView). */
+    public static final float HUD_FONT_MONO_BASE  = 20f;
+    /** Текст OBS-оверлея (Electrolize), отдельный сайт от MONO_BASE. */
+    public static final float HUD_FONT_OVERLAY    = 20f;
 
     // -- Button factories ------------------------------------------------------
 

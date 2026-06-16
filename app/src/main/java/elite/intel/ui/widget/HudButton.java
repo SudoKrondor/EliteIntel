@@ -10,10 +10,6 @@ import java.awt.*;
  */
 public class HudButton extends JButton {
 
-    private static final Color PRIMARY_FILL          = new Color(0xB04000);
-    private static final Color PRIMARY_FILL_HOVER    = new Color(0xCC4D00);
-    private static final Color PRIMARY_FILL_PRESSED  = new Color(0xFF6000);
-
     private final boolean primary;
 
     /** When > 0, the button uses a fixed square footprint instead of the default action sizing. */
@@ -100,9 +96,9 @@ public class HudButton extends JButton {
     }
 
     private void paintPrimary(Graphics2D g2, int w, int h, ButtonModel model) {
-        Color fill = model.isPressed() ? PRIMARY_FILL_PRESSED
-                   : model.isRollover() ? PRIMARY_FILL_HOVER
-                   : PRIMARY_FILL;
+        Color fill = model.isPressed() ? AppTheme.HUD_BUTTON_FILL_PRESSED
+                   : model.isRollover() ? AppTheme.HUD_BUTTON_FILL_HOVER
+                   : AppTheme.HUD_BUTTON_FILL;
         g2.setColor(fill);
         g2.fillRect(0, 0, w - 1, h - 1);
         g2.setColor(AppTheme.ACCENT);

@@ -200,13 +200,13 @@ public class AppView extends JFrame implements AppViewInterface {
     }
 
     private Font loadCustomFont() {
-        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, 20);
+        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) AppTheme.HUD_FONT_MONO_BASE);
         // Use platform sans-serif for UI labels because the previous custom font did not cover Cyrillic glyphs reliably.
-        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, 18)));
+        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) AppTheme.HUD_FONT_UI_DEFAULT)));
         try {
             mono = Font.createFont(Font.TRUETYPE_FONT,
                             Objects.requireNonNull(getClass().getResourceAsStream("/fonts/UbuntuSansMono-Regular.ttf")))
-                    .deriveFont(20f);
+                    .deriveFont(AppTheme.HUD_FONT_MONO_BASE);
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(mono);
             UIManager.put("monospaceFont", new FontUIResource(mono));
             SwingUtilities.updateComponentTreeUI(this);

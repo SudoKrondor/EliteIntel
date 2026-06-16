@@ -21,7 +21,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 public class OBSOverlayWindow extends JFrame {
 
-    private static final Color BG = new Color(0, 0, 0);
+    private static final Color BG = AppTheme.HUD_OVERLAY_BG;
     private static final Color FG = AppTheme.ACCENT;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
@@ -155,9 +155,9 @@ public class OBSOverlayWindow extends JFrame {
             try {
                 loaded = Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
                         getClass().getResourceAsStream("/fonts/Electrolize-Regular.ttf"))
-                ).deriveFont(20f);
+                ).deriveFont(AppTheme.HUD_FONT_OVERLAY);
             } catch (FontFormatException | IOException e) {
-                loaded = new Font(Font.MONOSPACED, Font.PLAIN, 20);
+                loaded = new Font(Font.MONOSPACED, Font.PLAIN, (int) AppTheme.HUD_FONT_OVERLAY);
             }
             font = loaded;
         }
