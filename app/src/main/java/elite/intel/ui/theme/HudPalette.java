@@ -37,7 +37,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_E6E6E6 = new Color(0xE6E6E6);
     public static final Color HUD_COLOR_FF2E00 = new Color(0xFF2E00);
     public static final Color HUD_COLOR_FF7100 = new Color(0xFF7100);
-    public static final Color HUD_COLOR_FFB000 = new Color(0xE39E00);
+    public static final Color HUD_COLOR_FFB000 = new Color(0xD39207);
 
     // -- HUD semantic color roles ---------------------------------------------
 
@@ -46,6 +46,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND = HUD_COLOR_1A1206;
     public static final Color HUD_COLOR_ROLE_LOG_BACKGROUND = HUD_COLOR_101721;
     public static final Color HUD_COLOR_ROLE_PRIMARY_TEXT = HUD_COLOR_E6E6E6;
+    /** Ship name readout in the top status bar. */
+    public static final Color HUD_COLOR_ROLE_SHIP_NAME_TEXT = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_DIALOG_TITLE_TEXT = HUD_COLOR_C2C2C2;
     public static final Color HUD_COLOR_ROLE_BUTTON_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SECONDARY_TEXT = HUD_COLOR_9A6A3C;
@@ -63,7 +65,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
     public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
-    public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_1A1206;
+    public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_6E4A28;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND = HUD_COLOR_B85A14;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_HOVER_BACKGROUND = HUD_COLOR_B85A14;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_PRESSED_BACKGROUND = HUD_COLOR_FF7100;

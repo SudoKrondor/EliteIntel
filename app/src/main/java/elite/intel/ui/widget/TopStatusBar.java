@@ -96,18 +96,18 @@ public class TopStatusBar extends HudPanel {
     private JPanel buildRightGroup() {
         JPanel row = opaqueRow();
 
-        // Commander - label muted caps, value accent
+        // Commander - label muted caps, value white caps
         row.add(keyLabel(getText("hud.cmdr")));
         row.add(hgap());
-        cmdrValue = valueLabel(initCommanderName());
+        cmdrValue = valueLabel(initCommanderName(), HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         row.add(cmdrValue);
 
         row.add(Box.createHorizontalStrut(20));
 
-        // Ship - label muted caps, value white caps
+        // Ship - label muted caps, value carries the dedicated ship-name accent
         row.add(keyLabel(getText("hud.ship")));
         row.add(hgap());
-        shipValue = valueLabel(initShipName());
+        shipValue = valueLabel(initShipName(), HudPalette.HUD_COLOR_ROLE_SHIP_NAME_TEXT);
         row.add(shipValue);
 
         return row;
@@ -152,9 +152,9 @@ public class TopStatusBar extends HudPanel {
         return l;
     }
 
-    private static JLabel valueLabel(String text) {
+    private static JLabel valueLabel(String text, Color color) {
         JLabel l = new JLabel(text == null ? "—" : text.toUpperCase(Locale.ROOT));
-        l.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+        l.setForeground(color);
         l.setFont(l.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_COMMANDER_NAME));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;

@@ -111,13 +111,15 @@ public class UsageStatsTabPanel extends JPanel {
         } else {
             totalLabel = new JLabel(getText("stats.total.chargeable", 0));
         }
-        totalLabel.setFont(totalLabel.getFont().deriveFont(Font.BOLD));
+        totalLabel.setFont(totalLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_STAT_LG));
         totalLabel.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
 
         savedLabel = new JLabel(getText("stats.cacheSaved", 0));
+        savedLabel.setFont(savedLabel.getFont().deriveFont(HudPalette.HUD_FONT_MD));
         savedLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
 
         tphLabel = new JLabel(getText("stats.tokensPerHour"));
+        tphLabel.setFont(tphLabel.getFont().deriveFont(HudPalette.HUD_FONT_MD));
         tphLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
 
         totalLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
