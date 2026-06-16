@@ -23,7 +23,7 @@ class HudComboBoxUI extends FlatComboBoxUI {
         super.installDefaults();
         // FlatLaf installDefaults resets the border via LookAndFeel.installBorder;
         // restore the HUD warm frame here so it is in place before styleComboBox applies its own call.
-        comboBox.setBorder(AppTheme.hudFieldBorder());
+        comboBox.setBorder(AppTheme.hudComboBorder());
         // FlatComboBoxUI.update() paints the arrow area with buttonBackground on top of the
         // component-wide fill, producing a visible "button box". Null all four background
         // fields so buttonColor resolves to null and the arrow area keeps HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND.

@@ -391,6 +391,18 @@ public class AppTheme {
     }
 
     /**
+     * Combo frame border: the warm field line plus the vertical inset only. The horizontal content
+     * inset is owned by the cell renderer / editor ({@link #HUD_COMBO_ITEM_INSET_H}), so the collapsed
+     * value lines up with plain HUD text fields instead of double-counting the field horizontal inset.
+     */
+    public static Border hudComboBorder() {
+        return BorderFactory.createCompoundBorder(
+                hudFieldLine(),
+                new EmptyBorder(HUD_FIELD_INSET_V, 0, HUD_FIELD_INSET_V, 0)
+        );
+    }
+
+    /**
      * Creates a HUD input border with an enlarged right inset that reserves space for the
      * info-zone glyph ({@link #HUD_SEP_W} separator + {@link #HUD_TABLE_ROW_HEIGHT_COMPACT} zone).
      * The outer {@code LineBorder} and all other insets are identical to {@link #hudFieldBorder()}.
@@ -495,7 +507,7 @@ public class AppTheme {
     public static void styleComboBox(JComboBox<?> comboBox) {
         comboBox.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value - same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (section 5.3)
-        comboBox.setBorder(hudFieldBorder());
+        comboBox.setBorder(hudComboBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
         // BasicComboBoxUI.paintCurrentValue paints the collapsed value in comboBox.getForeground(),

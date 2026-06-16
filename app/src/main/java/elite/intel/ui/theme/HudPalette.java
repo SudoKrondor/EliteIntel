@@ -37,7 +37,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_E6E6E6 = new Color(0xE6E6E6);
     public static final Color HUD_COLOR_FF2E00 = new Color(0xFF2E00);
     public static final Color HUD_COLOR_FF7100 = new Color(0xFF7100);
-    public static final Color HUD_COLOR_FFB000 = new Color(0xFFB000);
+    public static final Color HUD_COLOR_FFB000 = new Color(0xE39E00);
 
     // -- HUD semantic color roles ---------------------------------------------
 
