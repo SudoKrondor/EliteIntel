@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import static elite.intel.ui.i18n.MultiLingualTextProvider.currentLanguageTag;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
@@ -22,6 +23,7 @@ public class MarkdownViewPanel extends JPanel {
 
     private final String filename;
     private JEditorPane editorPane;
+    private JScrollPane scrollPane;
 
     public MarkdownViewPanel(String filename) {
         this.filename = filename;
@@ -30,14 +32,12 @@ public class MarkdownViewPanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout());
-        setBackground(AppTheme.HUD_BG);
-        setBorder(AppTheme.hudScreenBorder());
+        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        setOpaque(false);
 
         editorPane = new JEditorPane();
         editorPane.setContentType("text/html");
         editorPane.setEditable(false);
-        editorPane.setBackground(AppTheme.BG_PANEL);
 
         editorPane.addHyperlinkListener(e -> {
             if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED && e.getURL() != null) {
@@ -49,25 +49,46 @@ public class MarkdownViewPanel extends JPanel {
             }
         });
 
-        JScrollPane scrollPane = AppTheme.hudScrollPane(editorPane);
+        this.scrollPane = AppTheme.hudScrollPane(editorPane);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
 
+        // Working zone of the tab → FLAT section (HUD §9), not a framed accent box.
+        HudSection documentSection = new HudSection(
+                getText("manual.section.document"),
+                new BorderLayout(),
+                HudPanel.Variant.FLAT,
+                AppTheme.HUD_GAP);
+        documentSection.body().add(scrollPane, BorderLayout.CENTER);
+
+        // RELOAD belongs in the shared tab footer (HUD §10), not a top toolbar.
         JButton reloadButton = AppTheme.makeButtonSubtle(getText("button.reload"));
         reloadButton.addActionListener(e -> loadContent());
-        JPanel toolbar = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 4));
-        toolbar.add(reloadButton);
+        JPanel footer = HudFooter.build(false, null, null, List.of(reloadButton));
 
-        HudSection documentSection = new HudSection(getText("manual.section.document"), new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
-        documentSection.body().add(toolbar, BorderLayout.NORTH);
-        documentSection.body().add(scrollPane, BorderLayout.CENTER);
         add(documentSection, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
 
-        // applyDarkPalette (called later in AppView) forces JEditorPane to white.
-        // Re-apply our dark background after the palette pass completes.
-        SwingUtilities.invokeLater(() -> editorPane.setBackground(AppTheme.BG_PANEL));
+        applyTransparentSurface();
+
+        // applyDarkPalette (run later in AppView) re-paints the JEditorPane white and gives it a
+        // warm field border + a lighter HUD_PANEL_BG viewport. Re-assert the transparent surface
+        // once that pass has completed so the document reads flush on the HUD background.
+        SwingUtilities.invokeLater(this::applyTransparentSurface);
+    }
+
+    /**
+     * Strips the field border and opaque fills that {@link AppTheme#applyDarkPalette} installs, so the
+     * editor and its scroll viewport are transparent and the markdown sits flush on the HUD background.
+     */
+    private void applyTransparentSurface() {
+        editorPane.setOpaque(false);
+        editorPane.setBorder(BorderFactory.createEmptyBorder());
+        // Viewport/scroll pane stay opaque (a non-opaque viewport smears on scroll) but carry the
+        // screen background HUD_BG, not the lighter HUD_PANEL_BG, so no panel slab shows behind text.
+        scrollPane.setBackground(AppTheme.HUD_BG);
+        scrollPane.getViewport().setBackground(AppTheme.HUD_BG);
     }
 
     private void loadContent() {
@@ -84,16 +105,51 @@ public class MarkdownViewPanel extends JPanel {
     }
 
     private String readFile() {
-        // 1. Same directory as JAR / working directory (production)
-        Path p = Path.of(System.getProperty("user.dir")).resolve(filename);
+        // Prefer the variant for the active language (e.g. user-manual-ru.md); fall back to the base
+        // file when no localized variant exists (English, or docs like credits.md that aren't translated).
+        for (String name : candidateFileNames()) {
+            String content = readNamed(name);
+            if (content != null) {
+                return content;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the file names to try in order: the localized variant for the active UI language first,
+     * then the base file as a fallback. English (the base) yields just the base name.
+     */
+    private List<String> candidateFileNames() {
+        String localized = localizedName(filename, currentLanguageTag());
+        return localized.equals(filename) ? List.of(filename) : List.of(localized, filename);
+    }
+
+    /**
+     * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
+     * {@code ("user-manual.md", "ru")} → {@code "user-manual-ru.md"}. The English base tag and a
+     * blank tag return the base name unchanged.
+     */
+    private static String localizedName(String base, String tag) {
+        if (tag == null || tag.isBlank() || "en".equals(tag)) {
+            return base;
+        }
+        int dot = base.lastIndexOf('.');
+        return dot < 0
+                ? base + "-" + tag
+                : base.substring(0, dot) + "-" + tag + base.substring(dot);
+    }
+
+    /** Reads the named file from the working directory (production) or {@code distribution/} (IDE). */
+    private String readNamed(String name) {
+        Path p = Path.of(System.getProperty("user.dir")).resolve(name);
         if (Files.exists(p)) {
             try {
                 return Files.readString(p);
             } catch (IOException ignored) {
             }
         }
-        // 2. distribution/ directory (running from IDE)
-        p = Path.of("distribution").resolve(filename);
+        p = Path.of("distribution").resolve(name);
         if (Files.exists(p)) {
             try {
                 return Files.readString(p);
@@ -290,7 +346,7 @@ public class MarkdownViewPanel extends JPanel {
                 <html>
                 <head>
                 <style type="text/css">
-                body   { background-color: #1F2032; color: #E6E6E6; margin: 20px; font-size: 18pt; }
+                body   { color: #E6E6E6; margin: 20px; font-size: 18pt; }
                 h1     { color: #FF7100; font-size: 30pt; }
                 h2     { color: #FF7100; font-size: 26pt; }
                 h3     { color: #FF7100; font-size: 22pt; }

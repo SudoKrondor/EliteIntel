@@ -77,7 +77,7 @@ public class UsageStatsTabPanel extends JPanel {
         JPanel dashboard = AppTheme.transparentPanel(null);
         dashboard.setLayout(new BoxLayout(dashboard, BoxLayout.Y_AXIS));
 
-        HudSection telemetrySection = new HudSection(getText("stats.section.llmTelemetry"), new BorderLayout());
+        HudSection telemetrySection = HudSection.flat(getText("stats.section.llmTelemetry"), new BorderLayout());
         JPanel header = AppTheme.transparentPanel(null);
         header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
 
@@ -94,7 +94,7 @@ public class UsageStatsTabPanel extends JPanel {
         telemetrySection.body().add(header, BorderLayout.CENTER);
 
         chart = new BarChart(usingLocalLLMs);
-        HudSection tokenSection = new HudSection(getText("stats.section.tokenUsage"), new BorderLayout());
+        HudSection tokenSection = HudSection.flat(getText("stats.section.tokenUsage"), new BorderLayout());
         tokenSection.body().add(chart, BorderLayout.CENTER);
 
         JPanel footer = AppTheme.transparentPanel(null);
@@ -124,7 +124,7 @@ public class UsageStatsTabPanel extends JPanel {
         if (!usingLocalLLMs) footer.add(Box.createVerticalStrut(6));
         footer.add(tphLabel);
 
-        HudSection summarySection = new HudSection(getText("stats.section.sessionSummary"), new BorderLayout());
+        HudSection summarySection = HudSection.flat(getText("stats.section.sessionSummary"), new BorderLayout());
         summarySection.body().add(footer, BorderLayout.CENTER);
 
         dashboard.add(telemetrySection);
