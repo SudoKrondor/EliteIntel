@@ -16,8 +16,8 @@ list exists so you know what's possible, not so you can recite scripts.
 ## Audio Input
 
 **Calibrate the audio in the app**. If the difference between Noise Floor and RMS is too low (e.g. less than 400) the
-app will have hard time understanding you. A good ratio is at least 800-1000. Speakers and mic do not go together.
-Headphones and mic are recommended.
+app will have hard time understanding you. A good ratio is at least 800-1000.
+If you are using speakers and mic enable Push To Talk, else Headphones and mic are recommended.
 
 ## App
 

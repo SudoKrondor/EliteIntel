@@ -14,7 +14,9 @@
 
 ## Entrada de audio
 
-**Calibra el audio en la aplicación.** Si la diferencia entre el nivel de ruido y el RMS es demasiado baja (p. ej. menos de 400), la aplicación tendrá dificultades para entenderte. Un buen ratio es al menos 800–1000. Los altavoces y el micrófono no combinan bien. Se recomienda auriculares con micrófono.
+**Calibra el audio en la aplicación.** Si la diferencia entre el nivel de ruido y el RMS es demasiado baja (p. ej. menos de 400),
+la aplicación tendrá dificultades para entenderte. Un buen ratio es al menos 800–1000.
+Si utilizas altavoces y micrófono, activa la función «pulsar para hablar»; de lo contrario, se recomienda usar auriculares con micrófono.
 
 ## Aplicación
 

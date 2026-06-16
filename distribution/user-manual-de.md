@@ -14,7 +14,9 @@ Hey Commander! Dies ist eine Referenz für die Arten von Dingen, die du deinem *
 
 ## Audio-Eingang
 
-**Kalibriere das Audio in der App.** Wenn der Unterschied zwischen Noise Floor und RMS zu gering ist (z. B. unter 400), kann die App dich schlecht verstehen. Ein guter Wert ist mindestens 800–1000. Lautsprecher und Mikrofon vertragen sich nicht. Kopfhörer mit Mikrofon werden empfohlen.
+**Kalibriere das Audio in der App.** Wenn der Unterschied zwischen Noise Floor und RMS zu gering ist (z. B. unter 400),
+kann die App dich schlecht verstehen. Ein guter Wert ist mindestens 800–1000.
+Wenn Sie Lautsprecher und Mikrofon verwenden, aktivieren Sie „Push-to-Talk“; andernfalls werden Kopfhörer und Mikrofon empfohlen.
 
 ## App
 

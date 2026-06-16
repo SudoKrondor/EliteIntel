@@ -14,7 +14,9 @@ Salutations Commandant ! Voici une référence pour les types de requêtes dispo
 
 ## Entrée audio
 
-**Calibrer l'audio dans l'appli.** Si la différence entre le plancher de bruit et le RMS est trop faible (p. ex. moins de 400), l'appli aura du mal à vous comprendre. Un bon ratio est au moins 800–1000. Haut-parleurs et micro ne font pas bon ménage. Casque avec micro recommandé.
+**Calibrer l'audio dans l'appli.** Si la différence entre le plancher de bruit et le RMS est trop faible (p. ex. moins de 400),
+l'appli aura du mal à vous comprendre. Un bon ratio est au moins 800–1000.
+Si vous utilisez des haut-parleurs et un micro, activez la fonction « Push-to-Talk » ; sinon, l'utilisation d'un casque avec micro est recommandée.
 
 ## Application
 
