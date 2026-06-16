@@ -3,7 +3,7 @@ package elite.intel.ui.controller;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.ui.event.*;
-import elite.intel.ui.view.AiTabPanel;
+import elite.intel.ui.screen.AiTabPanel;
 
 import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicBoolean;

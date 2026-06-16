@@ -3,7 +3,7 @@ package elite.intel.starvizion.overlay;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.starvizion.model.SvAxis;
-import elite.intel.ui.view.AppTheme;
+import elite.intel.ui.theme.AppTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;

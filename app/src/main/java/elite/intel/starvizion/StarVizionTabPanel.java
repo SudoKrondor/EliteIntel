@@ -8,14 +8,14 @@ import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
 import elite.intel.starvizion.overlay.KeyboardVizlet;
-import elite.intel.ui.view.AppTheme;
+import elite.intel.ui.theme.AppTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.view.AppTheme.*;
+import static elite.intel.ui.theme.AppTheme.*;
 
 /**
  * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows

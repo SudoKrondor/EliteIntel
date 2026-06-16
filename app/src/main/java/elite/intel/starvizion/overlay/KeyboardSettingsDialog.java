@@ -1,6 +1,6 @@
 package elite.intel.starvizion.overlay;
 
-import elite.intel.ui.view.AppTheme;
+import elite.intel.ui.theme.AppTheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
