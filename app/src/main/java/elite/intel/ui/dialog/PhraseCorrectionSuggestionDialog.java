@@ -164,8 +164,6 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
 
     private static JTextArea makeTextArea(int rows) {
         JTextArea area = AppTheme.makeTextArea(rows, 0);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }

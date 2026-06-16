@@ -315,8 +315,6 @@ public final class CommandDetailsDialog extends JDialog {
         area.setText(text);
         area.setEditable(false);
         area.setCaretColor(AppTheme.HUD_TABLE_ROW);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }

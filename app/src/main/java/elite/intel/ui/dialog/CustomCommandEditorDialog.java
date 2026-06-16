@@ -465,10 +465,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private static JTextArea textArea(int rows) {
-        JTextArea area = new JTextArea(rows, 36);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        AppTheme.styleTextComponent(area);
+        JTextArea area = AppTheme.makeTextArea(rows, 36);
         area.setBorder(new EmptyBorder(8, 8, 8, 8));
         installPlainTextPaste(area);
         return area;
