@@ -93,24 +93,24 @@ public class HudBanner extends HudPanel {
         );
     }
 
-    /** Dims the rail and text to {@code HUD_DISABLED} when disabled (§0.6), restores the state colour when enabled. */
+    /** Dims the rail and text to {@code HUD_COLOR_ROLE_DISABLED} when disabled (§0.6), restores the state colour when enabled. */
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
-        Color c = enabled ? colorFor(state) : HudPalette.HUD_DISABLED;
+        Color c = enabled ? colorFor(state) : HudPalette.HUD_COLOR_ROLE_DISABLED;
         if (textComponent != null) textComponent.setForeground(c);
         setBorder(railBorder(c));
         repaint();
     }
 
     private static Color colorFor(StatusBadge.State state) {
-        if (state == null) return HudPalette.HUD_CYAN;
+        if (state == null) return HudPalette.HUD_COLOR_ROLE_INFORMATION;
         return switch (state) {
-            case OK      -> HudPalette.HUD_OK;
-            case STANDBY -> HudPalette.HUD_WARN;
-            case OFFLINE -> HudPalette.HUD_DANGER;
-            case INFO    -> HudPalette.HUD_CYAN;
-            case IDLE    -> HudPalette.HUD_DISABLED;
+            case OK      -> HudPalette.HUD_COLOR_ROLE_SUCCESS;
+            case STANDBY -> HudPalette.HUD_COLOR_ROLE_WARNING;
+            case OFFLINE -> HudPalette.HUD_COLOR_ROLE_DANGER;
+            case INFO    -> HudPalette.HUD_COLOR_ROLE_INFORMATION;
+            case IDLE    -> HudPalette.HUD_COLOR_ROLE_DISABLED;
         };
     }
 

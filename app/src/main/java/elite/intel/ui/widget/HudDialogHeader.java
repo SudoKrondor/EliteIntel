@@ -28,10 +28,10 @@ public class HudDialogHeader extends JPanel {
     public HudDialogHeader(String title, Runnable onClose) {
         setLayout(new BorderLayout(HUD_PADDING, 0));
         setOpaque(true);
-        setBackground(HUD_DIALOG_HEADER_BG);
+        setBackground(HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND);
         setPreferredSize(new Dimension(0, HUD_DIALOG_HEADER_HEIGHT));
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, HUD_BORDER_THICKNESS_ACCENT, 0, ACCENT),
+                BorderFactory.createMatteBorder(0, 0, HUD_BORDER_THICKNESS_ACCENT, 0, HUD_COLOR_ROLE_PRIMARY_ACTION),
                 BorderFactory.createEmptyBorder(0, HUD_PADDING, 0, HUD_PADDING)));
         putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
 
@@ -39,13 +39,13 @@ public class HudDialogHeader extends JPanel {
         ImageIcon logo = null;
         try {
             logo = scaledIcon(HudDialogHeader.class, "/images/elite-logo.png", HUD_ICON_NAV);
-            logo = tintIcon(logo, HUD_ICON_NAV, HUD_ICON_NAV, HUD_ORANGE_SOFT);
+            logo = tintIcon(logo, HUD_ICON_NAV, HUD_ICON_NAV, HUD_COLOR_ROLE_CONTROL_DECORATION);
         } catch (Exception ignored) {}
         JLabel iconLabel = new JLabel(logo);
 
         // Title
         JLabel titleLabel = new JLabel(title != null ? title.toUpperCase() : "");
-        titleLabel.setForeground(HUD_DIALOG_TITLE_FG);
+        titleLabel.setForeground(HUD_COLOR_ROLE_DIALOG_TITLE_TEXT);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, HUD_FONT_APP_TITLE));
         titleLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
 
@@ -127,7 +127,7 @@ public class HudDialogHeader extends JPanel {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
-                Color tint = hover ? HUD_DANGER : HUD_ORANGE_SOFT;
+                Color tint = hover ? HUD_COLOR_ROLE_DANGER : HUD_COLOR_ROLE_CONTROL_DECORATION;
                 int gs = HUD_ICON_TABLE;
                 int gx = (getWidth()  - gs) / 2;
                 int gy = (getHeight() - gs) / 2;

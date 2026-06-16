@@ -24,7 +24,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public final class PhraseCorrectionSuggestionDialog extends JDialog {
 
     private final CommandCatalogEntry entry;
-    private final JLabel    languageValue        = AppTheme.hudReadoutValue("", HudPalette.FG);
+    private final JLabel    languageValue        = AppTheme.hudReadoutValue("", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     private final JTextArea currentPhrasesArea   = makeTextArea(6);
     private final JTextArea suggestedPhrasesArea = makeTextArea(6);
     private final JTextArea commentArea          = makeTextArea(4);

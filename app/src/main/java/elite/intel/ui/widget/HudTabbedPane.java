@@ -51,8 +51,8 @@ public class HudTabbedPane extends JTabbedPane {
 
         tp.putClientProperty(HUD_FLAT_TABS, flatContent);
         tp.setOpaque(true);
-        tp.setBackground(mainNavigation ? HudPalette.HUD_SHELL_BACKGROUND : HudPalette.HUD_CONTENT_BACKGROUND);
-        tp.setForeground(HudPalette.FG);
+        tp.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        tp.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         // MAIN_NAV uses WRAP so that calculateTabWidth can distribute width evenly in a single run.
         tp.setTabLayoutPolicy(mainNavigation ? JTabbedPane.WRAP_TAB_LAYOUT : JTabbedPane.SCROLL_TAB_LAYOUT);
 
@@ -110,27 +110,26 @@ public class HudTabbedPane extends JTabbedPane {
                 tabInsets = new Insets(8, 14, 8, 14);
             }
             selectedTabPadInsets = new Insets(1, 1, 1, 1);
-            focus = HudPalette.HUD_CYAN;
+            focus = HudPalette.HUD_COLOR_ROLE_INFORMATION;
         }
 
         @Override
         protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
             int tabAreaHeight = calculateTabAreaHeight(tabPlacement, runCount, maxTabHeight);
-            g.setColor(mainNavigation ? HudPalette.HUD_SHELL_BACKGROUND : HudPalette.HUD_CONTENT_BACKGROUND);
+            g.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g.fillRect(0, 0, tabPane.getWidth(), tabAreaHeight);
             super.paintTabArea(g, tabPlacement, selectedIndex);
             if (mainNavigation) {
                 int width = tabPane.getWidth();
                 // top rail — muted warm, 2px
-                g.setColor(HudPalette.HUD_ORANGE_SOFT);
+                g.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
                 g.fillRect(0, 0, width, 2);
-                // bottom rail — same fill as the active tab box, 3px; flush to tab-area bottom
-                g.setColor(HudPalette.HUD_TAB_MAIN_FILL);
+                // bottom rail — same accent as the active tab box, 3px; flush to tab-area bottom
+                g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
                 g.fillRect(0, tabAreaHeight - 3, width, 3);
             } else if (section) {
-                // Underline rail under the section tab row (§11): warm red-orange, paired with the
-                // active box fill so the active tab reads as live (not the old muted/dim box).
-                g.setColor(HudPalette.HUD_TAB_SECTION_RAIL);
+                // Underline rail under the section tab row (§11), paired with the active box fill.
+                g.setColor(HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE);
                 g.fillRect(0, tabAreaHeight - 2, tabPane.getWidth(), 2);
             }
         }
@@ -145,29 +144,28 @@ public class HudTabbedPane extends JTabbedPane {
                     int bottomGap = gap - 2; // box extends 2px lower, closing the gap to the rail (nav height unchanged)
                     int fillH = h - gap - bottomGap - bottomRail;
                     if (fillH < 1) fillH = 1;
-                    g.setColor(HudPalette.HUD_TAB_MAIN_FILL);
+                    g.setColor(HudPalette.HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND);
                     g.fillRect(x, y + gap, w, fillH);
                 }
-                // unselected: no fill — paintTabArea already painted HUD_SHELL_BACKGROUND
+                // unselected: no fill — paintTabArea already painted HUD_COLOR_ROLE_APPLICATION_BACKGROUND
                 return;
             }
             if (section) {
-                // Active = filled box (inversion, §11) in a bright red-shifted orange so the active
-                // tab reads as live; the warmer hue separates it from the MAIN_NAV accent box.
+                // Active = filled accent box (inversion, §11).
                 if (isSelected) {
                     int gap = 4;
                     int bottomRail = 2;
                     int separator = 5;   // transparent gap between the box and the bottom rail
                     int fillH = h - gap - separator - bottomRail;
                     if (fillH < 1) fillH = 1;
-                    g.setColor(HudPalette.HUD_TAB_SECTION_FILL);
+                    g.setColor(HudPalette.HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND);
                     g.fillRect(x, y + gap, w, fillH);
                 }
-                // unselected: leave the HUD_CONTENT_BACKGROUND painted by paintTabArea
+                // unselected: leave the HUD_COLOR_ROLE_APPLICATION_BACKGROUND painted by paintTabArea
                 return;
             }
-            Color background = compact ? HudPalette.HUD_SHELL_BACKGROUND : HudPalette.HUD_CONTENT_BACKGROUND;
-            g.setColor(compact ? background : isSelected ? HudPalette.HUD_PANEL_BG_ALT : background);
+            Color background = HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
+            g.setColor(compact ? background : isSelected ? HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND : background);
             g.fillRect(x, y, w, h);
         }
 
@@ -180,12 +178,12 @@ public class HudTabbedPane extends JTabbedPane {
             }
             Color tintColor;
             if (!tabPane.isEnabled() || !tabPane.isEnabledAt(tabIndex)) {
-                tintColor = HudPalette.HUD_DISABLED;
+                tintColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
             } else {
-                tintColor = isSelected ? HudPalette.SEL_FG : HudPalette.HUD_ORANGE_SOFT;
+                tintColor = isSelected ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
             }
-            int slot = tintColor == HudPalette.SEL_FG ? TINT_ACTIVE
-                     : tintColor == HudPalette.HUD_ORANGE_SOFT ? TINT_INACTIVE
+            int slot = tintColor == HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT ? TINT_ACTIVE
+                     : tintColor == HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION ? TINT_INACTIVE
                      : TINT_DISABLED;
             int w = iconRect.width  > 0 ? iconRect.width  : HudPalette.HUD_ICON_NAV;
             int h = iconRect.height > 0 ? iconRect.height : HudPalette.HUD_ICON_NAV;
@@ -207,7 +205,7 @@ public class HudTabbedPane extends JTabbedPane {
             if (!isSelected) return;
             if (mainNavigation || section) return; // selection = filled box (inversion), no underline
             // Orange underline
-            g.setColor(HudPalette.ACCENT);
+            g.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
             g.fillRect(x, y + h - 3, w, 3);
         }
 
@@ -259,11 +257,11 @@ public class HudTabbedPane extends JTabbedPane {
             g.setFont(font);
             String upper = title != null ? title.toUpperCase() : "";
             if (!tabPane.isEnabled() || !tabPane.isEnabledAt(tabIndex)) {
-                g.setColor(HudPalette.HUD_DISABLED);
+                g.setColor(HudPalette.HUD_COLOR_ROLE_DISABLED);
             } else if (mainNavigation || section) {
-                g.setColor(isSelected ? HudPalette.SEL_FG : HudPalette.FG_MUTED);
+                g.setColor(isSelected ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             } else {
-                g.setColor(isSelected ? HudPalette.ACCENT : HudPalette.FG_MUTED);
+                g.setColor(isSelected ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             }
             g.drawString(upper, textRect.x, textRect.y + metrics.getAscent());
         }
@@ -303,7 +301,7 @@ public class HudTabbedPane extends JTabbedPane {
             int y = in.top + top;
             int w = tabPane.getWidth() - in.left - in.right;
             int h = tabPane.getHeight() - y - in.bottom;
-            g.setColor(HudPalette.HUD_BORDER_DIM);
+            g.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
             g.drawRect(x, y, Math.max(0, w - 1), Math.max(0, h - 1));
         }
 

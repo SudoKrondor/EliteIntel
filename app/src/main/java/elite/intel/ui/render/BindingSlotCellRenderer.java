@@ -6,10 +6,10 @@ import elite.intel.ui.widget.HudTable;
 import javax.swing.*;
 import java.awt.*;
 
-import static elite.intel.ui.theme.HudPalette.ACCENT;
-import static elite.intel.ui.theme.HudPalette.HUD_DISABLED;
-import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW;
-import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HOVER;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_DISABLED;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
 import static elite.intel.ui.theme.HudPalette.*;
 
 /**
@@ -41,8 +41,8 @@ public class BindingSlotCellRenderer extends HudTable.CellRenderer {
         if (!isSelected) {
             Object hoveredObj = table.getClientProperty(BindingsGroupTableFactory.HOVER_ROW_PROPERTY);
             boolean hovered = hoveredObj instanceof Integer h && h == row;
-            label.setBackground(hovered ? HUD_TABLE_ROW_HOVER : HUD_TABLE_ROW);
-            label.setForeground(notDefined ? HUD_DISABLED : ACCENT);
+            label.setBackground(hovered ? HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            label.setForeground(notDefined ? HUD_COLOR_ROLE_DISABLED : HUD_COLOR_ROLE_PRIMARY_ACTION);
         }
         return label;
     }

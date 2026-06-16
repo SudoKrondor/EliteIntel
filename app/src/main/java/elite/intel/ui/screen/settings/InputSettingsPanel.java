@@ -88,7 +88,7 @@ public class InputSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         // Single flat working section (§9). Two-column body (§10): left column holds the master enable
         // slab and the mode switch (both stretched to the column width, no labels); right column holds

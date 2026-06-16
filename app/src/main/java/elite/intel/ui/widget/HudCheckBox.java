@@ -111,25 +111,25 @@ public class HudCheckBox extends JCheckBox {
             Color textColor;
 
             if (!enabled) {
-                fill        = HudPalette.HUD_TABLE_ROW_HOVER;
-                markerColor = HudPalette.HUD_DISABLED;
-                textColor   = HudPalette.HUD_DISABLED;
+                fill        = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
+                markerColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
+                textColor   = HudPalette.HUD_COLOR_ROLE_DISABLED;
             } else if (on) {
-                fill        = HudPalette.ACCENT;
-                markerColor = HudPalette.SEL_FG;
-                textColor   = HudPalette.SEL_FG;
+                fill        = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+                markerColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
+                textColor   = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
             } else {
-                fill        = HudPalette.HUD_TABLE_ROW_HOVER;
-                markerColor = HudPalette.HUD_ORANGE_SOFT;
-                textColor   = HudPalette.FG_MUTED;
+                fill        = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
+                markerColor = HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
+                textColor   = HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT;
             }
 
             // Slab fill — no border outline on the control itself
             g2.setColor(fill);
             g2.fillRect(0, 0, w, h);
 
-            // Left separator: HUD_BG stripe between marker zone and text zone
-            g2.setColor(HudPalette.HUD_BG);
+            // Left separator: HUD_COLOR_ROLE_APPLICATION_BACKGROUND stripe between marker zone and text zone
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(markerZoneW, 0, HudPalette.HUD_SEP_W, h);
 
             HudGlyphs.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on && enabled);
@@ -148,19 +148,19 @@ public class HudCheckBox extends JCheckBox {
                 int infoZoneX = w - infoZoneW;
 
                 // Right separator: same width/colour as the left one
-                g2.setColor(HudPalette.HUD_BG);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
                 g2.fillRect(infoZoneX - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
 
-                // Glyph tint: follows row state; hover on the zone itself brightens to ACCENT
+                // Glyph tint: follows row state; hover on the zone itself brightens to HUD_COLOR_ROLE_PRIMARY_ACTION
                 Color infoTint;
                 if (!enabled) {
-                    infoTint = HudPalette.HUD_DISABLED;
+                    infoTint = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 } else if (on) {
-                    infoTint = HudPalette.SEL_FG;          // visible on ACCENT fill
+                    infoTint = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;          // visible on HUD_COLOR_ROLE_PRIMARY_ACTION fill
                 } else if (infoHover) {
-                    infoTint = HudPalette.ACCENT;           // hover highlight
+                    infoTint = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;           // hover highlight
                 } else {
-                    infoTint = HudPalette.HUD_ORANGE_SOFT;
+                    infoTint = HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
                 }
 
                 // Glyph box centred inside the info zone, sized to HUD_ICON_TABLE role

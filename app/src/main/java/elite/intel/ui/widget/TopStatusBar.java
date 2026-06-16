@@ -35,12 +35,12 @@ public class TopStatusBar extends HudPanel {
      * @param version application version displayed as build metadata
      */
     public TopStatusBar(String appName, String version) {
-        super(new BorderLayout(0, 0), HudPalette.HUD_CYAN, Variant.FLAT);
+        super(new BorderLayout(0, 0), HudPalette.HUD_COLOR_ROLE_INFORMATION, Variant.FLAT);
         setPreferredSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
         setMinimumSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
-        setBackground(HudPalette.HUD_SHELL_BACKGROUND);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_BORDER_DIM),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)));
 
         add(buildLeftGroup(appName, version), BorderLayout.WEST);
@@ -76,7 +76,7 @@ public class TopStatusBar extends HudPanel {
         String ver  = version == null || version.isBlank() ? "UNKNOWN" : version;
 
         JLabel nameLabel = new JLabel(name);
-        nameLabel.setForeground(HudPalette.FG);
+        nameLabel.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_APP_TITLE));
         nameLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(nameLabel);
@@ -84,7 +84,7 @@ public class TopStatusBar extends HudPanel {
         row.add(Box.createHorizontalStrut(6));
 
         JLabel verLabel = new JLabel(ver);
-        verLabel.setForeground(HudPalette.FG_MUTED);
+        verLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         verLabel.setFont(verLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         verLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(verLabel);
@@ -146,7 +146,7 @@ public class TopStatusBar extends HudPanel {
 
     private static JLabel keyLabel(String text) {
         JLabel l = new JLabel(text == null ? "" : text.toUpperCase(Locale.ROOT));
-        l.setForeground(HudPalette.FG_MUTED);
+        l.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         l.setFont(l.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;
@@ -154,7 +154,7 @@ public class TopStatusBar extends HudPanel {
 
     private static JLabel valueLabel(String text) {
         JLabel l = new JLabel(text == null ? "—" : text.toUpperCase(Locale.ROOT));
-        l.setForeground(HudPalette.FG);
+        l.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         l.setFont(l.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_COMMANDER_NAME));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;
@@ -170,7 +170,7 @@ public class TopStatusBar extends HudPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(HudPalette.HUD_SHELL_BACKGROUND);
+        g.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         g.fillRect(0, 0, getWidth(), getHeight());
     }
 }

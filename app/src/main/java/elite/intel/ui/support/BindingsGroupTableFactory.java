@@ -64,8 +64,9 @@ public class BindingsGroupTableFactory {
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setWheelScrollingEnabled(false);
         scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        scrollPane.getViewport().setBackground(HUD_BG);
+        scrollPane.getViewport().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         scrollPane.setBorder(TABLE_SECTION_BORDER);
+        scrollPane.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
         forwardMouseWheelToOuterScrollPane(scrollPane, outerScrollPane);
         forwardMouseWheelToOuterScrollPane(scrollPane.getViewport(), outerScrollPane);
 
@@ -181,7 +182,7 @@ public class BindingsGroupTableFactory {
         HudTable.styleCompact(table);
         table.setRowHeight(TABLE_ROW_HEIGHT);
         table.setAutoCreateRowSorter(false);
-        table.getTableHeader().setBackground(HudPalette.HUD_BG);
+        table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
         table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer());
     }

@@ -50,7 +50,7 @@ public class CommandCatalogTablePanel extends JPanel {
     private void buildUi() {
         setLayout(new BorderLayout(HudPalette.HUD_GAP, 0));
         setBorder(AppTheme.hudSubtabContentBorder());
-        setBackground(HudPalette.HUD_BG);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
@@ -151,7 +151,6 @@ public class CommandCatalogTablePanel extends JPanel {
 
     private void styleTable(JTable table) {
         HudTable.style(table);
-        table.setBackground(HudPalette.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
         table.setRowHeight(44);
         table.setAutoCreateRowSorter(true);
         table.setDefaultRenderer(Object.class, new CellRenderer());

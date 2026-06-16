@@ -11,7 +11,7 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * Standard footer "unsaved changes" status (§10): {@code HUD_WARN} caution text with a leading
+ * Standard footer "unsaved changes" status (§10): {@code HUD_COLOR_ROLE_WARNING} caution text with a leading
  * ⚠ glyph, hidden by default. Place it just left of a SAVE button (grouped at the right edge) and
  * toggle visibility with the screen's dirty flag, so every SAVE footer reads the same.
  */
@@ -19,7 +19,7 @@ public class HudUnsavedHint extends JLabel {
 
     public HudUnsavedHint() {
         super(MultiLingualTextProvider.getText("status.unsavedChanges"));
-        setForeground(HudPalette.HUD_WARN);
+        setForeground(HudPalette.HUD_COLOR_ROLE_WARNING);
         setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BANNER));
         int glyph = Math.round(HudPalette.HUD_FONT_BANNER * 1.4f);
         setIcon(HudGlyphs.warningGlyphIcon(glyph));

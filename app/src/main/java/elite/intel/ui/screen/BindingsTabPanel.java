@@ -164,7 +164,7 @@ public class BindingsTabPanel extends JPanel {
     private void buildUi() {
         setLayout(new BorderLayout(2, SCREEN_TOP_GAP));
         setBorder(hudSubtabContentBorder());
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         JPanel details = compactProfilePanel();
         add(bindingProfileCard(details), BorderLayout.NORTH);
@@ -234,7 +234,7 @@ public class BindingsTabPanel extends JPanel {
                 HudPanel.Variant.FLAT,
                 6);
         card.body().add(body, BorderLayout.CENTER);
-        card.setFooter(keyboardOnlyWarningStrip(), HUD_WARN_BG);
+        card.setFooter(keyboardOnlyWarningStrip(), HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND);
 
         JPanel wrapper = transparentPanel(new BorderLayout());
         wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
@@ -258,7 +258,6 @@ public class BindingsTabPanel extends JPanel {
     }
 
     public void initData() {
-        applyOuterScrollPaneDataPlaneBorders();
         selectionController.resetTables();
         bindingsDirField.setText(playerSession.getBindingsDir().toString());
         try {
@@ -483,23 +482,11 @@ public class BindingsTabPanel extends JPanel {
 
     private JScrollPane groupedTablesScrollPane(JPanel panel) {
         JScrollPane scrollPane = hudScrollPane(panel);
-        scrollPane.getViewport().setBackground(HUD_BG);
+        scrollPane.getViewport().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         scrollPane.getVerticalScrollBar().setUnitIncrement(BindingsGroupTableFactory.TABLE_ROW_HEIGHT * SCROLL_UNIT_ROWS);
         scrollPane.setBorder(hudDataPlaneBorder());
+        scrollPane.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
         return scrollPane;
-    }
-
-    private void applyOuterScrollPaneDataPlaneBorders() {
-        // AppTheme restyles scroll panes after buildUi; restore the Bindings data-plane frame
-        // (border AND viewport bg) after palette passes — styleScrollPane resets viewport to HUD_PANEL_BG.
-        if (usedBindingsScrollPane != null) {
-            usedBindingsScrollPane.setBorder(hudDataPlaneBorder());
-            usedBindingsScrollPane.getViewport().setBackground(HUD_BG);
-        }
-        if (missingBindingsScrollPane != null) {
-            missingBindingsScrollPane.setBorder(hudDataPlaneBorder());
-            missingBindingsScrollPane.getViewport().setBackground(HUD_BG);
-        }
     }
 
     private JPanel nestedTabContent(JComponent content) {

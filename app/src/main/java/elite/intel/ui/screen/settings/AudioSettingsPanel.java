@@ -45,7 +45,7 @@ public class AudioSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         JPanel columns = transparentPanel(new GridBagLayout());
         columns.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));

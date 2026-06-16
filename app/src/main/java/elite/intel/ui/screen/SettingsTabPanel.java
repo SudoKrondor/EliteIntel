@@ -43,7 +43,7 @@ public class SettingsTabPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout(HudPalette.HUD_GAP, HudPalette.HUD_GAP));
-        setBackground(HudPalette.HUD_BG);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(AppTheme.hudScreenBorder());
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();

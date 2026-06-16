@@ -64,7 +64,7 @@ public class HudSearchToolbar extends JPanel {
 
         if (label != null && !label.isBlank()) {
             JLabel inlineLabel = new JLabel(label.toUpperCase());
-            inlineLabel.setForeground(HudPalette.FG_MUTED);
+            inlineLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             inlineLabel.setFont(inlineLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_SM));
             add(inlineLabel);
             add(Box.createRigidArea(new Dimension(HudPalette.HUD_GAP, 0)));

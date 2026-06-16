@@ -100,7 +100,7 @@ public final class CustomCommandExportDialog extends JDialog {
         table.getColumnModel().getColumn(ExportTableModel.COL_SELECTED)
                 .setHeaderRenderer(new HudCheckBoxHeaderRenderer(tableModel::areAllSelected));
 
-        // Name and action-key columns: caps + ACCENT colour
+        // Name and action-key columns: caps + HUD_COLOR_ROLE_PRIMARY_ACTION colour
         var nameRenderer = new HudTable.ValueCellRenderer();
         table.getColumnModel().getColumn(ExportTableModel.COL_NAME).setCellRenderer(nameRenderer);
         table.getColumnModel().getColumn(ExportTableModel.COL_ACTION_KEY).setCellRenderer(nameRenderer);

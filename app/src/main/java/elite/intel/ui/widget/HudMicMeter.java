@@ -23,11 +23,11 @@ import java.awt.RenderingHints;
  * Segmented vertical mic-level meter in the HUD visual language (HUD §4).
  * <p>
  * Two columns: a <b>LIVE</b> column whose segments light up to the current RMS, coloured by zone
- * ({@link AppTheme#HUD_DANGER} below the noise floor, {@link AppTheme#HUD_WARN} between floor and
- * gate, {@link AppTheme#HUD_OK} above the gate), and a slim <b>PEAK-trail</b> column holding the
- * decaying maximum with a bright {@link AppTheme#BUTTON_FG} cap ({@link AppTheme#HUD_DANGER} when
+ * ({@link AppTheme#HUD_COLOR_ROLE_DANGER} below the noise floor, {@link AppTheme#HUD_COLOR_ROLE_WARNING} between floor and
+ * gate, {@link AppTheme#HUD_COLOR_ROLE_SUCCESS} above the gate), and a slim <b>PEAK-trail</b> column holding the
+ * decaying maximum with a bright {@link AppTheme#HUD_COLOR_ROLE_BUTTON_TEXT} cap ({@link AppTheme#HUD_COLOR_ROLE_DANGER} when
  * the input is clipping = too hot). Floor and gate thresholds are drawn as labelled rails
- * ({@link AppTheme#FG_MUTED} / {@link AppTheme#HUD_CYAN}); the current value and gate status are
+ * ({@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} / {@link AppTheme#HUD_COLOR_ROLE_INFORMATION}); the current value and gate status are
  * read out below the columns.
  * <p>
  * Data comes from {@link AudioMonitorBus} (one {@link AudioMonitorEvent} per ~100 ms capture
@@ -54,7 +54,7 @@ public class HudMicMeter extends JComponent {
     private static final double MARGINAL_HIGH = 1.15;
 
     /** Grey peak-hold trail (dimmed white toward the background). */
-    private static final Color PEAK_TRAIL = mix(HudPalette.BUTTON_FG, HudPalette.HUD_BG, 0.60);
+    private static final Color PEAK_TRAIL = mix(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT, HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND, 0.60);
 
     // Frame state — written on the audio-monitor bus thread, read on the EDT.
     private volatile double currentRms = 0;
@@ -135,10 +135,10 @@ public class HudMicMeter extends JComponent {
      * intermittently), green from there up to {@code clip} (open), red again at/above clip (too hot).
      */
     private Color zoneColor(double level, double clip) {
-        if (level < gate * MARGINAL_LOW) return HudPalette.HUD_DANGER;
-        if (level < gate * MARGINAL_HIGH) return HudPalette.HUD_WARN;
-        if (level < clip) return HudPalette.HUD_OK;
-        return HudPalette.HUD_DANGER;
+        if (level < gate * MARGINAL_LOW) return HudPalette.HUD_COLOR_ROLE_DANGER;
+        if (level < gate * MARGINAL_HIGH) return HudPalette.HUD_COLOR_ROLE_WARNING;
+        if (level < clip) return HudPalette.HUD_COLOR_ROLE_SUCCESS;
+        return HudPalette.HUD_COLOR_ROLE_DANGER;
     }
 
     @Override
@@ -188,9 +188,9 @@ public class HudMicMeter extends JComponent {
                     g2.setColor(zone);
                     g2.fillRect(liveX, y, liveW, segH);
                 } else {
-                    g2.setColor(HudPalette.HUD_TABLE_ROW);
+                    g2.setColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
                     g2.fillRect(liveX, y, liveW, segH);
-                    g2.setColor(mix(zone, HudPalette.HUD_BG, 0.80));
+                    g2.setColor(mix(zone, HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND, 0.80));
                     g2.fillRect(liveX, y, liveW, Math.min(segH, 2));
                 }
 
@@ -199,10 +199,10 @@ public class HudMicMeter extends JComponent {
                 Color peakColor;
                 if (segLevel <= peakShown) {
                     peakColor = (i == peakSeg)
-                            ? ((clipping || peak >= clip) ? HudPalette.HUD_DANGER : HudPalette.BUTTON_FG)
+                            ? ((clipping || peak >= clip) ? HudPalette.HUD_COLOR_ROLE_DANGER : HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT)
                             : PEAK_TRAIL;
                 } else {
-                    peakColor = HudPalette.HUD_TABLE_ROW;
+                    peakColor = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND;
                 }
                 g2.setColor(peakColor);
                 g2.fillRect(peakX, y, peakW, segH);
@@ -214,15 +214,15 @@ public class HudMicMeter extends JComponent {
             g2.setFont(getFont().deriveFont(HudPalette.HUD_FONT_READOUT_KEY));
             FontMetrics fmK = g2.getFontMetrics();
             drawRail(g2, fmK, "FLOOR " + (int) noiseFloor, noiseFloor, fullScale,
-                    top, bottom, scaleW, meterRight, HudPalette.FG_MUTED);
+                    top, bottom, scaleW, meterRight, HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             drawRail(g2, fmK, "GATE " + (int) gate, gate, fullScale,
-                    top, bottom, scaleW, meterRight, HudPalette.HUD_CYAN);
+                    top, bottom, scaleW, meterRight, HudPalette.HUD_COLOR_ROLE_INFORMATION);
             drawRail(g2, fmK, "CLIP " + (int) clip, clip, fullScale,
-                    top, bottom, scaleW, meterRight, HudPalette.HUD_DANGER);
+                    top, bottom, scaleW, meterRight, HudPalette.HUD_COLOR_ROLE_DANGER);
 
             // MAX anchor at the top; "0" at the bottom only when the FLOOR label is clear of it
             // (otherwise a near-zero floor rail and the "0" anchor overlap).
-            g2.setColor(HudPalette.FG_MUTED);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             g2.drawString("MAX", scaleW - fmK.stringWidth("MAX") - HudPalette.HUD_GAP, top + fmK.getAscent());
             int floorY = (int) (bottom - Math.min(1.0, noiseFloor / fullScale) * meterH);
             if (bottom - floorY > fmK.getHeight()) {
@@ -231,7 +231,7 @@ public class HudMicMeter extends JComponent {
 
             // Peak readout tag pinned just right of the peak column, at the cap height.
             int peakY = (int) (bottom - Math.min(1.0, peakShown / fullScale) * meterH);
-            g2.setColor(HudPalette.BUTTON_FG);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT);
             String peakTag = "PEAK " + (int) peak;
             int tagX = Math.min(meterRight + HudPalette.HUD_GAP, w - fmK.stringWidth(peakTag));
             g2.drawString(peakTag, tagX, Math.max(top + fmK.getAscent(), peakY));
@@ -239,10 +239,10 @@ public class HudMicMeter extends JComponent {
             // Big current-value readout + status below the columns.
             Color statusColor;
             String status;
-            if (clipping || rms >= clip) { statusColor = HudPalette.HUD_DANGER; status = "HOT"; }
-            else if (rms >= gate * MARGINAL_HIGH) { statusColor = HudPalette.HUD_OK; status = "OPEN"; }
-            else if (rms >= gate * MARGINAL_LOW) { statusColor = HudPalette.HUD_WARN; status = "MARGINAL"; }
-            else { statusColor = HudPalette.HUD_DANGER; status = "CLOSED"; }
+            if (clipping || rms >= clip) { statusColor = HudPalette.HUD_COLOR_ROLE_DANGER; status = "HOT"; }
+            else if (rms >= gate * MARGINAL_HIGH) { statusColor = HudPalette.HUD_COLOR_ROLE_SUCCESS; status = "OPEN"; }
+            else if (rms >= gate * MARGINAL_LOW) { statusColor = HudPalette.HUD_COLOR_ROLE_WARNING; status = "MARGINAL"; }
+            else { statusColor = HudPalette.HUD_COLOR_ROLE_DANGER; status = "CLOSED"; }
 
             int center = scaleW + (meterRight - scaleW) / 2;
             g2.setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_STAT_LG));
@@ -254,7 +254,7 @@ public class HudMicMeter extends JComponent {
             g2.setFont(getFont().deriveFont(HudPalette.HUD_FONT_READOUT_KEY));
             FontMetrics fmS = g2.getFontMetrics();
             String sub = "LIVE · " + status;
-            g2.setColor(HudPalette.FG_MUTED);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             g2.drawString(sub, center - fmS.stringWidth(sub) / 2, bottom + fmBig.getHeight() + fmS.getAscent() - 2);
         } finally {
             g2.dispose();

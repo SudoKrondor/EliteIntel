@@ -22,17 +22,17 @@ import java.awt.event.MouseEvent;
 /**
  * HUD range slider rendered in the in-game Elite Dangerous form (HUD §4).
  * <p>
- * Layout: a warm brown track plaque ({@link AppTheme#HUD_ORANGE_FILL_HOVER}) spans the full
- * width; a dim rail ({@link AppTheme#HUD_ORANGE_SOFT}) with a horizontal edge inset runs through
+ * Layout: a warm brown track plaque ({@link AppTheme#HUD_COLOR_ROLE_PANEL_SEPARATOR}) spans the full
+ * width; a dim rail ({@link AppTheme#HUD_COLOR_ROLE_CONTROL_DECORATION}) with a horizontal edge inset runs through
  * its centre; the active portion left of the thumb is a saturated red fill
- * ({@link AppTheme#HUD_SLIDER_FILL}) drawn over a tall vertical start tick. The thumb is a round
- * {@link AppTheme#ACCENT} disc with a {@link AppTheme#BUTTON_FG} ring. The current value is
+ * ({@link AppTheme#HUD_COLOR_ROLE_SLIDER_VALUE_TRACK}) drawn over a tall vertical start tick. The thumb is a round
+ * {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION} disc with a {@link AppTheme#HUD_COLOR_ROLE_BUTTON_TEXT} ring. The current value is
  * rendered above the thumb and follows it.
  * <p>
  * The control snaps to {@code step} and exposes a {@link JComponent}-level
  * {@link ChangeListener} API ({@link #getValue()}, {@link #setValue(int)},
  * {@link #addChangeListener(ChangeListener)}) mirroring the subset of {@link javax.swing.JSlider}
- * used by callers. Disabled state mutes every part to {@link AppTheme#HUD_DISABLED} (§0.6).
+ * used by callers. Disabled state mutes every part to {@link AppTheme#HUD_COLOR_ROLE_DISABLED} (§0.6).
  */
 public class HudSlider extends JComponent {
 
@@ -192,12 +192,12 @@ public class HudSlider extends JComponent {
             int thumbX = thumbX();
 
             // Warm brown track plaque (muted when disabled).
-            g2.setColor(enabled ? HudPalette.HUD_ORANGE_FILL_HOVER : HudPalette.HUD_TABLE_ROW);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_PANEL_SEPARATOR : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             g2.fillRect(0, trackTop, w, trackH);
 
             // Dim rail with edge inset on both sides.
             int railY = centerY - HudPalette.HUD_SLIDER_RAIL_THICKNESS / 2;
-            g2.setColor(enabled ? HudPalette.HUD_ORANGE_SOFT : HudPalette.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : HudPalette.HUD_COLOR_ROLE_DISABLED);
             g2.fillRect(edge, railY, w - 2 * edge, HudPalette.HUD_SLIDER_RAIL_THICKNESS);
 
             // Tall vertical start tick (origin) at the left of the thumb travel range.
@@ -207,16 +207,16 @@ public class HudSlider extends JComponent {
             // Red active fill from the edge inset to the thumb (drawn over the start tick).
             int fillY = centerY - HudPalette.HUD_SLIDER_FILL_THICKNESS / 2;
             int fillW = Math.max(0, thumbX - edge);
-            g2.setColor(enabled ? HudPalette.HUD_SLIDER_FILL : HudPalette.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_SLIDER_VALUE_TRACK : HudPalette.HUD_COLOR_ROLE_DISABLED);
             g2.fillRect(edge, fillY, fillW, HudPalette.HUD_SLIDER_FILL_THICKNESS);
 
             // Round thumb: ring then accent core.
             int ring = HudPalette.HUD_SLIDER_THUMB_RING;
             int tx = thumbX - diameter / 2;
             int ty = centerY - diameter / 2;
-            g2.setColor(enabled ? HudPalette.BUTTON_FG : HudPalette.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT : HudPalette.HUD_COLOR_ROLE_DISABLED);
             g2.fillOval(tx, ty, diameter, diameter);
-            g2.setColor(enabled ? HudPalette.ACCENT : HudPalette.HUD_TABLE_ROW_HOVER);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
             g2.fillOval(tx + ring, ty + ring, diameter - 2 * ring, diameter - 2 * ring);
 
             // Value above the thumb, centred on it and clamped within the component bounds.
@@ -226,7 +226,7 @@ public class HudSlider extends JComponent {
             int textW = fm.stringWidth(text);
             int textX = Math.max(0, Math.min(thumbX - textW / 2, w - textW));
             int baseline = ty - 2 - fm.getDescent();
-            g2.setColor(enabled ? HudPalette.ACCENT : HudPalette.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_DISABLED);
             g2.drawString(text, textX, baseline);
         } finally {
             g2.dispose();

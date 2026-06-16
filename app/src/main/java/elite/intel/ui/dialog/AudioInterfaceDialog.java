@@ -73,7 +73,7 @@ public class AudioInterfaceDialog extends JDialog {
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel note = new JLabel(getText("audio.devices.note"));
-        note.setForeground(FG_MUTED);
+        note.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         note.setFont(note.getFont().deriveFont(note.getFont().getSize() * 0.9f));
         form.add(note, gbc);
 

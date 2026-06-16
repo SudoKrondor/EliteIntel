@@ -523,8 +523,8 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder());
-        button.setForeground(HudPalette.FG_MUTED);
-        button.setBackground(HudPalette.BG);
+        button.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        button.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         button.setFont(button.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_ICON_BUTTON));
         Dimension size = new Dimension(28, 28);

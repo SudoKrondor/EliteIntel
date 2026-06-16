@@ -23,7 +23,7 @@ public class ActionsTabPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(HudPalette.HUD_BG);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(AppTheme.hudScreenBorder());
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();

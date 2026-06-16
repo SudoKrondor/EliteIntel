@@ -10,8 +10,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 
-import static elite.intel.ui.theme.HudPalette.FG_MUTED;
-import static elite.intel.ui.theme.HudPalette.HUD_DIALOG_BODY;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND;
+import static elite.intel.ui.theme.AppTheme.HUD_SCROLL_STYLE_LOCKED;
 import static elite.intel.ui.theme.AppTheme.hudModalScaffold;
 import static elite.intel.ui.theme.AppTheme.hudScrollPane;
 import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
@@ -34,7 +35,7 @@ public class SettingsPopup extends JDialog {
 
         if (rows.isEmpty()) {
             JLabel placeholder = new JLabel(getText("popup.noSettings"));
-            placeholder.setForeground(FG_MUTED);
+            placeholder.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
             placeholder.setBorder(BorderFactory.createEmptyBorder(12, 4, 12, 4));
             placeholder.setAlignmentX(Component.LEFT_ALIGNMENT);
             content.add(placeholder);
@@ -52,7 +53,8 @@ public class SettingsPopup extends JDialog {
         scroll.setBorder(BorderFactory.createEmptyBorder());
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        scroll.getViewport().setBackground(HUD_DIALOG_BODY);
+        scroll.getViewport().setBackground(HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
+        scroll.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
 
         JButton cancel = makeButtonSubtle(getText("button.back"));
         cancel.addActionListener(e -> dispose());

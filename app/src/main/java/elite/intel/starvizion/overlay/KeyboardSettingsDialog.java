@@ -2,7 +2,7 @@ package elite.intel.starvizion.overlay;
 
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
-import elite.intel.ui.theme.HudPalette;
+import elite.intel.starvizion.StarVizionPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -35,7 +35,7 @@ public class KeyboardSettingsDialog extends JDialog {
     private void buildUi() {
         JPanel root = new JPanel(new GridBagLayout());
         root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(HudPalette.BG);
+        root.setBackground(StarVizionPalette.SETTINGS_DIALOG_BACKGROUND);
         setContentPane(root);
 
         GridBagConstraints gbc = HudForms.baseGbc();

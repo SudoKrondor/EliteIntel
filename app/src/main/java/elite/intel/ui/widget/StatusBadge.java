@@ -13,12 +13,12 @@ import java.awt.*;
 public class StatusBadge extends JLabel {
 
     public enum State {
-        OK(HudPalette.HUD_OK),
-        STANDBY(HudPalette.HUD_WARN),
-        OFFLINE(HudPalette.HUD_DANGER),
-        INFO(HudPalette.HUD_CYAN),
+        OK(HudPalette.HUD_COLOR_ROLE_SUCCESS),
+        STANDBY(HudPalette.HUD_COLOR_ROLE_WARNING),
+        OFFLINE(HudPalette.HUD_COLOR_ROLE_DANGER),
+        INFO(HudPalette.HUD_COLOR_ROLE_INFORMATION),
         /** Muted/inactive: service is off or sleeping — no action required. */
-        IDLE(HudPalette.HUD_DISABLED);
+        IDLE(HudPalette.HUD_COLOR_ROLE_DISABLED);
 
         private final Color color;
 

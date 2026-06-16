@@ -101,7 +101,7 @@ public class AiServicesSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         // ----- Section: LANGUAGE MODEL (flat working zone, §9) -----
         HudSection llmSection = HudSection.flat(getText("settings.ai.section.llm"), new BorderLayout(0, HUD_GAP));

@@ -14,10 +14,10 @@ import java.awt.event.MouseEvent;
 /**
  * HUD-styled segmented selector for a mutually-exclusive choice (radio-group semantics)
  * rendered as a single cockpit bar: equal-width text segments divided by a dark
- * {@code HUD_BG} gap, with the active segment carried by an inverted fill (§0.4/§11).
+ * {@code HUD_COLOR_ROLE_APPLICATION_BACKGROUND} gap, with the active segment carried by an inverted fill (§0.4/§11).
  * <p>
  * The canonical replacement for round LAF {@code JRadioButton}s: selection is shown by
- * a solid {@code ACCENT} fill with dark {@code SEL_FG} text — never a circular pill.
+ * a solid {@code HUD_COLOR_ROLE_PRIMARY_ACTION} fill with dark {@code HUD_COLOR_ROLE_SELECTED_TEXT} text — never a circular pill.
  * Colours mirror {@link HudCheckBox} (§5.2) so the controls read as one family. No LAF
  * rendering is used; {@code super.paintComponent} is not called.
  * <p>
@@ -116,8 +116,8 @@ public class HudSegmentedControl extends JComponent {
             int h = getHeight();
             boolean enabled = isEnabled();
 
-            // Gaps between segments read as HUD_BG, like the checkbox marker/text divider (§5.2).
-            g2.setColor(HudPalette.HUD_BG);
+            // Gaps between segments read as HUD_COLOR_ROLE_APPLICATION_BACKGROUND, like the checkbox marker/text divider (§5.2).
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(0, 0, w, h);
 
             Font f = baseFont();
@@ -134,15 +134,15 @@ public class HudSegmentedControl extends JComponent {
                 Color fill;
                 Color textColor;
                 if (!enabled) {
-                    fill = HudPalette.HUD_TABLE_ROW_HOVER;
-                    textColor = HudPalette.HUD_DISABLED;
+                    fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
+                    textColor = HudPalette.HUD_COLOR_ROLE_DISABLED;
                 } else if (on) {
-                    fill = HudPalette.ACCENT;
-                    textColor = HudPalette.SEL_FG;
+                    fill = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+                    textColor = HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT;
                 } else {
-                    fill = HudPalette.HUD_TABLE_ROW_HOVER;
-                    // Hover on an unselected segment brightens its text to ACCENT.
-                    textColor = (i == hoverIndex) ? HudPalette.ACCENT : HudPalette.FG_MUTED;
+                    fill = HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND;
+                    // Hover on an unselected segment brightens its text to HUD_COLOR_ROLE_PRIMARY_ACTION.
+                    textColor = (i == hoverIndex) ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT;
                 }
 
                 g2.setColor(fill);

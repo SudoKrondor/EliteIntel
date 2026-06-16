@@ -50,11 +50,11 @@ public final class HudTable {
         table.setFillsViewportHeight(true);
         table.setRowHeight(rowHeight);
         table.setFont(table.getFont().deriveFont(Font.PLAIN, fontSize));
-        table.setBackground(HudPalette.HUD_BG);   // table body = window colour; darker than HUD_TABLE_ROW tile → gap reads as dark slot (§2)
-        table.setForeground(HudPalette.FG);
-        table.setGridColor(HudPalette.HUD_BG);
-        table.setSelectionBackground(HudPalette.ACCENT);
-        table.setSelectionForeground(HudPalette.SEL_FG);
+        table.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);   // table body = window colour; darker than HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND tile → gap reads as dark slot (§2)
+        table.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+        table.setGridColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        table.setSelectionBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        table.setSelectionForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
         table.setShowGrid(false);
         table.setShowVerticalLines(false);
         table.setShowHorizontalLines(false);
@@ -62,45 +62,43 @@ public final class HudTable {
         table.setDefaultRenderer(Object.class, new CellRenderer(cellVerticalPadding));
 
         JTableHeader header = table.getTableHeader();
-        header.setBackground(HudPalette.HUD_BG);
-        header.setForeground(HudPalette.FG);
+        header.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        header.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         header.setFont(header.getFont().deriveFont(Font.BOLD, headerFontSize));
         header.setReorderingAllowed(false);
         header.setPreferredSize(new Dimension(header.getPreferredSize().width, headerHeight));
         header.setDefaultRenderer(new HeaderRenderer(headerVerticalPadding));
-        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_ORANGE_SOFT));
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION));
         // Belt-and-suspenders: FlatLaf also reads the client property per-component.
         header.putClientProperty("FlatLaf.style", String.format(
                 "hoverBackground: #%06X; hoverForeground: #%06X; pressedBackground: #%06X; pressedForeground: #%06X",
-                HudPalette.HUD_BG.getRGB() & 0xFFFFFF,
-                HudPalette.FG_MUTED.getRGB() & 0xFFFFFF,
-                HudPalette.HUD_BG.getRGB() & 0xFFFFFF,
-                HudPalette.FG_MUTED.getRGB() & 0xFFFFFF));
+                HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND.getRGB() & 0xFFFFFF,
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT.getRGB() & 0xFFFFFF,
+                HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND.getRGB() & 0xFFFFFF,
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT.getRGB() & 0xFFFFFF));
     }
 
     /**
-     * Creates a scroll pane suitable for a HUD table.
+     * Creates the standard data-plane scroll pane for a HUD table.
      *
      * @param table table to wrap
      */
     public static JScrollPane scrollPane(JTable table) {
-        JScrollPane scrollPane = new HudScrollPane(table);
-        scrollPane.getViewport().setBackground(HudPalette.HUD_BG);
-        return scrollPane;
+        return dataPlaneScrollPane(table);
     }
 
     /**
-     * Scroll pane for a HUD data table: warm HUD_BG viewport (matches the row
+     * Scroll pane for a HUD data table: warm HUD_COLOR_ROLE_APPLICATION_BACKGROUND viewport (matches the row
      * gap colour, no cold cant around/below rows) and a data-plane frame.
      * Marked HUD_SCROLL_STYLE_LOCKED so applyDarkPalette will not reset it to the
-     * cold HUD_PANEL_BG viewport. Use this for table panels instead of
+     * cold HUD_COLOR_ROLE_PANEL_BACKGROUND viewport. Use this for table panels instead of
      * scrollPane(JTable) + manual restore-after-palette (ED_HUD_REFERENCE §8.6).
      *
      * @param table table to wrap
      */
     public static JScrollPane dataPlaneScrollPane(JTable table) {
         JScrollPane scrollPane = new HudScrollPane(table);          // ctor runs styleScrollPane (cold)
-        scrollPane.getViewport().setBackground(HudPalette.HUD_BG);    // override to warm
+        scrollPane.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);    // override to warm
         scrollPane.setBorder(AppTheme.hudDataPlaneBorder());
         scrollPane.putClientProperty(AppTheme.HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
         return scrollPane;
@@ -131,8 +129,8 @@ public final class HudTable {
                 int column
         ) {
             JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            label.setBackground(HudPalette.HUD_BG);
-            label.setForeground(HudPalette.FG_MUTED);
+            label.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            label.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             label.setFont(label.getFont().deriveFont(Font.BOLD, label.getFont().getSize2D()));
             label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
             label.setHorizontalAlignment(SwingConstants.LEFT);
@@ -143,7 +141,7 @@ public final class HudTable {
     /**
      * Optional client property on a JTable: Integer index of the row currently
      * under the mouse, or -1 / absent for none. When present, the default
-     * CellRenderer paints that row with HUD_TABLE_ROW_HOVER. Panels that want
+     * CellRenderer paints that row with HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND. Panels that want
      * row hover install a MouseMotionListener that maintains this property.
      */
     public static final String HOVER_ROW_PROPERTY = "elite.intel.hud.table.hoverRow";
@@ -179,13 +177,13 @@ public final class HudTable {
         ) {
             JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             if (isSelected) {
-                label.setBackground(HudPalette.ACCENT);
-                label.setForeground(HudPalette.SEL_FG);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
                 Object hoveredObj = table.getClientProperty(HOVER_ROW_PROPERTY);
                 boolean hovered = hoveredObj instanceof Integer h && h == row;
-                label.setBackground(hovered ? HudPalette.HUD_TABLE_ROW_HOVER : HudPalette.HUD_TABLE_ROW);
-                label.setForeground(HudPalette.ACCENT);
+                label.setBackground(hovered ? HudPalette.HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
             }
             label.setBorder(new EmptyBorder(verticalPadding, 8, verticalPadding, 8));
             label.setHorizontalAlignment(SwingConstants.LEFT);
@@ -195,17 +193,17 @@ public final class HudTable {
 
     /**
      * Extends {@link CellRenderer} with configurable upper-casing, foreground colour, and horizontal
-     * alignment. Use for columns where the value is an identifier (pass {@link AppTheme#FG}),
+     * alignment. Use for columns where the value is an identifier (pass {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_TEXT}),
      * a numeric (pass {@link SwingConstants#RIGHT}), or needs explicit caps without global impact.
      *
-     * @param fg        non-selected foreground; {@code null} keeps the default {@link AppTheme#ACCENT}
+     * @param fg        non-selected foreground; {@code null} keeps the default {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}
      * @param alignment {@link SwingConstants#LEFT} or {@link SwingConstants#RIGHT}
      */
     public static class ValueCellRenderer extends CellRenderer {
         private final java.awt.Color fg;
         private final int alignment;
 
-        /** Creates a renderer with caps, default ACCENT foreground, and LEFT alignment. */
+        /** Creates a renderer with caps, default HUD_COLOR_ROLE_PRIMARY_ACTION foreground, and LEFT alignment. */
         public ValueCellRenderer() {
             this(null, SwingConstants.LEFT);
         }

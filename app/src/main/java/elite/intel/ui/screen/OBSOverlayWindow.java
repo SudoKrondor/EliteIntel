@@ -23,8 +23,8 @@ import static elite.intel.ui.theme.HudPalette.*;
 
 public class OBSOverlayWindow extends JFrame {
 
-    private static final Color BG = HudPalette.HUD_OVERLAY_BG;
-    private static final Color FG = HudPalette.ACCENT;
+    private static final Color OVERLAY_BACKGROUND = HudPalette.HUD_COLOR_ROLE_STREAM_OVERLAY_BACKGROUND;
+    private static final Color OVERLAY_TEXT = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
     private static final int TYPEWRITER_DELAY_MS = 50;
@@ -67,7 +67,7 @@ public class OBSOverlayWindow extends JFrame {
 
         overlayPanel = new OverlayPanel();
         setContentPane(overlayPanel);
-        getContentPane().setBackground(BG);
+        getContentPane().setBackground(OVERLAY_BACKGROUND);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class OBSOverlayWindow extends JFrame {
 
         OverlayPanel() {
             setOpaque(true);
-            setBackground(BG);
+            setBackground(OVERLAY_BACKGROUND);
 
             Font loaded;
             try {
@@ -179,7 +179,7 @@ public class OBSOverlayWindow extends JFrame {
             }
 
             Graphics2D g2 = frame.createGraphics();
-            g2.setColor(BG);
+            g2.setColor(OVERLAY_BACKGROUND);
             g2.fillRect(0, 0, w, h);
 
 
@@ -206,7 +206,7 @@ public class OBSOverlayWindow extends JFrame {
                 y -= blockH;
                 if (y + blockH < 0) break; // scrolled off top
 
-                g2.setColor(FG);
+                g2.setColor(OVERLAY_TEXT);
                 for (int li = 0; li < lines.size(); li++) {
                     g2.drawString(lines.get(li), PAD_X, y + li * fm.getHeight() + fm.getAscent());
                 }
@@ -219,7 +219,7 @@ public class OBSOverlayWindow extends JFrame {
                     int cy = y + (lines.size() - 1) * fm.getHeight();
                     boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
                     if (blink) {
-                        g2.setColor(FG);
+                        g2.setColor(OVERLAY_TEXT);
                         g2.fillRect(cx + 2, cy + 2, fm.charWidth('M') / 2, fm.getAscent() - 2);
                     }
                 }

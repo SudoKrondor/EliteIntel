@@ -38,7 +38,7 @@ public final class HudConfirmDialog extends JDialog {
         msg.setFocusable(false);
         msg.setOpaque(false);
         msg.setColumns(40);
-        msg.setForeground(HudPalette.FG);
+        msg.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         // Proportional Label font (not the monospaced JTextArea default).
         Font base = UIManager.getFont("Label.font");
         if (base == null) base = msg.getFont();

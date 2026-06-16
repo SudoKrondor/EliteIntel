@@ -37,7 +37,7 @@ public class HudStatusReadout extends JPanel {
         currentStateColor = stateColor(state);
 
         JLabel labelComp = new JLabel(label == null ? "" : label.toUpperCase());
-        labelComp.setForeground(FG_MUTED);
+        labelComp.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         labelComp.setFont(labelComp.getFont().deriveFont(Font.PLAIN, HUD_FONT_READOUT_KEY));
 
         valueComp = new JLabel(value == null ? "" : value.toUpperCase(), SwingConstants.RIGHT);
@@ -78,13 +78,13 @@ public class HudStatusReadout extends JPanel {
     }
 
     private static Color stateColor(StatusBadge.State state) {
-        if (state == null) return HUD_CYAN;
+        if (state == null) return HUD_COLOR_ROLE_INFORMATION;
         return switch (state) {
-            case OK      -> HUD_OK;
-            case STANDBY -> HUD_WARN;
-            case OFFLINE -> HUD_DANGER;
-            case INFO    -> HUD_CYAN;
-            case IDLE    -> HUD_DISABLED;
+            case OK      -> HUD_COLOR_ROLE_SUCCESS;
+            case STANDBY -> HUD_COLOR_ROLE_WARNING;
+            case OFFLINE -> HUD_COLOR_ROLE_DANGER;
+            case INFO    -> HUD_COLOR_ROLE_INFORMATION;
+            case IDLE    -> HUD_COLOR_ROLE_DISABLED;
         };
     }
 }

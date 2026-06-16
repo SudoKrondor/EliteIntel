@@ -19,10 +19,10 @@ import java.util.List;
  * dialog's setContentPane(). Composition, not a base class.
  *
  * Assembles:
- *  - window frame: MatteBorder HUD_ORANGE_FILL_HOVER, thickness HUD_BORDER_THICKNESS_ACCENT;
+ *  - window frame: MatteBorder HUD_COLOR_ROLE_PANEL_SEPARATOR, thickness HUD_BORDER_THICKNESS_ACCENT;
  *  - header HudDialogHeader(title, onClose) when title != null;
  *  - body inside side inset HUD_DIALOG_BODY_INSET (when scrollBody, wrapped in
- *    HudScrollPane with viewport bg overridden to HUD_DIALOG_BODY);
+ *    HudScrollPane with viewport bg overridden to HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
  *  - footer: shared HudFooter (modal=true) — dismiss/BACK on the left, primary+extra on the right.
  *
  * Does NOT orchestrate showing or scrim (kept outside: runWithModalScrim(owner, showModal)).
@@ -40,16 +40,17 @@ public final class HudModalScaffold {
         Component bodyComp;
         if (spec.scrollBody()) {
             JScrollPane sp = AppTheme.hudScrollPane(spec.body());
-            sp.getViewport().setBackground(HudPalette.HUD_DIALOG_BODY); // override HUD_PANEL_BG
+            sp.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND); // override HUD_COLOR_ROLE_PANEL_BACKGROUND
+            sp.putClientProperty(AppTheme.HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
             bodyComp = sp;
         } else {
             bodyComp = spec.body();
         }
 
-        // content = body (+ footer) within a single side inset, warm HUD_DIALOG_BODY background
+        // content = body (+ footer) within a single side inset, warm HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND background
         JPanel content = new JPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         content.setOpaque(true);
-        content.setBackground(HudPalette.HUD_DIALOG_BODY);
+        content.setBackground(HudPalette.HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
         int bottom = hasFooter ? 0 : inset; // footer border carries the bottom gap; otherwise inset
         content.setBorder(new EmptyBorder(inset, inset, bottom, inset));
         content.add(bodyComp, BorderLayout.CENTER);
@@ -58,11 +59,11 @@ public final class HudModalScaffold {
         // --- wrapper (window frame) ---
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(true);
-        wrapper.setBackground(HudPalette.HUD_BG);
+        wrapper.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         wrapper.setBorder(BorderFactory.createMatteBorder(
                 HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
                 HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
-                HudPalette.HUD_ORANGE_FILL_HOVER));
+                HudPalette.HUD_COLOR_ROLE_PANEL_SEPARATOR));
 
         if (spec.title() != null) {
             wrapper.add(new HudDialogHeader(spec.title(), spec.onClose()), BorderLayout.NORTH);

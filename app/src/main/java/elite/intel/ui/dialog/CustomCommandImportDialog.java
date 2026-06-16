@@ -154,7 +154,7 @@ public final class CustomCommandImportDialog extends JDialog {
         table.getColumnModel().getColumn(ImportTableModel.COL_SELECTED)
                 .setHeaderRenderer(new HudCheckBoxHeaderRenderer(tableModel::areAllValidSelected));
 
-        // Name and action-key columns: caps + ACCENT colour
+        // Name and action-key columns: caps + HUD_COLOR_ROLE_PRIMARY_ACTION colour
         var nameRenderer = new HudTable.ValueCellRenderer();
         table.getColumnModel().getColumn(ImportTableModel.COL_NAME).setCellRenderer(nameRenderer);
         table.getColumnModel().getColumn(ImportTableModel.COL_ACTION_KEY).setCellRenderer(nameRenderer);
@@ -214,15 +214,15 @@ public final class CustomCommandImportDialog extends JDialog {
             if (row >= candidates.size()) return label;
             CustomCommandExportImportService.ImportCandidate c = candidates.get(row);
 
-            // On selected rows keep SEL_FG; coloured status text is only for unselected rows.
+            // On selected rows keep HUD_COLOR_ROLE_SELECTED_TEXT; coloured status text is only for unselected rows.
             if (isSelected) {
-                label.setForeground(HudPalette.SEL_FG);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else if (!c.isValid()) {
-                label.setForeground(HudPalette.HUD_DANGER);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_DANGER);
             } else if (c.hasConflict()) {
-                label.setForeground(HudPalette.HUD_WARN);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_WARNING);
             } else {
-                label.setForeground(HudPalette.HUD_OK);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_SUCCESS);
             }
 
             if (!c.isValid()) {

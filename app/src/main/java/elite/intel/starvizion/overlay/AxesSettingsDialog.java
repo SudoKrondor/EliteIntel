@@ -3,9 +3,9 @@ package elite.intel.starvizion.overlay;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.starvizion.model.SvAxis;
+import elite.intel.starvizion.StarVizionPalette;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
-import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -41,7 +41,7 @@ public class AxesSettingsDialog extends JDialog {
     private void buildUi() {
         JPanel root = new JPanel(new GridBagLayout());
         root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(HudPalette.BG);
+        root.setBackground(StarVizionPalette.SETTINGS_DIALOG_BACKGROUND);
         setContentPane(root);
 
         GridBagConstraints gbc = HudForms.baseGbc();

@@ -42,7 +42,7 @@ public class CommonSettingsPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
 
         HudSection section = HudSection.flat(getText("settings.section.common"), new GridBagLayout());
         JPanel body = section.body();

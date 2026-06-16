@@ -49,8 +49,8 @@ public class AppTheme {
     /**
      * Opt-out client property for JScrollPane: when TRUE, applyDarkPalette does
      * NOT restyle this scroll pane (keeps its own viewport bg / border). Use for
-     * data-plane table scrolls that must keep the warm HUD_BG viewport instead of
-     * the cold HUD_PANEL_BG that styleScrollPane applies. Mirrors
+     * data-plane table scrolls that must keep the warm HUD_COLOR_ROLE_APPLICATION_BACKGROUND viewport instead of
+     * the cold HUD_COLOR_ROLE_PANEL_BACKGROUND that styleScrollPane applies. Mirrors
      * HUD_TABLE_STYLE_LOCKED for tables (ED_HUD_REFERENCE §8.6).
      */
     public static final String HUD_SCROLL_STYLE_LOCKED = "eliteIntel.hud.scrollStyleLocked";
@@ -100,7 +100,7 @@ public class AppTheme {
         HudButton button = new HudButton(null, true);
         button.setSquareSide(fieldHeight);
         // Dark glyph on the bright primary fill (HUD inversion, §0.4); the icon reads getForeground().
-        button.setForeground(SEL_FG);
+        button.setForeground(HUD_COLOR_ROLE_SELECTED_TEXT);
         button.setIcon(icon);
         return button;
     }
@@ -180,10 +180,10 @@ public class AppTheme {
         b.setOpaque(false);
         b.setContentAreaFilled(false);
         b.setFocusPainted(false);
-        b.setForeground(FG);
-        b.setBackground(BUTTON_BG);
+        b.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+        b.setBackground(HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND);
         b.setBorder(BorderFactory.createCompoundBorder(
-                new LineBorder(BUTTON_BG, HUD_BORDER_THICKNESS, true),
+                new LineBorder(HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND, HUD_BORDER_THICKNESS, true),
                 new EmptyBorder(6, 12, 6, 12)
         ));
     }
@@ -193,7 +193,7 @@ public class AppTheme {
      */
     public static Border hudBorder() {
         return BorderFactory.createCompoundBorder(
-                new LineBorder(HUD_BORDER_DIM, HUD_BORDER_THICKNESS, true),
+                new LineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER, HUD_BORDER_THICKNESS, true),
                 new EmptyBorder(HUD_PADDING, HUD_PADDING, HUD_PADDING, HUD_PADDING)
         );
     }
@@ -225,7 +225,7 @@ public class AppTheme {
      */
     public static Border hudMajorPanelBorder() {
         return BorderFactory.createCompoundBorder(
-                new LineBorder(HUD_BORDER_DIM, HUD_BORDER_THICKNESS, true),
+                new LineBorder(HUD_COLOR_ROLE_SECONDARY_BORDER, HUD_BORDER_THICKNESS, true),
                 new EmptyBorder(4, 6, 5, 6)
         );
     }
@@ -243,12 +243,12 @@ public class AppTheme {
      * The top edge is omitted because the filter bar provides the shared top border line.
      */
     public static Border hudConnectedScrollPaneBorder() {
-        return BorderFactory.createMatteBorder(0, 1, 1, 1, HUD_BORDER);
+        return BorderFactory.createMatteBorder(0, 1, 1, 1, HUD_COLOR_ROLE_FRAME_BORDER);
     }
 
     /**
      * Canonical footer rule (§10) shared by modal dialogs and non-modal screen/tab footers:
-     * a full-width warm {@link #HUD_ORANGE_FILL_HOVER} rule of {@link #HUD_BORDER_THICKNESS}
+     * a full-width warm {@link #HUD_COLOR_ROLE_PANEL_SEPARATOR} rule of {@link #HUD_BORDER_THICKNESS}
      * at the top, with {@link #HUD_GAP} padding above (after the rule) and below, zero side inset.
      * Apply to the footer strip built by {@link HudFooter}.
      */
@@ -257,7 +257,7 @@ public class AppTheme {
         final int th  = HUD_BORDER_THICKNESS;
         return new AbstractBorder() {
             @Override public void paintBorder(Component c, Graphics g, int x, int y, int w, int h) {
-                g.setColor(HUD_ORANGE_FILL_HOVER);
+                g.setColor(HUD_COLOR_ROLE_PANEL_SEPARATOR);
                 g.fillRect(x, y, w, th);            // full-width rule, zero side inset
             }
             @Override public Insets getBorderInsets(Component c) { return new Insets(th + gap, 0, gap, 0); }
@@ -270,7 +270,7 @@ public class AppTheme {
      */
     public static JLabel hudSectionLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setForeground(ACCENT);
+        label.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
         label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_SECTION_TITLE));
         label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         return label;
@@ -282,14 +282,14 @@ public class AppTheme {
      */
     public static JLabel hudGroupLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setForeground(FG);
+        label.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         label.setFont(label.getFont().deriveFont(Font.BOLD, HUD_FONT_SECTION_TITLE));
         label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         return label;
     }
 
     /**
-     * Light form field label (§5.1): {@code FG}, SM caps — the key column next to inputs.
+     * Light form field label (§5.1): {@code HUD_COLOR_ROLE_PRIMARY_TEXT}, SM caps — the key column next to inputs.
      * Shares {@link #styleFieldLabel} with {@link #addLabel}.
      */
     public static JLabel hudReadoutLabel(String text) {
@@ -299,13 +299,13 @@ public class AppTheme {
     }
 
     /**
-     * Single source of truth for field/readout key-label styling (§5.1): {@code FG_MUTED}, XS caps,
+     * Single source of truth for field/readout key-label styling (§5.1): {@code HUD_COLOR_ROLE_SECONDARY_TEXT}, XS caps,
      * foreground locked against the dark palette. Shared by {@link #hudReadoutLabel} and {@link #addLabel}
      * so every form label looks identical.
      */
     static void styleFieldLabel(JLabel label) {
-        // Vanilla-ED form labels are light (FG), not muted, at the field-label size (§5.1).
-        label.setForeground(FG);
+        // Vanilla-ED form labels are light (HUD_COLOR_ROLE_PRIMARY_TEXT), not muted, at the field-label size (§5.1).
+        label.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         label.setFont(label.getFont().deriveFont(HUD_FONT_FIELD_LABEL));
         label.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
@@ -315,7 +315,7 @@ public class AppTheme {
      * Pair with {@link #hudReadoutLabel} for the key column. No border or background is set.
      *
      * @param value initial text
-     * @param color foreground colour — e.g. {@link #HUD_CYAN} for command names, {@link #FG} for plain values
+     * @param color foreground colour — e.g. {@link #HUD_COLOR_ROLE_INFORMATION} for command names, {@link #HUD_COLOR_ROLE_PRIMARY_TEXT} for plain values
      */
     public static JLabel hudReadoutValue(String value, Color color) {
         JLabel l = new JLabel(value);
@@ -338,10 +338,10 @@ public class AppTheme {
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setOpaque(false);
         JLabel nameLabel = new JLabel(name.toUpperCase());
-        nameLabel.setForeground(HUD_CYAN);
+        nameLabel.setForeground(HUD_COLOR_ROLE_INFORMATION);
         nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, HUD_FONT_APP_TITLE));
         JLabel idLabel = new JLabel(id);
-        idLabel.setForeground(FG_MUTED);
+        idLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         idLabel.setFont(idLabel.getFont().deriveFont(HUD_FONT_READOUT_KEY));
         idLabel.setBorder(new EmptyBorder(4, 0, 0, 0));
         panel.add(nameLabel);
@@ -355,14 +355,14 @@ public class AppTheme {
     private static final int HUD_FIELD_INSET_H = 8;
 
     /**
-     * Outer field line that follows the component's enabled state: warm {@code HUD_ORANGE_SOFT}
-     * when enabled, dimmed {@code HUD_DISABLED} when disabled (§0.6). Shared by all HUD fields and
+     * Outer field line that follows the component's enabled state: warm {@code HUD_COLOR_ROLE_CONTROL_DECORATION}
+     * when enabled, dimmed {@code HUD_COLOR_ROLE_DISABLED} when disabled (§0.6). Shared by all HUD fields and
      * combo boxes so the disabled look is consistent app-wide.
      */
     private static Border hudFieldLine() {
         return new javax.swing.border.AbstractBorder() {
             @Override public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-                g.setColor(c.isEnabled() ? HUD_ORANGE_SOFT : HUD_DISABLED);
+                g.setColor(c.isEnabled() ? HUD_COLOR_ROLE_CONTROL_DECORATION : HUD_COLOR_ROLE_DISABLED);
                 for (int i = 0; i < HUD_BORDER_THICKNESS; i++) {
                     g.drawRect(x + i, y + i, width - 1 - 2 * i, height - 1 - 2 * i);
                 }
@@ -444,15 +444,15 @@ public class AppTheme {
                 && Boolean.TRUE.equals(jce.getClientProperty(HUD_COMBO_EDITOR_LOCKED))) {
             return;   // combo editor is fully styled by picker(); palette must not re-border it
         }
-        tc.setBackground(HUD_TABLE_ROW);
-        // Field value text — ACCENT (vanilla-ED: light label, orange value), the same for single-line
+        tc.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        // Field value text — HUD_COLOR_ROLE_PRIMARY_ACTION (vanilla-ED: light label, orange value), the same for single-line
         // and multi-line FIELD areas; only enabled/disabled differs. The live console/log is a
         // separate role (HudLogArea, a JPanel) and is not styled here.
-        tc.setForeground(ACCENT);
-        tc.setDisabledTextColor(HUD_DISABLED); // §0.6: disabled text dims to the warm muted tone
-        tc.setCaretColor(ACCENT);
-        tc.setSelectionColor(ACCENT);
-        tc.setSelectedTextColor(SEL_FG);
+        tc.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        tc.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED); // §0.6: disabled text dims to the warm muted tone
+        tc.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        tc.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         // Preserve the wider info border so the palette does not clobber the reserved info-«i» zone.
         tc.setBorder(tc instanceof HudTextField htf && htf.hasInfoZone()
                 ? hudFieldBorderWithInfo() : hudFieldBorder());
@@ -465,11 +465,11 @@ public class AppTheme {
      */
     public static void styleSearchInnerField(JTextComponent tc) {
         tc.setOpaque(false);
-        tc.setBackground(HUD_PANEL_BG_ALT);
-        tc.setForeground(FG);
-        tc.setCaretColor(HUD_CYAN);
-        tc.setSelectionColor(HUD_CYAN);
-        tc.setSelectedTextColor(SEL_FG);
+        tc.setBackground(HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
+        tc.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+        tc.setCaretColor(HUD_COLOR_ROLE_INFORMATION);
+        tc.setSelectionColor(HUD_COLOR_ROLE_INFORMATION);
+        tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         tc.setBorder(BorderFactory.createEmptyBorder());
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_SM));
     }
@@ -479,11 +479,11 @@ public class AppTheme {
      */
     public static void styleMetadataField(JTextComponent tc) {
         tc.setOpaque(true);
-        tc.setBackground(HUD_PANEL_BG_ALT);
-        tc.setForeground(FG);
-        tc.setCaretColor(FG_MUTED);
-        tc.setSelectionColor(HUD_CYAN);
-        tc.setSelectedTextColor(SEL_FG);
+        tc.setBackground(HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
+        tc.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+        tc.setCaretColor(HUD_COLOR_ROLE_SECONDARY_TEXT);
+        tc.setSelectionColor(HUD_COLOR_ROLE_INFORMATION);
+        tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         tc.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 8));
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
     }
@@ -493,8 +493,8 @@ public class AppTheme {
      * replacing the model or renderer. The UI delegate is installed by HudComboBox itself.
      */
     public static void styleComboBox(JComboBox<?> comboBox) {
-        comboBox.setBackground(HUD_TABLE_ROW);
-        comboBox.setForeground(ACCENT); // collapsed value — same ACCENT as the popup items (§5.3)
+        comboBox.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        comboBox.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION); // collapsed value — same HUD_COLOR_ROLE_PRIMARY_ACTION as the popup items (§5.3)
         comboBox.setBorder(hudFieldBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
@@ -507,7 +507,7 @@ public class AppTheme {
      * editor, not through the renderer used by non-editable combos. This is the single place that
      * subdues that editor to the HUD canon so both combo types read identically (§5.3):
      * <ul>
-     *   <li>Value colour {@link #ACCENT} (enabled) / {@link #HUD_DISABLED} (disabled) — matches the
+     *   <li>Value colour {@link #HUD_COLOR_ROLE_PRIMARY_ACTION} (enabled) / {@link #HUD_COLOR_ROLE_DISABLED} (disabled) — matches the
      *       renderer-painted value of non-editable combos.</li>
      *   <li>Text inset {@link #HUD_COMBO_ITEM_INSET_H}/{@link #HUD_COMBO_ITEM_INSET_V}, equal to the
      *       renderer item inset. FlatLaf's own {@code JTextField.padding} is zeroed so it does not add
@@ -521,12 +521,12 @@ public class AppTheme {
      * HUD border is already in place when the FlatLaf padding is neutralised.
      */
     public static void styleComboEditor(JTextComponent editor) {
-        editor.setBackground(HUD_TABLE_ROW);
-        editor.setForeground(ACCENT);
-        editor.setDisabledTextColor(HUD_DISABLED);
-        editor.setCaretColor(ACCENT);
-        editor.setSelectionColor(ACCENT);
-        editor.setSelectedTextColor(SEL_FG);
+        editor.setBackground(HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        editor.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        editor.setDisabledTextColor(HUD_COLOR_ROLE_DISABLED);
+        editor.setCaretColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        editor.setSelectionColor(HUD_COLOR_ROLE_PRIMARY_ACTION);
+        editor.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
         // Border carries the full text inset; equals the non-editable renderer item inset.
         editor.setBorder(new EmptyBorder(
                 HUD_COMBO_ITEM_INSET_V, HUD_COMBO_ITEM_INSET_H,
@@ -543,7 +543,7 @@ public class AppTheme {
      */
     public static void styleCheckBox(AbstractButton checkBox) {
         checkBox.setOpaque(false);
-        checkBox.setForeground(FG);
+        checkBox.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         checkBox.setFocusPainted(false);
     }
 
@@ -551,8 +551,8 @@ public class AppTheme {
      * Applies the standard HUD treatment to scroll panes and their viewport.
      */
     public static void styleScrollPane(JScrollPane scrollPane) {
-        scrollPane.setBackground(HUD_BG);
-        scrollPane.getViewport().setBackground(HUD_PANEL_BG);
+        scrollPane.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        scrollPane.getViewport().setBackground(HUD_COLOR_ROLE_PANEL_BACKGROUND);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         styleScrollBar(scrollPane.getVerticalScrollBar());
         styleScrollBar(scrollPane.getHorizontalScrollBar());
@@ -561,16 +561,16 @@ public class AppTheme {
 
     public static void styleScrollBar(JScrollBar scrollBar) {
         scrollBar.setPreferredSize(new Dimension(9, 9));
-        scrollBar.setBackground(HUD_BG);
+        scrollBar.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         scrollBar.setUnitIncrement(16);
         scrollBar.setUI(new BasicScrollBarUI() {
             @Override
             protected void configureScrollBarColors() {
-                thumbColor = HUD_DISABLED;
-                thumbDarkShadowColor = HUD_BORDER_DIM;
-                thumbHighlightColor = HUD_DISABLED;
-                trackColor = HUD_PANEL_BG;
-                trackHighlightColor = HUD_PANEL_BG_ALT;
+                thumbColor = HUD_COLOR_ROLE_DISABLED;
+                thumbDarkShadowColor = HUD_COLOR_ROLE_SECONDARY_BORDER;
+                thumbHighlightColor = HUD_COLOR_ROLE_DISABLED;
+                trackColor = HUD_COLOR_ROLE_PANEL_BACKGROUND;
+                trackHighlightColor = HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
             }
 
             @Override
@@ -588,7 +588,7 @@ public class AppTheme {
                 if (thumbBounds.isEmpty() || !scrollbar.isEnabled()) return;
                 Graphics2D g2 = (Graphics2D) g.create();
                 try {
-                    g2.setColor(HUD_DISABLED);
+                    g2.setColor(HUD_COLOR_ROLE_DISABLED);
                     g2.fillRect(thumbBounds.x + 1, thumbBounds.y + 1,
                             Math.max(1, thumbBounds.width - 2),
                             Math.max(1, thumbBounds.height - 2));
@@ -599,7 +599,7 @@ public class AppTheme {
 
             @Override
             protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
-                g.setColor(HUD_BG);
+                g.setColor(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
                 g.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
             }
 
@@ -680,16 +680,16 @@ public class AppTheme {
         } else if (c instanceof JScrollPane && lockScroll) {
             // data-plane scroll owns its viewport bg/border — leave it untouched
         } else if (c instanceof JPanel || c instanceof JTabbedPane || c instanceof JScrollPane) {
-            c.setBackground(HUD_CONTENT_BACKGROUND);
-            if (!lockForeground) c.setForeground(FG);
+            c.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            if (!lockForeground) c.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         } else {
-            c.setBackground(c instanceof JTextComponent ? BG_PANEL : BG);
-            if (!lockForeground) c.setForeground(FG);
+            c.setBackground(c instanceof JTextComponent ? HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND : HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            if (!lockForeground) c.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
         }
 
         if (c instanceof JTextArea) {
-            c.setBackground(LOG_BG);
-            c.setForeground(CONSOLE_FG);
+            c.setBackground(HUD_COLOR_ROLE_LOG_BACKGROUND);
+            c.setForeground(HUD_COLOR_ROLE_MONOSPACE_TEXT);
         }
 
         if (c instanceof JTextComponent tc) {
@@ -715,8 +715,8 @@ public class AppTheme {
         }
 
         if (c instanceof JTabbedPane tp) {
-            tp.setBackground(HUD_CONTENT_BACKGROUND);
-            tp.setForeground(FG);
+            tp.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+            tp.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
             tp.setOpaque(true);
         }
 
@@ -741,7 +741,7 @@ public class AppTheme {
     // -- Modal scrim -----------------------------------------------------------
 
     /**
-     * Shows a {@link #HUD_SCRIM} veil on the owner's glass pane for the duration of a modal dialog.
+     * Shows a {@link #HUD_COLOR_ROLE_MODAL_SCRIM} veil on the owner's glass pane for the duration of a modal dialog.
      * {@code showModal} must call {@code setVisible(true)} on an {@code APPLICATION_MODAL} dialog,
      * which blocks until the dialog is closed. The scrim is guaranteed to be removed in a
      * {@code finally} block even if {@code showModal} throws.
@@ -756,7 +756,7 @@ public class AppTheme {
         JComponent scrim = new JComponent() {
             @Override
             protected void paintComponent(Graphics g) {
-                g.setColor(HUD_SCRIM);
+                g.setColor(HUD_COLOR_ROLE_MODAL_SCRIM);
                 g.fillRect(0, 0, getWidth(), getHeight());
             }
         };

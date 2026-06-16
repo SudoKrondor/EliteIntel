@@ -80,7 +80,7 @@ public class MarkdownViewPanel extends JPanel {
         applyTransparentSurface();
 
         // applyDarkPalette (run later in AppView) re-paints the JEditorPane white and gives it a
-        // warm field border + a lighter HUD_PANEL_BG viewport. Re-assert the transparent surface
+        // warm field border + a lighter HUD_COLOR_ROLE_PANEL_BACKGROUND viewport. Re-assert the transparent surface
         // once that pass has completed so the document reads flush on the HUD background.
         SwingUtilities.invokeLater(this::applyTransparentSurface);
     }
@@ -93,9 +93,9 @@ public class MarkdownViewPanel extends JPanel {
         editorPane.setOpaque(false);
         editorPane.setBorder(BorderFactory.createEmptyBorder());
         // Viewport/scroll pane stay opaque (a non-opaque viewport smears on scroll) but carry the
-        // screen background HUD_BG, not the lighter HUD_PANEL_BG, so no panel slab shows behind text.
-        scrollPane.setBackground(HudPalette.HUD_BG);
-        scrollPane.getViewport().setBackground(HudPalette.HUD_BG);
+        // screen background HUD_COLOR_ROLE_APPLICATION_BACKGROUND, not the lighter HUD_COLOR_ROLE_PANEL_BACKGROUND, so no panel slab shows behind text.
+        scrollPane.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        scrollPane.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
     }
 
     private void loadContent() {
@@ -346,32 +346,47 @@ public class MarkdownViewPanel extends JPanel {
     }
 
     private String wrapHtml(String body) {
-        // Colors from AppTheme palette
-        // BG_PANEL #1F2032, FG #E6E6E6, ACCENT #FF7100, BUTTON_BG #03529F,
-        // BG #141622, CONSOLE_FG #E0FFEF, FG_MUTED #B0B0B0
-        return """
+        String open = """
                 <html>
                 <head>
                 <style type="text/css">
-                body   { color: #E6E6E6; margin: 20px; font-size: 18pt; }
-                h1     { color: #FF7100; font-size: 30pt; }
-                h2     { color: #FF7100; font-size: 26pt; }
-                h3     { color: #FF7100; font-size: 22pt; }
-                h4     { color: #FF7100; font-size: 20pt; }
-                a      { color: #4E9AF1; }
-                b      { color: #FFFFFF; }
-                code   { font-family: monospace; color: #E0FFEF; background-color: #141622; }
-                pre    { font-family: monospace; color: #E0FFEF; background-color: #141622; padding: 10px; }
-                blockquote { color: #B0B0B0; margin-left: 16px; }
-                hr     { color: #03529F; }
+                body   { color: %s; margin: 20px; font-size: 18pt; }
+                h1     { color: %s; font-size: 30pt; }
+                h2     { color: %s; font-size: 26pt; }
+                h3     { color: %s; font-size: 22pt; }
+                h4     { color: %s; font-size: 20pt; }
+                a      { color: %s; }
+                b      { color: %s; }
+                code   { font-family: monospace; color: %s; background-color: %s; }
+                pre    { font-family: monospace; color: %s; background-color: %s; padding: 10px; }
+                blockquote { color: %s; margin-left: 16px; }
+                hr     { color: %s; }
                 ul, ol { margin-left: 24px; }
                 li     { margin-bottom: 4px; }
                 </style>
                 </head>
                 <body>
-                """ + body + """
+                """.formatted(
+                cssColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT),
+                cssColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION),
+                cssColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION),
+                cssColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION),
+                cssColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION),
+                cssColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK),
+                cssColor(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT),
+                cssColor(HudPalette.HUD_COLOR_ROLE_MONOSPACE_TEXT),
+                cssColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND),
+                cssColor(HudPalette.HUD_COLOR_ROLE_MONOSPACE_TEXT),
+                cssColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND),
+                cssColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT),
+                cssColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION));
+        return open + body + """
                 </body>
                 </html>
                 """;
+    }
+
+    private static String cssColor(Color color) {
+        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
     }
 }

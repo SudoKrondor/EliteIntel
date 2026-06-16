@@ -97,7 +97,7 @@ public class AiTabPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout(HUD_GAP, HUD_GAP));
-        setBackground(HUD_BG);
+        setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(hudScreenBorder());
 
         // --- Controls wired up, placed in right sidebar SHORTCUTS ---

@@ -10,8 +10,8 @@ import java.awt.*;
 
 /**
  * Full-width HUD toolbar that paints the "connected-to-table" top border:
- * top/left/right sides in {@link AppTheme#HUD_BORDER}, a dim bottom separator in
- * {@link AppTheme#HUD_BORDER_DIM}, and cyan L-shaped corner marks on the two top corners.
+ * top/left/right sides in {@link AppTheme#HUD_COLOR_ROLE_FRAME_BORDER}, a dim bottom separator in
+ * {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_BORDER}, and cyan L-shaped corner marks on the two top corners.
  * <p>
  * Place a {@link AppTheme#hudConnectedScrollPaneBorder()} data table directly below this toolbar
  * with no vertical gap so that the shared side borders form one continuous framed block.
@@ -28,7 +28,7 @@ public class HudConnectedToolbar extends JPanel {
     public HudConnectedToolbar() {
         super(new BorderLayout(HudPalette.HUD_GAP, 0));
         setOpaque(true);
-        setBackground(HudPalette.HUD_BG);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(new EmptyBorder(8, 8, 8, 8));
     }
 
@@ -40,12 +40,12 @@ public class HudConnectedToolbar extends JPanel {
             int w = getWidth();
             int h = getHeight();
             int m = CORNER_MARK;
-            g2.setColor(HudPalette.HUD_BORDER);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
             g2.drawLine(0, 0, w - 1, 0);           // top
             g2.drawLine(0, 0, 0, h - 1);           // left
             g2.drawLine(w - 1, 0, w - 1, h - 1);  // right
             // Dim separator marks the filter/table boundary
-            g2.setColor(HudPalette.HUD_BORDER_DIM);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
             g2.drawLine(0, h - 1, w - 1, h - 1);
         } finally {
             g2.dispose();

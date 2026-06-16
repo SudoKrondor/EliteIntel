@@ -49,7 +49,7 @@ public class HudCommanderBlock extends JPanel {
         // --- app name ---
         JLabel appNameLabel = new JLabel(getText("ai.commander.appName"));
         appNameLabel.setFont(appNameLabel.getFont().deriveFont(Font.BOLD, HUD_FONT_READOUT_KEY));
-        appNameLabel.setForeground(FG_MUTED);
+        appNameLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         appNameLabel.setAlignmentX(CENTER_ALIGNMENT);
         appNameLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         add(appNameLabel);
@@ -59,7 +59,7 @@ public class HudCommanderBlock extends JPanel {
         // --- UTC time (large mono) ---
         timeLabel = new JLabel("--:--:--");
         timeLabel.setFont(monoFont.deriveFont(Font.BOLD, HUD_FONT_CLOCK));
-        timeLabel.setForeground(ACCENT);
+        timeLabel.setForeground(HUD_COLOR_ROLE_PRIMARY_ACTION);
         timeLabel.setAlignmentX(CENTER_ALIGNMENT);
         timeLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         add(timeLabel);
@@ -69,7 +69,7 @@ public class HudCommanderBlock extends JPanel {
         // --- galactic date ---
         dateLabel = new JLabel("-- --- ----");
         dateLabel.setFont(monoFont.deriveFont(Font.PLAIN, HUD_FONT_READOUT_VALUE));
-        dateLabel.setForeground(FG_MUTED);
+        dateLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         dateLabel.setAlignmentX(CENTER_ALIGNMENT);
         dateLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         add(dateLabel);
@@ -79,7 +79,7 @@ public class HudCommanderBlock extends JPanel {
         // --- credit balance (hidden when zero) ---
         creditsLabel = new JLabel();
         creditsLabel.setFont(monoFont.deriveFont(Font.BOLD, HUD_FONT_READOUT_VALUE));
-        creditsLabel.setForeground(FG_MUTED);
+        creditsLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         creditsLabel.setAlignmentX(CENTER_ALIGNMENT);
         creditsLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         creditsLabel.setVisible(false);

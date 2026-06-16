@@ -47,12 +47,12 @@ public class HudTelemetryBlock extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         JLabel keyLabel = new JLabel(label == null ? "" : label.toUpperCase());
-        keyLabel.setForeground(HudPalette.HUD_DISABLED);
+        keyLabel.setForeground(HudPalette.HUD_COLOR_ROLE_DISABLED);
         keyLabel.setFont(keyLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         keyLabel.setAlignmentX(LEFT_ALIGNMENT);
 
         valueLabel = new JLabel(PLACEHOLDER);
-        valueLabel.setForeground(HudPalette.HUD_DISABLED);
+        valueLabel.setForeground(HudPalette.HUD_COLOR_ROLE_DISABLED);
         valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_READOUT_VALUE));
         valueLabel.setAlignmentX(LEFT_ALIGNMENT);
 
@@ -70,7 +70,7 @@ public class HudTelemetryBlock extends JPanel {
     public void setValue(String value) {
         boolean placeholder = (value == null || value.isBlank());
         valueLabel.setText(placeholder ? PLACEHOLDER : value);
-        valueLabel.setForeground(placeholder ? HudPalette.HUD_DISABLED : HudPalette.FG);
+        valueLabel.setForeground(placeholder ? HudPalette.HUD_COLOR_ROLE_DISABLED : HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
     }
 
     /** Wraps a pre-tinted native-size icon in a vertically centered JLabel. */
@@ -105,7 +105,7 @@ public class HudTelemetryBlock extends JPanel {
                     int h = 5;
                     int[] xp = {cx, cx + h, cx, cx - h};
                     int[] yp = {cy - h, cy, cy + h, cy};
-                    g2.setColor(HudPalette.FG_MUTED);
+                    g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
                     g2.fillPolygon(xp, yp, 4);
                 } finally {
                     g2.dispose();

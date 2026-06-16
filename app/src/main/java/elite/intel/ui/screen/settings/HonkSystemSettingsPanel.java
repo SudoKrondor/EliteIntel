@@ -77,7 +77,7 @@ public class HonkSystemSettingsPanel implements SettingRow {
             boolean on = cb.isSelected();
             fireGroupComboBox.setEnabled(on);
             triggerGroupComboBox.setEnabled(on);
-            Color c = on ? FG_MUTED : HUD_DISABLED;
+            Color c = on ? HUD_COLOR_ROLE_SECONDARY_TEXT : HUD_COLOR_ROLE_DISABLED;
             fgLabel.setForeground(c);
             trgLabel.setForeground(c);
         };

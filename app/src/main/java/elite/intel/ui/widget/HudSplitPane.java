@@ -10,8 +10,8 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.*;
 
 /**
- * HUD-styled JSplitPane. Divider background is painted using {@link AppTheme#HUD_BG} so it
- * blends with the main window shell. Grip dots use {@link AppTheme#HUD_DISABLED} — muted but
+ * HUD-styled JSplitPane. Divider background is painted using {@link AppTheme#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} so it
+ * blends with the main window shell. Grip dots use {@link AppTheme#HUD_COLOR_ROLE_DISABLED} — muted but
  * functional. Supports {@link JSplitPane#HORIZONTAL_SPLIT} and {@link JSplitPane#VERTICAL_SPLIT}.
  */
 public class HudSplitPane extends JSplitPane {
@@ -44,7 +44,7 @@ public class HudSplitPane extends JSplitPane {
      * need properties that BasicSplitPaneUI.installDefaults() would otherwise reset.
      */
     private void applyHudDefaults() {
-        setBackground(HudPalette.HUD_BG);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(null);
         setDividerSize(HudPalette.HUD_GAP);
     }
@@ -74,7 +74,7 @@ public class HudSplitPane extends JSplitPane {
 
         HudDivider(BasicSplitPaneUI ui) {
             super(ui);
-            setBackground(HudPalette.HUD_BG);
+            setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             // Remove the default raised-bevel border so the divider has no bright edge.
             setBorder(null);
         }
@@ -82,7 +82,7 @@ public class HudSplitPane extends JSplitPane {
         /** Fully overrides default paint to avoid any Swing-default background or border artifacts. */
         @Override
         public void paint(Graphics g) {
-            g.setColor(HudPalette.HUD_BG);
+            g.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g.fillRect(0, 0, getWidth(), getHeight());
             paintGripDots((Graphics2D) g.create());
         }
@@ -90,7 +90,7 @@ public class HudSplitPane extends JSplitPane {
         private void paintGripDots(Graphics2D g2) {
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(HudPalette.HUD_DISABLED);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_DISABLED);
 
                 int w = getWidth();
                 int h = getHeight();

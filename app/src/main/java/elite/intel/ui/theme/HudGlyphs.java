@@ -293,7 +293,7 @@ public final class HudGlyphs {
     /**
      * Draws the HUD warning glyph — a triangle outline with a centred exclamation — within
      * (x, y, w, h). Primitive replacement for the Unicode "⚠" (HUD §13); the caller chooses the
-     * colour (state-driven, typically {@link #HUD_WARN}).
+     * colour (state-driven, typically {@link #HUD_COLOR_ROLE_WARNING}).
      *
      * @param g2    graphics context (not disposed by this method)
      * @param x     left edge of the available area

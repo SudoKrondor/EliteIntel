@@ -12,8 +12,8 @@ import java.awt.*;
  * Reusable HUD search input with placeholder text and an embedded clear action.
  * <p>
  * {@link Variant#TABLE_FILTER} renders as a segmented Elite-Dangerous-style filter bar:
- * a dedicated icon cell, a text cell, and a clear cell, separated by {@code HUD_BORDER_DIM}
- * vertical lines, with {@code HUD_CYAN_SOFT} L-shaped corner marks painted over the outer border.
+ * a dedicated icon cell, a text cell, and a clear cell, separated by {@code HUD_COLOR_ROLE_SECONDARY_BORDER}
+ * vertical lines, with {@code HUD_COLOR_ROLE_INFORMATION_MARK} L-shaped corner marks painted over the outer border.
  * <p>
  * {@link Variant#TABLE_FILTER_CONNECTED} is the same segmented layout but without a bottom
  * border line — it instead draws a dim separator. Use it with a data table directly below so
@@ -78,7 +78,7 @@ public class HudSearchField extends JPanel {
                 || this.variant == Variant.EMBEDDED;
 
         setOpaque(true);
-        setBackground(filter ? HudPalette.HUD_PANEL_BG : HudPalette.HUD_PANEL_BG_ALT);
+        setBackground(filter ? HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND : HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
         // TABLE_FILTER variants paint their own border in paintBorder(); use a 1 px inset so
         // child panels don't bleed over the painted border line.
         // EMBEDDED has no outer border — the host container provides the frame.
@@ -103,7 +103,7 @@ public class HudSearchField extends JPanel {
         clearButton.setContentAreaFilled(false);
         clearButton.setBorderPainted(false);
         clearButton.setFocusable(false);
-        clearButton.setForeground(HudPalette.FG_MUTED);
+        clearButton.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
         clearButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         clearButton.addActionListener(e -> textField.setText(""));
 
@@ -131,8 +131,8 @@ public class HudSearchField extends JPanel {
     private static JPanel iconSegment() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(true);
-        panel.setBackground(HudPalette.HUD_BG);
-        panel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, HudPalette.HUD_BORDER_DIM));
+        panel.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        panel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 10, 0, 10);
         panel.add(new JLabel(new SearchIcon()), gbc);
@@ -142,8 +142,8 @@ public class HudSearchField extends JPanel {
     private static JPanel clearSegment(JButton clearButton) {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(true);
-        panel.setBackground(HudPalette.HUD_BG);
-        panel.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, HudPalette.HUD_BORDER_DIM));
+        panel.setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        panel.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 8, 0, 8);
         panel.add(clearButton, gbc);
@@ -166,25 +166,25 @@ public class HudSearchField extends JPanel {
             int m = CORNER_MARK;
             if (variant == Variant.TABLE_FILTER) {
                 // Full enclosing border
-                g2.setColor(HudPalette.HUD_BORDER);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
                 g2.drawRect(0, 0, w - 1, h - 1);
                 // Corner accent marks at all four corners
-                g2.setColor(HudPalette.HUD_CYAN_SOFT);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
                 g2.drawLine(1, 1, 1 + m, 1);       g2.drawLine(1, 1, 1, 1 + m);           // TL
                 g2.drawLine(w-2-m, 1, w-2, 1);     g2.drawLine(w-2, 1, w-2, 1 + m);       // TR
                 g2.drawLine(1, h-2, 1+m, h-2);     g2.drawLine(1, h-2-m, 1, h-2);         // BL
                 g2.drawLine(w-2-m, h-2, w-2, h-2); g2.drawLine(w-2, h-2-m, w-2, h-2);    // BR
             } else {
                 // TABLE_FILTER_CONNECTED: top/left/right border only — the table provides the bottom
-                g2.setColor(HudPalette.HUD_BORDER);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
                 g2.drawLine(0, 0, w - 1, 0);           // top
                 g2.drawLine(0, 0, 0, h - 1);           // left
                 g2.drawLine(w - 1, 0, w - 1, h - 1);  // right
                 // Dim separator line at the bottom (marks the filter/table boundary)
-                g2.setColor(HudPalette.HUD_BORDER_DIM);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
                 g2.drawLine(0, h - 1, w - 1, h - 1);
                 // Corner accent marks on top corners only
-                g2.setColor(HudPalette.HUD_CYAN_SOFT);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
                 g2.drawLine(1, 1, 1 + m, 1);      g2.drawLine(1, 1, 1, 1 + m);      // TL
                 g2.drawLine(w-2-m, 1, w-2, 1);    g2.drawLine(w-2, 1, w-2, 1 + m);  // TR
             }
@@ -211,7 +211,7 @@ public class HudSearchField extends JPanel {
             }
             Graphics2D g2 = (Graphics2D) graphics.create();
             try {
-                g2.setColor(HudPalette.FG_MUTED);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
                 FontMetrics metrics = g2.getFontMetrics();
                 Insets insets = getInsets();
                 int x = insets.left + 2;
@@ -231,7 +231,7 @@ public class HudSearchField extends JPanel {
             Graphics2D g2 = (Graphics2D) graphics.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(HudPalette.HUD_CYAN_SOFT);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
                 g2.setStroke(new BasicStroke(1.6f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
                 g2.drawOval(x + 1, y + 1, 8, 8);
                 g2.drawLine(x + 9, y + 9, x + 13, y + 13);

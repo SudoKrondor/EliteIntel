@@ -29,7 +29,7 @@ public class HudPanel extends JPanel {
      * @param layout layout manager used by the panel content
      */
     public HudPanel(LayoutManager layout) {
-        this(layout, HudPalette.ACCENT);
+        this(layout, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
     }
 
     /**
@@ -51,7 +51,7 @@ public class HudPanel extends JPanel {
      */
     public HudPanel(LayoutManager layout, Color accentColor, Variant variant) {
         super(layout);
-        this.accentColor = accentColor == null ? HudPalette.ACCENT : accentColor;
+        this.accentColor = accentColor == null ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION : accentColor;
         this.variant = variant == null ? Variant.FRAMED : variant;
         setOpaque(false);
         setBorder(this.variant == Variant.FLAT ? AppTheme.hudFlatBorder() : AppTheme.hudBorder());
@@ -70,7 +70,7 @@ public class HudPanel extends JPanel {
             int w = getWidth();
             int h = getHeight();
             if (paintBackgroundFill) {
-                g2.setColor(HudPalette.HUD_PANEL_BG);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
                 g2.fillRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1),
                         HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
             }
@@ -79,7 +79,7 @@ public class HudPanel extends JPanel {
                 return;
             }
 
-            g2.setColor(HudPalette.HUD_BORDER_DIM);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
             g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1),
                     HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
 

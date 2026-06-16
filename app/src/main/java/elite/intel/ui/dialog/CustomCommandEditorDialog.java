@@ -154,7 +154,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         panel.setOpaque(false);
         GridBagConstraints gbc = HudForms.baseGbc();
         idField.setEditable(false);
-        idField.setForeground(HudPalette.FG_MUTED);
+        idField.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
 
         addField(panel, gbc, getText("actions.customCommands.editor.actionKey"), actionKeyField);
         addField(panel, gbc, getText("actions.customCommands.editor.name"), nameField);
@@ -282,8 +282,8 @@ public final class CustomCommandEditorDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JScrollPane sp = AppTheme.hudScrollPane(area);
         sp.setBorder(AppTheme.hudFieldBorder());
-        sp.getViewport().setBackground(HudPalette.HUD_TABLE_ROW);
-        area.setBackground(HudPalette.HUD_TABLE_ROW);
+        sp.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        area.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         panel.add(sp, gbc);
         gbc.gridy++;
     }

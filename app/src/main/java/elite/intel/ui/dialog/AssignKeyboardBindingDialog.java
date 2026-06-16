@@ -119,14 +119,14 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        noFreeKeysLabel.setForeground(FG_MUTED);
+        noFreeKeysLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
         content.add(noFreeKeysLabel, gbc);
 
         nextRow(gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        alreadyInUseLabel.setForeground(HUD_DANGER);
+        alreadyInUseLabel.setForeground(HUD_COLOR_ROLE_DANGER);
         alreadyInUseLabel.setFont(alreadyInUseLabel.getFont().deriveFont(Font.BOLD));
         alreadyInUseLabel.setVisible(false);
         content.add(alreadyInUseLabel, gbc);
@@ -165,7 +165,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        JLabel field = hudReadoutValue(value, FG);
+        JLabel field = hudReadoutValue(value, HUD_COLOR_ROLE_PRIMARY_TEXT);
         panel.add(field, gbc);
     }
 

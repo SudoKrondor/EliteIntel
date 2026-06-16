@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * HUD-styled combo box with shared dark input colours and configurable cell rendering.
  *
  * <p>Constructors accepting {@code labelFn} control dropdown text extraction; constructors
- * accepting {@code mutedWhen} dim placeholder or disabled items with {@link AppTheme#FG_MUTED}.
+ * accepting {@code mutedWhen} dim placeholder or disabled items with {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT}.
  * All constructors install {@link HudComboBoxUI} and the built-in {@link HudComboRenderer}.
  *
  * <p>Use {@link #picker} to create an editable, searchable variant.
@@ -45,7 +45,7 @@ public class HudComboBox<E> extends JComboBox<E> {
 
     /**
      * Creates a HUD combo box from an array with a custom display-text extractor and a
-     * predicate that dims non-selected items matching the condition with {@link AppTheme#FG_MUTED}.
+     * predicate that dims non-selected items matching the condition with {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT}.
      */
     public HudComboBox(E[] values, Function<? super E, String> labelFn,
                        Predicate<? super E> mutedWhen) {
@@ -111,9 +111,9 @@ public class HudComboBox<E> extends JComboBox<E> {
      * HUD dropdown cell renderer.
      *
      * <ul>
-     *   <li>Selected: {@link AppTheme#ACCENT} background, {@link AppTheme#SEL_FG} foreground.</li>
-     *   <li>Non-selected: {@link AppTheme#HUD_TABLE_ROW} background;
-     *       {@link AppTheme#FG_MUTED} when {@code mutedWhen} matches, otherwise {@link AppTheme#FG}.</li>
+     *   <li>Selected: {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link AppTheme#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
+     *   <li>Non-selected: {@link AppTheme#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} background;
+     *       {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_TEXT}.</li>
      *   <li>Font: {@link AppTheme#HUD_FONT_FIELD_VALUE}.</li>
      *   <li>Border: {@link AppTheme#HUD_COMBO_ITEM_INSET_V} / {@link AppTheme#HUD_COMBO_ITEM_INSET_H}.</li>
      * </ul>
@@ -146,16 +146,16 @@ public class HudComboBox<E> extends JComboBox<E> {
             label.setText(text);
 
             if (isSelected) {
-                label.setBackground(HudPalette.ACCENT);
-                label.setForeground(HudPalette.SEL_FG);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+                label.setForeground(HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
             } else {
-                label.setBackground(HudPalette.HUD_TABLE_ROW);
+                label.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
                 boolean muted = false;
                 if (mutedWhen != null && value != null) {
                     @SuppressWarnings("unchecked") E item = (E) value;
                     muted = mutedWhen.test(item);
                 }
-                label.setForeground(muted ? HudPalette.FG_MUTED : HudPalette.ACCENT);
+                label.setForeground(muted ? HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT : HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
             }
 
             label.setBorder(new EmptyBorder(

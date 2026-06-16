@@ -56,10 +56,10 @@ public class App {
             try {
                 UIManager.setLookAndFeel(new FlatLightLaf());
                 // FlatLaf paints hover/pressed over the renderer; neutralise it here.
-                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_BG);
-                UIManager.put("TableHeader.hoverForeground", HudPalette.FG_MUTED);
-                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_BG);
-                UIManager.put("TableHeader.pressedForeground", HudPalette.FG_MUTED);
+                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.hoverForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.pressedForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -9,7 +9,7 @@ import java.awt.*;
 
 /**
  * Two equal-width columns separated by a centred vertical divider in the warm subordinate rail
- * tone ({@link AppTheme#HUD_ORANGE_FILL_HOVER} — quieter than a section header rail). Shared HUD
+ * tone ({@link AppTheme#HUD_COLOR_ROLE_PANEL_SEPARATOR} — quieter than a section header rail). Shared HUD
  * layout for side-by-side form/section columns (e.g. local/cloud setup, command identity vs steps).
  * <p>
  * Columns are exactly equal ({@link GridLayout}); each child fills its half. If a child's content
@@ -36,7 +36,7 @@ public class HudTwoColumns extends JPanel {
         // Painted directly (not a child's background) so the global dark palette can't overwrite it.
         int t = HudPalette.HUD_BORDER_THICKNESS;
         int x = (getWidth() - t) / 2;
-        g.setColor(HudPalette.HUD_ORANGE_FILL_HOVER);
+        g.setColor(HudPalette.HUD_COLOR_ROLE_PANEL_SEPARATOR);
         g.fillRect(x, 0, t, getHeight());
     }
 }

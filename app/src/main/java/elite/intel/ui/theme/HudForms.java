@@ -62,10 +62,10 @@ public final class HudForms {
         JLabel label = new JLabel(text.toUpperCase()) {
             @Override public void setEnabled(boolean enabled) {
                 super.setEnabled(enabled);
-                setForeground(enabled ? FG : HUD_DISABLED);
+                setForeground(enabled ? HUD_COLOR_ROLE_PRIMARY_TEXT : HUD_COLOR_ROLE_DISABLED);
             }
         };
-        AppTheme.styleFieldLabel(label); // shared §5.1 field-label styling (FG_MUTED, XS caps, locked)
+        AppTheme.styleFieldLabel(label); // shared §5.1 field-label styling (HUD_COLOR_ROLE_SECONDARY_TEXT, XS caps, locked)
         if (labelWidth > 0) {
             sizeFieldLabel(label, labelWidth);
         }

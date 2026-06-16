@@ -13,7 +13,7 @@ import java.awt.*;
  * HUD table cell editor backed by a {@link HudComboBox}.
  *
  * <p>Overrides {@link #getTableCellEditorComponent} to lock the combo box background
- * to {@link AppTheme#HUD_TABLE_ROW} regardless of the row selection state, keeping the
+ * to {@link AppTheme#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} regardless of the row selection state, keeping the
  * warm cockpit colour consistent with the surrounding data rows (§3).
  *
  * @param <E> option type
@@ -33,8 +33,8 @@ public class HudComboCellEditor<E> extends DefaultCellEditor {
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int col) {
         Component c = super.getTableCellEditorComponent(table, value, isSelected, row, col);
-        c.setBackground(HudPalette.HUD_TABLE_ROW); // §3: input field stays warm on any row state
-        c.setForeground(HudPalette.FG);
+        c.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND); // §3: input field stays warm on any row state
+        c.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
         return c;
     }
 }

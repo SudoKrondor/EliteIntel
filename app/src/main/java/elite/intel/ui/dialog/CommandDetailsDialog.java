@@ -176,9 +176,9 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.insets = new Insets(5, 0, 5, HudPalette.HUD_GAP);
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), HudPalette.HUD_CYAN);
-        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.ACCENT);
-        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.ACCENT);
+        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), HudPalette.HUD_COLOR_ROLE_INFORMATION);
+        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
+        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
         addDescription(panel, gbc);
         addPhrases(panel, gbc);
         addParameters(panel, gbc);
@@ -301,7 +301,7 @@ public final class CommandDetailsDialog extends JDialog {
         List<String> phrases = currentPhrases();
         if (phrases.isEmpty()) {
             JLabel empty = new JLabel(getText("actions.commands.details.noPhrases"));
-            empty.setForeground(HudPalette.FG_MUTED);
+            empty.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             empty.setBorder(new EmptyBorder(8, 8, 8, 8));
             return empty;
         }
@@ -315,7 +315,7 @@ public final class CommandDetailsDialog extends JDialog {
         JTextArea area = AppTheme.makeTextArea(0, 0);
         area.setText(text);
         area.setEditable(false);
-        area.setCaretColor(HudPalette.HUD_TABLE_ROW);
+        area.setCaretColor(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }
@@ -376,7 +376,7 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.gridx = 0;
             gbc.weightx = 0.0;
             JLabel label = new JLabel(parameter.name());
-            label.setForeground(HudPalette.FG);
+            label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
             panel.add(label, gbc);
 
             gbc.gridx = 1;
@@ -434,7 +434,7 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.weightx = 0.0;
             String labelText = spec.getName() + (spec.isRequired() ? " *" : "");
             JLabel label = new JLabel(labelText);
-            label.setForeground(HudPalette.FG);
+            label.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
             if (!spec.getDescription().isBlank()) {
                 label.setToolTipText(spec.getDescription());
             }
@@ -554,7 +554,7 @@ public final class CommandDetailsDialog extends JDialog {
             Graphics2D g2 = (Graphics2D) graphics.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(HudPalette.BUTTON_FG);
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_BUTTON_TEXT);
                 Polygon triangle = new Polygon(
                         new int[]{x, x, x + WIDTH},
                         new int[]{y, y + HEIGHT, y + HEIGHT / 2},

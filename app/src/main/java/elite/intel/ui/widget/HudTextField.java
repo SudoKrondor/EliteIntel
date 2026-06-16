@@ -72,14 +72,14 @@ public class HudTextField extends JTextField {
             int infoZoneW = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
             int infoZoneX = w - infoZoneW;
 
-            // Separator stripe: HUD_BG between text area and info-zone
-            g2.setColor(HudPalette.HUD_BG);
+            // Separator stripe: HUD_COLOR_ROLE_APPLICATION_BACKGROUND between text area and info-zone
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
             g2.fillRect(infoZoneX - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
 
             // Tint by state (text field has no selected state)
-            Color tint = !isEnabled() ? HudPalette.HUD_DISABLED
-                       : infoHover    ? HudPalette.ACCENT
-                       :                HudPalette.HUD_ORANGE_SOFT;
+            Color tint = !isEnabled() ? HudPalette.HUD_COLOR_ROLE_DISABLED
+                       : infoHover    ? HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION
+                       :                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
 
             int gs = HudPalette.HUD_ICON_TABLE;
             int gx = infoZoneX + (infoZoneW - gs) / 2;
