@@ -118,7 +118,7 @@ public class AudioSettingsPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel inLabel = hudReadoutLabel(getText("audio.devices.input"));
-        inLabel.setPreferredSize(new Dimension(LABEL_COL_WIDTH, HUD_FIELD_HEIGHT));
+        sizeFieldLabel(inLabel, LABEL_COL_WIDTH);
         form.add(inLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -130,7 +130,7 @@ public class AudioSettingsPanel extends JPanel {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel outLabel = hudReadoutLabel(getText("audio.devices.output"));
-        outLabel.setPreferredSize(new Dimension(LABEL_COL_WIDTH, HUD_FIELD_HEIGHT));
+        sizeFieldLabel(outLabel, LABEL_COL_WIDTH);
         form.add(outLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;

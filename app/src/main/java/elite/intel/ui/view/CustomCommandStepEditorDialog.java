@@ -194,7 +194,7 @@ final class CustomCommandStepEditorDialog extends JDialog {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         // Foreground already set by hudReadoutLabel; fixed-width column for label alignment.
-        label.setPreferredSize(new Dimension(160, 28));
+        AppTheme.sizeFieldLabel(label, 160);
         panel.add(label, gbc);
 
         gbc.gridx = 1;

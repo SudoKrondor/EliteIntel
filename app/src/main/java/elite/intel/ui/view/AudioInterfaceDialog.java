@@ -39,7 +39,7 @@ public class AudioInterfaceDialog extends JDialog {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel inLabel = hudReadoutLabel(getText("audio.devices.input"));
-        inLabel.setPreferredSize(new Dimension(170, 28));
+        sizeFieldLabel(inLabel, 170);
         form.add(inLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -52,7 +52,7 @@ public class AudioInterfaceDialog extends JDialog {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         JLabel outLabel = hudReadoutLabel(getText("audio.devices.output"));
-        outLabel.setPreferredSize(new Dimension(170, 28));
+        sizeFieldLabel(outLabel, 170);
         form.add(outLabel, gbc);
         gbc.gridx = 1;
         gbc.weightx = 1;

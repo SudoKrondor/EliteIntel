@@ -396,7 +396,7 @@ public class BindingsTabPanel extends JPanel {
         gbc.fill = GridBagConstraints.NONE;
         gbc.insets = new Insets(2, 0, 6, 7);
         JLabel label = hudReadoutLabel(text);
-        label.setPreferredSize(new Dimension(width, HUD_FIELD_HEIGHT));
+        sizeFieldLabel(label, width);
         panel.add(label, gbc);
     }
 

@@ -1300,6 +1300,15 @@ public class AppTheme {
         gbc.gridy++;
     }
 
+    /**
+     * Single owner of form-label height: sizes a field label to the given column width and the canonical
+     * field-row height ({@link #HUD_FIELD_HEIGHT}), so each label lines up with the field beside it.
+     * Call sites pass only the width (their layout intent); the height lives here, not at the call site.
+     */
+    public static void sizeFieldLabel(JLabel label, int width) {
+        label.setPreferredSize(new Dimension(width, HUD_FIELD_HEIGHT));
+    }
+
     public static void addLabel(JPanel panel, String text, GridBagConstraints gbc) {
         addLabel(panel, text, gbc, 220);
     }
@@ -1323,7 +1332,7 @@ public class AppTheme {
         };
         styleFieldLabel(label); // shared §5.1 field-label styling (FG_MUTED, XS caps, locked)
         if (labelWidth > 0) {
-            label.setPreferredSize(new Dimension(labelWidth, HUD_TABLE_ROW_HEIGHT_COMPACT));
+            sizeFieldLabel(label, labelWidth);
         }
         panel.add(label, gbc);
     }

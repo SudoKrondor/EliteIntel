@@ -278,12 +278,8 @@ final class CustomCommandEditorDialog extends JDialog {
     }
 
     private void addLabel(JPanel panel, GridBagConstraints gbc, String labelText) {
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        JLabel label = AppTheme.hudReadoutLabel(labelText);
-        label.setPreferredSize(new Dimension(170, 28));
-        panel.add(label, gbc);
+        // Delegate to the canonical label builder (owns dim-aware styling + height); 170 is this dialog's column width.
+        AppTheme.addLabel(panel, labelText, gbc, 170);
     }
 
     private void addStepButton(JPanel panel, String key, Runnable action) {
