@@ -100,12 +100,41 @@ earned. Mission target kills are announced as <code>Mission Kill Confirmed</code
 per-faction breakdown.</li>
 </ol>
 <h2>Best Practices</h2>
+<p><em><strong>redeem all bounties before picking up your private massacre missions</strong></em> a confirmed kill is a bounty voucher 
+against the faction</p>
 <ul>
 <li><strong>Mission Stacking</strong>: Accepting multiple missions against the same faction increases credit efficiency. Use INARA 
 to identify systems with multiple qualifying mission providers.</li>
 <li><strong>Natural Language Queries</strong>: Natural speech is accepted. <code>How many pirates left to kill?</code> and <code>Pirate mission  score?</code> are both valid. Specify that the query is pirate-related to avoid confusion with other active missions.</li>
 <li><strong>Personality Toggle</strong>: Switch between personality modes as needed to match your current playstyle.</li>
 </ul>
+<hr>
+<h1>Find pirate massacre missions</h1>
+<h2>Experimental feature</h2>
+<p>At the moment manual search in INARA for pirate mission stacking remains the most effective way of bounty hunting. 
+However, the app has an experimental feature based on IN<strong>T</strong>RA data (not IN<strong>A</strong>RA). This is a less efficient but 
+more immersive way to play bounty hunting, though it depends on the data availability in IN<strong>T</strong>RA and their site 
+being up and operational. </p>
+<p>To use this feature, board our bounty-hunter ship and ask <code>Find us some hunting grounds (within X light years)</code> the 
+ship will attempt to a connection to IN<strong>T</strong>RA and fetch the pairs of target system / mission provider system. The 
+success or failure depends on IN<strong>T</strong>RA API returning the data and the number of other bounty hunters running EDMC with
+IN<strong>T</strong>RA plugin.</p>
+<p>If and When that data is returned to you, the ship computer will tell you it found X number of hunting grounds. Ask 
+<code>plot a route to hunting ground for reconnaissance</code>. Elite Intell will plot the route for the nearest hunting 
+ground in the list. You have to fly there and confirm the presence of the Resource Site. If there is one, and the 
+spawn rate is to your liking, confirm or reject this system as a potential hunting ground with a voice command.</p>
+<p>Elite Intel may automatically confirm it as a hunting ground if it detects the RES sites in the journal on entry, or 
+on nav beacon scan. There are cases when this does not happen because there are no records of RES sites dumped by 
+the game in to the journal. Manual confirmation is required.</p>
+<p>Once you are satisfied with the hunting ground, ask <code>navigate to pirate massacre mission provider system</code> or 
+something close to that. The app will plot a route to the mission provider system. Fly there, land at ports, and pick 
+up missions against pirates for the same faction and location of the hunting ground system. When you pick up your 
+first massacre mission, this star system pair will be confirmed as hunting ground / mission provider. The app will 
+tell you if there are other systems that it knows about that have missions against the same faction in the target 
+system. This is, of course, if the IN<strong>T</strong>RA has that data. </p>
+<p>When you got your missions stacked ask <code>plot route to active mission</code> and pew-pew pirates as usual. When you are 
+done with the missions same request <code>plot route to active mission</code> will take you to where the objective is, this 
+time the port where you picked up the assignment. </p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 
