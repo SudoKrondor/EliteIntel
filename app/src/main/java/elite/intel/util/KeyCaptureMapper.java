@@ -1,5 +1,6 @@
 package elite.intel.util;
 
+import com.sun.jna.platform.unix.X11;
 import com.sun.jna.platform.win32.User32;
 
 import java.awt.event.KeyEvent;
@@ -29,6 +30,9 @@ public final class KeyCaptureMapper {
 
     private static final boolean IS_WINDOWS =
             System.getProperty("os.name", "").toLowerCase().contains("win");
+
+    private static final boolean IS_LINUX =
+            !IS_WINDOWS && System.getProperty("os.name", "").toLowerCase().contains("linux");
 
     // PS/2 Set-1 scan code → Elite token.
     // Mirrors the letter/punctuation/number-row entries in WindowsNativeKeyInput.SCAN_MAP,
@@ -220,8 +224,63 @@ public final class KeyCaptureMapper {
             } catch (Throwable ignored) {
                 // JNA unavailable or MapVirtualKeyEx failed — fall through to VK map
             }
+        } else if (IS_LINUX) {
+            try {
+                int scan = LinuxScanResolver.getScanCode(vk);
+                if (scan != 0) {
+                    String token = SCAN_TO_TOKEN.get(scan);
+                    if (token != null) return token;
+                }
+            } catch (Throwable ignored) {
+                // X11 unavailable (pure Wayland without XWayland) — fall through to VK map
+            }
         }
         return VK_TO_TOKEN.get(vk);
+    }
+
+    // Linux X11: keycodes = PS/2 scan code + 8 (evdev driver offset)
+    private static final class LinuxScanResolver {
+        private static final X11 x11;
+        private static final X11.Display display;
+
+        static {
+            X11 x11ref = null;
+            X11.Display dispRef = null;
+            try {
+                x11ref = X11.INSTANCE;
+                dispRef = x11ref.XOpenDisplay(null);
+            } catch (Throwable ignored) {
+            }
+            x11 = x11ref;
+            display = dispRef;
+        }
+
+        static int getScanCode(int vk) {
+            if (x11 == null || display == null) return 0;
+            long keysym = vkToKeysym(vk);
+            if (keysym == 0) return 0;
+            int keycode = x11.XKeysymToKeycode(display, new X11.KeySym(keysym)) & 0xFF;
+            return keycode > 8 ? keycode - 8 : 0;
+        }
+
+        // Maps Java VK codes to X11 keysyms.
+        // For letters: VK_A(65) = 'A'; XK_a(0x61) = 'a'; offset = +32.
+        // For Latin-1 extended (é,è,à,ü,ö,ä,ß,...): Java VK = Unicode = XK keysym — default case.
+        // For ASCII punctuation where Java kept the ASCII value: default case.
+        // Explicit entries only for keys where Java renamed the VK constant away from the keysym value.
+        private static long vkToKeysym(int vk) {
+            if (vk >= KeyEvent.VK_A && vk <= KeyEvent.VK_Z) return vk + 32L;
+            return switch (vk) {
+                case KeyEvent.VK_QUOTE -> 0x27L;  // XK_apostrophe
+                case KeyEvent.VK_BACK_QUOTE -> 0x60L;  // XK_grave
+                case KeyEvent.VK_AMPERSAND -> 0x26L;  // XK_ampersand        (AZERTY 1)
+                case KeyEvent.VK_QUOTEDBL -> 0x22L;  // XK_quotedbl         (AZERTY 3)
+                case KeyEvent.VK_LEFT_PARENTHESIS -> 0x28L;  // XK_parenleft        (AZERTY 5)
+                case KeyEvent.VK_RIGHT_PARENTHESIS -> 0x29L;  // XK_parenright       (AZERTY ))
+                case KeyEvent.VK_UNDERSCORE -> 0x5FL;  // XK_underscore       (AZERTY 8)
+                default -> vk;
+            };
+        }
     }
 
     /**

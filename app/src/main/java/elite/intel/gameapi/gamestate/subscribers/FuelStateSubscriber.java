@@ -13,7 +13,9 @@ import static elite.intel.util.StringUtls.localizedEvent;
 public class FuelStateSubscriber {
 
     public static final int QUARTER_TANK_REMAINING = 25;
+    private static final long ANNOUNCE_COOLDOWN_MS = 5 * 60 * 1000;
     private boolean hasAnnounced = false;
+    private long lastAnnouncedAt = 0;
 
     @Subscribe
     public void onStatusChange(GameEvents.StatusEvent event) {
@@ -28,21 +30,27 @@ public class FuelStateSubscriber {
 
         if (status.isInSrv()) {
             //TODO Need a way to know we are in SRV
-            if (fuelReservoir <= 0.06 && !hasAnnounced) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.srvCritical")));
-                hasAnnounced = true;
+            if (fuelReservoir <= 0.06) {
+                if (!hasAnnounced && System.currentTimeMillis() - lastAnnouncedAt > ANNOUNCE_COOLDOWN_MS) {
+                    EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.srvCritical")));
+                    hasAnnounced = true;
+                    lastAnnouncedAt = System.currentTimeMillis();
+                }
             } else {
                 hasAnnounced = false;
             }
         } else if (status.isInMainShip()) {
             //We are on the ship.
-            if (!hasAnnounced && oldStatus != null && oldStatus.getFuel() != null && playerSession.getShipLoadout() != null && playerSession.getShipLoadout().getFuelCapacity() != null) {
+            if (oldStatus != null && oldStatus.getFuel() != null && playerSession.getShipLoadout() != null && playerSession.getShipLoadout().getFuelCapacity() != null) {
                 double fuelCapacityMain = playerSession.getShipLoadout().getFuelCapacity().getMainTank();
                 double fuelAmount = oldStatus.getFuel().getFuelMain();
                 double remainingFuelInPercent = Math.round((fuelAmount / fuelCapacityMain * 100) * 100.0) / 100.0;
                 if (remainingFuelInPercent != 0 && remainingFuelInPercent < QUARTER_TANK_REMAINING && event.getFuel().getFuelMain() < fuelAmount) {
-                    EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.warning", remainingFuelInPercent)));
-                    hasAnnounced = true;
+                    if (!hasAnnounced && System.currentTimeMillis() - lastAnnouncedAt > ANNOUNCE_COOLDOWN_MS) {
+                        EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.fuel.warning", remainingFuelInPercent)));
+                        hasAnnounced = true;
+                        lastAnnouncedAt = System.currentTimeMillis();
+                    }
                 } else {
                     hasAnnounced = false;
                 }

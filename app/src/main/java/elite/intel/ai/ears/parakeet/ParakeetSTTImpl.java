@@ -9,6 +9,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.UserInputEvent;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.PttButtonStateEvent;
@@ -356,6 +357,9 @@ public class ParakeetSTTImpl implements EarsInterface {
             long timeStart = System.currentTimeMillis();
             OfflineStream stream = recognizer.createStream();
             try {
+                if (stream.hasOption("language")) {
+                    stream.setOption("language", toLangCode(systemSession.getLanguage()));
+                }
                 stream.acceptWaveform(samples, SAMPLE_RATE);
                 recognizer.decode(stream);
                 OfflineRecognizerResult result = recognizer.getResult(stream);
@@ -563,6 +567,17 @@ public class ParakeetSTTImpl implements EarsInterface {
             sum += (double) val * val;
         }
         return Math.sqrt(sum / samples);
+    }
+
+    private static String toLangCode(Language lang) {
+        return switch (lang) {
+            case EN -> "en";
+            case FR -> "fr";
+            case DE -> "de";
+            case ES -> "es";
+            case RU -> "ru";
+            case UK -> "uk";
+        };
     }
 
     private void retryWithBackoff(int retryCount) {

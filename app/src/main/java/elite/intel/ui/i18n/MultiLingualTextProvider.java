@@ -51,6 +51,14 @@ public final class MultiLingualTextProvider {
         }
     }
 
+    /**
+     * Lowercase language tag of the active UI language (e.g. {@code "en"}, {@code "ru"}).
+     * Intended for selecting localized resource files (manuals, credits) by language suffix.
+     */
+    public static String currentLanguageTag() {
+        return locale().getLanguage();
+    }
+
     private static Locale locale() {
         Language language = SystemSession.getInstance().getLanguage();
         return locale(language);

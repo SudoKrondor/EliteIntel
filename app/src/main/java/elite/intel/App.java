@@ -9,16 +9,21 @@ import elite.intel.gameapi.SubscriberRegistration;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
-import elite.intel.ui.view.AppTheme;
-import elite.intel.ui.view.AppView;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.screen.AppView;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 
 import javax.swing.*;
 
 
 public class App {
+
+    private static final Logger log = LogManager.getLogger(App.class);
 
     public static void main(String[] args) {
 
@@ -51,16 +56,19 @@ public class App {
             try {
                 UIManager.setLookAndFeel(new FlatLightLaf());
                 // FlatLaf paints hover/pressed over the renderer; neutralise it here.
-                UIManager.put("TableHeader.hoverBackground", AppTheme.HUD_BG);
-                UIManager.put("TableHeader.hoverForeground", AppTheme.FG_MUTED);
-                UIManager.put("TableHeader.pressedBackground", AppTheme.HUD_BG);
-                UIManager.put("TableHeader.pressedForeground", AppTheme.FG_MUTED);
+                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.hoverForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.pressedForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             AppView view = new AppView();
             new AppController();
             view.getUiComponent().setVisible(true);
+        });
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            log.error("Uncaught exception on thread {}", thread.getName(), throwable);
         });
     }
 }

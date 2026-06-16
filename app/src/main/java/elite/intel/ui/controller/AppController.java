@@ -22,6 +22,8 @@ import elite.intel.ui.event.*;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import elite.intel.ws.WebSocketBroadcaster;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.Timer;
@@ -33,6 +35,8 @@ import java.util.function.Supplier;
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 public class AppController implements Runnable {
+
+    private static final Logger log = LogManager.getLogger(AppController.class);
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -57,7 +61,7 @@ public class AppController implements Runnable {
                     EventBusManager.publish(new UpdateAvailableEvent());
                 }
             } catch (Exception e) {
-                //kek
+                log.warn("Update check failed", e);
             }
         });
     }
@@ -136,10 +140,11 @@ public class AppController implements Runnable {
     @Subscribe
     void onToggleServiceEvent(ToggleServicesEvent event) {
         new Thread(() -> {
-            if (event.isStartSercice()) {
+            if (event.isStartService()) {
                 try {
                     startServices();
-                } catch (Exception stop) {
+                } catch (Exception e) {
+                    log.error("Failed to start services, stopping", e);
                     stopServices();
                     EventBusManager.publish(new ServicesStateEvent(false));
                 }
@@ -206,9 +211,6 @@ public class AppController implements Runnable {
             ServiceHolder service = services.get(type);
             if (service != null) service.start();
         }
-
-        String mission_statement = playerSession.getPlayerMissionStatement();
-        playerSession.setPlayerMissionStatement(mission_statement);
 
         isRunning.set(true);
         EventBusManager.publish(new ServicesStateEvent(true));

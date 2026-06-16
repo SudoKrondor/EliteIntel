@@ -341,12 +341,15 @@ public class Ranks {
         } else if (federation > imperial) {
             return getFederationRankMap().get(federation);
         } else {
-            return chooseAtRandom(imperial, federation);
+            return new Random().nextBoolean()
+                    ? getImperialRankMap().get(imperial)
+                    : getFederationRankMap().get(federation);
         }
     }
 
     public static String getPlayerHonorific() {
         RankAndProgressDto rankDto = PlayerSession.getInstance().getRankAndProgressDto();
-        return rankDto.getHonorific();
+        String honorific = getHonorificMap().get(rankDto.getHighestMilitaryRank());
+        return honorific != null ? honorific : getText("ranks.honorific.commander");
     }
 }
