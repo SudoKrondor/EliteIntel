@@ -122,6 +122,12 @@ public final class HudPalette {
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
+    /** Row height of a stat readout ({@link elite.intel.ui.widget.HudStatCell}); reserves the emblem, label, value and bar. */
+    public static final int HUD_STAT_CELL_HEIGHT = 72;
+    /** Thickness of the bright data-fill line in a stat readout ({@link elite.intel.ui.widget.HudStatCell}). */
+    public static final int HUD_STAT_CELL_BAR_THICKNESS = 7;
+    /** Thickness of the dim full-width track behind the data fill in a stat readout. */
+    public static final int HUD_STAT_CELL_TRACK_THICKNESS = 3;
     // HudSlider metrics (ED slider form, section 4): brown track plaque, rail with edge inset,
     // red fill, tall start tick, round thumb, value floating above the thumb.
     /** Total row height reserving space for the value rendered above the thumb. */
@@ -191,6 +197,7 @@ public final class HudPalette {
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;
+    public static final float HUD_FONT_STAT_VALUE     = 22f;  // prominent value in a stat cell (HudStatCell)
     /** LAF defaultFont - base font size for UI labels outside HUD roles (AppView). */
     public static final float HUD_FONT_UI_DEFAULT = 18f;
     /** LAF monospaceFont - base monospace font of the application (AppView). */

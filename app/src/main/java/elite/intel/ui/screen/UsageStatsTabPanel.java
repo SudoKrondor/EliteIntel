@@ -4,6 +4,7 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudStatCell;
 import elite.intel.ui.widget.StatusBadge;
 
 import com.google.common.eventbus.Subscribe;
@@ -32,7 +33,15 @@ public class UsageStatsTabPanel extends JPanel {
     private JLabel totalLabel;
     private JLabel savedLabel;
     private JLabel tphLabel;
-    private BarChart chart;
+    private HudStatCell cellPrompt;
+    private HudStatCell cellCompletion;
+    private HudStatCell cellHits;
+    private HudStatCell cellWritten;
+    private HudStatCell cellSpeed;
+
+    // Token bars fill relative to the last request's total tokens (composition). Speed has no fixed
+    // ceiling, so its bar fills relative to the observed session peak.
+    private double peakSpeed;
 
     @SuppressWarnings("unused")
     private final Timer clockTimer;
@@ -99,9 +108,25 @@ public class UsageStatsTabPanel extends JPanel {
         header.add(sessionTimeLabel);
         telemetrySection.body().add(header, BorderLayout.CENTER);
 
-        chart = new BarChart(usingLocalLLMs);
+        resetPeaks();
+        JPanel cells = AppTheme.transparentPanel(null);
+        cells.setLayout(new BoxLayout(cells, BoxLayout.Y_AXIS));
+        cellPrompt = new HudStatCell(getText("stats.chart.lastPrompt"), "/images/microchip-ai.png",
+                HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, null);
+        cellCompletion = new HudStatCell(getText("stats.chart.lastCompletion"), "/images/ai.png",
+                HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, null);
+        cellHits = new HudStatCell(getText("stats.chart.cacheHits"), "/images/file-recycle.png",
+                HudPalette.HUD_COLOR_ROLE_SUCCESS, null);
+        cellWritten = new HudStatCell(getText("stats.chart.cacheWritten"), "/images/file-recycle.png",
+                HudPalette.HUD_COLOR_ROLE_SUCCESS, null);
+        cellSpeed = new HudStatCell(getText("stats.chart.lastSpeed"), "/images/tachometer-fast.png",
+                HudPalette.HUD_COLOR_ROLE_INFORMATION, "t/s");
+        for (HudStatCell cell : new HudStatCell[]{cellPrompt, cellCompletion, cellHits, cellWritten, cellSpeed}) {
+            cell.setAlignmentX(Component.LEFT_ALIGNMENT);
+            cells.add(cell);
+        }
         HudSection tokenSection = HudSection.flat(getText("stats.section.tokenUsage"), new BorderLayout());
-        tokenSection.body().add(chart, BorderLayout.CENTER);
+        tokenSection.body().add(cells, BorderLayout.CENTER);
 
         JPanel footer = AppTheme.transparentPanel(null);
         footer.setLayout(new BoxLayout(footer, BoxLayout.Y_AXIS));
@@ -154,10 +179,21 @@ public class UsageStatsTabPanel extends JPanel {
             providerLabel.setText(getText("stats.llm", snap.modelDisplay()));
         }
         int hits = snap.totalCachedHits();
-        int written = snap.totalCacheWritten();
         int total = snap.totalPromptTokens() + snap.totalCompletionTokens();
 
-        chart.update(snap.lastPromptTokens(), snap.lastCompletionTokens(), hits, written, snap.lastTps());
+        // Token cells are scoped to the last request and fill as a share of that request's total tokens.
+        int prompt = snap.lastPromptTokens();
+        int completion = snap.lastCompletionTokens();
+        int lastCached = snap.lastCachedTokens();
+        int lastWritten = snap.lastCacheWrittenTokens();
+        int callTotal = prompt + completion + lastCached + lastWritten;
+        double tps = snap.lastTps();
+        peakSpeed = Math.max(peakSpeed, tps);
+        cellPrompt.setValue(formatTokens(prompt), ratio(prompt, callTotal), pct(prompt, callTotal));
+        cellCompletion.setValue(formatTokens(completion), ratio(completion, callTotal), pct(completion, callTotal));
+        cellHits.setValue(formatTokens(lastCached), ratio(lastCached, callTotal), pct(lastCached, callTotal));
+        cellWritten.setValue(formatTokens(lastWritten), ratio(lastWritten, callTotal), pct(lastWritten, callTotal));
+        cellSpeed.setValue(String.format("%.1f", tps), ratio(tps, peakSpeed), pct(tps, peakSpeed));
         if (systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm()) {
             totalLabel.setText(getText("stats.total.free.upper", total));
         } else {
@@ -193,124 +229,23 @@ public class UsageStatsTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
-    private static final class BarChart extends JPanel {
+    private void resetPeaks() {
+        peakSpeed = 0;
+    }
 
-        private static final String[] LABELS = {
-                getText("stats.chart.lastPrompt"),
-                getText("stats.chart.lastCompletion"),
-                getText("stats.chart.cacheHitsTotal"),
-                getText("stats.chart.cacheWrittenTotal")
-        };
-        private static final String TPS_LABEL = getText("stats.chart.lastSpeed");
-        private static final Color[] COLORS = {
-                HudPalette.HUD_COLOR_ROLE_INFORMATION,
-                HudPalette.HUD_COLOR_ROLE_SUCCESS,
-                HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                HudPalette.HUD_COLOR_ROLE_DISABLED
-        };
-        private static final Color TPS_COLOR = HudPalette.HUD_COLOR_ROLE_INFORMATION;
+    /** Bar fill as a fraction of {@code total} (clamped to 0..1). */
+    private static double ratio(double value, double total) {
+        return total > 0 ? Math.min(1.0, value / total) : 0;
+    }
 
-        private final boolean localMode;
-        private int[] values = new int[4];
-        private double lastTps = 0.0;
-        private double maxTps = 1.0;
+    /** Percentage of {@code total}, formatted for the right edge. */
+    private static String pct(double value, double total) {
+        return (total > 0 ? Math.round(value / total * 100) : 0) + "%";
+    }
 
-        BarChart(boolean localMode) {
-            this.localMode = localMode;
-            setOpaque(false);
-        }
-
-        @Override
-        public Dimension getPreferredSize() {
-            return new Dimension(super.getPreferredSize().width, 220);
-        }
-
-        @Override
-        public Dimension getMaximumSize() {
-            return new Dimension(Integer.MAX_VALUE, 220);
-        }
-
-        void update(int prompt, int completion, int hits, int written, double tps) {
-            values = new int[]{prompt, completion, hits, written};
-            lastTps = tps;
-            if (tps > maxTps) maxTps = tps;
-            repaint();
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-
-                int tokenBars = localMode ? 2 : values.length;
-                int totalBars = tokenBars + 1; // +1 for TPS
-                int labelW = 260;
-                int valueW = 80;
-                int barAreaW = getWidth() - labelW - valueW - 24;
-                if (barAreaW <= 0) return;
-
-                int rowH = Math.min(42, Math.max(20, (getHeight() - 20) / totalBars));
-                int barH = rowH - Math.max(4, rowH / 5);
-                int totalH = totalBars * rowH - (rowH - barH);
-                int startY = (getHeight() - totalH) / 2;
-
-                int maxVal = 1;
-                for (int i = 0; i < tokenBars; i++) maxVal = Math.max(maxVal, values[i]);
-
-                Font font = g2.getFont().deriveFont(HudPalette.HUD_FONT_LG);
-                g2.setFont(font);
-                FontMetrics fm = g2.getFontMetrics(font);
-                int baseline = barH / 2 + fm.getAscent() / 2 - 1;
-
-                // Token bars
-                for (int i = 0; i < tokenBars; i++) {
-                    int y = startY + i * rowH;
-
-                    g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-                    g2.drawString(LABELS[i], 0, y + baseline);
-
-                    g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
-                    g2.fillRoundRect(labelW, y, barAreaW, barH, 6, 6);
-
-                    if (values[i] > 0) {
-                        int fillW = Math.max(6, (int) ((long) values[i] * barAreaW / maxVal));
-                        g2.setColor(COLORS[i]);
-                        g2.fillRoundRect(labelW, y, fillW, barH, 6, 6);
-                    }
-
-                    g2.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-                    g2.drawString(formatTokens(values[i]), labelW + barAreaW + 8, y + baseline);
-                }
-
-                // TPS bar uses its own observed scale so token volume cannot flatten speed changes.
-                int tpsY = startY + tokenBars * rowH;
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-                g2.drawString(TPS_LABEL, 0, tpsY + baseline);
-
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
-                g2.fillRoundRect(labelW, tpsY, barAreaW, barH, 6, 6);
-
-                if (lastTps > 0) {
-                    int fillW = Math.max(6, (int) (lastTps / maxTps * barAreaW));
-                    g2.setColor(TPS_COLOR);
-                    g2.fillRoundRect(labelW, tpsY, fillW, barH, 6, 6);
-                }
-
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-                g2.drawString(String.format("%.1f t/s", lastTps), labelW + barAreaW + 8, tpsY + baseline);
-
-            } finally {
-                g2.dispose();
-            }
-        }
-
-        private static String formatTokens(int v) {
-            if (v >= 1_000_000) return String.format("%.1fM", v / 1_000_000.0);
-            if (v >= 1_000) return String.format("%.1fK", v / 1_000.0);
-            return String.valueOf(v);
-        }
+    private static String formatTokens(int v) {
+        if (v >= 1_000_000) return String.format("%.1fM", v / 1_000_000.0);
+        if (v >= 1_000) return String.format("%.1fK", v / 1_000.0);
+        return String.valueOf(v);
     }
 }
