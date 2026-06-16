@@ -80,7 +80,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
             map.put("приоритетная цель, цель с наибольшей угрозой, самая опасная цель, выбрать врага, следующий враг", SELECT_HIGHEST_THREAT.getAction());
 
             // vehicle deployment
-            map.put("выпусти срв, запусти срв, выпусти транспорт, разверни SRV, высади срв", DEPLOY_SRV.getAction());
+            map.put("выпусти срв, выпусти тачку, запусти мамашину, запусти автомобиль, запусти срв, выпусти транспорт, разверни SRV, высади срв", DEPLOY_SRV.getAction());
             map.put("выпусти теплоотвод, запусти теплоотвод, сбрось тепло, сброс тепла", DEPLOY_HEAT_SINK.getAction());
 
             // fighter orders
@@ -122,9 +122,9 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
             map.put("покажи хранилище, открой склад, открой хранилище", SHOW_STORAGE_PANEL.getAction());
 
             // power
-            map.put("энергию на щиты, максимум щитов, усилить щиты", INCREASE_SHIELDS_POWER.getAction());
-            map.put("энергию на двигатели, максимум двигателей, усилить двигатели", INCREASE_ENGINES_POWER.getAction());
-            map.put("энергию на оружие, максимум оружия, усилить оружие", INCREASE_WEAPONS_POWER.getAction());
+            map.put("энергию на щиты, питание на системы, питание на щиты, максимум щитов, усилить щиты", INCREASE_SHIELDS_POWER.getAction());
+            map.put("энергию на двигатели, питание на двигатели максимум двигателей, усилить двигатели", INCREASE_ENGINES_POWER.getAction());
+            map.put("энергию на оружие, питание на оружия, энергию на лазеры, максимум оружия, усилить оружие", INCREASE_WEAPONS_POWER.getAction());
 
             // vehicle deployment
             map.put("выйти из корабля, высадиться, покинуть корабль", DISEMBARK.getAction());
@@ -133,7 +133,7 @@ public class RussianAiActionAliases implements AiActionAliasProvider {
 
         if (status.isInSrv() || isDryRun) {
             map.put("помощь вождения, ассистент вождения, ассистент срв {state:true/false}", DRIVE_ASSIST.getAction());
-            map.put("вернуть срв, на борт корабля, вернуться в корабль, забрать срв, стыковка срв", RECOVER_SRV.getAction());
+            map.put("вернуть срв, подбери машину, забери тачку на борт, забери автомобиль, на борт корабля, вернуться в корабль, забрать срв, стыковка срв", RECOVER_SRV.getAction());
         }
 
         if (status.isInSrv() || status.isOnFoot() || isDryRun) {
