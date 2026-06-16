@@ -201,6 +201,10 @@ function renderPage({ title, description, canonical, body, activePage }) {
     <meta property="og:description" content="${esc(description)}">
     <meta property="og:url" content="${canonical}">
     <meta property="og:type" content="website">
+    <meta property="og:image" content="${DOMAIN}/images/site-preview.png">
+    <meta property="og:image:type" content="image/png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="${DOMAIN}/images/site-preview.png">
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
