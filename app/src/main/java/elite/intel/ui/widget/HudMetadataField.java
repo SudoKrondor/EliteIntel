@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +17,7 @@ public class HudMetadataField extends JTextField {
     public HudMetadataField() {
         setEditable(false);
         AppTheme.styleMetadataField(this);
-        setFont(getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_FIELD_VALUE));
-        setPreferredSize(new Dimension(0, AppTheme.HUD_FORM_ROW_HEIGHT_COMPACT));
+        setFont(getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_FIELD_VALUE));
+        setPreferredSize(new Dimension(0, HudPalette.HUD_FORM_ROW_HEIGHT_COMPACT));
     }
 }

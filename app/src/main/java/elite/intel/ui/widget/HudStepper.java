@@ -1,6 +1,9 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.JComponent;
 import javax.swing.UIManager;
@@ -58,7 +61,7 @@ public class HudStepper extends JComponent {
         if (base == null) {
             base = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
         }
-        setFont(base.deriveFont(Font.BOLD, AppTheme.HUD_FONT_FIELD_VALUE));
+        setFont(base.deriveFont(Font.BOLD, HudPalette.HUD_FONT_FIELD_VALUE));
 
         MouseAdapter mouse = new MouseAdapter() {
             @Override
@@ -166,10 +169,10 @@ public class HudStepper extends JComponent {
         if (isPreferredSizeSet()) {
             return super.getPreferredSize();
         }
-        int h = AppTheme.HUD_FIELD_HEIGHT;
+        int h = HudPalette.HUD_FIELD_HEIGHT;
         FontMetrics fm = getFontMetrics(getFont());
         int textW = Math.max(fm.stringWidth(String.valueOf(value)), fm.stringWidth("0000"));
-        int width = 2 * h + 2 * AppTheme.HUD_SEP_W + textW + 2 * AppTheme.HUD_GAP;
+        int width = 2 * h + 2 * HudPalette.HUD_SEP_W + textW + 2 * HudPalette.HUD_GAP;
         return new Dimension(width, h);
     }
 
@@ -187,7 +190,7 @@ public class HudStepper extends JComponent {
             int zw = zoneWidth();
 
             // Borderless warm slab, like the HUD checkbox in its OFF state (§5.2).
-            g2.setColor(AppTheme.HUD_TABLE_ROW_HOVER);
+            g2.setColor(HudPalette.HUD_TABLE_ROW_HOVER);
             g2.fillRect(0, 0, w, h);
 
             // Arrow zones at the edges, with hover/press state fills.
@@ -195,15 +198,15 @@ public class HudStepper extends JComponent {
             paintArrowZone(g2, 1, w - zw, zw, h, value < max);
 
             // Vertical dividers (HUD_BG) between arrow zones and the value, as in the checkbox gap.
-            g2.setColor(AppTheme.HUD_BG);
-            g2.fillRect(zw, 0, AppTheme.HUD_SEP_W, h);
-            g2.fillRect(w - zw - AppTheme.HUD_SEP_W, 0, AppTheme.HUD_SEP_W, h);
+            g2.setColor(HudPalette.HUD_BG);
+            g2.fillRect(zw, 0, HudPalette.HUD_SEP_W, h);
+            g2.fillRect(w - zw - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
 
             // Value centred.
             g2.setFont(getFont());
             FontMetrics fm = g2.getFontMetrics();
             String text = String.valueOf(value);
-            g2.setColor(AppTheme.ACCENT);
+            g2.setColor(HudPalette.ACCENT);
             int tx = (w - fm.stringWidth(text)) / 2;
             int ty = (h - fm.getHeight()) / 2 + fm.getAscent();
             g2.drawString(text, tx, ty);
@@ -215,25 +218,25 @@ public class HudStepper extends JComponent {
     private void paintArrowZone(Graphics2D g2, int dir, int x, int zw, int h, boolean enabled) {
         Color arrowColor;
         if (!enabled) {
-            arrowColor = AppTheme.HUD_DISABLED;
+            arrowColor = HudPalette.HUD_DISABLED;
         } else if (pressedZone == dir) {
             // Full ACCENT fill + inverted arrow, matching the subtle button's pressed state.
-            g2.setColor(AppTheme.ACCENT);
+            g2.setColor(HudPalette.ACCENT);
             g2.fillRect(x, 0, zw, h);
-            arrowColor = AppTheme.SEL_FG;
+            arrowColor = HudPalette.SEL_FG;
         } else if (hoverZone == dir) {
             // Light ACCENT wash on hover (base slab is already HUD_TABLE_ROW_HOVER).
-            g2.setColor(new Color(AppTheme.ACCENT.getRed(), AppTheme.ACCENT.getGreen(),
-                    AppTheme.ACCENT.getBlue(), 45));
+            g2.setColor(new Color(HudPalette.ACCENT.getRed(), HudPalette.ACCENT.getGreen(),
+                    HudPalette.ACCENT.getBlue(), 45));
             g2.fillRect(x, 0, zw, h);
-            arrowColor = AppTheme.ACCENT;
+            arrowColor = HudPalette.ACCENT;
         } else {
-            arrowColor = AppTheme.ACCENT;
+            arrowColor = HudPalette.ACCENT;
         }
         if (dir < 0) {
-            AppTheme.paintHudArrowLeft(g2, x, 0, zw, h, arrowColor);
+            HudGlyphs.paintHudArrowLeft(g2, x, 0, zw, h, arrowColor);
         } else {
-            AppTheme.paintHudArrowRight(g2, x, 0, zw, h, arrowColor);
+            HudGlyphs.paintHudArrowRight(g2, x, 0, zw, h, arrowColor);
         }
     }
 }

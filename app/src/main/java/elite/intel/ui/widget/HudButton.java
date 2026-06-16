@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,15 +29,15 @@ public class HudButton extends JButton {
         setOpaque(false);
         setContentAreaFilled(false);
         setFocusPainted(false);
-        setForeground(primary ? AppTheme.BUTTON_FG : AppTheme.ACCENT);
-        setFont(getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_BUTTON));
+        setForeground(primary ? HudPalette.BUTTON_FG : HudPalette.ACCENT);
+        setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BUTTON));
         setBorder(BorderFactory.createEmptyBorder(4, 14, 4, 14));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Prevent applyDarkPalette from overriding the state-driven foreground colour.
         putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         // Invert text to dark on the bright ACCENT pressed fill for secondary buttons.
         if (!primary) {
-            getModel().addChangeListener(e -> setForeground(getModel().isPressed() ? AppTheme.SEL_FG : AppTheme.ACCENT));
+            getModel().addChangeListener(e -> setForeground(getModel().isPressed() ? HudPalette.SEL_FG : HudPalette.ACCENT));
         }
     }
 
@@ -57,7 +59,7 @@ public class HudButton extends JButton {
             return new Dimension(squareSide, squareSide);
         }
         Dimension d = super.getPreferredSize();
-        return new Dimension(Math.max(90, d.width), AppTheme.HUD_BUTTON_HEIGHT);
+        return new Dimension(Math.max(90, d.width), HudPalette.HUD_BUTTON_HEIGHT);
     }
 
     @Override
@@ -80,9 +82,9 @@ public class HudButton extends JButton {
 
             if (!isEnabled()) {
                 // Unified disabled appearance for primary and secondary: warm fill + dim cold border.
-                g2.setColor(AppTheme.HUD_TABLE_ROW);
+                g2.setColor(HudPalette.HUD_TABLE_ROW);
                 g2.fillRect(0, 0, w - 1, h - 1);
-                g2.setColor(AppTheme.HUD_BORDER_DIM);
+                g2.setColor(HudPalette.HUD_BORDER_DIM);
                 g2.drawRect(0, 0, w - 1, h - 1);
             } else if (primary) {
                 paintPrimary(g2, w, h, model);
@@ -96,24 +98,24 @@ public class HudButton extends JButton {
     }
 
     private void paintPrimary(Graphics2D g2, int w, int h, ButtonModel model) {
-        Color fill = model.isPressed() ? AppTheme.HUD_BUTTON_FILL_PRESSED
-                   : model.isRollover() ? AppTheme.HUD_BUTTON_FILL_HOVER
-                   : AppTheme.HUD_BUTTON_FILL;
+        Color fill = model.isPressed() ? HudPalette.HUD_BUTTON_FILL_PRESSED
+                   : model.isRollover() ? HudPalette.HUD_BUTTON_FILL_HOVER
+                   : HudPalette.HUD_BUTTON_FILL;
         g2.setColor(fill);
         g2.fillRect(0, 0, w - 1, h - 1);
-        g2.setColor(AppTheme.ACCENT);
+        g2.setColor(HudPalette.ACCENT);
         g2.drawRect(0, 0, w - 1, h - 1);
-        Color glow = new Color(AppTheme.ACCENT.getRed(), AppTheme.ACCENT.getGreen(),
-                AppTheme.ACCENT.getBlue(), 70);
+        Color glow = new Color(HudPalette.ACCENT.getRed(), HudPalette.ACCENT.getGreen(),
+                HudPalette.ACCENT.getBlue(), 70);
         g2.setColor(glow);
         g2.drawRect(1, 1, w - 3, h - 3);
     }
 
     private void paintSecondary(Graphics2D g2, int w, int h, ButtonModel model) {
-        Color fill = model.isPressed() ? AppTheme.ACCENT
-                   : model.isRollover() ? AppTheme.HUD_TABLE_ROW_HOVER
-                   : AppTheme.HUD_TABLE_ROW;
-        Color border = AppTheme.HUD_ORANGE_SOFT;
+        Color fill = model.isPressed() ? HudPalette.ACCENT
+                   : model.isRollover() ? HudPalette.HUD_TABLE_ROW_HOVER
+                   : HudPalette.HUD_TABLE_ROW;
+        Color border = HudPalette.HUD_ORANGE_SOFT;
         g2.setColor(fill);
         g2.fillRect(0, 0, w - 1, h - 1);
         g2.setColor(border);

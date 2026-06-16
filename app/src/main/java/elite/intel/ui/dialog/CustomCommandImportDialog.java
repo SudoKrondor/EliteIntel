@@ -4,6 +4,7 @@ import elite.intel.ui.render.HudBooleanCellEditor;
 import elite.intel.ui.render.HudBooleanCellRenderer;
 import elite.intel.ui.render.HudCheckBoxHeaderRenderer;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal dialog for reviewing and importing custom commands from a JSON export file.
@@ -214,13 +216,13 @@ public final class CustomCommandImportDialog extends JDialog {
 
             // On selected rows keep SEL_FG; coloured status text is only for unselected rows.
             if (isSelected) {
-                label.setForeground(AppTheme.SEL_FG);
+                label.setForeground(HudPalette.SEL_FG);
             } else if (!c.isValid()) {
-                label.setForeground(AppTheme.HUD_DANGER);
+                label.setForeground(HudPalette.HUD_DANGER);
             } else if (c.hasConflict()) {
-                label.setForeground(AppTheme.HUD_WARN);
+                label.setForeground(HudPalette.HUD_WARN);
             } else {
-                label.setForeground(AppTheme.HUD_OK);
+                label.setForeground(HudPalette.HUD_OK);
             }
 
             if (!c.isValid()) {

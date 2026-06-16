@@ -3,6 +3,7 @@ package elite.intel.ui.screen;
 import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudConnectedToolbar;
 import elite.intel.ui.widget.HudSearchField;
 import elite.intel.ui.widget.HudTable;
@@ -47,9 +48,9 @@ public class CommandCatalogTablePanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout(AppTheme.HUD_GAP, 0));
+        setLayout(new BorderLayout(HudPalette.HUD_GAP, 0));
         setBorder(AppTheme.hudSubtabContentBorder());
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
@@ -150,7 +151,7 @@ public class CommandCatalogTablePanel extends JPanel {
 
     private void styleTable(JTable table) {
         HudTable.style(table);
-        table.setBackground(AppTheme.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
+        table.setBackground(HudPalette.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
         table.setRowHeight(44);
         table.setAutoCreateRowSorter(true);
         table.setDefaultRenderer(Object.class, new CellRenderer());

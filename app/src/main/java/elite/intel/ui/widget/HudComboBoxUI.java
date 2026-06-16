@@ -1,6 +1,9 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import com.formdev.flatlaf.ui.FlatComboBoxUI;
 
@@ -30,7 +33,7 @@ class HudComboBoxUI extends FlatComboBoxUI {
         buttonFocusedBackground  = null;
         buttonEditableBackground = null;
         focusedBackground        = null;
-        popupBackground         = AppTheme.HUD_TABLE_ROW;   // тёплый фон JList и popup-окна
+        popupBackground         = HudPalette.HUD_TABLE_ROW;   // тёплый фон JList и popup-окна
     }
 
     /** Replaces FlatLaf's default (white/bright) popup border with the HUD warm accent frame. */
@@ -39,7 +42,7 @@ class HudComboBoxUI extends FlatComboBoxUI {
         javax.swing.plaf.basic.ComboPopup popup = super.createPopup();
         if (popup instanceof javax.swing.plaf.basic.BasicComboPopup basic) {
             basic.setBorder(javax.swing.BorderFactory.createLineBorder(
-                    AppTheme.HUD_ORANGE_SOFT, AppTheme.HUD_BORDER_THICKNESS));
+                    HudPalette.HUD_ORANGE_SOFT, HudPalette.HUD_BORDER_THICKNESS));
         }
         JScrollPane scroller = (JScrollPane) SwingUtilities.getAncestorOfClass(
                 JScrollPane.class, popup.getList());
@@ -90,8 +93,8 @@ class HudComboBoxUI extends FlatComboBoxUI {
         protected void paintComponent(Graphics g) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
-                Color c = (comboBox != null && comboBox.isEnabled()) ? AppTheme.ACCENT : AppTheme.HUD_DISABLED;
-                AppTheme.paintHudArrowDown(g2, 0, 0, getWidth(), getHeight(), c);
+                Color c = (comboBox != null && comboBox.isEnabled()) ? HudPalette.ACCENT : HudPalette.HUD_DISABLED;
+                HudGlyphs.paintHudArrowDown(g2, 0, 0, getWidth(), getHeight(), c);
             } finally {
                 g2.dispose();
             }

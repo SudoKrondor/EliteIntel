@@ -18,6 +18,9 @@ import java.io.File;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 /**
  * COMMON settings shown above the SETTINGS sub-tabs (settings shared across all of them):

@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.JComponent;
 import javax.swing.UIManager;
@@ -58,7 +60,7 @@ public class HudSlider extends JComponent {
         if (base == null) {
             base = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
         }
-        setFont(base.deriveFont(Font.BOLD, AppTheme.HUD_FONT_FIELD_VALUE));
+        setFont(base.deriveFont(Font.BOLD, HudPalette.HUD_FONT_FIELD_VALUE));
 
         MouseAdapter mouse = new MouseAdapter() {
             @Override
@@ -128,12 +130,12 @@ public class HudSlider extends JComponent {
 
     /** Left edge of the thumb travel range (also the start-tick x). */
     private int thumbMin() {
-        return AppTheme.HUD_SLIDER_RANGE_INSET;
+        return HudPalette.HUD_SLIDER_RANGE_INSET;
     }
 
     /** Right edge of the thumb travel range. */
     private int thumbMax() {
-        return getWidth() - AppTheme.HUD_SLIDER_RANGE_INSET;
+        return getWidth() - HudPalette.HUD_SLIDER_RANGE_INSET;
     }
 
     /** Maps the current value to the thumb centre x. */
@@ -159,14 +161,14 @@ public class HudSlider extends JComponent {
             return super.getPreferredSize();
         }
         // Width is nominal — the slider is expected to stretch horizontally in its layout.
-        return new Dimension(200, AppTheme.HUD_SLIDER_HEIGHT);
+        return new Dimension(200, HudPalette.HUD_SLIDER_HEIGHT);
     }
 
     @Override
     public Dimension getMinimumSize() {
         return isMinimumSizeSet()
                 ? super.getMinimumSize()
-                : new Dimension(2 * AppTheme.HUD_SLIDER_RANGE_INSET, AppTheme.HUD_SLIDER_HEIGHT);
+                : new Dimension(2 * HudPalette.HUD_SLIDER_RANGE_INSET, HudPalette.HUD_SLIDER_HEIGHT);
     }
 
     @Override
@@ -178,43 +180,43 @@ public class HudSlider extends JComponent {
             int w = getWidth();
             int h = getHeight();
 
-            int trackH = AppTheme.HUD_SLIDER_TRACK_HEIGHT;
-            int diameter = AppTheme.HUD_SLIDER_THUMB_DIAMETER;
+            int trackH = HudPalette.HUD_SLIDER_TRACK_HEIGHT;
+            int diameter = HudPalette.HUD_SLIDER_THUMB_DIAMETER;
             // Reserve HUD_SLIDER_VALUE_AREA on top for the value above the thumb; the track band is
             // centred in the remaining height. Mirrors the label top inset so they line up.
-            int valueArea = Math.min(AppTheme.HUD_SLIDER_VALUE_AREA, h);
+            int valueArea = Math.min(HudPalette.HUD_SLIDER_VALUE_AREA, h);
             int centerY = valueArea + (h - valueArea) / 2;
             int trackTop = centerY - trackH / 2;
 
-            int edge = AppTheme.HUD_SLIDER_EDGE_INSET;
+            int edge = HudPalette.HUD_SLIDER_EDGE_INSET;
             int thumbX = thumbX();
 
             // Warm brown track plaque (muted when disabled).
-            g2.setColor(enabled ? AppTheme.HUD_ORANGE_FILL_HOVER : AppTheme.HUD_TABLE_ROW);
+            g2.setColor(enabled ? HudPalette.HUD_ORANGE_FILL_HOVER : HudPalette.HUD_TABLE_ROW);
             g2.fillRect(0, trackTop, w, trackH);
 
             // Dim rail with edge inset on both sides.
-            int railY = centerY - AppTheme.HUD_SLIDER_RAIL_THICKNESS / 2;
-            g2.setColor(enabled ? AppTheme.HUD_ORANGE_SOFT : AppTheme.HUD_DISABLED);
-            g2.fillRect(edge, railY, w - 2 * edge, AppTheme.HUD_SLIDER_RAIL_THICKNESS);
+            int railY = centerY - HudPalette.HUD_SLIDER_RAIL_THICKNESS / 2;
+            g2.setColor(enabled ? HudPalette.HUD_ORANGE_SOFT : HudPalette.HUD_DISABLED);
+            g2.fillRect(edge, railY, w - 2 * edge, HudPalette.HUD_SLIDER_RAIL_THICKNESS);
 
             // Tall vertical start tick (origin) at the left of the thumb travel range.
-            int tickH = trackH - AppTheme.HUD_SLIDER_RAIL_THICKNESS * 2;
-            g2.fillRect(thumbMin() - 1, centerY - tickH / 2, AppTheme.HUD_SLIDER_RAIL_THICKNESS, tickH);
+            int tickH = trackH - HudPalette.HUD_SLIDER_RAIL_THICKNESS * 2;
+            g2.fillRect(thumbMin() - 1, centerY - tickH / 2, HudPalette.HUD_SLIDER_RAIL_THICKNESS, tickH);
 
             // Red active fill from the edge inset to the thumb (drawn over the start tick).
-            int fillY = centerY - AppTheme.HUD_SLIDER_FILL_THICKNESS / 2;
+            int fillY = centerY - HudPalette.HUD_SLIDER_FILL_THICKNESS / 2;
             int fillW = Math.max(0, thumbX - edge);
-            g2.setColor(enabled ? AppTheme.HUD_SLIDER_FILL : AppTheme.HUD_DISABLED);
-            g2.fillRect(edge, fillY, fillW, AppTheme.HUD_SLIDER_FILL_THICKNESS);
+            g2.setColor(enabled ? HudPalette.HUD_SLIDER_FILL : HudPalette.HUD_DISABLED);
+            g2.fillRect(edge, fillY, fillW, HudPalette.HUD_SLIDER_FILL_THICKNESS);
 
             // Round thumb: ring then accent core.
-            int ring = AppTheme.HUD_SLIDER_THUMB_RING;
+            int ring = HudPalette.HUD_SLIDER_THUMB_RING;
             int tx = thumbX - diameter / 2;
             int ty = centerY - diameter / 2;
-            g2.setColor(enabled ? AppTheme.BUTTON_FG : AppTheme.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.BUTTON_FG : HudPalette.HUD_DISABLED);
             g2.fillOval(tx, ty, diameter, diameter);
-            g2.setColor(enabled ? AppTheme.ACCENT : AppTheme.HUD_TABLE_ROW_HOVER);
+            g2.setColor(enabled ? HudPalette.ACCENT : HudPalette.HUD_TABLE_ROW_HOVER);
             g2.fillOval(tx + ring, ty + ring, diameter - 2 * ring, diameter - 2 * ring);
 
             // Value above the thumb, centred on it and clamped within the component bounds.
@@ -224,7 +226,7 @@ public class HudSlider extends JComponent {
             int textW = fm.stringWidth(text);
             int textX = Math.max(0, Math.min(thumbX - textW / 2, w - textW));
             int baseline = ty - 2 - fm.getDescent();
-            g2.setColor(enabled ? AppTheme.ACCENT : AppTheme.HUD_DISABLED);
+            g2.setColor(enabled ? HudPalette.ACCENT : HudPalette.HUD_DISABLED);
             g2.drawString(text, textX, baseline);
         } finally {
             g2.dispose();

@@ -1,6 +1,8 @@
 package elite.intel.ui.render;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudComboBox;
 
 import javax.swing.*;
@@ -31,8 +33,8 @@ public class HudComboCellEditor<E> extends DefaultCellEditor {
     public Component getTableCellEditorComponent(
             JTable table, Object value, boolean isSelected, int row, int col) {
         Component c = super.getTableCellEditorComponent(table, value, isSelected, row, col);
-        c.setBackground(AppTheme.HUD_TABLE_ROW); // §3: input field stays warm on any row state
-        c.setForeground(AppTheme.FG);
+        c.setBackground(HudPalette.HUD_TABLE_ROW); // §3: input field stays warm on any row state
+        c.setForeground(HudPalette.FG);
         return c;
     }
 }

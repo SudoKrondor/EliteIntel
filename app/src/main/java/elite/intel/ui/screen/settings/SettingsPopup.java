@@ -10,13 +10,14 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 
-import static elite.intel.ui.theme.AppTheme.FG_MUTED;
-import static elite.intel.ui.theme.AppTheme.HUD_DIALOG_BODY;
+import static elite.intel.ui.theme.HudPalette.FG_MUTED;
+import static elite.intel.ui.theme.HudPalette.HUD_DIALOG_BODY;
 import static elite.intel.ui.theme.AppTheme.hudModalScaffold;
 import static elite.intel.ui.theme.AppTheme.hudScrollPane;
 import static elite.intel.ui.theme.AppTheme.makeButtonSubtle;
 import static elite.intel.ui.theme.AppTheme.transparentPanel;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class SettingsPopup extends JDialog {
 

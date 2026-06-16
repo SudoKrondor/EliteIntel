@@ -1,6 +1,9 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -65,18 +68,18 @@ public class HudBanner extends HudPanel {
             // Proportional Label font (not the monospaced JTextArea default), at banner size.
             Font base = UIManager.getFont("Label.font");
             if (base == null) base = area.getFont();
-            area.setFont(base.deriveFont(Font.BOLD, AppTheme.HUD_FONT_BANNER));
+            area.setFont(base.deriveFont(Font.BOLD, HudPalette.HUD_FONT_BANNER));
             area.putClientProperty("eliteIntel.hud.lockedForeground", Boolean.TRUE);
             this.textComponent = area;
         } else {
             JLabel label = new JLabel(text == null ? "" : text);
             label.setForeground(colorFor(state));
-            label.setFont(label.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_BANNER));
+            label.setFont(label.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BANNER));
             label.putClientProperty("eliteIntel.hud.lockedForeground", Boolean.TRUE);
             if (leadingWarnGlyph) {
-                int glyph = Math.round(AppTheme.HUD_FONT_BANNER * 1.4f);
-                label.setIcon(AppTheme.warningGlyphIcon(glyph));
-                label.setIconTextGap(AppTheme.HUD_GAP);
+                int glyph = Math.round(HudPalette.HUD_FONT_BANNER * 1.4f);
+                label.setIcon(HudGlyphs.warningGlyphIcon(glyph));
+                label.setIconTextGap(HudPalette.HUD_GAP);
             }
             this.textComponent = label;
         }
@@ -94,20 +97,20 @@ public class HudBanner extends HudPanel {
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);
-        Color c = enabled ? colorFor(state) : AppTheme.HUD_DISABLED;
+        Color c = enabled ? colorFor(state) : HudPalette.HUD_DISABLED;
         if (textComponent != null) textComponent.setForeground(c);
         setBorder(railBorder(c));
         repaint();
     }
 
     private static Color colorFor(StatusBadge.State state) {
-        if (state == null) return AppTheme.HUD_CYAN;
+        if (state == null) return HudPalette.HUD_CYAN;
         return switch (state) {
-            case OK      -> AppTheme.HUD_OK;
-            case STANDBY -> AppTheme.HUD_WARN;
-            case OFFLINE -> AppTheme.HUD_DANGER;
-            case INFO    -> AppTheme.HUD_CYAN;
-            case IDLE    -> AppTheme.HUD_DISABLED;
+            case OK      -> HudPalette.HUD_OK;
+            case STANDBY -> HudPalette.HUD_WARN;
+            case OFFLINE -> HudPalette.HUD_DANGER;
+            case INFO    -> HudPalette.HUD_CYAN;
+            case IDLE    -> HudPalette.HUD_DISABLED;
         };
     }
 

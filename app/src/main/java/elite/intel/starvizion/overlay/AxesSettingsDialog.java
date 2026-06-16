@@ -4,6 +4,8 @@ import elite.intel.devices.DeviceService;
 import elite.intel.devices.model.Device;
 import elite.intel.starvizion.model.SvAxis;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -39,10 +41,10 @@ public class AxesSettingsDialog extends JDialog {
     private void buildUi() {
         JPanel root = new JPanel(new GridBagLayout());
         root.setBorder(new EmptyBorder(12, 16, 12, 16));
-        root.setBackground(AppTheme.BG);
+        root.setBackground(HudPalette.BG);
         setContentPane(root);
 
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
 
         // Device
         nextRow(gbc);
@@ -161,7 +163,7 @@ public class AxesSettingsDialog extends JDialog {
     private static void nextRow(GridBagConstraints gbc) { gbc.gridy++; gbc.gridwidth = 1; }
 
     private static void addLabel(JPanel p, String text, GridBagConstraints gbc) {
-        AppTheme.addLabel(p, text, gbc, 160); // central §5.1 field label
+        HudForms.addLabel(p, text, gbc, 160); // central §5.1 field label
     }
 
     private static void addField(JPanel p, JComponent c, GridBagConstraints gbc) {

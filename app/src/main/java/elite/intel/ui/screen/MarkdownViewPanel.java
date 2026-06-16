@@ -1,6 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
@@ -16,6 +17,7 @@ import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.currentLanguageTag;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Scrollable, read-only Markdown viewer panel.
@@ -37,7 +39,7 @@ public class MarkdownViewPanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        setLayout(new BorderLayout(HudPalette.HUD_GAP, HudPalette.HUD_GAP));
         setOpaque(false);
 
         editorPane = new JEditorPane();
@@ -64,7 +66,7 @@ public class MarkdownViewPanel extends JPanel {
                 getText("manual.section.document"),
                 new BorderLayout(),
                 HudPanel.Variant.FLAT,
-                AppTheme.HUD_GAP);
+                HudPalette.HUD_GAP);
         documentSection.body().add(scrollPane, BorderLayout.CENTER);
 
         // RELOAD belongs in the shared tab footer (HUD §10), not a top toolbar.
@@ -92,8 +94,8 @@ public class MarkdownViewPanel extends JPanel {
         editorPane.setBorder(BorderFactory.createEmptyBorder());
         // Viewport/scroll pane stay opaque (a non-opaque viewport smears on scroll) but carry the
         // screen background HUD_BG, not the lighter HUD_PANEL_BG, so no panel slab shows behind text.
-        scrollPane.setBackground(AppTheme.HUD_BG);
-        scrollPane.getViewport().setBackground(AppTheme.HUD_BG);
+        scrollPane.setBackground(HudPalette.HUD_BG);
+        scrollPane.getViewport().setBackground(HudPalette.HUD_BG);
     }
 
     private void loadContent() {

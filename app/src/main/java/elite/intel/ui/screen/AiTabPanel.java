@@ -2,6 +2,7 @@ package elite.intel.ui.screen;
 
 import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudCommanderBlock;
 import elite.intel.ui.widget.HudLogArea;
 import elite.intel.ui.widget.HudSection;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class AiTabPanel extends JPanel {
 
@@ -214,7 +216,7 @@ public class AiTabPanel extends JPanel {
                 obsOverlayButton, audioDevicesButton, recalibrateAudioButton,
                 updateAppButton}) {
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
-            b.setMaximumSize(new Dimension(Integer.MAX_VALUE, AppTheme.HUD_BUTTON_HEIGHT));
+            b.setMaximumSize(new Dimension(Integer.MAX_VALUE, HudPalette.HUD_BUTTON_HEIGHT));
         }
 
         // top: runtime controls

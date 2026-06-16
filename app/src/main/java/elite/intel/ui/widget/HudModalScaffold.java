@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
@@ -31,23 +33,23 @@ public final class HudModalScaffold {
     private HudModalScaffold() {}
 
     public static JPanel build(HudModalSpec spec) {
-        final int inset = AppTheme.HUD_DIALOG_BODY_INSET;
+        final int inset = HudPalette.HUD_DIALOG_BODY_INSET;
         final boolean hasFooter = !spec.footerButtons().isEmpty();
 
         // --- body ---
         Component bodyComp;
         if (spec.scrollBody()) {
             JScrollPane sp = AppTheme.hudScrollPane(spec.body());
-            sp.getViewport().setBackground(AppTheme.HUD_DIALOG_BODY); // override HUD_PANEL_BG
+            sp.getViewport().setBackground(HudPalette.HUD_DIALOG_BODY); // override HUD_PANEL_BG
             bodyComp = sp;
         } else {
             bodyComp = spec.body();
         }
 
         // content = body (+ footer) within a single side inset, warm HUD_DIALOG_BODY background
-        JPanel content = new JPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        JPanel content = new JPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         content.setOpaque(true);
-        content.setBackground(AppTheme.HUD_DIALOG_BODY);
+        content.setBackground(HudPalette.HUD_DIALOG_BODY);
         int bottom = hasFooter ? 0 : inset; // footer border carries the bottom gap; otherwise inset
         content.setBorder(new EmptyBorder(inset, inset, bottom, inset));
         content.add(bodyComp, BorderLayout.CENTER);
@@ -56,11 +58,11 @@ public final class HudModalScaffold {
         // --- wrapper (window frame) ---
         JPanel wrapper = new JPanel(new BorderLayout());
         wrapper.setOpaque(true);
-        wrapper.setBackground(AppTheme.HUD_BG);
+        wrapper.setBackground(HudPalette.HUD_BG);
         wrapper.setBorder(BorderFactory.createMatteBorder(
-                AppTheme.HUD_BORDER_THICKNESS_ACCENT, AppTheme.HUD_BORDER_THICKNESS_ACCENT,
-                AppTheme.HUD_BORDER_THICKNESS_ACCENT, AppTheme.HUD_BORDER_THICKNESS_ACCENT,
-                AppTheme.HUD_ORANGE_FILL_HOVER));
+                HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
+                HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
+                HudPalette.HUD_ORANGE_FILL_HOVER));
 
         if (spec.title() != null) {
             wrapper.add(new HudDialogHeader(spec.title(), spec.onClose()), BorderLayout.NORTH);

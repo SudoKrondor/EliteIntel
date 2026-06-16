@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.gameapi.EventBusManager;
@@ -30,7 +32,7 @@ public class HudUpdateButton extends HudButton {
         super(MultiLingualTextProvider.getText("settings.update.upToDate"), false);
         setEnabled(false);
         if (showIcon) {
-            setIcon(AppTheme.scaledIcon(getClass(), "/images/update.png", AppTheme.HUD_ICON_MAIN));
+            setIcon(HudGlyphs.scaledIcon(getClass(), "/images/update.png", HudPalette.HUD_ICON_MAIN));
         }
         addActionListener(e -> onClick());
         EventBusManager.register(this);

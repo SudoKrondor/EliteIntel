@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -28,7 +29,7 @@ public class HudPanel extends JPanel {
      * @param layout layout manager used by the panel content
      */
     public HudPanel(LayoutManager layout) {
-        this(layout, AppTheme.ACCENT);
+        this(layout, HudPalette.ACCENT);
     }
 
     /**
@@ -50,7 +51,7 @@ public class HudPanel extends JPanel {
      */
     public HudPanel(LayoutManager layout, Color accentColor, Variant variant) {
         super(layout);
-        this.accentColor = accentColor == null ? AppTheme.ACCENT : accentColor;
+        this.accentColor = accentColor == null ? HudPalette.ACCENT : accentColor;
         this.variant = variant == null ? Variant.FRAMED : variant;
         setOpaque(false);
         setBorder(this.variant == Variant.FLAT ? AppTheme.hudFlatBorder() : AppTheme.hudBorder());
@@ -69,24 +70,24 @@ public class HudPanel extends JPanel {
             int w = getWidth();
             int h = getHeight();
             if (paintBackgroundFill) {
-                g2.setColor(AppTheme.HUD_PANEL_BG);
+                g2.setColor(HudPalette.HUD_PANEL_BG);
                 g2.fillRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1),
-                        AppTheme.HUD_PANEL_ARC, AppTheme.HUD_PANEL_ARC);
+                        HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
             }
 
             if (variant == Variant.FLAT) {
                 return;
             }
 
-            g2.setColor(AppTheme.HUD_BORDER_DIM);
+            g2.setColor(HudPalette.HUD_BORDER_DIM);
             g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1),
-                    AppTheme.HUD_PANEL_ARC, AppTheme.HUD_PANEL_ARC);
+                    HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
 
             // Keep the cockpit treatment lightweight: a single accent edge avoids repaint-heavy effects.
             g2.setColor(accentColor);
-            g2.fillRoundRect(AppTheme.HUD_PADDING, 0,
-                    Math.max(0, w - AppTheme.HUD_PADDING * 2), 2,
-                    AppTheme.HUD_PANEL_ARC, AppTheme.HUD_PANEL_ARC);
+            g2.fillRoundRect(HudPalette.HUD_PADDING, 0,
+                    Math.max(0, w - HudPalette.HUD_PADDING * 2), 2,
+                    HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
         } finally {
             g2.dispose();
         }

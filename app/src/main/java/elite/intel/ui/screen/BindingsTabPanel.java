@@ -51,6 +51,9 @@ import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 public class BindingsTabPanel extends JPanel {
 
@@ -441,8 +444,8 @@ public class BindingsTabPanel extends JPanel {
     }
 
     /**
-     * Creates a read-only value field carrying an in-field info-\u00ABi\u00BB (HUD \u00A75.1) that opens the
-     * help text for {@code infoKey} on click \u2014 replaces the former external Unicode info button.
+     * Creates a read-only value field carrying an in-field info-«i» (HUD §5.1) that opens the
+     * help text for {@code infoKey} on click — replaces the former external Unicode info button.
      */
     private JTextField readOnlyInfoField(String infoKey) {
         HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
@@ -465,7 +468,7 @@ public class BindingsTabPanel extends JPanel {
     }
 
     private JPanel keyboardOnlyWarningStrip() {
-        // Centralised on HudBanner (\u00A77.3) with the leading warning glyph \u2014 no hand-rolled strip.
+        // Centralised on HudBanner (§7.3) with the leading warning glyph — no hand-rolled strip.
         keyboardOnlyBanner = new HudBanner(getText("bindings.keyboardOnlyHint"),
                 StatusBadge.State.STANDBY, true);
         return keyboardOnlyBanner;

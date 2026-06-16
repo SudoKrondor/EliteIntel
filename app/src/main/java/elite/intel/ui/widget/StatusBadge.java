@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -12,12 +13,12 @@ import java.awt.*;
 public class StatusBadge extends JLabel {
 
     public enum State {
-        OK(AppTheme.HUD_OK),
-        STANDBY(AppTheme.HUD_WARN),
-        OFFLINE(AppTheme.HUD_DANGER),
-        INFO(AppTheme.HUD_CYAN),
+        OK(HudPalette.HUD_OK),
+        STANDBY(HudPalette.HUD_WARN),
+        OFFLINE(HudPalette.HUD_DANGER),
+        INFO(HudPalette.HUD_CYAN),
         /** Muted/inactive: service is off or sleeping — no action required. */
-        IDLE(AppTheme.HUD_DISABLED);
+        IDLE(HudPalette.HUD_DISABLED);
 
         private final Color color;
 
@@ -39,9 +40,9 @@ public class StatusBadge extends JLabel {
         this.state = state == null ? State.INFO : state;
         setOpaque(false);
         setForeground(this.state.color);
-        setFont(getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_BADGE_ROLE));
+        setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_BADGE_ROLE));
         setBorder(new EmptyBorder(2, 10, 2, 10));
-        setMinimumSize(new Dimension(68, AppTheme.HUD_BADGE_HEIGHT));
+        setMinimumSize(new Dimension(68, HudPalette.HUD_BADGE_HEIGHT));
         updatePreferredSize();
     }
 
@@ -64,7 +65,7 @@ public class StatusBadge extends JLabel {
         Insets insets = getInsets();
         int textWidth = getFontMetrics(getFont()).stringWidth(getText());
         int width = Math.max(76, textWidth + insets.left + insets.right + 8);
-        setPreferredSize(new Dimension(width, AppTheme.HUD_BADGE_HEIGHT));
+        setPreferredSize(new Dimension(width, HudPalette.HUD_BADGE_HEIGHT));
     }
 
     @Override

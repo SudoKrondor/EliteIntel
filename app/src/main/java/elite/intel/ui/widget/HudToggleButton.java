@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,15 +22,15 @@ public class HudToggleButton extends JToggleButton {
         setOpaque(false);
         setContentAreaFilled(false);
         setFocusPainted(false);
-        setForeground(AppTheme.FG);
+        setForeground(HudPalette.FG);
         setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
-        setPreferredSize(new Dimension(Math.max(112, getPreferredSize().width), AppTheme.HUD_BUTTON_HEIGHT));
+        setPreferredSize(new Dimension(Math.max(112, getPreferredSize().width), HudPalette.HUD_BUTTON_HEIGHT));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         // Prevent applyDarkPalette from overriding the state-driven foreground colour.
         putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         // Keep text readable against bright ACCENT fill when selected.
-        addItemListener(e -> setForeground(isSelected() ? AppTheme.SEL_FG : AppTheme.FG));
-        setForeground(isSelected() ? AppTheme.SEL_FG : AppTheme.FG);
+        addItemListener(e -> setForeground(isSelected() ? HudPalette.SEL_FG : HudPalette.FG));
+        setForeground(isSelected() ? HudPalette.SEL_FG : HudPalette.FG);
     }
 
     @Override
@@ -37,15 +39,15 @@ public class HudToggleButton extends JToggleButton {
         try {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             ButtonModel model = getModel();
-            Color border = isSelected() ? AppTheme.ACCENT : AppTheme.HUD_BORDER;
-            Color fill = isSelected() ? AppTheme.ACCENT : AppTheme.HUD_PANEL_BG_ALT;
+            Color border = isSelected() ? HudPalette.ACCENT : HudPalette.HUD_BORDER;
+            Color fill = isSelected() ? HudPalette.ACCENT : HudPalette.HUD_PANEL_BG_ALT;
             if (!isEnabled()) {
-                border = AppTheme.HUD_DISABLED;
-                fill = AppTheme.HUD_PANEL_BG;
+                border = HudPalette.HUD_DISABLED;
+                fill = HudPalette.HUD_PANEL_BG;
             } else if (model.isPressed()) {
                 fill = fill.darker();
             } else if (model.isRollover()) {
-                fill = isSelected() ? AppTheme.ACCENT.darker() : AppTheme.HUD_HOVER;
+                fill = isSelected() ? HudPalette.ACCENT.darker() : HudPalette.HUD_HOVER;
             }
             g2.setColor(fill);
             g2.fillRect(0, 0, getWidth() - 1, getHeight() - 1);

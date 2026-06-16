@@ -1,6 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.ShipManager;
@@ -18,11 +19,12 @@ import java.util.List;
 import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class OBSOverlayWindow extends JFrame {
 
-    private static final Color BG = AppTheme.HUD_OVERLAY_BG;
-    private static final Color FG = AppTheme.ACCENT;
+    private static final Color BG = HudPalette.HUD_OVERLAY_BG;
+    private static final Color FG = HudPalette.ACCENT;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
     private static final int TYPEWRITER_DELAY_MS = 50;
@@ -155,9 +157,9 @@ public class OBSOverlayWindow extends JFrame {
             try {
                 loaded = Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
                         getClass().getResourceAsStream("/fonts/Electrolize-Regular.ttf"))
-                ).deriveFont(AppTheme.HUD_FONT_OVERLAY);
+                ).deriveFont(HudPalette.HUD_FONT_OVERLAY);
             } catch (FontFormatException | IOException e) {
-                loaded = new Font(Font.MONOSPACED, Font.PLAIN, (int) AppTheme.HUD_FONT_OVERLAY);
+                loaded = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_OVERLAY);
             }
             font = loaded;
         }

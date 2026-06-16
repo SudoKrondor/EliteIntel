@@ -3,6 +3,8 @@ package elite.intel.ui.dialog;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.support.CustomCommandStepPickerItem;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
@@ -28,6 +30,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal editor for one custom command step.
@@ -170,7 +173,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
 
     private JPanel form() {
         JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
 
         addRow(panel, gbc, getText("actions.customCommands.editor.step.type"), typeCombo);
         addRow(panel, gbc, valueLabel, valueField);
@@ -204,7 +207,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         // Foreground already set by hudReadoutLabel; fixed-width column for label alignment.
-        AppTheme.sizeFieldLabel(label, 160);
+        HudForms.sizeFieldLabel(label, 160);
         panel.add(label, gbc);
 
         gbc.gridx = 1;
@@ -213,7 +216,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         gbc.anchor = GridBagConstraints.WEST;
         // Dialog owns only the uniform field WIDTH (so every row's right edge aligns); HEIGHT comes from
         // the control itself (HUD layer) — HudTextField/HudStepper/HudComboBox all size to HUD_FIELD_HEIGHT.
-        Dimension fieldSize = new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, field.getPreferredSize().height);
+        Dimension fieldSize = new Dimension(HudPalette.HUD_PICKER_FIELD_WIDTH, field.getPreferredSize().height);
         field.setPreferredSize(fieldSize);
         field.setMinimumSize(fieldSize);
         panel.add(field, gbc);
@@ -520,10 +523,10 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createEmptyBorder());
-        button.setForeground(AppTheme.FG_MUTED);
-        button.setBackground(AppTheme.BG);
+        button.setForeground(HudPalette.FG_MUTED);
+        button.setBackground(HudPalette.BG);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setFont(button.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_ICON_BUTTON));
+        button.setFont(button.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_ICON_BUTTON));
         Dimension size = new Dimension(28, 28);
         button.setPreferredSize(size);
         button.setMinimumSize(size);

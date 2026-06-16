@@ -1,6 +1,7 @@
 package elite.intel.ui.dialog;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 
 import javax.swing.*;
@@ -37,11 +38,11 @@ public final class HudConfirmDialog extends JDialog {
         msg.setFocusable(false);
         msg.setOpaque(false);
         msg.setColumns(40);
-        msg.setForeground(AppTheme.FG);
+        msg.setForeground(HudPalette.FG);
         // Proportional Label font (not the monospaced JTextArea default).
         Font base = UIManager.getFont("Label.font");
         if (base == null) base = msg.getFont();
-        msg.setFont(base.deriveFont(AppTheme.HUD_FONT_FIELD_VALUE));
+        msg.setFont(base.deriveFont(HudPalette.HUD_FONT_FIELD_VALUE));
         msg.putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         msg.setBorder(null);
 

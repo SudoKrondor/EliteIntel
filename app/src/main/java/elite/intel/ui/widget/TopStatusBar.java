@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.ShipDao;
@@ -34,12 +35,12 @@ public class TopStatusBar extends HudPanel {
      * @param version application version displayed as build metadata
      */
     public TopStatusBar(String appName, String version) {
-        super(new BorderLayout(0, 0), AppTheme.HUD_CYAN, Variant.FLAT);
-        setPreferredSize(new Dimension(0, AppTheme.HUD_TOP_BAR_HEIGHT));
-        setMinimumSize(new Dimension(0, AppTheme.HUD_TOP_BAR_HEIGHT));
-        setBackground(AppTheme.HUD_SHELL_BACKGROUND);
+        super(new BorderLayout(0, 0), HudPalette.HUD_CYAN, Variant.FLAT);
+        setPreferredSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
+        setMinimumSize(new Dimension(0, HudPalette.HUD_TOP_BAR_HEIGHT));
+        setBackground(HudPalette.HUD_SHELL_BACKGROUND);
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, AppTheme.HUD_BORDER_DIM),
+                BorderFactory.createMatteBorder(0, 0, 1, 0, HudPalette.HUD_BORDER_DIM),
                 BorderFactory.createEmptyBorder(8, 12, 8, 12)));
 
         add(buildLeftGroup(appName, version), BorderLayout.WEST);
@@ -75,16 +76,16 @@ public class TopStatusBar extends HudPanel {
         String ver  = version == null || version.isBlank() ? "UNKNOWN" : version;
 
         JLabel nameLabel = new JLabel(name);
-        nameLabel.setForeground(AppTheme.FG);
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_APP_TITLE));
+        nameLabel.setForeground(HudPalette.FG);
+        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_APP_TITLE));
         nameLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(nameLabel);
 
         row.add(Box.createHorizontalStrut(6));
 
         JLabel verLabel = new JLabel(ver);
-        verLabel.setForeground(AppTheme.FG_MUTED);
-        verLabel.setFont(verLabel.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_READOUT_KEY));
+        verLabel.setForeground(HudPalette.FG_MUTED);
+        verLabel.setFont(verLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         verLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
         row.add(verLabel);
 
@@ -145,16 +146,16 @@ public class TopStatusBar extends HudPanel {
 
     private static JLabel keyLabel(String text) {
         JLabel l = new JLabel(text == null ? "" : text.toUpperCase(Locale.ROOT));
-        l.setForeground(AppTheme.FG_MUTED);
-        l.setFont(l.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_READOUT_KEY));
+        l.setForeground(HudPalette.FG_MUTED);
+        l.setFont(l.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;
     }
 
     private static JLabel valueLabel(String text) {
         JLabel l = new JLabel(text == null ? "—" : text.toUpperCase(Locale.ROOT));
-        l.setForeground(AppTheme.FG);
-        l.setFont(l.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_COMMANDER_NAME));
+        l.setForeground(HudPalette.FG);
+        l.setFont(l.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_COMMANDER_NAME));
         l.setAlignmentY(Component.CENTER_ALIGNMENT);
         return l;
     }
@@ -169,7 +170,7 @@ public class TopStatusBar extends HudPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        g.setColor(AppTheme.HUD_SHELL_BACKGROUND);
+        g.setColor(HudPalette.HUD_SHELL_BACKGROUND);
         g.fillRect(0, 0, getWidth(), getHeight());
     }
 }

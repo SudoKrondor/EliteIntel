@@ -2,6 +2,7 @@ package elite.intel.ui.support;
 
 import elite.intel.ui.render.BindingSlotCellRenderer;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudTable;
 
 import elite.intel.ai.hands.BindingSlotType;
@@ -19,9 +20,10 @@ import java.util.List;
 import java.util.function.BiConsumer;
 
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class BindingsGroupTableFactory {
-    public static final int TABLE_ROW_HEIGHT = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT;
+    public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     public static final String HOVER_ROW_PROPERTY = "elite.intel.bindings.hoverRow";
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
 
@@ -179,7 +181,7 @@ public class BindingsGroupTableFactory {
         HudTable.styleCompact(table);
         table.setRowHeight(TABLE_ROW_HEIGHT);
         table.setAutoCreateRowSorter(false);
-        table.getTableHeader().setBackground(AppTheme.HUD_BG);
+        table.getTableHeader().setBackground(HudPalette.HUD_BG);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
         table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer());
     }

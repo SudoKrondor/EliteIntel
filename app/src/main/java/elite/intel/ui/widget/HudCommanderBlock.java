@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,6 +14,7 @@ import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Central commander identity block for the AI screen's SHORTCUTS sidebar.
@@ -38,7 +40,7 @@ public class HudCommanderBlock extends JPanel {
 
         // --- muted logo ---
         ImageIcon rawIcon = loadLogoSafe(72);
-        JLabel logoLabel = new JLabel(rawIcon != null ? AppTheme.dimIcon(rawIcon, 0.45f) : null);
+        JLabel logoLabel = new JLabel(rawIcon != null ? HudGlyphs.dimIcon(rawIcon, 0.45f) : null);
         logoLabel.setAlignmentX(CENTER_ALIGNMENT);
         add(logoLabel);
 
@@ -110,7 +112,7 @@ public class HudCommanderBlock extends JPanel {
 
     private static ImageIcon loadLogoSafe(int size) {
         try {
-            return AppTheme.scaledIcon(HudCommanderBlock.class, "/images/elite-logo.png", size);
+            return HudGlyphs.scaledIcon(HudCommanderBlock.class, "/images/elite-logo.png", size);
         } catch (Exception e) {
             return null;
         }

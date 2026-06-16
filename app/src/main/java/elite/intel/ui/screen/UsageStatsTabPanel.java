@@ -1,6 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.StatusBadge;
@@ -74,9 +75,9 @@ public class UsageStatsTabPanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
+        setLayout(new BorderLayout(HudPalette.HUD_GAP, HudPalette.HUD_GAP));
         setBorder(AppTheme.hudScreenBorder());
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
         boolean usingLocalLLMs = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
 
         JPanel dashboard = AppTheme.transparentPanel(null);
@@ -87,11 +88,11 @@ public class UsageStatsTabPanel extends JPanel {
         header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
 
         providerLabel = new JLabel(getText("stats.llm.na"));
-        providerLabel.setFont(providerLabel.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_STAT_LG));
-        providerLabel.setForeground(AppTheme.FG);
+        providerLabel.setFont(providerLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_STAT_LG));
+        providerLabel.setForeground(HudPalette.FG);
 
         sessionTimeLabel = new JLabel(getText("stats.sessionTime.initial"));
-        sessionTimeLabel.setForeground(AppTheme.FG_MUTED);
+        sessionTimeLabel.setForeground(HudPalette.FG_MUTED);
 
         header.add(providerLabel);
         header.add(Box.createHorizontalGlue());
@@ -111,13 +112,13 @@ public class UsageStatsTabPanel extends JPanel {
             totalLabel = new JLabel(getText("stats.total.chargeable", 0));
         }
         totalLabel.setFont(totalLabel.getFont().deriveFont(Font.BOLD));
-        totalLabel.setForeground(AppTheme.ACCENT);
+        totalLabel.setForeground(HudPalette.ACCENT);
 
         savedLabel = new JLabel(getText("stats.cacheSaved", 0));
-        savedLabel.setForeground(AppTheme.FG_MUTED);
+        savedLabel.setForeground(HudPalette.FG_MUTED);
 
         tphLabel = new JLabel(getText("stats.tokensPerHour"));
-        tphLabel.setForeground(AppTheme.FG_MUTED);
+        tphLabel.setForeground(HudPalette.FG_MUTED);
 
         totalLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         savedLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -133,13 +134,13 @@ public class UsageStatsTabPanel extends JPanel {
         summarySection.body().add(footer, BorderLayout.CENTER);
 
         dashboard.add(telemetrySection);
-        dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+        dashboard.add(Box.createVerticalStrut(HudPalette.HUD_GAP));
         dashboard.add(tokenSection);
         if (usingLocalLLMs) {
-            dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+            dashboard.add(Box.createVerticalStrut(HudPalette.HUD_GAP));
             dashboard.add(new HudBanner(getText("stats.localCacheNote"), StatusBadge.State.INFO));
         }
-        dashboard.add(Box.createVerticalStrut(AppTheme.HUD_GAP));
+        dashboard.add(Box.createVerticalStrut(HudPalette.HUD_GAP));
         dashboard.add(summarySection);
         dashboard.add(Box.createVerticalGlue());
 
@@ -200,12 +201,12 @@ public class UsageStatsTabPanel extends JPanel {
         };
         private static final String TPS_LABEL = getText("stats.chart.lastSpeed");
         private static final Color[] COLORS = {
-                AppTheme.HUD_CYAN,
-                AppTheme.HUD_OK,
-                AppTheme.ACCENT,
-                AppTheme.HUD_DISABLED
+                HudPalette.HUD_CYAN,
+                HudPalette.HUD_OK,
+                HudPalette.ACCENT,
+                HudPalette.HUD_DISABLED
         };
-        private static final Color TPS_COLOR = AppTheme.HUD_CYAN;
+        private static final Color TPS_COLOR = HudPalette.HUD_CYAN;
 
         private final boolean localMode;
         private int[] values = new int[4];
@@ -257,7 +258,7 @@ public class UsageStatsTabPanel extends JPanel {
                 int maxVal = 1;
                 for (int i = 0; i < tokenBars; i++) maxVal = Math.max(maxVal, values[i]);
 
-                Font font = g2.getFont().deriveFont(AppTheme.HUD_FONT_LG);
+                Font font = g2.getFont().deriveFont(HudPalette.HUD_FONT_LG);
                 g2.setFont(font);
                 FontMetrics fm = g2.getFontMetrics(font);
                 int baseline = barH / 2 + fm.getAscent() / 2 - 1;
@@ -266,10 +267,10 @@ public class UsageStatsTabPanel extends JPanel {
                 for (int i = 0; i < tokenBars; i++) {
                     int y = startY + i * rowH;
 
-                    g2.setColor(AppTheme.FG_MUTED);
+                    g2.setColor(HudPalette.FG_MUTED);
                     g2.drawString(LABELS[i], 0, y + baseline);
 
-                    g2.setColor(AppTheme.HUD_PANEL_BG_ALT);
+                    g2.setColor(HudPalette.HUD_PANEL_BG_ALT);
                     g2.fillRoundRect(labelW, y, barAreaW, barH, 6, 6);
 
                     if (values[i] > 0) {
@@ -278,16 +279,16 @@ public class UsageStatsTabPanel extends JPanel {
                         g2.fillRoundRect(labelW, y, fillW, barH, 6, 6);
                     }
 
-                    g2.setColor(AppTheme.FG);
+                    g2.setColor(HudPalette.FG);
                     g2.drawString(formatTokens(values[i]), labelW + barAreaW + 8, y + baseline);
                 }
 
                 // TPS bar uses its own observed scale so token volume cannot flatten speed changes.
                 int tpsY = startY + tokenBars * rowH;
-                g2.setColor(AppTheme.FG_MUTED);
+                g2.setColor(HudPalette.FG_MUTED);
                 g2.drawString(TPS_LABEL, 0, tpsY + baseline);
 
-                g2.setColor(AppTheme.HUD_PANEL_BG_ALT);
+                g2.setColor(HudPalette.HUD_PANEL_BG_ALT);
                 g2.fillRoundRect(labelW, tpsY, barAreaW, barH, 6, 6);
 
                 if (lastTps > 0) {
@@ -296,7 +297,7 @@ public class UsageStatsTabPanel extends JPanel {
                     g2.fillRoundRect(labelW, tpsY, fillW, barH, 6, 6);
                 }
 
-                g2.setColor(AppTheme.FG);
+                g2.setColor(HudPalette.FG);
                 g2.drawString(String.format("%.1f t/s", lastTps), labelW + barAreaW + 8, tpsY + baseline);
 
             } finally {

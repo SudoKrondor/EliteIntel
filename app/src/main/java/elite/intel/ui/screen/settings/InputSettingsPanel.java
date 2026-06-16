@@ -25,6 +25,8 @@ import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 /**
  * "Input" settings tab — lets the user map a controller button to push-to-talk, monitored via

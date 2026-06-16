@@ -2,6 +2,7 @@ package elite.intel.ui.dialog;
 
 import elite.intel.ui.support.GuiCommandRunner;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 
@@ -115,7 +116,7 @@ public final class CommandDetailsDialog extends JDialog {
     private void buildUi() {
         setUndecorated(true);
 
-        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         content.add(header(), BorderLayout.NORTH);   // commandTitleBlock(entry.name(), entry.id())
 
         HudSection detailsSection = HudSection.flat(
@@ -172,12 +173,12 @@ public final class CommandDetailsDialog extends JDialog {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.insets = new Insets(5, 0, 5, AppTheme.HUD_GAP);
+        gbc.insets = new Insets(5, 0, 5, HudPalette.HUD_GAP);
         gbc.anchor = GridBagConstraints.NORTHWEST;
 
-        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), AppTheme.HUD_CYAN);
-        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), AppTheme.ACCENT);
-        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), AppTheme.ACCENT);
+        addLabelValue(panel, gbc, getText("actions.commands.details.name"), entry.name(), HudPalette.HUD_CYAN);
+        addLabelValue(panel, gbc, getText("actions.commands.details.actionKey"), entry.id(), HudPalette.ACCENT);
+        addLabelValue(panel, gbc, getText("actions.commands.details.type"), readableType(entry.type()), HudPalette.ACCENT);
         addDescription(panel, gbc);
         addPhrases(panel, gbc);
         addParameters(panel, gbc);
@@ -300,7 +301,7 @@ public final class CommandDetailsDialog extends JDialog {
         List<String> phrases = currentPhrases();
         if (phrases.isEmpty()) {
             JLabel empty = new JLabel(getText("actions.commands.details.noPhrases"));
-            empty.setForeground(AppTheme.FG_MUTED);
+            empty.setForeground(HudPalette.FG_MUTED);
             empty.setBorder(new EmptyBorder(8, 8, 8, 8));
             return empty;
         }
@@ -314,7 +315,7 @@ public final class CommandDetailsDialog extends JDialog {
         JTextArea area = AppTheme.makeTextArea(0, 0);
         area.setText(text);
         area.setEditable(false);
-        area.setCaretColor(AppTheme.HUD_TABLE_ROW);
+        area.setCaretColor(HudPalette.HUD_TABLE_ROW);
         area.setBorder(AppTheme.hudFieldBorder());
         return area;
     }
@@ -363,7 +364,7 @@ public final class CommandDetailsDialog extends JDialog {
         }
 
         JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING));
+        panel.setBorder(new EmptyBorder(HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING));
         Map<CommandParameter, JComponent> fields = new LinkedHashMap<>();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -375,7 +376,7 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.gridx = 0;
             gbc.weightx = 0.0;
             JLabel label = new JLabel(parameter.name());
-            label.setForeground(AppTheme.FG);
+            label.setForeground(HudPalette.FG);
             panel.add(label, gbc);
 
             gbc.gridx = 1;
@@ -420,7 +421,7 @@ public final class CommandDetailsDialog extends JDialog {
 
     private JsonObject promptForCustomCommandParams() {
         JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
-        panel.setBorder(new EmptyBorder(AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING, AppTheme.HUD_PADDING));
+        panel.setBorder(new EmptyBorder(HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING));
         Map<CustomCommandParameterSpec, JComponent> fields = new LinkedHashMap<>();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
@@ -433,7 +434,7 @@ public final class CommandDetailsDialog extends JDialog {
             gbc.weightx = 0.0;
             String labelText = spec.getName() + (spec.isRequired() ? " *" : "");
             JLabel label = new JLabel(labelText);
-            label.setForeground(AppTheme.FG);
+            label.setForeground(HudPalette.FG);
             if (!spec.getDescription().isBlank()) {
                 label.setToolTipText(spec.getDescription());
             }
@@ -553,7 +554,7 @@ public final class CommandDetailsDialog extends JDialog {
             Graphics2D g2 = (Graphics2D) graphics.create();
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppTheme.BUTTON_FG);
+                g2.setColor(HudPalette.BUTTON_FG);
                 Polygon triangle = new Polygon(
                         new int[]{x, x, x + WIDTH},
                         new int[]{y, y + HEIGHT, y + HEIGHT / 2},

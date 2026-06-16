@@ -2,14 +2,14 @@ package elite.intel.ui.event;
 
 public class ToggleServicesEvent {
 
-    private boolean startSercice;
+    private boolean startService;
 
-    public ToggleServicesEvent(boolean startSercice) {
-        this.startSercice = startSercice;
+    public ToggleServicesEvent(boolean startService) {
+        this.startService = startService;
     }
 
-    public boolean isStartSercice() {
-        return startSercice;
+    public boolean isStartService() {
+        return startService;
     }
 
 }

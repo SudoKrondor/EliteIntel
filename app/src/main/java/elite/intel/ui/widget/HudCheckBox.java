@@ -1,6 +1,9 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -68,16 +71,16 @@ public class HudCheckBox extends JCheckBox {
 
     @Override
     public Dimension getPreferredSize() {
-        Font f = getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
+        Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
         FontMetrics fm = getFontMetrics(f);
-        int markerSize  = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * AppTheme.HUD_PADDING_SMALL;
-        int markerZoneW = markerSize + 2 * AppTheme.HUD_PADDING_SMALL;
-        int textW = AppTheme.HUD_PADDING
+        int markerSize  = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
+        int markerZoneW = markerSize + 2 * HudPalette.HUD_PADDING_SMALL;
+        int textW = HudPalette.HUD_PADDING
                 + (fm != null ? fm.stringWidth(labelText) : 120)
-                + AppTheme.HUD_PADDING;
-        int infoExtra = infoAction != null ? (AppTheme.HUD_SEP_W + AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT) : 0;
-        return new Dimension(markerZoneW + AppTheme.HUD_SEP_W + textW + infoExtra,
-                AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT);
+                + HudPalette.HUD_PADDING;
+        int infoExtra = infoAction != null ? (HudPalette.HUD_SEP_W + HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT) : 0;
+        return new Dimension(markerZoneW + HudPalette.HUD_SEP_W + textW + infoExtra,
+                HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
     }
 
     // -------------------------------------------------------------------------
@@ -95,9 +98,9 @@ public class HudCheckBox extends JCheckBox {
             int h = getHeight();
 
             // Marker geometry: square sized to row height minus vertical padding
-            int markerSize  = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * AppTheme.HUD_PADDING_SMALL;
-            int markerZoneW = markerSize + 2 * AppTheme.HUD_PADDING_SMALL;
-            int markerX     = AppTheme.HUD_PADDING_SMALL;
+            int markerSize  = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
+            int markerZoneW = markerSize + 2 * HudPalette.HUD_PADDING_SMALL;
+            int markerX     = HudPalette.HUD_PADDING_SMALL;
             int markerY     = (h - markerSize) / 2;
 
             boolean on      = isSelected();
@@ -108,17 +111,17 @@ public class HudCheckBox extends JCheckBox {
             Color textColor;
 
             if (!enabled) {
-                fill        = AppTheme.HUD_TABLE_ROW_HOVER;
-                markerColor = AppTheme.HUD_DISABLED;
-                textColor   = AppTheme.HUD_DISABLED;
+                fill        = HudPalette.HUD_TABLE_ROW_HOVER;
+                markerColor = HudPalette.HUD_DISABLED;
+                textColor   = HudPalette.HUD_DISABLED;
             } else if (on) {
-                fill        = AppTheme.ACCENT;
-                markerColor = AppTheme.SEL_FG;
-                textColor   = AppTheme.SEL_FG;
+                fill        = HudPalette.ACCENT;
+                markerColor = HudPalette.SEL_FG;
+                textColor   = HudPalette.SEL_FG;
             } else {
-                fill        = AppTheme.HUD_TABLE_ROW_HOVER;
-                markerColor = AppTheme.HUD_ORANGE_SOFT;
-                textColor   = AppTheme.FG_MUTED;
+                fill        = HudPalette.HUD_TABLE_ROW_HOVER;
+                markerColor = HudPalette.HUD_ORANGE_SOFT;
+                textColor   = HudPalette.FG_MUTED;
             }
 
             // Slab fill — no border outline on the control itself
@@ -126,45 +129,45 @@ public class HudCheckBox extends JCheckBox {
             g2.fillRect(0, 0, w, h);
 
             // Left separator: HUD_BG stripe between marker zone and text zone
-            g2.setColor(AppTheme.HUD_BG);
-            g2.fillRect(markerZoneW, 0, AppTheme.HUD_SEP_W, h);
+            g2.setColor(HudPalette.HUD_BG);
+            g2.fillRect(markerZoneW, 0, HudPalette.HUD_SEP_W, h);
 
-            AppTheme.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on && enabled);
+            HudGlyphs.paintHudCheckMarker(g2, markerX, markerY, markerSize, markerColor, on && enabled);
 
             // Label text in the text zone, vertically centred
-            Font f = getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
+            Font f = getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
             g2.setFont(f);
             FontMetrics fm   = g2.getFontMetrics();
             int baseline     = (h - fm.getHeight()) / 2 + fm.getAscent();
             g2.setColor(textColor);
-            g2.drawString(labelText, markerZoneW + AppTheme.HUD_SEP_W + AppTheme.HUD_PADDING, baseline);
+            g2.drawString(labelText, markerZoneW + HudPalette.HUD_SEP_W + HudPalette.HUD_PADDING, baseline);
 
             // Info-zone (optional)
             if (infoAction != null) {
-                int infoZoneW = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT;
+                int infoZoneW = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
                 int infoZoneX = w - infoZoneW;
 
                 // Right separator: same width/colour as the left one
-                g2.setColor(AppTheme.HUD_BG);
-                g2.fillRect(infoZoneX - AppTheme.HUD_SEP_W, 0, AppTheme.HUD_SEP_W, h);
+                g2.setColor(HudPalette.HUD_BG);
+                g2.fillRect(infoZoneX - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
 
                 // Glyph tint: follows row state; hover on the zone itself brightens to ACCENT
                 Color infoTint;
                 if (!enabled) {
-                    infoTint = AppTheme.HUD_DISABLED;
+                    infoTint = HudPalette.HUD_DISABLED;
                 } else if (on) {
-                    infoTint = AppTheme.SEL_FG;          // visible on ACCENT fill
+                    infoTint = HudPalette.SEL_FG;          // visible on ACCENT fill
                 } else if (infoHover) {
-                    infoTint = AppTheme.ACCENT;           // hover highlight
+                    infoTint = HudPalette.ACCENT;           // hover highlight
                 } else {
-                    infoTint = AppTheme.HUD_ORANGE_SOFT;
+                    infoTint = HudPalette.HUD_ORANGE_SOFT;
                 }
 
                 // Glyph box centred inside the info zone, sized to HUD_ICON_TABLE role
-                int gs  = AppTheme.HUD_ICON_TABLE;
+                int gs  = HudPalette.HUD_ICON_TABLE;
                 int gx  = infoZoneX + (infoZoneW - gs) / 2;
                 int gy  = (h - gs) / 2;
-                AppTheme.paintHudInfoGlyph(g2, gx, gy, gs, gs, infoTint);
+                HudGlyphs.paintHudInfoGlyph(g2, gx, gy, gs, gs, infoTint);
             }
         } finally {
             g2.dispose();
@@ -219,7 +222,7 @@ public class HudCheckBox extends JCheckBox {
 
     /** Returns true when {@code mouseX} falls within the info-zone column. */
     private boolean isInInfoZone(int mouseX) {
-        return mouseX >= getWidth() - AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT;
+        return mouseX >= getWidth() - HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     }
 
     private void clearInfoHover() {

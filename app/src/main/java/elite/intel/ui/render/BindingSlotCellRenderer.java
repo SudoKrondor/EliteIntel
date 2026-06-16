@@ -6,10 +6,11 @@ import elite.intel.ui.widget.HudTable;
 import javax.swing.*;
 import java.awt.*;
 
-import static elite.intel.ui.theme.AppTheme.ACCENT;
-import static elite.intel.ui.theme.AppTheme.HUD_DISABLED;
-import static elite.intel.ui.theme.AppTheme.HUD_TABLE_ROW;
-import static elite.intel.ui.theme.AppTheme.HUD_TABLE_ROW_HOVER;
+import static elite.intel.ui.theme.HudPalette.ACCENT;
+import static elite.intel.ui.theme.HudPalette.HUD_DISABLED;
+import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW;
+import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HOVER;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Table renderer for binding rows.

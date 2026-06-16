@@ -7,6 +7,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * HUD-style status readout row: fixed muted label on the left, value right-aligned

@@ -1,6 +1,9 @@
 package elite.intel.ui.render;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -40,12 +43,12 @@ public class HudCheckBoxHeaderRenderer extends JComponent implements TableCellRe
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
-            g2.setColor(AppTheme.HUD_BG);
+            g2.setColor(HudPalette.HUD_BG);
             g2.fillRect(0, 0, w, h);
-            int size = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * AppTheme.HUD_PADDING_SMALL;
+            int size = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
             int x = (w - size) / 2;
             int y = (h - size) / 2;
-            AppTheme.paintHudCheckMarker(g2, x, y, size, AppTheme.HUD_ORANGE_SOFT, filled);
+            HudGlyphs.paintHudCheckMarker(g2, x, y, size, HudPalette.HUD_ORANGE_SOFT, filled);
         } finally {
             g2.dispose();
         }
