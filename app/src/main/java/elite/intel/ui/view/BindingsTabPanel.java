@@ -423,7 +423,6 @@ public class BindingsTabPanel extends JPanel {
     private JTextField readOnlyField() {
         JTextField field = makeTextField();
         field.setEditable(false);
-        field.setPreferredSize(new Dimension(0, HUD_FIELD_HEIGHT));
         return field;
     }
 
@@ -434,7 +433,6 @@ public class BindingsTabPanel extends JPanel {
     private JTextField readOnlyInfoField(String infoKey) {
         HudTextField field = makeTextField(() -> showFieldInfo(infoKey));
         field.setEditable(false);
-        field.setPreferredSize(new Dimension(0, HUD_FIELD_HEIGHT));
         return field;
     }
 

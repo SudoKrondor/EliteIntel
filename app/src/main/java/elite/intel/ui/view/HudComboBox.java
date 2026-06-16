@@ -183,8 +183,10 @@ public class HudComboBox<E> extends JComboBox<E> {
         // setEditable(true) triggers FlatLaf's addEditor()/configureEditor(); HudComboBoxUI.configureEditor()
         // subdues the editor to the HUD canon (colour, inset, locks). No manual editor styling needed here.
         combo.setEditable(true);
-        combo.setPreferredSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT));
-        combo.setMinimumSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT));
+        // Picker keeps the wide picker field width but the standard field height, so it lines up with
+        // text fields and non-editable combos (height is owned by the HUD layer, not each call site).
+        combo.setPreferredSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_FIELD_HEIGHT));
+        combo.setMinimumSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_FIELD_HEIGHT));
 
         configureSearch(combo, items, labelFn, matches);
         return combo;

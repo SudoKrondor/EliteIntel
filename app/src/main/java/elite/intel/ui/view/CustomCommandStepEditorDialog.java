@@ -201,8 +201,9 @@ final class CustomCommandStepEditorDialog extends JDialog {
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.WEST;
-        // Uniform field size across the whole form so every row's right edge aligns.
-        Dimension fieldSize = new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_PICKER_FIELD_HEIGHT);
+        // Dialog owns only the uniform field WIDTH (so every row's right edge aligns); HEIGHT comes from
+        // the control itself (HUD layer) — HudTextField/HudStepper/HudComboBox all size to HUD_FIELD_HEIGHT.
+        Dimension fieldSize = new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, field.getPreferredSize().height);
         field.setPreferredSize(fieldSize);
         field.setMinimumSize(fieldSize);
         panel.add(field, gbc);

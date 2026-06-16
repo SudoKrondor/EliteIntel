@@ -126,10 +126,8 @@ public class AppTheme {
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
     public static final int HUD_FIELD_HEIGHT = 30;
-    /** Preferred width for searchable editable picker combo boxes. */
+    /** Preferred width for searchable editable picker combo boxes; height uses {@link #HUD_FIELD_HEIGHT}. */
     public static final int HUD_PICKER_FIELD_WIDTH  = 500;
-    /** Preferred height for searchable editable picker combo boxes. */
-    public static final int HUD_PICKER_FIELD_HEIGHT = 42;
     public static final int HUD_BUTTON_HEIGHT = 34;
     public static final int HUD_BUTTON_HEIGHT_COMPACT = 28;
     public static final int HUD_DIALOG_HEADER_HEIGHT = 44;
