@@ -39,7 +39,7 @@ When collecting bio samples in challenging terrain, EliteIntel tracks tagged sam
    the Composition Analyzer to create a Codex Entry. Remain close to the sample when scanning. This logs the ship's
    coordinates in EliteIntel and may earn a credit reward. Tag all visible species before landing.
 2. **Land**: Find a landing spot within 2 km of the samples if possible. If no suitable spot is available within
-   that range, EliteIntel will guide you via SRV.
+   that range, EliteIntel will guide your SRV via GPS.
 3. **Navigate to Samples**: Say ``Navigate to nearest codex entry`` or ``Navigate to next bio sample.`` EliteIntel
    routes you to the nearest tagged location. After scanning a species (for example, Frutexa), EliteIntel records
    the type. Subsequent navigation requests prioritize that species if additional tags of the same type exist.
