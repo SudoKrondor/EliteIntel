@@ -13,6 +13,11 @@
   --ed-bg-code:       #080a0e;
   --ed-text:          #bfc4ce;
   --ed-text-dim:      #7a8090;
+
+    --ed-blue:     #2d70e9;
+    --ed-blue-bright: #307bfb;
+    --ed-blue-dim: #173c7d;
+
   --ed-border:        rgba(255, 102, 0, 0.22);
   --header-h:         56px;
   --sidebar-w:        270px;
@@ -101,6 +106,29 @@ body {
   box-shadow: 0 0 14px var(--ed-orange-glow);
   color: #000;
 }
+
+
+
+.btn-secondary {
+    background: var(--ed-blue);
+    color: #000;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.85rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.18s, box-shadow 0.18s;
+}
+.btn-secondary:hover {
+    background: var(--ed-blue-bright);
+    box-shadow: 0 0 14px var(--ed-orange-glow);
+    color: #000;
+}
+
+
 
 .btn-ghost {
   color: var(--ed-text-dim);

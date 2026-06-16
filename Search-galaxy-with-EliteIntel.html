@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Navigation Assistance — EliteIntel</title>
-    <meta name="description" content="EliteIntel (EI) provides navigation assistance in Elite Dangerous. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for">
-    <link rel="canonical" href="https://www.elite-intel.org/Navigation-Assistance.html">
-    <meta property="og:title" content="Navigation Assistance — EliteIntel">
-    <meta property="og:description" content="EliteIntel (EI) provides navigation assistance in Elite Dangerous. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for">
-    <meta property="og:url" content="https://www.elite-intel.org/Navigation-Assistance.html">
+    <title>Searching — EliteIntel</title>
+    <meta name="description" content="A useful feature for space-miners. ``Find where I can mine some Low Temperature Diamonds within X light years``">
+    <link rel="canonical" href="https://www.elite-intel.org/Search-galaxy-with-EliteIntel.html">
+    <meta property="og:title" content="Searching — EliteIntel">
+    <meta property="og:description" content="A useful feature for space-miners. ``Find where I can mine some Low Temperature Diamonds within X light years``">
+    <meta property="og:url" content="https://www.elite-intel.org/Search-galaxy-with-EliteIntel.html">
     <meta property="og:type" content="website">
     <link rel="stylesheet" href="css/main.css">
 </head>
@@ -53,9 +53,9 @@
             <div class="nav-section">How Do I…?</div>
             <a href="General-Operation.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> General Operation</a>
             <a href="TradeRoutePlotting.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Trade &amp; Profit</a>
-            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
+            <a href="Search-galaxy-with-EliteIntel.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Search the Galaxy</a>
             <a href="Discovery-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Discovery & ExoBiology</a>
-            <a href="Navigation-Assistance.html" class="nav-link active"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
+            <a href="Navigation-Assistance.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Navigation</a>
             <a href="Pirate-Massacre-Mission-Tracking.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> Pirate Missions</a>
             <a href="AllCommands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> All Commands & Queries</a>
             <a href="Obscure-System-Commands.html" class="nav-link"><img src="images/manual.png" class="inline" height="20" alt=""> System Commands</a>
@@ -71,38 +71,33 @@
     </aside>
     <main class="content" id="content" role="main">
         <div class="content-inner markdown-body" id="content-inner">
-<h1>Navigation Assistance</h1>
-<p>EliteIntel (EI) provides navigation assistance in <em>Elite Dangerous</em>. It supports galactic coordinate routing for Fleet Carriers, surface coordinate navigation for planets and moons, and exobiology sample tracking.</p>
-<h2>Fleet Carrier Route Planning</h2>
-<p>EliteIntel uses <a href="https://spansh.co.uk">Spansh</a> to plan Fleet Carrier jump routes. To calculate a route:</p>
-<ol>
-<li><strong>Open the Galaxy Map</strong>: Any galaxy map view works. The Fleet Carrier map is not required for this step.</li>
-<li><strong>Copy the Destination Name</strong>: Select the target star system. Click the copy button (the last button on the right in the Galaxy Map UI). The system name is now on your clipboard.</li>
-<li><strong>Request Route Calculation</strong>: Say &quot;Calculate Fleet Carrier Route.&quot; EliteIntel reads the system name from the clipboard, checks the carrier&#39;s current position, and queries Spansh to generate a route. The route is saved to the current session.</li>
-</ol>
-<p><strong>Note</strong>: Spansh&#39;s database may not include all systems. If the carrier&#39;s current system is unknown to Spansh, EliteIntel selects the nearest known star within jump range as the starting point. If the destination system is not in Spansh, a nearby alternative may be required.</p>
-<h3>Executing the Route</h3>
-<p>After the route is calculated:</p>
-<ol>
-<li><strong>Open the Fleet Carrier Galaxy Map</strong>: Access the map from the carrier management menu and click the top text field.</li>
-<li><strong>Retrieve the Next Destination</strong>: Say &quot;Enter next Fleet Carrier destination.&quot; EliteIntel pastes the next system name into the field.</li>
-<li><strong>Schedule the Jump</strong>: Confirm the jump in-game. Repeat for each leg of the route.</li>
-</ol>
-<h2>Surface Coordinate Navigation</h2>
-<p>EliteIntel provides voice-guided navigation to specific coordinates on a planet or moon. No navigation marker is required.</p>
-<ol>
-<li><strong>Begin Navigation</strong>: Say &quot;Navigate to latitude 41.4325 longitude -75.2309&quot; (replace with your target coordinates). EliteIntel guides you from orbit to the surface.</li>
-<li><strong>Orbital Approach</strong>: Maintain a moderate speed in supercruise. There is a slight text-to-speech delay, so avoid excessive speed to ensure you can follow guidance accurately. Too slow, and the ship may drop out of supercruise prematurely. Navigating the dark side of a planet requires instrument flight.</li>
-<li><strong>Glide Phase</strong>: When approximately 400 km from the surface, EliteIntel provides glide angle updates such as &quot;Steep glide angle, -40 degrees.&quot; The decision to glide or reposition for a better angle is the pilot&#39;s choice. EliteIntel provides guidance only.</li>
-<li><strong>Surface Navigation</strong>: After landing, EliteIntel guides you to within 1,000 meters of the target and prompts you to find a landing spot. From that point, EliteIntel continues directing you in the SRV or on foot until you are within 50 meters of the target.</li>
-<li><strong>Cancel Navigation</strong>: Say &quot;Cancel navigation&quot; at any time to stop. Natural phrasing is accepted.</li>
-</ol>
-<h2>Usage Notes</h2>
-<ul>
-<li><strong>Natural Language</strong>: Formal command syntax is not required. Natural speech is accepted.</li>
-<li><strong>Dark Side Navigation</strong>: Navigating to coordinates on a planet&#39;s dark side requires instrument flight.</li>
-<li><strong>Spansh Limitations</strong>: If Spansh does not recognize your current system, try an adjacent star to initiate the route.</li>
-</ul>
+<h1>Searching</h1>
+<h2>Find a Mining Site</h2>
+<p>A useful feature for space-miners. <code>Find where I can mine some Low Temperature Diamonds within X light years</code>
+The app will query Spansh for a knokwn location of a star system that contains a ring planet with deposits of the
+material specified. Especially useful when you and your Fleet Carrier is far out in the black. You do not have 
+to stick to Tritium highway. Other explorers have reported many Tritium sites all over the galaxy and you will find one
+within one or two carrier jumps from your location with a high degree of probability.</p>
+<h2>Finding a Commodity</h2>
+<p>To locate a specific commodity, use the following process:</p>
+<p><strong>Request a specific commodity search</strong>: </p>
+<p>Speak naturally to EliteIntel. For example, <code>Where can I buy Tritium?</code> 
+or <code>Find a market that has Bromellite.</code> EliteIntel queries crowd data for the best market prices 
+within X light years of your current position. When results are found, it will plot a route to the 
+best match. You can refine your queries by asking for the cheapest or closest and provide range. For example:
+<code>Find a market where we can buy gold within 50 light years, go for the cheapest one</code></p>
+<p>NOTE:
+<em>The market data is time-sensitive. If no commanders running EDMC passed through a station, neither EDSM 
+nor Spansh will have up-to-date information. Even if you see it in INARA. INARA does not have an API 
+for apps to query it, so we can&#39;t get info from there.</em></p>
+<h2>Find a broker / trader</h2>
+<p>Ask the app <code>Find a raw/manufactured/encoded material trader within X light years</code>. It will search Spansh and plot a route
+to the nearest star system where a material trader is located, according to data in Spansh.</p>
+<p>You can ask <code>Locate Guardian/Human technology broker within X light years</code>. If you do not indicate the range
+it will search within about 100 ly from your location. (subject to change in the future to X times your ship range)</p>
+<p>NOTE:
+<em>Same as above. The data we get can be aged. The app will tell you how long ago the data was updated, and
+if the result is a month ago, perhaps that system may not have the broker you are looking for anymore.</em></p>
 <hr>
 <p>Community 👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Matrix</strong></a>👈</p>
 

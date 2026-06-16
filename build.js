@@ -214,8 +214,8 @@ function renderPage({ title, description, canonical, body, activePage }) {
         <img src="images/windows.png" alt="Windows" class="os-icon" title="Windows">
         <img src="images/linux.png" alt="Linux" class="os-icon" title="Linux">
         <a class="btn-primary" href="https://github.com/SudoKrondor/EliteIntel/releases" target="_blank" rel="noopener">Download 1.0</a>
+        <a class="btn-secondary" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
         <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Support</a>
-        <a class="btn-ghost" href="https://matrix.to/#/#krondor:matrix.org" target="_blank" rel="noopener">Become a tester 1.1</a>
         <a class="btn-ghost" href="https://github.com/SudoKrondor/EliteIntel" target="_blank" rel="noopener">GitHub</a>
     </nav>
 </header>
