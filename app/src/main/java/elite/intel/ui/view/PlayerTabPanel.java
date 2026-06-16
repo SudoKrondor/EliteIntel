@@ -208,7 +208,12 @@ public class PlayerTabPanel extends JPanel {
     }
 
     private void saveCommanderName() {
-        playerSession.setAlternativeName(playerAltNameField.getText());
+        String current = playerAltNameField.getText();
+        String stored = playerSession.getAlternativeName();
+        // The field loses focus on every tab switch; only persist (and log) when the value actually
+        // changed, so an untouched name does not spam "Commander name saved" into the log.
+        if (current.equals(stored == null ? "" : stored)) return;
+        playerSession.setAlternativeName(current);
         EventBusManager.publish(new AppLogEvent("Commander name saved"));
     }
 
