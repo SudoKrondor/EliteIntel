@@ -5,8 +5,8 @@
 👉[YouTube](https://www.youtube.com/@SudoKrondor)
 
 ### 📧 Support Email:
-``` support@protonmail.com ```
+``` support@elite-intel.org ```
 
 
 ### 📧 General Contact Email:
-``` contact@protonmail.com ```
+``` contact@elite-intel.org ```
