@@ -113,7 +113,7 @@ public class HudComboBox<E> extends JComboBox<E> {
      * <ul>
      *   <li>Selected: {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link AppTheme#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
      *   <li>Non-selected: {@link AppTheme#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} background;
-     *       {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_TEXT}.</li>
+     *       {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}.</li>
      *   <li>Font: {@link AppTheme#HUD_FONT_FIELD_VALUE}.</li>
      *   <li>Border: {@link AppTheme#HUD_COMBO_ITEM_INSET_V} / {@link AppTheme#HUD_COMBO_ITEM_INSET_H}.</li>
      * </ul>

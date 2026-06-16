@@ -58,6 +58,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND = HUD_COLOR_101721;
     public static final Color HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND = HUD_COLOR_090D12;
     public static final Color HUD_COLOR_ROLE_DIALOG_HEADER_BACKGROUND = HUD_COLOR_101721;
+    /** Accent frame around an undecorated modal dialog window (section 7.2). */
+    public static final Color HUD_COLOR_ROLE_DIALOG_FRAME_BORDER = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
     public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
@@ -72,7 +74,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_6E4A28;
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_1A1206;
     public static final Color HUD_COLOR_ROLE_INFORMATION_MARK = HUD_COLOR_33D7E8;
-    public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FF7100;
+    public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FFB000;
     public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_SECTION_TAB_ACTIVE_UNDERLINE = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND = HUD_COLOR_1A1206;

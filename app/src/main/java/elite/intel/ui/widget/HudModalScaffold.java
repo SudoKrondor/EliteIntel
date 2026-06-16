@@ -19,7 +19,7 @@ import java.util.List;
  * dialog's setContentPane(). Composition, not a base class.
  *
  * Assembles:
- *  - window frame: MatteBorder HUD_COLOR_ROLE_PANEL_SEPARATOR, thickness HUD_BORDER_THICKNESS_ACCENT;
+ *  - window frame: MatteBorder HUD_COLOR_ROLE_DIALOG_FRAME_BORDER, thickness HUD_BORDER_THICKNESS_ACCENT;
  *  - header HudDialogHeader(title, onClose) when title != null;
  *  - body inside side inset HUD_DIALOG_BODY_INSET (when scrollBody, wrapped in
  *    HudScrollPane with viewport bg overridden to HUD_COLOR_ROLE_DIALOG_BODY_BACKGROUND);
@@ -63,7 +63,7 @@ public final class HudModalScaffold {
         wrapper.setBorder(BorderFactory.createMatteBorder(
                 HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
                 HudPalette.HUD_BORDER_THICKNESS_ACCENT, HudPalette.HUD_BORDER_THICKNESS_ACCENT,
-                HudPalette.HUD_COLOR_ROLE_PANEL_SEPARATOR));
+                HudPalette.HUD_COLOR_ROLE_DIALOG_FRAME_BORDER));
 
         if (spec.title() != null) {
             wrapper.add(new HudDialogHeader(spec.title(), spec.onClose()), BorderLayout.NORTH);

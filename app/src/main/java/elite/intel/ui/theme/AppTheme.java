@@ -498,6 +498,10 @@ public class AppTheme {
         comboBox.setBorder(hudFieldBorder());
         comboBox.setFocusable(true);
         comboBox.setFont(comboBox.getFont().deriveFont(HUD_FONT_FIELD_VALUE));
+        // BasicComboBoxUI.paintCurrentValue paints the collapsed value in comboBox.getForeground(),
+        // so the orange value is lost if applyDarkPalette overwrites the foreground during the tree
+        // walk. Lock it (same opt-out the editable picker editor uses) to keep the canon value colour.
+        comboBox.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
     }
 
     /**
