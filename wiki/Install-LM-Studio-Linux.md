@@ -26,6 +26,10 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 ---
 
+[[youtube:2HGFmlZGK1g]]
+
+---
+
 ### Step 1 - Install LM Studio
 
 ```shell

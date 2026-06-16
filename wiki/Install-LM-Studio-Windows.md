@@ -26,6 +26,12 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 ---
 
+Detailed (very detailed) Video tutorial by @DawnTreaderToolsoftheElite 
+
+[[youtube:F5RgRRePrTo]]
+
+---
+
 ### Step 1 - Install LM Studio
 
 Open **PowerShell** and run:
