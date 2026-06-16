@@ -6,10 +6,6 @@
 | ![EliteIntel app](images/v1.0.png) | ![EliteIntel app](images/v1.1.png) |
 
 
-The **released version is V1.0 is different** from what you see on screenshots. 
-
-If you want version V1.1 shown above 👉[**Join the Beta Test Team here V1.1**](https://matrix.to/#/#krondor:matrix.org)👈
-
 ## Speak Naturally. Fly Better.
 
 Elite Intel connects your voice to your ship. No command lists to memorize, no rigid syntax to learn. Just say what you mean, and the AI handles the rest. Whether you are managing ship systems, plotting a route, or scanning a system for signals, Elite Intel understands your intent and acts on it.
