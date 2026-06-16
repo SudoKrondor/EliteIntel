@@ -4,27 +4,9 @@
 
 👉[YouTube](https://www.youtube.com/@SudoKrondor)
 
-### 📧 Email:
-``` sudokrondor@protonmail.com ```
+### 📧 Электронная почта поддержки:
+``` support@protonmail.com ```
 
-### 🔐 PGP-ключ
 
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
-
-mDMEaTN2TRYJKwYBBAHaRw8BAQdA7wimVltSluvxFSx26b1cvfjslnbleh7MvTMI
-Kw/XZ6C0N3N1ZG9rcm9uZG9yQHByb3Rvbm1haWwuY29tIDxzdWRva3JvbmRvckBw
-cm90b25tYWlsLmNvbT6I0QQTFgoAgwWCaTN2TQMLCQcJEIoecSncRr0hRRQAAAAA
-ABwAIHNhbHRAbm90YXRpb25zLm9wZW5wZ3Bqcy5vcmf9SxZH056W9an1BCeJzlOQ
-3H4e71xrVZCHHVgbFiB+6gMVCggEFgACAQIZAQKbAwIeARYhBL2p9ny/uzW209AU
-0ooecSncRr0hAACSPgD/eC3MAUSU6BFkZfwvHZxhD4UmnZjse0UMHjENRWTCXH8B
-AMcNL+2bBlfQAlPGpbvgDLCNaObF0TKXh2VFUn4oQLMOuDgEaTN2TRIKKwYBBAGX
-VQEFAQEHQDDHhcX+rG45rvLxeNtIqALZBF+Fjx85HYIEY83OctcKAwEIB4i+BBgW
-CgBwBYJpM3ZNCRCKHnEp3Ea9IUUUAAAAAAAcACBzYWx0QG5vdGF0aW9ucy5vcGVu
-cGdwanMub3JnsGt1UWq+BAL0XijdKRBBUGkDgOS4oIRgmqkYt83fICcCmwwWIQS9
-qfZ8v7s1ttPQFNKKHnEp3Ea9IQAAkyABAKELPLtTurB8cyWVSuBnGPAJ+VFyBWPT
-+UYq9XDlKu89AP4m6mPVaoP+Jbi/lWflNdYUlT61E1bZC76V172shQ2pBw==
-=r88I
------END PGP PUBLIC KEY BLOCK-----
-
-```
+### 📧 Общий контактный адрес:
+``` contact@protonmail.com ```
