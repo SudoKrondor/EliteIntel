@@ -363,16 +363,17 @@ public class PlayerTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
-    /** Stamp renderer for the gear settings button column. */
-    private static class GearButtonRenderer implements TableCellRenderer {
-        private final JPanel panel = new JPanel(new BorderLayout());
-        private final JButton gear = new JButton();
+    /** Общий вид gear-ячейки флота (§6: borderless растр-иконка + tint по строке).
+     *  Композиция: renderer и editor держат GearCell и делегируют отрисовку. */
+    private static class GearCell {
+        final JPanel panel = new JPanel(new BorderLayout());
+        final JButton gear = new JButton();
         private final ImageIcon gearBase =
                 AppTheme.scaledIcon(PlayerTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 
-        GearButtonRenderer() {
+        GearCell() {
             gear.setOpaque(false);
             gear.setContentAreaFilled(false);
             gear.setBorderPainted(false);
@@ -392,9 +393,8 @@ public class PlayerTabPanel extends JPanel {
             return gearOrange;
         }
 
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+        /** Применить вид ячейки под состояние выбора и вернуть готовую панель. */
+        JPanel apply(boolean isSelected) {
             panel.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
             panel.setOpaque(true);
             gear.setIcon(gearIcon(isSelected));
@@ -404,25 +404,27 @@ public class PlayerTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
+    /** Stamp renderer for the gear settings button column. */
+    private static class GearButtonRenderer implements TableCellRenderer {
+        private final GearCell cell = new GearCell();
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
+            return cell.apply(isSelected);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+
     /** Cell editor that opens {@link ShipSettingsPopup} on a single click. */
     private static class GearButtonEditor extends AbstractCellEditor implements TableCellEditor {
-        private final JPanel panel = new JPanel(new BorderLayout());
-        private final JButton gear = new JButton();
-        private final ImageIcon gearBase =
-                AppTheme.scaledIcon(PlayerTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
-        private ImageIcon gearOrange;
-        private ImageIcon gearDark;
+        private final GearCell cell = new GearCell();
         private ShipDao.Ship currentShip;
         private JTable ownerTable;
 
         GearButtonEditor() {
-            gear.setOpaque(false);
-            gear.setContentAreaFilled(false);
-            gear.setBorderPainted(false);
-            gear.setFocusPainted(false);
-            gear.setHorizontalAlignment(SwingConstants.CENTER);
-            panel.add(gear, BorderLayout.CENTER);
-            gear.addActionListener(e -> {
+            cell.gear.addActionListener(e -> {
                 if (currentShip != null) {
                     String identifier = displayShipName(currentShip);
                     ShipSettingsDao.ShipSettings settings =
@@ -435,17 +437,6 @@ public class PlayerTabPanel extends JPanel {
             });
         }
 
-        private ImageIcon gearIcon(boolean selected) {
-            if (selected) {
-                if (gearDark == null)
-                    gearDark = AppTheme.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, AppTheme.SEL_FG);
-                return gearDark;
-            }
-            if (gearOrange == null)
-                gearOrange = AppTheme.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, AppTheme.HUD_ORANGE_SOFT);
-            return gearOrange;
-        }
-
         @Override public Object getCellEditorValue() { return currentShip; }
 
         @Override public boolean isCellEditable(EventObject e) { return true; }
@@ -455,11 +446,9 @@ public class PlayerTabPanel extends JPanel {
                 JTable table, Object value, boolean isSelected, int row, int col) {
             ownerTable = table;
             currentShip = (ShipDao.Ship) value;
-            panel.setBackground(isSelected ? ACCENT : HUD_TABLE_ROW);
-            panel.setOpaque(true);
-            gear.setIcon(gearIcon(isSelected));
+            JPanel panel = cell.apply(isSelected);
             // Defer the click so editCellAt completes before the popup opens and editing stops.
-            SwingUtilities.invokeLater(gear::doClick);
+            SwingUtilities.invokeLater(cell.gear::doClick);
             return panel;
         }
     }
