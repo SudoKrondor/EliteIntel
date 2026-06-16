@@ -1,6 +1,7 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +23,7 @@ public class ActionsTabPanel extends JPanel {
 
     private void buildUi() {
         setLayout(new BorderLayout());
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
         setBorder(AppTheme.hudScreenBorder());
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();

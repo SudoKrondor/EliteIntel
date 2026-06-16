@@ -1,6 +1,9 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +28,7 @@ public class HudTextField extends JTextField {
      */
     public HudTextField() {
         AppTheme.styleTextComponent(this);
-        setPreferredSize(new Dimension(0, AppTheme.HUD_FIELD_HEIGHT));
+        setPreferredSize(new Dimension(0, HudPalette.HUD_FIELD_HEIGHT));
     }
 
     /**
@@ -66,22 +69,22 @@ public class HudTextField extends JTextField {
         try {
             int w = getWidth();
             int h = getHeight();
-            int infoZoneW = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT;
+            int infoZoneW = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
             int infoZoneX = w - infoZoneW;
 
             // Separator stripe: HUD_BG between text area and info-zone
-            g2.setColor(AppTheme.HUD_BG);
-            g2.fillRect(infoZoneX - AppTheme.HUD_SEP_W, 0, AppTheme.HUD_SEP_W, h);
+            g2.setColor(HudPalette.HUD_BG);
+            g2.fillRect(infoZoneX - HudPalette.HUD_SEP_W, 0, HudPalette.HUD_SEP_W, h);
 
             // Tint by state (text field has no selected state)
-            Color tint = !isEnabled() ? AppTheme.HUD_DISABLED
-                       : infoHover    ? AppTheme.ACCENT
-                       :                AppTheme.HUD_ORANGE_SOFT;
+            Color tint = !isEnabled() ? HudPalette.HUD_DISABLED
+                       : infoHover    ? HudPalette.ACCENT
+                       :                HudPalette.HUD_ORANGE_SOFT;
 
-            int gs = AppTheme.HUD_ICON_TABLE;
+            int gs = HudPalette.HUD_ICON_TABLE;
             int gx = infoZoneX + (infoZoneW - gs) / 2;
             int gy = (h - gs) / 2;
-            AppTheme.paintHudInfoGlyph(g2, gx, gy, gs, gs, tint);
+            HudGlyphs.paintHudInfoGlyph(g2, gx, gy, gs, gs, tint);
         } finally {
             g2.dispose();
         }
@@ -137,6 +140,6 @@ public class HudTextField extends JTextField {
     // -------------------------------------------------------------------------
 
     private boolean isInInfoZone(int mouseX) {
-        return infoAction != null && mouseX >= getWidth() - AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT;
+        return infoAction != null && mouseX >= getWidth() - HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     }
 }

@@ -4,6 +4,8 @@ import elite.intel.ui.render.HudComboCellEditor;
 import elite.intel.ui.screen.settings.SettingsPopup;
 import elite.intel.ui.screen.settings.ShipSettingsPopup;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
@@ -43,6 +45,8 @@ import java.util.Locale;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 public class PlayerTabPanel extends JPanel {
 
@@ -335,8 +339,8 @@ public class PlayerTabPanel extends JPanel {
             super.paintComponent(g);
             Graphics2D g2 = (Graphics2D) g.create();
             try {
-                Color arrow = selectedRow ? AppTheme.SEL_FG : AppTheme.HUD_ORANGE_SOFT;
-                AppTheme.paintHudArrowDown(g2, getWidth() - ARROW_AREA, 0, ARROW_AREA - 4, getHeight(), arrow);
+                Color arrow = selectedRow ? HudPalette.SEL_FG : HudPalette.HUD_ORANGE_SOFT;
+                HudGlyphs.paintHudArrowDown(g2, getWidth() - ARROW_AREA, 0, ARROW_AREA - 4, getHeight(), arrow);
             } finally {
                 g2.dispose();
             }
@@ -355,8 +359,8 @@ public class PlayerTabPanel extends JPanel {
         public Component getTableCellEditorComponent(
                 JTable table, Object value, boolean isSelected, int row, int col) {
             Component c = super.getTableCellEditorComponent(table, value, isSelected, row, col);
-            c.setBackground(AppTheme.HUD_TABLE_ROW); // §3: input field stays warm on any row state
-            c.setForeground(AppTheme.FG);
+            c.setBackground(HudPalette.HUD_TABLE_ROW); // §3: input field stays warm on any row state
+            c.setForeground(HudPalette.FG);
             return c;
         }
     }
@@ -369,7 +373,7 @@ public class PlayerTabPanel extends JPanel {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
         private final ImageIcon gearBase =
-                AppTheme.scaledIcon(PlayerTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
+                HudGlyphs.scaledIcon(PlayerTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 
@@ -385,11 +389,11 @@ public class PlayerTabPanel extends JPanel {
         private ImageIcon gearIcon(boolean selected) {
             if (selected) {
                 if (gearDark == null)
-                    gearDark = AppTheme.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, AppTheme.SEL_FG);
+                    gearDark = HudGlyphs.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, HudPalette.SEL_FG);
                 return gearDark;
             }
             if (gearOrange == null)
-                gearOrange = AppTheme.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, AppTheme.HUD_ORANGE_SOFT);
+                gearOrange = HudGlyphs.tintIcon(gearBase, HUD_ICON_TABLE, HUD_ICON_TABLE, HudPalette.HUD_ORANGE_SOFT);
             return gearOrange;
         }
 

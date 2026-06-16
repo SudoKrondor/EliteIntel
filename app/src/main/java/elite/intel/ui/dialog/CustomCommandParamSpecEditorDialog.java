@@ -1,6 +1,7 @@
 package elite.intel.ui.dialog;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
@@ -86,7 +87,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
     private JPanel form() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
 
         addRow(panel, gbc, getText("actions.customCommands.editor.param.name"), nameField);
         addRow(panel, gbc, getText("actions.customCommands.editor.param.type"), typeCombo);

@@ -1,6 +1,10 @@
 package elite.intel.ui.render;
+import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -29,15 +33,15 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
         filled = Boolean.TRUE.equals(value);
 
         if (isSelected) {
-            bgColor = AppTheme.ACCENT;
+            bgColor = HudPalette.ACCENT;
             // Marker must remain legible on the ACCENT background; SEL_FG provides the contrast.
-            markerColor = AppTheme.SEL_FG;
+            markerColor = HudPalette.SEL_FG;
         } else {
             Object hoveredObj = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
             boolean hovered = hoveredObj instanceof Integer h && h == row;
-            bgColor = hovered ? AppTheme.HUD_TABLE_ROW_HOVER : AppTheme.HUD_TABLE_ROW;
+            bgColor = hovered ? HudPalette.HUD_TABLE_ROW_HOVER : HudPalette.HUD_TABLE_ROW;
             boolean editable = table.getModel().isCellEditable(row, column);
-            markerColor = editable ? AppTheme.HUD_ORANGE_SOFT : AppTheme.HUD_DISABLED;
+            markerColor = editable ? HudPalette.HUD_ORANGE_SOFT : HudPalette.HUD_DISABLED;
         }
 
         return this;
@@ -50,13 +54,13 @@ public class HudBooleanCellRenderer extends JComponent implements TableCellRende
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
-            g2.setColor(bgColor != null ? bgColor : AppTheme.HUD_TABLE_ROW);
+            g2.setColor(bgColor != null ? bgColor : HudPalette.HUD_TABLE_ROW);
             g2.fillRect(0, 0, w, h);
-            int size = AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * AppTheme.HUD_PADDING_SMALL;
+            int size = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT - 2 * HudPalette.HUD_PADDING_SMALL;
             int x = (w - size) / 2;
             int y = (h - size) / 2;
-            AppTheme.paintHudCheckMarker(g2, x, y, size,
-                    markerColor != null ? markerColor : AppTheme.HUD_ORANGE_SOFT, filled);
+            HudGlyphs.paintHudCheckMarker(g2, x, y, size,
+                    markerColor != null ? markerColor : HudPalette.HUD_ORANGE_SOFT, filled);
         } finally {
             g2.dispose();
         }

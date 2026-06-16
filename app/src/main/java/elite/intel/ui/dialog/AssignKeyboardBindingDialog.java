@@ -20,6 +20,8 @@ import java.util.Optional;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 /**
  * Modal selector for one keyboard binding edit.

@@ -6,9 +6,10 @@ import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-import static elite.intel.ui.theme.AppTheme.HUD_GAP;
+import static elite.intel.ui.theme.HudPalette.HUD_GAP;
 import static elite.intel.ui.theme.AppTheme.makeCheckBox;
 import static elite.intel.ui.theme.AppTheme.transparentPanel;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class CheckboxRow implements SettingRow {
 

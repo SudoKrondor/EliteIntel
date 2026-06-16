@@ -8,6 +8,7 @@ import elite.intel.ui.dialog.CustomCommandStepEditorDialog;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudConnectedToolbar;
 import elite.intel.ui.widget.HudSearchField;
 import elite.intel.ui.widget.HudTable;
@@ -68,7 +69,7 @@ public class CustomCommandsTabPanel extends JPanel {
     private void buildUi() {
         setLayout(new BorderLayout(0, 0));
         setBorder(AppTheme.hudSubtabContentBorder());
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
 
         tableModel = new ReadOnlyTableModel(columnNames(), 0);
         table = new JTable(tableModel);
@@ -121,7 +122,7 @@ public class CustomCommandsTabPanel extends JPanel {
     }
 
     private JPanel actionPanel() {
-        JPanel panel = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 0));
+        JPanel panel = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, HudPalette.HUD_GAP, 0));
         panel.add(secondaryButton("actions.customCommands.action.import", this::importCustomCommands));
         panel.add(secondaryButton("actions.customCommands.action.export", this::exportCustomCommands));
         panel.add(primaryButton("actions.customCommands.action.new", this::newCustomCommand));
@@ -307,7 +308,7 @@ public class CustomCommandsTabPanel extends JPanel {
 
     private void styleTable(JTable table) {
         HudTable.style(table);
-        table.setBackground(AppTheme.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
+        table.setBackground(HudPalette.HUD_BG);   // зазор intercellSpacing(0,2) рисуется фоном окна, без «линий» (§2)
         table.setRowHeight(48);
         table.setAutoCreateRowSorter(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

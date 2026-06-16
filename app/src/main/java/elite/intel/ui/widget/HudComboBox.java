@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -98,7 +100,7 @@ public class HudComboBox<E> extends JComboBox<E> {
     public Dimension getPreferredSize() {
         Dimension d = super.getPreferredSize();
         if (!isPreferredSizeSet() && !isEditable()) {
-            return new Dimension(d.width, AppTheme.HUD_FIELD_HEIGHT);
+            return new Dimension(d.width, HudPalette.HUD_FIELD_HEIGHT);
         }
         return d;
     }
@@ -144,22 +146,22 @@ public class HudComboBox<E> extends JComboBox<E> {
             label.setText(text);
 
             if (isSelected) {
-                label.setBackground(AppTheme.ACCENT);
-                label.setForeground(AppTheme.SEL_FG);
+                label.setBackground(HudPalette.ACCENT);
+                label.setForeground(HudPalette.SEL_FG);
             } else {
-                label.setBackground(AppTheme.HUD_TABLE_ROW);
+                label.setBackground(HudPalette.HUD_TABLE_ROW);
                 boolean muted = false;
                 if (mutedWhen != null && value != null) {
                     @SuppressWarnings("unchecked") E item = (E) value;
                     muted = mutedWhen.test(item);
                 }
-                label.setForeground(muted ? AppTheme.FG_MUTED : AppTheme.ACCENT);
+                label.setForeground(muted ? HudPalette.FG_MUTED : HudPalette.ACCENT);
             }
 
             label.setBorder(new EmptyBorder(
-                    AppTheme.HUD_COMBO_ITEM_INSET_V, AppTheme.HUD_COMBO_ITEM_INSET_H,
-                    AppTheme.HUD_COMBO_ITEM_INSET_V, AppTheme.HUD_COMBO_ITEM_INSET_H));
-            label.setFont(label.getFont().deriveFont(AppTheme.HUD_FONT_FIELD_VALUE));
+                    HudPalette.HUD_COMBO_ITEM_INSET_V, HudPalette.HUD_COMBO_ITEM_INSET_H,
+                    HudPalette.HUD_COMBO_ITEM_INSET_V, HudPalette.HUD_COMBO_ITEM_INSET_H));
+            label.setFont(label.getFont().deriveFont(HudPalette.HUD_FONT_FIELD_VALUE));
             return label;
         }
     }
@@ -194,8 +196,8 @@ public class HudComboBox<E> extends JComboBox<E> {
         combo.setEditable(true);
         // Picker keeps the wide picker field width but the standard field height, so it lines up with
         // text fields and non-editable combos (height is owned by the HUD layer, not each call site).
-        combo.setPreferredSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_FIELD_HEIGHT));
-        combo.setMinimumSize(new Dimension(AppTheme.HUD_PICKER_FIELD_WIDTH, AppTheme.HUD_FIELD_HEIGHT));
+        combo.setPreferredSize(new Dimension(HudPalette.HUD_PICKER_FIELD_WIDTH, HudPalette.HUD_FIELD_HEIGHT));
+        combo.setMinimumSize(new Dimension(HudPalette.HUD_PICKER_FIELD_WIDTH, HudPalette.HUD_FIELD_HEIGHT));
 
         configureSearch(combo, items, labelFn, matches);
         return combo;

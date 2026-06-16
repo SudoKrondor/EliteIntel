@@ -1,6 +1,7 @@
 package elite.intel.ui.render;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -43,12 +44,12 @@ public final class HudCommandNameCellRenderer extends HudTable.CellRenderer {
 
         JLabel name = new JLabel(nullToBlank(commandValue.name()));
         name.setAlignmentX(Component.LEFT_ALIGNMENT);
-        name.setForeground(isSelected ? AppTheme.SEL_FG : AppTheme.FG);
+        name.setForeground(isSelected ? HudPalette.SEL_FG : HudPalette.FG);
         name.setFont(fallback.getFont().deriveFont(Font.BOLD, fallback.getFont().getSize2D()));
 
         JLabel id = new JLabel(nullToBlank(commandValue.id()));
         id.setAlignmentX(Component.LEFT_ALIGNMENT);
-        id.setForeground(isSelected ? AppTheme.SEL_FG : AppTheme.FG_MUTED);
+        id.setForeground(isSelected ? HudPalette.SEL_FG : HudPalette.FG_MUTED);
         id.setFont(fallback.getFont().deriveFont(Font.PLAIN, Math.max(10f, fallback.getFont().getSize2D() - 3f)));
 
         cell.add(Box.createVerticalGlue());

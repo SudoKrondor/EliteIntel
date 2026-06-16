@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,7 +24,7 @@ public class HudTwoColumns extends JPanel {
      * @param right right column component (fills its half)
      */
     public HudTwoColumns(Component left, Component right) {
-        super(new GridLayout(1, 2, AppTheme.HUD_GAP * 2, 0));
+        super(new GridLayout(1, 2, HudPalette.HUD_GAP * 2, 0));
         setOpaque(false);
         add(left);
         add(right);
@@ -32,9 +34,9 @@ public class HudTwoColumns extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         // Painted directly (not a child's background) so the global dark palette can't overwrite it.
-        int t = AppTheme.HUD_BORDER_THICKNESS;
+        int t = HudPalette.HUD_BORDER_THICKNESS;
         int x = (getWidth() - t) / 2;
-        g.setColor(AppTheme.HUD_ORANGE_FILL_HOVER);
+        g.setColor(HudPalette.HUD_ORANGE_FILL_HOVER);
         g.fillRect(x, 0, t, getHeight());
     }
 }

@@ -9,6 +9,7 @@ import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
 import elite.intel.starvizion.overlay.KeyboardVizlet;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -16,6 +17,7 @@ import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows
@@ -61,7 +63,7 @@ public class StarVizionTabPanel extends JPanel {
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setOpaque(false);
 
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
 
         // Description label
         nextRow(gbc);

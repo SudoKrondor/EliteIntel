@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,6 +16,6 @@ public class HudPasswordField extends JPasswordField {
      */
     public HudPasswordField() {
         AppTheme.styleTextComponent(this);
-        setPreferredSize(new Dimension(0, AppTheme.HUD_FIELD_HEIGHT));
+        setPreferredSize(new Dimension(0, HudPalette.HUD_FIELD_HEIGHT));
     }
 }

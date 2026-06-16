@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,6 +9,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Reusable HUD dialog header strip: muted Elite logo on the left, title in caps,
@@ -128,7 +131,7 @@ public class HudDialogHeader extends JPanel {
                 int gs = HUD_ICON_TABLE;
                 int gx = (getWidth()  - gs) / 2;
                 int gy = (getHeight() - gs) / 2;
-                AppTheme.paintHudCloseGlyph(g2, gx, gy, gs, gs, tint);
+                HudGlyphs.paintHudCloseGlyph(g2, gx, gy, gs, gs, tint);
             } finally {
                 g2.dispose();
             }

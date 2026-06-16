@@ -20,6 +20,8 @@ import java.util.function.Supplier;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudForms.*;
 
 /**
  * Builds {@link SettingRow} instances for the trade profile section of the ship settings popup.

@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -24,9 +26,9 @@ public class HudConnectedToolbar extends JPanel {
     private static final int CORNER_MARK = 6;
 
     public HudConnectedToolbar() {
-        super(new BorderLayout(AppTheme.HUD_GAP, 0));
+        super(new BorderLayout(HudPalette.HUD_GAP, 0));
         setOpaque(true);
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
         setBorder(new EmptyBorder(8, 8, 8, 8));
     }
 
@@ -38,12 +40,12 @@ public class HudConnectedToolbar extends JPanel {
             int w = getWidth();
             int h = getHeight();
             int m = CORNER_MARK;
-            g2.setColor(AppTheme.HUD_BORDER);
+            g2.setColor(HudPalette.HUD_BORDER);
             g2.drawLine(0, 0, w - 1, 0);           // top
             g2.drawLine(0, 0, 0, h - 1);           // left
             g2.drawLine(w - 1, 0, w - 1, h - 1);  // right
             // Dim separator marks the filter/table boundary
-            g2.setColor(AppTheme.HUD_BORDER_DIM);
+            g2.setColor(HudPalette.HUD_BORDER_DIM);
             g2.drawLine(0, h - 1, w - 1, h - 1);
         } finally {
             g2.dispose();

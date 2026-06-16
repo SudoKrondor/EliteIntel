@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.AudioMonitorEvent;
@@ -52,7 +54,7 @@ public class HudMicMeter extends JComponent {
     private static final double MARGINAL_HIGH = 1.15;
 
     /** Grey peak-hold trail (dimmed white toward the background). */
-    private static final Color PEAK_TRAIL = mix(AppTheme.BUTTON_FG, AppTheme.HUD_BG, 0.60);
+    private static final Color PEAK_TRAIL = mix(HudPalette.BUTTON_FG, HudPalette.HUD_BG, 0.60);
 
     // Frame state — written on the audio-monitor bus thread, read on the EDT.
     private volatile double currentRms = 0;
@@ -108,8 +110,8 @@ public class HudMicMeter extends JComponent {
         if (isPreferredSizeSet()) {
             return super.getPreferredSize();
         }
-        int w = AppTheme.HUD_METER_SCALE_W + AppTheme.HUD_METER_LIVE_W
-                + AppTheme.HUD_METER_COL_GAP + AppTheme.HUD_METER_PEAK_W + 78;
+        int w = HudPalette.HUD_METER_SCALE_W + HudPalette.HUD_METER_LIVE_W
+                + HudPalette.HUD_METER_COL_GAP + HudPalette.HUD_METER_PEAK_W + 78;
         return new Dimension(w, 260);
     }
 
@@ -133,10 +135,10 @@ public class HudMicMeter extends JComponent {
      * intermittently), green from there up to {@code clip} (open), red again at/above clip (too hot).
      */
     private Color zoneColor(double level, double clip) {
-        if (level < gate * MARGINAL_LOW) return AppTheme.HUD_DANGER;
-        if (level < gate * MARGINAL_HIGH) return AppTheme.HUD_WARN;
-        if (level < clip) return AppTheme.HUD_OK;
-        return AppTheme.HUD_DANGER;
+        if (level < gate * MARGINAL_LOW) return HudPalette.HUD_DANGER;
+        if (level < gate * MARGINAL_HIGH) return HudPalette.HUD_WARN;
+        if (level < clip) return HudPalette.HUD_OK;
+        return HudPalette.HUD_DANGER;
     }
 
     @Override
@@ -150,19 +152,19 @@ public class HudMicMeter extends JComponent {
             int h = getHeight();
             boolean clipping = System.currentTimeMillis() < clipExpiry;
 
-            int scaleW = AppTheme.HUD_METER_SCALE_W;
-            int readoutH = AppTheme.HUD_METER_READOUT_H;
-            int top = AppTheme.HUD_PADDING_SMALL;
+            int scaleW = HudPalette.HUD_METER_SCALE_W;
+            int readoutH = HudPalette.HUD_METER_READOUT_H;
+            int top = HudPalette.HUD_PADDING_SMALL;
             int bottom = h - readoutH;
             int meterH = Math.max(1, bottom - top);
 
             int liveX = scaleW;
-            int liveW = AppTheme.HUD_METER_LIVE_W;
-            int peakX = liveX + liveW + AppTheme.HUD_METER_COL_GAP;
-            int peakW = AppTheme.HUD_METER_PEAK_W;
+            int liveW = HudPalette.HUD_METER_LIVE_W;
+            int peakX = liveX + liveW + HudPalette.HUD_METER_COL_GAP;
+            int peakW = HudPalette.HUD_METER_PEAK_W;
 
-            int n = AppTheme.HUD_METER_SEG_COUNT;
-            int segGap = AppTheme.HUD_METER_SEG_GAP;
+            int n = HudPalette.HUD_METER_SEG_COUNT;
+            int segGap = HudPalette.HUD_METER_SEG_GAP;
             int segH = Math.max(1, (meterH - (n - 1) * segGap) / n);
 
             // Gate-anchored scale: gate at 30%, clip at 85%, max = top — matches the design mockup
@@ -186,9 +188,9 @@ public class HudMicMeter extends JComponent {
                     g2.setColor(zone);
                     g2.fillRect(liveX, y, liveW, segH);
                 } else {
-                    g2.setColor(AppTheme.HUD_TABLE_ROW);
+                    g2.setColor(HudPalette.HUD_TABLE_ROW);
                     g2.fillRect(liveX, y, liveW, segH);
-                    g2.setColor(mix(zone, AppTheme.HUD_BG, 0.80));
+                    g2.setColor(mix(zone, HudPalette.HUD_BG, 0.80));
                     g2.fillRect(liveX, y, liveW, Math.min(segH, 2));
                 }
 
@@ -197,10 +199,10 @@ public class HudMicMeter extends JComponent {
                 Color peakColor;
                 if (segLevel <= peakShown) {
                     peakColor = (i == peakSeg)
-                            ? ((clipping || peak >= clip) ? AppTheme.HUD_DANGER : AppTheme.BUTTON_FG)
+                            ? ((clipping || peak >= clip) ? HudPalette.HUD_DANGER : HudPalette.BUTTON_FG)
                             : PEAK_TRAIL;
                 } else {
-                    peakColor = AppTheme.HUD_TABLE_ROW;
+                    peakColor = HudPalette.HUD_TABLE_ROW;
                 }
                 g2.setColor(peakColor);
                 g2.fillRect(peakX, y, peakW, segH);
@@ -209,50 +211,50 @@ public class HudMicMeter extends JComponent {
             int meterRight = peakX + peakW;
 
             // Threshold rails + scale labels.
-            g2.setFont(getFont().deriveFont(AppTheme.HUD_FONT_READOUT_KEY));
+            g2.setFont(getFont().deriveFont(HudPalette.HUD_FONT_READOUT_KEY));
             FontMetrics fmK = g2.getFontMetrics();
             drawRail(g2, fmK, "FLOOR " + (int) noiseFloor, noiseFloor, fullScale,
-                    top, bottom, scaleW, meterRight, AppTheme.FG_MUTED);
+                    top, bottom, scaleW, meterRight, HudPalette.FG_MUTED);
             drawRail(g2, fmK, "GATE " + (int) gate, gate, fullScale,
-                    top, bottom, scaleW, meterRight, AppTheme.HUD_CYAN);
+                    top, bottom, scaleW, meterRight, HudPalette.HUD_CYAN);
             drawRail(g2, fmK, "CLIP " + (int) clip, clip, fullScale,
-                    top, bottom, scaleW, meterRight, AppTheme.HUD_DANGER);
+                    top, bottom, scaleW, meterRight, HudPalette.HUD_DANGER);
 
             // MAX anchor at the top; "0" at the bottom only when the FLOOR label is clear of it
             // (otherwise a near-zero floor rail and the "0" anchor overlap).
-            g2.setColor(AppTheme.FG_MUTED);
-            g2.drawString("MAX", scaleW - fmK.stringWidth("MAX") - AppTheme.HUD_GAP, top + fmK.getAscent());
+            g2.setColor(HudPalette.FG_MUTED);
+            g2.drawString("MAX", scaleW - fmK.stringWidth("MAX") - HudPalette.HUD_GAP, top + fmK.getAscent());
             int floorY = (int) (bottom - Math.min(1.0, noiseFloor / fullScale) * meterH);
             if (bottom - floorY > fmK.getHeight()) {
-                g2.drawString("0", scaleW - fmK.stringWidth("0") - AppTheme.HUD_GAP, bottom - 1);
+                g2.drawString("0", scaleW - fmK.stringWidth("0") - HudPalette.HUD_GAP, bottom - 1);
             }
 
             // Peak readout tag pinned just right of the peak column, at the cap height.
             int peakY = (int) (bottom - Math.min(1.0, peakShown / fullScale) * meterH);
-            g2.setColor(AppTheme.BUTTON_FG);
+            g2.setColor(HudPalette.BUTTON_FG);
             String peakTag = "PEAK " + (int) peak;
-            int tagX = Math.min(meterRight + AppTheme.HUD_GAP, w - fmK.stringWidth(peakTag));
+            int tagX = Math.min(meterRight + HudPalette.HUD_GAP, w - fmK.stringWidth(peakTag));
             g2.drawString(peakTag, tagX, Math.max(top + fmK.getAscent(), peakY));
 
             // Big current-value readout + status below the columns.
             Color statusColor;
             String status;
-            if (clipping || rms >= clip) { statusColor = AppTheme.HUD_DANGER; status = "HOT"; }
-            else if (rms >= gate * MARGINAL_HIGH) { statusColor = AppTheme.HUD_OK; status = "OPEN"; }
-            else if (rms >= gate * MARGINAL_LOW) { statusColor = AppTheme.HUD_WARN; status = "MARGINAL"; }
-            else { statusColor = AppTheme.HUD_DANGER; status = "CLOSED"; }
+            if (clipping || rms >= clip) { statusColor = HudPalette.HUD_DANGER; status = "HOT"; }
+            else if (rms >= gate * MARGINAL_HIGH) { statusColor = HudPalette.HUD_OK; status = "OPEN"; }
+            else if (rms >= gate * MARGINAL_LOW) { statusColor = HudPalette.HUD_WARN; status = "MARGINAL"; }
+            else { statusColor = HudPalette.HUD_DANGER; status = "CLOSED"; }
 
             int center = scaleW + (meterRight - scaleW) / 2;
-            g2.setFont(getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_STAT_LG));
+            g2.setFont(getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_STAT_LG));
             FontMetrics fmBig = g2.getFontMetrics();
             String num = String.valueOf((int) rms);
             g2.setColor(statusColor);
             g2.drawString(num, center - fmBig.stringWidth(num) / 2, bottom + fmBig.getAscent());
 
-            g2.setFont(getFont().deriveFont(AppTheme.HUD_FONT_READOUT_KEY));
+            g2.setFont(getFont().deriveFont(HudPalette.HUD_FONT_READOUT_KEY));
             FontMetrics fmS = g2.getFontMetrics();
             String sub = "LIVE · " + status;
-            g2.setColor(AppTheme.FG_MUTED);
+            g2.setColor(HudPalette.FG_MUTED);
             g2.drawString(sub, center - fmS.stringWidth(sub) / 2, bottom + fmBig.getHeight() + fmS.getAscent() - 2);
         } finally {
             g2.dispose();
@@ -265,7 +267,7 @@ public class HudMicMeter extends JComponent {
         if (level <= 0) return;
         int y = (int) (bottom - Math.min(1.0, level / fullScale) * (bottom - top));
         g2.setColor(color);
-        g2.fillRect(scaleW, y, meterRight - scaleW, AppTheme.HUD_BORDER_THICKNESS);
-        g2.drawString(label, scaleW - fm.stringWidth(label) - AppTheme.HUD_GAP, y + fm.getAscent() / 2);
+        g2.fillRect(scaleW, y, meterRight - scaleW, HudPalette.HUD_BORDER_THICKNESS);
+        g2.drawString(label, scaleW - fm.stringWidth(label) - HudPalette.HUD_GAP, y + fm.getAscent() / 2);
     }
 }

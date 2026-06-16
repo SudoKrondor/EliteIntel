@@ -1,6 +1,7 @@
 package elite.intel.ui.dialog;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 
@@ -23,7 +24,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public final class PhraseCorrectionSuggestionDialog extends JDialog {
 
     private final CommandCatalogEntry entry;
-    private final JLabel    languageValue        = AppTheme.hudReadoutValue("", AppTheme.FG);
+    private final JLabel    languageValue        = AppTheme.hudReadoutValue("", HudPalette.FG);
     private final JTextArea currentPhrasesArea   = makeTextArea(6);
     private final JTextArea suggestedPhrasesArea = makeTextArea(6);
     private final JTextArea commentArea          = makeTextArea(4);
@@ -54,7 +55,7 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
     private void buildUi() {
         setUndecorated(true);
 
-        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        JPanel content = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         content.add(AppTheme.commandTitleBlock(entry.name(), entry.id()), BorderLayout.NORTH);
 
         HudSection section = HudSection.flat(

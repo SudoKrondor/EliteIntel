@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -22,11 +24,11 @@ public class HudLogArea extends JPanel {
     /** Visual style variant controlling the marker glyph, its color, and the body text color. */
     public enum Style {
         /** Pilot command input: {@code »} marker in muted orange; amber body text. */
-        USER_INPUT("»", AppTheme.HUD_ORANGE_SOFT, AppTheme.HUD_USER_INPUT_TEXT),
+        USER_INPUT("»", HudPalette.HUD_ORANGE_SOFT, HudPalette.HUD_USER_INPUT_TEXT),
         /** Ship-computer response stream: {@code »} marker in muted cyan; soft blue-grey body text. */
-        AI_RESPONSE("»", AppTheme.HUD_CYAN_SOFT, AppTheme.HUD_AI_RESPONSE_TEXT),
+        AI_RESPONSE("»", HudPalette.HUD_CYAN_SOFT, HudPalette.HUD_AI_RESPONSE_TEXT),
         /** System diagnostics readout: {@code ·} marker in subdued gray; dim neutral-grey body text. */
-        SYSTEM_LOG("·", AppTheme.HUD_DISABLED, AppTheme.HUD_SYSTEM_LOG_TEXT);
+        SYSTEM_LOG("·", HudPalette.HUD_DISABLED, HudPalette.HUD_SYSTEM_LOG_TEXT);
 
         final String marker;
         final Color markerColor;
@@ -86,7 +88,7 @@ public class HudLogArea extends JPanel {
     public HudLogArea(int typewriterDelayMs, Style style) {
         this.style = style;
         setOpaque(true);
-        setBackground(AppTheme.HUD_PANEL_BG);
+        setBackground(HudPalette.HUD_PANEL_BG);
         typewriterTimer = new Timer(typewriterDelayMs, null);
         if (style == Style.USER_INPUT) {
             blinkTimer = new Timer(530, e -> { caretVisible = !caretVisible; repaint(); });
@@ -156,7 +158,7 @@ public class HudLogArea extends JPanel {
     }
 
     private Font hudFont() {
-        return getFont().deriveFont(AppTheme.HUD_FONT_SM);
+        return getFont().deriveFont(HudPalette.HUD_FONT_SM);
     }
 
     private void clampScroll() {
@@ -209,7 +211,7 @@ public class HudLogArea extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
         g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        g2.setColor(AppTheme.HUD_PANEL_BG);
+        g2.setColor(HudPalette.HUD_PANEL_BG);
         g2.fillRect(0, 0, w, h);
 
         Font font = hudFont();
@@ -271,7 +273,7 @@ public class HudLogArea extends JPanel {
                         int split = Math.min(msg.prefixLen, lineText.length());
                         String tsStr = lineText.substring(0, split);
                         String bodyStr = lineText.substring(split);
-                        g2.setColor(AppTheme.HUD_SYSTEM_LOG_TIMESTAMP);
+                        g2.setColor(HudPalette.HUD_SYSTEM_LOG_TIMESTAMP);
                         g2.drawString(tsStr, textX, lineBaselineY);
                         if (!bodyStr.isEmpty()) {
                             g2.setColor(style.textColor);
@@ -344,7 +346,7 @@ public class HudLogArea extends JPanel {
                 g2.drawString(style.marker, PAD_X, inputBaseline);
                 if (caretVisible) {
                     int caretX = PAD_X + markerW + MARKER_GAP;
-                    drawCaret(g2, caretX, inputBaseline, fm, AppTheme.HUD_USER_INPUT_TEXT);
+                    drawCaret(g2, caretX, inputBaseline, fm, HudPalette.HUD_USER_INPUT_TEXT);
                 }
             }
         }

@@ -2,6 +2,9 @@ package elite.intel.ui.dialog;
 
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.HudButton;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
@@ -103,7 +106,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         identitySection.body().add(form(existing), BorderLayout.CENTER);
 
         // Two columns: left = identity (top) + parameters (fills); right = steps (fills).
-        JPanel leftColumn = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        JPanel leftColumn = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         leftColumn.add(identitySection, BorderLayout.NORTH);
         leftColumn.add(paramsPanel(), BorderLayout.CENTER);
 
@@ -115,7 +118,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         errorsScrollPane = AppTheme.hudScrollPane(errorsArea);
         errorsScrollPane.setVisible(false);
 
-        JPanel body = AppTheme.transparentPanel(new BorderLayout(0, AppTheme.HUD_GAP));
+        JPanel body = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
         body.add(columns, BorderLayout.CENTER);
         body.add(errorsScrollPane, BorderLayout.SOUTH);
 
@@ -149,9 +152,9 @@ public final class CustomCommandEditorDialog extends JDialog {
     private JPanel form(boolean existing) {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
         idField.setEditable(false);
-        idField.setForeground(AppTheme.FG_MUTED);
+        idField.setForeground(HudPalette.FG_MUTED);
 
         addField(panel, gbc, getText("actions.customCommands.editor.actionKey"), actionKeyField);
         addField(panel, gbc, getText("actions.customCommands.editor.name"), nameField);
@@ -161,7 +164,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel paramsPanel() {
-        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, AppTheme.HUD_GAP));
+        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, HudPalette.HUD_GAP));
 
         paramsTable.setFillsViewportHeight(true);
         paramsTable.setRowHeight(26);
@@ -186,7 +189,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         panel.body().add(scroll, BorderLayout.CENTER);
 
         // Table toolbar: buttons stretch evenly across the full table width.
-        JPanel buttons = AppTheme.transparentPanel(new GridLayout(1, 0, AppTheme.HUD_GAP, 0));
+        JPanel buttons = AppTheme.transparentPanel(new GridLayout(1, 0, HudPalette.HUD_GAP, 0));
         addStepButton(buttons, "actions.customCommands.editor.param.add", this::addParam);
         addStepButton(buttons, "actions.customCommands.editor.param.edit", this::editParam);
         addStepButton(buttons, "actions.customCommands.editor.param.remove", this::removeParam);
@@ -223,7 +226,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private JPanel stepsPanel() {
-        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.steps"), new BorderLayout(0, AppTheme.HUD_GAP));
+        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.steps"), new BorderLayout(0, HudPalette.HUD_GAP));
 
         stepsTable.setFillsViewportHeight(true);
         stepsTable.setRowHeight(30);
@@ -250,15 +253,15 @@ public final class CustomCommandEditorDialog extends JDialog {
         bg.gridy = 0;
         bg.fill = GridBagConstraints.HORIZONTAL;
         bg.weightx = 1;
-        bg.insets = new Insets(0, 0, 0, AppTheme.HUD_GAP);
+        bg.insets = new Insets(0, 0, 0, HudPalette.HUD_GAP);
         buttons.add(stepTextButton("actions.customCommands.editor.step.add", this::addStep), bg);
         buttons.add(stepTextButton("actions.customCommands.editor.step.edit", this::editStep), bg);
         buttons.add(stepTextButton("actions.customCommands.editor.step.remove", this::removeStep), bg);
         bg.fill = GridBagConstraints.NONE;
         bg.weightx = 0;
-        buttons.add(stepArrowButton(AppTheme.arrowUpIcon(16), "actions.customCommands.editor.step.up", () -> moveSelected(-1)), bg);
+        buttons.add(stepArrowButton(HudGlyphs.arrowUpIcon(16), "actions.customCommands.editor.step.up", () -> moveSelected(-1)), bg);
         bg.insets = new Insets(0, 0, 0, 0);
-        buttons.add(stepArrowButton(AppTheme.arrowDownIcon(16), "actions.customCommands.editor.step.down", () -> moveSelected(1)), bg);
+        buttons.add(stepArrowButton(HudGlyphs.arrowDownIcon(16), "actions.customCommands.editor.step.down", () -> moveSelected(1)), bg);
         panel.body().add(buttons, BorderLayout.SOUTH);
         return panel;
     }
@@ -279,15 +282,15 @@ public final class CustomCommandEditorDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JScrollPane sp = AppTheme.hudScrollPane(area);
         sp.setBorder(AppTheme.hudFieldBorder());
-        sp.getViewport().setBackground(AppTheme.HUD_TABLE_ROW);
-        area.setBackground(AppTheme.HUD_TABLE_ROW);
+        sp.getViewport().setBackground(HudPalette.HUD_TABLE_ROW);
+        area.setBackground(HudPalette.HUD_TABLE_ROW);
         panel.add(sp, gbc);
         gbc.gridy++;
     }
 
     private void addLabel(JPanel panel, GridBagConstraints gbc, String labelText) {
         // Delegate to the canonical label builder (owns dim-aware styling + height); 170 is this dialog's column width.
-        AppTheme.addLabel(panel, labelText, gbc, 170);
+        HudForms.addLabel(panel, labelText, gbc, 170);
     }
 
     private void addStepButton(JPanel panel, String key, Runnable action) {
@@ -306,7 +309,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     /** Compact square subtle toolbar button with a glyph icon; {@code tooltipKey} labels it. */
     private JButton stepArrowButton(Icon icon, String tooltipKey, Runnable action) {
         HudButton button = (HudButton) AppTheme.makeButtonSubtle("");
-        button.setSquareSide(AppTheme.HUD_BUTTON_HEIGHT);   // square, ignores the min text-button width
+        button.setSquareSide(HudPalette.HUD_BUTTON_HEIGHT);   // square, ignores the min text-button width
         button.setIcon(icon);
         button.setToolTipText(getText(tooltipKey));
         button.addActionListener(event -> action.run());
@@ -608,31 +611,31 @@ public final class CustomCommandEditorDialog extends JDialog {
         private boolean checked;
 
         @Override
-        public java.awt.Component getTableCellRendererComponent(
-                javax.swing.JTable table, Object value, boolean isSelected,
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
                 boolean hasFocus, int row, int column) {
-            java.awt.Component c = super.getTableCellRendererComponent(
+            Component c = super.getTableCellRendererComponent(
                     table, value, isSelected, hasFocus, row, column);
             this.checked = Boolean.TRUE.equals(value);
-            if (c instanceof javax.swing.JLabel l) {
+            if (c instanceof JLabel l) {
                 l.setText("");
             }
             return c;
         }
 
         @Override
-        protected void paintComponent(java.awt.Graphics g) {
+        protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            java.awt.Graphics2D g2 = (java.awt.Graphics2D) g.create();
+            Graphics2D g2 = (Graphics2D) g.create();
             try {
-                g2.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING,
-                        java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
                 int pad = getVerticalPadding();
                 int size = (int) Math.round((getHeight() - 2 * pad) * 0.8);  // smaller, with air
                 int x = (getWidth() - size) / 2;            // center horizontally
                 int y = (getHeight() - size) / 2;
-                java.awt.Color tint = getForeground();
-                AppTheme.paintHudCheckMarker(g2, x, y, size, tint, checked);
+                Color tint = getForeground();
+                HudGlyphs.paintHudCheckMarker(g2, x, y, size, tint, checked);
             } finally {
                 g2.dispose();
             }

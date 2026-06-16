@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,7 +19,7 @@ public class HudSection extends HudPanel {
     private final Variant sectionVariant;
     private final JLabel headerLabel;
     private JComponent footer;
-    private Color footerBackground = AppTheme.HUD_PANEL_BG_ALT;
+    private Color footerBackground = HudPalette.HUD_PANEL_BG_ALT;
 
     /**
      * Creates a titled section with a supplied body layout.
@@ -38,7 +39,7 @@ public class HudSection extends HudPanel {
      * @param variant visual framing strength for the section surface
      */
     public HudSection(String title, LayoutManager bodyLayout, Variant variant) {
-        this(title, bodyLayout, variant, AppTheme.HUD_GAP);
+        this(title, bodyLayout, variant, HudPalette.HUD_GAP);
     }
 
     /**
@@ -50,7 +51,7 @@ public class HudSection extends HudPanel {
      * @param bodyGap vertical gap between the title and the content body
      */
     public HudSection(String title, LayoutManager bodyLayout, Variant variant, int bodyGap) {
-        this(title, bodyLayout, variant, bodyGap, AppTheme.HUD_ORANGE_SOFT);
+        this(title, bodyLayout, variant, bodyGap, HudPalette.HUD_ORANGE_SOFT);
     }
 
     /**
@@ -64,7 +65,7 @@ public class HudSection extends HudPanel {
      */
     public HudSection(String title, LayoutManager bodyLayout, Variant variant, int bodyGap, Color borderColor) {
         // HudSection owns the titled-card frame; HudPanel only supplies the dark rounded base fill.
-        super(new BorderLayout(0, 0), AppTheme.ACCENT, Variant.FLAT);
+        super(new BorderLayout(0, 0), HudPalette.ACCENT, Variant.FLAT);
         sectionVariant = variant == null ? Variant.FRAMED : variant;
         if (sectionVariant == Variant.FLAT) {
             setPaintBackgroundFill(false);
@@ -73,7 +74,7 @@ public class HudSection extends HudPanel {
                 ? AppTheme.hudFlatBorder()
                 : BorderFactory.createEmptyBorder(1, 1, 1, 1));
         putClientProperty(AppTheme.HUD_CARD_BORDER_COLOR,
-                borderColor == null ? AppTheme.HUD_ORANGE_SOFT : borderColor);
+                borderColor == null ? HudPalette.HUD_ORANGE_SOFT : borderColor);
 
         headerLabel = AppTheme.hudSectionLabel(title == null ? "" : title.toUpperCase());
         JPanel header = AppTheme.transparentPanel(new BorderLayout());
@@ -123,7 +124,7 @@ public class HudSection extends HudPanel {
      * @param footer component shown as the section footer, or {@code null} to remove it
      */
     public void setFooter(JComponent footer) {
-        setFooter(footer, AppTheme.HUD_PANEL_BG_ALT);
+        setFooter(footer, HudPalette.HUD_PANEL_BG_ALT);
     }
 
     /**
@@ -137,7 +138,7 @@ public class HudSection extends HudPanel {
             remove(this.footer);
         }
         this.footer = footer;
-        footerBackground = background == null ? AppTheme.HUD_PANEL_BG_ALT : background;
+        footerBackground = background == null ? HudPalette.HUD_PANEL_BG_ALT : background;
         if (footer != null) {
             add(footer, BorderLayout.SOUTH);
         }
@@ -156,7 +157,7 @@ public class HudSection extends HudPanel {
                 Component header = getComponentCount() > 0 ? getComponent(0) : null;
                 if (header != null) {
                     Rectangle bounds = header.getBounds();
-                    g2.setColor(AppTheme.HUD_ORANGE_SOFT);
+                    g2.setColor(HudPalette.HUD_ORANGE_SOFT);
                     g2.drawLine(1, bounds.y + bounds.height,
                                 Math.max(1, w - 2), bounds.y + bounds.height);
                 }
@@ -171,7 +172,7 @@ public class HudSection extends HudPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
-            int arc = AppTheme.HUD_PANEL_ARC;
+            int arc = HudPalette.HUD_PANEL_ARC;
 
             Shape originalClip = g2.getClip();
             g2.setClip(new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
@@ -179,9 +180,9 @@ public class HudSection extends HudPanel {
             Component header = getComponentCount() > 0 ? getComponent(0) : null;
             if (header != null) {
                 Rectangle bounds = header.getBounds();
-                g2.setColor(AppTheme.HUD_PANEL_BG_ALT);
+                g2.setColor(HudPalette.HUD_PANEL_BG_ALT);
                 g2.fillRect(1, 1, Math.max(0, w - 2), Math.max(0, bounds.height));
-                g2.setColor(AppTheme.HUD_BORDER_DIM);
+                g2.setColor(HudPalette.HUD_BORDER_DIM);
                 g2.drawLine(1, bounds.y + bounds.height, Math.max(1, w - 2), bounds.y + bounds.height);
 
             }
@@ -190,13 +191,13 @@ public class HudSection extends HudPanel {
                 Rectangle bounds = footer.getBounds();
                 g2.setColor(footerBackground);
                 g2.fillRect(1, bounds.y, Math.max(0, w - 2), Math.max(0, h - bounds.y - 1));
-                g2.setColor(AppTheme.HUD_ORANGE_SOFT);
+                g2.setColor(HudPalette.HUD_ORANGE_SOFT);
                 g2.drawLine(1, bounds.y, Math.max(1, w - 2), bounds.y);
             }
             g2.setClip(originalClip);
 
             Color borderColor = (Color) getClientProperty(AppTheme.HUD_CARD_BORDER_COLOR);
-            g2.setColor(borderColor == null ? AppTheme.HUD_ORANGE_SOFT : borderColor);
+            g2.setColor(borderColor == null ? HudPalette.HUD_ORANGE_SOFT : borderColor);
             g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
         } finally {
             g2.dispose();

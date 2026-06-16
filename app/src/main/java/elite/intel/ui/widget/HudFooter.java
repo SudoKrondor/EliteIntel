@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.AbstractButton;
 import javax.swing.JPanel;
@@ -40,14 +41,14 @@ public final class HudFooter {
         footer.setOpaque(false);
         footer.setBorder(AppTheme.hudFooterBorder());
 
-        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, AppTheme.HUD_GAP, 0));
+        JPanel west = new JPanel(new FlowLayout(FlowLayout.LEFT, HudPalette.HUD_GAP, 0));
         west.setOpaque(false);
         Component leading = modal ? back : status;
         if (leading != null) {
             west.add(leading);
         }
 
-        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, AppTheme.HUD_GAP, 0));
+        JPanel east = new JPanel(new FlowLayout(FlowLayout.RIGHT, HudPalette.HUD_GAP, 0));
         east.setOpaque(false);
         if (trailing != null) {
             for (AbstractButton button : trailing) {

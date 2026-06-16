@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
@@ -42,9 +44,9 @@ public class HudSplitPane extends JSplitPane {
      * need properties that BasicSplitPaneUI.installDefaults() would otherwise reset.
      */
     private void applyHudDefaults() {
-        setBackground(AppTheme.HUD_BG);
+        setBackground(HudPalette.HUD_BG);
         setBorder(null);
-        setDividerSize(AppTheme.HUD_GAP);
+        setDividerSize(HudPalette.HUD_GAP);
     }
 
     /** Reinstalls our custom UI on every LAF change, preventing Swing defaults from overriding. */
@@ -72,7 +74,7 @@ public class HudSplitPane extends JSplitPane {
 
         HudDivider(BasicSplitPaneUI ui) {
             super(ui);
-            setBackground(AppTheme.HUD_BG);
+            setBackground(HudPalette.HUD_BG);
             // Remove the default raised-bevel border so the divider has no bright edge.
             setBorder(null);
         }
@@ -80,7 +82,7 @@ public class HudSplitPane extends JSplitPane {
         /** Fully overrides default paint to avoid any Swing-default background or border artifacts. */
         @Override
         public void paint(Graphics g) {
-            g.setColor(AppTheme.HUD_BG);
+            g.setColor(HudPalette.HUD_BG);
             g.fillRect(0, 0, getWidth(), getHeight());
             paintGripDots((Graphics2D) g.create());
         }
@@ -88,7 +90,7 @@ public class HudSplitPane extends JSplitPane {
         private void paintGripDots(Graphics2D g2) {
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(AppTheme.HUD_DISABLED);
+                g2.setColor(HudPalette.HUD_DISABLED);
 
                 int w = getWidth();
                 int h = getHeight();

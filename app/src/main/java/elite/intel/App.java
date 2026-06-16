@@ -10,6 +10,7 @@ import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.screen.AppView;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
@@ -55,10 +56,10 @@ public class App {
             try {
                 UIManager.setLookAndFeel(new FlatLightLaf());
                 // FlatLaf paints hover/pressed over the renderer; neutralise it here.
-                UIManager.put("TableHeader.hoverBackground", AppTheme.HUD_BG);
-                UIManager.put("TableHeader.hoverForeground", AppTheme.FG_MUTED);
-                UIManager.put("TableHeader.pressedBackground", AppTheme.HUD_BG);
-                UIManager.put("TableHeader.pressedForeground", AppTheme.FG_MUTED);
+                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_BG);
+                UIManager.put("TableHeader.hoverForeground", HudPalette.FG_MUTED);
+                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_BG);
+                UIManager.put("TableHeader.pressedForeground", HudPalette.FG_MUTED);
             } catch (Exception e) {
                 e.printStackTrace();
             }

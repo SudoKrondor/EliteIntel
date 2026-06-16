@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,7 +21,7 @@ public class HudTelemetryBlock extends JPanel {
     public static final String PLACEHOLDER = "—";
 
     /** Side length used for metric icons passed to this block. */
-    public static final int ICON_SIZE = AppTheme.HUD_ICON_SMALL;
+    public static final int ICON_SIZE = HudPalette.HUD_ICON_SMALL;
 
     private final JLabel valueLabel;
 
@@ -46,13 +47,13 @@ public class HudTelemetryBlock extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         JLabel keyLabel = new JLabel(label == null ? "" : label.toUpperCase());
-        keyLabel.setForeground(AppTheme.HUD_DISABLED);
-        keyLabel.setFont(keyLabel.getFont().deriveFont(Font.PLAIN, AppTheme.HUD_FONT_READOUT_KEY));
+        keyLabel.setForeground(HudPalette.HUD_DISABLED);
+        keyLabel.setFont(keyLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         keyLabel.setAlignmentX(LEFT_ALIGNMENT);
 
         valueLabel = new JLabel(PLACEHOLDER);
-        valueLabel.setForeground(AppTheme.HUD_DISABLED);
-        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_READOUT_VALUE));
+        valueLabel.setForeground(HudPalette.HUD_DISABLED);
+        valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_READOUT_VALUE));
         valueLabel.setAlignmentX(LEFT_ALIGNMENT);
 
         JPanel textStack = new JPanel();
@@ -69,7 +70,7 @@ public class HudTelemetryBlock extends JPanel {
     public void setValue(String value) {
         boolean placeholder = (value == null || value.isBlank());
         valueLabel.setText(placeholder ? PLACEHOLDER : value);
-        valueLabel.setForeground(placeholder ? AppTheme.HUD_DISABLED : AppTheme.FG);
+        valueLabel.setForeground(placeholder ? HudPalette.HUD_DISABLED : HudPalette.FG);
     }
 
     /** Wraps a pre-tinted native-size icon in a vertically centered JLabel. */
@@ -104,7 +105,7 @@ public class HudTelemetryBlock extends JPanel {
                     int h = 5;
                     int[] xp = {cx, cx + h, cx, cx - h};
                     int[] yp = {cy - h, cy, cy + h, cy};
-                    g2.setColor(AppTheme.FG_MUTED);
+                    g2.setColor(HudPalette.FG_MUTED);
                     g2.fillPolygon(xp, yp, 4);
                 } finally {
                     g2.dispose();

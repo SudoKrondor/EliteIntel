@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal dialog for selecting and exporting custom command definitions to a JSON file.

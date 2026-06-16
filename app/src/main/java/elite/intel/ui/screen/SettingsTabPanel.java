@@ -6,6 +6,7 @@ import elite.intel.ui.screen.settings.AudioSettingsPanel;
 import elite.intel.ui.screen.settings.CommonSettingsPanel;
 import elite.intel.ui.screen.settings.InputSettingsPanel;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudUpdateButton;
 
@@ -41,8 +42,8 @@ public class SettingsTabPanel extends JPanel {
     }
 
     private void buildUi() {
-        setLayout(new BorderLayout(AppTheme.HUD_GAP, AppTheme.HUD_GAP));
-        setBackground(AppTheme.HUD_BG);
+        setLayout(new BorderLayout(HudPalette.HUD_GAP, HudPalette.HUD_GAP));
+        setBackground(HudPalette.HUD_BG);
         setBorder(AppTheme.hudScreenBorder());
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();

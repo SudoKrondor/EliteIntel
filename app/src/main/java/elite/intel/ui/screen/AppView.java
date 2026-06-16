@@ -1,6 +1,8 @@
 package elite.intel.ui.screen;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.widget.TopStatusBar;
 
 import com.google.common.eventbus.Subscribe;
@@ -26,6 +28,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudGlyphs.*;
 
 public class AppView extends JFrame implements AppViewInterface {
 
@@ -83,12 +86,12 @@ public class AppView extends JFrame implements AppViewInterface {
 
         JPanel root = new JPanel(new BorderLayout());
         root.setBorder(new EmptyBorder(
-                AppTheme.SHELL_GAP / 2,
-                AppTheme.SHELL_GAP / 2,
-                AppTheme.SHELL_GAP / 2,
-                AppTheme.SHELL_GAP / 2
+                HudPalette.SHELL_GAP / 2,
+                HudPalette.SHELL_GAP / 2,
+                HudPalette.SHELL_GAP / 2,
+                HudPalette.SHELL_GAP / 2
         ));
-        root.setBackground(AppTheme.HUD_SHELL_BACKGROUND);
+        root.setBackground(HudPalette.HUD_SHELL_BACKGROUND);
         setContentPane(root);
 
         JTabbedPane tabs = AppTheme.makeMainNavTabs();
@@ -132,13 +135,13 @@ public class AppView extends JFrame implements AppViewInterface {
     private JComponent buildTopShell(TopStatusBar statusBar) {
         JPanel shell = new JPanel(new BorderLayout());
         shell.setOpaque(true);
-        shell.setBackground(AppTheme.HUD_SHELL_BACKGROUND);
+        shell.setBackground(HudPalette.HUD_SHELL_BACKGROUND);
         shell.add(statusBar, BorderLayout.CENTER);
         return shell;
     }
 
     private ImageIcon scaledIcon(String resource) {
-        return AppTheme.scaledIcon(getClass(), resource, AppTheme.HUD_ICON_NAV);
+        return HudGlyphs.scaledIcon(getClass(), resource, HudPalette.HUD_ICON_NAV);
     }
 
     @Override
@@ -200,13 +203,13 @@ public class AppView extends JFrame implements AppViewInterface {
     }
 
     private Font loadCustomFont() {
-        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) AppTheme.HUD_FONT_MONO_BASE);
+        Font mono = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_MONO_BASE);
         // Use platform sans-serif for UI labels because the previous custom font did not cover Cyrillic glyphs reliably.
-        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) AppTheme.HUD_FONT_UI_DEFAULT)));
+        UIManager.put("defaultFont", new FontUIResource(new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT)));
         try {
             mono = Font.createFont(Font.TRUETYPE_FONT,
                             Objects.requireNonNull(getClass().getResourceAsStream("/fonts/UbuntuSansMono-Regular.ttf")))
-                    .deriveFont(AppTheme.HUD_FONT_MONO_BASE);
+                    .deriveFont(HudPalette.HUD_FONT_MONO_BASE);
             GraphicsEnvironment.getLocalGraphicsEnvironment().registerFont(mono);
             UIManager.put("monospaceFont", new FontUIResource(mono));
             SwingUtilities.updateComponentTreeUI(this);
@@ -217,41 +220,41 @@ public class AppView extends JFrame implements AppViewInterface {
     }
 
     private void installDarkDefaults() {
-        UIManager.put("Panel.background", AppTheme.BG);
-        UIManager.put("OptionPane.background", AppTheme.BG);
-        UIManager.put("TabbedPane.background", AppTheme.HUD_CONTENT_BACKGROUND);
-        UIManager.put("TabbedPane.foreground", AppTheme.FG);
-        UIManager.put("TabbedPane.contentAreaColor", AppTheme.HUD_CONTENT_BACKGROUND);
-        UIManager.put("Label.foreground", AppTheme.FG);
-        UIManager.put("CheckBox.foreground", AppTheme.FG);
-        UIManager.put("RadioButton.foreground", AppTheme.BUTTON_BG);
-        UIManager.put("Button.foreground", AppTheme.BUTTON_FG);
-        UIManager.put("Button.background", AppTheme.BUTTON_BG);
-        UIManager.put("Button.disabledText",       AppTheme.HUD_DISABLED);
-        UIManager.put("Button.disabledForeground", AppTheme.HUD_DISABLED);
-        UIManager.put("ScrollPane.background", AppTheme.BG);
-        UIManager.put("Viewport.background", AppTheme.BG);
-        UIManager.put("TextField.background", AppTheme.BG_PANEL);
-        UIManager.put("PasswordField.background", AppTheme.BG_PANEL);
-        UIManager.put("TextArea.background", AppTheme.BG_PANEL);
-        UIManager.put("EditorPane.background", AppTheme.BG_PANEL);
-        UIManager.put("TextField.foreground", AppTheme.FG);
-        UIManager.put("PasswordField.foreground", AppTheme.FG);
-        UIManager.put("TextArea.foreground", AppTheme.FG);
-        UIManager.put("EditorPane.foreground", AppTheme.FG);
-        UIManager.put("TextField.inactiveForeground", AppTheme.FG_MUTED);
-        UIManager.put("PasswordField.inactiveForeground", AppTheme.FG_MUTED);
-        UIManager.put("TextArea.inactiveForeground", AppTheme.FG_MUTED);
-        UIManager.put("EditorPane.inactiveForeground", AppTheme.FG_MUTED);
-        UIManager.put("Table.background", AppTheme.HUD_PANEL_BG);
-        UIManager.put("Table.foreground", AppTheme.FG);
-        UIManager.put("Table.selectionBackground", AppTheme.ACCENT);
-        UIManager.put("Table.selectionForeground", AppTheme.SEL_FG);
-        UIManager.put("ComboBox.background",              AppTheme.HUD_TABLE_ROW);
-        UIManager.put("ComboBox.foreground",              AppTheme.FG);
-        UIManager.put("ComboBox.disabledBackground",       AppTheme.HUD_TABLE_ROW);
-        UIManager.put("ComboBox.disabledForeground",       AppTheme.HUD_DISABLED);
-        UIManager.put("ComboBox.buttonDisabledBackground", AppTheme.HUD_TABLE_ROW);
+        UIManager.put("Panel.background", HudPalette.BG);
+        UIManager.put("OptionPane.background", HudPalette.BG);
+        UIManager.put("TabbedPane.background", HudPalette.HUD_CONTENT_BACKGROUND);
+        UIManager.put("TabbedPane.foreground", HudPalette.FG);
+        UIManager.put("TabbedPane.contentAreaColor", HudPalette.HUD_CONTENT_BACKGROUND);
+        UIManager.put("Label.foreground", HudPalette.FG);
+        UIManager.put("CheckBox.foreground", HudPalette.FG);
+        UIManager.put("RadioButton.foreground", HudPalette.BUTTON_BG);
+        UIManager.put("Button.foreground", HudPalette.BUTTON_FG);
+        UIManager.put("Button.background", HudPalette.BUTTON_BG);
+        UIManager.put("Button.disabledText",       HudPalette.HUD_DISABLED);
+        UIManager.put("Button.disabledForeground", HudPalette.HUD_DISABLED);
+        UIManager.put("ScrollPane.background", HudPalette.BG);
+        UIManager.put("Viewport.background", HudPalette.BG);
+        UIManager.put("TextField.background", HudPalette.BG_PANEL);
+        UIManager.put("PasswordField.background", HudPalette.BG_PANEL);
+        UIManager.put("TextArea.background", HudPalette.BG_PANEL);
+        UIManager.put("EditorPane.background", HudPalette.BG_PANEL);
+        UIManager.put("TextField.foreground", HudPalette.FG);
+        UIManager.put("PasswordField.foreground", HudPalette.FG);
+        UIManager.put("TextArea.foreground", HudPalette.FG);
+        UIManager.put("EditorPane.foreground", HudPalette.FG);
+        UIManager.put("TextField.inactiveForeground", HudPalette.FG_MUTED);
+        UIManager.put("PasswordField.inactiveForeground", HudPalette.FG_MUTED);
+        UIManager.put("TextArea.inactiveForeground", HudPalette.FG_MUTED);
+        UIManager.put("EditorPane.inactiveForeground", HudPalette.FG_MUTED);
+        UIManager.put("Table.background", HudPalette.HUD_PANEL_BG);
+        UIManager.put("Table.foreground", HudPalette.FG);
+        UIManager.put("Table.selectionBackground", HudPalette.ACCENT);
+        UIManager.put("Table.selectionForeground", HudPalette.SEL_FG);
+        UIManager.put("ComboBox.background",              HudPalette.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.foreground",              HudPalette.FG);
+        UIManager.put("ComboBox.disabledBackground",       HudPalette.HUD_TABLE_ROW);
+        UIManager.put("ComboBox.disabledForeground",       HudPalette.HUD_DISABLED);
+        UIManager.put("ComboBox.buttonDisabledBackground", HudPalette.HUD_TABLE_ROW);
         UIManager.put("ComboBox.maximumRowCount",          8);
         // Width=0 suppresses the vertical separator between value and arrow button.
         // FlatLaf re-installs buttonSeparatorColor from the theme after per-instance nulling,
@@ -259,7 +262,7 @@ public class AppView extends JFrame implements AppViewInterface {
         UIManager.put("ComboBox.buttonSeparatorWidth",     0);
         // Editable combo editor calls selectAll() on setSelectedItem; override FlatLaf's
         // cold-blue theme default so selection follows the warm HUD palette.
-        UIManager.put("ComboBox.selectionBackground", AppTheme.ACCENT);
-        UIManager.put("ComboBox.selectionForeground", AppTheme.SEL_FG);
+        UIManager.put("ComboBox.selectionBackground", HudPalette.ACCENT);
+        UIManager.put("ComboBox.selectionForeground", HudPalette.SEL_FG);
     }
 }

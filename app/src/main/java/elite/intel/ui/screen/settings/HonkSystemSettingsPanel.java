@@ -13,6 +13,7 @@ import java.util.function.Supplier;
 
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.ui.theme.HudPalette.*;
 
 public class HonkSystemSettingsPanel implements SettingRow {
 

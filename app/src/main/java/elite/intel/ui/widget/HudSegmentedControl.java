@@ -1,6 +1,8 @@
 package elite.intel.ui.widget;
+import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -93,10 +95,10 @@ public class HudSegmentedControl extends JComponent {
         for (String label : labels) {
             maxLabel = Math.max(maxLabel, fm != null ? fm.stringWidth(label) : 80);
         }
-        int segW = maxLabel + 2 * AppTheme.HUD_PADDING;
+        int segW = maxLabel + 2 * HudPalette.HUD_PADDING;
         int n = labels.length;
-        int total = n * segW + (n - 1) * AppTheme.HUD_SEP_W;
-        return new Dimension(total, AppTheme.HUD_TABLE_ROW_HEIGHT_COMPACT);
+        int total = n * segW + (n - 1) * HudPalette.HUD_SEP_W;
+        return new Dimension(total, HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
     }
 
     // -------------------------------------------------------------------------
@@ -115,7 +117,7 @@ public class HudSegmentedControl extends JComponent {
             boolean enabled = isEnabled();
 
             // Gaps between segments read as HUD_BG, like the checkbox marker/text divider (§5.2).
-            g2.setColor(AppTheme.HUD_BG);
+            g2.setColor(HudPalette.HUD_BG);
             g2.fillRect(0, 0, w, h);
 
             Font f = baseFont();
@@ -132,15 +134,15 @@ public class HudSegmentedControl extends JComponent {
                 Color fill;
                 Color textColor;
                 if (!enabled) {
-                    fill = AppTheme.HUD_TABLE_ROW_HOVER;
-                    textColor = AppTheme.HUD_DISABLED;
+                    fill = HudPalette.HUD_TABLE_ROW_HOVER;
+                    textColor = HudPalette.HUD_DISABLED;
                 } else if (on) {
-                    fill = AppTheme.ACCENT;
-                    textColor = AppTheme.SEL_FG;
+                    fill = HudPalette.ACCENT;
+                    textColor = HudPalette.SEL_FG;
                 } else {
-                    fill = AppTheme.HUD_TABLE_ROW_HOVER;
+                    fill = HudPalette.HUD_TABLE_ROW_HOVER;
                     // Hover on an unselected segment brightens its text to ACCENT.
-                    textColor = (i == hoverIndex) ? AppTheme.ACCENT : AppTheme.FG_MUTED;
+                    textColor = (i == hoverIndex) ? HudPalette.ACCENT : HudPalette.FG_MUTED;
                 }
 
                 g2.setColor(fill);
@@ -162,14 +164,14 @@ public class HudSegmentedControl extends JComponent {
 
     private int segmentStart(int i, int w) {
         int n = labels.length;
-        double slot = (w - (n - 1) * AppTheme.HUD_SEP_W) / (double) n;
-        return (int) Math.round(i * (slot + AppTheme.HUD_SEP_W));
+        double slot = (w - (n - 1) * HudPalette.HUD_SEP_W) / (double) n;
+        return (int) Math.round(i * (slot + HudPalette.HUD_SEP_W));
     }
 
     private int segmentEnd(int i, int w) {
         int n = labels.length;
-        double slot = (w - (n - 1) * AppTheme.HUD_SEP_W) / (double) n;
-        return (int) Math.round(i * (slot + AppTheme.HUD_SEP_W) + slot);
+        double slot = (w - (n - 1) * HudPalette.HUD_SEP_W) / (double) n;
+        return (int) Math.round(i * (slot + HudPalette.HUD_SEP_W) + slot);
     }
 
     /** Returns the segment index containing {@code mouseX}, or -1 if within a gap. */
@@ -243,6 +245,6 @@ public class HudSegmentedControl extends JComponent {
         Font f = getFont();
         if (f == null) f = UIManager.getFont("Label.font");
         if (f == null) f = new Font(Font.SANS_SERIF, Font.PLAIN, 12);
-        return f.deriveFont(Font.BOLD, AppTheme.HUD_FONT_CHECKBOX);
+        return f.deriveFont(Font.BOLD, HudPalette.HUD_FONT_CHECKBOX);
     }
 }

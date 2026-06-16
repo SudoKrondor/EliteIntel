@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -58,19 +59,19 @@ public class HudSearchToolbar extends JPanel {
         super();
         setOpaque(false);
         setLayout(fullWidth ? new BorderLayout() : new BoxLayout(this, BoxLayout.X_AXIS));
-        int bottomPad = connected ? 0 : (fullWidth ? AppTheme.HUD_PADDING_SMALL : AppTheme.HUD_GAP);
+        int bottomPad = connected ? 0 : (fullWidth ? HudPalette.HUD_PADDING_SMALL : HudPalette.HUD_GAP);
         setBorder(BorderFactory.createEmptyBorder(0, 0, bottomPad, 0));
 
         if (label != null && !label.isBlank()) {
             JLabel inlineLabel = new JLabel(label.toUpperCase());
-            inlineLabel.setForeground(AppTheme.FG_MUTED);
-            inlineLabel.setFont(inlineLabel.getFont().deriveFont(Font.BOLD, AppTheme.HUD_FONT_SM));
+            inlineLabel.setForeground(HudPalette.FG_MUTED);
+            inlineLabel.setFont(inlineLabel.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_SM));
             add(inlineLabel);
-            add(Box.createRigidArea(new Dimension(AppTheme.HUD_GAP, 0)));
+            add(Box.createRigidArea(new Dimension(HudPalette.HUD_GAP, 0)));
         }
 
         searchField = new HudSearchField(placeholder, clearTooltip, variant);
-        int height = fullWidth ? AppTheme.HUD_BUTTON_HEIGHT_COMPACT : AppTheme.HUD_FIELD_HEIGHT;
+        int height = fullWidth ? HudPalette.HUD_BUTTON_HEIGHT_COMPACT : HudPalette.HUD_FIELD_HEIGHT;
         searchField.setPreferredSize(new Dimension(DEFAULT_SEARCH_WIDTH, height));
         if (fullWidth) {
             add(searchField, BorderLayout.CENTER);

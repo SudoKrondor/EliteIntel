@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,7 +48,7 @@ public class HudTelemetryStrip extends JPanel {
         if (blocks.size() < 2) return;
         Graphics2D g2 = (Graphics2D) g.create();
         try {
-            g2.setColor(AppTheme.HUD_BORDER_DIM);
+            g2.setColor(HudPalette.HUD_BORDER_DIM);
             // draw a separator at the left edge of every cell except the first
             for (int i = 1; i < getComponentCount(); i++) {
                 int x = getComponent(i).getX();
