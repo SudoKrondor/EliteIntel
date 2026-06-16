@@ -10,8 +10,8 @@ import java.awt.*;
 
 /**
  * Full-width HUD toolbar that paints the "connected-to-table" top border:
- * top/left/right sides in {@link AppTheme#HUD_COLOR_ROLE_FRAME_BORDER}, a dim bottom separator in
- * {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_BORDER}, and cyan L-shaped corner marks on the two top corners.
+ * top/left/right sides in {@link HudPalette#HUD_COLOR_ROLE_FRAME_BORDER}, a dim bottom separator in
+ * {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_BORDER}, and cyan L-shaped corner marks on the two top corners.
  * <p>
  * Place a {@link AppTheme#hudConnectedScrollPaneBorder()} data table directly below this toolbar
  * with no vertical gap so that the shared side borders form one continuous framed block.

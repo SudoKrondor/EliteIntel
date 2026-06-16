@@ -13,8 +13,8 @@ import java.util.function.BooleanSupplier;
 
 /**
  * HUD table header renderer for Boolean selector columns.
- * Paints the standard HUD header background ({@link AppTheme#HUD_COLOR_ROLE_APPLICATION_BACKGROUND}) and a
- * {@link AppTheme#HUD_COLOR_ROLE_CONTROL_DECORATION} checkbox marker centred in the header cell.
+ * Paints the standard HUD header background ({@link HudPalette#HUD_COLOR_ROLE_APPLICATION_BACKGROUND}) and a
+ * {@link HudPalette#HUD_COLOR_ROLE_CONTROL_DECORATION} checkbox marker centred in the header cell.
  * No bottom border is painted here - {@link HudTable#style} applies a
  * {@code MatteBorder(0,0,1,0, HUD_COLOR_ROLE_CONTROL_DECORATION)} on the entire {@link JTableHeader},
  * which already covers this column. Adding another border here would double the line.

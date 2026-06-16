@@ -21,13 +21,13 @@ import java.awt.event.MouseEvent;
  * HUD discrete numeric stepper rendered as "< value >" (HUD section 4).
  * <p>
  * Triangle buttons sit at the left/right edges of a borderless warm slab
- * ({@link AppTheme#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}, like the HUD checkbox OFF state, section 5.2), separated from the
- * centred value by {@link AppTheme#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} dividers. Clicking a triangle steps the value by
+ * ({@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND}, like the HUD checkbox OFF state, section 5.2), separated from the
+ * centred value by {@link HudPalette#HUD_COLOR_ROLE_APPLICATION_BACKGROUND} dividers. Clicking a triangle steps the value by
  * {@code step}, clamped to {@code [min, max]}.
  * <p>
- * Arrow states: rest {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}; hover - light HUD_COLOR_ROLE_PRIMARY_ACTION wash on the zone; pressed -
- * full {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION} fill with the arrow inverted to {@link AppTheme#HUD_COLOR_ROLE_SELECTED_TEXT} (matching
- * the subtle button); disabled at the range end - {@link AppTheme#HUD_COLOR_ROLE_DISABLED}. The value is
+ * Arrow states: rest {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}; hover - light HUD_COLOR_ROLE_PRIMARY_ACTION wash on the zone; pressed -
+ * full {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION} fill with the arrow inverted to {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} (matching
+ * the subtle button); disabled at the range end - {@link HudPalette#HUD_COLOR_ROLE_DISABLED}. The value is
  * display-only (no free text entry).
  */
 public class HudStepper extends JComponent {

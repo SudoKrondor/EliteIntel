@@ -193,10 +193,10 @@ public final class HudTable {
 
     /**
      * Extends {@link CellRenderer} with configurable upper-casing, foreground colour, and horizontal
-     * alignment. Use for columns where the value is an identifier (pass {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_TEXT}),
+     * alignment. Use for columns where the value is an identifier (pass {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_TEXT}),
      * a numeric (pass {@link SwingConstants#RIGHT}), or needs explicit caps without global impact.
      *
-     * @param fg        non-selected foreground; {@code null} keeps the default {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}
+     * @param fg        non-selected foreground; {@code null} keeps the default {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}
      * @param alignment {@link SwingConstants#LEFT} or {@link SwingConstants#RIGHT}
      */
     public static class ValueCellRenderer extends CellRenderer {

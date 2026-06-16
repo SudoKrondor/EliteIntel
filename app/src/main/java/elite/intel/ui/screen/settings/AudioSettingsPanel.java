@@ -2,6 +2,7 @@ package elite.intel.ui.screen.settings;
 
 import elite.intel.ui.support.AudioDeviceCombo;
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudBanner;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudMicMeter;
@@ -226,7 +227,7 @@ public class AudioSettingsPanel extends JPanel {
 
     /**
      * Builds a slider-row key label aligned to the slider track. The top inset of
-     * {@link AppTheme#HUD_SLIDER_VALUE_AREA} drops the text from the row top to the track level,
+     * {@link HudPalette#HUD_SLIDER_VALUE_AREA} drops the text from the row top to the track level,
      * matching the slider's internal layout (value above, track below).
      */
     private static JLabel sliderLabel(String text, int width) {

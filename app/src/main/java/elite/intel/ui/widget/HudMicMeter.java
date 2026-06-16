@@ -23,11 +23,11 @@ import java.awt.RenderingHints;
  * Segmented vertical mic-level meter in the HUD visual language (HUD section 4).
  * <p>
  * Two columns: a <b>LIVE</b> column whose segments light up to the current RMS, coloured by zone
- * ({@link AppTheme#HUD_COLOR_ROLE_DANGER} below the noise floor, {@link AppTheme#HUD_COLOR_ROLE_WARNING} between floor and
- * gate, {@link AppTheme#HUD_COLOR_ROLE_SUCCESS} above the gate), and a slim <b>PEAK-trail</b> column holding the
- * decaying maximum with a bright {@link AppTheme#HUD_COLOR_ROLE_BUTTON_TEXT} cap ({@link AppTheme#HUD_COLOR_ROLE_DANGER} when
+ * ({@link HudPalette#HUD_COLOR_ROLE_DANGER} below the noise floor, {@link HudPalette#HUD_COLOR_ROLE_WARNING} between floor and
+ * gate, {@link HudPalette#HUD_COLOR_ROLE_SUCCESS} above the gate), and a slim <b>PEAK-trail</b> column holding the
+ * decaying maximum with a bright {@link HudPalette#HUD_COLOR_ROLE_BUTTON_TEXT} cap ({@link HudPalette#HUD_COLOR_ROLE_DANGER} when
  * the input is clipping = too hot). Floor and gate thresholds are drawn as labelled rails
- * ({@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} / {@link AppTheme#HUD_COLOR_ROLE_INFORMATION}); the current value and gate status are
+ * ({@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT} / {@link HudPalette#HUD_COLOR_ROLE_INFORMATION}); the current value and gate status are
  * read out below the columns.
  * <p>
  * Data comes from {@link AudioMonitorBus} (one {@link AudioMonitorEvent} per ~100 ms capture

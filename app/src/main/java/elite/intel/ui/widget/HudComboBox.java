@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * HUD-styled combo box with shared dark input colours and configurable cell rendering.
  *
  * <p>Constructors accepting {@code labelFn} control dropdown text extraction; constructors
- * accepting {@code mutedWhen} dim placeholder or disabled items with {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT}.
+ * accepting {@code mutedWhen} dim placeholder or disabled items with {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT}.
  * All constructors install {@link HudComboBoxUI} and the built-in {@link HudComboRenderer}.
  *
  * <p>Use {@link #picker} to create an editable, searchable variant.
@@ -45,7 +45,7 @@ public class HudComboBox<E> extends JComboBox<E> {
 
     /**
      * Creates a HUD combo box from an array with a custom display-text extractor and a
-     * predicate that dims non-selected items matching the condition with {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT}.
+     * predicate that dims non-selected items matching the condition with {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT}.
      */
     public HudComboBox(E[] values, Function<? super E, String> labelFn,
                        Predicate<? super E> mutedWhen) {
@@ -91,7 +91,7 @@ public class HudComboBox<E> extends JComboBox<E> {
     }
 
     /**
-     * Caps a non-editable combo to the shared field height ({@link AppTheme#HUD_FIELD_HEIGHT}, the same
+     * Caps a non-editable combo to the shared field height ({@link HudPalette#HUD_FIELD_HEIGHT}, the same
      * token {@link HudTextField} uses) so combos line up with text fields in form rows. FlatLaf otherwise
      * makes combos a few px taller than fields. Editable pickers and any explicit {@code setPreferredSize}
      * (e.g. {@code addField}, {@link #picker}) are honoured untouched; width stays dynamic.
@@ -111,11 +111,11 @@ public class HudComboBox<E> extends JComboBox<E> {
      * HUD dropdown cell renderer.
      *
      * <ul>
-     *   <li>Selected: {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link AppTheme#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
-     *   <li>Non-selected: {@link AppTheme#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} background;
-     *       {@link AppTheme#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}.</li>
-     *   <li>Font: {@link AppTheme#HUD_FONT_FIELD_VALUE}.</li>
-     *   <li>Border: {@link AppTheme#HUD_COMBO_ITEM_INSET_V} / {@link AppTheme#HUD_COMBO_ITEM_INSET_H}.</li>
+     *   <li>Selected: {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION} background, {@link HudPalette#HUD_COLOR_ROLE_SELECTED_TEXT} foreground.</li>
+     *   <li>Non-selected: {@link HudPalette#HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND} background;
+     *       {@link HudPalette#HUD_COLOR_ROLE_SECONDARY_TEXT} when {@code mutedWhen} matches, otherwise {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}.</li>
+     *   <li>Font: {@link HudPalette#HUD_FONT_FIELD_VALUE}.</li>
+     *   <li>Border: {@link HudPalette#HUD_COMBO_ITEM_INSET_V} / {@link HudPalette#HUD_COMBO_ITEM_INSET_H}.</li>
      * </ul>
      */
     static final class HudComboRenderer<E> extends DefaultListCellRenderer {

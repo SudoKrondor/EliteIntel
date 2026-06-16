@@ -12,7 +12,7 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 
 /**
- * HUD-styled combo box UI: flat down glyph in {@link AppTheme#HUD_COLOR_ROLE_PRIMARY_ACTION}, warm dark field background.
+ * HUD-styled combo box UI: flat down glyph in {@link HudPalette#HUD_COLOR_ROLE_PRIMARY_ACTION}, warm dark field background.
  * Replaces FlatLaf's arrow-button box with a plain filled triangle - no gradient, no rounded box.
  * Install via {@link AppTheme#styleComboBox(JComboBox)}.
  */
