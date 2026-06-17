@@ -1,6 +1,7 @@
 package elite.intel.util;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.i18n.Language;
@@ -108,6 +109,10 @@ public class StringUtls {
 
     public static String localizedLlm(String key, Object... args) {
         return LlmTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedAiActionKeys(String action) {
+        return AiActionAliasTextProvider.getText(SystemSession.getInstance().getLanguage(), action);
     }
 
     public static String localizedEvent(String key, Object... args) {

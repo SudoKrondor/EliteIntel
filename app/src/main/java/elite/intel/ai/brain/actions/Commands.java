@@ -71,7 +71,7 @@ public enum Commands {
     INCREASE_SHIELDS_POWER                              ("transfer_power_to_shields", null,  SetPowerToSystemsHandler.class),
     INCREASE_SYSTEMS_POWER                              ("transfer_power_to_ship_systems", null,  SetPowerToSystemsHandler.class),
     INCREASE_WEAPONS_POWER                              ("transfer_power_to_weapons", null,  SetPowerToWeaponsHandler.class),
-    RESET_POWER                                         ("reset_power", null,  ResetPowerSettings.class),
+    RESET_POWER                                         ("equalize_power", null,  ResetPowerSettings.class),
 
     OPEN_GALAXY_MAP                                     ("display_open_galaxy_map", null,  OpenGalaxyMapHandler.class),
     OPEN_SYSTEM_MAP                                     ("display_open_system_map", null,  OpenLocalMapHandler.class),

@@ -74,6 +74,7 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(" never as ");
         sb.append(JUMP_TO_HYPERSPACE.getAction());
         sb.append("\n");
+
         sb.append(" - classify прыжок в гиперпространство, прыгай, гиперпрыжок, войти в гиперпространство, поехали, следующий маршрутный пункт as ");
         sb.append(JUMP_TO_HYPERSPACE.getAction());
         sb.append("\n");
@@ -82,8 +83,21 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(FLEET_CARRIER_STATUS.getAction());
         sb.append("\n");
 
+        sb.append(" - classify questions about тритий авианосца, топливо авианосца, сколько трития на авианосце, уровень трития, уровень топлива авианосца as ");
+        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append("\n");
+
+        sb.append(" - classify questions about Расстояние до Земли, Как далеко Земля ");
+        sb.append(DISTANCE_TO_BUBBLE.getAction());
+        sb.append("\n");
+
+
         sb.append(" - classify questions about авианосец эскадрона as ");
         sb.append(SQUADRON_CARRIER_STATUS.getAction());
+        sb.append("\n");
+
+        sb.append(" - classify questions about курс авианосца эскадрильи as ");
+        sb.append(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
         sb.append("\n");
 
         sb.append(" - classify автоматическая стыковка as ");
@@ -93,6 +107,8 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("- require very high probability match for action →");
         sb.append(CLEAR_ALL_ACTIVE_MISSIONS.getAction());
         sb.append("\n");
+
+
         return sb.toString();
     }
 }
