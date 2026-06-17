@@ -1,5 +1,7 @@
 package elite.intel.ai.brain;
 
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -62,7 +64,7 @@ public class Reducer {
         // Preserve an exact alias match as a high-confidence candidate.
         // This must not replace semantic classification; it only prevents
         // the reducer from accidentally removing a valid action before the LLM sees it.
-        String directAction = full.get(normalizedInput);
+        String directAction = findDirectAction(normalizedInput, full);
 
         // Use Unicode-aware tokenization.
         // "\\W+" is too ASCII-centric and does not work reliably with Cyrillic,
@@ -117,6 +119,23 @@ public class Reducer {
         }
 
         return result;
+    }
+
+    private static String findDirectAction(String normalizedInput, Map<String, String> full) {
+        String directAction = full.get(normalizedInput);
+        if (directAction != null) {
+            return directAction;
+        }
+
+        String normalized = normalizedInput.trim().toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : full.entrySet()) {
+            for (String phrase : AiActionLocalizations.splitPhraseGroup(entry.getKey())) {
+                if (normalized.equals(phrase.trim().toLowerCase(Locale.ROOT))) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return null;
     }
 
     public static String formatActions(Map<String, String> map) {
