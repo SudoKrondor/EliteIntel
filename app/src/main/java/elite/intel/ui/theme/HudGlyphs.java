@@ -344,6 +344,32 @@ public final class HudGlyphs {
         };
     }
 
+    /** Base length of a focus corner-mark leg; lengthens by 2 px while focused. */
+    private static final int FOCUS_CORNER_MARK = 6;
+
+    /**
+     * Paints the diagonal HUD focus corner accent: short 1 px L-marks one pixel inside the top-left
+     * and bottom-right corners of the box (0, 0, w, h). The legs lengthen slightly while focused.
+     * Used by {@link HudSearchField} framed search variants; the caller chooses the colour and
+     * disposes the graphics context.
+     *
+     * @param g2      graphics context (not disposed by this method)
+     * @param w       component width in px
+     * @param h       component height in px
+     * @param focused whether the host input holds focus (lengthens the marks)
+     * @param color   mark colour
+     */
+    public static void paintHudFocusCornerMarks(Graphics2D g2, int w, int h, boolean focused, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        // Axis-aligned 1 px lines: AA off so they render as crisp full-brightness pixels.
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        int m = focused ? FOCUS_CORNER_MARK + 2 : FOCUS_CORNER_MARK;
+        g2.setColor(color);
+        g2.drawLine(1, 1, 1 + m, 1);       g2.drawLine(1, 1, 1, 1 + m);           // top-left
+        g2.drawLine(w-2-m, h-2, w-2, h-2); g2.drawLine(w-2, h-2-m, w-2, h-2);    // bottom-right
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
     /**
      * Paints the HUD checkbox marker: a 2-px double-outline square box, with a centred
      * filled inner square when {@code filled} is true. Geometry matches the legacy inline

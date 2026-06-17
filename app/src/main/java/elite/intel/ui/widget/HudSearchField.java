@@ -2,6 +2,7 @@ package elite.intel.ui.widget;
 import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
@@ -213,16 +214,15 @@ public class HudSearchField extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
-            // Marks lengthen slightly while focused, echoing the brighter frame.
-            int m = focused ? CORNER_MARK + 2 : CORNER_MARK;
-            g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
-            // TABLE_FILTER shows a diagonal pair (top-left + bottom-right); the connected variant has
-            // no bottom edge of its own, so it marks the two top corners instead.
-            g2.drawLine(1, 1, 1 + m, 1);       g2.drawLine(1, 1, 1, 1 + m);           // TL
+            // TABLE_FILTER shows the shared diagonal pair (top-left + bottom-right); the connected
+            // variant has no bottom edge of its own, so it marks the two top corners instead.
             if (variant == Variant.TABLE_FILTER) {
-                g2.drawLine(w-2-m, h-2, w-2, h-2); g2.drawLine(w-2, h-2-m, w-2, h-2);    // BR
+                HudGlyphs.paintHudFocusCornerMarks(g2, w, h, focused, HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
             } else {
-                g2.drawLine(w-2-m, 1, w-2, 1);     g2.drawLine(w-2, 1, w-2, 1 + m);       // TR
+                int m = focused ? CORNER_MARK + 2 : CORNER_MARK;
+                g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
+                g2.drawLine(1, 1, 1 + m, 1);    g2.drawLine(1, 1, 1, 1 + m);      // TL
+                g2.drawLine(w-2-m, 1, w-2, 1);  g2.drawLine(w-2, 1, w-2, 1 + m);  // TR
             }
         } finally {
             g2.dispose();
