@@ -284,7 +284,8 @@ public class KokoroTTS implements MouthInterface {
 
                 resetNumericLocale();
                 GeneratedAudio audio = tts.generate(
-                        task.text(),
+                        //Remove dots, TTS say "dot" all the time.
+                        task.text().replace(".", " "),
                         sid,
                         1f + systemSession.getSpeechSpeed()
                 );
