@@ -1,17 +1,6 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.render.HudComboCellEditor;
-import elite.intel.ui.screen.settings.SettingsPopup;
-import elite.intel.ui.screen.settings.ShipSettingsPopup;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.theme.HudGlyphs;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTable;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.ShipCadence;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -27,6 +16,14 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
+import elite.intel.ui.screen.settings.SettingsPopup;
+import elite.intel.ui.screen.settings.ShipSettingsPopup;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudTable;
 import elite.intel.util.StringUtls;
 
 import javax.swing.*;
@@ -36,19 +33,21 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EventObject;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
 
-import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.*;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class CommanderTabPanel extends JPanel {
+
+    private static final int COL_SHIP = 0;
+    private static final int COL_VOICE = 1;
+    private static final int COL_PERSONALITY = 2;
+    private static final int COL_GEAR = 3;
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -160,18 +159,16 @@ public class CommanderTabPanel extends JPanel {
         HudTable.style(fleetTable);
         fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        fleetTable.getColumnModel().getColumn(0).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(1).setCellRenderer(new ComboColumnRenderer(null));
-        fleetTable.getColumnModel().getColumn(2).setCellRenderer(new ComboColumnRenderer("ship.personality."));
-        fleetTable.getColumnModel().getColumn(3).setCellRenderer(new ComboColumnRenderer("ship.cadence."));
-        fleetTable.getColumnModel().getColumn(4).setCellRenderer(new GearButtonRenderer());
-        fleetTable.getColumnModel().getColumn(4).setCellEditor(new GearButtonEditor());
+        fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(null));
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer("ship.personality."));
+        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
+        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
 
-        fleetTable.getColumnModel().getColumn(0).setPreferredWidth(200);
-        fleetTable.getColumnModel().getColumn(1).setPreferredWidth(160);
-        fleetTable.getColumnModel().getColumn(2).setPreferredWidth(160);
-        fleetTable.getColumnModel().getColumn(3).setPreferredWidth(100);
-        TableColumn gearCol = fleetTable.getColumnModel().getColumn(4);
+        fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(200);
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setPreferredWidth(160);
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setPreferredWidth(160);
+        TableColumn gearCol = fleetTable.getColumnModel().getColumn(COL_GEAR);
         gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
         gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
 
@@ -199,17 +196,14 @@ public class CommanderTabPanel extends JPanel {
         String[] voiceOptions = useLocal
                 ? Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new)
                 : Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
-        fleetTable.getColumnModel().getColumn(1)
+        fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions)));
 
         String[] personalityOptions =
                 Arrays.stream(ShipPersonality.values()).map(Enum::name).toArray(String[]::new);
-        String[] cadenceOptions =
-                Arrays.stream(ShipCadence.values()).map(Enum::name).toArray(String[]::new);
-        fleetTable.getColumnModel().getColumn(2)
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(personalityOptions)));
-        fleetTable.getColumnModel().getColumn(3)
-                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(cadenceOptions)));
+
     }
 
     static String displayShipName(ShipDao.Ship ship) {
@@ -241,7 +235,6 @@ public class CommanderTabPanel extends JPanel {
                     getText("player.fleet.ship"),
                     getText("player.fleet.voice"),
                     getText("player.fleet.personality"),
-                    getText("player.fleet.cadence"),
                     ""
             };
         }
@@ -251,26 +244,31 @@ public class CommanderTabPanel extends JPanel {
         }
 
         @Override public int getRowCount()    { return ships.size(); }
-        @Override public int getColumnCount() { return 5; }
+
+        @Override
+        public int getColumnCount() {
+            return 4;
+        }
         @Override public String getColumnName(int col) { return columnNames[col]; }
 
         @Override
         public Class<?> getColumnClass(int col) {
-            return col == 4 ? Object.class : String.class;
+            return col == COL_GEAR ? Object.class : String.class;
         }
 
         @Override
-        public boolean isCellEditable(int row, int col) { return col >= 1; }
+        public boolean isCellEditable(int row, int col) {
+            return col >= COL_VOICE;
+        }
 
         @Override
         public Object getValueAt(int row, int col) {
             ShipDao.Ship ship = ships.get(row);
             return switch (col) {
-                case 0 -> displayShipName(ship);
-                case 1 -> ship.getVoice();
-                case 2 -> ship.getPersonality();
-                case 3 -> ship.getCadence();
-                case 4 -> ship;
+                case COL_SHIP -> displayShipName(ship);
+                case COL_VOICE -> ship.getVoice();
+                case COL_PERSONALITY -> ship.getPersonality();
+                case COL_GEAR -> ship;
                 default -> null;
             };
         }
@@ -279,7 +277,7 @@ public class CommanderTabPanel extends JPanel {
         public void setValueAt(Object value, int row, int col) {
             ShipDao.Ship ship = ships.get(row);
             switch (col) {
-                case 1 -> {
+                case COL_VOICE -> {
                     String voiceName = (String) value;
                     ship.setVoice(voiceName);
                     String speakerName = trimToNull(displayShipName(ship));
@@ -289,12 +287,8 @@ public class CommanderTabPanel extends JPanel {
                     EventBusManager.publish(new AiVoxDemoEvent(tts, voiceName));
                     ShipManager.getInstance().saveShip(ship);
                 }
-                case 2 -> {
+                case COL_PERSONALITY -> {
                     ship.setPersonality((String) value);
-                    ShipManager.getInstance().saveShip(ship);
-                }
-                case 3 -> {
-                    ship.setCadence((String) value);
                     ShipManager.getInstance().saveShip(ship);
                 }
             }
@@ -303,11 +297,13 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * Cell renderer for editable combo columns (Voice/Personality/Cadence).
+     * Cell renderer for editable combo columns (Voice/Personality).
      * Optionally localizes enum values and draws a muted down affordance at the right edge.
      */
     private static final class ComboColumnRenderer extends HudTable.CellRenderer {
-        /** null -> raw value (Voice); non-null -> i18n key prefix (Personality/Cadence). */
+        /**
+         * null -> raw value (Voice); non-null -> i18n key prefix (Personality).
+         */
         private final String i18nPrefix;
         private boolean selectedRow;
         // Local pixel geometry - not a colour/font/component-height token.

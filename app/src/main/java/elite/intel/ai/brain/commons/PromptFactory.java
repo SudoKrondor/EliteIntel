@@ -289,10 +289,8 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     private void appendCadenceAndPersonality(StringBuilder sb) {
-        ShipCadence shipCadence = systemSession.getAICadence();
         ShipPersonality aiPersonality = systemSession.getAIPersonality();
-        sb.append(" Cadence and Personality: ");
-        sb.append(shipCadence.getCadenceClause());
+        sb.append(" Personality: ");
         sb.append(aiPersonality.getPersonalityClause());
     }
 
