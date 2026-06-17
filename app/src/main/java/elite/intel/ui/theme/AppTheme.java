@@ -474,6 +474,11 @@ public class AppTheme {
     /**
      * Applies borderless text styling for fields embedded inside composite HUD controls.
      * Uses {@link #HUD_FONT_SM} so search/filter inputs read as secondary controls, not headings.
+     * <p>
+     * Does not touch the component border: the inner-field inset is owned by {@link HudSearchField},
+     * which sets a variant-dependent padding (e.g. a left inset so the text clears the segment
+     * divider). The palette walk re-invokes this styler, so resetting the border here would erase
+     * that padding and push the text flush against the divider.
      */
     public static void styleSearchInnerField(JTextComponent tc) {
         tc.setOpaque(false);
@@ -482,7 +487,6 @@ public class AppTheme {
         tc.setCaretColor(HUD_COLOR_ROLE_INFORMATION);
         tc.setSelectionColor(HUD_COLOR_ROLE_INFORMATION);
         tc.setSelectedTextColor(HUD_COLOR_ROLE_SELECTED_TEXT);
-        tc.setBorder(BorderFactory.createEmptyBorder());
         tc.setFont(tc.getFont().deriveFont(HUD_FONT_SM));
     }
 

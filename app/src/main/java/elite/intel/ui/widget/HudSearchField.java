@@ -2,11 +2,14 @@ package elite.intel.ui.widget;
 import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 /**
  * Reusable HUD search input with placeholder text and an embedded clear action.
@@ -52,6 +55,14 @@ public class HudSearchField extends JPanel {
 
     private final JTextField textField;
     private final Variant variant;
+    /**
+     * Whether the inner text field currently holds keyboard focus. Drives the cyan focus accent
+     * on the framed variants ({@link Variant#TABLE_FILTER}, {@link Variant#TABLE_FILTER_CONNECTED}):
+     * the frame line brightens from {@code HUD_COLOR_ROLE_FRAME_BORDER} (teal) to
+     * {@code HUD_COLOR_ROLE_INFORMATION} (cyan) so the focus cue stays in the data/info colour
+     * language and does not compete with the orange action buttons that sit beside the field.
+     */
+    private boolean focused;
 
     /**
      * Creates a search field wrapper that owns the HUD border and clear button.
@@ -94,6 +105,11 @@ public class HudSearchField extends JPanel {
         textField.setBorder(BorderFactory.createEmptyBorder(0, filter ? 10 : 0, 0, 6));
         AppTheme.styleTextComponent(textField);
         textField.setOpaque(false);
+        // Focus accent: repaint the framed border in cyan while the field is being edited.
+        textField.addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) { focused = true; repaint(); }
+            @Override public void focusLost(FocusEvent e) { focused = false; repaint(); }
+        });
 
         JButton clearButton = new JButton("×");
         clearButton.putClientProperty(HUD_SEARCH_CLEAR_BUTTON, Boolean.TRUE);
@@ -163,30 +179,50 @@ public class HudSearchField extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             int w = getWidth();
             int h = getHeight();
-            int m = CORNER_MARK;
+            // Focus accent (cyan) brightens the frame while editing; unfocused frame stays the dim
+            // teal so it does not compete with the orange action buttons.
+            g2.setColor(focused ? HudPalette.HUD_COLOR_ROLE_INFORMATION : HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
             if (variant == Variant.TABLE_FILTER) {
-                // Full enclosing border
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
-                g2.drawRect(0, 0, w - 1, h - 1);
-                // Corner accent marks at all four corners
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
-                g2.drawLine(1, 1, 1 + m, 1);       g2.drawLine(1, 1, 1, 1 + m);           // TL
-                g2.drawLine(w-2-m, 1, w-2, 1);     g2.drawLine(w-2, 1, w-2, 1 + m);       // TR
-                g2.drawLine(1, h-2, 1+m, h-2);     g2.drawLine(1, h-2-m, 1, h-2);         // BL
-                g2.drawLine(w-2-m, h-2, w-2, h-2); g2.drawLine(w-2, h-2-m, w-2, h-2);    // BR
+                g2.drawRect(0, 0, w - 1, h - 1);   // full enclosing border
             } else {
                 // TABLE_FILTER_CONNECTED: top/left/right border only - the table provides the bottom
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_FRAME_BORDER);
                 g2.drawLine(0, 0, w - 1, 0);           // top
                 g2.drawLine(0, 0, 0, h - 1);           // left
                 g2.drawLine(w - 1, 0, w - 1, h - 1);  // right
                 // Dim separator line at the bottom (marks the filter/table boundary)
                 g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
                 g2.drawLine(0, h - 1, w - 1, h - 1);
-                // Corner accent marks on top corners only
+            }
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * Paints the cyan corner accent marks on top of the child segments. They must be drawn after
+     * {@code paintChildren} (here, post {@code super.paint}) because the opaque icon/clear segments
+     * fill the panel interior and would otherwise overdraw marks placed inside the 1 px border inset.
+     */
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        if (variant != Variant.TABLE_FILTER && variant != Variant.TABLE_FILTER_CONNECTED) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            // TABLE_FILTER shows the shared diagonal pair (top-left + bottom-right); the connected
+            // variant has no bottom edge of its own, so it marks the two top corners instead.
+            if (variant == Variant.TABLE_FILTER) {
+                HudGlyphs.paintHudFocusCornerMarks(g2, w, h, focused, HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
+            } else {
+                int m = focused ? CORNER_MARK + 2 : CORNER_MARK;
                 g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
-                g2.drawLine(1, 1, 1 + m, 1);      g2.drawLine(1, 1, 1, 1 + m);      // TL
-                g2.drawLine(w-2-m, 1, w-2, 1);    g2.drawLine(w-2, 1, w-2, 1 + m);  // TR
+                g2.drawLine(1, 1, 1 + m, 1);    g2.drawLine(1, 1, 1, 1 + m);      // TL
+                g2.drawLine(w-2-m, 1, w-2, 1);  g2.drawLine(w-2, 1, w-2, 1 + m);  // TR
             }
         } finally {
             g2.dispose();

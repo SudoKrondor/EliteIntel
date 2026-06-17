@@ -337,6 +337,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("hardpoints out", "deploy hardpoints");
         m.put("arm up", "deploy hardpoints");
         m.put("ready weapons", "deploy hardpoints");
+        m.put("power cell", "shield cell");
 
         // Generic deploy verbs
         m.put("extend", "deploy");

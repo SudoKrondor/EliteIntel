@@ -22,7 +22,7 @@ import java.awt.event.MouseEvent;
 /**
  * HUD range slider rendered in the in-game Elite Dangerous form (HUD section 4).
  * <p>
- * Layout: a warm brown track plaque ({@link HudPalette#HUD_COLOR_ROLE_PANEL_SEPARATOR}) spans the full
+ * Layout: a warm brown track plaque ({@link HudPalette#HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND}) spans the full
  * width; a dim rail ({@link HudPalette#HUD_COLOR_ROLE_CONTROL_DECORATION}) with a horizontal edge inset runs through
  * its centre; the active portion left of the thumb is a saturated red fill
  * ({@link HudPalette#HUD_COLOR_ROLE_SLIDER_VALUE_TRACK}) drawn over a tall vertical start tick. The thumb is a round
@@ -192,7 +192,7 @@ public class HudSlider extends JComponent {
             int thumbX = thumbX();
 
             // Warm brown track plaque (muted when disabled).
-            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_PANEL_SEPARATOR : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+            g2.setColor(enabled ? HudPalette.HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND : HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
             g2.fillRect(0, trackTop, w, trackH);
 
             // Dim rail with edge inset on both sides.

@@ -9,11 +9,10 @@ import java.awt.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Groups bindings, command catalog, and future customCommands under one Actions tab.
+ * Groups the command catalog and customCommands under one Actions tab.
  */
 public class ActionsTabPanel extends JPanel {
 
-    private final BindingsTabPanel bindingsTabPanel = new BindingsTabPanel();
     private final CommandCatalogTablePanel commandCatalogTablePanel = new CommandCatalogTablePanel();
     private final CustomCommandsTabPanel customCommandsTabPanel = new CustomCommandsTabPanel();
 
@@ -28,7 +27,6 @@ public class ActionsTabPanel extends JPanel {
 
         JTabbedPane tabs = AppTheme.makeSectionTabs();
         tabs.setTabPlacement(JTabbedPane.TOP);
-        tabs.addTab(getText("actions.tab.bindings"), bindingsTabPanel);
         tabs.addTab(getText("actions.tab.commands"), commandCatalogTablePanel);
         tabs.addTab(getText("actions.tab.customCommands"), customCommandsTabPanel);
 
@@ -36,17 +34,7 @@ public class ActionsTabPanel extends JPanel {
     }
 
     public void initData() {
-        bindingsTabPanel.initData();
         commandCatalogTablePanel.initData();
         customCommandsTabPanel.initData();
-    }
-
-    /** Forwards close-with-draft prompt to the bindings panel. Must be called on the EDT. */
-    public void promptCloseWithDraft() {
-        bindingsTabPanel.promptCloseWithDraft();
-    }
-
-    public void dispose() {
-        bindingsTabPanel.dispose();
     }
 }

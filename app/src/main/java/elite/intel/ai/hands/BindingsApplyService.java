@@ -25,14 +25,20 @@ public class BindingsApplyService {
 
     private final BindingsWorkingCopyRepository workingCopyRepo;
     private final BindingsBackupService backupService;
+    private final Path backupDirectory;
 
     public BindingsApplyService() {
-        this(new BindingsWorkingCopyRepository(), new BindingsBackupService());
+        this(new BindingsWorkingCopyRepository(), new BindingsBackupService(), null);
     }
 
     BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, BindingsBackupService backupService) {
+        this(workingCopyRepo, backupService, null);
+    }
+
+    BindingsApplyService(BindingsWorkingCopyRepository workingCopyRepo, BindingsBackupService backupService, Path backupDirectory) {
         this.workingCopyRepo = workingCopyRepo;
         this.backupService = backupService;
+        this.backupDirectory = backupDirectory;
     }
 
     /**
@@ -50,6 +56,10 @@ public class BindingsApplyService {
         if (!Files.exists(workingCopy)) {
             throw new BindingsApplyException("No working copy found for preset: " + presetFileName);
         }
+        if (!verifyGameFileDidNotChange(presetFileName, gameBindsFile)) {
+            log.info("No bindings draft to apply for '{}'", presetFileName);
+            return null;
+        }
 
         byte[] content;
         try {
@@ -62,7 +72,27 @@ public class BindingsApplyService {
 
         Path backupPath = backupGameFile(gameBindsFile);
 
-        return writeToGameDir(gameBindsFile, content, backupPath);
+        Path result = writeToGameDir(gameBindsFile, content, backupPath);
+        try {
+            workingCopyRepo.markApplied(presetFileName);
+        } catch (IOException e) {
+            log.warn("Applied bindings but could not update baseline metadata: {}", e.getMessage());
+        }
+        return result;
+    }
+
+    private boolean verifyGameFileDidNotChange(String presetFileName, Path gameBindsFile) throws BindingsApplyException {
+        try {
+            boolean hasDraft = workingCopyRepo.hasUnappliedDraft(presetFileName, gameBindsFile);
+            if (hasDraft && !workingCopyRepo.gameFileMatchesBaseline(presetFileName, gameBindsFile)) {
+                throw BindingsApplyException.localized(
+                        "bindings.apply.conflict",
+                        "The game bindings file changed after this EI draft was created. Reload from game or discard the draft before applying.");
+            }
+            return hasDraft;
+        } catch (IOException e) {
+            throw new BindingsApplyException("Could not compare bindings draft with game file: " + e.getMessage(), e);
+        }
     }
 
     private void validateXml(byte[] content) throws BindingsApplyException {
@@ -91,7 +121,7 @@ public class BindingsApplyService {
             return null;
         }
         try {
-            Path backupDir = AppPaths.getBindingsBackupDir();
+            Path backupDir = backupDirectory != null ? backupDirectory : AppPaths.getBindingsBackupDir();
             Path backupPath = backupService.createBackup(gameBindsFile, backupDir);
             log.info("Backed up game bindings to {}", backupPath);
             return backupPath;

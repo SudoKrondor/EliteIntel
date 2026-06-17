@@ -7,6 +7,8 @@ import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
 
 /**
@@ -22,6 +24,10 @@ public class HudTextField extends JTextField {
     private Runnable infoAction;
     /** True while the pointer is inside the info-zone. */
     private boolean infoHover;
+    /** True while the field holds keyboard focus; drives the focus-frame and text accent. */
+    private boolean focused;
+    /** Foreground colour captured on focus gain, restored on focus loss. */
+    private Color restingForeground;
 
     /**
      * Creates an empty HUD text field.
@@ -29,6 +35,21 @@ public class HudTextField extends JTextField {
     public HudTextField() {
         AppTheme.styleTextComponent(this);
         setPreferredSize(new Dimension(0, HudPalette.HUD_FIELD_HEIGHT));
+        addFocusListener(new FocusAdapter() {
+            @Override public void focusGained(FocusEvent e) {
+                focused = true;
+                restingForeground = getForeground();
+                setForeground(HudPalette.HUD_COLOR_ROLE_INPUT_FOCUS);
+                repaint();
+            }
+            @Override public void focusLost(FocusEvent e) {
+                focused = false;
+                if (restingForeground != null) {
+                    setForeground(restingForeground);
+                }
+                repaint();
+            }
+        });
     }
 
     /**
@@ -85,6 +106,27 @@ public class HudTextField extends JTextField {
             int gx = infoZoneX + (infoZoneW - gs) / 2;
             int gy = (h - gs) / 2;
             HudGlyphs.paintHudInfoGlyph(g2, gx, gy, gs, gs, tint);
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    /**
+     * Overlays the HUD focus accent on top of the standard field border: while focused, the frame
+     * is repainted in {@code HUD_COLOR_ROLE_INPUT_FOCUS}. Drawn after {@code super.paint} so it sits
+     * over the border; the disabled field keeps its dim border untouched. The field border/insets
+     * and base colours are unchanged.
+     */
+    @Override
+    public void paint(Graphics g) {
+        super.paint(g);
+        if (!isEnabled() || !focused) return;
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            // Crisp 1 px frame: AA off so the right/bottom edges render at full brightness.
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+            g2.setColor(HudPalette.HUD_COLOR_ROLE_INPUT_FOCUS);
+            g2.drawRect(0, 0, getWidth() - 1, getHeight() - 1);
         } finally {
             g2.dispose();
         }

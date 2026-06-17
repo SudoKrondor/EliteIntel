@@ -55,7 +55,7 @@ import static elite.intel.ui.theme.HudGlyphs.*;
 import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
 
-public class BindingsTabPanel extends JPanel {
+public class BindForgeTabPanel extends JPanel {
 
     private static final int SCROLL_UNIT_ROWS = 2;
 
@@ -96,7 +96,7 @@ public class BindingsTabPanel extends JPanel {
     private String activePresetFileName;
     private boolean assignDialogOpen;
 
-    public BindingsTabPanel() {
+    public BindForgeTabPanel() {
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(selectionController, this::openAssignKeyboardBindingDialog);
         buildUi();
@@ -122,7 +122,11 @@ public class BindingsTabPanel extends JPanel {
         if (activePresetFileName == null || gameBindingsFile == null) {
             return false;
         }
-        return !workingCopyRepo.isSyncedWithGame(activePresetFileName, gameBindingsFile.toPath());
+        try {
+            return workingCopyRepo.hasUnappliedDraft(activePresetFileName, gameBindingsFile.toPath());
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     /**
@@ -320,19 +324,17 @@ public class BindingsTabPanel extends JPanel {
         if (applyButton == null || syncStatusBadge == null) {
             return;
         }
-        boolean synced = activePresetFileName == null
-                || gameBindingsFile == null
-                || workingCopyRepo.isSyncedWithGame(activePresetFileName, gameBindingsFile.toPath());
+        boolean hasDraft = hasUnappliedChanges();
 
         syncStatusBadge.setStatus(
-                synced ? getText("bindings.status.synced.badge") : getText("bindings.status.draft.badge"),
-                synced ? StatusBadge.State.OK : StatusBadge.State.STANDBY);
-        syncStatusBadge.setToolTipText(synced ? getText("bindings.status.synced") : getText("bindings.status.draft"));
+                hasDraft ? getText("bindings.status.draft.badge") : getText("bindings.status.synced.badge"),
+                hasDraft ? StatusBadge.State.STANDBY : StatusBadge.State.OK);
+        syncStatusBadge.setToolTipText(hasDraft ? getText("bindings.status.draft") : getText("bindings.status.synced"));
 
-        applyButton.setEnabled(!synced && activePresetFileName != null);
+        applyButton.setEnabled(hasDraft && activePresetFileName != null);
         revertButton.setEnabled(activePresetFileName != null && workingCopyRepo.exists(activePresetFileName));
 
-        EventBusManager.publish(new KeymapSyncStateChangedEvent(synced));
+        EventBusManager.publish(new KeymapSyncStateChangedEvent(!hasDraft));
     }
 
     private void performApply() {
@@ -351,9 +353,10 @@ public class BindingsTabPanel extends JPanel {
                     JOptionPane.INFORMATION_MESSAGE);
             updateSyncStatus();
         } catch (BindingsApplyException e) {
+            String errorMessage = e.localizationKey() == null ? e.getMessage() : getText(e.localizationKey());
             JOptionPane.showMessageDialog(
                     this,
-                    getText("bindings.apply.error", e.getMessage()),
+                    getText("bindings.apply.error", errorMessage),
                     getText("bindings.apply.dialogTitle"),
                     JOptionPane.ERROR_MESSAGE);
         }

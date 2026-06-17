@@ -9,8 +9,7 @@ import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudConnectedToolbar;
-import elite.intel.ui.widget.HudSearchField;
+import elite.intel.ui.widget.HudSearchToolbar;
 import elite.intel.ui.widget.HudTable;
 
 import elite.intel.ai.brain.actions.catalog.CommandCatalog;
@@ -95,18 +94,16 @@ public class CustomCommandsTabPanel extends JPanel {
      * Builds the connected toolbar row: search field on the left, action buttons on
      * the right.
      */
-    private HudConnectedToolbar controlsToolbar() {
-        HudConnectedToolbar toolbar = new HudConnectedToolbar();
-
-        HudSearchField searchPanel = new HudSearchField(
+    private JPanel controlsToolbar() {
+        // Shared full-width filter bar (search box owns its TABLE_FILTER frame) with the
+        // import/export/new buttons as trailing actions beside it, outside the frame. The shared
+        // bar owns the field height so it matches the buttons and the other command tab.
+        HudSearchToolbar toolbar = HudSearchToolbar.tableFilter(
                 getText("actions.customCommands.search.placeholder"),
                 getText("actions.commands.search.clearTooltip"),
-                HudSearchField.Variant.TABLE_FILTER);
-        searchField = searchPanel.textField();
+                actionPanel());
+        searchField = toolbar.textField();
         searchField.getDocument().addDocumentListener(new SearchDocumentListener());
-        toolbar.add(searchPanel, BorderLayout.CENTER);
-
-        toolbar.add(actionPanel(), BorderLayout.EAST);
         return toolbar;
     }
 
