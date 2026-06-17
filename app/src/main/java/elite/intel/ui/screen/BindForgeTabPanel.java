@@ -55,7 +55,7 @@ import static elite.intel.ui.theme.HudGlyphs.*;
 import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
 
-public class BindingsTabPanel extends JPanel {
+public class BindForgeTabPanel extends JPanel {
 
     private static final int SCROLL_UNIT_ROWS = 2;
 
@@ -96,7 +96,7 @@ public class BindingsTabPanel extends JPanel {
     private String activePresetFileName;
     private boolean assignDialogOpen;
 
-    public BindingsTabPanel() {
+    public BindForgeTabPanel() {
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(selectionController, this::openAssignKeyboardBindingDialog);
         buildUi();

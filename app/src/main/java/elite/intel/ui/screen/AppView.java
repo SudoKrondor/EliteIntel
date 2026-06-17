@@ -37,6 +37,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String ICON_AI = "/images/ai.png";
     private static final String ICON_PLAYER = "/images/controller.png";
     private static final String ICON_ACTIONS = "/images/keys-binding.png";
+    private static final String ICON_BIND_FORGE = "/images/anvil.png";
     private static final String ICON_SETTINGS = "/images/settings.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
@@ -46,7 +47,8 @@ public class AppView extends JFrame implements AppViewInterface {
     private Font monoFont;
     private AiTabPanel aiTabPanel;
     private CommanderTabPanel commanderTabPanel;
-    private ActionCenterTabPanel actionCenterTabPanel;
+    private ActionsTabPanel actionsTabPanel;
+    private BindForgeTabPanel bindForgeTabPanel;
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
@@ -67,8 +69,8 @@ public class AppView extends JFrame implements AppViewInterface {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (actionCenterTabPanel != null) {
-                    actionCenterTabPanel.promptCloseWithDraft();
+                if (bindForgeTabPanel != null) {
+                    bindForgeTabPanel.promptCloseWithDraft();
                 }
                 System.exit(0);
             }
@@ -98,7 +100,8 @@ public class AppView extends JFrame implements AppViewInterface {
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
-        ImageIcon actionCenterIcon = scaledIcon(ICON_ACTIONS);
+        ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
+        ImageIcon bindForgeIcon = scaledIcon(ICON_BIND_FORGE);
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
@@ -106,7 +109,8 @@ public class AppView extends JFrame implements AppViewInterface {
 
         aiTabPanel = new AiTabPanel(monoFont);
         commanderTabPanel = new CommanderTabPanel();
-        actionCenterTabPanel = new ActionCenterTabPanel();
+        actionsTabPanel = new ActionsTabPanel();
+        bindForgeTabPanel = new BindForgeTabPanel();
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
@@ -115,7 +119,8 @@ public class AppView extends JFrame implements AppViewInterface {
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
         tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
-        tabs.addTab(getText("tab.actionCenter"), actionCenterIcon, actionCenterTabPanel);
+        tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
+        tabs.addTab(getText("tab.bindForge"), bindForgeIcon, bindForgeTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
@@ -148,7 +153,8 @@ public class AppView extends JFrame implements AppViewInterface {
     public void initData() {
         settingsTabPanel.initData();
         commanderTabPanel.initData();
-        actionCenterTabPanel.initData();
+        actionsTabPanel.initData();
+        bindForgeTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesRunning);
     }
 
@@ -174,7 +180,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (topStatusBar != null) topStatusBar.dispose();
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
-        if (actionCenterTabPanel != null) actionCenterTabPanel.dispose();
+        if (bindForgeTabPanel != null) bindForgeTabPanel.dispose();
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (starVizionTabPanel != null) starVizionTabPanel.dispose();
