@@ -11,9 +11,6 @@ import elite.intel.ui.i18n.MultiLingualTextProvider;
 import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 public class StringUtls {
@@ -287,14 +284,6 @@ public class StringUtls {
 
 
     public static String affirmative() {
-        List<String> result = Arrays.stream(localizedSpeech("speech.affirmative").split("\\|"))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
-        if (result.isEmpty()) {
-            return "Commander";
-        }
-
-        return result.get(new Random().nextInt(result.size()));
+        return localizedSpeech("speech.affirmative");
     }
 }

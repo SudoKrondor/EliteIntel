@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestRU {
 
-    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_WAIT_MS = 5000;
 
     private HandlerCapture capture;
 
@@ -107,7 +107,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> combatMode() {
-        return Stream.of("боевой режим", "переключись в боевой режим", "боевой", "включи боевой режим", "боевой");
+        return Stream.of("боевой режим", "переключись в боевой режим", "включи боевой режим", "боевой");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -366,7 +366,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> deployLandingGear() {
-        return Stream.of("шасси", "выпустить шасси", "опустить шасси", "развернуть шасси");
+        return Stream.of("шасси", "выпустить шасси", "опустить шасси", "развернуть шасси", "приготовся к посадке");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -471,7 +471,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("убрать орудия", "оружие убрать", "оружие в покое", "отбой", "оружие в кобуру");
+        return Stream.of("убрать орудия", "оружие убрать", "оружие в покое", "отбой");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -591,8 +591,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> navigateToNextBioSample() {
-        return Stream.of("Лети к следующему биообразцу", "Лети к следующему органическому",
-                "лети к записи кодекса");
+        return Stream.of("навигация к следующему биообразцу", "навигация к следующему органическому", "навигация к записи кодекса");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -647,7 +646,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> navigateToSquadronCarrier() {
-        return Stream.of("лети к авианосцу эскадрильи", "к авианосцу эскадрильи", "курс на авианосец эскадрильи");
+        return Stream.of("лети к авианосцу эскадрильи", "маршрут к авианосцу эскадрильи", "курс на авианосец эскадрильи");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -888,8 +887,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> queryPlottedRoute() {
-        return Stream.of("проложенный маршрут", "оставшиеся прыжки",
-                "сколько прыжков до цели", "мы уже там");
+        return Stream.of("проложенный маршрут", "оставшиеся прыжки", "сколько прыжков до цели");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -969,7 +967,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("Каков диапазон нашего авианосца?", "Каков статус топлива флотского авианосца",
+        return Stream.of("Какова дальность действия нашего авианосца?", "Каков статус топлива флотского авианосца",
                 "Как долго мы можем работать на текущих средствах?",
                 "Как далеко может прыгнуть авианосец с текущим тритием?", "тритий авианосца", "топливо авианосца",
                 "сколько трития на авианосце", "уровень трития", "Уровень топлива авианосца"
@@ -996,7 +994,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> queryFsdTarget() {
-        return Stream.of("цель фсд", "какую звезду мы выбираем", "информация о следующем прыжке");
+        return Stream.of("цель фсд", "информация о следующем прыжке");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

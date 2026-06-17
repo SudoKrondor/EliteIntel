@@ -78,6 +78,18 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(JUMP_TO_HYPERSPACE.getAction());
         sb.append("\n");
 
+        sb.append(" - classify questions about авианосец as ");
+        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append("\n");
+
+        sb.append(" - classify questions about авианосец эскадрона as ");
+        sb.append(SQUADRON_CARRIER_STATUS.getAction());
+        sb.append("\n");
+
+        sb.append(" - classify автоматическая стыковка as ");
+        sb.append(TAXI.getAction());
+        sb.append("\n");
+
         sb.append("- require very high probability match for action →");
         sb.append(CLEAR_ALL_ACTIVE_MISSIONS.getAction());
         sb.append("\n");

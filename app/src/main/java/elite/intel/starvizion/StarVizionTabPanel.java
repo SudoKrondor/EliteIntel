@@ -8,14 +8,15 @@ import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
 import elite.intel.starvizion.overlay.KeyboardVizlet;
-import elite.intel.ui.view.AppTheme;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudForms;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.view.AppTheme.*;
+import static elite.intel.ui.theme.AppTheme.*;
 
 /**
  * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows
@@ -61,7 +62,7 @@ public class StarVizionTabPanel extends JPanel {
         setBorder(new EmptyBorder(20, 20, 20, 20));
         setOpaque(false);
 
-        GridBagConstraints gbc = AppTheme.baseGbc();
+        GridBagConstraints gbc = HudForms.baseGbc();
 
         // Description label
         nextRow(gbc);
@@ -70,7 +71,7 @@ public class StarVizionTabPanel extends JPanel {
         JLabel desc = new JLabel("<html><body style='width:420px'>"
                 + getText("starvizion.description")
                 + "</body></html>");
-        desc.setForeground(FG_MUTED);
+        desc.setForeground(StarVizionPalette.DESCRIPTION_TEXT);
         add(desc, gbc);
 
         // Spacer
@@ -92,7 +93,7 @@ public class StarVizionTabPanel extends JPanel {
         gbc.gridx = 0; gbc.gridwidth = 2; gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         statusLabel = new JLabel(" ");
-        statusLabel.setForeground(FG_MUTED);
+        statusLabel.setForeground(StarVizionPalette.STATUS_PENDING_TEXT);
         add(statusLabel, gbc);
 
         // Push everything up
@@ -115,7 +116,7 @@ public class StarVizionTabPanel extends JPanel {
             deviceService = DeviceService.getInstance();
             deviceService.start();
             statusLabel.setText(getText("starvizion.sdl.initializing"));
-            statusLabel.setForeground(FG_MUTED);
+            statusLabel.setForeground(StarVizionPalette.STATUS_PENDING_TEXT);
         }
 
         // Spawn vizlets in upper-right, side by side
@@ -162,7 +163,7 @@ public class StarVizionTabPanel extends JPanel {
         SwingUtilities.invokeLater(() -> {
             if (!event.available()) {
                 statusLabel.setText(getText("starvizion.sdl.unavailable"));
-                statusLabel.setForeground(DISABLED_FG);
+                statusLabel.setForeground(StarVizionPalette.STATUS_UNAVAILABLE_TEXT);
             } else if (active) {
                 statusLabel.setText(" ");
             }

@@ -22,7 +22,7 @@ public record LlmSessionStatsSnapshot(
         double lastTps,
         int totalPromptTokens,
         int totalCompletionTokens,
-        /** Cache hits — tokens served at reduced or no charge. */
+        /** Cache hits - tokens served at reduced or no charge. */
         int totalCachedHits,
         int totalCacheWritten,
         /** True once at least one {@link elite.intel.ui.event.LlmUsageEvent} has been processed this session. */

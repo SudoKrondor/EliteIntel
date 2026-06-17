@@ -6,6 +6,7 @@ import elite.intel.session.SystemSession;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
+import java.util.Random;
 import java.util.ResourceBundle;
 
 public final class MultiLingualTextProvider {
@@ -14,6 +15,8 @@ public final class MultiLingualTextProvider {
     // Disable JVM locale fallback so missing translated keys fall through to English explicitly below.
     private static final ResourceBundle.Control NO_FALLBACK_CONTROL =
             ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_DEFAULT);
+
+    private static final Random RANDOM = new Random();
 
     private MultiLingualTextProvider() {
     }
@@ -31,15 +34,21 @@ public final class MultiLingualTextProvider {
     private static String resolveText(Locale locale, String key) {
         ResourceBundle selectedBundle = getBundle(locale);
         if (selectedBundle.containsKey(key)) {
-            return selectedBundle.getString(key);
+            return pickVariant(selectedBundle.getString(key));
         }
 
         ResourceBundle fallbackBundle = getBundle(Locale.ENGLISH);
         if (fallbackBundle.containsKey(key)) {
-            return fallbackBundle.getString(key);
+            return pickVariant(fallbackBundle.getString(key));
         }
 
         return key;
+    }
+
+    private static String pickVariant(String raw) {
+        if (!raw.contains("|")) return raw;
+        String[] parts = raw.split("\\|");
+        return parts[RANDOM.nextInt(parts.length)].trim();
     }
 
     private static ResourceBundle getBundle(Locale locale) {
@@ -49,6 +58,14 @@ public final class MultiLingualTextProvider {
         } catch (MissingResourceException e) {
             return ResourceBundle.getBundle(BUNDLE_NAME, Locale.ROOT, NO_FALLBACK_CONTROL);
         }
+    }
+
+    /**
+     * Lowercase language tag of the active UI language (e.g. {@code "en"}, {@code "ru"}).
+     * Intended for selecting localized resource files (manuals, credits) by language suffix.
+     */
+    public static String currentLanguageTag() {
+        return locale().getLanguage();
     }
 
     private static Locale locale() {

@@ -10,11 +10,13 @@
 - Si la aplicación no te escucha bien: problema de oídos (sala ruidosa, ratio ruido/RMS bajo, audio sin calibrar, etc.)
 - Si la aplicación no habla: problema de boca. Verifica el enrutamiento de audio a nivel del sistema operativo.
 
-### [Wiki completo aquí](https://github.com/SudoKrondor/EliteIntel/wiki)
+### [Wiki completo aquí](https://www.elite-intel.org/es)
 
 ## Entrada de audio
 
-**Calibra el audio en la aplicación.** Si la diferencia entre el nivel de ruido y el RMS es demasiado baja (p. ej. menos de 400), la aplicación tendrá dificultades para entenderte. Un buen ratio es al menos 800–1000. Los altavoces y el micrófono no combinan bien. Se recomienda auriculares con micrófono.
+**Calibra el audio en la aplicación.** Si la diferencia entre el nivel de ruido y el RMS es demasiado baja (p. ej. menos de 400),
+la aplicación tendrá dificultades para entenderte. Un buen ratio es al menos 800–1000.
+Si utilizas altavoces y micrófono, activa la función «pulsar para hablar»; de lo contrario, se recomienda usar auriculares con micrófono.
 
 ## Aplicación
 
@@ -248,7 +250,7 @@ Los LLMs locales responderán pero serán rígidos. Se recomiendan LLMs en la nu
 
 ---
 
-[Más comandos aquí](https://github.com/SudoKrondor/EliteIntel/wiki/Obscure-System-Commands)
+[Más comandos aquí](https://www.elite-intel.org/es)
 
 ¡Vuela peligroso, Comandante! o7
 
