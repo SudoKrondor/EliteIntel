@@ -577,6 +577,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             case ES -> "es";
             case RU -> "ru";
             case UK -> "uk";
+            case PT -> "pt";
         };
     }
 

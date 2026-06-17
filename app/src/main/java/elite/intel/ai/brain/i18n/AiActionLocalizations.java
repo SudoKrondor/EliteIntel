@@ -4,6 +4,7 @@ import elite.intel.ai.brain.i18n.de.GermanAiActionAliases;
 import elite.intel.ai.brain.i18n.en.EnglishAiActionAliases;
 import elite.intel.ai.brain.i18n.es.SpanishAiActionAliases;
 import elite.intel.ai.brain.i18n.fr.FrenchAiActionAliases;
+import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
 import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
 import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
 import elite.intel.session.Status;
@@ -24,6 +25,7 @@ public final class AiActionLocalizations {
             case DE -> new GermanAiActionAliases();
             case FR -> new FrenchAiActionAliases();
             case ES -> new SpanishAiActionAliases();
+            case PT -> new PortugueseAiActionAliases();
         };
     }
 

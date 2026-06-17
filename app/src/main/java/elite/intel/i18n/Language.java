@@ -6,5 +6,6 @@ public enum Language {
     UK,
     DE,
     FR,
-    ES
+    ES,
+    PT
 }

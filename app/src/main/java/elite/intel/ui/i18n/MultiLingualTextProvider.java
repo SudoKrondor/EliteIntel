@@ -4,12 +4,7 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.Random;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public final class MultiLingualTextProvider {
 
@@ -119,6 +114,7 @@ public final class MultiLingualTextProvider {
             case FR -> Locale.FRENCH;
             case EN -> Locale.ENGLISH;
             case ES -> Locale.forLanguageTag("es");
+            case PT -> Locale.forLanguageTag("pt");
         };
     }
 }
