@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestRU {
 
-    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_WAIT_MS = 5000;
 
     private HandlerCapture capture;
 
@@ -366,7 +366,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> deployLandingGear() {
-        return Stream.of("шасси", "выпустить шасси", "опустить шасси", "развернуть шасси");
+        return Stream.of("шасси", "выпустить шасси", "опустить шасси", "развернуть шасси", "приготовся к посадке");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

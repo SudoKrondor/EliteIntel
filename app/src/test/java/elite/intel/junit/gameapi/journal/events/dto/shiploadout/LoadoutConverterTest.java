@@ -1,5 +1,6 @@
-package elite.intel.gameapi.journal.events.dto.shiploadout;
+package elite.intel.junit.gameapi.journal.events.dto.shiploadout;
 
+import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
