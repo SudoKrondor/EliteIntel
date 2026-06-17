@@ -1,16 +1,13 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.DockedEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 
-import java.util.List;
 import java.util.Locale;
 
 import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.FLEET_CARRIER;
@@ -63,30 +60,6 @@ public class DockedSubscriber {
                 }
 
                 if (event.getStationFaction() != null) location.setStationFaction(event.getStationFaction().getName());
-
-                StringBuilder sb = new StringBuilder();
-                List<String> stationServices = event.getStationServices();
-                if (stationServices != null && !stationServices.isEmpty()) {
-                    sb.append("Services: ");
-                    for (String service : stationServices) {
-                        sb.append(service);
-                        sb.append(", ");
-                    }
-                    sb.append(".");
-                }
-
-                DockedEvent.LandingPads landingPads = event.getLandingPads();
-                if (landingPads != null) {
-                    sb.append(" Landing Pads:");
-                    sb.append(" Large: ").append(landingPads.getLarge()).append(", ");
-                    sb.append(" Medium: ").append(landingPads.getMedium()).append(", ");
-                    sb.append(" Small: ").append(landingPads.getSmall()).append(".");
-                }
-
-                String availableData = LocalServicesData.setLocalServicesData(event.getMarketID());
-                if (!availableData.isEmpty()) {
-                    EventBusManager.publish(new MissionCriticalAnnouncementEvent("Market data available."));
-                }
                 locationManager.save(location);
             }); // end virtual thread
         });
