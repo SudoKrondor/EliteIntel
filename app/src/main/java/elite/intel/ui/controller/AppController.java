@@ -170,8 +170,33 @@ public class AppController implements Runnable {
     }
 
     @Subscribe
+    void onLanguageChangedEvent(LanguageChangedEvent event) {
+        new Thread(this::restartEarsService, "EarsRestart-Lang-Thread").start();
+        // Delay so the language-change announcement can finish playing before TTS rebuilds
+        new Thread(() -> {
+            try {
+                Thread.sleep(5_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            restartMouthService();
+        }, "MouthRestart-Lang-Thread").start();
+    }
+
+    @Subscribe
     void onRestartMouthEvent(RestartMouthEvent event) {
         new Thread(this::restartMouthService, "MouthRestart-Thread").start();
+    }
+
+    private void restartEarsService() {
+        if (!isRunning.get()) return;
+        ServiceHolder ears = services.get(ServiceType.EARS);
+        if (ears == null) return;
+        appendToLog("Restarting STT service...");
+        ears.stop();
+        ears.start();
+        appendToLog("STT service restarted");
     }
 
     private void restartMouthService() {
