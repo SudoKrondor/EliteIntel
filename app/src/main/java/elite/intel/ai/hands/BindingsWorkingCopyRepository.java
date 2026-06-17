@@ -5,8 +5,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.FileTime;
 
 /**
  * Manages per-preset working copies of Elite Dangerous {@code .binds} files.
@@ -23,6 +27,17 @@ import java.nio.file.*;
 public class BindingsWorkingCopyRepository {
 
     private static final Logger log = LogManager.getLogger(BindingsWorkingCopyRepository.class);
+    private static final String BASELINE_HASH_SUFFIX = ".elite-intel.base.sha256";
+    private static final String TMP_SUFFIX = ".tmp";
+    private final Path workingDirectory;
+
+    public BindingsWorkingCopyRepository() {
+        this(null);
+    }
+
+    BindingsWorkingCopyRepository(Path workingDirectory) {
+        this.workingDirectory = workingDirectory;
+    }
 
     /**
      * Returns the working copy path for the given preset file name.
@@ -32,7 +47,8 @@ public class BindingsWorkingCopyRepository {
      */
     public Path getWorkingCopyPath(String presetFileName) {
         try {
-            return AppPaths.getBindingsWorkingDir().resolve(presetFileName);
+            Path directory = workingDirectory != null ? workingDirectory : AppPaths.getBindingsWorkingDir();
+            return directory.resolve(presetFileName);
         } catch (IOException e) {
             throw new IllegalStateException("Cannot resolve bindings working directory", e);
         }
@@ -50,12 +66,14 @@ public class BindingsWorkingCopyRepository {
         Path workingCopy = getWorkingCopyPath(presetFileName);
         if (Files.exists(workingCopy)) {
             log.debug("Using existing working copy for '{}' at {}", presetFileName, workingCopy);
+            refreshFromGameIfClean(presetFileName, gameFile);
             return workingCopy;
         }
         log.info("No working copy for '{}', importing from game file {}", presetFileName, gameFile);
         Files.createDirectories(workingCopy.getParent());
         // Byte-perfect copy preserves BOM and any encoding details of the original.
         Files.copy(gameFile, workingCopy);
+        writeBaselineHash(presetFileName, sha256(gameFile));
         log.info("Working copy created at {}", workingCopy);
         return workingCopy;
     }
@@ -107,6 +125,7 @@ public class BindingsWorkingCopyRepository {
             Path workingCopy = getWorkingCopyPath(presetFileName);
             Files.deleteIfExists(workingCopy);
             Files.deleteIfExists(workingCopy.resolveSibling(workingCopy.getFileName() + ".bak"));
+            Files.deleteIfExists(baselineHashPath(presetFileName));
             log.info("Deleted working copy for '{}'", presetFileName);
         } catch (IOException e) {
             log.warn("Could not fully delete working copy for '{}': {}", presetFileName, e.getMessage());
@@ -127,5 +146,151 @@ public class BindingsWorkingCopyRepository {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Returns {@code true} only when the EI working copy differs from its imported baseline.
+     * If EI has not changed the working copy and the game file has changed, the working copy is refreshed first.
+     */
+    public boolean hasUnappliedDraft(String presetFileName, Path gameFile) throws IOException {
+        refreshFromGameIfClean(presetFileName, gameFile);
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        if (!Files.exists(workingCopy)) {
+            return false;
+        }
+        String baselineHash = ensureBaselineHash(presetFileName, gameFile);
+        return !sha256(workingCopy).equals(baselineHash);
+    }
+
+    /**
+     * Returns {@code true} when the current game file still matches the baseline used by the EI draft.
+     */
+    public boolean gameFileMatchesBaseline(String presetFileName, Path gameFile) throws IOException {
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        if (!Files.exists(workingCopy)) {
+            return false;
+        }
+        if (!Files.exists(gameFile)) {
+            return true;
+        }
+        String baselineHash = ensureBaselineHash(presetFileName, gameFile);
+        return sha256(gameFile).equals(baselineHash);
+    }
+
+    /**
+     * Marks the current working copy as applied so later game-only changes are detected against the new baseline.
+     */
+    public void markApplied(String presetFileName) throws IOException {
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        if (!Files.exists(workingCopy)) {
+            throw new IOException("Working copy does not exist: " + workingCopy);
+        }
+        writeBaselineHash(presetFileName, sha256(workingCopy));
+    }
+
+    private void refreshFromGameIfClean(String presetFileName, Path gameFile) throws IOException {
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        if (!Files.exists(workingCopy) || !Files.exists(gameFile)) {
+            return;
+        }
+
+        String baselineHash = ensureBaselineHash(presetFileName, gameFile);
+        String workingHash = sha256(workingCopy);
+        String gameHash = sha256(gameFile);
+
+        if (workingHash.equals(baselineHash) && !gameHash.equals(baselineHash)) {
+            copyReplacing(gameFile, workingCopy);
+            writeBaselineHash(presetFileName, gameHash);
+            log.info("Refreshed clean working copy for '{}' from changed game file", presetFileName);
+        }
+    }
+
+    private String ensureBaselineHash(String presetFileName, Path gameFile) throws IOException {
+        Path baselineHashPath = baselineHashPath(presetFileName);
+        if (Files.exists(baselineHashPath)) {
+            return Files.readString(baselineHashPath, StandardCharsets.UTF_8).trim();
+        }
+        return migrateLegacyWorkingCopy(presetFileName, gameFile);
+    }
+
+    private String migrateLegacyWorkingCopy(String presetFileName, Path gameFile) throws IOException {
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        String workingHash = sha256(workingCopy);
+        if (!Files.exists(gameFile)) {
+            writeBaselineHash(presetFileName, workingHash);
+            return workingHash;
+        }
+
+        String gameHash = sha256(gameFile);
+        if (workingHash.equals(gameHash)) {
+            writeBaselineHash(presetFileName, gameHash);
+            return gameHash;
+        }
+
+        FileTime workingModified = Files.getLastModifiedTime(workingCopy);
+        FileTime gameModified = Files.getLastModifiedTime(gameFile);
+        if (workingModified.compareTo(gameModified) <= 0) {
+            copyReplacing(gameFile, workingCopy);
+            writeBaselineHash(presetFileName, gameHash);
+            log.info("Migrated stale clean working copy for '{}' from changed game file", presetFileName);
+            return gameHash;
+        }
+
+        writeBaselineHash(presetFileName, gameHash);
+        log.warn("Migrated existing working copy for '{}' as an EI draft because it is newer than the game file", presetFileName);
+        return gameHash;
+    }
+
+    private Path baselineHashPath(String presetFileName) {
+        Path workingCopy = getWorkingCopyPath(presetFileName);
+        return workingCopy.resolveSibling(workingCopy.getFileName() + BASELINE_HASH_SUFFIX);
+    }
+
+    private void writeBaselineHash(String presetFileName, String hash) throws IOException {
+        Path baselineHashPath = baselineHashPath(presetFileName);
+        Files.createDirectories(baselineHashPath.getParent());
+        Path tmp = baselineHashPath.resolveSibling(baselineHashPath.getFileName() + TMP_SUFFIX);
+        Files.writeString(tmp, hash + System.lineSeparator(), StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE);
+        try {
+            Files.move(tmp, baselineHashPath, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tmp, baselineHashPath, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private void copyReplacing(Path source, Path target) throws IOException {
+        Files.createDirectories(target.getParent());
+        Path tmp = target.resolveSibling(target.getFileName() + TMP_SUFFIX);
+        Files.copy(source, tmp, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        try {
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private String sha256(Path file) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            try (InputStream input = Files.newInputStream(file)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    digest.update(buffer, 0, read);
+                }
+            }
+            return toHex(digest.digest());
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    private String toHex(byte[] bytes) {
+        StringBuilder hex = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            hex.append(String.format("%02x", b));
+        }
+        return hex.toString();
     }
 }
