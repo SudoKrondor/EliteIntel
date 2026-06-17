@@ -55,6 +55,9 @@ public final class HudPalette {
     /** Muted key label in key→value readouts and telemetry blocks (§7). Same tone as the
      *  secondary text, but a distinct semantic role so the two can diverge later. */
     public static final Color HUD_COLOR_ROLE_READOUT_LABEL = HUD_COLOR_9A6A3C;
+    /** CMDR credit-balance readout (e.g. commander block, §7). Same tone as the secondary
+     *  text today, but a distinct semantic role so the two can diverge later. */
+    public static final Color HUD_COLOR_ROLE_CREDITS_TEXT = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_MONOSPACE_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_101721;
