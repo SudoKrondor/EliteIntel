@@ -46,7 +46,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private Font monoFont;
     private AiTabPanel aiTabPanel;
     private CommanderTabPanel commanderTabPanel;
-    private ActionsTabPanel actionsTabPanel;
+    private ActionCenterTabPanel actionCenterTabPanel;
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
@@ -67,8 +67,8 @@ public class AppView extends JFrame implements AppViewInterface {
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (actionsTabPanel != null) {
-                    actionsTabPanel.promptCloseWithDraft();
+                if (actionCenterTabPanel != null) {
+                    actionCenterTabPanel.promptCloseWithDraft();
                 }
                 System.exit(0);
             }
@@ -98,7 +98,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
         ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
-        ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
+        ImageIcon actionCenterIcon = scaledIcon(ICON_ACTIONS);
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
@@ -106,7 +106,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
         aiTabPanel = new AiTabPanel(monoFont);
         commanderTabPanel = new CommanderTabPanel();
-        actionsTabPanel = new ActionsTabPanel();
+        actionCenterTabPanel = new ActionCenterTabPanel();
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
@@ -115,7 +115,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
         tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
-        tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
+        tabs.addTab(getText("tab.actionCenter"), actionCenterIcon, actionCenterTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
         tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
@@ -148,7 +148,7 @@ public class AppView extends JFrame implements AppViewInterface {
     public void initData() {
         settingsTabPanel.initData();
         commanderTabPanel.initData();
-        actionsTabPanel.initData();
+        actionCenterTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesRunning);
     }
 
@@ -174,7 +174,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (topStatusBar != null) topStatusBar.dispose();
         if (aiTabController != null) aiTabController.dispose();
         if (aiTabPanel != null) aiTabPanel.dispose();
-        if (actionsTabPanel != null) actionsTabPanel.dispose();
+        if (actionCenterTabPanel != null) actionCenterTabPanel.dispose();
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (starVizionTabPanel != null) starVizionTabPanel.dispose();

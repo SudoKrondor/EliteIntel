@@ -9,15 +9,15 @@ import java.awt.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Groups bindings, command catalog, and future customCommands under one Actions tab.
+ * Groups bindings, command catalog, and future customCommands under one Action Center tab.
  */
-public class ActionsTabPanel extends JPanel {
+public class ActionCenterTabPanel extends JPanel {
 
     private final BindingsTabPanel bindingsTabPanel = new BindingsTabPanel();
     private final CommandCatalogTablePanel commandCatalogTablePanel = new CommandCatalogTablePanel();
     private final CustomCommandsTabPanel customCommandsTabPanel = new CustomCommandsTabPanel();
 
-    public ActionsTabPanel() {
+    public ActionCenterTabPanel() {
         buildUi();
     }
 
