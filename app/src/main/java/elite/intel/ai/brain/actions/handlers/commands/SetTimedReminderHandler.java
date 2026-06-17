@@ -16,8 +16,14 @@ public class SetTimedReminderHandler implements CommandHandler {
     public void handle(String action, JsonObject params, String responseText) {
         JsonElement keyEl = params.get("key");
         JsonElement minutesEl = params.get("minutes");
+        String text;
+        if (keyEl == null || keyEl.getAsString().equalsIgnoreCase("")) {
+            text = StringUtls.localizedLlm("handler.reminder.genericText");
+        } else {
+            text = keyEl.getAsString();
+        }
 
-        if (isValidReminder(keyEl, minutesEl)) {
+        if (isValidReminder(minutesEl)) {
             EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));
             return;
         }
@@ -35,13 +41,12 @@ public class SetTimedReminderHandler implements CommandHandler {
             return;
         }
 
-        String text = keyEl.getAsString();
         TimedReminderManager.getInstance().schedule(text, minutes);
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(
                 StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes)));
     }
 
-    private static boolean isValidReminder(JsonElement keyEl, JsonElement minutesEl) {
-        return keyEl == null || minutesEl == null || Objects.equals(keyEl.getAsString(), "none") || keyEl.getAsString().trim().isEmpty() || Objects.equals(keyEl.getAsString(), "");
+    private static boolean isValidReminder(JsonElement minutesEl) {
+        return minutesEl == null || Objects.equals(minutesEl.getAsString(), "");
     }
 }
