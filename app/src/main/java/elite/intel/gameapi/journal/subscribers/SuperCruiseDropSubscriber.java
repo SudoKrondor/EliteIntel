@@ -1,7 +1,6 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.EventBusManager;
@@ -15,7 +14,6 @@ public class SuperCruiseDropSubscriber {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
-    private final CommandHandlerFactory commandHandlerFactory = CommandHandlerFactory.getInstance();
 
     @Subscribe
     public void onSuperCruiseDrop(SupercruiseDestinationDropEvent event) {
