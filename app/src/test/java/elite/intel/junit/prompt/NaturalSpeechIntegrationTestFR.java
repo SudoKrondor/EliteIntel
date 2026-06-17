@@ -659,10 +659,7 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "redirige la puissance vers les boucliers",
                 "priorité aux boucliers",
-                "puissance dans les boucliers",
-                "redirige la puissance vers les systèmes",
-                "priorité aux systèmes",
-                "puissance dans les systèmes"
+                "puissance dans les boucliers"
         );
     }
 

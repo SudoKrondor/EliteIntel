@@ -57,7 +57,7 @@ public class FrenchAiActionAliases implements AiActionAliasProvider {
         if (status.isInMainShip() || isDryRun) {
             // Navigation
             map.put("cible la prochaine destination, sélectionne la prochaine étape d'itinéraire, verrouille la destination suivante, sélectionne la destination FSD", TARGET_DESTINATION.getAction());
-            map.put("saute en hyperespace, lance le saut FSD, active le saut, saut, allons-y", JUMP_TO_HYPERSPACE.getAction());
+            map.put("saute en hyperespace, lance le saut FSD, active le saut, saut, allons-y, fs d, f sd, f s d", JUMP_TO_HYPERSPACE.getAction());
             map.put("sors de la super navigation, quitte la super navigation, drop, drop maintenant", DROP_FROM_SUPER_CRUISE.getAction());
             map.put("entre en super navigation, active la super navigation, super navigation", ENTER_SUPER_CRUISE.getAction());
             map.put("lance le vaisseau, décolle, quitte le port, quitte la station", LAUNCH_SHIP.getAction());
@@ -138,7 +138,7 @@ public class FrenchAiActionAliases implements AiActionAliasProvider {
             map.put("montre le stockage, ouvre le stockage", SHOW_STORAGE_PANEL.getAction());
 
             // Distribution d'énergie
-            map.put("mets la puissance dans les boucliers, concentre l'energie vers les boucliers, priorité aux boucliers, puissance aux boucliers, energie dans les boucliers, boost boucliers, rediriger vers bouclier, mets la puissance dans les systèmes, concentre l'systèmes vers les systèmes, priorité aux systèmes, puissance aux systèmes, energie dans les systèmes, boost systèmes, rediriger vers systèmes", INCREASE_SHIELDS_POWER.getAction());
+            map.put("mets la puissance dans les boucliers, concentre l'energie vers les boucliers, priorité aux boucliers, puissance aux boucliers, energie dans les boucliers, boost boucliers, rediriger vers bouclier", INCREASE_SHIELDS_POWER.getAction());
             map.put("redirige la puissance vers les moteurs, priorité aux moteurs, puissance dans les moteurs, mets la puissance dans les moteurs", INCREASE_ENGINES_POWER.getAction());
             map.put("redirige la puissance vers les armes, priorité aux armes, puissance dans les armes, mets la puissance dans les armes", INCREASE_WEAPONS_POWER.getAction());
             map.put("réinitialise la puissance, équilibre le distributeur, remet la puissance par défaut, puissance à l'équilibre", RESET_POWER.getAction());

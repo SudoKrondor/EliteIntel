@@ -26,10 +26,7 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
 
         // fleet carrier
 
-        //powerdistribution
-        m.put("priorité aux systèmes","priorité aux boucliers");
-        m.put("puissance dans les systèmes","puissance dans les boucliers");
-        m.put("redirige la puissance vers les systèmes","redirige la puissance vers les boucliers");
+        //power distribution
 
         //scannerFFS
 
