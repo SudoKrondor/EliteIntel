@@ -4,8 +4,7 @@ import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudConnectedToolbar;
-import elite.intel.ui.widget.HudSearchField;
+import elite.intel.ui.widget.HudSearchToolbar;
 import elite.intel.ui.widget.HudTable;
 
 import elite.intel.ai.brain.actions.catalog.CommandCatalog;
@@ -76,16 +75,13 @@ public class CommandCatalogTablePanel extends JPanel {
     }
 
     private JPanel searchPanel() {
-        HudConnectedToolbar toolbar = new HudConnectedToolbar();
-
-        HudSearchField searchPanel = new HudSearchField(
+        // Standalone full-width TABLE_FILTER search box; the table below is a separate block
+        // (tableFilter adds the bottom gap that detaches the filter row from the table).
+        HudSearchToolbar toolbar = HudSearchToolbar.tableFilter(
                 getText("actions.commands.search.placeholder"),
-                getText("actions.commands.search.clearTooltip"),
-                HudSearchField.Variant.TABLE_FILTER);
-        searchField = searchPanel.textField();
+                getText("actions.commands.search.clearTooltip"));
+        searchField = toolbar.textField();
         searchField.getDocument().addDocumentListener(new SearchDocumentListener());
-        toolbar.add(searchPanel, BorderLayout.CENTER);
-
         return toolbar;
     }
 
