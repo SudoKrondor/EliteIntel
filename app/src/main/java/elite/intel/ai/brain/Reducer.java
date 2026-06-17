@@ -1,5 +1,7 @@
 package elite.intel.ai.brain;
 
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,6 +65,16 @@ public class Reducer {
         // This must not replace semantic classification; it only prevents
         // the reducer from accidentally removing a valid action before the LLM sees it.
         String directAction = full.get(normalizedInput);
+        if (directAction == null) {
+            String lowerInput = normalizedInput.toLowerCase(Locale.ROOT);
+            for (Map.Entry<String, String> entry : full.entrySet()) {
+                List<String> phrases = AiActionLocalizations.splitPhraseGroup(entry.getKey());
+                if (phrases.stream().anyMatch(p -> p.toLowerCase(Locale.ROOT).equals(lowerInput))) {
+                    directAction = entry.getValue();
+                    break;
+                }
+            }
+        }
 
         // Use Unicode-aware tokenization.
         // "\\W+" is too ASCII-centric and does not work reliably with Cyrillic,
