@@ -48,7 +48,7 @@ import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
 
-public class PlayerTabPanel extends JPanel {
+public class CommanderTabPanel extends JPanel {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -56,7 +56,7 @@ public class PlayerTabPanel extends JPanel {
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
 
-    public PlayerTabPanel() {
+    public CommanderTabPanel() {
         buildUi();
         EventBusManager.register(this);
     }
@@ -373,7 +373,7 @@ public class PlayerTabPanel extends JPanel {
         final JPanel panel = new JPanel(new BorderLayout());
         final JButton gear = new JButton();
         private final ImageIcon gearBase =
-                HudGlyphs.scaledIcon(PlayerTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
+                HudGlyphs.scaledIcon(CommanderTabPanel.class, "/images/settings.png", HUD_ICON_TABLE);
         private ImageIcon gearOrange;
         private ImageIcon gearDark;
 

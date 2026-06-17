@@ -45,7 +45,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private final SystemSession systemSession = SystemSession.getInstance();
     private Font monoFont;
     private AiTabPanel aiTabPanel;
-    private PlayerTabPanel playerTabPanel;
+    private CommanderTabPanel commanderTabPanel;
     private ActionsTabPanel actionsTabPanel;
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
@@ -97,7 +97,7 @@ public class AppView extends JFrame implements AppViewInterface {
         JTabbedPane tabs = AppTheme.makeMainNavTabs();
 
         ImageIcon aiIcon = scaledIcon(ICON_AI);
-        ImageIcon playerIcon = scaledIcon(ICON_PLAYER);
+        ImageIcon commanderIcon = scaledIcon(ICON_PLAYER);
         ImageIcon actionsIcon = scaledIcon(ICON_ACTIONS);
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
@@ -105,7 +105,7 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon manualIcon = scaledIcon(MANUAL_ICON);
 
         aiTabPanel = new AiTabPanel(monoFont);
-        playerTabPanel = new PlayerTabPanel();
+        commanderTabPanel = new CommanderTabPanel();
         actionsTabPanel = new ActionsTabPanel();
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
@@ -114,7 +114,7 @@ public class AppView extends JFrame implements AppViewInterface {
         starVizionTabPanel = new StarVizionTabPanel();
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
-        tabs.addTab(getText("tab.player"), playerIcon, playerTabPanel);
+        tabs.addTab(getText("tab.commander"), commanderIcon, commanderTabPanel);
         tabs.addTab(getText("tab.actions"), actionsIcon, actionsTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
@@ -147,7 +147,7 @@ public class AppView extends JFrame implements AppViewInterface {
     @Override
     public void initData() {
         settingsTabPanel.initData();
-        playerTabPanel.initData();
+        commanderTabPanel.initData();
         actionsTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesRunning);
     }
