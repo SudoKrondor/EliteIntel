@@ -4,6 +4,8 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.Random;
@@ -46,9 +48,45 @@ public final class MultiLingualTextProvider {
     }
 
     private static String pickVariant(String raw) {
-        if (!raw.contains("|")) return raw;
-        String[] parts = raw.split("\\|");
-        return parts[RANDOM.nextInt(parts.length)].trim();
+        List<String> parts = splitTopLevelVariants(raw);
+        if (parts.size() == 1) return raw;
+        return parts.get(RANDOM.nextInt(parts.size())).trim();
+    }
+
+    private static List<String> splitTopLevelVariants(String raw) {
+        if (!raw.contains("|")) return List.of(raw);
+
+        List<String> parts = new ArrayList<>();
+        int start = 0;
+        int braceDepth = 0;
+        boolean inQuote = false;
+
+        for (int i = 0; i < raw.length(); i++) {
+            char ch = raw.charAt(i);
+            if (ch == '\'') {
+                if (i + 1 < raw.length() && raw.charAt(i + 1) == '\'') {
+                    i++;
+                } else {
+                    inQuote = !inQuote;
+                }
+                continue;
+            }
+
+            if (inQuote) continue;
+
+            if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == '|' && braceDepth == 0) {
+                parts.add(raw.substring(start, i).trim());
+                start = i + 1;
+            }
+        }
+
+        if (start == 0) return List.of(raw);
+        parts.add(raw.substring(start).trim());
+        return parts;
     }
 
     private static ResourceBundle getBundle(Locale locale) {
