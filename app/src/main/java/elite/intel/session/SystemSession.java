@@ -1,7 +1,6 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.LocalLlmProvider;
-import elite.intel.ai.brain.ShipCadence;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
@@ -82,11 +81,6 @@ public class SystemSession {
     }
 
 
-    public ShipCadence getAICadence() {
-        ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return ShipCadence.IMPERIAL;
-        return ShipCadence.valueOf(ship.getCadence());
-    }
 
     public boolean isSleepingModeOn() {
         return Database.withDao(GameSessionDao.class, dao -> {
