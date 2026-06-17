@@ -26,7 +26,8 @@ public interface GameSessionDao {
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
                                                              pushToTalkEnabled, pushToTalkControllerName,
-                                                             pushToTalkButtonIndex, pushToTalkToggleMode
+                                                             pushToTalkButtonIndex, pushToTalkToggleMode,
+                                                             noiseReductionEnabled, noiseReductionStrength
                                                 )
                                   VALUES (1, :aiPersonality, :aiCadence, :aiVoice, :aiApiKey, :ttsApiKey, :sttApiKey,
                                                       :edsmApiKey, :loggingEnabled, :privacyModeOn, :rmsThresholdHigh,
@@ -39,7 +40,8 @@ public interface GameSessionDao {
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
-                                                      :pushToTalkButtonIndex, :pushToTalkToggleMode
+                                                      :pushToTalkButtonIndex, :pushToTalkToggleMode,
+                                                      :noiseReductionEnabled, :noiseReductionStrength
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -98,6 +100,8 @@ public interface GameSessionDao {
             session.setPushToTalkControllerName(rs.getString("pushToTalkControllerName"));
             session.setPushToTalkButtonIndex(rs.getInt("pushToTalkButtonIndex"));
             session.setPushToTalkToggleMode(rs.getBoolean("pushToTalkToggleMode"));
+            session.setNoiseReductionEnabled(rs.getBoolean("noiseReductionEnabled"));
+            session.setNoiseReductionStrength(rs.getInt("noiseReductionStrength"));
             return session;
         }
     }
@@ -147,6 +151,8 @@ public interface GameSessionDao {
         private String pushToTalkControllerName;
         private int pushToTalkButtonIndex = -1;
         private boolean pushToTalkToggleMode = true;
+        private boolean noiseReductionEnabled = false;
+        private int noiseReductionStrength = 1;
 
 
         public String getAiPersonality() {
@@ -461,6 +467,22 @@ public interface GameSessionDao {
 
         public void setPushToTalkToggleMode(boolean pushToTalkToggleMode) {
             this.pushToTalkToggleMode = pushToTalkToggleMode;
+        }
+
+        public boolean isNoiseReductionEnabled() {
+            return noiseReductionEnabled;
+        }
+
+        public void setNoiseReductionEnabled(boolean noiseReductionEnabled) {
+            this.noiseReductionEnabled = noiseReductionEnabled;
+        }
+
+        public int getNoiseReductionStrength() {
+            return noiseReductionStrength;
+        }
+
+        public void setNoiseReductionStrength(int noiseReductionStrength) {
+            this.noiseReductionStrength = noiseReductionStrength;
         }
     }
 }

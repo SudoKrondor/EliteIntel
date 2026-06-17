@@ -493,4 +493,30 @@ public class SystemSession {
             return null;
         });
     }
+
+    public boolean isNoiseReductionEnabled() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isNoiseReductionEnabled());
+    }
+
+    public void setNoiseReductionEnabled(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setNoiseReductionEnabled(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getNoiseReductionStrength() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getNoiseReductionStrength());
+    }
+
+    public void setNoiseReductionStrength(int strength) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setNoiseReductionStrength(strength);
+            dao.save(session);
+            return null;
+        });
+    }
 }
