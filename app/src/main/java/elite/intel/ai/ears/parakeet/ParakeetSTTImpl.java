@@ -1,8 +1,8 @@
 package elite.intel.ai.ears.parakeet;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
+import elite.intel.ai.brain.actions.command.CommandIds;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
@@ -585,6 +585,7 @@ public class ParakeetSTTImpl implements EarsInterface {
             case ES -> "es";
             case RU -> "ru";
             case UK -> "uk";
+            case IT -> "it";
             case PT -> "pt";
         };
     }

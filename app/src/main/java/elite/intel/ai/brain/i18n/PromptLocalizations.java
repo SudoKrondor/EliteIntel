@@ -4,6 +4,7 @@ import elite.intel.ai.brain.i18n.de.GermanPromptRules;
 import elite.intel.ai.brain.i18n.en.EnglishPromptRules;
 import elite.intel.ai.brain.i18n.es.SpanishPromptRules;
 import elite.intel.ai.brain.i18n.fr.FrenchPromptRules;
+import elite.intel.ai.brain.i18n.it.ItalianPromptRules;
 import elite.intel.ai.brain.i18n.pt.PortuguesePromptRules;
 import elite.intel.ai.brain.i18n.ru.RussianPromptRules;
 import elite.intel.ai.brain.i18n.uk.UkrainianPromptRules;
@@ -39,6 +40,7 @@ public final class PromptLocalizations {
             case DE -> new GermanPromptRules();
             case FR -> new FrenchPromptRules();
             case ES -> new SpanishPromptRules();
+            case IT -> new ItalianPromptRules();
             case PT -> new PortuguesePromptRules();
         };
     }

@@ -56,6 +56,7 @@ public final class EventsTextProvider {
             case EN -> Locale.ENGLISH;
             case ES -> Locale.forLanguageTag("es");
             case PT -> Locale.forLanguageTag("pt");
+            case IT -> Locale.ITALIAN;
         };
     }
 }

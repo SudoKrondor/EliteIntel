@@ -132,6 +132,7 @@ public class CommonSettingsPanel extends JPanel {
                 new LanguageOption(getText("language.german"), Language.DE),
                 new LanguageOption(getText("language.french"), Language.FR),
                 new LanguageOption(getText("language.spanish"), Language.ES),
+                new LanguageOption(getText("language.italian"), Language.IT),
                 new LanguageOption(getText("language.portuguese"), Language.PT)
         });
         selectLanguage(combo, selected);
