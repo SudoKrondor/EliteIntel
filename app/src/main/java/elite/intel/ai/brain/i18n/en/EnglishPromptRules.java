@@ -3,7 +3,7 @@ import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
-import static elite.intel.ai.brain.actions.Queries.*;
+import elite.intel.ai.brain.actions.query.QueryIds;
 
 public class EnglishPromptRules implements PromptLanguageRules {
 
@@ -37,13 +37,13 @@ public class EnglishPromptRules implements PromptLanguageRules {
 
         sb.append(" - HARD RULE: 'fleet carrier' and 'squadron carrier' are COMPLETELY DIFFERENT things. NEVER mix them up.");
         sb.append("\n");
-        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + FLEET_CARRIER_STATUS.getAction() + "; 'squadron carrier' → " + SQUADRON_CARRIER_STATUS.getAction());
+        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + QueryIds.FLEET_CARRIER_STATUS + "; 'squadron carrier' → " + QueryIds.SQUADRON_CARRIER_STATUS);
         sb.append("\n");
         sb.append("   - navigate/go/head: 'squadron carrier' → " + CommandIds.NAVIGATE_TO_SQUADRON_CARRIER + " ONLY; 'fleet carrier' or bare 'carrier' → " + CommandIds.NAVIGATE_TO_FLEET_CARRIER);
         sb.append("\n");
-        sb.append("   - 'fleet carrier funds/balance/finances' → " + FLEET_CARRIER_STATUS.getAction() + " ONLY. NEVER " + SQUADRON_CARRIER_STATUS.getAction() + ".");
+        sb.append("   - 'fleet carrier funds/balance/finances' → " + QueryIds.FLEET_CARRIER_STATUS + " ONLY. NEVER " + QueryIds.SQUADRON_CARRIER_STATUS + ".");
         sb.append("\n");
-        sb.append("   - 'squadron carrier funds/balance/finances' → " + SQUADRON_CARRIER_STATUS.getAction() + " ONLY. NEVER " + FLEET_CARRIER_STATUS.getAction() + ".");
+        sb.append("   - 'squadron carrier funds/balance/finances' → " + QueryIds.SQUADRON_CARRIER_STATUS + " ONLY. NEVER " + QueryIds.FLEET_CARRIER_STATUS + ".");
         sb.append("\n");
         sb.append(" ______________________________________________________________ ");
         sb.append("\n");
@@ -116,7 +116,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("- Never confuse 'in system' or 'which planets' (system-wide) with 'here / on this planet / at this location / still have to scan' (planet surface)\n");
         sb.append("- Never confuse 'honk' with 'open fss'\n");
         sb.append("- carrier full status (fuel + credits + operations): 'carrier status / carrier fuel status / how far can carrier jump / fleet carrier fuel status / how long can carrier operate' → ");
-        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append(QueryIds.FLEET_CARRIER_STATUS);
         sb.append("\n");
 
         //sb.append("- carrier tritium level only: 'how much tritium / tritium supply / tritium level / tritium reserve' → ");
@@ -124,19 +124,19 @@ public class EnglishPromptRules implements PromptLanguageRules {
         //sb.append("\n");
 
         sb.append("- bio signals: 'which planets have bio signals / bio signals in system / organics in system / biological signals / how many planets have bio' → ");
-        sb.append(BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
+        sb.append(QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
         sb.append("\n");
 
         sb.append("- bio scans: 'what organisms are here / exobiology samples / organics on this planet / organics still to scan / organics left to scan' → ");
-        sb.append(EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
+        sb.append(QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET);
         sb.append("\n");
 
         sb.append("- For EXPLICIT 'player profile' (these two words, in this order, optionally followed by additional context words like 'summarize ranks', 'summarize progress') → '");
-        sb.append(PLAYER_PROFILE_ANALYSIS.getAction());
+        sb.append(QueryIds.PLAYER_PROFILE_ANALYSIS);
         sb.append("'. Any other phrasing that does NOT begin with 'player profile', including rank, stats, progress, name, or commander - return ");
         sb.append(CommandIds.IGNORE_NONSENSICAL_INPUT);
         sb.append(" or ");
-        sb.append(GENERAL_CONVERSATION.getAction());
+        sb.append(QueryIds.GENERAL_CONVERSATION);
         sb.append(". This is an instant fail if triggered by anything else.");
         sb.append("\n");
 
@@ -155,7 +155,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("- 'navigate to active mission' / 'go to mission' / 'plot route to mission' → ");
         sb.append(CommandIds.NAVIGATE_TO_MISSION_TARGET);
         sb.append(" (NOT ");
-        sb.append(ANALYZE_MISSIONS.getAction());
+        sb.append(QueryIds.ANALYZE_MISSIONS);
         sb.append(" - navigation, not a query)");
         sb.append("\n");
 
@@ -170,7 +170,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- 'unbound keys' / 'check key bindings' / 'missing bindings' / 'keybind check' → ");
-        sb.append(KEY_BINDINGS_ANALYSIS.getAction());
+        sb.append(QueryIds.KEY_BINDINGS_ANALYSIS);
         sb.append(" (this IS a valid game command, not meta-talk)\n");
         sb.append("- 'listen' / 'listen up' / 'wake up' alone → ");
         sb.append(CommandIds.WAKEUP);
@@ -228,36 +228,36 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(")\n");
 
         sb.append("- 'player profile' (input starts with 'player', NOT 'trade') → ");
-        sb.append(PLAYER_PROFILE_ANALYSIS.getAction());
+        sb.append(QueryIds.PLAYER_PROFILE_ANALYSIS);
         sb.append("; NEVER any trade_profile action for this input\n");
 
         sb.append("- 'distance to bubble' → ");
-        sb.append(DISTANCE_TO_BUBBLE.getAction());
+        sb.append(QueryIds.DISTANCE_TO_BUBBLE);
         sb.append(" (sol, earth, civilization all normalize to bubble; NOT ");
-        sb.append(DISTANCE_TO_BODY.getAction());
+        sb.append(QueryIds.DISTANCE_TO_BODY);
         sb.append(" or ");
-        sb.append(DISTANCE_TO_CARRIER.getAction());
+        sb.append(QueryIds.DISTANCE_TO_CARRIER);
         sb.append(")\n");
 
         sb.append("- 'What's my fleet carrier fuel status', 'What is our fleet carrier range' → ");
-        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append(QueryIds.FLEET_CARRIER_STATUS);
         sb.append("\n");
         sb.append("- organics / biology / exobiology on a planet or here → ");
-        sb.append(EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
+        sb.append(QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET);
         sb.append(", NOT geo/materials\n");
         sb.append("- organics / bio signals in a system or which planets → ");
-        sb.append(BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
+        sb.append(QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
         sb.append("\n");
 
         sb.append("- 'how much X do we have' / 'do we have any X' (specific item) → ");
-        sb.append(MATERIALS_INVENTORY.getAction());
+        sb.append(QueryIds.MATERIALS_INVENTORY);
         sb.append(" (handles both engineering materials AND cargo commodities)\n");
         sb.append("- 'what are we carrying' / 'list cargo' / 'cargo contents' (no specific item) → ");
-        sb.append(CARGO_HOLD_CONTENTS.getAction());
+        sb.append(QueryIds.CARGO_HOLD_CONTENTS);
         sb.append("\n");
 
         sb.append("- 'geo signals / geological' → ");
-        sb.append(QUERY_GEO_SIGNALS.getAction());
+        sb.append(QueryIds.QUERY_GEO_SIGNALS);
         sb.append(" (NOT ");
         sb.append(CommandIds.FIND_BRAIN_TREES);
         sb.append(")\n");
@@ -266,15 +266,15 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(CommandIds.FIND_HUNTING_GROUNDS);
         sb.append(" (NOT fleet carrier)\n");
         sb.append("- profit from bounties is not profit from missions for bounties → '");
-        sb.append(TOTAL_BOUNTIES.getAction());
+        sb.append(QueryIds.TOTAL_BOUNTIES);
         sb.append("'\n");
 
         sb.append("- profit from missions is not profit from bounties for missions → '");
-        sb.append(ANALYZE_MISSIONS.getAction());
+        sb.append(QueryIds.ANALYZE_MISSIONS);
         sb.append("'\n");
 
         sb.append("- profit from discovery is not profit from bounties or missions → '");
-        sb.append(EXPLORATION_PROFITS.getAction());
+        sb.append(QueryIds.EXPLORATION_PROFITS);
         sb.append("'\n");
 
         sb.append("- HARD RULE: if the word 'honk' appears anywhere in the input, the ONLY valid action is '");

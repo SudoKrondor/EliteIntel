@@ -32,6 +32,7 @@ public class App {
         Database.init();
         CustomCommandRegistry.getInstance().load();
         elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().load();
+        elite.intel.ai.brain.actions.query.QueryRegistry.getInstance().load();
 
         // change the debug log level when we have version 1.0
         Configurator.setRootLevel(Level.ALL);

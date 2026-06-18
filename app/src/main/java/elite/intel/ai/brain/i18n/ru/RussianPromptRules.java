@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.i18n.ru;
 import elite.intel.ai.brain.actions.command.CommandIds;
 
-import elite.intel.ai.brain.actions.Queries;
+import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
-import static elite.intel.ai.brain.actions.Queries.*;
 
 public class RussianPromptRules implements PromptLanguageRules {
 
@@ -37,15 +36,15 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- classify queries about location like как долго длится день здесь to action → ");
-        sb.append(CURRENT_LOCATION.getAction());
+        sb.append(QueryIds.CURRENT_LOCATION);
         sb.append("\n");
 
         sb.append("- classify bio signals: Какие планеты / ещё нуждаются в биологическом или органическом сканировании? / позволяют приземлится / имеют био сигналы итд. → ");
-        sb.append(Queries.BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
+        sb.append(QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
         sb.append("\n");
 
         sb.append("- classify queries about bio sample distance: расстояние до последнего биообразца, какие органические объекты ещё нужно сканировать итд. → ");
-        sb.append(Queries.DISTANCE_TO_LAST_BIO_SAMPLE.getAction());
+        sb.append(QueryIds.DISTANCE_TO_LAST_BIO_SAMPLE);
         sb.append("\n");
 
         sb.append("- classify commands to fire on target such as : открыть огонь, атака, атакуй итд. → ");
@@ -62,9 +61,9 @@ public class RussianPromptRules implements PromptLanguageRules {
         //переключись в боевой режим
 
         sb.append("- classify курс авианосца эскадрильи → ");
-        sb.append(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
+        sb.append(QueryIds.SQUADRON_CARRIER_ROUTE_ANALYSIS);
         sb.append(" with пункт назначения авианосца эскадрильи → ");
-        sb.append(SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction());
+        sb.append(QueryIds.SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION);
         sb.append("\n");
 
 
@@ -79,24 +78,24 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append(" - classify questions about авианосец as ");
-        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append(QueryIds.FLEET_CARRIER_STATUS);
         sb.append("\n");
 
         sb.append(" - classify questions about тритий авианосца, топливо авианосца, сколько трития на авианосце, уровень трития, уровень топлива авианосца as ");
-        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append(QueryIds.FLEET_CARRIER_STATUS);
         sb.append("\n");
 
         sb.append(" - classify questions about Расстояние до Земли, Как далеко Земля ");
-        sb.append(DISTANCE_TO_BUBBLE.getAction());
+        sb.append(QueryIds.DISTANCE_TO_BUBBLE);
         sb.append("\n");
 
 
         sb.append(" - classify questions about авианосец эскадрона as ");
-        sb.append(SQUADRON_CARRIER_STATUS.getAction());
+        sb.append(QueryIds.SQUADRON_CARRIER_STATUS);
         sb.append("\n");
 
         sb.append(" - classify questions about курс авианосца эскадрильи as ");
-        sb.append(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
+        sb.append(QueryIds.SQUADRON_CARRIER_ROUTE_ANALYSIS);
         sb.append("\n");
 
         sb.append(" - classify автоматическая стыковка as ");

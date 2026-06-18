@@ -3,14 +3,7 @@ import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
-import static elite.intel.ai.brain.actions.Queries.ANALYZE_MARKETS;
-import static elite.intel.ai.brain.actions.Queries.BIO_SAMPLE_IN_STAR_SYSTEM;
-import static elite.intel.ai.brain.actions.Queries.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET;
-import static elite.intel.ai.brain.actions.Queries.FSD_TARGET_ANALYSIS;
-import static elite.intel.ai.brain.actions.Queries.MATERIALS_INVENTORY;
-import static elite.intel.ai.brain.actions.Queries.PLOTTED_ROUTE_ANALYSIS;
-import static elite.intel.ai.brain.actions.Queries.QUERY_GEO_SIGNALS;
-import static elite.intel.ai.brain.actions.Queries.QUERY_STATIONS;
+import elite.intel.ai.brain.actions.query.QueryIds;
 
 public class FrenchPromptRules implements PromptLanguageRules {
 
@@ -67,33 +60,33 @@ public class FrenchPromptRules implements PromptLanguageRules {
         sb.append(CommandIds.TOGGLE_ALL_ANNOUNCEMENTS);
         sb.append("\n");
         sb.append("- \"rapport sur notre itinéraire\", \"rapport d'itinéraire\", or remaining jumps without carrier means ship plotted route → ");
-        sb.append(PLOTTED_ROUTE_ANALYSIS.getAction());
+        sb.append(QueryIds.PLOTTED_ROUTE_ANALYSIS);
         sb.append("\n");
         sb.append("- \"rapport sur la prochaine étape de l'itinéraire\" is an information query about the current FSD target → ");
-        sb.append(FSD_TARGET_ANALYSIS.getAction());
+        sb.append(QueryIds.FSD_TARGET_ANALYSIS);
         sb.append("; only verbs like \"cible\", \"sélectionne\", \"verrouille\" make it an action → ");
         sb.append(CommandIds.TARGET_DESTINATION);
         sb.append("\n");
         sb.append("- \"où puis-je me poser ici\" asks for stations/ports in the current system → ");
-        sb.append(QUERY_STATIONS.getAction());
+        sb.append(QueryIds.QUERY_STATIONS);
         sb.append("\n");
         sb.append("- French biology scope: \"dans le système\", \"quelles planètes\", or \"progression biologique système\" means system-wide bio signals/scans → ");
-        sb.append(BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
+        sb.append(QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
         sb.append("; \"ici\", \"sur cette planète\", \"à scanner ici\", or sampling still needed at current location means surface exobiology → ");
-        sb.append(EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
+        sb.append(QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET);
         sb.append("\n");
         sb.append("- \"signaux géologiques\", \"sites géologiques\", or \"activité volcanique\" means geological signals → ");
-        sb.append(QUERY_GEO_SIGNALS.getAction());
+        sb.append(QueryIds.QUERY_GEO_SIGNALS);
         sb.append("\n");
         sb.append("- \"inventaire des matériaux\" / \"liste des matériaux\" is an information query → ");
-        sb.append(MATERIALS_INVENTORY.getAction());
+        sb.append(QueryIds.MATERIALS_INVENTORY);
         sb.append("; opening the UI requires \"montre/ouvre/affiche le panneau inventaire\" → ");
         sb.append(CommandIds.SHOW_INVENTORY_PANEL);
         sb.append("\n");
         sb.append("- \"stations avec commerce\", \"marchés locaux\", \"marché le plus proche\" without a named commodity means market list → ");
-        sb.append(ANALYZE_MARKETS.getAction());
+        sb.append(QueryIds.ANALYZE_MARKETS);
         sb.append("; generic landing/ports/stations means → ");
-        sb.append(QUERY_STATIONS.getAction());
+        sb.append(QueryIds.QUERY_STATIONS);
         sb.append("\n");
         return sb.toString();
     }

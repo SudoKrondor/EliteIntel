@@ -7,7 +7,7 @@ import elite.intel.util.StringUtls;
 import java.util.Map;
 import java.util.Set;
 
-import static elite.intel.ai.brain.actions.Queries.*;
+import elite.intel.ai.brain.actions.query.QueryIds;
 
 public abstract class AiActionAliasProvider {
 
@@ -29,8 +29,8 @@ public abstract class AiActionAliasProvider {
 
         // Declared early so these win before power-management "balance power" and carrier-route entries can interfere
         map.put(StringUtls.localizedAiActionKeys(CommandIds.FIND_NEAREST_FLEET_CARRIER), CommandIds.FIND_NEAREST_FLEET_CARRIER);
-        map.put(StringUtls.localizedAiActionKeys(FLEET_CARRIER_STATUS.getAction()), FLEET_CARRIER_STATUS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_STATUS.getAction()), SQUADRON_CARRIER_STATUS.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.FLEET_CARRIER_STATUS), QueryIds.FLEET_CARRIER_STATUS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SQUADRON_CARRIER_STATUS), QueryIds.SQUADRON_CARRIER_STATUS);
 
         // navigation
         map.put(StringUtls.localizedAiActionKeys(CommandIds.CANCEL_TRADE_ROUTE), CommandIds.CANCEL_TRADE_ROUTE);
@@ -98,7 +98,7 @@ public abstract class AiActionAliasProvider {
         }
 
         if (status.isInMainShip() && !status.isDocked() || isDryRun) {
-            map.put(StringUtls.localizedAiActionKeys(QUERY_STATIONS.getAction()), QUERY_STATIONS.getAction());
+            map.put(StringUtls.localizedAiActionKeys(QueryIds.QUERY_STATIONS), QueryIds.QUERY_STATIONS);
         }
 
         if (status.isInSrv() && status.isDocked() || isDryRun) {
@@ -152,16 +152,17 @@ public abstract class AiActionAliasProvider {
         map.put(StringUtls.localizedAiActionKeys(CommandIds.SET_CARRIER_FUEL_RESERVE), CommandIds.SET_CARRIER_FUEL_RESERVE);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.CALCULATE_FLEET_CARRIER_ROUTE), CommandIds.CALCULATE_FLEET_CARRIER_ROUTE);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.ENTER_FLEET_CARRIER_DESTINATION), CommandIds.ENTER_FLEET_CARRIER_DESTINATION);
-        map.put(StringUtls.localizedAiActionKeys(QUERY_CARRIERS.getAction()), QUERY_CARRIERS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(FLEET_CARRIER_ROUTE_ANALYSIS.getAction()), FLEET_CARRIER_ROUTE_ANALYSIS.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.QUERY_CARRIERS), QueryIds.QUERY_CARRIERS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.FLEET_CARRIER_ROUTE_ANALYSIS), QueryIds.FLEET_CARRIER_ROUTE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.FLEET_CARRIER_FINAL_DESTINATION), QueryIds.FLEET_CARRIER_FINAL_DESTINATION);
         //map.put(StringUtls.localizedAiActionKeys(FLEET_CARRIER_TRITIUM_SUPPLY.getAction()), FLEET_CARRIER_TRITIUM_SUPPLY.getAction());
-        map.put(StringUtls.localizedAiActionKeys(FLEET_CARRIER_ETA.getAction()), FLEET_CARRIER_ETA.getAction());
-        map.put(StringUtls.localizedAiActionKeys(DISTANCE_TO_CARRIER.getAction()), DISTANCE_TO_CARRIER.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.FLEET_CARRIER_ETA), QueryIds.FLEET_CARRIER_ETA);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.DISTANCE_TO_CARRIER), QueryIds.DISTANCE_TO_CARRIER);
 
         // squadron carrier  must explicitly say "squadron carrier"
-        map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction()), SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction()), SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction());
-        map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ETA.getAction()), SQUADRON_CARRIER_ETA.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SQUADRON_CARRIER_ROUTE_ANALYSIS), QueryIds.SQUADRON_CARRIER_ROUTE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION), QueryIds.SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SQUADRON_CARRIER_ETA), QueryIds.SQUADRON_CARRIER_ETA);
 
         // trade
         map.put(StringUtls.localizedAiActionKeys(CommandIds.CALCULATE_TRADE_ROUTE), CommandIds.CALCULATE_TRADE_ROUTE);
@@ -206,8 +207,8 @@ public abstract class AiActionAliasProvider {
         // pirate massacre missions
         map.put(StringUtls.localizedAiActionKeys(CommandIds.NAVIGATE_TO_MISSION_PROVIDER), CommandIds.NAVIGATE_TO_MISSION_PROVIDER);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.NAVIGATE_TO_PIRATE_MISSION_PROVIDER), CommandIds.NAVIGATE_TO_PIRATE_MISSION_PROVIDER);
-        map.put(StringUtls.localizedAiActionKeys(ANALYZE_MISSIONS.getAction()), ANALYZE_MISSIONS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(PIRATE_MISSION_PROGRESS.getAction()), PIRATE_MISSION_PROGRESS.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.ANALYZE_MISSIONS), QueryIds.ANALYZE_MISSIONS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.PIRATE_MISSION_PROGRESS), QueryIds.PIRATE_MISSION_PROGRESS);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.FIND_HUNTING_GROUNDS), CommandIds.FIND_HUNTING_GROUNDS);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.RECON_HUNTING_GROUND), CommandIds.RECON_HUNTING_GROUND);
         map.put(StringUtls.localizedAiActionKeys(CommandIds.IGNORE_HUNTING_GROUND), CommandIds.IGNORE_HUNTING_GROUND);
@@ -229,36 +230,36 @@ public abstract class AiActionAliasProvider {
         // FR-only action; other locales get a dead entry that no user will trigger
         map.put(StringUtls.localizedAiActionKeys(CommandIds.NAVIGATE_TO_SQUADRON_CARRIER), CommandIds.NAVIGATE_TO_SQUADRON_CARRIER);
 
-        map.put(StringUtls.localizedAiActionKeys(KEY_BINDINGS_ANALYSIS.getAction()), KEY_BINDINGS_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(BIO_SAMPLE_IN_STAR_SYSTEM.getAction()), BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
-        map.put(StringUtls.localizedAiActionKeys(EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction()), EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
-        map.put(StringUtls.localizedAiActionKeys(DISTANCE_TO_LAST_BIO_SAMPLE.getAction()), DISTANCE_TO_LAST_BIO_SAMPLE.getAction());
-        map.put(StringUtls.localizedAiActionKeys(PLANET_BIOME_ANALYSIS.getAction()), PLANET_BIOME_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(QUERY_STELLAR_OBJETS.getAction()), QUERY_STELLAR_OBJETS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(QUERY_STELLAR_SIGNALS.getAction()), QUERY_STELLAR_SIGNALS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(QUERY_GEO_SIGNALS.getAction()), QUERY_GEO_SIGNALS.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.KEY_BINDINGS_ANALYSIS), QueryIds.KEY_BINDINGS_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM), QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET), QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.DISTANCE_TO_LAST_BIO_SAMPLE), QueryIds.DISTANCE_TO_LAST_BIO_SAMPLE);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.PLANET_BIOME_ANALYSIS), QueryIds.PLANET_BIOME_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.QUERY_STELLAR_OBJETS), QueryIds.QUERY_STELLAR_OBJETS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.QUERY_STELLAR_SIGNALS), QueryIds.QUERY_STELLAR_SIGNALS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.QUERY_GEO_SIGNALS), QueryIds.QUERY_GEO_SIGNALS);
 
-        map.put(StringUtls.localizedAiActionKeys(SYSTEM_SECURITY_ANALYSIS.getAction()), SYSTEM_SECURITY_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(TRADE_PROFILE_ANALYSIS.getAction()), TRADE_PROFILE_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(DISTANCE_TO_BODY.getAction()), DISTANCE_TO_BODY.getAction());
-        map.put(StringUtls.localizedAiActionKeys(LAST_SCAN_ANALYSIS.getAction()), LAST_SCAN_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(MATERIALS_INVENTORY.getAction()), MATERIALS_INVENTORY.getAction());
-        map.put(StringUtls.localizedAiActionKeys(PLANET_MATERIALS.getAction()), PLANET_MATERIALS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(EXPLORATION_PROFITS.getAction()), EXPLORATION_PROFITS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(CURRENT_LOCATION.getAction()), CURRENT_LOCATION.getAction());
-        map.put(StringUtls.localizedAiActionKeys(FSD_TARGET_ANALYSIS.getAction()), FSD_TARGET_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(PLOTTED_ROUTE_ANALYSIS.getAction()), PLOTTED_ROUTE_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(TRADE_ROUTE_ANALYSIS.getAction()), TRADE_ROUTE_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(LOCAL_OUTFITTING.getAction()), LOCAL_OUTFITTING.getAction());
-        map.put(StringUtls.localizedAiActionKeys(LOCAL_SHIPYARD.getAction()), LOCAL_SHIPYARD.getAction());
-        map.put(StringUtls.localizedAiActionKeys(CARGO_HOLD_CONTENTS.getAction()), CARGO_HOLD_CONTENTS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(PLAYER_PROFILE_ANALYSIS.getAction()), PLAYER_PROFILE_ANALYSIS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(SHIP_LOADOUT.getAction()), SHIP_LOADOUT.getAction());
-        map.put(StringUtls.localizedAiActionKeys(STATION_DETAILS.getAction()), STATION_DETAILS.getAction());
-        map.put(StringUtls.localizedAiActionKeys(TOTAL_BOUNTIES.getAction()), TOTAL_BOUNTIES.getAction());
-        map.put(StringUtls.localizedAiActionKeys(DISTANCE_TO_BUBBLE.getAction()), DISTANCE_TO_BUBBLE.getAction());
-        map.put(StringUtls.localizedAiActionKeys(TIME_IN_ZONE.getAction()), TIME_IN_ZONE.getAction());
-        map.put(StringUtls.localizedAiActionKeys(REMINDER.getAction()), REMINDER.getAction());
-        map.put(StringUtls.localizedAiActionKeys(ANALYZE_MARKETS.getAction()), ANALYZE_MARKETS.getAction());
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SYSTEM_SECURITY_ANALYSIS), QueryIds.SYSTEM_SECURITY_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.TRADE_PROFILE_ANALYSIS), QueryIds.TRADE_PROFILE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.DISTANCE_TO_BODY), QueryIds.DISTANCE_TO_BODY);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.LAST_SCAN_ANALYSIS), QueryIds.LAST_SCAN_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.MATERIALS_INVENTORY), QueryIds.MATERIALS_INVENTORY);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.PLANET_MATERIALS), QueryIds.PLANET_MATERIALS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.EXPLORATION_PROFITS), QueryIds.EXPLORATION_PROFITS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.CURRENT_LOCATION), QueryIds.CURRENT_LOCATION);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.FSD_TARGET_ANALYSIS), QueryIds.FSD_TARGET_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.PLOTTED_ROUTE_ANALYSIS), QueryIds.PLOTTED_ROUTE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.TRADE_ROUTE_ANALYSIS), QueryIds.TRADE_ROUTE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.LOCAL_OUTFITTING), QueryIds.LOCAL_OUTFITTING);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.LOCAL_SHIPYARD), QueryIds.LOCAL_SHIPYARD);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.CARGO_HOLD_CONTENTS), QueryIds.CARGO_HOLD_CONTENTS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.PLAYER_PROFILE_ANALYSIS), QueryIds.PLAYER_PROFILE_ANALYSIS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.SHIP_LOADOUT), QueryIds.SHIP_LOADOUT);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.STATION_DETAILS), QueryIds.STATION_DETAILS);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.TOTAL_BOUNTIES), QueryIds.TOTAL_BOUNTIES);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.DISTANCE_TO_BUBBLE), QueryIds.DISTANCE_TO_BUBBLE);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.TIME_IN_ZONE), QueryIds.TIME_IN_ZONE);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.REMINDER), QueryIds.REMINDER);
+        map.put(StringUtls.localizedAiActionKeys(QueryIds.ANALYZE_MARKETS), QueryIds.ANALYZE_MARKETS);
     }
 }

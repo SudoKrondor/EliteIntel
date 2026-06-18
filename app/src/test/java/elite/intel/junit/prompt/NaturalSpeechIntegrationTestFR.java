@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static elite.intel.ai.brain.actions.Queries.*;
+import elite.intel.ai.brain.actions.query.QueryIds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -1058,7 +1058,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(200)
     @MethodSource
     void queryCurrentLocation(String input) throws InterruptedException {
-        assertRouted(input, CURRENT_LOCATION.getAction());
+        assertRouted(input, QueryIds.CURRENT_LOCATION);
     }
 
     static Stream<String> queryCurrentLocation() {
@@ -1073,7 +1073,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(202)
     @MethodSource
     void queryShipLoadout(String input) throws InterruptedException {
-        assertRouted(input, SHIP_LOADOUT.getAction());
+        assertRouted(input, QueryIds.SHIP_LOADOUT);
     }
 
     static Stream<String> queryShipLoadout() {
@@ -1088,7 +1088,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(203)
     @MethodSource
     void queryCargoHold(String input) throws InterruptedException {
-        assertRouted(input, CARGO_HOLD_CONTENTS.getAction());
+        assertRouted(input, QueryIds.CARGO_HOLD_CONTENTS);
     }
 
     static Stream<String> queryCargoHold() {
@@ -1103,7 +1103,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(204)
     @MethodSource
     void queryPlottedRoute(String input) throws InterruptedException {
-        assertRouted(input, PLOTTED_ROUTE_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.PLOTTED_ROUTE_ANALYSIS);
     }
 
     static Stream<String> queryPlottedRoute() {
@@ -1119,7 +1119,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(205)
     @MethodSource
     void queryStationsInSystem(String input) throws InterruptedException {
-        assertRouted(input, QUERY_STATIONS.getAction());
+        assertRouted(input, QueryIds.QUERY_STATIONS);
     }
 
     static Stream<String> queryStationsInSystem() {
@@ -1134,7 +1134,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(206)
     @MethodSource
     void queryStellarObjects(String input) throws InterruptedException {
-        assertRouted(input, QUERY_STELLAR_OBJETS.getAction());
+        assertRouted(input, QueryIds.QUERY_STELLAR_OBJETS);
     }
 
     static Stream<String> queryStellarObjects() {
@@ -1149,7 +1149,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(207)
     @MethodSource
     void queryStellarSignals(String input) throws InterruptedException {
-        assertRouted(input, QUERY_STELLAR_SIGNALS.getAction());
+        assertRouted(input, QueryIds.QUERY_STELLAR_SIGNALS);
     }
 
     static Stream<String> queryStellarSignals() {
@@ -1164,7 +1164,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(208)
     @MethodSource
     void queryBioScanProgress(String input) throws InterruptedException {
-        assertRouted(input, BIO_SAMPLE_IN_STAR_SYSTEM.getAction());
+        assertRouted(input, QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM);
     }
 
     static Stream<String> queryBioScanProgress() {
@@ -1179,7 +1179,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(209)
     @MethodSource
     void queryExobiologySamples(String input) throws InterruptedException {
-        assertRouted(input, EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
+        assertRouted(input, QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET);
     }
 
     static Stream<String> queryExobiologySamples() {
@@ -1194,7 +1194,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(210)
     @MethodSource
     void queryPlayerProfile(String input) throws InterruptedException {
-        assertRouted(input, PLAYER_PROFILE_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.PLAYER_PROFILE_ANALYSIS);
     }
 
     static Stream<String> queryPlayerProfile() {
@@ -1209,7 +1209,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(211)
     @MethodSource
     void queryCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, FLEET_CARRIER_STATUS.getAction());
+        assertRouted(input, QueryIds.FLEET_CARRIER_STATUS);
     }
 
     static Stream<String> queryCarrierStatus() {
@@ -1238,7 +1238,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(213)
     @MethodSource
     void queryDistanceToCarrier(String input) throws InterruptedException {
-        assertRouted(input, DISTANCE_TO_CARRIER.getAction());
+        assertRouted(input, QueryIds.DISTANCE_TO_CARRIER);
     }
 
     static Stream<String> queryDistanceToCarrier() {
@@ -1253,7 +1253,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(214)
     @MethodSource
     void queryFsdTarget(String input) throws InterruptedException {
-        assertRouted(input, FSD_TARGET_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.FSD_TARGET_ANALYSIS);
     }
 
     static Stream<String> queryFsdTarget() {
@@ -1269,7 +1269,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(215)
     @MethodSource
     void queryExplorationProfits(String input) throws InterruptedException {
-        assertRouted(input, EXPLORATION_PROFITS.getAction());
+        assertRouted(input, QueryIds.EXPLORATION_PROFITS);
     }
 
     static Stream<String> queryExplorationProfits() {
@@ -1284,7 +1284,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(216)
     @MethodSource
     void queryTime(String input) throws InterruptedException {
-        assertRouted(input, TIME_IN_ZONE.getAction());
+        assertRouted(input, QueryIds.TIME_IN_ZONE);
     }
 
     static Stream<String> queryTime() {
@@ -1299,7 +1299,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(217)
     @MethodSource
     void querySystemSecurity(String input) throws InterruptedException {
-        assertRouted(input, SYSTEM_SECURITY_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.SYSTEM_SECURITY_ANALYSIS);
     }
 
     static Stream<String> querySystemSecurity() {
@@ -1314,7 +1314,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(218)
     @MethodSource
     void queryStationDetails(String input) throws InterruptedException {
-        assertRouted(input, STATION_DETAILS.getAction());
+        assertRouted(input, QueryIds.STATION_DETAILS);
     }
 
     static Stream<String> queryStationDetails() {
@@ -1330,7 +1330,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(219)
     @MethodSource
     void queryMaterials(String input) throws InterruptedException {
-        assertRouted(input, MATERIALS_INVENTORY.getAction());
+        assertRouted(input, QueryIds.MATERIALS_INVENTORY);
     }
 
     static Stream<String> queryMaterials() {
@@ -1345,7 +1345,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(220)
     @MethodSource
     void queryPlanetMaterials(String input) throws InterruptedException {
-        assertRouted(input, PLANET_MATERIALS.getAction());
+        assertRouted(input, QueryIds.PLANET_MATERIALS);
     }
 
     static Stream<String> queryPlanetMaterials() {
@@ -1360,7 +1360,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(221)
     @MethodSource
     void queryDistanceToBubble(String input) throws InterruptedException {
-        assertRouted(input, DISTANCE_TO_BUBBLE.getAction());
+        assertRouted(input, QueryIds.DISTANCE_TO_BUBBLE);
     }
 
     static Stream<String> queryDistanceToBubble() {
@@ -1375,7 +1375,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(224)
     @MethodSource
     void queryLastScan(String input) throws InterruptedException {
-        assertRouted(input, LAST_SCAN_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.LAST_SCAN_ANALYSIS);
     }
 
     static Stream<String> queryLastScan() {
@@ -1390,7 +1390,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(225)
     @MethodSource
     void queryReminder(String input) throws InterruptedException {
-        assertRouted(input, REMINDER.getAction());
+        assertRouted(input, QueryIds.REMINDER);
     }
 
     static Stream<String> queryReminder() {
@@ -1405,7 +1405,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(226)
     @MethodSource
     void queryCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, FLEET_CARRIER_ETA.getAction());
+        assertRouted(input, QueryIds.FLEET_CARRIER_ETA);
     }
 
     static Stream<String> queryCarrierEta() {
@@ -1420,7 +1420,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(227)
     @MethodSource
     void queryGeoSignals(String input) throws InterruptedException {
-        assertRouted(input, QUERY_GEO_SIGNALS.getAction());
+        assertRouted(input, QueryIds.QUERY_GEO_SIGNALS);
     }
 
     static Stream<String> queryGeoSignals() {
@@ -1435,7 +1435,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(228)
     @MethodSource
     void queryLocalStations(String input) throws InterruptedException {
-        assertRouted(input, ANALYZE_MARKETS.getAction());
+        assertRouted(input, QueryIds.ANALYZE_MARKETS);
     }
 
     static Stream<String> queryLocalStations() {
@@ -1451,7 +1451,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(229)
     @MethodSource
     void queryTotalBounties(String input) throws InterruptedException {
-        assertRouted(input, TOTAL_BOUNTIES.getAction());
+        assertRouted(input, QueryIds.TOTAL_BOUNTIES);
     }
 
     static Stream<String> queryTotalBounties() {
@@ -1466,7 +1466,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(230)
     @MethodSource
     void queryKeyBindings(String input) throws InterruptedException {
-        assertRouted(input, KEY_BINDINGS_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.KEY_BINDINGS_ANALYSIS);
     }
 
     static Stream<String> queryKeyBindings() {
@@ -1481,7 +1481,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(231)
     @MethodSource
     void queryBiomeAnalysis(String input) throws InterruptedException {
-        assertRouted(input, PLANET_BIOME_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.PLANET_BIOME_ANALYSIS);
     }
 
     static Stream<String> queryBiomeAnalysis() {
@@ -1496,7 +1496,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(232)
     @MethodSource
     void queryLastBioSample(String input) throws InterruptedException {
-        assertRouted(input, DISTANCE_TO_LAST_BIO_SAMPLE.getAction());
+        assertRouted(input, QueryIds.DISTANCE_TO_LAST_BIO_SAMPLE);
     }
 
     static Stream<String> queryLastBioSample() {
@@ -1511,7 +1511,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(233)
     @MethodSource
     void queryCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, FLEET_CARRIER_ROUTE_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.FLEET_CARRIER_ROUTE_ANALYSIS);
     }
 
     static Stream<String> queryCarrierRoute() {
@@ -1519,6 +1519,20 @@ public class NaturalSpeechIntegrationTestFR {
                 "quel est l'itinéraire de mon porte-vaisseaux",
                 "combien de sauts pour le carrier",
                 "rapport de l'itinéraire du porte-vaisseaux"
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(233)
+    @MethodSource
+    void queryCarrierDestination(String input) throws InterruptedException {
+        assertRouted(input, QueryIds.FLEET_CARRIER_FINAL_DESTINATION);
+    }
+
+    static Stream<String> queryCarrierDestination() {
+        return Stream.of(
+                "où va le porte-vaisseau",
+                "quelle est la destination finale du porte-vaisseau"
         );
     }
 
@@ -1622,7 +1636,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(240)
     @MethodSource
     void querySquadronCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_STATUS.getAction());
+        assertRouted(input, QueryIds.SQUADRON_CARRIER_STATUS);
     }
 
     static Stream<String> querySquadronCarrierStatus() {
@@ -1639,7 +1653,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(242)
     @MethodSource
     void querySquadronCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
+        assertRouted(input, QueryIds.SQUADRON_CARRIER_ROUTE_ANALYSIS);
     }
 
     static Stream<String> querySquadronCarrierRoute() {
@@ -1653,7 +1667,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(243)
     @MethodSource
     void querySquadronCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction());
+        assertRouted(input, QueryIds.SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION);
     }
 
     static Stream<String> querySquadronCarrierDestination() {
@@ -1668,7 +1682,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(244)
     @MethodSource
     void querySquadronCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_ETA.getAction());
+        assertRouted(input, QueryIds.SQUADRON_CARRIER_ETA);
     }
 
     static Stream<String> querySquadronCarrierEta() {
@@ -1701,7 +1715,7 @@ public class NaturalSpeechIntegrationTestFR {
     @Order(251)
     @MethodSource
     void bareCarrierStatusDefaultsToFleet(String input) throws InterruptedException {
-        assertRouted(input, FLEET_CARRIER_STATUS.getAction());
+        assertRouted(input, QueryIds.FLEET_CARRIER_STATUS);
     }
 
     static Stream<String> bareCarrierStatusDefaultsToFleet() {

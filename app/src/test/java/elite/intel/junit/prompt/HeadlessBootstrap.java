@@ -26,6 +26,8 @@ public class HeadlessBootstrap {
 
         Cypher.initializeKey();
         Database.init();
+        elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().load();
+        elite.intel.ai.brain.actions.query.QueryRegistry.getInstance().load();
 
         // "false" = do not ignore input (i.e. listen mode on)
         SystemSession.getInstance().stopStartListening(false);
