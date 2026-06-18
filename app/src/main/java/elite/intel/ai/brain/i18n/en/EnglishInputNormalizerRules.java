@@ -587,6 +587,17 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("where is carrier headed", "carrier destination");
         m.put("carrier final destination", "carrier destination");
         m.put("carrier heading", "carrier destination");
+        m.put("where is the squadron carrier going", "squadron carrier final destination");
+        m.put("where is our squadron carrier going", "squadron carrier final destination");
+        m.put("where is squadron carrier going", "squadron carrier final destination");
+        // "where is" → "find" fires earlier in the map; also cover the post-substitution form:
+        m.put("find the squadron carrier going", "squadron carrier final destination");
+        m.put("find our squadron carrier going", "squadron carrier final destination");
+        m.put("find squadron carrier going", "squadron carrier final destination");
+        m.put("when does the squadron carrier arrive", "squadron carrier ETA");
+        m.put("when does our squadron carrier arrive", "squadron carrier ETA");
+        m.put("how long until the squadron carrier arrives", "squadron carrier ETA");
+        m.put("how long until our squadron carrier arrives", "squadron carrier ETA");
 
         // Station / outfitting / shipyard
         m.put("station info", "station details");
@@ -629,6 +640,11 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
 
         // Player profile - normalize before any "profile" substring can match trade_profile entries
         m.put("player profile", "player profile analysis");
+
+        // Reminder - collapse variations to canonical alias phrase
+        m.put("any reminders", "reminder");
+        m.put("recall reminder", "reminder");
+        m.put("what was the reminder", "reminder");
 
         // Distance queries
         m.put("range to carrier", "distance to carrier");

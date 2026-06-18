@@ -37,9 +37,9 @@ public class EnglishPromptRules implements PromptLanguageRules {
 
         sb.append(" - HARD RULE: 'fleet carrier' and 'squadron carrier' are COMPLETELY DIFFERENT things. NEVER mix them up.");
         sb.append("\n");
-        sb.append("   - input contains 'fleet carrier' or no qualifier (just 'carrier') → ALWAYS " + FLEET_CARRIER_STATUS.getAction());
+        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + FLEET_CARRIER_STATUS.getAction() + "; 'squadron carrier' → " + SQUADRON_CARRIER_STATUS.getAction());
         sb.append("\n");
-        sb.append("   - input contains 'squadron carrier' → ALWAYS " + SQUADRON_CARRIER_STATUS.getAction());
+        sb.append("   - navigate/go/head: 'squadron carrier' → " + NAVIGATE_TO_SQUADRON_CARRIER.getAction() + " ONLY; 'fleet carrier' or bare 'carrier' → " + NAVIGATE_TO_FLEET_CARRIER.getAction());
         sb.append("\n");
         sb.append("   - 'fleet carrier funds/balance/finances' → " + FLEET_CARRIER_STATUS.getAction() + " ONLY. NEVER " + SQUADRON_CARRIER_STATUS.getAction() + ".");
         sb.append("\n");
@@ -47,6 +47,12 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("\n");
         sb.append(" ______________________________________________________________ ");
         sb.append("\n");
+        sb.append("- 'deploy shield cell' / 'deploy power cell' / 'use shield cell' → ");
+        sb.append(DEPLOY_SHIELD_CELL.getAction());
+        sb.append(" (power cell and shield cell are synonyms here)\n");
+        sb.append("- 'attack' alone / 'fighter attack' → ");
+        sb.append(FIGHTER_REQUEST_FOCUS_TARGET.getAction());
+        sb.append(" (NOT fire_at_will; bare 'attack' = order fighter to focus on target)\n");
 
         sb.append("- 'activate' (exact standalone word only, nothing else meaningful in input) → ");
         sb.append(ACTIVATE.getAction());
