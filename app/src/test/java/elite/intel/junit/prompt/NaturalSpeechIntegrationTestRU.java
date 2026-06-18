@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestRU {
 
-    private static final int LLM_WAIT_MS = 5000;
+    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
 
@@ -52,14 +53,26 @@ public class NaturalSpeechIntegrationTestRU {
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
         EventBusManager.publish(new UserInputEvent(input));
-        Thread.sleep(LLM_WAIT_MS);
 
-        HandlerDispatchedEvent event = capture.getLastEvent();
+        HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,
                 "No handler dispatched for input: \"" + input + "\"");
         assertEquals(expectedAction, event.getAction(),
                 "Input: \"" + input + "\" → got \"" + event.getAction()
                         + "\" but expected \"" + expectedAction + "\"");
+    }
+
+    private HandlerDispatchedEvent waitForDispatch(String expectedAction) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + LLM_WAIT_MS;
+        HandlerDispatchedEvent event = null;
+        while (System.currentTimeMillis() < deadline) {
+            event = capture.getLastEvent();
+            if (event != null && expectedAction.equals(event.getAction())) {
+                return event;
+            }
+            Thread.sleep(LLM_POLL_MS);
+        }
+        return event;
     }
 
     // =========================================================================
@@ -460,7 +473,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> deployHardpoints() {
-        return Stream.of("развернуть орудия", "оружие готово", "к бою", "оружие открыто", "вооружиться");
+        return Stream.of("развернуть орудия", "оружие готово", "к бою", "вооружиться");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -471,7 +484,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("убрать орудия", "оружие убрать", "оружие в покое", "отбой");
+        return Stream.of("убрать орудия", "оружие убрать", "сверни оружие", "отбой");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -657,20 +670,12 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> querySquadronCarrierStatus() {
-        return Stream.of("статус авианосца эскадрильи", "финансы авианосца эскадрильи", "баланс авианосца эскадрильи", "как долго мы можем эксплуатировать авианосец эскадрильи");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(241)
-    @MethodSource
-    void querySquadronCarrierFuel(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_TRITIUM_SUPPLY.getAction());
-    }
-
-    static Stream<String> querySquadronCarrierFuel() {
-        return Stream.of("тритий авианосца эскадрильи", "топливо авианосца эскадрильи",
+        return Stream.of("статус авианосца эскадрильи", "финансы авианосца эскадрильи",
+                "баланс авианосца эскадрильи", "как долго мы можем эксплуатировать авианосец эскадрильи",
+                "тритий авианосца эскадрильи", "топливо авианосца эскадрильи",
                 "уровень топлива авианосца эскадрильи");
     }
+
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(242)

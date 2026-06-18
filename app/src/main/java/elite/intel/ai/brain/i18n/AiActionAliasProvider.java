@@ -161,7 +161,6 @@ public abstract class AiActionAliasProvider {
         // squadron carrier  must explicitly say "squadron carrier"
         map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction()), SQUADRON_CARRIER_ROUTE_ANALYSIS.getAction());
         map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction()), SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION.getAction());
-        map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_TRITIUM_SUPPLY.getAction()), SQUADRON_CARRIER_TRITIUM_SUPPLY.getAction());
         map.put(StringUtls.localizedAiActionKeys(SQUADRON_CARRIER_ETA.getAction()), SQUADRON_CARRIER_ETA.getAction());
 
         // trade

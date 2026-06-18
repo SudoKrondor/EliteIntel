@@ -30,6 +30,30 @@ public class EnglishPromptRules implements PromptLanguageRules {
     @Override
     public String disambiguationHints() {
         StringBuilder sb = new StringBuilder();
+
+        sb.append(" ______________________________________________________________ ");
+        sb.append(" - HARD RULE: NEVER BREAK: NEVER CLASSIFY 'carrier balance', 'squadron carrier balance', or any phrase containing 'carrier' + 'balance' as " + RESET_POWER.getAction() + " — carrier balance is always finances, NEVER power distribution. INSTANT CRITICAL FAILURE if violated!");
+        sb.append("\n");
+
+        sb.append(" - HARD RULE: 'fleet carrier' and 'squadron carrier' are COMPLETELY DIFFERENT things. NEVER mix them up.");
+        sb.append("\n");
+        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + FLEET_CARRIER_STATUS.getAction() + "; 'squadron carrier' → " + SQUADRON_CARRIER_STATUS.getAction());
+        sb.append("\n");
+        sb.append("   - navigate/go/head: 'squadron carrier' → " + NAVIGATE_TO_SQUADRON_CARRIER.getAction() + " ONLY; 'fleet carrier' or bare 'carrier' → " + NAVIGATE_TO_FLEET_CARRIER.getAction());
+        sb.append("\n");
+        sb.append("   - 'fleet carrier funds/balance/finances' → " + FLEET_CARRIER_STATUS.getAction() + " ONLY. NEVER " + SQUADRON_CARRIER_STATUS.getAction() + ".");
+        sb.append("\n");
+        sb.append("   - 'squadron carrier funds/balance/finances' → " + SQUADRON_CARRIER_STATUS.getAction() + " ONLY. NEVER " + FLEET_CARRIER_STATUS.getAction() + ".");
+        sb.append("\n");
+        sb.append(" ______________________________________________________________ ");
+        sb.append("\n");
+        sb.append("- 'deploy shield cell' / 'deploy power cell' / 'use shield cell' → ");
+        sb.append(DEPLOY_SHIELD_CELL.getAction());
+        sb.append(" (power cell and shield cell are synonyms here)\n");
+        sb.append("- 'attack' alone / 'fighter attack' → ");
+        sb.append(FIGHTER_REQUEST_FOCUS_TARGET.getAction());
+        sb.append(" (NOT fire_at_will; bare 'attack' = order fighter to focus on target)\n");
+
         sb.append("- 'activate' (exact standalone word only, nothing else meaningful in input) → ");
         sb.append(ACTIVATE.getAction());
         sb.append("\n");
@@ -201,8 +225,23 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("- 'target [anything else]' → ");
         sb.append(TARGET_SUB_SYSTEM.getAction());
         sb.append(", key = the words after 'target'");
-
         sb.append(")\n");
+
+        sb.append("- 'player profile' (input starts with 'player', NOT 'trade') → ");
+        sb.append(PLAYER_PROFILE_ANALYSIS.getAction());
+        sb.append("; NEVER any trade_profile action for this input\n");
+
+        sb.append("- 'distance to bubble' → ");
+        sb.append(DISTANCE_TO_BUBBLE.getAction());
+        sb.append(" (sol, earth, civilization all normalize to bubble; NOT ");
+        sb.append(DISTANCE_TO_BODY.getAction());
+        sb.append(" or ");
+        sb.append(DISTANCE_TO_CARRIER.getAction());
+        sb.append(")\n");
+
+        sb.append("- 'What's my fleet carrier fuel status', 'What is our fleet carrier range' → ");
+        sb.append(FLEET_CARRIER_STATUS.getAction());
+        sb.append("\n");
         sb.append("- organics / biology / exobiology on a planet or here → ");
         sb.append(EXOBIOLOGY_SAMPLES_ON_THIS_PLANET.getAction());
         sb.append(", NOT geo/materials\n");

@@ -27,6 +27,9 @@ public class RussianInputNormalizerRules implements InputNormalizerProvider {
         loadHudModes(m);
         loadHyperspace(m);
         colloquialTerms(m);
+        loadNavigation(m);
+        loadCarrierFuelStatus(m);
+        loadSquadronCarrierDestination(m);
         loadPhonetics(m);
         return m;
     }
@@ -71,6 +74,45 @@ public class RussianInputNormalizerRules implements InputNormalizerProvider {
         m.put("давай прыгнем", "прыжок в гиперпространство");
         m.put("суперкруиз", "войти в суперкруиз");
         m.put("поехали", "войти в суперкруиз");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Navigation / fighter commands
+    //
+    // "курс на авианосец эскадрильи" (accusative: navigate TO carrier) is distinct
+    // from "курс авианосца эскадрильи" (genitive: carrier's heading/destination).
+    // The former maps to the navigation alias; the latter is handled by
+    // loadSquadronCarrierDestination below.
+    // ─────────────────────────────────────────────────────────────────────────
+    private void loadNavigation(LinkedHashMap<String, String> m) {
+        m.put("курс на авианосец эскадрильи", "лети к авианосцу эскадрильи");
+        m.put("информация о следующем прыжке", "информация о цели fsd");
+        m.put("сосредоточиться", "фокус");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fleet carrier fuel / status normalization
+    //
+    // "топливо" (nominative) and question-form phrasing of carrier fuel status
+    // can confuse the small command model.  Map them to a canonical alias phrase
+    // that the Reducer will direct-match, removing LLM ambiguity entirely.
+    // Longer phrases must appear before shorter ones (substring-safe ordering).
+    // ─────────────────────────────────────────────────────────────────────────
+    private void loadCarrierFuelStatus(LinkedHashMap<String, String> m) {
+        m.put("каков статус топлива флотского авианосца", "статус авианосца");
+        m.put("уровень топлива авианосца", "статус авианосца");
+        m.put("топливо авианосца", "статус авианосца");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Squadron carrier final destination
+    //
+    // "курс авианосца эскадрильи" (the carrier's heading/course) means final
+    // destination, not route, but the small model conflates курс with маршрут.
+    // Normalize to the unambiguous canonical phrase so the Reducer direct-matches.
+    // ─────────────────────────────────────────────────────────────────────────
+    private void loadSquadronCarrierDestination(LinkedHashMap<String, String> m) {
+        m.put("курс авианосца эскадрильи", "конечный пункт назначения авианосца эскадрильи");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

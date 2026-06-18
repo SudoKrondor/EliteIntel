@@ -145,6 +145,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         // navigate / go / head / travel
         m.put("head over to", "navigate to");
         m.put("head to", "navigate to");
+        m.put("go to next trade stop", "navigate to next trade stop");
         m.put("go to", "navigate to");
         m.put("take us to", "navigate to");
         m.put("take me to", "navigate to");
@@ -167,6 +168,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("compute", "calculate");
         m.put("work out", "calculate");
         m.put("figure out", "calculate");
+        m.put("calculate neutron route", "calculate neutron star route");
 
         // cancel / abort / stop
         m.put("abort", "cancel");
@@ -259,6 +261,9 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void loadLandingAndBubble(LinkedHashMap<String, String> m) {
+        m.put("auto docking", "auto land");
+        m.put("auto dock", "auto land");
+
         m.put("lower landing gear", "gear down");
         m.put("extend landing gear", "gear down");
 
@@ -395,6 +400,10 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("run a scan", "scan the system");
         m.put("perform system scan", "scan the system");
         m.put("discovery scan", "scan the system");
+
+        // Carrier balance must be locked in before the bare "balance" → "equalize power" entry below
+        m.put("squadron carrier balance", "squadron carrier finances");
+        m.put("carrier balance", "carrier finances");
 
         // Equalize / balance / reset power
         m.put("balance power", "equalize power");
@@ -571,18 +580,32 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
 
     private void loadCarrierAndTrade(LinkedHashMap<String, String> m) {
         // Carrier status / fuel / ETA / destination
-        m.put("carrier balance", "carrier stats");
+        m.put("carrier balance", "carrier finances");
         m.put("when does carrier arrive", "carrier ETA");
         m.put("carrier arrival time", "carrier ETA");
         m.put("carrier arrival", "carrier ETA");
         m.put("when does carrier jump", "carrier ETA");
         m.put("carrier jump time", "carrier ETA");
-        m.put("carrier fuel level", "carrier tritium");
-        m.put("tritium level", "carrier tritium");
-        m.put("tritium reserve", "carrier tritium");
+        m.put("squadron carrier tritium", "squadron carrier fuel status");
+        m.put("squadron carrier fuel level", "squadron carrier fuel status");
+        m.put("carrier fuel level", "fleet carrier fuel status");
+        m.put("carrier tritium", "fleet carrier fuel status");
+        m.put("tritium level", "fleet carrier fuel status");
+        m.put("tritium reserve", "fleet carrier fuel status");
         m.put("where is carrier headed", "carrier destination");
         m.put("carrier final destination", "carrier destination");
         m.put("carrier heading", "carrier destination");
+        m.put("where is the squadron carrier going", "squadron carrier final destination");
+        m.put("where is our squadron carrier going", "squadron carrier final destination");
+        m.put("where is squadron carrier going", "squadron carrier final destination");
+        // "where is" → "find" fires earlier in the map; also cover the post-substitution form:
+        m.put("find the squadron carrier going", "squadron carrier final destination");
+        m.put("find our squadron carrier going", "squadron carrier final destination");
+        m.put("find squadron carrier going", "squadron carrier final destination");
+        m.put("when does the squadron carrier arrive", "squadron carrier ETA");
+        m.put("when does our squadron carrier arrive", "squadron carrier ETA");
+        m.put("how long until the squadron carrier arrives", "squadron carrier ETA");
+        m.put("how long until our squadron carrier arrives", "squadron carrier ETA");
 
         // Station / outfitting / shipyard
         m.put("station info", "station details");
@@ -622,6 +645,14 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("massacre progress", "massacre mission progress");
         m.put("pirates remaining", "massacre mission progress");
         m.put("pirate kills remaining", "massacre mission progress");
+
+        // Player profile - normalize before any "profile" substring can match trade_profile entries
+        m.put("player profile", "player profile analysis");
+
+        // Reminder - collapse variations to canonical alias phrase
+        m.put("any reminders", "reminder");
+        m.put("recall reminder", "reminder");
+        m.put("what was the reminder", "reminder");
 
         // Distance queries
         m.put("range to carrier", "distance to carrier");

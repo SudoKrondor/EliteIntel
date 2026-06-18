@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class NaturalSpeechIntegrationTestEN {
+public class NaturalSpeechIntegrationTestPT {
 
     /**
      * Pause between each test phrase. Increase if your LLM is slow.
@@ -45,7 +45,7 @@ public class NaturalSpeechIntegrationTestEN {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 5000;
+    private static final int LLM_WAIT_MS = 3000;
     private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
@@ -54,7 +54,7 @@ public class NaturalSpeechIntegrationTestEN {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
-        systemSession.setLanguage(Language.EN);
+        systemSession.setLanguage(Language.EN); ///NOTE: Change this to Language.PT
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();
         capture = new HandlerCapture();
@@ -74,6 +74,7 @@ public class NaturalSpeechIntegrationTestEN {
     // -------------------------------------------------------------------------
     // Core tester
     // -------------------------------------------------------------------------
+
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
@@ -99,6 +100,7 @@ public class NaturalSpeechIntegrationTestEN {
         }
         return event;
     }
+
 
     // =========================================================================
     // Attention / control
@@ -661,14 +663,14 @@ public class NaturalSpeechIntegrationTestEN {
 
     /*
      * @ParameterizedTest(name = "[{index}] \"{0}\"")
-     * 
+     *
      * @Order(81)
-     * 
+     *
      * @MethodSource
      * void clearCarrierRoute(String input) throws InterruptedException {
      * assertRouted(input, CLEAR_FLEET_CARRIER_ROUTE.getAction());
      * }
-     * 
+     *
      * static Stream<String> clearCarrierRoute() {
      * return Stream.of("clear fleet carrier route", "cancel carrier route");
      * }
@@ -743,8 +745,7 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> querySquadronCarrierStatus() {
         return Stream.of("squadron carrier status", "squadron carrier finances", "squadron carrier balance",
-                "how long can we operate the squadron carrier",
-                "squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
+                "how long can we operate the squadron carrier", "squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1333,14 +1334,14 @@ public class NaturalSpeechIntegrationTestEN {
 
     /*
      * @ParameterizedTest(name = "[{index}] \"{0}\"")
-     * 
+     *
      * @Order(236)
-     * 
+     *
      * @MethodSource
      * void nonsense(String input) throws InterruptedException {
      * assertRouted(input, IGNORE_NONSENSE.getAction());
      * }
-     * 
+     *
      * static Stream<String> nonsense() {
      * return Stream.of("youtube stream is at 5 tomorrow",
      * "what time should we meet",
