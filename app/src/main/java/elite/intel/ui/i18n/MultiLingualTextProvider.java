@@ -64,6 +64,14 @@ public final class MultiLingualTextProvider {
         for (int i = 0; i < raw.length(); i++) {
             char ch = raw.charAt(i);
             if (ch == '\'') {
+                // Apostrophes inside words (for example, French "J'écoute") are
+                // punctuation, not MessageFormat quote delimiters.
+                if (i > 0
+                        && i + 1 < raw.length()
+                        && Character.isLetter(raw.charAt(i - 1))
+                        && Character.isLetter(raw.charAt(i + 1))) {
+                    continue;
+                }
                 if (i + 1 < raw.length() && raw.charAt(i + 1) == '\'') {
                     i++;
                 } else {

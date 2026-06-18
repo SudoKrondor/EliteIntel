@@ -25,15 +25,18 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
         // speed /throttle
 
         // fleet carrier
-        m.put("squadron-carrier", "porte-vaisseau d'escadron");
-        m.put("squadron carrier", "porte-vaisseau d'escadron");
-        m.put("carrier d'escadron", "porte-vaisseau d'escadron");
-        m.put("carrier de l'escadron", "porte-vaisseau d'escadron");
-        m.put("porte-vaisseau de l'escadron", "porte-vaisseau d'escadron");
-        m.put("fleet-carrier", "porte-vaisseau");
-        m.put("fleet carrier", "porte-vaisseau");
-        m.put("porte-vaisseaux", "porte-vaisseau");
-        m.put("porte vaisseaux", "porte-vaisseau");
+        m.put("squadron-carrier", "porte-vaisseaux d'escadron");
+        m.put("squadron carrier", "porte-vaisseaux d'escadron");
+        m.put("carrier d'escadron", "porte-vaisseaux d'escadron");
+        m.put("carrier de l'escadron", "porte-vaisseaux d'escadron");
+        m.put("porte-vaisseau de l'escadron", "porte-vaisseaux d'escadron");
+        m.put("rapport sur le porte-vaisseaux d'escadron", "statut du porte-vaisseaux d'escadron");
+        m.put("rapport sur le porte vaisseaux d'escadron", "statut du porte-vaisseauxx d'escadron");
+        m.put("rapport sur le porte-vaisseau d'escadron", "statut du porte-vaisseaux d'escadron");
+        m.put("fleet-carrier", "porte-vaisseaux");
+        m.put("fleet carrier", "porte-vaisseaux");
+        m.put("porte-vaisseaux", "porte-vaisseaux");
+        m.put("porte vaisseaux", "porte-vaisseaux");
 
         //power distribution
         m.put("puissance dans les boucliers", "redirige la puissance vers les boucliers");
@@ -45,6 +48,19 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
         m.put("puissance dans les armes", "redirige la puissance vers les armes");
         m.put("puissance aux armes", "redirige la puissance vers les armes");
         m.put("équilibre le distributeur", "réinitialise la puissance");
+
+        // ship status panel vs loadout query
+        m.put("ouvre l'état général du vaisseau", "ouvre le panneau de statut");
+        m.put("affiche l'état général du vaisseau", "affiche le panneau de statut");
+        m.put("montre l'état général du vaisseau", "montre le panneau de statut");
+
+        // cargo scoop: "trappe" always identifies the physical scoop/hatch
+        m.put("ouvre la trappe du cargo", "ouvre la trappe");
+        m.put("ferme la trappe du cargo", "ferme la trappe");
+        m.put("ouvre la trappe de la soute", "ouvre la trappe");
+        m.put("ferme la trappe de la soute", "ferme la trappe");
+        m.put("ouvre la trappe de cargaison", "ouvre la trappe");
+        m.put("ferme la trappe de cargaison", "ferme la trappe");
 
         //scannerFFS
 
@@ -80,6 +96,13 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
         m.put("matériels", "matériaux");
         m.put("materiels", "matériaux");
         m.put("materiaux", "matériaux");
+        m.put("inventaire de bord", "inventaire du vaisseau");
+        m.put("inventaire vaisseau", "inventaire du vaisseau");
+        m.put("inventaire du bord", "inventaire du vaisseau");
+        m.put("matériaux codés", "matériaux encodés");
+        m.put("materiaux codes", "matériaux encodés");
+        m.put("données encodées", "matériaux encodés");
+        m.put("donnees encodees", "matériaux encodés");
         m.put("liste les stations avec commerce", "quels sont les marchés locaux");
         m.put("cherche une station avec commerce", "quels sont les marchés locaux");
         m.put("trouve moi le marché le plus proche", "quels sont les marchés locaux");

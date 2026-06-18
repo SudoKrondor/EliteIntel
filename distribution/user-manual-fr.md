@@ -21,8 +21,6 @@ Un bon ratio est généralement autour de 800 à 1000. Si vous utilisez des haut
 
 ## Application, écoute et session
 
-Type : **ACTION_APP / INFO / DANGEREUX**
-
 - Mettre l’application en veille : **« dors »**, **« passe en mode veille »**, **« tu peux disposer »**
 - Réveiller l’application : **« réveille-toi »**, **« écoute »**
 - Envoyer une commande pendant la veille : **« écoute-moi, saute en hyperespace »**
@@ -39,8 +37,6 @@ Type : **ACTION_APP / INFO / DANGEREUX**
 
 ## Exploration, position et système
 
-Type : **INFO / ACTION_JEU**
-
 - Position actuelle : **« où sommes-nous »**, **« dans quel système sommes-nous »**
 - Distance de la Bulle : **« distance de la Bulle »**, **« combien d’années-lumière de la civilisation »**
 - Heure actuelle : **« quelle heure est-il »**, **« donne-moi l’heure UTC »**
@@ -53,8 +49,6 @@ Type : **INFO / ACTION_JEU**
 - Dernier scan : **« quel a été le dernier scan »**, **« qu’avons-nous scanné récemment »**
 
 ## Exobiologie, biologie et codex
-
-Type : **INFO / ACTION_JEU / ACTION_RECHERCHE / DANGEREUX**
 
 Différence importante :
 
@@ -179,7 +173,7 @@ Rappel :
 - Demande d’appontage : **« demande l’autorisation d’appontage »**
 - Mode combat : **« active le mode combat »**
 - Mode analyse : **« active le mode analyse »**
-- Récupérateur de cargaison : **« ouvre la trappe »**, **« ferme la trappe »**
+- Récupérateur de cargaison : ouvrez ou fermez la trappe, le récupérateur ou la soute à cargaison.
 - Vision nocturne : **« active la vision nocturne »**
 - Lumières : **« allume les phares »**, **« éteins les phares »**
 - SRV : **« déploie le VRS »**, **« récupère le VRS »**
@@ -188,10 +182,12 @@ Rappel :
 
 ## Distribution de puissance
 
-- Boucliers : **« puissance dans les boucliers »**, **« priorité aux boucliers »**
+- Systèmes/boucliers : **« puissance dans les systèmes »**, **« priorité aux boucliers »**
 - Moteurs : **« puissance dans les moteurs »**, **« priorité aux moteurs »**
 - Armes : **« puissance dans les armes »**, **« priorité aux armes »**
 - Équilibrer : **« équilibre le distributeur »**, **« réinitialise la puissance »**
+
+Dans ce contexte, **systèmes** désigne le canal SYS du distributeur, qui alimente notamment les boucliers. Pour la navigation, les cartes et les scans, **système** désigne un système stellaire.
 
 ## Combat, armes et chasseur
 
@@ -212,7 +208,7 @@ Rappel :
 
 ## Panneaux et interface
 
-Utilisez **« ouvre »**, **« montre »** ou **« affiche »** suivi du panneau.
+Utilisez naturellement **« ouvre »**, **« montre »** ou **« affiche »** suivi du nom du panneau.
 
 - Navigation : **« ouvre le panneau de navigation »**
 - Transactions : **« montre les transactions »**
@@ -222,12 +218,12 @@ Utilisez **« ouvre »**, **« montre »** ou **« affiche »** suivi du panneau
 - Social : **« ouvre le social »**
 - Historique : **« montre l’historique »**
 - Escadron : **« ouvre le panneau escadron »**
-- Statut : **« ouvre le panneau de statut »**
+- Statut ou état du vaisseau
 - Commandant : **« montre le panneau commandant »**
 - Équipage : **« montre le panneau équipage »**
-- Modules : **« montre le panneau modules »**
+- Modules
 - Groupes de tir : **« montre les groupes de tir »**
-- Inventaire : **« affiche le panneau inventaire »**
+- Inventaire
 - Stockage : **« ouvre le stockage »**
 - Chasseur : **« montre le panneau chasseur »**
 - Gestion carrier : **« ouvre la gestion du porte-vaisseau »**
@@ -236,9 +232,9 @@ Utilisez **« ouvre »**, **« montre »** ou **« affiche »** suivi du panneau
 ## Vaisseau, inventaire et profits
 
 - Profil commercial : **« quels sont les paramètres commerciaux actuels »**
-- Inventaire matériaux : **« inventaire des matériaux »**, **« combien de fer avons-nous »**
+- Matériaux : **« inventaire des matériaux »**, **« combien de fer avons-nous »**
 - Matériaux planète : **« quels matériaux trouve-t-on sur cette planète »**
-- Soute : **« que contient la soute »**, **« liste la cargaison »**
+- Cargaison : **« que contient la soute »**, **« liste la cargaison »**
 - Loadout : **« configuration du vaisseau »**, **« modules du vaisseau »**
 - Profil commandant : **« profil de commandant »**, **« affiche mes statistiques »**
 - Profits exploration : **« combien rapportent les scans d’exploration »**
