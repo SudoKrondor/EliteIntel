@@ -484,7 +484,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("убрать орудия", "оружие убрать", "брать оружие", "отбой");
+        return Stream.of("убрать орудия", "оружие убрать", "сверни оружие", "отбой");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
