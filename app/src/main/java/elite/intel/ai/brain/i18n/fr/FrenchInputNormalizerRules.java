@@ -24,25 +24,49 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
 
         // speed /throttle
 
-        // fleet carrier
-        m.put("squadron-carrier", "porte-vaisseaux d'escadron");
-        m.put("squadron carrier", "porte-vaisseaux d'escadron");
-        m.put("carrier d'escadron", "porte-vaisseaux d'escadron");
-        m.put("carrier de l'escadron", "porte-vaisseaux d'escadron");
-        m.put("porte-vaisseau de l'escadron", "porte-vaisseaux d'escadron");
-        m.put("rapport sur le porte-vaisseaux d'escadron", "statut du porte-vaisseaux d'escadron");
-        m.put("rapport sur le porte vaisseaux d'escadron", "statut du porte-vaisseauxx d'escadron");
-        m.put("rapport sur le porte-vaisseau d'escadron", "statut du porte-vaisseaux d'escadron");
-        m.put("fleet-carrier", "porte-vaisseaux");
-        m.put("fleet carrier", "porte-vaisseaux");
-        m.put("porte-vaisseaux", "porte-vaisseaux");
-        m.put("porte vaisseaux", "porte-vaisseaux");
+        // landing gear: "sors" deploys, "rentre/relève" retracts
+        m.put("sors le train d'atterrissage", "déploie le train d'atterrissage");
+        m.put("sors le train d atterrissage", "déploie le train d'atterrissage");
+
+        // fleet carrier: canonical singular form matches the action aliases
+        m.put("squadron-carrier", "porte-vaisseau d'escadron");
+        m.put("squadron carrier", "porte-vaisseau d'escadron");
+        m.put("carrier d'escadron", "porte-vaisseau d'escadron");
+        m.put("carrier de l'escadron", "porte-vaisseau d'escadron");
+        m.put("porte-vaisseau de l'escadron", "porte-vaisseau d'escadron");
+        m.put("rapport sur le porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le porte vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("combien de tritium dans le porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("carburant du porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("carburant du porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le niveau de carburant du porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le niveau de carburant du porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("portée porte-vaisseaux avec tritium actuel", "portée du porte-vaisseau avec tritium actuel");
+        m.put("active l'itinéraire vers le porte-vaisseaux", "navigue vers le porte-vaisseau");
+        m.put("active l'itinéraire vers le porte-vaisseau", "navigue vers le porte-vaisseau");
+        m.put("active l'itineraire vers le porte-vaisseaux", "navigue vers le porte-vaisseau");
+        m.put("fleet-carrier", "porte-vaisseau");
+        m.put("fleet carrier", "porte-vaisseau");
+        m.put("porte-vaisseaux", "porte-vaisseau");
+        m.put("porte vaisseaux", "porte-vaisseau");
+
+        // installed ship equipment is loadout, not material inventory
+        m.put("avons-nous un collecteur de carburant", "est-ce équipé d'un collecteur de carburant");
+        m.put("avons nous un collecteur de carburant", "est-ce équipé d'un collecteur de carburant");
+
+        // fighter focus order: canonical registered phrase
+        m.put("concentre-toi sur ma cible", "chasseur attaque ma cible");
+        m.put("concentre toi sur ma cible", "chasseur attaque ma cible");
+        m.put("focus sur la cible", "chasseur attaque ma cible");
 
         //power distribution
         m.put("puissance dans les boucliers", "redirige la puissance vers les boucliers");
         m.put("puissance aux boucliers", "redirige la puissance vers les boucliers");
-        m.put("puissance dans les systèmes", "redirige la puissance vers les systèmes");
-        m.put("puissance aux systèmes", "redirige la puissance vers les systèmes");
+        m.put("redirige la puissance vers les systèmes", "redirige la puissance vers les boucliers");
+        m.put("puissance dans les systèmes", "redirige la puissance vers les boucliers");
+        m.put("puissance aux systèmes", "redirige la puissance vers les boucliers");
+        m.put("priorité aux systèmes", "priorité aux boucliers");
         m.put("puissance dans les moteurs", "redirige la puissance vers les moteurs");
         m.put("puissance aux moteurs", "redirige la puissance vers les moteurs");
         m.put("puissance dans les armes", "redirige la puissance vers les armes");
@@ -91,6 +115,11 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
         // announcements
         m.put("plus d'annonces", "désactive toutes les annonces");
         m.put("plus d annonces", "désactive toutes les annonces");
+        m.put("coupe toutes les notifications vocales", "désactive toutes les annonces");
+
+        // fighter UI: opening commands means opening the panel, not deploying a fighter
+        m.put("ouvre les commandes des chasseurs", "ouvre le panneau chasseur");
+        m.put("ouvre les commandes du chasseur", "ouvre le panneau chasseur");
 
         // markets vs generic stations / commodity search
         m.put("matériels", "matériaux");

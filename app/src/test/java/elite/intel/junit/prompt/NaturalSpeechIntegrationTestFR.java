@@ -396,7 +396,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> navigateToCarrier() {
         return Stream.of(
                 "navigue vers mon porte-vaisseaux",  
-                "active l'itinéraire vers le porte-vaisseaux"
+                "trace l'itinéraire vers le porte-vaisseaux"
         );
     }
 
