@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.brain.actions.Commands;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.session.Status;
 
@@ -269,8 +268,8 @@ public final class CustomCommandValidator {
 
     static Set<String> builtInCommandIds() {
         Set<String> ids = new HashSet<>();
-        for (Commands command : Commands.values()) {
-            ids.add(normalize(command.getAction()));
+        for (String id : elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().byId().keySet()) {
+            ids.add(normalize(id));
         }
         return ids;
     }

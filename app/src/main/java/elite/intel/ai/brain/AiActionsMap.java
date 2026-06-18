@@ -1,4 +1,5 @@
 package elite.intel.ai.brain;
+import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
@@ -8,7 +9,6 @@ import elite.intel.session.SystemSession;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static elite.intel.ai.brain.actions.Commands.IGNORE_NONSENSE;
 import static elite.intel.ai.brain.actions.Queries.CONNECTION_CHECK;
 import static elite.intel.ai.brain.actions.Queries.GENERAL_CONVERSATION;
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
@@ -51,7 +51,7 @@ public class AiActionsMap {
         if (systemSession.conversationalModeOn()) {
             map.put("general conversation", GENERAL_CONVERSATION.getAction());
         } else {
-            map.put("ignore_nonsensical_input", IGNORE_NONSENSE.getAction());
+            map.put("ignore_nonsensical_input", CommandIds.IGNORE_NONSENSICAL_INPUT);
         }
 
         // Machine-only command, not user-facing language.

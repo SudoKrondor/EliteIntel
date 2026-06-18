@@ -1,33 +1,41 @@
 package elite.intel.ai.brain.actions.catalog;
 
 import com.google.gson.Gson;
-import elite.intel.ai.brain.actions.Commands;
-import elite.intel.ai.brain.actions.handlers.commands.SimpleCommandActionHandler;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class CommandCatalogTest {
 
     private final CommandCatalog catalog = new CommandCatalog(Function.identity());
 
+    @BeforeAll
+    static void loadRegistry() {
+        CommandRegistry.getInstance().load();
+    }
+
+    private static int registrySize() {
+        return CommandRegistry.getInstance().byId().size();
+    }
+
     @Test
-    void containsOneEntryForEveryCommandsEnumEntry() {
+    void containsOneEntryForEveryRegistryCommand() {
         Map<String, Long> entryCountsById = catalog.entries().stream()
                 .collect(Collectors.groupingBy(CommandCatalogEntry::id, Collectors.counting()));
-        Map<String, Long> commandCountsById = List.of(Commands.values()).stream()
-                .collect(Collectors.groupingBy(this::idOf, Collectors.counting()));
+        Map<String, Long> registryCountsById = CommandRegistry.getInstance().byId().keySet().stream()
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-        assertEquals(Commands.values().length, catalog.entries().size());
-        assertEquals(commandCountsById, entryCountsById);
+        assertEquals(registrySize(), catalog.entries().size());
+        assertEquals(registryCountsById, entryCountsById);
     }
 
     @Test
@@ -38,54 +46,38 @@ class CommandCatalogTest {
     }
 
     @Test
-    void entryTypesAreDerivedFromCommandHandlerAndBinding() {
-        assertCatalogMatchesCommands((command, entry) ->
-                assertEquals(expectedType(command), entry.type(), command.name())
-        );
+    void entryTypeMatchesCommandKind() {
+        Map<String, CommandCatalogEntry> entriesById = catalog.entries().stream()
+                .collect(Collectors.toMap(CommandCatalogEntry::id, Function.identity()));
+
+        for (IntelCommand command : CommandRegistry.getInstance().byId().values()) {
+            CommandCatalogEntry entry = entriesById.get(command.id());
+            assertNotNull(entry, command.id());
+            assertEquals(expectedType(command), entry.type(), command.id());
+        }
     }
 
     @Test
     void missingLocalizationKeysFallBackToNonBlankNameAndDescription() {
-        assertCatalogMatchesCommands((command, entry) -> {
-            assertFalse(entry.name().isBlank(), command.name());
-            assertFalse(entry.description().isBlank(), command.name());
-            assertFalse(localizationKey(entry.id(), "name").equals(entry.name()), command.name());
-            assertFalse(localizationKey(entry.id(), "description").equals(entry.description()), command.name());
-        });
-    }
-
-    private void assertCatalogMatchesCommands(CommandEntryAssertion assertion) {
-        Commands[] commands = Commands.values();
-        List<CommandCatalogEntry> entries = catalog.entries();
-
-        assertEquals(commands.length, entries.size());
-        for (int i = 0; i < commands.length; i++) {
-            assertion.accept(commands[i], entries.get(i));
+        // textResolver is Function.identity(): it echoes the i18n key back, simulating
+        // missing translations, so every entry must use its non-blank fallbacks.
+        for (CommandCatalogEntry entry : catalog.entries()) {
+            assertFalse(entry.name().isBlank(), entry.id());
+            assertFalse(entry.description().isBlank(), entry.id());
+            assertNotEquals(localizationKey(entry.id(), "name"), entry.name(), entry.id());
+            assertEquals("Built-in command action: " + entry.id(), entry.description(), entry.id());
         }
     }
 
-    private CommandCatalogEntryType expectedType(Commands command) {
-        if (command.getHandlerClass() == SimpleCommandActionHandler.class && command.getBinding() != null) {
-            return CommandCatalogEntryType.BUILT_IN_BINDING;
-        }
-        return CommandCatalogEntryType.BUILT_IN_ACTION;
-    }
-
-    private String idOf(Commands command) {
-        String action = command.getAction();
-        if (action != null && !action.isBlank()) {
-            return action;
-        }
-        return command.name().toLowerCase(Locale.ROOT);
+    private CommandCatalogEntryType expectedType(IntelCommand command) {
+        return switch (command.kind()) {
+            case BINDING -> CommandCatalogEntryType.BUILT_IN_BINDING;
+            case ACTION -> CommandCatalogEntryType.BUILT_IN_ACTION;
+        };
     }
 
     private String localizationKey(String id, String field) {
         return "command." + id + "." + field;
-    }
-
-    @FunctionalInterface
-    private interface CommandEntryAssertion {
-        void accept(Commands command, CommandCatalogEntry entry);
     }
 
     // ---- entries(List<CustomCommandDefinition>) overload ----
@@ -93,7 +85,7 @@ class CommandCatalogTest {
     @Test
     void builtInEntriesStillPresentWhenCustomCommandListIsEmpty() {
         List<CommandCatalogEntry> entries = catalog.entries(List.of());
-        assertEquals(Commands.values().length, entries.size());
+        assertEquals(registrySize(), entries.size());
     }
 
     @Test
@@ -101,7 +93,7 @@ class CommandCatalogTest {
         CustomCommandDefinition customCommand = buildCustomCommand("custom_command_test", "Test Custom Command", "desc");
         List<CommandCatalogEntry> entries = catalog.entries(List.of(customCommand));
 
-        assertEquals(Commands.values().length + 1, entries.size());
+        assertEquals(registrySize() + 1, entries.size());
         CommandCatalogEntry customCommandEntry = entries.getLast();
         assertEquals("custom_command_test", customCommandEntry.id());
         assertEquals("Test Custom Command", customCommandEntry.name());

@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.i18n.ru;
+import elite.intel.ai.brain.actions.command.CommandIds;
 
-import elite.intel.ai.brain.actions.Commands;
 import elite.intel.ai.brain.actions.Queries;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
-import static elite.intel.ai.brain.actions.Commands.*;
 import static elite.intel.ai.brain.actions.Queries.*;
 
 public class RussianPromptRules implements PromptLanguageRules {
@@ -34,7 +33,7 @@ public class RussianPromptRules implements PromptLanguageRules {
         StringBuilder sb = new StringBuilder();
 
         sb.append("- classify commands like прервать, заткнись to interrupt action → ");
-        sb.append(INTERRUPT_TTS.getAction());
+        sb.append(CommandIds.INTERRUPT);
         sb.append("\n");
 
         sb.append("- classify queries about location like как долго длится день здесь to action → ");
@@ -50,15 +49,15 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- classify commands to fire on target such as : открыть огонь, атака, атакуй итд. → ");
-        sb.append(Commands.FIGHTER_OPEN_ORDERS.getAction());
+        sb.append(CommandIds.FIGHTER_FIRE_AT_WILL);
         sb.append("\n");
 
         sb.append("- classify command режим анализа → ");
-        sb.append(Commands.ACTIVATE_ANALYSIS_MODE.getAction());
+        sb.append(CommandIds.SWITCH_TO_ANALYSIS_MODE);
         sb.append("\n");
 
         sb.append("- classify command боевой режим → ");
-        sb.append(Commands.ACTIVATE_COMBAT_MODE.getAction());
+        sb.append(CommandIds.SWITCH_TO_COMBAT_MODE);
         sb.append("\n");
         //переключись в боевой режим
 
@@ -70,13 +69,13 @@ public class RussianPromptRules implements PromptLanguageRules {
 
 
         sb.append(" - classify войти в суперкруиз, суперкруиз, включи суперкруиз, световая скорость, на форсаж as ");
-        sb.append(ENTER_SUPER_CRUISE.getAction());
+        sb.append(CommandIds.ENTER_SUPER_CRUISE);
         sb.append(" never as ");
-        sb.append(JUMP_TO_HYPERSPACE.getAction());
+        sb.append(CommandIds.JUMP_TO_HYPERSPACE);
         sb.append("\n");
 
         sb.append(" - classify прыжок в гиперпространство, прыгай, гиперпрыжок, войти в гиперпространство, поехали, следующий маршрутный пункт as ");
-        sb.append(JUMP_TO_HYPERSPACE.getAction());
+        sb.append(CommandIds.JUMP_TO_HYPERSPACE);
         sb.append("\n");
 
         sb.append(" - classify questions about авианосец as ");
@@ -101,11 +100,11 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append(" - classify автоматическая стыковка as ");
-        sb.append(TAXI.getAction());
+        sb.append(CommandIds.TAXI_TO_LANDING_PAD);
         sb.append("\n");
 
         sb.append("- require very high probability match for action →");
-        sb.append(CLEAR_ALL_ACTIVE_MISSIONS.getAction());
+        sb.append(CommandIds.CLEAR_ACTIVE_MISSIONS);
         sb.append("\n");
 
 

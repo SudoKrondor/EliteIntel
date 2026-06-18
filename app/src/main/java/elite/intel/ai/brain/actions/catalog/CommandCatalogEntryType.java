@@ -5,7 +5,7 @@ package elite.intel.ai.brain.actions.catalog;
  */
 public enum CommandCatalogEntryType {
     /**
-     * Built-in command handled by SimpleCommandActionHandler with a non-null binding.
+     * Built-in command that taps a single game binding (non-null binding).
      */
     BUILT_IN_BINDING,
 

@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
+import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;

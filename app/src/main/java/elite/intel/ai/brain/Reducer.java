@@ -1,11 +1,11 @@
 package elite.intel.ai.brain;
+import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static elite.intel.ai.brain.actions.Commands.IGNORE_NONSENSE;
 import static elite.intel.ai.brain.actions.Queries.GENERAL_CONVERSATION;
 
 public class Reducer {
@@ -124,7 +124,7 @@ public class Reducer {
             if (isConversationMode) {
                 result.put(GENERAL_CONVERSATION.getAction(), GENERAL_CONVERSATION.getAction());
             } else {
-                result.put(IGNORE_NONSENSE.getAction(), IGNORE_NONSENSE.getAction());
+                result.put(CommandIds.IGNORE_NONSENSICAL_INPUT, CommandIds.IGNORE_NONSENSICAL_INPUT);
             }
         }
 
