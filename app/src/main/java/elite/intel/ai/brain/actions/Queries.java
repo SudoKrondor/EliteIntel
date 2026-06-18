@@ -31,14 +31,12 @@ public enum Queries {
     PLOTTED_ROUTE_ANALYSIS              ("query_ship_route_remaining_jumps",            AnalyzeRouterHandler.class),
 
     FLEET_CARRIER_ROUTE_ANALYSIS        ("query_fleet_carrier_route",                         AnalyzeFleetCarrierRouteHandler.class),
-    //FLEET_CARRIER_TRITIUM_SUPPLY        ("query_fleet_carrier_fuel",                          AnalyzeFleetCarrierFuelSupplyHandler.class),
     FLEET_CARRIER_ROUTE                 ("query_fleet_carrier_route",                         AnalyzeFleetCarrierFinalDestinationHandler.class),
     FLEET_CARRIER_STATUS                ("query_fleet_carrier_status_fuel_credit_finance",    AnalyzeFleetCarrierDataHandler.class),
     FLEET_CARRIER_ETA                   ("query_fleet_carrier_eta",                           AnalyzeFleetCarrierETAHandler.class),
 
     SQUADRON_CARRIER_ROUTE_ANALYSIS     ("query_squadron_carrier_route",                      AnalyzeSquadronCarrierRouteHandler.class),
-    SQUADRON_CARRIER_TRITIUM_SUPPLY     ("query_squadron_carrier_fuel",                       AnalyzeSquadronCarrierFuelSupplyHandler.class),
-    SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION ("query_squadron_carrier_final_destination",                      AnalyzeSquadronCarrierFinalDestinationHandler.class),
+    SQUADRON_CARRIER_ROUTE_FINAL_DESTINATION ("query_squadron_carrier_final_destination",     AnalyzeSquadronCarrierFinalDestinationHandler.class),
     SQUADRON_CARRIER_STATUS             ("query_squadron_carrier_status_fuel_credit_finance", AnalyzeSquadronCarrierDataHandler.class),
     SQUADRON_CARRIER_ETA                ("query_squadron_carrier_eta",                        AnalyzeSquadronCarrierETAHandler.class),
 
