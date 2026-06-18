@@ -22,13 +22,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * French-language integration test for the NaturalSpeech routing system.
  * Mirrors {@link NaturalSpeechIntegrationTestEN} in structure and @Order numbers.
  * <p>
- * Intended as a starting point for a native French speaker to verify and extend.
- * All phrases are drawn from {@code FrenchAiActionAliases} and should be natural
- * spoken equivalents — not literal translations of the English test phrases.
+ * Intended as a routing checklist for the French voice localization. The phrases
+ * should be natural spoken French, not literal translations of the English tests.
+ * Keep this file aligned with {@code i18n/ai_action_aliases_fr.properties}.
+ * <p>
+ * INTENTION TYPES
+ * - INFO: asks for information; should route to a query and speak an answer.
+ * - ACTION_JEU: interacts with Elite Dangerous through bindings, panels, navigation, or typing.
+ * - ACTION_RECHERCHE: searches data and may then prepare navigation, reminders, or route entry.
+ * - ACTION_APP: changes Elite Intel state, settings, announcements, reminders, or voice behavior.
+ * - DANGEREUX: clears, deletes, cancels, or otherwise removes state; phrases must be explicit.
  * <p>
  * NOTES FOR THE LOCALIZER:
  * - "honk" in French routes to OPEN_FSS (not HONK_THE_SYSTEM) — see openFss().
- * - NAVIGATE_TO_SQUADRON_CARRIER has no French alias yet; test is commented out.
  * - Phrases with accent variants (e.g. "écoute"/"ecoute") only need one tested here;
  * the alias file covers both spellings.
  * <p>
@@ -42,7 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestFR {
 
-    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_WAIT_MS = 8000;
+    private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
 
@@ -71,9 +78,8 @@ public class NaturalSpeechIntegrationTestFR {
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
         EventBusManager.publish(new UserInputEvent(input));
-        Thread.sleep(LLM_WAIT_MS);
 
-        HandlerDispatchedEvent event = capture.getLastEvent();
+        HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,
                 "No handler dispatched for input: \"" + input + "\"");
         assertEquals(expectedAction, event.getAction(),
@@ -81,8 +87,23 @@ public class NaturalSpeechIntegrationTestFR {
                         + "\" but expected \"" + expectedAction + "\"");
     }
 
+    private HandlerDispatchedEvent waitForDispatch(String expectedAction) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + LLM_WAIT_MS;
+        HandlerDispatchedEvent event = null;
+        while (System.currentTimeMillis() < deadline) {
+            event = capture.getLastEvent();
+            if (event != null && expectedAction.equals(event.getAction())) {
+                return event;
+            }
+            Thread.sleep(LLM_POLL_MS);
+        }
+        return event;
+    }
+
     // =========================================================================
-    // Attention / control
+    // BLOC 01 — ÉCOUTE, VEILLE ET INTERRUPTION
+    // Type: ACTION_APP
+    // Rôle: contrôler l'état d'écoute et interrompre la voix, sans interaction directe avec le jeu.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -124,9 +145,15 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "arrête de parler",
                 "stop voix",
-                "silence"// peon
+                "silence"
         );
     }
+
+    // =========================================================================
+    // BLOC 03 — PILOTAGE DIRECT DU VAISSEAU: MODES ET VUE
+    // Type: ACTION_JEU
+    // Rôle: vérifier les bascules de mode cockpit et la remise à zéro de la vue.
+    // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(13)
@@ -173,7 +200,9 @@ public class NaturalSpeechIntegrationTestFR {
     // There is no honkTheSystem() test for French — see openFss() at Order(70).   ok:')
 
     // =========================================================================
-    // Speed / throttle - highest collision risk group
+    // BLOC 03 — PILOTAGE DIRECT DU VAISSEAU: VITESSE
+    // Type: ACTION_JEU
+    // Rôle: vérifier les ordres de poussée et de vitesse; groupe à fort risque de collision.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -293,7 +322,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Navigation - second highest collision risk
+    // BLOC 02 — NAVIGATION ET ITINÉRAIRES IMMÉDIATS
+    // Type: ACTION_JEU / DANGEREUX
+    // Rôle: tracer, sélectionner ou annuler des destinations et routes.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -307,7 +338,8 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "saute en hyperespace",             
                 "active le saut FSD",                       
-                "lance le saut"                             
+                "lance le saut",
+                "active le réacteur FSD"
         );
     }
 
@@ -427,7 +459,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Flight / ship systems
+    // BLOC 03 — PILOTAGE DIRECT DU VAISSEAU: SYSTÈMES
+    // Type: ACTION_JEU
+    // Rôle: vérifier les commandes immédiates de vol, docking, train, modes et systèmes.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -551,7 +585,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Combat / hardpoints
+    // BLOC 04 — COMBAT, ARMES, CIBLES ET CHASSEUR
+    // Type: ACTION_JEU
+    // Rôle: vérifier armements, ciblage, ordres au chasseur et gestion tactique.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -645,7 +681,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Power management
+    // BLOC 05 — DISTRIBUTION DE PUISSANCE
+    // Type: ACTION_JEU
+    // Rôle: vérifier la répartition d'énergie du vaisseau.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -659,6 +697,9 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "redirige la puissance vers les boucliers",
                 "priorité aux boucliers",
+                "puissance dans les boucliers",
+                "redirige la puissance vers les systèmes",
+                "priorité aux systèmes",
                 "puissance dans les boucliers"
         );
     }
@@ -709,7 +750,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Science / exploration / mining
+    // BLOC 12 — MINAGE, EXOBIOLOGIE ET CODEX
+    // Type: INFO / ACTION_JEU / ACTION_RECHERCHE / DANGEREUX
+    // Rôle: vérifier les scans, l'exobio, le minage et les actions de codex.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -760,7 +803,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Fleet carrier
+    // BLOC 13 — PORTE-VAISSEAUX: ACTIONS PERSONNELLES
+    // Type: ACTION_JEU / ACTION_APP / ACTION_RECHERCHE
+    // Rôle: vérifier les actions liées au porte-vaisseau personnel.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -794,27 +839,24 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Squadron carrier
+    // BLOC 13 — PORTE-VAISSEAUX: ACTIONS D'ESCADRON
+    // Type: ACTION_JEU / ACTION_RECHERCHE
+    // Rôle: vérifier les actions où "d'escadron" doit être explicite.
     // =========================================================================
 
-    /*
-     * NAVIGATE_TO_SQUADRON_CARRIER has no French alias yet.
-     * Add an alias to FrenchAiActionAliases.java first, then enable this test.
-     *
-     * @ParameterizedTest(name = "[{index}] \"{0}\"")
-     * @Order(85)
-     * @MethodSource
-     * void navigateToSquadronCarrier(String input) throws InterruptedException {
-     *     assertRouted(input, NAVIGATE_TO_SQUADRON_CARRIER.getAction());
-     * }
-     *
-     * static Stream<String> navigateToSquadronCarrier() {
-     *     return Stream.of(
-     *                              "navigue vers le porte-vaisseaux d'escadron",
-                                    "trace l'itinéraire vers le carrier d'escadron"
-     *      );
-     * }
-     */
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(85)
+    @MethodSource
+    void navigateToSquadronCarrier(String input) throws InterruptedException {
+        assertRouted(input, NAVIGATE_TO_SQUADRON_CARRIER.getAction());
+    }
+
+    static Stream<String> navigateToSquadronCarrier() {
+        return Stream.of(
+                "navigue vers le porte-vaisseau d'escadron",
+                "trace l'itinéraire vers le porte-vaisseau d'escadron"
+        );
+    }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(86)
@@ -861,7 +903,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // App settings / announcements
+    // BLOC 10 — ANNONCES, RADIO ET RAPPELS
+    // Type: ACTION_APP / DANGEREUX
+    // Rôle: vérifier les réglages internes, annonces vocales, radio et rappels.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -894,7 +938,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // UI panels
+    // BLOC 06 — PANNEAUX ET INTERFACE DU JEU
+    // Type: ACTION_JEU
+    // Rôle: vérifier l'ouverture et la fermeture des panneaux et cartes du jeu.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -983,7 +1029,7 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "montre l'inventaire",
                 "ouvre le cargo",
-                "affiche la liste des matériaux"
+                "affiche le panneau inventaire"
         );
     }
 
@@ -1003,7 +1049,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Queries
+    // BLOC 14/15 — REQUÊTES D'INFORMATION GÉNÉRALES
+    // Type: INFO
+    // Rôle: vérifier les demandes d'information qui doivent répondre sans déclencher d'action de jeu.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1565,7 +1613,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Squadron carrier queries
+    // BLOC 13 — PORTE-VAISSEAUX: REQUÊTES D'ESCADRON
+    // Type: INFO
+    // Rôle: vérifier les infos de carrier d'escadron; "d'escadron" doit rester explicite.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1641,7 +1691,9 @@ public class NaturalSpeechIntegrationTestFR {
     }
 
     // =========================================================================
-    // Disambiguation: bare "carrier" phrases must route to fleet, not squadron
+    // BLOC 13 — DÉSAMBIGUÏSATION CARRIER
+    // Type: INFO / ACTION_JEU
+    // Rôle: vérifier que "porte-vaisseau" seul route vers le carrier personnel, pas l'escadron.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
