@@ -55,6 +55,7 @@ public final class LlmTextProvider {
             case FR -> Locale.FRENCH;
             case EN -> Locale.ENGLISH;
             case ES -> Locale.forLanguageTag("es");
+            case PT -> Locale.forLanguageTag("pt");
         };
     }
 }
