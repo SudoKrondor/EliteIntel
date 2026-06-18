@@ -396,7 +396,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> navigateToCarrier() {
         return Stream.of(
                 "navigue vers mon porte-vaisseaux",  
-                "active l'itinéraire vers le porte-vaisseaux"
+                "trace l'itinéraire vers le porte-vaisseaux"
         );
     }
 
@@ -439,6 +439,9 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> targetDestination() {
         return Stream.of(
                 "cible la prochaine destination",
+                "cible la destination suivante",
+                "cible la prochaine étape de l'itinéraire",
+                "sélectionne la prochaine destination",
                 "sélectionne la prochaine étape d'itinéraire",
                 "verrouille la destination suivante"
         );
@@ -516,8 +519,13 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> cargoScoop() {
         return Stream.of(
+                "trappe",
+                "ouvre la trappe",
+                "ferme la trappe",
                 "déploie le récupérateur de cargaison",
                 "rentre le récupérateur de cargaison",
+                "ouvre la trappe du cargo",
+                "ferme la trappe du cargo",
                 "ouvre la trappe de la soute",
                 "ferme la trappe de la soute"
         );
@@ -700,7 +708,7 @@ public class NaturalSpeechIntegrationTestFR {
                 "puissance dans les boucliers",
                 "redirige la puissance vers les systèmes",
                 "priorité aux systèmes",
-                "puissance dans les boucliers"
+                "puissance dans les systèmes"
         );
     }
 
@@ -1027,9 +1035,10 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> inventoryPanel() {
         return Stream.of(
-                "montre l'inventaire",
-                "ouvre le cargo",
-                "affiche le panneau inventaire"
+                "montre l'inventaire du vaisseau",
+                "ouvre le panneau d'affichage du cargo",
+                "ouvre l'inventaire des marchandises du vaisseau",
+                "affiche le panneau de cargaison"
         );
     }
 
@@ -1259,6 +1268,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> queryFsdTarget() {
         return Stream.of(
                 "quelle est la cible FSD actuelle",
+                "quelle est la prochaine destination",
                 "informations sur la prochaine destination",
                 "quel système est ciblé",
                 "rapport sur la prochaine étape de l'itinéraire"
