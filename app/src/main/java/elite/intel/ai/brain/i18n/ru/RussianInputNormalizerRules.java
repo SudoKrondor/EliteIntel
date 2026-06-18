@@ -27,6 +27,7 @@ public class RussianInputNormalizerRules implements InputNormalizerProvider {
         loadHudModes(m);
         loadHyperspace(m);
         colloquialTerms(m);
+        loadNavigation(m);
         loadCarrierFuelStatus(m);
         loadSquadronCarrierDestination(m);
         loadPhonetics(m);
@@ -73,6 +74,20 @@ public class RussianInputNormalizerRules implements InputNormalizerProvider {
         m.put("давай прыгнем", "прыжок в гиперпространство");
         m.put("суперкруиз", "войти в суперкруиз");
         m.put("поехали", "войти в суперкруиз");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Navigation / fighter commands
+    //
+    // "курс на авианосец эскадрильи" (accusative: navigate TO carrier) is distinct
+    // from "курс авианосца эскадрильи" (genitive: carrier's heading/destination).
+    // The former maps to the navigation alias; the latter is handled by
+    // loadSquadronCarrierDestination below.
+    // ─────────────────────────────────────────────────────────────────────────
+    private void loadNavigation(LinkedHashMap<String, String> m) {
+        m.put("курс на авианосец эскадрильи", "лети к авианосцу эскадрильи");
+        m.put("информация о следующем прыжке", "информация о цели fsd");
+        m.put("сосредоточиться", "фокус");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

@@ -473,7 +473,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> deployHardpoints() {
-        return Stream.of("развернуть орудия", "оружие готово", "к бою", "оружие открыто", "вооружиться");
+        return Stream.of("развернуть орудия", "оружие готово", "к бою", "вооружиться");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

@@ -145,6 +145,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         // navigate / go / head / travel
         m.put("head over to", "navigate to");
         m.put("head to", "navigate to");
+        m.put("go to next trade stop", "navigate to next trade stop");
         m.put("go to", "navigate to");
         m.put("take us to", "navigate to");
         m.put("take me to", "navigate to");
@@ -167,6 +168,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("compute", "calculate");
         m.put("work out", "calculate");
         m.put("figure out", "calculate");
+        m.put("calculate neutron route", "calculate neutron star route");
 
         // cancel / abort / stop
         m.put("abort", "cancel");
@@ -259,6 +261,9 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void loadLandingAndBubble(LinkedHashMap<String, String> m) {
+        m.put("auto docking", "auto land");
+        m.put("auto dock", "auto land");
+
         m.put("lower landing gear", "gear down");
         m.put("extend landing gear", "gear down");
 
@@ -581,9 +586,12 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("carrier arrival", "carrier ETA");
         m.put("when does carrier jump", "carrier ETA");
         m.put("carrier jump time", "carrier ETA");
-        m.put("carrier fuel level", "carrier tritium");
-        m.put("tritium level", "carrier tritium");
-        m.put("tritium reserve", "carrier tritium");
+        m.put("squadron carrier tritium", "squadron carrier fuel status");
+        m.put("squadron carrier fuel level", "squadron carrier fuel status");
+        m.put("carrier fuel level", "fleet carrier fuel status");
+        m.put("carrier tritium", "fleet carrier fuel status");
+        m.put("tritium level", "fleet carrier fuel status");
+        m.put("tritium reserve", "fleet carrier fuel status");
         m.put("where is carrier headed", "carrier destination");
         m.put("carrier final destination", "carrier destination");
         m.put("carrier heading", "carrier destination");
