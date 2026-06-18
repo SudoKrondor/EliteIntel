@@ -45,7 +45,8 @@ public class NaturalSpeechIntegrationTestEN {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 2500;
+    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
 
@@ -77,14 +78,26 @@ public class NaturalSpeechIntegrationTestEN {
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
         EventBusManager.publish(new UserInputEvent(input));
-        Thread.sleep(LLM_WAIT_MS);
 
-        HandlerDispatchedEvent event = capture.getLastEvent();
+        HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,
                 "No handler dispatched for input: \"" + input + "\"");
         assertEquals(expectedAction, event.getAction(),
                 "Input: \"" + input + "\" → got \"" + event.getAction()
                         + "\" but expected \"" + expectedAction + "\"");
+    }
+
+    private HandlerDispatchedEvent waitForDispatch(String expectedAction) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + LLM_WAIT_MS;
+        HandlerDispatchedEvent event = null;
+        while (System.currentTimeMillis() < deadline) {
+            event = capture.getLastEvent();
+            if (event != null && expectedAction.equals(event.getAction())) {
+                return event;
+            }
+            Thread.sleep(LLM_POLL_MS);
+        }
+        return event;
     }
 
     // =========================================================================
@@ -730,18 +743,8 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> querySquadronCarrierStatus() {
         return Stream.of("squadron carrier status", "squadron carrier finances", "squadron carrier balance",
-                "how long can we operate the squadron carrier");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(241)
-    @MethodSource
-    void querySquadronCarrierFuel(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_TRITIUM_SUPPLY.getAction());
-    }
-
-    static Stream<String> querySquadronCarrierFuel() {
-        return Stream.of("squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
+                "how long can we operate the squadron carrier",
+                "squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

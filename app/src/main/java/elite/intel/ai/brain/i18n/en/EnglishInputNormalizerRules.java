@@ -396,6 +396,10 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("perform system scan", "scan the system");
         m.put("discovery scan", "scan the system");
 
+        // Carrier balance must be locked in before the bare "balance" → "equalize power" entry below
+        m.put("squadron carrier balance", "squadron carrier finances");
+        m.put("carrier balance", "carrier finances");
+
         // Equalize / balance / reset power
         m.put("balance power", "equalize power");
         m.put("reset power", "equalize power");
@@ -571,7 +575,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
 
     private void loadCarrierAndTrade(LinkedHashMap<String, String> m) {
         // Carrier status / fuel / ETA / destination
-        m.put("carrier balance", "carrier stats");
+        m.put("carrier balance", "carrier finances");
         m.put("when does carrier arrive", "carrier ETA");
         m.put("carrier arrival time", "carrier ETA");
         m.put("carrier arrival", "carrier ETA");
@@ -622,6 +626,9 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("massacre progress", "massacre mission progress");
         m.put("pirates remaining", "massacre mission progress");
         m.put("pirate kills remaining", "massacre mission progress");
+
+        // Player profile - normalize before any "profile" substring can match trade_profile entries
+        m.put("player profile", "player profile analysis");
 
         // Distance queries
         m.put("range to carrier", "distance to carrier");

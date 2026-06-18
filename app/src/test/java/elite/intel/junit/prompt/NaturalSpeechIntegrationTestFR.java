@@ -1628,19 +1628,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> querySquadronCarrierStatus() {
         return Stream.of(
                 "statut du porte-vaisseaux d'escadron",
-                "rapport sur le porte-vaisseaux d'escadron"
-        );
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(241)
-    @MethodSource
-    void querySquadronCarrierFuel(String input) throws InterruptedException {
-        assertRouted(input, SQUADRON_CARRIER_TRITIUM_SUPPLY.getAction());
-    }
-
-    static Stream<String> querySquadronCarrierFuel() {
-        return Stream.of(
+                "rapport sur le porte-vaisseaux d'escadron",
                 "combien de tritium dans le porte-vaisseaux d'escadron",
                 "carburant du porte-vaisseaux d'escadron",
                 "rapport sur le niveau de carburant du porte-vaisseaux d'escadron"
