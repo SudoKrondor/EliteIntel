@@ -992,7 +992,8 @@ public class NaturalSpeechIntegrationTestFR {
         return Stream.of(
                 "montre le panneau de navigation",
                 "ouvre la navigation",
-                "affiche le panneau nav"
+                "affiche le panneau nav",
+                "panneau de gauche"
         );
     }
 
