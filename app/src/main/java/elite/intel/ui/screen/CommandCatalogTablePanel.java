@@ -93,7 +93,7 @@ public class CommandCatalogTablePanel extends JPanel {
     }
 
     private List<CommandCatalogEntry> sortedEntries() {
-        return commandCatalog.entries().stream()
+        return commandCatalog.builtInEntries().stream()
                 .sorted(Comparator
                         .comparing(CommandCatalogEntry::name, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(CommandCatalogEntry::id))
@@ -141,6 +141,7 @@ public class CommandCatalogTablePanel extends JPanel {
         return switch (type) {
             case BUILT_IN_BINDING -> getText("actions.commands.type.builtInBinding");
             case BUILT_IN_ACTION -> getText("actions.commands.type.builtInAction");
+            case BUILT_IN_QUERY -> getText("actions.commands.type.builtInQuery");
             case CUSTOM_COMMAND -> getText("actions.commands.type.customCommand");
         };
     }

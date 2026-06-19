@@ -126,6 +126,11 @@ public final class CommandDetailsDialog extends JDialog {
 
         JButton run = runButton();
         run.addActionListener(event -> runCommand());
+        // Queries are information requests that need live game data + LLM formatting; they are not
+        // directly runnable from the catalog, so keep Run disabled for them.
+        if (entry.type() == CommandCatalogEntryType.BUILT_IN_QUERY) {
+            run.setEnabled(false);
+        }
         JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
         close.addActionListener(event -> dispose());
 
@@ -516,6 +521,7 @@ public final class CommandDetailsDialog extends JDialog {
         return switch (type) {
             case BUILT_IN_BINDING -> getText("actions.commands.type.builtInBinding");
             case BUILT_IN_ACTION -> getText("actions.commands.type.builtInAction");
+            case BUILT_IN_QUERY -> getText("actions.commands.type.builtInQuery");
             case CUSTOM_COMMAND -> getText("actions.commands.type.customCommand");
         };
     }
