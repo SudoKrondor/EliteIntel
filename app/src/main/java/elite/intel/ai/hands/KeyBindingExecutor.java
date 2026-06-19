@@ -60,6 +60,11 @@ public class KeyBindingExecutor {
             ELITE_TO_KEYPROCESSOR_MAP.put("KEY_LESSTHAN", KeyProcessor.KEY_LESSTHAN);
             // Elite uses "Key_Numpad_Enter"; our field is KEY_NUMENTER → auto-reflection produces "KEY_NUMENTER"
             ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_ENTER", KeyProcessor.KEY_NUMENTER);
+            ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_DIVIDE", KeyProcessor.NATIVE_NUMPAD_DIVIDE);
+            ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_MULTIPLY", KeyProcessor.NATIVE_NUMPAD_MULTIPLY);
+            ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_DECIMAL", KeyProcessor.NATIVE_NUMPAD_DECIMAL);
+            ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_ADD", KeyProcessor.NATIVE_NUMPAD_ADD);
+            ELITE_TO_KEYPROCESSOR_MAP.put("KEY_NUMPAD_SUBTRACT", KeyProcessor.NATIVE_NUMPAD_SUBTRACT);
             // French AZERTY accented keys. Elite serialises as e.g. "Key_é" (lowercase Unicode).
             // toUpperCase() on lookup produces "KEY_É" which the reflection loop cannot auto-map
             // (field name is ASCII "KEY_EACUTE"), so explicit entries are required.
@@ -106,7 +111,7 @@ public class KeyBindingExecutor {
         if (eliteKeyName == null || eliteKeyName.isBlank()) {
             return null;
         }
-        return ELITE_TO_KEYPROCESSOR_MAP.get(eliteKeyName.toUpperCase());
+        return FrontierBindingKeyResolver.resolve(eliteKeyName, ELITE_TO_KEYPROCESSOR_MAP);
     }
 
     /**
@@ -128,7 +133,7 @@ public class KeyBindingExecutor {
     public void executeTap(KeyBindingsParser.KeyBinding binding) {
         try {
             log.debug("[exec] executeTap key='{}' modifiers={}", binding.key, java.util.Arrays.toString(binding.modifiers));
-            Integer mainKeyCode = ELITE_TO_KEYPROCESSOR_MAP.get(binding.key.toUpperCase());
+            Integer mainKeyCode = resolveKeyCode(binding.key);
             if (mainKeyCode == null) {
                 log.error("[exec] UNKNOWN KEY '{}' (uppercase='{}') — not in ELITE_TO_KEYPROCESSOR_MAP",
                         binding.key, binding.key.toUpperCase());
@@ -139,7 +144,7 @@ public class KeyBindingExecutor {
             log.debug("[exec] key '{}' → keyCode=0x{}", binding.key.toUpperCase(), Integer.toHexString(mainKeyCode));
             int[] modifierCodes = new int[binding.modifiers.length];
             for (int i = 0; i < binding.modifiers.length; i++) {
-                Integer modCode = ELITE_TO_KEYPROCESSOR_MAP.get(binding.modifiers[i].toUpperCase());
+                Integer modCode = resolveKeyCode(binding.modifiers[i]);
                 if (modCode == null) {
                     log.error("[exec] UNKNOWN MODIFIER '{}' (uppercase='{}') — not in ELITE_TO_KEYPROCESSOR_MAP",
                             binding.modifiers[i], binding.modifiers[i].toUpperCase());
@@ -165,7 +170,7 @@ public class KeyBindingExecutor {
         try {
             log.debug("[exec] executeBindingWithHold key='{}' modifiers={} hold={}ms",
                     binding.key, java.util.Arrays.toString(binding.modifiers), holdTimeMs);
-            Integer mainKeyCode = ELITE_TO_KEYPROCESSOR_MAP.get(binding.key.toUpperCase());
+            Integer mainKeyCode = resolveKeyCode(binding.key);
             if (mainKeyCode == null) {
                 log.error("[exec] UNKNOWN KEY '{}' (uppercase='{}') — not in ELITE_TO_KEYPROCESSOR_MAP",
                         binding.key, binding.key.toUpperCase());
@@ -176,7 +181,7 @@ public class KeyBindingExecutor {
             log.debug("[exec] key '{}' → keyCode=0x{}", binding.key.toUpperCase(), Integer.toHexString(mainKeyCode));
             int[] modifierCodes = new int[binding.modifiers.length];
             for (int i = 0; i < binding.modifiers.length; i++) {
-                Integer modCode = ELITE_TO_KEYPROCESSOR_MAP.get(binding.modifiers[i].toUpperCase());
+                Integer modCode = resolveKeyCode(binding.modifiers[i]);
                 if (modCode == null) {
                     log.error("[exec] UNKNOWN MODIFIER '{}' (uppercase='{}') — not in ELITE_TO_KEYPROCESSOR_MAP",
                             binding.modifiers[i], binding.modifiers[i].toUpperCase());
@@ -214,7 +219,7 @@ public class KeyBindingExecutor {
             for (int modCode : ELITE_TO_KEYPROCESSOR_MAP.values()) {
                 keyProcessor.releaseKey(modCode);
             }
-            keyProcessor.releaseKey(ELITE_TO_KEYPROCESSOR_MAP.getOrDefault(binding.key, 0));
+            keyProcessor.releaseKey(Optional.ofNullable(resolveKeyCode(binding.key)).orElse(0));
             log.error("Error executing key binding: {}", e.getMessage());
         }
     }
