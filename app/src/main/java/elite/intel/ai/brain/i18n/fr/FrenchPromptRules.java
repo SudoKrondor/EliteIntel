@@ -103,6 +103,11 @@ public class FrenchPromptRules implements PromptLanguageRules {
 
         sb.append("- Any \"trappe\" → ").append(TOGGLE_CARGO_SCOOP);
         sb.append("; panneau/affichage/inventaire cargo → ").append(SHOW_INVENTORY_PANEL).append(".\n");
+        sb.append("- INFO noun phrase \"inventaire/liste/stock des matériaux\" without ouvre/montre/affiche and without panneau → ");
+        sb.append(MATERIALS_INVENTORY);
+        sb.append(". Only ACTION ouvre/montre/affiche + panneau/inventaire du vaisseau/cargo → ");
+        sb.append(SHOW_INVENTORY_PANEL);
+        sb.append(". Never open the inventory panel for \"inventaire des matériaux\".\n");
         sb.append("- ouvre/montre/affiche + état/statut du vaisseau → ");
         sb.append(SHOW_STATUS_PANEL);
         sb.append("; INFO modules/equipment/damage/specifications → ").append(SHIP_LOADOUT).append(".\n");

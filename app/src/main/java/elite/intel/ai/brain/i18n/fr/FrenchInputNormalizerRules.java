@@ -125,6 +125,10 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
         m.put("matériels", "matériaux");
         m.put("materiels", "matériaux");
         m.put("materiaux", "matériaux");
+        m.put("inventaire des matériaux", "inventaire des matériaux d'ingénierie");
+        m.put("inventaire des materiaux", "inventaire des matériaux d'ingénierie");
+        m.put("liste des matériaux", "liste des matériaux d'ingénierie");
+        m.put("liste des materiaux", "liste des matériaux d'ingénierie");
         m.put("inventaire de bord", "inventaire du vaisseau");
         m.put("inventaire vaisseau", "inventaire du vaisseau");
         m.put("inventaire du bord", "inventaire du vaisseau");
