@@ -1,7 +1,9 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.AiActionsMap;
+import elite.intel.ai.brain.actions.command.CommandIds;
+import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.session.Status;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -275,11 +277,21 @@ public final class CustomCommandValidator {
     }
 
     private static Set<String> builtInPhrases() {
-        Map<String, String> aliases = new java.util.LinkedHashMap<>();
-        AiActionLocalizations.addAliases(aliases, Status.getInstance(), true);
+        var full = AiActionsMap.getInstance().actionMap(true);
+        Set<String> floating = Set.of(
+                QueryIds.GENERAL_CONVERSATION,
+                CommandIds.IGNORE_NONSENSICAL_INPUT,
+                QueryIds.CONNECTION_CHECK);
+        Set<String> customKeys = new HashSet<>();
+        for (CustomCommandDefinition def : CustomCommandRegistry.getInstance().getCustomCommands()) {
+            customKeys.add(def.getActionKey());
+        }
         Set<String> phrases = new HashSet<>();
-        aliases.keySet().forEach(group ->
-                AiActionLocalizations.splitPhraseGroup(group).forEach(phrase -> phrases.add(normalize(phrase))));
+        full.forEach((group, id) -> {
+            if (!floating.contains(id) && !customKeys.contains(id)) {
+                AiActionLocalizations.splitPhraseGroup(group).forEach(phrase -> phrases.add(normalize(phrase)));
+            }
+        });
         return phrases;
     }
 

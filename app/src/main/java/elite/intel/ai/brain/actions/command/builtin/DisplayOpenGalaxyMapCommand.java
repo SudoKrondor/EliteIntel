@@ -14,8 +14,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "open galaxy map".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenGalaxyMapHandler.
  */
 @RegisterCommand
 public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
@@ -25,11 +23,6 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.DISPLAY_OPEN_GALAXY_MAP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

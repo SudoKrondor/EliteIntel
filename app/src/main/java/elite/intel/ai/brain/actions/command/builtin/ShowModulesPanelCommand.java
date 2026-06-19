@@ -11,8 +11,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show modules panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenModulesPanelHandler.
  */
 @RegisterCommand
 public final class ShowModulesPanelCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class ShowModulesPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_MODULES_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

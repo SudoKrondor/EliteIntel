@@ -11,8 +11,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show fire groups panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenFireGroupsPanelHandler.
  */
 @RegisterCommand
 public final class ShowFireGroupsPanelCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class ShowFireGroupsPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_FIRE_GROUPS_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

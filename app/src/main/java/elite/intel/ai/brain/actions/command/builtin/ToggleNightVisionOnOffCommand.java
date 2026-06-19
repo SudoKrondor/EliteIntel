@@ -11,8 +11,7 @@ import elite.intel.gameapi.GameControllerBus;
 
 /**
  * Stage-4b self-describing command for "toggle night vision".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ToggleNightVision. Also carries its game
+ * Also carries its game
  * binding via bindingName() (sourced from Bindings, NOT a literal) so command-model
  * parity stays matched once the enum is eventually removed.
  */
@@ -27,11 +26,6 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
     @Override
     public String bindingName() {
         return Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding();
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

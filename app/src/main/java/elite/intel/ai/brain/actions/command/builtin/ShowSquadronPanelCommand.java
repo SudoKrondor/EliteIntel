@@ -14,8 +14,7 @@ import elite.intel.util.StringUtls;
 
 /**
  * Stage-4b self-describing command for "show squadron panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenSquadronHandler. No on-foot path; else
+ * No on-foot path; else
  * branch announces cantDoNow, matching the legacy handler 1:1.
  */
 @RegisterCommand
@@ -27,11 +26,6 @@ public final class ShowSquadronPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_SQUADRON_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

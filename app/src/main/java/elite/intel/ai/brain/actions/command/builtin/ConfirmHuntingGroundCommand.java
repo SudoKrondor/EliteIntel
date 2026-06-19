@@ -30,11 +30,6 @@ public final class ConfirmHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         missionDataManager.confirmTargetReconResourceSite(location.getStarName());

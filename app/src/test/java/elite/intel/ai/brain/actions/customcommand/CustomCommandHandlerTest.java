@@ -143,7 +143,7 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepDelegatesToRegisteredBuiltinHandler() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
         registerHandler("builtin_action", fakeBuiltin);
 
         runCustomCommand("""
@@ -393,7 +393,7 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPassesResolvedStepParamsToNestedHandler() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> capturedParams.set(p);
+        CommandHandler fakeBuiltin = (a, p, r) -> { capturedParams.set(p); return null; };
         registerHandler("builtin_with_params", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -412,7 +412,7 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPreservesJsonNumberType() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> capturedParams.set(p);
+        CommandHandler fakeBuiltin = (a, p, r) -> { capturedParams.set(p); return null; };
         registerHandler("navigate_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -435,7 +435,7 @@ class CustomCommandHandlerTest {
     @Test
     void abortsCustomCommandWhenRequiredParamIsMissing() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
         registerHandler("cmd_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -468,7 +468,7 @@ class CustomCommandHandlerTest {
     @Test
     void optionalParamAbsentDoesNotAbortCustomCommand() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
         registerHandler("cmd_optional", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(

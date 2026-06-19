@@ -21,11 +21,6 @@ public final class ListTradeParametersCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.listParams")));
     }

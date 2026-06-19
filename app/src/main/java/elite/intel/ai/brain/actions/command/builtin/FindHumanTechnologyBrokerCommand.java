@@ -28,11 +28,6 @@ public final class FindHumanTechnologyBrokerCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.broker.searching", BrokerType.HUMAN.getType())));

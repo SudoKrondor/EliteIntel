@@ -17,8 +17,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED_ZERO;
 
 /**
  * Stage-4b self-describing command for "open fss and scan system".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DisplayFssAndScanHandler.
  */
 @RegisterCommand
 public final class OpenFssScanSystemCommand implements IntelCommand {
@@ -28,11 +26,6 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.OPEN_FSS_SCAN_SYSTEM;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

@@ -11,8 +11,6 @@ import elite.intel.util.StringUtls;
 
 /**
  * Stage-4b self-describing command for "toggle route announcements".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RouteAnnouncementsOnOffHandler.
  */
 @RegisterCommand
 public final class ToggleRouteAnnouncementsCommand implements IntelCommand {
@@ -20,11 +18,6 @@ public final class ToggleRouteAnnouncementsCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.TOGGLE_ROUTE_ANNOUNCEMENTS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

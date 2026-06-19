@@ -35,11 +35,6 @@ public final class FindBrainTreesCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         if (brainTreeManager.getCount() == 0) {
             brainTreeManager.retrieveFromSpansh();

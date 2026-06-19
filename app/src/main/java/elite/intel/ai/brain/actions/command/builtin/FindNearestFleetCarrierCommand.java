@@ -23,17 +23,12 @@ import elite.intel.util.json.GetNumberFromParam;
  * Owns its own execution: body migrated 1:1 from the legacy FindNearestFleetCarrierHandler,
  * routed through CommandRegistry via the self-describing model.
  */
-@RegisterCommand
+@RegisterCommand(before = { "navigate_to_fleet_carrier" })
 public final class FindNearestFleetCarrierCommand implements IntelCommand {
 
     @Override
     public String id() {
         return CommandIds.FIND_NEAREST_FLEET_CARRIER;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

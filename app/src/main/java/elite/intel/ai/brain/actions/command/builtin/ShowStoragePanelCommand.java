@@ -11,8 +11,7 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show storage panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenStoragePanelHandler. Guard intentionally
+ * Guard intentionally
  * omits isInFighter() to match the legacy handler 1:1.
  */
 @RegisterCommand
@@ -24,11 +23,6 @@ public final class ShowStoragePanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_STORAGE_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

@@ -14,8 +14,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "deploy srv".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DeploySrvHandler.
  */
 @RegisterCommand
 public final class DeployVehicleSrvCommand implements IntelCommand {
@@ -26,11 +24,6 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.DEPLOY_VEHICLE_SRV;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

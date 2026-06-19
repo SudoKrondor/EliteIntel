@@ -12,8 +12,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED75;
 
 /**
  * Stage-4b self-describing command for "set optimal speed".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy SetOptimalSpeedHandler.
  */
 @RegisterCommand
 public final class SetOptimalSpeedCommand implements IntelCommand {
@@ -21,11 +19,6 @@ public final class SetOptimalSpeedCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SET_OPTIMAL_SPEED;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

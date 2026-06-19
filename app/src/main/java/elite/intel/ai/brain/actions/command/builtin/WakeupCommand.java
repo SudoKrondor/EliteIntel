@@ -11,8 +11,7 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
 
 /**
  * Stage-4b self-describing command for "wake up".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy StartListeningHandler. Side effects on the
+ * Side effects on the
  * listening/push-to-talk subsystem (SystemSession + PttModeChangedEvent/VoiceInputModeToggleEvent).
  */
 @RegisterCommand
@@ -21,11 +20,6 @@ public final class WakeupCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.WAKEUP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

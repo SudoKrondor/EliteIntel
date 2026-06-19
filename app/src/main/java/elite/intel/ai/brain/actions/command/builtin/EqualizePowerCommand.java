@@ -14,8 +14,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_RESET_POWER_DIST
 
 /**
  * Stage-4b self-describing command for "equalize power".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ResetPowerSettings.
  */
 @RegisterCommand
 public final class EqualizePowerCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class EqualizePowerCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.EQUALIZE_POWER;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

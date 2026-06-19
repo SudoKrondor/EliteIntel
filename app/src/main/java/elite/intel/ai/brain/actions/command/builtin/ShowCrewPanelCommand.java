@@ -11,8 +11,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show crew panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenCrewPanelHandler.
  */
 @RegisterCommand
 public final class ShowCrewPanelCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class ShowCrewPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_CREW_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

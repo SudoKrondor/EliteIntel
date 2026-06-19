@@ -13,8 +13,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXIT_SUPERCRUISE
 
 /**
  * Stage-4b self-describing command for "drop from super cruise".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DropFromFtlHandler.
  */
 @RegisterCommand
 public final class DropFromSuperCruiseCommand implements IntelCommand {
@@ -22,11 +20,6 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.DROP_FROM_SUPER_CRUISE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

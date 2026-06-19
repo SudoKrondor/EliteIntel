@@ -51,11 +51,6 @@ public final class SetTimedReminderCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         JsonElement keyEl = params.get("key");
         JsonElement minutesEl = params.get("minutes");

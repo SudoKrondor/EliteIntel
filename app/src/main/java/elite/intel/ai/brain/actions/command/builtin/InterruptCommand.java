@@ -9,8 +9,7 @@ import elite.intel.gameapi.EventBusManager;
 
 /**
  * Stage-4b self-describing command for "interrupt speech".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ShutUpHandler. Side effect on the TTS
+ * Side effect on the TTS
  * subsystem (publishes TTSInterruptEvent).
  */
 @RegisterCommand
@@ -19,11 +18,6 @@ public final class InterruptCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.INTERRUPT;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

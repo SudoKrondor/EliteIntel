@@ -11,8 +11,7 @@ import elite.intel.util.StringUtls;
 
 /**
  * Stage-4b self-describing command for "toggle all announcements".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ToggleAllAnnouncementsHandler. No parameters
+ * No parameters
  * beyond the LLM "state" flag.
  */
 @RegisterCommand
@@ -21,11 +20,6 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.TOGGLE_ALL_ANNOUNCEMENTS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

@@ -34,11 +34,6 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
             EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity")));

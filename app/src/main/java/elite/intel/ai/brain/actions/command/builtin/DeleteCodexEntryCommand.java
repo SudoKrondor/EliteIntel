@@ -27,11 +27,6 @@ public final class DeleteCodexEntryCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         TargetLocation tracking = playerSession.getTracking();
         if (tracking != null) {

@@ -27,11 +27,6 @@ public final class ClearRemindersCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         destinationReminder.clear();
         monetizeRouteManager.clear();

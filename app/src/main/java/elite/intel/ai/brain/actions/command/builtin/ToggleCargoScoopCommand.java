@@ -14,8 +14,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TOGGLE_CARGO_SCO
 
 /**
  * Stage-4b self-describing command for "toggle cargo scoop".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy CargoScoopHandler.
  */
 @RegisterCommand
 public final class ToggleCargoScoopCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class ToggleCargoScoopCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.TOGGLE_CARGO_SCOOP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

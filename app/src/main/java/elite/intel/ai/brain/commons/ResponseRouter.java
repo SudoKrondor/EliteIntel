@@ -7,7 +7,7 @@ import elite.intel.ai.brain.AIRouterInterface;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.command.CommandHandler;
-import elite.intel.ai.brain.actions.handlers.query.QueryHandler;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
@@ -30,7 +30,7 @@ public class ResponseRouter implements AIRouterInterface {
     private static final Logger log = LogManager.getLogger(ResponseRouter.class);
     private static final ResponseRouter INSTANCE = new ResponseRouter();
     private final Map<String, CommandHandler> commandHandlers;
-    private final Map<String, QueryHandler> queryHandlers;
+    private final Map<String, IntelQuery> queryHandlers;
     private final SystemSession systemSession;
     private final WebSocketBroadcaster webSocketBroadcaster;
     private boolean dryRun = false;
@@ -106,7 +106,7 @@ public class ResponseRouter implements AIRouterInterface {
     }
 
     private void handleQuery(String action, JsonObject params, String userInput) {
-        QueryHandler handler = getQueryHandlers().get(action);
+        IntelQuery handler = getQueryHandlers().get(action);
         if (handler == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent("infer query action"));
             return;
@@ -139,7 +139,7 @@ public class ResponseRouter implements AIRouterInterface {
         return commandHandlers;
     }
 
-    protected Map<String, QueryHandler> getQueryHandlers() {
+    protected Map<String, IntelQuery> getQueryHandlers() {
         return queryHandlers;
     }
 

@@ -11,8 +11,6 @@ import elite.intel.util.StringUtls;
 
 /**
  * Stage-4b self-describing command for "toggle mining announcements".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy MiningOnOffHandler.
  */
 @RegisterCommand
 public final class ToggleMiningAnnouncementsCommand implements IntelCommand {
@@ -20,11 +18,6 @@ public final class ToggleMiningAnnouncementsCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.TOGGLE_MINING_ANNOUNCEMENTS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

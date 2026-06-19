@@ -45,11 +45,6 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get("key").getAsString());
 

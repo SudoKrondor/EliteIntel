@@ -29,11 +29,6 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
         if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {

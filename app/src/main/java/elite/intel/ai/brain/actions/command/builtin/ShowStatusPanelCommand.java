@@ -11,8 +11,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show status panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenStatusPanelHandler.
  */
 @RegisterCommand
 public final class ShowStatusPanelCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class ShowStatusPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SHOW_STATUS_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

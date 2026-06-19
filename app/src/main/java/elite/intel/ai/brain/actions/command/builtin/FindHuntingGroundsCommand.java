@@ -30,11 +30,6 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         int range = params.get("key") == null
                 || getIntSafely(params.get("key").getAsString()) == null

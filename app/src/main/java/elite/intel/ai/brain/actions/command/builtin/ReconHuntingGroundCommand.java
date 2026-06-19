@@ -30,11 +30,6 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         HuntingGroundManager manager = HuntingGroundManager.getInstance();
         LocationManager locationManager = LocationManager.getInstance();

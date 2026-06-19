@@ -13,8 +13,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "recover srv".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RecoverSrvHandler.
  */
 @RegisterCommand
 public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelCommand {
@@ -24,11 +22,6 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
     @Override
     public String id() {
         return CommandIds.RECOVER_SRV_VEHICLE_GET_ON_BOARD_SHIP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

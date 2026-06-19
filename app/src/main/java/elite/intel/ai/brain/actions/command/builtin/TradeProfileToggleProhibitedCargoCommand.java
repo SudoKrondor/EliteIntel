@@ -45,11 +45,6 @@ public final class TradeProfileToggleProhibitedCargoCommand implements IntelComm
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         boolean isOn = params.get("state").getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();

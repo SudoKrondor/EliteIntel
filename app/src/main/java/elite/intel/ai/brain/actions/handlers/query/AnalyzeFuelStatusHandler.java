@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.session.PlayerSession;
@@ -10,7 +11,9 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-public class AnalyzeFuelStatusHandler extends BaseQueryAnalyzer implements QueryHandler {
+public class AnalyzeFuelStatusHandler extends BaseQueryAnalyzer implements IntelQuery {
+
+    @Override public String id() { return "analyze_fuel_status_handler"; }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         //EventBusManager.publish(new AiVoxResponseEvent("Analyzing ship's data. Stand by."));

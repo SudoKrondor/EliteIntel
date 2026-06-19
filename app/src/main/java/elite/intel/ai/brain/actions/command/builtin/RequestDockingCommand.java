@@ -15,8 +15,6 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "request docking".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RequestDockingHandler.
  */
 @RegisterCommand
 public final class RequestDockingCommand implements IntelCommand {
@@ -27,11 +25,6 @@ public final class RequestDockingCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.REQUEST_DOCKING;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

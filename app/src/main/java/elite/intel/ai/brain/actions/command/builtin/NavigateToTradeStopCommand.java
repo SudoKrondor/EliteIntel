@@ -39,11 +39,6 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());

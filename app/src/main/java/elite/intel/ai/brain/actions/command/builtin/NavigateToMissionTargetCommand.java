@@ -28,11 +28,6 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         String keyword = params.get("key") == null ? null : params.get("key").getAsString();
 

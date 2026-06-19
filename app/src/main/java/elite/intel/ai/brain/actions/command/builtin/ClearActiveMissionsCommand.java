@@ -21,11 +21,6 @@ public final class ClearActiveMissionsCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         missionManager.clear();
     }

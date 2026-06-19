@@ -14,8 +14,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL
 
 /**
  * Stage-4b self-describing command for "display radar panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DisplayRadarPanelHandler.
  */
 @RegisterCommand
 public final class DisplayRadarPanelCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class DisplayRadarPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.DISPLAY_RADAR_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

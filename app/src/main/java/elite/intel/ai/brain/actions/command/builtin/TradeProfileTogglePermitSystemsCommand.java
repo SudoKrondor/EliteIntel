@@ -45,11 +45,6 @@ public final class TradeProfileTogglePermitSystemsCommand implements IntelComman
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         boolean isOn = params.get("state").getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();

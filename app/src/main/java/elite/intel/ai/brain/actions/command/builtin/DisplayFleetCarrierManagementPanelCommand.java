@@ -27,11 +27,6 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
         return CommandIds.DISPLAY_FLEET_CARRIER_MANAGEMENT_PANEL;
     }
 
-    @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
     /// not a sure fire. assumes default UI selection. will fail often.
     @Override
     public void execute(JsonObject params, String responseText) {

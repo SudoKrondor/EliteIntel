@@ -14,8 +14,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_ANALYSI
 
 /**
  * Stage-4b self-describing command for "switch to analysis mode".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ActivateAnalysisModeHandler.
  */
 @RegisterCommand
 public final class SwitchToAnalysisModeCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class SwitchToAnalysisModeCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SWITCH_TO_ANALYSIS_MODE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

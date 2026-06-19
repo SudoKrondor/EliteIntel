@@ -12,8 +12,6 @@ import elite.intel.session.Status;
 
 /**
  * Stage-4b self-describing command for "toggle lights".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy LightsOnOffHandler.
  */
 @RegisterCommand
 public final class ToggleLightsOnOffCommand implements IntelCommand {
@@ -21,11 +19,6 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.TOGGLE_LIGHTS_ON_OFF;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

@@ -13,8 +13,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_COMBAT_
 
 /**
  * Stage-4b self-describing command for "switch to combat mode".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy ActivateCombatModeHandler.
  */
 @RegisterCommand
 public final class SwitchToCombatModeCommand implements IntelCommand {
@@ -22,11 +20,6 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.SWITCH_TO_COMBAT_MODE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

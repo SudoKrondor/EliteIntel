@@ -16,8 +16,7 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "return ship to surface".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DismissRecallShip. The legacy handler is
+ * The legacy handler is
  * shared with "dismiss ship to orbit" and does not branch on action, so both commands
  * carry an identical body 1:1.
  */
@@ -29,11 +28,6 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.RETURN_TO_SURFACE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

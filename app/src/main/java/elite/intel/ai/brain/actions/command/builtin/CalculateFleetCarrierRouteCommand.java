@@ -19,11 +19,6 @@ public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         FleetCarrierRouteCalculator.calculate();
     }

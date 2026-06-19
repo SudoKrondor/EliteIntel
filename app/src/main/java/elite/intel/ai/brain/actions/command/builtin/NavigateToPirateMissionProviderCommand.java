@@ -35,11 +35,6 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         List<MissionProvider> missionProviders = huntingGroundManager.findConfirmedMissionProviders();

@@ -60,7 +60,7 @@ public final class CustomCommandHandler implements CommandHandler {
     }
 
     @Override
-    public void handle(String action, JsonObject params, String responseText) {
+    public JsonObject handle(String action, JsonObject params, String responseText) {
         CUSTOM_COMMAND_LOCK.lock();
         try {
             CustomCommandExecutionContext ctx = CustomCommandExecutionContext.fromJson(customCommand, params);
@@ -69,7 +69,7 @@ public final class CustomCommandHandler implements CommandHandler {
                 String errorSummary = String.join(", ", paramErrors);
                 log.warn("Custom command '{}' aborted: {}", customCommand.getName(), errorSummary);
                 EventBusManager.publish(new AppLogEvent("Custom command '" + customCommand.getName() + "' aborted: " + errorSummary));
-                return;
+                return null;
             }
             log.info("Executing custom command '{}' ({} step(s))", customCommand.getName(), customCommand.getSteps().size());
             PendingInputSequence pendingInput = new PendingInputSequence();
@@ -80,7 +80,7 @@ public final class CustomCommandHandler implements CommandHandler {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     log.warn("Custom command '{}' interrupted at step {}", customCommand.getName(), i);
-                    return;
+                    return null;
                 } catch (UnresolvedCustomCommandParamException e) {
                     log.error("Custom command '{}' step {} ({}): {}  step skipped",
                             customCommand.getName(), i, step.getType(), e.getMessage());
@@ -96,12 +96,13 @@ public final class CustomCommandHandler implements CommandHandler {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("Custom command '{}' interrupted while flushing input sequence", customCommand.getName());
-                return;
+                return null;
             }
             log.debug("Custom command '{}' completed", customCommand.getName());
         } finally {
             CUSTOM_COMMAND_LOCK.unlock();
         }
+        return null;
     }
 
     private void executeStep(CustomCommandStep step, int index, PendingInputSequence pendingInput,

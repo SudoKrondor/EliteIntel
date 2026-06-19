@@ -33,11 +33,6 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 250);
         EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.vistaGenomics.searching")));

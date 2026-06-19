@@ -158,7 +158,7 @@ class CustomCommandRegistryTest {
     @Test
     void contributeToHandlerMapDoesNotOverrideExistingHandler() {
         registry.setCustomCommands(List.of(buildCustomCommand("existing_action", "phrase")));
-        CommandHandler existingHandler = (action, params, responseText) -> {};
+        CommandHandler existingHandler = (action, params, responseText) -> null;
         Map<String, CommandHandler> handlers = new HashMap<>();
         handlers.put("existing_action", existingHandler);
 

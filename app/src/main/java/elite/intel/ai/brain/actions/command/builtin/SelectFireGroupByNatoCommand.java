@@ -42,11 +42,6 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
 
         JsonElement key = params.get("key");

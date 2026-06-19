@@ -36,11 +36,6 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
 

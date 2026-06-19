@@ -8,7 +8,7 @@ import elite.intel.ai.brain.i18n.it.ItalianAiActionAliases;
 import elite.intel.ai.brain.i18n.pt.PortugueseAiActionAliases;
 import elite.intel.ai.brain.i18n.ru.RussianAiActionAliases;
 import elite.intel.ai.brain.i18n.uk.UkrainianAiActionAliases;
-import elite.intel.session.Status;
+import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.session.SystemSession;
 
 import java.util.*;
@@ -31,18 +31,12 @@ public final class AiActionLocalizations {
         };
     }
 
-    public static void addAliases(Map<String, String> map, Status status, boolean isDryRun) {
-        provider().addAliases(map, status, isDryRun);
-    }
-
     public static List<String> phrasesForAction(String actionId) {
         if (actionId == null || actionId.isBlank()) {
             return List.of();
         }
-
-        Map<String, String> aliasesByPhraseGroup = new LinkedHashMap<>();
-        provider().addAliases(aliasesByPhraseGroup, Status.getInstance(), true);
-        return aliasesByPhraseGroup.entrySet().stream()
+        Map<String, String> fullMap = AiActionsMap.getInstance().actionMap(true);
+        return fullMap.entrySet().stream()
                 .filter(entry -> actionId.equalsIgnoreCase(entry.getValue()))
                 .flatMap(entry -> splitPhraseGroup(entry.getKey()).stream())
                 .distinct()

@@ -12,8 +12,6 @@ import elite.intel.util.StringUtls;
 
 /**
  * Stage-4b self-describing command for "cancel navigation".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy NavigationOnOffHandler.
  */
 @RegisterCommand
 public final class CancelNavigationCommand implements IntelCommand {
@@ -23,11 +21,6 @@ public final class CancelNavigationCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.CANCEL_NAVIGATION;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

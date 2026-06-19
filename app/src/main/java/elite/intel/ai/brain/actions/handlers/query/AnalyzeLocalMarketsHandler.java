@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.MarketDto;
@@ -10,10 +11,12 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements QueryHandler {
+public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements IntelQuery {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
+
+    @Override public String id() { return "analyze_local_markets_handler"; }
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

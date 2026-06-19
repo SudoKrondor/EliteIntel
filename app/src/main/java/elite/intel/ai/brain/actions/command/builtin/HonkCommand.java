@@ -18,8 +18,6 @@ import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
 
 /**
  * Stage-4b self-describing command for "honk the system".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy HonkTheSystemHandler.
  */
 @RegisterCommand
 public final class HonkCommand implements IntelCommand {
@@ -32,11 +30,6 @@ public final class HonkCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.HONK;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

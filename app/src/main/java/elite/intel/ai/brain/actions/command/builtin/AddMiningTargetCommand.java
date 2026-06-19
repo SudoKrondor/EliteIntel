@@ -49,11 +49,6 @@ public final class AddMiningTargetCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         playerSession.setMiningAnnouncementOn(true);
         JsonElement key = params.get("key");

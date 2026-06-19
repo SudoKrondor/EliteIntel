@@ -45,11 +45,6 @@ public final class TradeProfileSetBudgetCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         Integer budget = StringUtls.getIntSafely(params.get("key").getAsString());
         if (budget == null) {

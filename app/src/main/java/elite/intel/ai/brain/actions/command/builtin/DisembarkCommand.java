@@ -30,11 +30,6 @@ public final class DisembarkCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         if (status.isInSrv()) {

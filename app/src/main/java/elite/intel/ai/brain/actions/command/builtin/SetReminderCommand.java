@@ -43,11 +43,6 @@ public final class SetReminderCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         ReminderManager reminderManager = ReminderManager.getInstance();
         JsonElement key = params.get("key");

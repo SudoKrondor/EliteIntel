@@ -11,7 +11,16 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-@RegisterQuery
+@RegisterQuery(before = {
+        "query_fleet_carrier_route",
+        "query_fleet_carrier_final_destination",
+        "query_fleet_carrier_eta",
+        "query_distance_to_carrier",
+        "calculate_fleet_carrier_route",
+        "enter_fleet_carrier_destination",
+        "set_carrier_fuel_reserve",
+        "query_squadron_carrier_status_fuel_credit_finance"
+})
 public class AnalyzeFleetCarrierDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
 
     @Override public String id() { return QueryIds.FLEET_CARRIER_STATUS; }

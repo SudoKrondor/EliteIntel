@@ -28,11 +28,6 @@ public final class ResetHeadLookAheadCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
 
         if (status.isInMainShip()) {

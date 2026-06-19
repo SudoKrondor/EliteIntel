@@ -16,8 +16,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HARDPOINTS_TOGGL
 
 /**
  * Stage-4b self-describing command for "retract hardpoints".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RetractHardpointsHandler.
  */
 @RegisterCommand
 public final class RetractHardpointsCommand implements IntelCommand {
@@ -25,11 +23,6 @@ public final class RetractHardpointsCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.RETRACT_HARDPOINTS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

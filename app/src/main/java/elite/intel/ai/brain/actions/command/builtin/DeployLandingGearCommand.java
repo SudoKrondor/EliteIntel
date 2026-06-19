@@ -16,8 +16,6 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
 
 /**
  * Stage-4b self-describing command for "deploy landing gear".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DeployLandingGearHandler.
  */
 @RegisterCommand
 public final class DeployLandingGearCommand implements IntelCommand {
@@ -25,11 +23,6 @@ public final class DeployLandingGearCommand implements IntelCommand {
     @Override
     public String id() {
         return CommandIds.DEPLOY_LANDING_GEAR;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

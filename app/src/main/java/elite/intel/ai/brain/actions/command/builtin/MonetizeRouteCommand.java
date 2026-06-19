@@ -28,11 +28,6 @@ public final class MonetizeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         ShipManager shipManager = ShipManager.getInstance();
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {

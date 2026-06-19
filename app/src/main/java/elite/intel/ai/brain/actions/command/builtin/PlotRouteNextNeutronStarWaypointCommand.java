@@ -26,11 +26,6 @@ public final class PlotRouteNextNeutronStarWaypointCommand implements IntelComma
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
         NeutronStarRouteDao.Route route = neutronStarRouteManager.getNeutronStarRoute();
         if (route == null || route.getLegs().isEmpty() || route.getLegs().getFirst() == null) {

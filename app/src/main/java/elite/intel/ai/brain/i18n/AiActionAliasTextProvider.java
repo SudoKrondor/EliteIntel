@@ -19,6 +19,19 @@ public final class AiActionAliasTextProvider {
         return resolveText(locale(language), key);
     }
 
+    /**
+     * Whether the alias bundle for the given language actually defines this key,
+     * checking the language bundle then the ROOT (English base) bundle. Unlike
+     * {@link #getText} this does NOT fall back to returning the key itself, so a
+     * present-but-equal-to-id phrase (e.g. {@code interrupt=interrupt}) counts as
+     * existing, while a missing key (e.g. an action with no localized phrase) does not.
+     */
+    public static boolean hasKey(Language language, String key) {
+        Locale locale = locale(language);
+        if (getBundle(locale).containsKey(key)) return true;
+        return getBundle(Locale.ROOT).containsKey(key);
+    }
+
     private static String resolveText(Locale locale, String key) {
         ResourceBundle selected = getBundle(locale);
         if (selected.containsKey(key)) return selected.getString(key);

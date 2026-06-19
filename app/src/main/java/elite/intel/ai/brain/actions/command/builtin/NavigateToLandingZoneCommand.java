@@ -29,11 +29,6 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
     }
 
     @Override
-    public boolean ownsExecution() {
-        return true;
-    }
-
-    @Override
     public void execute(JsonObject params, String responseText) {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
