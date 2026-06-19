@@ -3,9 +3,9 @@ package elite.intel.ai.brain.commons;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AIRouterInterface;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -29,7 +29,7 @@ public class ResponseRouter implements AIRouterInterface {
 
     private static final Logger log = LogManager.getLogger(ResponseRouter.class);
     private static final ResponseRouter INSTANCE = new ResponseRouter();
-    private final Map<String, CommandHandler> commandHandlers;
+    private final Map<String, IntelAction> commandHandlers;
     private final Map<String, IntelQuery> queryHandlers;
     private final SystemSession systemSession;
     private final WebSocketBroadcaster webSocketBroadcaster;
@@ -135,7 +135,7 @@ public class ResponseRouter implements AIRouterInterface {
     }
 
 
-    protected Map<String, CommandHandler> getCommandHandlers() {
+    protected Map<String, IntelAction> getCommandHandlers() {
         return commandHandlers;
     }
 
@@ -185,7 +185,7 @@ public class ResponseRouter implements AIRouterInterface {
             EventBusManager.publish(new AiVoxResponseEvent("%s".formatted(StringUtls.affirmative())));
         }
 
-        CommandHandler handler = getCommandHandlers().get(action);
+        IntelAction handler = getCommandHandlers().get(action);
         if (handler == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent("command not found"));
             return;

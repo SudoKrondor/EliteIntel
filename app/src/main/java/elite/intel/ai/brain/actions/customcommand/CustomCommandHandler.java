@@ -1,8 +1,9 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
@@ -39,7 +40,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * - Relies on {@code CustomCommandSpeakExecutor} for speech execution steps.
  * - Integrates with {@code EventBusManager} to log and publish events during execution.
  */
-public final class CustomCommandHandler implements CommandHandler {
+public final class CustomCommandHandler implements IntelAction {
 
     private static final Logger log = LogManager.getLogger(CustomCommandHandler.class);
 
@@ -57,6 +58,17 @@ public final class CustomCommandHandler implements CommandHandler {
     CustomCommandHandler(CustomCommandDefinition customCommand, CustomCommandSpeakExecutor speakExecutor) {
         this.customCommand = customCommand;
         this.speakExecutor = speakExecutor;
+    }
+
+    @Override
+    public String id() {
+        return customCommand.getActionKey();
+    }
+
+    /** Exposes the custom command's declared parameter contract for action-map / UI consumers. */
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return customCommand.getParameters();
     }
 
     @Override
@@ -160,7 +172,7 @@ public final class CustomCommandHandler implements CommandHandler {
             case RUN_COMMAND -> {
                 // Flush before delegating so pending keystrokes are sent before the nested handler runs.
                 flushPendingInputSteps(pendingInput);
-                CommandHandler nested = CommandHandlerFactory.getInstance()
+                IntelAction nested = CommandHandlerFactory.getInstance()
                         .getCommandHandlers()
                         .get(step.getActionId());
                 if (nested == null) {
@@ -177,7 +189,17 @@ public final class CustomCommandHandler implements CommandHandler {
                     Map<String, String> stepParamMapping = step.getStepParams();
                     JsonObject resolvedParams = ctx.resolveStepParams(stepParamMapping);
                     EventBusManager.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId()));
-                    nested.handle(step.getActionId(), resolvedParams, "");
+                    try {
+                        nested.handle(step.getActionId(), resolvedParams, "");
+                    } catch (InterruptedException ie) {
+                        throw ie;
+                    } catch (Exception e) {
+                        // A built-in handler's handle() declares throws Exception; isolate the failure to this step.
+                        log.error("Custom command '{}' step {}: RUN_COMMAND {} failed: {}",
+                                customCommand.getName(), index, step.getActionId(), e.getMessage(), e);
+                        EventBusManager.publish(new AppLogEvent(
+                                "Custom command step: RUN_COMMAND " + step.getActionId() + " failed: " + e.getMessage()));
+                    }
                 }
             }
         }

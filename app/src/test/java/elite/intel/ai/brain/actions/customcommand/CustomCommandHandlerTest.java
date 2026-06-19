@@ -6,8 +6,8 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
@@ -145,7 +145,10 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepDelegatesToRegisteredBuiltinHandler() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("builtin_action", fakeBuiltin);
 
         runCustomCommand("""
@@ -395,7 +398,10 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPassesResolvedStepParamsToNestedHandler() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> { capturedParams.set(p); return null; };
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { capturedParams.set(p); return null; }
+        };
         registerHandler("builtin_with_params", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -414,7 +420,10 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPreservesJsonNumberType() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> { capturedParams.set(p); return null; };
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { capturedParams.set(p); return null; }
+        };
         registerHandler("navigate_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -437,7 +446,10 @@ class CustomCommandHandlerTest {
     @Test
     void abortsCustomCommandWhenRequiredParamIsMissing() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("cmd_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -470,7 +482,10 @@ class CustomCommandHandlerTest {
     @Test
     void optionalParamAbsentDoesNotAbortCustomCommand() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> { called.set(true); return null; };
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("cmd_optional", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
@@ -548,7 +563,7 @@ class CustomCommandHandlerTest {
         return GSON.fromJson(json, CustomCommandDefinition.class);
     }
 
-    private void registerHandler(String key, CommandHandler handler) {
+    private void registerHandler(String key, IntelAction handler) {
         CommandHandlerFactory.getInstance().getCommandHandlers().put(key, handler);
         addedHandlerKeys.add(key);
     }

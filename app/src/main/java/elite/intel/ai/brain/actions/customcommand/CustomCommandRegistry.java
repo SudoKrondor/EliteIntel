@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import elite.intel.ai.brain.InputNormalizer;
-import elite.intel.ai.brain.actions.command.CommandHandler;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
@@ -150,7 +150,7 @@ public final class CustomCommandRegistry {
      * Called from {@code CommandHandlerFactory.registerCommandHandlers()} so that
      * {@code ResponseRouter} routes user-defined action IDs through the normal command dispatch path.
      */
-    public void contributeToHandlerMap(Map<String, CommandHandler> map) {
+    public void contributeToHandlerMap(Map<String, IntelAction> map) {
         Set<String> protectedActionIds = new HashSet<>(map.keySet());
         for (CustomCommandDefinition customCommand : customCommands) {
             if (protectedActionIds.contains(customCommand.getActionKey())) {

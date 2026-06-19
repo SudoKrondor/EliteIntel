@@ -6,10 +6,10 @@ import elite.intel.ai.brain.actions.IntelAction;
 /**
  * Self-describing built-in command. Owns its own metadata (id, parameter schema,
  * binding, isDangerous, voiceStrategy, description key) and its execution.
- * Extends CommandHandler so a discovered command can later (Stage 2) be dropped
- * straight into the existing handler map; default handle() delegates to execute().
+ * Provides a default {@link #handle} that delegates to {@link #execute}, so a command
+ * drops straight into the handler map dispatched through {@link IntelAction}.
  */
-public interface IntelCommand extends CommandHandler, IntelAction {
+public interface IntelCommand extends IntelAction {
 
     default boolean isDangerous() {
         return false;
