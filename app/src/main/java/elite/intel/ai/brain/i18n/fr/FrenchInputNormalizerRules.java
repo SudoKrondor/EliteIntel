@@ -24,16 +24,118 @@ public class FrenchInputNormalizerRules implements InputNormalizerProvider {
 
         // speed /throttle
 
-        // fleet carrier
+        // landing gear: "sors" deploys, "rentre/relève" retracts
+        m.put("sors le train d'atterrissage", "déploie le train d'atterrissage");
+        m.put("sors le train d atterrissage", "déploie le train d'atterrissage");
 
-        //powerdistribution
-        m.put("priorité aux systèmes","priorité aux boucliers");
-        m.put("puissance dans les systèmes","puissance dans les boucliers");
-        m.put("redirige la puissance vers les systèmes","redirige la puissance vers les boucliers");
+        // fleet carrier: canonical singular form matches the action aliases
+        m.put("squadron-carrier", "porte-vaisseau d'escadron");
+        m.put("squadron carrier", "porte-vaisseau d'escadron");
+        m.put("carrier d'escadron", "porte-vaisseau d'escadron");
+        m.put("carrier de l'escadron", "porte-vaisseau d'escadron");
+        m.put("porte-vaisseau de l'escadron", "porte-vaisseau d'escadron");
+        m.put("rapport sur le porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le porte vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("combien de tritium dans le porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("carburant du porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("carburant du porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le niveau de carburant du porte-vaisseaux d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("rapport sur le niveau de carburant du porte-vaisseau d'escadron", "statut du porte-vaisseau d'escadron");
+        m.put("portée porte-vaisseaux avec tritium actuel", "portée du porte-vaisseau avec tritium actuel");
+        m.put("active l'itinéraire vers le porte-vaisseaux", "navigue vers le porte-vaisseau");
+        m.put("active l'itinéraire vers le porte-vaisseau", "navigue vers le porte-vaisseau");
+        m.put("active l'itineraire vers le porte-vaisseaux", "navigue vers le porte-vaisseau");
+        m.put("fleet-carrier", "porte-vaisseau");
+        m.put("fleet carrier", "porte-vaisseau");
+        m.put("porte-vaisseaux", "porte-vaisseau");
+        m.put("porte vaisseaux", "porte-vaisseau");
+
+        // installed ship equipment is loadout, not material inventory
+        m.put("avons-nous un collecteur de carburant", "est-ce équipé d'un collecteur de carburant");
+        m.put("avons nous un collecteur de carburant", "est-ce équipé d'un collecteur de carburant");
+
+        // fighter focus order: canonical registered phrase
+        m.put("concentre-toi sur ma cible", "chasseur attaque ma cible");
+        m.put("concentre toi sur ma cible", "chasseur attaque ma cible");
+        m.put("focus sur la cible", "chasseur attaque ma cible");
+
+        //power distribution
+        m.put("puissance dans les boucliers", "redirige la puissance vers les boucliers");
+        m.put("puissance aux boucliers", "redirige la puissance vers les boucliers");
+        m.put("redirige la puissance vers les systèmes", "redirige la puissance vers les boucliers");
+        m.put("puissance dans les systèmes", "redirige la puissance vers les boucliers");
+        m.put("puissance aux systèmes", "redirige la puissance vers les boucliers");
+        m.put("priorité aux systèmes", "priorité aux boucliers");
+        m.put("puissance dans les moteurs", "redirige la puissance vers les moteurs");
+        m.put("puissance aux moteurs", "redirige la puissance vers les moteurs");
+        m.put("puissance dans les armes", "redirige la puissance vers les armes");
+        m.put("puissance aux armes", "redirige la puissance vers les armes");
+        m.put("équilibre le distributeur", "réinitialise la puissance");
+
+        // ship status panel vs loadout query
+        m.put("ouvre l'état général du vaisseau", "ouvre le panneau de statut");
+        m.put("affiche l'état général du vaisseau", "affiche le panneau de statut");
+        m.put("montre l'état général du vaisseau", "montre le panneau de statut");
+
+        // cargo scoop: "trappe" always identifies the physical scoop/hatch
+        m.put("ouvre la trappe du cargo", "ouvre la trappe");
+        m.put("ferme la trappe du cargo", "ferme la trappe");
+        m.put("ouvre la trappe de la soute", "ouvre la trappe");
+        m.put("ferme la trappe de la soute", "ferme la trappe");
+        m.put("ouvre la trappe de cargaison", "ouvre la trappe");
+        m.put("ferme la trappe de cargaison", "ferme la trappe");
 
         //scannerFFS
 
         // biology
+        m.put("combien d'espèces biologique reste-t-il à analyser dans le système", "progression biologique système");
+        m.put("combien d'espèces biologiques reste-t-il à analyser dans le système", "progression biologique système");
+        m.put("combien d'especes biologique reste-t-il a analyser dans le systeme", "progression biologique système");
+        m.put("combien d'especes biologiques reste-t-il a analyser dans le systeme", "progression biologique système");
+
+        // geology
+        m.put("y a-t-il des signaux géologiques", "signaux géologiques");
+        m.put("y a t il des signaux géologiques", "signaux géologiques");
+        m.put("y a-t-il des signaux geologiques", "signaux géologiques");
+        m.put("y a t il des signaux geologiques", "signaux géologiques");
+
+        // route / itinerary queries
+        m.put("rapport sur notre itinéraire", "rapport d'itinéraire");
+        m.put("rapport sur notre itineraire", "rapport d'itinéraire");
+        m.put("rapport sur la prochaine étape de l'itinéraire", "informations sur la prochaine destination");
+        m.put("rapport sur la prochaine etape de l'itineraire", "informations sur la prochaine destination");
+
+        // stations / landing places
+        m.put("où puis-je me poser ici", "quelles stations dans le système");
+        m.put("où puis je me poser ici", "quelles stations dans le système");
+        m.put("ou puis-je me poser ici", "quelles stations dans le système");
+        m.put("ou puis je me poser ici", "quelles stations dans le système");
+
+        // announcements
+        m.put("plus d'annonces", "désactive toutes les annonces");
+        m.put("plus d annonces", "désactive toutes les annonces");
+        m.put("coupe toutes les notifications vocales", "désactive toutes les annonces");
+
+        // fighter UI: opening commands means opening the panel, not deploying a fighter
+        m.put("ouvre les commandes des chasseurs", "ouvre le panneau chasseur");
+        m.put("ouvre les commandes du chasseur", "ouvre le panneau chasseur");
+
+        // markets vs generic stations / commodity search
+        m.put("matériels", "matériaux");
+        m.put("materiels", "matériaux");
+        m.put("materiaux", "matériaux");
+        m.put("inventaire de bord", "inventaire du vaisseau");
+        m.put("inventaire vaisseau", "inventaire du vaisseau");
+        m.put("inventaire du bord", "inventaire du vaisseau");
+        m.put("matériaux codés", "matériaux encodés");
+        m.put("materiaux codes", "matériaux encodés");
+        m.put("données encodées", "matériaux encodés");
+        m.put("donnees encodees", "matériaux encodés");
+        m.put("liste les stations avec commerce", "quels sont les marchés locaux");
+        m.put("cherche une station avec commerce", "quels sont les marchés locaux");
+        m.put("trouve moi le marché le plus proche", "quels sont les marchés locaux");
+        m.put("trouve-moi le marché le plus proche", "quels sont les marchés locaux");
 
         return m;
     }

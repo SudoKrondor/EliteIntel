@@ -1,6 +1,7 @@
 package elite.intel.util;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.i18n.Language;
@@ -11,9 +12,6 @@ import elite.intel.ui.i18n.MultiLingualTextProvider;
 import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 public class StringUtls {
@@ -113,6 +111,10 @@ public class StringUtls {
         return LlmTextProvider.getText(effectiveTtsLanguage(), key, args);
     }
 
+    public static String localizedAiActionKeys(String action) {
+        return AiActionAliasTextProvider.getText(SystemSession.getInstance().getLanguage(), action);
+    }
+
     public static String localizedEvent(String key, Object... args) {
         return EventsTextProvider.getText(effectiveTtsLanguage(), key, args);
     }
@@ -150,6 +152,8 @@ public class StringUtls {
             case DE -> "language.german";
             case FR -> "language.french";
             case ES -> "language.spanish";
+            case PT -> "language.portuguese";
+            case IT -> "language.italian";
         };
         return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key);
     }
@@ -287,14 +291,6 @@ public class StringUtls {
 
 
     public static String affirmative() {
-        List<String> result = Arrays.stream(localizedSpeech("speech.affirmative").split("\\|"))
-                .map(String::trim)
-                .filter(value -> !value.isBlank())
-                .toList();
-        if (result.isEmpty()) {
-            return "Commander";
-        }
-
-        return result.get(new Random().nextInt(result.size()));
+        return localizedSpeech("speech.affirmative");
     }
 }

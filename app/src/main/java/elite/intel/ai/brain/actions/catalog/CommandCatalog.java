@@ -1,16 +1,17 @@
 package elite.intel.ai.brain.actions.catalog;
 
-import elite.intel.ai.brain.actions.Commands;
-import elite.intel.ai.brain.actions.handlers.commands.SimpleCommandActionHandler;
+import elite.intel.ai.brain.actions.command.CommandI18nKeys;
+import elite.intel.ai.brain.actions.command.CommandKind;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -18,16 +19,13 @@ import java.util.function.Function;
 /**
  * Read-only projection of the built-in command registry.
  * <p>
- * {@link Commands} remains the source of truth: every catalog entry is derived from
- * {@link Commands#values()}, and this class must not maintain a separate hardcoded
+ * The self-describing CommandRegistry is the source of truth: every catalog entry is
+ * derived from CommandRegistry.byId(), and this class must not maintain a separate hardcoded
  * list of built-in commands. The catalog is metadata only; it does not execute
  * commands and is intentionally not wired into ResponseRouter or CommandHandlerFactory.
  */
 public final class CommandCatalog {
 
-    private static final String COMMAND_KEY_PREFIX = "command.";
-    private static final String NAME_KEY_SUFFIX = ".name";
-    private static final String DESCRIPTION_KEY_SUFFIX = ".description";
     private final Function<String, String> textResolver;
 
     public CommandCatalog() {
@@ -43,14 +41,20 @@ public final class CommandCatalog {
     }
 
     public List<CommandCatalogEntry> entries() {
-        return Arrays.stream(Commands.values())
+        // Source is the self-describing registry. byId() is a LinkedHashMap, but its
+        // insertion order mirrors the Reflections scan and is NOT stable across JVM runs,
+        // so we sort here (name, then id) — the same comparator the UI consumers already
+        // apply — to keep entries() deterministic.
+        return CommandRegistry.getInstance().byId().values().stream()
                 .map(this::entryFrom)
+                .sorted(Comparator.comparing(CommandCatalogEntry::name, String.CASE_INSENSITIVE_ORDER)
+                                  .thenComparing(CommandCatalogEntry::id))
                 .toList();
     }
 
     /**
      * Returns all catalog entries: built-in commands followed by user-defined customCommands.
-     * Built-in entries are derived from {@link Commands#values()} as before; custom command entries
+     * Built-in entries are derived from CommandRegistry.byId() as before; custom command entries
      * are built from the provided list. The existing {@link #entries()} method is unchanged.
      */
     public List<CommandCatalogEntry> entries(List<CustomCommandDefinition> customCommands) {
@@ -74,49 +78,41 @@ public final class CommandCatalog {
                 .findFirst();
     }
 
-    private CommandCatalogEntry entryFrom(Commands command) {
+    private CommandCatalogEntry entryFrom(IntelCommand command) {
         Objects.requireNonNull(command, "command");
-        String id = idOf(command);
-        CommandCatalogEntryType type = typeOf(command);
+        String id = command.id();
         return new CommandCatalogEntry(
                 id,
-                localizedName(id, command),
-                localizedDescription(id, command),
-                type
+                localizedName(id),
+                localizedDescription(id),
+                kindToType(command.kind())
         );
     }
 
-    private static String idOf(Commands command) {
-        String action = command.getAction();
-        if (action != null && !action.isBlank()) {
-            return action;
-        }
-        return command.name().toLowerCase(Locale.ROOT);
+    /** Maps the command's self-described {@link CommandKind} to the catalog's display type. */
+    private static CommandCatalogEntryType kindToType(CommandKind kind) {
+        return switch (kind) {
+            case BINDING -> CommandCatalogEntryType.BUILT_IN_BINDING;
+            case ACTION -> CommandCatalogEntryType.BUILT_IN_ACTION;
+        };
     }
 
-    private static CommandCatalogEntryType typeOf(Commands command) {
-        if (command.getHandlerClass() == SimpleCommandActionHandler.class && command.getBinding() != null) {
-            return CommandCatalogEntryType.BUILT_IN_BINDING;
-        }
-        return CommandCatalogEntryType.BUILT_IN_ACTION;
-    }
-
-    private String localizedName(String id, Commands command) {
-        String key = COMMAND_KEY_PREFIX + id + NAME_KEY_SUFFIX;
+    private String localizedName(String id) {
+        String key = CommandI18nKeys.nameKey(id);
         String localized = textResolver.apply(key);
         if (!key.equals(localized)) {
             return localized;
         }
-        return humanize(idOf(command));
+        return humanize(id);
     }
 
-    private String localizedDescription(String id, Commands command) {
-        String key = COMMAND_KEY_PREFIX + id + DESCRIPTION_KEY_SUFFIX;
+    private String localizedDescription(String id) {
+        String key = CommandI18nKeys.descriptionKey(id);
         String localized = textResolver.apply(key);
         if (!key.equals(localized)) {
             return localized;
         }
-        return "Built-in command action: " + idOf(command);
+        return "Built-in command action: " + id;
     }
 
     private static String humanize(String value) {

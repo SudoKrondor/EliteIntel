@@ -1,8 +1,5 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudSection;
-
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.i18n.Language;
@@ -10,6 +7,8 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LanguageChangedEvent;
+import elite.intel.ui.widget.HudComboBox;
+import elite.intel.ui.widget.HudSection;
 import elite.intel.util.StringUtls;
 
 import javax.swing.*;
@@ -18,9 +17,9 @@ import java.io.File;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudGlyphs.*;
-import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * COMMON settings shown above the SETTINGS sub-tabs (settings shared across all of them):
@@ -132,7 +131,9 @@ public class CommonSettingsPanel extends JPanel {
                 new LanguageOption(getText("language.ukrainian"), Language.UK),
                 new LanguageOption(getText("language.german"), Language.DE),
                 new LanguageOption(getText("language.french"), Language.FR),
-                new LanguageOption(getText("language.spanish"), Language.ES)
+                new LanguageOption(getText("language.spanish"), Language.ES),
+                new LanguageOption(getText("language.italian"), Language.IT),
+                new LanguageOption(getText("language.portuguese"), Language.PT)
         });
         selectLanguage(combo, selected);
         return combo;

@@ -354,6 +354,9 @@ public class GoogleTTSImpl implements MouthInterface {
             if (vocalizationQueue != null)
                 vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, completionFuture));
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.debug("TTS request interrupted mid-flight (service stopping), skipping: {}", text);
         } catch (Exception e) {
             log.error("Text-to-speech error: {}", e.getMessage(), e);
         } finally {

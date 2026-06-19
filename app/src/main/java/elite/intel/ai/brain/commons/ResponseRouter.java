@@ -1,11 +1,12 @@
 package elite.intel.ai.brain.commons;
+import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AIRouterInterface;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
+import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.actions.handlers.query.QueryHandler;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -20,7 +21,6 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import static elite.intel.ai.brain.actions.Commands.IGNORE_NONSENSE;
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 import static elite.intel.util.json.JsonUtils.nullSaveJsonObject;
 
@@ -176,7 +176,7 @@ public class ResponseRouter implements AIRouterInterface {
     private void handleCommand(String action, JsonObject params, String responseText, boolean speakAffirmation) {
         log.info("Command dispatch: action=[{}] params=[{}]", action, params);
         EventBusManager.publish(new AppLogEvent("Processing action: " + action + " with params: " + params.toString()));
-        if (IGNORE_NONSENSE.getAction().equalsIgnoreCase(action)) {
+        if (CommandIds.IGNORE_NONSENSICAL_INPUT.equalsIgnoreCase(action)) {
             /// do nothing and return.
             return;
         }

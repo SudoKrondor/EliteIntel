@@ -1,13 +1,12 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
-
-import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
-import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
 import elite.intel.util.BrowserUtil;
 import elite.intel.util.GitHubIssueUrlBuilder;
 
@@ -181,6 +180,8 @@ public final class PhraseCorrectionSuggestionDialog extends JDialog {
             case DE -> getText("language.german");
             case FR -> getText("language.french");
             case ES -> getText("language.spanish");
+            case IT -> getText("language.italian");
+            case PT -> getText("language.portuguese");
         };
     }
 }

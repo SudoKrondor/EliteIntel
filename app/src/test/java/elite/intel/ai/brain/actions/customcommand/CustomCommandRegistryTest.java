@@ -2,7 +2,7 @@ package elite.intel.ai.brain.actions.customcommand;
 
 import com.google.gson.Gson;
 import elite.intel.ai.brain.Reducer;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
+import elite.intel.ai.brain.actions.command.CommandHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

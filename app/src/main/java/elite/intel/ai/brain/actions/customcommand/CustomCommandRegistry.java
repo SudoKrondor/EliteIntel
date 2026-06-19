@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import elite.intel.ai.brain.InputNormalizer;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
+import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
@@ -140,24 +140,8 @@ public final class CustomCommandRegistry {
                 
                 """);
         for (CustomCommandDefinition customCommand : activeCustomCommands) {
-            sb.append("  ").append(customCommand.getActionKey()).append(":\n");
-            for (CustomCommandParameterSpec param : customCommand.getParameters()) {
-                sb.append("    ").append(param.getName())
-                  .append(" (").append(param.getType());
-                if (param.isRequired()) sb.append(", required");
-                sb.append(")");
-                if (!param.getDescription().isBlank()) {
-                    sb.append(" - ").append(param.getDescription());
-                }
-                List<String> examples = param.getExamples();
-                if (!examples.isEmpty()) {
-                    sb.append(". E.g.: ").append(String.join(", ", examples));
-                }
-                sb.append("\n");
-                if (param.getExtractionHint() != null && !param.getExtractionHint().isBlank()) {
-                    sb.append("      Hint: ").append(param.getExtractionHint()).append("\n");
-                }
-            }
+            elite.intel.ai.brain.actions.command.CommandParamRules.appendCommandBlock(
+                    customCommand.getActionKey(), customCommand.getParameters(), sb);
         }
     }
 

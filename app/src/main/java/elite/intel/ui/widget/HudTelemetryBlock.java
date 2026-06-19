@@ -47,7 +47,7 @@ public class HudTelemetryBlock extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
         JLabel keyLabel = new JLabel(label == null ? "" : label.toUpperCase());
-        keyLabel.setForeground(HudPalette.HUD_COLOR_ROLE_DISABLED);
+        keyLabel.setForeground(HudPalette.HUD_COLOR_ROLE_READOUT_LABEL);
         keyLabel.setFont(keyLabel.getFont().deriveFont(Font.PLAIN, HudPalette.HUD_FONT_READOUT_KEY));
         keyLabel.setAlignmentX(LEFT_ALIGNMENT);
 

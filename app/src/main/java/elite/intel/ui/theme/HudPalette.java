@@ -37,6 +37,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_E6E6E6 = new Color(0xE6E6E6);
     public static final Color HUD_COLOR_FF2E00 = new Color(0xFF2E00);
     public static final Color HUD_COLOR_FF7100 = new Color(0xFF7100);
+    public static final Color HUD_COLOR_FF822E = new Color(0xFF822E);
     public static final Color HUD_COLOR_FFB000 = new Color(0xD39207);
 
     // -- HUD semantic color roles ---------------------------------------------
@@ -51,6 +52,12 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_DIALOG_TITLE_TEXT = HUD_COLOR_C2C2C2;
     public static final Color HUD_COLOR_ROLE_BUTTON_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SECONDARY_TEXT = HUD_COLOR_9A6A3C;
+    /** Muted key label in key→value readouts and telemetry blocks (§7). Same tone as the
+     *  secondary text, but a distinct semantic role so the two can diverge later. */
+    public static final Color HUD_COLOR_ROLE_READOUT_LABEL = HUD_COLOR_9A6A3C;
+    /** CMDR credit-balance readout (e.g. commander block, §7). Same tone as the secondary
+     *  text today, but a distinct semantic role so the two can diverge later. */
+    public static final Color HUD_COLOR_ROLE_CREDITS_TEXT = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_MONOSPACE_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_101721;
@@ -65,6 +72,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
     public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
+    /** Bright accent painted on an input frame and its corner marks while it holds keyboard focus. */
+    public static final Color HUD_COLOR_ROLE_INPUT_FOCUS = HUD_COLOR_FF822E;
     public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_6E4A28;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_BACKGROUND = HUD_COLOR_B85A14;
     public static final Color HUD_COLOR_ROLE_PRIMARY_BUTTON_HOVER_BACKGROUND = HUD_COLOR_B85A14;
@@ -82,7 +91,9 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_WARNING_PANEL_BACKGROUND = HUD_COLOR_1A1206;
     /** Active left-of-thumb portion of a HudSlider track; this is a level indicator, not a danger signal. */
     public static final Color HUD_COLOR_ROLE_SLIDER_VALUE_TRACK = HUD_COLOR_FF2E00;
-    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_BB7A32;
+    /** Warm brown plaque behind a HudSlider track, on which the rail and value fill are drawn. */
+    public static final Color HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND = HUD_COLOR_151519;
+    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT = HUD_COLOR_72A2B4;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TEXT = HUD_COLOR_5A6368;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;

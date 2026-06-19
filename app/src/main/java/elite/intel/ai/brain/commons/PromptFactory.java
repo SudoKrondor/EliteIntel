@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.*;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
@@ -150,8 +151,6 @@ public class PromptFactory implements AiPromptFactory {
                   - "night vision on"          → {"action": "toggle_night_vision_on_off", "params": {"state": true}}
                   - "night vision off"         → {"action": "toggle_night_vision_on_off", "params": {"state": false}}
                   - "lights on"                → {"action": "toggle_lights_on_off", "params": {"state": true}}
-                  - "navigate to coordinates 12.34 minus 45.67" → {"action": "navigate_to_coordinates", "params": {"lat": 12.34, "lon": -45.67}}
-                  - "increase speed by 25"          → {"action": "increase_speed", "params": {"key": "25"}}
                   - "find gold within 80 ly"                    → {"action": "find_commodity", "params": {"key": "gold", "max_distance": "80"}}
                   - "find nearest market for gold"              → {"action": "find_commodity", "params": {"key": "gold", "state": true}}
                   - "where can we buy gold"                     → {"action": "find_commodity", "params": {"key": "gold", "state": false}}
@@ -169,8 +168,9 @@ public class PromptFactory implements AiPromptFactory {
         buildCommandRules(sb);
         Map<String, String> reduced = reduce(rawUserInput);
         sb.append(Reducer.formatActions(reduced));
-        // CustomCommand param rules are appended after reduction so only the matched customCommand's params are shown,
-        // avoiding token overhead from param rules of unrelated customCommands.
+        // Built-in (self-describing) command param rules, then custom — same shared formatter,
+        // both appended after reduction so only matched actions contribute (token economy).
+        CommandRegistry.getInstance().appendBuiltInParamRules(reduced, sb);
         CustomCommandRegistry.getInstance().appendCustomCommandParamRules(reduced, sb);
         return sb.toString();
     }
@@ -289,10 +289,8 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     private void appendCadenceAndPersonality(StringBuilder sb) {
-        ShipCadence shipCadence = systemSession.getAICadence();
         ShipPersonality aiPersonality = systemSession.getAIPersonality();
-        sb.append(" Cadence and Personality: ");
-        sb.append(shipCadence.getCadenceClause());
+        sb.append(" Personality: ");
         sb.append(aiPersonality.getPersonalityClause());
     }
 

@@ -1,6 +1,8 @@
 package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiActionsMap;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -65,7 +67,24 @@ public final class ActionParameterKeyExtractor {
         Map<String, Map<String, ActionParameterHint>> hintsByAction = new LinkedHashMap<>();
         extractAliasPlaceholders(hintsByAction);
         extractPromptJsonExamples(hintsByAction);
+        extractRegistryParameters(hintsByAction);
         return hintsByAction;
+    }
+
+    /**
+     * Third hint source: the self-describing command registry. Migrated built-in commands
+     * declare a typed parameter schema via {@link IntelCommand#parameters()}; this is the
+     * authoritative type source, so it runs last and upgrades the untyped {@code string}
+     * guesses produced by alias placeholders (e.g. alias {@code {lat:X}} yields string,
+     * the registry spec yields number). Only iterates commands present in the registry, so
+     * non-migrated commands keep taking their hints from aliases/JSON examples untouched.
+     */
+    private void extractRegistryParameters(Map<String, Map<String, ActionParameterHint>> hintsByAction) {
+        CommandRegistry.getInstance().byId().values().forEach(command -> {
+            for (CustomCommandParameterSpec spec : command.parameters()) {
+                add(hintsByAction, command.id(), spec.getName(), spec.getType());
+            }
+        });
     }
 
     private void extractAliasPlaceholders(Map<String, Map<String, ActionParameterHint>> hintsByAction) {

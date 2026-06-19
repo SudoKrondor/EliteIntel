@@ -1,18 +1,14 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ui.support.AudioDeviceCombo;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudBanner;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudMicMeter;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudSlider;
-import elite.intel.ui.widget.StatusBadge;
-
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.*;
+import elite.intel.ui.event.NotificationVolumeChangedEvent;
+import elite.intel.ui.event.SpeechSpeedChangeEvent;
+import elite.intel.ui.event.SttThreadsChangedEvent;
+import elite.intel.ui.event.SttVolumeChangedEvent;
+import elite.intel.ui.support.AudioDeviceCombo;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,8 +16,8 @@ import java.awt.event.HierarchyEvent;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.HudForms.baseGbc;
 import static elite.intel.ui.theme.HudPalette.*;
-import static elite.intel.ui.theme.HudForms.*;
 
 public class AudioSettingsPanel extends JPanel {
 
@@ -39,6 +35,13 @@ public class AudioSettingsPanel extends JPanel {
     private HudComboBox<String> outputCombo;
     /** Guards the combo listeners from persisting while we programmatically re-sync the selection. */
     private boolean syncingDevices;
+
+    private JCheckBox noiseReductionCheck;
+    private HudSegmentedControl noiseStrengthControl;
+
+    private static final int STRENGTH_LOW = 0;
+    private static final int STRENGTH_MEDIUM = 1;
+    private static final int STRENGTH_HIGH = 2;
 
     public AudioSettingsPanel() {
         buildUi();
@@ -80,7 +83,9 @@ public class AudioSettingsPanel extends JPanel {
         });
     }
 
-    /** Left column: AUDIO DEVICES over AUDIO LEVELS, with the help block beneath. All FLAT (section 9). */
+    /**
+     * Left column: AUDIO DEVICES (with inline noise reduction) over AUDIO LEVELS. All FLAT (section 9).
+     */
     private JComponent buildSettingsColumn() {
         JPanel column = transparentPanel(null);
         column.setLayout(new BoxLayout(column, BoxLayout.PAGE_AXIS));
@@ -99,7 +104,12 @@ public class AudioSettingsPanel extends JPanel {
         return column;
     }
 
-    /** Inlined audio device pickers; selection is persisted immediately on change. */
+    /**
+     * 4-column layout:
+     *   Row 0 — Mic [dropdown]   Speaker [dropdown]
+     *   Row 1 — [☑ Enable Noise Reduction]   [Low][Medium][High]
+     *   Row 2 — restart-required banner
+     */
     private HudSection buildDevicesSection() {
         HudSection section = HudSection.flat(getText("audio.devices.section.devices"), new GridBagLayout());
         JPanel form = section.body();
@@ -107,48 +117,81 @@ public class AudioSettingsPanel extends JPanel {
         inputCombo = AudioDeviceCombo.input(systemSession.getAudioInputDevice());
         outputCombo = AudioDeviceCombo.output(systemSession.getAudioOutputDevice());
         inputCombo.addActionListener(e -> {
-            if (!syncingDevices) {
+            if (!syncingDevices)
                 systemSession.setAudioInputDevice(AudioDeviceCombo.normalize((String) inputCombo.getSelectedItem()));
-            }
         });
         outputCombo.addActionListener(e -> {
-            if (!syncingDevices) {
+            if (!syncingDevices)
                 systemSession.setAudioOutputDevice(AudioDeviceCombo.normalize((String) outputCombo.getSelectedItem()));
-            }
         });
 
-        GridBagConstraints gbc = baseGbc();
-        gbc.gridy = 0;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        JLabel inLabel = hudReadoutLabel(getText("audio.devices.input"));
-        sizeFieldLabel(inLabel, LABEL_COL_WIDTH);
-        form.add(inLabel, gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        form.add(inputCombo, gbc);
+        // Cols: 0=Mic label  1=input combo  2=Speaker label  3=output combo
+        // Cols 1 and 3 share available width equally; cols 0 and 2 are natural-width labels.
+        GridBagConstraints g = baseGbc();
 
-        gbc.gridy = 1;
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        gbc.fill = GridBagConstraints.NONE;
-        JLabel outLabel = hudReadoutLabel(getText("audio.devices.output"));
-        sizeFieldLabel(outLabel, LABEL_COL_WIDTH);
-        form.add(outLabel, gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        form.add(outputCombo, gbc);
+        // Row 0 — device pickers
+        g.gridy = 0;
+        g.gridx = 0;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        form.add(hudReadoutLabel(getText("audio.devices.input.short")), g);
 
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(HUD_GAP, gbc.insets.left, gbc.insets.bottom, gbc.insets.right);
-        form.add(new HudBanner(getText("audio.devices.note"), StatusBadge.State.STANDBY, true), gbc);
+        g.gridx = 1;
+        g.weightx = 0.5;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        form.add(inputCombo, g);
+
+        g.gridx = 2;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        g.insets = new Insets(6, HUD_GAP * 2, 6, 6);
+        form.add(hudReadoutLabel(getText("audio.devices.output.short")), g);
+
+        g.gridx = 3;
+        g.weightx = 0.5;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.insets = new Insets(6, 6, 6, 6);
+        form.add(outputCombo, g);
+
+        // Row 1 — noise reduction: checkbox spans left pair, segmented control spans right pair
+        g.gridy = 1;
+        noiseReductionCheck = makeCheckBox(getText("settings.audio.noiseReduction.enable"), false);
+        noiseReductionCheck.addActionListener(e -> {
+            boolean enabled = noiseReductionCheck.isSelected();
+            systemSession.setNoiseReductionEnabled(enabled);
+            noiseStrengthControl.setEnabled(enabled);
+        });
+        g.gridx = 0;
+        g.gridwidth = 2;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        g.anchor = GridBagConstraints.WEST;
+        form.add(noiseReductionCheck, g);
+
+        noiseStrengthControl = new HudSegmentedControl(new String[]{
+                getText("settings.audio.noiseReduction.strength.low"),
+                getText("settings.audio.noiseReduction.strength.medium"),
+                getText("settings.audio.noiseReduction.strength.high")
+        }, STRENGTH_MEDIUM);
+        noiseStrengthControl.addChangeListener(e ->
+                systemSession.setNoiseReductionStrength(noiseStrengthControl.getSelectedIndex()));
+        g.gridx = 2;
+        g.gridwidth = 2;
+        g.weightx = 1;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.anchor = GridBagConstraints.CENTER;
+        g.insets = new Insets(6, HUD_GAP * 2, 6, 6);
+        form.add(noiseStrengthControl, g);
+
+        // Row 2 — note: device changes need a service restart
+        g.gridy = 2;
+        g.gridx = 0;
+        g.gridwidth = 4;
+        g.weightx = 1;
+        g.fill = GridBagConstraints.HORIZONTAL;
+        g.anchor = GridBagConstraints.WEST;
+        g.insets = new Insets(HUD_GAP, 6, 6, 6);
+        form.add(new HudBanner(getText("audio.devices.note"), StatusBadge.State.STANDBY, true), g);
 
         return section;
     }
@@ -187,6 +230,10 @@ public class AudioSettingsPanel extends JPanel {
 
     public void initData() {
         syncDevices();
+        boolean nrEnabled = systemSession.isNoiseReductionEnabled();
+        noiseReductionCheck.setSelected(nrEnabled);
+        noiseStrengthControl.setSelectedIndex(systemSession.getNoiseReductionStrength());
+        noiseStrengthControl.setEnabled(nrEnabled);
     }
 
     /** Re-reads the persisted device selection into the pickers without re-triggering a save. */

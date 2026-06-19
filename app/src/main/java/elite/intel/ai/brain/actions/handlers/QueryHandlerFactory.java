@@ -1,11 +1,11 @@
 package elite.intel.ai.brain.actions.handlers;
 
-import elite.intel.ai.brain.actions.Queries;
 import elite.intel.ai.brain.actions.handlers.query.QueryHandler;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.QueryRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,34 +28,10 @@ public class QueryHandlerFactory {
 
 
     public Map<String, QueryHandler> registerQueryHandlers() {
-        for (Queries action : Queries.values()) {
-            try {
-                QueryHandler handler = instantiateHandler(action.getHandlerClass(), QueryHandler.class);
-                queryHandlers.put(action.getAction(), handler);
-                log.debug("Registered query handler for action: {}", action.getAction());
-            } catch (Exception e) {
-                log.error("Failed to register query handler for action: {}", action.getAction(), e);
-                throw new RuntimeException("Query handler registration failed for action: " + action.getAction(), e);
-            }
+        for (Map.Entry<String, IntelQuery> entry : QueryRegistry.getInstance().byId().entrySet()) {
+            queryHandlers.put(entry.getKey(), entry.getValue());
         }
+        log.info("Registered {} built-in query handler(s) from QueryRegistry", queryHandlers.size());
         return queryHandlers;
-    }
-
-    private <T> T instantiateHandler(Class<? extends T> handlerClass, @SuppressWarnings("SameParameterValue") Class<T> expectedType) {
-        try {
-            Constructor<? extends T> constructor = handlerClass.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            T handler = constructor.newInstance();
-            if (!expectedType.isInstance(handler)) {
-                throw new IllegalStateException("Handler class " + handlerClass.getName() + " does not implement " + expectedType.getName());
-            }
-            return handler;
-        } catch (NoSuchMethodException e) {
-            log.error("No no-arg constructor found for handler: {}", handlerClass.getName());
-            throw new RuntimeException("Failed to instantiate handler: " + handlerClass.getName(), e);
-        } catch (Exception e) {
-            log.error("Failed to instantiate handler: {}", handlerClass.getName(), e);
-            throw new RuntimeException("Failed to instantiate handler: " + handlerClass.getName(), e);
-        }
     }
 }

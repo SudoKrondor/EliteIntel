@@ -1,251 +1,252 @@
-# Guide des requêtes et commandes IA – EliteIntel (Français)
+# Guide des requêtes et commandes IA – Elite Intel (Français)
 
-Salutations Commandant ! Voici une référence pour les types de requêtes disponibles à soumettre à votre assistant **Elite Intel**.
-**L'idéal : Vous n'avez pas besoin de mémoriser tout ça** – parler naturellement, et l'appli comprendra. Cette liste existe pour que vous sachiez ce qui est possible, pas pour récter des scripts.
+Salutations Commandant ! Ce guide présente les requêtes et commandes vocales possibles avec **Elite Intel**.
+
+L’objectif n’est pas de réciter des scripts au mot près : vous pouvez parler naturellement. Les exemples ci-dessous montrent simplement le genre de demandes que l’assistant sait comprendre.
 
 ## Avant tout. Des problèmes ?
 
-- Si l'appli déclenche des commandes au hasard : problème de cerveau (LLM trop faible ou configuration incorrecte)
-- Si l'appli déclenche des commandes mais qu'elles n'ont aucun effet : problème de mains (raccourcis clavier)
-- Si l'appli ne t'entend pas bien : problème d'oreilles (pièce bruyante, rapport bruit/RMS trop faible, audio non calibré, etc.)
-- Si l'appli ne parle pas : problème de bouche. Vérifie le routage audio au niveau du système d'exploitation.
+- Si l’appli déclenche des commandes au hasard : problème de cerveau, souvent un LLM trop faible ou mal configuré.
+- Si l’appli déclenche des commandes mais qu’elles n’ont aucun effet : problème de mains, souvent des raccourcis clavier manquants.
+- Si l’appli ne vous entend pas bien : problème d’oreilles, souvent bruit ambiant, micro mal calibré ou rapport bruit/RMS trop faible.
+- Si l’appli ne parle pas : problème de bouche, vérifiez le routage audio du système d’exploitation.
 
 ### [Wiki complet ici](https://www.elite-intel.org/fr)
 
 ## Entrée audio
 
-**Calibrer l'audio dans l'appli.** Si la différence entre le plancher de bruit et le RMS est trop faible (p. ex. moins de 400),
-l'appli aura du mal à vous comprendre. Un bon ratio est au moins 800–1000.
-Si vous utilisez des haut-parleurs et un micro, activez la fonction « Push-to-Talk » ; sinon, l'utilisation d'un casque avec micro est recommandée.
+Calibrez l’audio dans l’application. Si la différence entre le plancher de bruit et le RMS est trop faible, par exemple moins de 400, l’application aura du mal à comprendre.
 
-## Application
+Un bon ratio est généralement autour de 800 à 1000. Si vous utilisez des haut-parleurs et un micro, activez le **Push-to-Talk** ; sinon, un casque avec micro est recommandé.
 
-- Vérifier les raccourcis manquants ou non assignés : **« vérifie les touches »** / **« raccourcis manquants »**
-- Veille / Réveil : **« dors »** / **« réveille-toi »**
-  (En mode veille, les entrées vocales sont ignorées. Bypass : **« écoute-moi [commande] »**)
+## Application, écoute et session
 
-## Exploration & Position
-
-- Activer/désactiver les annonces de découverte : **« annonces de découverte »**
-- Où sommes-nous ? **« position actuelle »** / **« où sommes-nous »** / **« dans quel système sommes-nous »**
-- À quelle distance de la Bulle / notre porte-vaisseaux / le dernier échantillon bio ? **« distance de la Bulle »** / **« distance au porte-vaisseaux »** / **« distance au dernier échantillon biologique »**
-- Distance d'une planète, lune ou station précise ? **« distance planète [Nom] »**
-- Quels matériaux sont disponibles sur cette planète ? **« matériaux planète »** / **« matériaux ici »**
-- Analyser le dernier scan : **« dernier scan »**
-- Quelle est l'ETA du saut du porte-vaisseaux ? **« ETA porte-vaisseaux »** / **« quand arrive le porte-vaisseaux »**
-- Quelle heure est-il / heure UTC ? **« heure actuelle »** / **« quelle heure est-il »**
-- Analyser le biome du système stellaire : **« analyse biome »** / **« quel biome [Nom] »**
-- Quelles planètes nécessitent encore des scans bio ? **« signaux biologique traités dans le système »** / **« quelles planètes restent à scanner »**
-- Quels scans bio avons-nous effectués ? **« échantillons exobiologie »** / **« organiques sur cette planète »**
-- Quelles planètes ou lunes sont atterrissables ? **« planètes atterrissables »** / **« objets stellaires »**
-- Quels signaux dans ce système ? **« signaux dans le système »** / **« signaux FSS »**
-- Quelles planètes ont des signaux géologiques ? **« signaux géologiques »**
-- Ouvrir le FSS et scanner : **« scanner de système »** / **« analyseur du système »** / **« analyse complète du système »**
-- Sécurité du système, contrôle de faction ? **« sécurité système »** / **« qui contrôle ce système »**
-- Profil joueur / rangs / stats : **« profil joueur »** / **« profil commandant »**
-
-## Exobiologie
-
-- Quels scans bio avons-nous effectués ? **« échantillons exobiologie »** / **« organiques sur cette planète »**
-- Potentiel de profit d'exploration dans ce système : **« profits exploration »**
-- Position et distance du dernier échantillon bio : **« distance au dernier échantillon biologique »**
-- Naviguer vers le prochain bio-sample / entrée codex : **« navigue vers prochain échantillon biologique »** / **« naviguation vers entrée codex »**
-- Quels organismes sont sur cette planète ? **« organiques ici »** / **« que reste-t-il à scanner »**
-- Analyse biome pour [système / planète] : **« analyse biome »** / **« quel biome [Nom] »**
-
-## porte-vaisseaux (Fleet Carrier)
-
-Assure-toi de mentionner « porte-vaisseaux », sinon l'appli pourrait croire que tu parles de ton vaisseau !
-
-- Portée / statut / carburant du porte-vaisseaux : **« statut porte-vaisseaux »** / **« portée de saut porte-vaisseaux »**
-- Définir la réserve de carburant : **« réserve tritium du porte-vaisseaux [quantité] »**
-- Où va le porte-vaisseaux ? **« où va le porte-vaisseaux »** / **« cap porte-vaisseaux »**
-- Combien de temps avant l'arrivée du porte-vaisseaux ? **« ETA porte-vaisseaux »** / **« quand arrive le porte-vaisseaux »**
-- Statut carburant / portée de saut : **« statut porte-vaisseaux »**
-- Combien de temps peut-on opérer avec les fonds actuels ? **« combien de temps peut fonctionner le porte-vaisseaux »**
-- Quelle portée avec le tritium actuel ? **« portée porte-vaisseaux avec tritium actuel »**
-- Que contient la route du porte-vaisseaux ? **« route porte-vaisseaux »** / **« combien de sauts sur la route porte-vaisseaux »**
-- Distance au porte-vaisseaux : **« distance au porte-vaisseaux »** / **« à quelle distance se trouve le porte-vaisseaux »**
-- Porte-vaisseaux dans ce système ? **« porte-vaisseaux dans le système »** / **« porte-vaisseaux ici »**
-
-## Vaisseau & Systèmes
-
+- Mettre l’application en veille : **« dors »**, **« passe en mode veille »**, **« tu peux disposer »**
+- Réveiller l’application : **« réveille-toi »**, **« écoute »**
+- Envoyer une commande pendant la veille : **« écoute-moi, saute en hyperespace »**
+- Interrompre la voix : **« arrête de parler »**, **« stop voix »**, **« silence »**
+- Vérifier les raccourcis manquants : **« vérifie les raccourcis clavier »**, **« analyse les bindings »**
+- Activer/désactiver toutes les annonces : **« plus d’annonces »**, **« désactive toutes les annonces »**
 - Activer/désactiver les annonces de route : **« annonces de route »**
-- L'étoile suivante est-elle scoopable ? **« route tracée »** / **« prochaine étoile scoopable »**
-- Analyser la cible FSD : **« info cible FSD »** / **« analyse destination »**
-- Qu'y a-t-il dans ma soute ? **« contenu de la soute »** / **« que transportons-nous »**
-- Quel est le loadout ? **« configuration vaisseau »** / **« modules vaisseau »**
-- Analyser la route : **« route tracée »** / **« analyse route »**
-- Disponibilité du carburant sur la route : **« carburant disponible sur la route »**
-- Avons-nous [matériau] ? **« inventaire matériaux [Nom] »** / **« avons-nous du [Nom] »**
-- Rang / profil joueur : **« profil joueur »**
+- Activer/désactiver les annonces de découverte : **« annonces de découverte »**
+- Activer/désactiver les annonces de minage : **« annonces de minage »**
+- Activer/désactiver la radio : **« radio »**, **« trafic radio »**
+- Définir un rappel : **« définis un rappel : acheter des drones »**, **« ajoute un rappel : vérifier le carburant »**
+- Consulter les rappels : **« liste les rappels »**, **« quel est le rappel actif »**
+- Effacer les rappels : **« efface les rappels »**, **« supprime tous les rappels »**
 
-## Stations & Marchés
+## Exploration, position et système
 
-- Quels services dans les stations locales ? **« détails station »** / **« quels services ici »**
-- Outfitting / pièces / modules à vendre ? **« outfitting »** / **« modules disponibles »**
-- Des vaisseaux à vendre à cette station ? **« chantier naval »** / **« vaisseaux à vendre »**
-- Monétiser la route : **« monétise la route »** / **« calcule profit route »**
-- Calculer une route commerciale : **« calcule route commerciale »**
-- Où acheter/vendre [marchandise] ? **« trouve marchandise [Nom] »** / **« où acheter »**
-- Qu'y a-t-il sur le marché local ? **« marchés locaux »**
-- Données de stations : **« détails station »**
-- Poser un rappel : **« définis rappel [texte] »** / **« crée rappel [texte] »**
-- Plan commercial actuel / route de trading : **« route commerciale »** / **« plan commercial actuel »**
+- Position actuelle : **« où sommes-nous »**, **« dans quel système sommes-nous »**
+- Distance de la Bulle : **« distance de la Bulle »**, **« combien d’années-lumière de la civilisation »**
+- Heure actuelle : **« quelle heure est-il »**, **« donne-moi l’heure UTC »**
+- Sécurité du système : **« sécurité système »**, **« qui contrôle ce système »**
+- Corps stellaires : **« quels sont les corps du système »**, **« objets stellaires »**
+- Planètes atterrissables : **« y a-t-il des planètes atterrissables »**
+- Signaux dans le système : **« quels signaux sont détectés »**, **« signaux dans le système »**
+- Signaux géologiques : **« y a-t-il des signaux géologiques »**, **« où sont les sites géologiques »**
+- Ouvrir le FSS : **« ouvre l’analyseur de système »**, **« analyse complète du système »**
+- Dernier scan : **« quel a été le dernier scan »**, **« qu’avons-nous scanné récemment »**
 
-## Paramètres du profil commercial
+## Exobiologie, biologie et codex
 
-- Modifier le budget de départ : **« change profil commercial budget de départ [montant] »**
-- Modifier la distance maximale : **« change profil commercial distance maximum [X] »**
-- Modifier le nombre d'arrêts max : **« change profil commercial nombre maximum d'arrêts [N] »**
-- Autoriser cargo interdit : **« profil commercial autorise marchandises interdites »**
-- Autoriser ports planétaires : **« profil commercial autorise ports planétaires »**
-- Autoriser systèmes à permis : **« profil commercial autorise systèmes à permis »**
-- Autoriser bastions : **« profil commercial autorise bastions »**
-- Afficher profil commercial : **« profil commercial »** / **« paramètres commerciaux »**
-- Lister les paramètres de route : **« liste paramètres route commerciale »**
+Différence importante :
 
-## ⚔️ Combat & Missions
+- **« dans le système »**, **« quelles planètes »**, **« progression biologique système »** → analyse globale du système.
+- **« ici »**, **« sur cette planète »**, **« à scanner ici »** → exobiologie locale, à la surface.
 
-- Annonces de contact radar : **« annonce contact radar »**
-- Trouver un terrain de chasse : **« trouve terrain de chasse [système] »**
-- Reconnaître le terrain de chasse : **« recon terrain de chasse »**
-- Ignorer le terrain de chasse : **« ignore terrain de chasse »**
-- Confirmer le terrain de chasse : **« confirme terrain de chasse »**
-- Naviguer vers le système fournisseur de missions : **« navigue vers système fournisseur de missions »**
-- Naviguer vers le fournisseur pirate : **« navigue vers fournisseur de missions pirates »**
-- Naviguer vers la mission active : **« navigue vers la mission active »**
-- Combien de kills pirates restants ? **« mission pirate »** / **« combien de kills »**
-- Progression mission massacre : **« progression massacre »** / **« kills pirates »**
-- Quelles missions actives ? **« missions actives »** / **« missions en cours »**
-- Total des primes cette session : **« primes »** / **« total primes »**
-- Cibler un sous-système : **« cible fsd »** / **« cible moteurs »** / **« cible distributeur d'énergie »** / **« cible centrale électrique »** / **« cible système de survie »**
-- Cibler un ailier : **« cible ailier un »** / **« cible ailier deux »** / **« cible ailier trois »**
-- Cible prioritaire / menace principale : **« cible prioritaire »** / **« menace principale »** / **« sélectionne l'hostile »**
+Exemples :
 
-## 🧭 Commandes de navigation
+- Progression bio système : **« progression biologique système »**, **« combien d’espèces biologiques reste-t-il à analyser dans le système »**
+- Planètes avec bio : **« quelles planètes ont des signaux biologiques »**, **« quelles planètes restent à scanner »**
+- Organismes locaux : **« quels organismes reste-t-il à scanner ici »**, **« que devons-nous encore prélever sur cette planète »**
+- Distance du dernier échantillon : **« distance au dernier échantillon biologique »**
+- Biome : **« quel est le biome de cette planète »**, **« analyse biome »**
+- Naviguer vers le prochain échantillon : **« navigue vers le prochain échantillon biologique »**
+- Supprimer une entrée codex : **« supprime cette entrée codex »**
+- Trouver Vista Genomics : **« trouve Vista Genomics le plus proche »**
 
-- Naviguer vers des coordonnées : **« navigue vers les coordonnées [Lat] [Lon] »**
-- Naviguer vers la zone d'atterrissage : **« navigue vers la zone d'atterrissage »** / **« direction la ZA »**
-- Naviguer vers le prochain bio-sample : **« navigue vers prochain échantillon biologique »**
-- Trouver le porte-vaisseaux le plus proche : **« trouve le porte-vaisseaux le plus proche »**
-- Naviguer vers le porte-vaisseaux : **« navigue vers le porte-vaisseaux »** / **« retourne au porte vaisseau »**
-- Naviguer vers / aller à / cap sur [destination] : **« navigue vers [destination] »** / **« cap sur [destination] »** / **« va à [destination] »**
-- Prochaine étape commerciale : **« navigue vers le prochain arrêt commercial »**
-- Calculer une route pour le porte-vaisseaux : **« calcule route vers porte-vaisseaux »**
-- Entrer la destination du porte-vaisseaux : **« entre destination porte-vaisseaux »**
-- Calculer une route commerciale : **« calcule route commerciale »**
-- Trouver Vista Genomics : **« trouve vista genomics le plus proche »**
-- Trouver un courtier tech humain / guardian : **« trouve courtier de technologies humaines »** / **« trouve courtier de technologies gardiennes »**
-- Trouver un trader de matériaux : **« trouve marchand de matériaux bruts »** / **« trouve marchand de données codées »** / **« trouve marchand de matériaux manufacturés »**
-- Trouver des Brain Trees : **« trouve arbres cérébraux [distance max] »**
-- Trouver un site de minage pour [matériau] : **« trouve site de minage [matériau] »**
-- Trouver du tritium à miner : **« trouve site de minage tritium »**
-- Trouver une marchandise : **« trouve marchandise [Nom] »**
-- Annuler la navigation : **« annule la navigation »** / **« stop navigation »**
-- Retour à la base : **« ramène-moi à la base »** / **« rentre à la base »**
-- Définir le système de base : **« définis le système de base »**
+## Porte-vaisseaux et carriers
+
+Rappel :
+
+- **« porte-vaisseau »** = carrier personnel.
+- **« porte-vaisseau d’escadron »** ou **« squadron carrier »** = carrier d’escadron.
+
+### Carrier personnel
+
+- Statut : **« statut du porte-vaisseau »**, **« rapport du porte-vaisseau »**
+- Finances/autonomie : **« combien de temps peut fonctionner le porte-vaisseau »**
+- Portée : **« portée du porte-vaisseau avec tritium actuel »**
+- ETA : **« quand arrive mon porte-vaisseau »**, **« ETA du fleet carrier »**
+- Distance : **« à quelle distance se trouve mon porte-vaisseau »**, **« distance du fleet carrier »**
+- Route : **« quel est l’itinéraire de mon porte-vaisseau »**, **« combien de sauts pour le porte-vaisseau »**
+- Réserve de tritium : **« règle la réserve de tritium à 5000 »**
+- Calculer la route : **« calcule la route du porte-vaisseau »**
+- Entrer une destination : **« définis la destination du porte-vaisseau »**
+- Trouver le plus proche : **« trouve le porte-vaisseau le plus proche »**
+
+### Carrier d’escadron
+
+- Statut : **« statut du porte-vaisseau d’escadron »**, **« statut du squadron carrier »**
+- Route : **« itinéraire du porte-vaisseau d’escadron »**, **« route squadron carrier »**
+- Destination finale : **« destination finale du porte-vaisseau d’escadron »**
+- Carburant : **« carburant du porte-vaisseau d’escadron »**, **« carburant du squadron carrier »**
+- ETA : **« ETA du porte-vaisseau d’escadron »**, **« ETA du squadron carrier »**
+- Navigation : **« navigue vers le porte-vaisseau d’escadron »**
+
+## Vaisseau, route et cible FSD
+
+- Cible FSD actuelle : **« quelle est la cible FSD actuelle »**, **« informations sur la prochaine destination »**
+- Rapport sur la prochaine étape : **« rapport sur la prochaine étape de l’itinéraire »**
+- Rapport d’itinéraire : **« rapport d’itinéraire »**, **« route tracée »**
+- Sauts restants : **« combien de sauts reste-t-il »**
+- Prochaine étoile scoopable : **« prochaine étoile scoopable »**
+- Carburant sur la route : **« carburant disponible sur la route »**
+- Cibler la prochaine destination : **« cible la prochaine destination »**, **« verrouille la destination suivante »**
+- Ouvrir la carte galactique : **« ouvre la carte galactique »**, **« affiche la carte de la galaxie »**
+- Ouvrir la carte du système : **« ouvre la carte du système »**, **« montre la carte du système »**
+
+## Stations et marchés
+
+- Stations du système : **« quelles stations dans le système »**, **« où puis-je me poser ici »**
+- Marchés locaux : **« quels sont les marchés locaux »**, **« liste les stations avec commerce »**
+- Marché le plus proche : **« trouve-moi le marché le plus proche »**
+- Services de station : **« quels services propose cette station »**, **« détails de la station »**
+- Outfitting : **« quels équipements sont disponibles ici »**, **« modules en vente »**
+- Chantier naval : **« quels vaisseaux sont à vendre »**, **« chantier naval »**
+- Marchandise précise : **« trouve une marchandise tritium »**, **« où acheter du tritium »**
+- Interstellar Factor : **« trouve l’Interstellar Factor le plus proche »**, **« où payer mes amendes »**
+
+## Commerce et profil commercial
+
+- Route commerciale actuelle : **« quel est notre plan commercial actuel »**, **« route commerciale »**
+- Calculer une route commerciale : **« calcule une route commerciale »**
+- Profit de route : **« calcule le profit de la route »**, **« monétise la route »**
+- Paramètres de route : **« liste les paramètres de la route commerciale »**
+- Budget de départ : **« change le budget de départ du profil commercial à 1000000 »**
+- Nombre d’arrêts : **« change le nombre maximum d’arrêts du profil commercial à 5 »**
+- Distance maximale : **« change la distance maximum du profil commercial à 80 »**
+- Marchandises interdites : **« autorise les marchandises interdites dans le profil commercial »**
+- Ports planétaires : **« autorise les ports planétaires dans le profil commercial »**
+- Systèmes à permis : **« autorise les systèmes à permis dans le profil commercial »**
+- Bastions : **« autorise les bastions dans le profil commercial »**
+
+## Missions, pirates et objectifs
+
+- Missions actives : **« analyse les missions actives »**, **« liste les missions en cours »**
+- Progression pirate : **« progression de la mission pirate »**, **« combien de kills restants »**
+- Terrain de chasse : **« trouve un terrain de chasse »**, **« cherche une zone de massacre »**
+- Reconnaissance : **« reconnais le terrain de chasse »**
+- Confirmer/ignorer : **« confirme ce terrain de chasse »**, **« ignore ce terrain de chasse »**
+- Fournisseur de missions : **« navigue vers le système fournisseur de missions »**
+- Fournisseur pirate : **« navigue vers le fournisseur de missions pirates »**
+- Mission active : **« navigue vers la mission active »**
+- Effacer les missions : **« efface toutes les missions actives »**
+- Total des primes : **« total des primes »**, **« combien de primes avons-nous accumulées »**
+
+## Navigation et routes spéciales
+
+- Coordonnées : **« navigue vers les coordonnées 12.34 -45.67 »**
+- Zone d’atterrissage : **« navigue vers la zone d’atterrissage »**, **« va à la ZA »**
+- Depuis la mémoire : **« navigue depuis la mémoire »**, **« colle depuis la mémoire »**
+- Base : **« ramène-moi à la base »**, **« trace une route vers la base »**
+- Définir la base : **« définis le système de base »**
+- Prochain arrêt commercial : **« navigue vers le prochain arrêt commercial »**
+- Route neutron : **« calcule la route des étoiles à neutrons »**
+- Prochain saut neutron : **« planifie le prochain saut neutron »**, **« va à la prochaine étoile à neutrons »**
+- Effacer route neutron : **« efface la route des étoiles à neutrons »**, **« supprime l’itinéraire neutron »**
+- Annuler navigation : **« annule la navigation »**, **« stop navigation »**
+- Annuler route commerciale : **« annule la route commerciale »**
+
+## Pilotage direct du vaisseau
+
+- Hyperespace : **« saute en hyperespace »**, **« lance le saut FSD »**
+- Super navigation : **« entre en super navigation »**
+- Sortir de super navigation : **« sors de la super navigation »**, **« drop maintenant »**
+- Décollage : **« lance le vaisseau »**, **« quitte la station »**
+- Arrêt complet : **« stop »**, **« coupe les gaz »**, **« arrêt complet »**
+- Vitesses : **« quart de poussée »**, **« demi poussée »**, **« trois quarts de poussée »**, **« plein gaz »**
+- Ajuster la vitesse : **« augmente la vitesse de 25 »**, **« ralentis de 25 »**
 - Vitesse optimale : **« règle la vitesse optimale »**
-- Augmenter / Diminuer la vitesse de [X] : **« augmente la vitesse de [X] »** / **« réduis la vitesse de [X] »**
-- Réserve carburant porte-vaisseaux : **« réserve tritium du porte-vaisseaux [quantité] »**
-- Sélectionner la destination FSD : **« prochaine destination du FSD »**
-- Verrouillage nav escadre : **« verrouillage navigation escadre »**
-- Naviguer depuis la mémoire : **« navigue depuis la mémoire »**
+- Train d’atterrissage : **« sors le train »**, **« rentre le train »**
+- Demande d’appontage : **« demande l’autorisation d’appontage »**
+- Mode combat : **« active le mode combat »**
+- Mode analyse : **« active le mode analyse »**
+- Récupérateur de cargaison : ouvrez ou fermez la trappe, le récupérateur ou la soute à cargaison.
+- Vision nocturne : **« active la vision nocturne »**
+- Lumières : **« allume les phares »**, **« éteins les phares »**
+- SRV : **« déploie le VRS »**, **« récupère le VRS »**
+- Débarquer : **« je débarque »**
+- Renvoyer/rappeler le vaisseau : **« renvoie le vaisseau »**, **« viens me chercher »**
 
-## 🎮 Commandes du vaisseau
+## Distribution de puissance
 
-- Trains d'atterrissage sortis / rentrés : **« sors les trains d'atterrissages »** / **« rentre les trains d'atterrissage »**
-- Déployer / rentrer les points d'emport / armes : **« déploie les points d'emport »** / **« armes au clair »** / **« rentre les points d'emport »**
-- Armes au clair : **« armes au clair »**
-- Déployer un dissipateur thermique : **« lance dissipateur thermique »** / **« heat sink »**
-- Déployer / récupérer le SRV : **« déploie SRV »** / **« récupère SRV »**
-- Monter à bord / récupérer le SRV : **« remonte à bord »** / **« dock SRV »**
-- Débarquer : **« je débarque »** / **« sors du vaisseau »**
-- Ouvrir / fermer la soute : **« cargo scoop »** / **« ouvre l'écoutille cargo »**
-- Demander l'autorisation d'appontage : **« demande l'autorisation d'appontage »** / **« demande docking »**
-- Lancer le vaisseau / quitter la station : **« lance le vaisseau »** / **« quitte la station »**
-- Pilote automatique / taxi : **« taxi appontage »** / **« pilote automatique »**
-- Passer en super navigation : **« entre en super navigation »**
-- Saut en hyperespace : **« saute en hyperespace »** / **« lance le saut »**
-- Sortir de super navigation : **« sors de super navigation »** / **« drop »**
-- Arrêt complet : **« arrêt complet »** / **« coupe les moteurs »**
-- Vitesse à quart / moitié / trois quarts / pleine : **« quart de poussée »** / **« demi poussée »** / **« trois quarts de poussée »** / **« pleine poussée »**
-- Puissance aux boucliers / moteurs / armes. Équilibrer : **« priorité aux boucliers »** / **« priorité aux moteurs »** / **« priorité aux armes »** / **« équilibre la puissance »**
-- Mode combat / mode analyse : **« passe en mode combat »** / **« passe en mode analyse »**
-- Vision nocturne : **« vision nocturne »**
-- Phares : **« phares »** / **« allume les lumières »**
-- Assistance de conduite (SRV) : **« assistance de conduite »**
-- Renvoyer le vaisseau / en orbite : **« renvoie le vaisseau »** / **« ship en orbite »**
-- Retour à la surface / viens me chercher : **« retour à la surface »** / **« viens me chercher »**
-- Ouvrir le FSS : **« scanner de système »** / **« analyseur du système »**
-- Carte galactique / carte du système : **« ouvre carte galactique »** / **« ouvre carte du système »**
-- Fermer le panneau : **« ferme panneau »** / **« ferme »**
-- Interrompre le TTS : **« stop »** / **« interromps »** / **« silence »**
-- Activer : **« active »** / **« activer »**
+- Systèmes/boucliers : **« puissance dans les systèmes »**, **« priorité aux boucliers »**
+- Moteurs : **« puissance dans les moteurs »**, **« priorité aux moteurs »**
+- Armes : **« puissance dans les armes »**, **« priorité aux armes »**
+- Équilibrer : **« équilibre le distributeur »**, **« réinitialise la puissance »**
 
-## 🎙️ Commandes des chasseurs
+Dans ce contexte, **systèmes** désigne le canal SYS du distributeur, qui alimente notamment les boucliers. Pour la navigation, les cartes et les scans, **système** désigne un système stellaire.
 
-- Déployer un chasseur : **« déploie chasseur »** / **« lance chasseur »**
-- Ordonner au chasseur de défendre le vaisseau : **« chasseur défends le vaisseau »** / **« chasseur défensif »**
-- Ordonner au chasseur d'attaquer ma cible : **« chasseur attaque ma cible »** / **« focus ma cible »**
-- Ordonner au chasseur de cesser le feu : **« chasseur cesse le feu »**
-- Ordonner au chasseur de rentrer : **« chasseur rentre au vaisseau »** / **« rappelle le chasseur »**
-- Chasseur feu à volonté : **« chasseur feu à volonté »** / **« fire at will »**
+## Combat, armes et chasseur
 
-## 📺 Panneaux UI
+- Armes : **« sors les armes »**, **« armes au clair »**, **« range les armes »**
+- Cellule de bouclier : **« utilise une cellule de bouclier »**
+- Chaff : **« lance les paillettes »**
+- Heat sink : **« lance un dissipateur thermique »**
+- Sous-système : **« cible les moteurs »**, **« cible la centrale électrique »**, **« cible le distributeur d’énergie »**
+- Ailier : **« cible l’ailier un »**, **« cible l’ailier deux »**
+- Menace prioritaire : **« cible la menace prioritaire »**
+- Chasseur : **« déploie le chasseur »**
+- Défense : **« chasseur défends le vaisseau »**
+- Attaque : **« chasseur attaque ma cible »**
+- Cessez-le-feu : **« chasseur cesse le feu »**
+- Retour : **« chasseur rentre au vaisseau »**
+- Feu à volonté : **« chasseur feu à volonté »**
+- Groupe de tir : **« sélectionne le groupe de tir bravo »**
 
-Dis **« montre »**, **« ouvre »** ou **« affiche »** suivi du nom du panneau :
+## Panneaux et interface
 
-- Panneau navigation : **« montre navigation »**
-- Panneau transactions : **« montre transactions »**
-- Panneau contacts : **« montre contacts »**
-- Panneau chat / comms : **« montre chat »** / **« ouvre comms »**
-- Boîte de réception : **« montre boîte de réception »** / **« ouvre inbox »**
-- Panneau social : **« montre social »**
-- Panneau historique : **« montre historique »**
-- Panneau escadron : **« montre escadron »**
-- Panneau statut : **« montre statut »**
-- Panneau commandant / rôle / genouillère : **« montre le panneau commandant »** / **« ouvre la genouillère »**
-- Panneau équipage : **« montre le panneau équipage »**
-- Panneau accueil : **« montre le panneau accueil »**
-- Panneau modules : **« montre le panneau modules »**
+Utilisez naturellement **« ouvre »**, **« montre »** ou **« affiche »** suivi du nom du panneau.
+
+- Navigation : **« ouvre le panneau de navigation »**
+- Transactions : **« montre les transactions »**
+- Contacts : **« montre les contacts »**
+- Chat/comms : **« ouvre les communications »**
+- Boîte de réception : **« ouvre les messages »**
+- Social : **« ouvre le social »**
+- Historique : **« montre l’historique »**
+- Escadron : **« ouvre le panneau escadron »**
+- Statut ou état du vaisseau
+- Commandant : **« montre le panneau commandant »**
+- Équipage : **« montre le panneau équipage »**
+- Modules
 - Groupes de tir : **« montre les groupes de tir »**
-- Panneau inventaire : **« montre l'inventaire »**
-- Panneau stockage : **« montre le stockage »**
-- Panneau chasseur : **« montre le panneau chasseur »**
-- Gestion porte-vaisseaux : **« montre gestion carrier »**
-- Carte galactique : **« ouvre carte galactique »**
-- Carte du système : **« ouvre carte du système »**
-- Services (SRV amarré) : **« montre le panneau services »**
+- Inventaire
+- Stockage : **« ouvre le stockage »**
+- Chasseur : **« montre le panneau chasseur »**
+- Gestion carrier : **« ouvre la gestion du porte-vaisseau »**
+- Fermer : **« ferme le panneau »**, **« quitte l’écran actuel »**
 
-Autres commandes de panneau :
-- Fermer le panneau : **« ferme panneau »** / **« ferme »** / **« quitte »**
+## Vaisseau, inventaire et profits
 
-## ⚙️ Commandes d'application & de session
+- Profil commercial : **« quels sont les paramètres commerciaux actuels »**
+- Matériaux : **« inventaire des matériaux »**, **« combien de fer avons-nous »**
+- Matériaux planète : **« quels matériaux trouve-t-on sur cette planète »**
+- Cargaison : **« que contient la soute »**, **« liste la cargaison »**
+- Loadout : **« configuration du vaisseau »**, **« modules du vaisseau »**
+- Profil commandant : **« profil de commandant »**, **« affiche mes statistiques »**
+- Profits exploration : **« combien rapportent les scans d’exploration »**
+- Primes : **« total des primes »**
 
-- **« dors »** / **« ignore-moi »** / **« mode veille »** → met l'appli en veille (ignore les entrées)
-- **« réveille-toi »** → reprend l'écoute normale
-- **« écoute-moi [commande] »** → bypass : transmet une seule commande pendant que l'appli est en veille. Le préfixe est retiré avant traitement. Exemple : *« écoute-moi, saute en hyperespace »*
-- Définir un rappel : **« définis rappel [texte] »** / **« crée rappel [texte] »**
-- Effacer les rappels : **« efface les rappels »**
-- Annonces de route : **« annonces de route »**
-- Annonces de découverte : **« annonces de découverte »**
-- Annonces de minage : **« annonces minage »**
-- Radio / trafic radio : **« radio »** / **« trafic radio »**
-- Désactiver toutes les annonces : **« basculer toutes les annonces »**
-- Annonces de contact radar : **« annonce contact radar »**
-- Ajouter une cible de minage : **« ajoute cible minage [matériau] »**
-- Retirer une cible de minage : **« retire cible minage [matériau] »**
-- Effacer les cibles de minage : **« efface cibles minage »**
-- Supprimer une entrée codex : **« supprime entrée codex »**
+## Mode conversation
 
-## 💬 Chat général (le mode Conversation doit être ACTIVÉ)
+Par défaut, Elite Intel fonctionne en **Mode Strict** : si l’entrée ne correspond pas à une commande ou requête connue, elle est ignorée. C’est volontaire : cela évite au bruit STT et aux discussions en arrière-plan de déclencher des actions.
 
-Par défaut, l'appli fonctionne en **Mode Strict** : si l'entrée ne correspond pas à une commande ou requête connue, elle est silencieusement ignorée. C'est intentionnel — cela empêche le bruit de l'STT et les discussions en arrière-plan de déclencher des actions aléatoires.
+Activez le **Mode Conversation** dans les paramètres pour le chat libre. Dans ce mode, ce qui ne correspond pas à une commande bascule vers une conversation générale.
 
-Active le **Mode Conversation** dans l'onglet Paramètres pour activer le chat libre. Une fois activé, tout ce qui ne correspond pas à une commande bascule vers une conversation générale — lore du jeu, sujets réels, configurations de vaisseau, peu importe.
-
-Les LLMs locaux répondront mais seront rigides. Les LLMs cloud (Claude, OpenAI, xAI, Mistral, Deepseek) sont recommandés pour la conversation.
+Les LLM locaux peuvent répondre, mais sont souvent plus rigides. Les LLM cloud sont recommandés pour une conversation plus naturelle.
 
 ---
 

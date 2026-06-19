@@ -79,7 +79,7 @@ public class HudCommanderBlock extends JPanel {
         // --- credit balance (hidden when zero) ---
         creditsLabel = new JLabel();
         creditsLabel.setFont(monoFont.deriveFont(Font.BOLD, HUD_FONT_READOUT_VALUE));
-        creditsLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
+        creditsLabel.setForeground(HUD_COLOR_ROLE_CREDITS_TEXT);
         creditsLabel.setAlignmentX(CENTER_ALIGNMENT);
         creditsLabel.putClientProperty(HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         creditsLabel.setVisible(false);

@@ -1,12 +1,12 @@
 package elite.intel.ai.brain.actions.handlers;
 
-import elite.intel.ai.brain.actions.Commands;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.command.IntelCommand;
+import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,16 +27,10 @@ public class CommandHandlerFactory {
     }
 
     public Map<String, CommandHandler> registerCommandHandlers() {
-        for (Commands action : Commands.values()) {
-            try {
-                CommandHandler handler = instantiateCommandHandler(action.getHandlerClass(), action.getAction());
-                commandHandlers.put(action.getAction(), handler);
-                log.debug("Registered custom command handler for action: {}", action.getAction());
-            } catch (Exception e) {
-                log.error("Failed to register custom command handler for action: {}", action.getAction(), e);
-                throw new RuntimeException("Custom command handler registration failed for action: " + action.getAction(), e);
-            }
+        for (Map.Entry<String, IntelCommand> entry : CommandRegistry.getInstance().byId().entrySet()) {
+            commandHandlers.put(entry.getKey(), entry.getValue());
         }
+        log.info("Registered {} built-in command handler(s) from CommandRegistry", commandHandlers.size());
 
         CustomCommandRegistry.getInstance().contributeToHandlerMap(commandHandlers);
 
@@ -53,19 +47,5 @@ public class CommandHandlerFactory {
     public void refreshCustomCommandHandlers() {
         commandHandlers.entrySet().removeIf(entry -> entry.getValue() instanceof elite.intel.ai.brain.actions.customcommand.CustomCommandHandler);
         CustomCommandRegistry.getInstance().contributeToHandlerMap(commandHandlers);
-    }
-
-    private CommandHandler instantiateCommandHandler(Class<? extends CommandHandler> handlerClass, String action) {
-        try {
-            Constructor<? extends CommandHandler> constructor = handlerClass.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            return constructor.newInstance();
-        } catch (NoSuchMethodException e) {
-            log.error("No suitable constructor found for handler: {}, action/binding: {}", handlerClass.getName(), action);
-            throw new RuntimeException("Failed to instantiate command handler: " + handlerClass.getName(), e);
-        } catch (Exception e) {
-            log.error("Failed to instantiate command handler: {}, action/binding: {}", handlerClass.getName(), action, e);
-            throw new RuntimeException("Failed to instantiate command handler: " + handlerClass.getName(), e);
-        }
     }
 }

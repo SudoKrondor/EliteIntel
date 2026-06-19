@@ -2,7 +2,7 @@ package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
-import elite.intel.ai.brain.actions.Commands;
+import elite.intel.ai.brain.actions.command.CommandIds;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
@@ -210,6 +210,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     private void captureLoop() {
+        SpectralNoiseReducer.getInstance().reset();
         if (sampleRateHertz != SAMPLE_RATE) {
             antiAliasingFilter = new AntiAliasingFilter(sampleRateHertz, SAMPLE_RATE);
             resampler = new Resampler(sampleRateHertz, SAMPLE_RATE, CHANNELS);
@@ -312,6 +313,10 @@ public class ParakeetSTTImpl implements EarsInterface {
                         log.warn("VAD: max utterance length ({}ms) reached, forcing gate close", MAX_UTTERANCE_MS);
                     }
                 }
+                if (!isActive && systemSession.isNoiseReductionEnabled()) {
+                    SpectralNoiseReducer.getInstance().accumulateNoise(audio, audioLen);
+                }
+
                 if (wasActive && !isActive && audioCollector.size() > 0) {
                     final byte[] utterance = audioCollector.toByteArray();
                     final boolean awake = capturedWhileAwake;
@@ -352,6 +357,9 @@ public class ParakeetSTTImpl implements EarsInterface {
     private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWhileAwake) {
         pendingTranscriptions.decrementAndGet();
         try {
+            if (systemSession.isNoiseReductionEnabled()) {
+                pcmBytes = SpectralNoiseReducer.getInstance().denoise(pcmBytes, systemSession.getNoiseReductionStrength());
+            }
             float[] samples = pcm16ToFloat(Amplifier.amplify(padAudio(trimLeadingLowEnergy(pcmBytes))));
 
             long timeStart = System.currentTimeMillis();
@@ -500,7 +508,7 @@ public class ParakeetSTTImpl implements EarsInterface {
      */
     private boolean isInterruptPhrase(String transcript) {
         String lower = transcript.trim().toLowerCase(Locale.ROOT);
-        for (String phrase : AiActionLocalizations.phrasesForAction(Commands.INTERRUPT_TTS.getAction())) {
+        for (String phrase : AiActionLocalizations.phrasesForAction(CommandIds.INTERRUPT)) {
             if (lower.equals(phrase.trim().toLowerCase(Locale.ROOT))) return true;
         }
         return false;
@@ -577,6 +585,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             case ES -> "es";
             case RU -> "ru";
             case UK -> "uk";
+            case IT -> "it";
+            case PT -> "pt";
         };
     }
 

@@ -4,9 +4,7 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.text.MessageFormat;
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public final class MultiLingualTextProvider {
 
@@ -14,6 +12,8 @@ public final class MultiLingualTextProvider {
     // Disable JVM locale fallback so missing translated keys fall through to English explicitly below.
     private static final ResourceBundle.Control NO_FALLBACK_CONTROL =
             ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_DEFAULT);
+
+    private static final Random RANDOM = new Random();
 
     private MultiLingualTextProvider() {
     }
@@ -31,15 +31,65 @@ public final class MultiLingualTextProvider {
     private static String resolveText(Locale locale, String key) {
         ResourceBundle selectedBundle = getBundle(locale);
         if (selectedBundle.containsKey(key)) {
-            return selectedBundle.getString(key);
+            return pickVariant(selectedBundle.getString(key));
         }
 
         ResourceBundle fallbackBundle = getBundle(Locale.ENGLISH);
         if (fallbackBundle.containsKey(key)) {
-            return fallbackBundle.getString(key);
+            return pickVariant(fallbackBundle.getString(key));
         }
 
         return key;
+    }
+
+    private static String pickVariant(String raw) {
+        List<String> parts = splitTopLevelVariants(raw);
+        if (parts.size() == 1) return raw;
+        return parts.get(RANDOM.nextInt(parts.size())).trim();
+    }
+
+    private static List<String> splitTopLevelVariants(String raw) {
+        if (!raw.contains("|")) return List.of(raw);
+
+        List<String> parts = new ArrayList<>();
+        int start = 0;
+        int braceDepth = 0;
+        boolean inQuote = false;
+
+        for (int i = 0; i < raw.length(); i++) {
+            char ch = raw.charAt(i);
+            if (ch == '\'') {
+                // Apostrophes inside words (for example, French "J'écoute") are
+                // punctuation, not MessageFormat quote delimiters.
+                if (i > 0
+                        && i + 1 < raw.length()
+                        && Character.isLetter(raw.charAt(i - 1))
+                        && Character.isLetter(raw.charAt(i + 1))) {
+                    continue;
+                }
+                if (i + 1 < raw.length() && raw.charAt(i + 1) == '\'') {
+                    i++;
+                } else {
+                    inQuote = !inQuote;
+                }
+                continue;
+            }
+
+            if (inQuote) continue;
+
+            if (ch == '{') {
+                braceDepth++;
+            } else if (ch == '}' && braceDepth > 0) {
+                braceDepth--;
+            } else if (ch == '|' && braceDepth == 0) {
+                parts.add(raw.substring(start, i).trim());
+                start = i + 1;
+            }
+        }
+
+        if (start == 0) return List.of(raw);
+        parts.add(raw.substring(start).trim());
+        return parts;
     }
 
     private static ResourceBundle getBundle(Locale locale) {
@@ -72,6 +122,8 @@ public final class MultiLingualTextProvider {
             case FR -> Locale.FRENCH;
             case EN -> Locale.ENGLISH;
             case ES -> Locale.forLanguageTag("es");
+            case PT -> Locale.forLanguageTag("pt");
+            case IT -> Locale.ITALIAN;
         };
     }
 }

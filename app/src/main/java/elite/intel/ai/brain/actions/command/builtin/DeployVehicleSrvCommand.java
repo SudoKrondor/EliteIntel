@@ -1,0 +1,56 @@
+package elite.intel.ai.brain.actions.command.builtin;
+import elite.intel.ai.brain.actions.command.CommandIds;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.command.IntelCommand;
+import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.gameapi.GameControllerBus;
+import elite.intel.session.Status;
+import elite.intel.session.StatusFlags;
+import elite.intel.session.ui.UINavigator;
+
+/**
+ * Stage-4b self-describing command for "deploy srv".
+ * Owns its own execution (ownsExecution() == true): the dispatch map routes this
+ * command's execute() in place of the legacy DeploySrvHandler.
+ */
+@RegisterCommand
+public final class DeployVehicleSrvCommand implements IntelCommand {
+
+    private final UINavigator navigator = new UINavigator();
+    private final Status status = Status.getInstance();
+
+    @Override
+    public String id() {
+        return CommandIds.DEPLOY_VEHICLE_SRV;
+    }
+
+    @Override
+    public boolean ownsExecution() {
+        return true;
+    }
+
+    @Override
+    public void execute(JsonObject params, String responseText) {
+        if (status.isInMainShip()) {
+            GameControllerBus.publish(GameInputSequenceEvent.of(
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
+                    // Ensure the cursor is at the top before navigating to the SRV option.
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                    // Deploy SRV.
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
+            ));
+            navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+        }
+    }
+}
