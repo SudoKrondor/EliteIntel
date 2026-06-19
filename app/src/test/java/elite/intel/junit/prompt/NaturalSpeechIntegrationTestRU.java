@@ -1,5 +1,7 @@
 package elite.intel.junit.prompt;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.SensorDataEvent;
@@ -15,8 +17,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import elite.intel.ai.brain.actions.command.builtin.*;
-import elite.intel.ai.brain.actions.handlers.query.*;
 
 
 @Tag("local-integration")
@@ -342,7 +342,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> targetDestination() {
-        return Stream.of("цель назначения", "выбрать пункт назначения");
+        return Stream.of("выбрать цель назначения", "выбрать пункт назначения");
     }
 
 
@@ -660,7 +660,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> navigateToSquadronCarrier() {
-        return Stream.of("лети к авианосцу эскадрильи", "маршрут к авианосцу эскадрильи", "курс на авианосец эскадрильи");
+        return Stream.of("лети к авианосцу эскадрильи", "проложи маршрут к авианосцу эскадрильи", "проложи курс на авианосец эскадрильи");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

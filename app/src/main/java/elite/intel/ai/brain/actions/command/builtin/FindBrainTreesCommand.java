@@ -13,6 +13,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
+import elite.intel.util.NavigationUtils;
 import elite.intel.util.StringUtls;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -59,7 +60,8 @@ public final class FindBrainTreesCommand implements IntelCommand {
         if (result == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), result.getDistance(), result.getBodyName())));
+            double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName())));
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(result.getSystemName());
             ReminderManager.getInstance().setReminder(
@@ -67,5 +69,13 @@ public final class FindBrainTreesCommand implements IntelCommand {
                     result.getSystemName()
             );
         }
+    }
+
+    private double calculateDistance(LocationDao.Coordinates coordinates, double x, double y, double z) {
+        return NavigationUtils.calculateGalacticDistance(
+                coordinates.x(), coordinates.y(), coordinates.z(),
+                x, y, z
+
+        );
     }
 }
