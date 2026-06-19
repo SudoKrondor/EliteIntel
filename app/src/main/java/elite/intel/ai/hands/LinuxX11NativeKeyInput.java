@@ -82,6 +82,11 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
         KEYSYM_MAP.put(NATIVE_BASE + 20, 0x00F9L);  // KEY_UGRAVE   → XK_ugrave (ù)
         KEYSYM_MAP.put(NATIVE_BASE + 21, 0x00E7L);  // KEY_CCEDILLA → XK_ccedilla (ç)
         KEYSYM_MAP.put(NATIVE_BASE + 22, 0x00F1L);  // KEY_NTILDE   → XK_ntilde (ñ)
+        KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_DIVIDE, 0xFFAFL);   // XK_KP_Divide
+        KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_MULTIPLY, 0xFFAAL); // XK_KP_Multiply
+        KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_DECIMAL, 0xFFAEL);  // XK_KP_Decimal
+        KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_ADD, 0xFFABL);      // XK_KP_Add
+        KEYSYM_MAP.put(KeyProcessor.NATIVE_NUMPAD_SUBTRACT, 0xFFADL); // XK_KP_Subtract
     }
 
     private final X11 x11;
@@ -143,7 +148,7 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
 
     @Override
     public boolean handles(int keyCode) {
-        return KEYSYM_MAP.containsKey(keyCode);
+        return KEYSYM_MAP.containsKey(keyCode) || KeyProcessor.isNativeCharacterCode(keyCode);
     }
 
     @Override
@@ -157,6 +162,27 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
     }
 
     private void fakeKeyEvent(int syntheticCode, boolean press) {
+        if (KeyProcessor.isNativeCharacterCode(syntheticCode)) {
+            char character = KeyProcessor.nativeCharacter(syntheticCode);
+            long keysym = characterKeysym(character);
+            byte keycode = x11.XKeysymToKeycode(display, new X11.KeySym(keysym));
+            if (keycode == 0) {
+                long deadKeysym = deadKeysym(character);
+                if (deadKeysym != 0) {
+                    keysym = deadKeysym;
+                    keycode = x11.XKeysymToKeycode(display, new X11.KeySym(keysym));
+                }
+            }
+            if (keycode == 0) {
+                log.warn("No X11 keycode for Frontier character '{}' (keysym 0x{})",
+                        character, Long.toHexString(keysym));
+                return;
+            }
+            xtst.XTestFakeKeyEvent(display, keycode & 0xFF, press ? 1 : 0, new NativeLong(0));
+            x11.XFlush(display);
+            return;
+        }
+
         Byte keycode = keycodeCache.get(syntheticCode);
         if (keycode == null) {
             log.warn("No X11 keycode cached for synthetic code 0x{}", Integer.toHexString(syntheticCode));
@@ -168,6 +194,21 @@ class LinuxX11NativeKeyInput implements NativeKeyInput {
         }
         xtst.XTestFakeKeyEvent(display, keycode & 0xFF, press ? 1 : 0, new NativeLong(0));
         x11.XFlush(display);
+    }
+
+    private static long characterKeysym(char character) {
+        return character < 0x100 ? character : 0x01000000L | character;
+    }
+
+    private static long deadKeysym(char character) {
+        return switch (character) {
+            case '`' -> 0xFE50L; // XK_dead_grave
+            case '´' -> 0xFE51L; // XK_dead_acute
+            case '^' -> 0xFE52L; // XK_dead_circumflex
+            case '~' -> 0xFE53L; // XK_dead_tilde
+            case '¨' -> 0xFE57L; // XK_dead_diaeresis
+            default -> 0;
+        };
     }
 
 

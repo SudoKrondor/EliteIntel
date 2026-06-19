@@ -63,6 +63,7 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             KeyEvent.VK_PAGE_DOWN,      // E0 51
             // Numpad extended keys
             KeyEvent.VK_DIVIDE,         // E0 35  (numpad /)
+            KeyProcessor.NATIVE_NUMPAD_DIVIDE,
             NATIVE_BASE + 11,           // KEY_NUMENTER → E0 1C
             // PrintScreen
             KeyEvent.VK_PRINTSCREEN     // E0 37
@@ -92,6 +93,11 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         SCAN_MAP.put(NATIVE_BASE + 20, (short) 0x27); // KEY_UGRAVE   → ù (FR, PS/2 ';' position)
         SCAN_MAP.put(NATIVE_BASE + 21, (short) 0x0A); // KEY_CCEDILLA → ç (FR, PS/2 position 9)
         SCAN_MAP.put(NATIVE_BASE + 22, (short) 0x27); // KEY_NTILDE   → ñ (ES, PS/2 ';' position)
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_DIVIDE, (short) 0x35);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_MULTIPLY, (short) 0x37);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_DECIMAL, (short) 0x53);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_ADD, (short) 0x4E);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_SUBTRACT, (short) 0x4A);
 
         // --- Control / editing keys ---
         SCAN_MAP.put(KeyEvent.VK_ESCAPE, (short) 0x01);
@@ -369,7 +375,7 @@ class WindowsNativeKeyInput implements NativeKeyInput {
 
     @Override
     public boolean handles(int keyCode) {
-        return SCAN_MAP.containsKey(keyCode);
+        return SCAN_MAP.containsKey(keyCode) || KeyProcessor.isNativeCharacterCode(keyCode);
     }
 
     @Override
@@ -403,7 +409,25 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         short scan;
         String resolvedVia;
 
-        if (keyCode >= NATIVE_BASE) {
+        if (KeyProcessor.isNativeCharacterCode(keyCode)) {
+            char character = KeyProcessor.nativeCharacter(keyCode);
+            WinDef.HKL hkl = getForegroundWindowLayout();
+            short encodedVk = User32.INSTANCE.VkKeyScanExW(character, hkl);
+            if (encodedVk == -1) {
+                log.warn("[key] VkKeyScanExW could not resolve Frontier character '{}' (U+{})",
+                        character, Integer.toHexString(character));
+                return;
+            }
+            int virtualKey = encodedVk & 0xFF;
+            int vsc = User32.INSTANCE.MapVirtualKeyEx(virtualKey, MAPVK_VK_TO_VSC, hkl);
+            if (vsc == 0) {
+                log.warn("[key] MapVirtualKeyEx could not resolve VK=0x{} for Frontier character '{}'",
+                        Integer.toHexString(virtualKey), character);
+                return;
+            }
+            scan = (short) vsc;
+            resolvedVia = "VkKeyScanExW('" + character + "',hkl=" + hkl + ")";
+        } else if (keyCode >= NATIVE_BASE) {
             Short s = SCAN_MAP.get(keyCode);
             if (s == null) {
                 log.warn("[key] No Windows scan code mapping for NATIVE code 0x{}", Integer.toHexString(keyCode));
