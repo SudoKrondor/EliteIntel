@@ -101,6 +101,15 @@ public class HudSegmentedControl extends JComponent {
         return new Dimension(total, HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
     }
 
+    /**
+     * Pins the minimum size to the preferred size: segments and their labels are painted within the
+     * control's bounds, so a layout that shrinks it below this would clip the labels vertically.
+     */
+    @Override
+    public Dimension getMinimumSize() {
+        return getPreferredSize();
+    }
+
     // -------------------------------------------------------------------------
     // Paint
     // -------------------------------------------------------------------------
