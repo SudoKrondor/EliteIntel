@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -23,12 +22,14 @@ import elite.intel.util.json.GetNumberFromParam;
  * Owns its own execution: body migrated 1:1 from the legacy FindNearestFleetCarrierHandler,
  * routed through CommandRegistry via the self-describing model.
  */
-@RegisterCommand(before = { "navigate_to_fleet_carrier" })
+@RegisterCommand(before = { NavigateToFleetCarrierCommand.ID })
 public final class FindNearestFleetCarrierCommand implements IntelCommand {
+    public static final String ID = "find_nearest_fleet_carrier";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_NEAREST_FLEET_CARRIER;
+        return ID;
     }
 
     @Override

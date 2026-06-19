@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -16,12 +15,14 @@ import elite.intel.session.ui.UINavigator;
  */
 @RegisterCommand
 public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelCommand {
+    public static final String ID = "recover_srv_vehicle_get_on_board_ship";
+
 
     private final UINavigator navigator = new UINavigator();
 
     @Override
     public String id() {
-        return CommandIds.RECOVER_SRV_VEHICLE_GET_ON_BOARD_SHIP;
+        return ID;
     }
 
     @Override

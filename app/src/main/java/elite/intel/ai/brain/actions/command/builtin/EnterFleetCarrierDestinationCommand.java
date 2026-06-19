@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -21,10 +20,12 @@ import java.util.Map;
  */
 @RegisterCommand
 public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
+    public static final String ID = "enter_fleet_carrier_destination";
+
 
     @Override
     public String id() {
-        return CommandIds.ENTER_FLEET_CARRIER_DESTINATION;
+        return ID;
     }
 
     @Override

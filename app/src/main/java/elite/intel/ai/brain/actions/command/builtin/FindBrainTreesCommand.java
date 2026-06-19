@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -25,13 +24,15 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class FindBrainTreesCommand implements IntelCommand {
+    public static final String ID = "find_brain_trees";
+
 
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.FIND_BRAIN_TREES;
+        return ID;
     }
 
     @Override

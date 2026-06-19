@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -22,12 +21,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class DismissShipToOrbitCommand implements IntelCommand {
+    public static final String ID = "dismiss_ship_to_orbit";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DISMISS_SHIP_TO_ORBIT;
+        return ID;
     }
 
     @Override

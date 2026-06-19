@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -27,6 +26,8 @@ import java.util.stream.Collectors;
  */
 @RegisterCommand
 public final class NavigateToTradeStopCommand implements IntelCommand {
+    public static final String ID = "navigate_to_trade_stop";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
@@ -35,7 +36,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_TRADE_STOP;
+        return ID;
     }
 
     @Override

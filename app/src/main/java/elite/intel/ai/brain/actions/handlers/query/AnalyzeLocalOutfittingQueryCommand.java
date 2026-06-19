@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -15,8 +14,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeLocalOutfittingQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_local_outfitting";
 
-    @Override public String id() { return QueryIds.LOCAL_OUTFITTING; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

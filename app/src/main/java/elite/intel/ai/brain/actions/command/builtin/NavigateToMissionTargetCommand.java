@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,12 +18,14 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class NavigateToMissionTargetCommand implements IntelCommand {
+    public static final String ID = "navigate_to_mission_target";
+
 
     private final MissionManager missionManager = MissionManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_MISSION_TARGET;
+        return ID;
     }
 
     @Override

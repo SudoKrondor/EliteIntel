@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_ANALYSI
  */
 @RegisterCommand
 public final class SwitchToAnalysisModeCommand implements IntelCommand {
+    public static final String ID = "switch_to_analysis_mode";
+
 
     @Override
     public String id() {
-        return CommandIds.SWITCH_TO_ANALYSIS_MODE;
+        return ID;
     }
 
     @Override

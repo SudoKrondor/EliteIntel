@@ -2,7 +2,6 @@ package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
-import elite.intel.ai.brain.actions.command.CommandIds;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
@@ -34,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static elite.intel.ai.brain.Reducer.trashSttWords;
 import static elite.intel.gameapi.AudioMonitorBus.publish;
 import static java.util.Arrays.copyOf;
+import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
 
 public class ParakeetSTTImpl implements EarsInterface {
 
@@ -508,7 +508,7 @@ public class ParakeetSTTImpl implements EarsInterface {
      */
     private boolean isInterruptPhrase(String transcript) {
         String lower = transcript.trim().toLowerCase(Locale.ROOT);
-        for (String phrase : AiActionLocalizations.phrasesForAction(CommandIds.INTERRUPT)) {
+        for (String phrase : AiActionLocalizations.phrasesForAction(InterruptCommand.ID)) {
             if (lower.equals(phrase.trim().toLowerCase(Locale.ROOT))) return true;
         }
         return false;

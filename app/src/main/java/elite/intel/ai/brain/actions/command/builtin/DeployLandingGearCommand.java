@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,10 +18,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
  */
 @RegisterCommand
 public final class DeployLandingGearCommand implements IntelCommand {
+    public static final String ID = "deploy_landing_gear";
+
 
     @Override
     public String id() {
-        return CommandIds.DEPLOY_LANDING_GEAR;
+        return ID;
     }
 
     @Override

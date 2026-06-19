@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,6 +18,8 @@ import java.util.Locale;
  */
 @RegisterCommand
 public final class TargetSubsystemCommand implements IntelCommand {
+    public static final String ID = "target_subsystem";
+
 
     private static final Logger log = LogManager.getLogger(TargetSubsystemCommand.class);
 
@@ -36,7 +37,7 @@ public final class TargetSubsystemCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.TARGET_SUBSYSTEM;
+        return ID;
     }
 
     @Override

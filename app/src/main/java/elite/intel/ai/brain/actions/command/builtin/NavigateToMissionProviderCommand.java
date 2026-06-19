@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -30,6 +29,8 @@ import java.util.Map;
  */
 @RegisterCommand
 public final class NavigateToMissionProviderCommand implements IntelCommand {
+    public static final String ID = "navigate_to_mission_provider";
+
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -37,7 +38,7 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_MISSION_PROVIDER;
+        return ID;
     }
 
     @Override

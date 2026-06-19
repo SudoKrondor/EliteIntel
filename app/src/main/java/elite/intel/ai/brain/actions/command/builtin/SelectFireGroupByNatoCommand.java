@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -18,6 +17,8 @@ import static elite.intel.gameapi.FireGroups.fireGroupByNato;
  */
 @RegisterCommand
 public final class SelectFireGroupByNatoCommand implements IntelCommand {
+    public static final String ID = "select_fire_group_by_nato";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -33,7 +34,7 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.SELECT_FIRE_GROUP_BY_NATO;
+        return ID;
     }
 
     @Override

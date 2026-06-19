@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -20,12 +19,14 @@ import elite.intel.util.json.GetNumberFromParam;
  */
 @RegisterCommand
 public final class FindRawMaterialTraderCommand implements IntelCommand {
+    public static final String ID = "find_raw_material_trader";
+
 
     private static final int DEFAULT_RANGE = 250;
 
     @Override
     public String id() {
-        return CommandIds.FIND_RAW_MATERIAL_TRADER;
+        return ID;
     }
 
     @Override

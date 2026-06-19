@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,13 +16,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ClearRemindersCommand implements IntelCommand {
+    public static final String ID = "clear_reminders";
+
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CLEAR_REMINDERS;
+        return ID;
     }
 
     @Override

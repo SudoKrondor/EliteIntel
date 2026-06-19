@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.commons;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
@@ -23,6 +22,7 @@ import java.util.Map;
 
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 import static elite.intel.util.json.JsonUtils.nullSaveJsonObject;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 
 
 public class ResponseRouter implements AIRouterInterface {
@@ -176,7 +176,7 @@ public class ResponseRouter implements AIRouterInterface {
     private void handleCommand(String action, JsonObject params, String responseText, boolean speakAffirmation) {
         log.info("Command dispatch: action=[{}] params=[{}]", action, params);
         EventBusManager.publish(new AppLogEvent("Processing action: " + action + " with params: " + params.toString()));
-        if (CommandIds.IGNORE_NONSENSICAL_INPUT.equalsIgnoreCase(action)) {
+        if (IgnoreNonsensicalInputCommand.ID.equalsIgnoreCase(action)) {
             /// do nothing and return.
             return;
         }

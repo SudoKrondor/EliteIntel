@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -15,12 +14,14 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class CancelTradeRouteCommand implements IntelCommand {
+    public static final String ID = "cancel_trade_route";
+
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CANCEL_TRADE_ROUTE;
+        return ID;
     }
 
     @Override

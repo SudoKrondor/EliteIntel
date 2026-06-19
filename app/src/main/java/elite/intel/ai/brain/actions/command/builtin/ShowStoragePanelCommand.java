@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -16,13 +15,15 @@ import elite.intel.session.ui.UINavigator;
  */
 @RegisterCommand
 public final class ShowStoragePanelCommand implements IntelCommand {
+    public static final String ID = "show_storage_panel";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SHOW_STORAGE_PANEL;
+        return ID;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -18,8 +17,10 @@ import java.time.format.DateTimeFormatter;
 
 @RegisterQuery
 public class TimeQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_time";
 
-    @Override public String id() { return QueryIds.TIME_IN_ZONE; }
+
+    @Override public String id() { return ID; }
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

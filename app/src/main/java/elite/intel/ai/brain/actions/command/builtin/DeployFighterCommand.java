@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -18,12 +17,14 @@ import java.util.List;
  */
 @RegisterCommand
 public final class DeployFighterCommand implements IntelCommand {
+    public static final String ID = "deploy_fighter";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DEPLOY_FIGHTER;
+        return ID;
     }
 
     @Override

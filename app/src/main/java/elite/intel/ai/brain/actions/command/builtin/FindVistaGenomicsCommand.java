@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -26,10 +25,12 @@ import java.util.Optional;
  */
 @RegisterCommand
 public final class FindVistaGenomicsCommand implements IntelCommand {
+    public static final String ID = "find_vista_genomics";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_VISTA_GENOMICS;
+        return ID;
     }
 
     @Override

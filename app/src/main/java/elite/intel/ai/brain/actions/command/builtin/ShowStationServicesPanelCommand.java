@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import elite.intel.gameapi.GameControllerBus;
  */
 @RegisterCommand
 public final class ShowStationServicesPanelCommand implements IntelCommand {
+    public static final String ID = "show_station_services_panel";
+
 
     @Override
     public String id() {
-        return CommandIds.SHOW_STATION_SERVICES_PANEL;
+        return ID;
     }
 
     @Override

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,13 +18,15 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class ShowContactsPanelCommand implements IntelCommand {
+    public static final String ID = "show_contacts_panel";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SHOW_CONTACTS_PANEL;
+        return ID;
     }
 
     @Override

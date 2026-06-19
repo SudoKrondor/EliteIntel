@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -19,8 +18,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeCurrentLocationQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_current_location";
 
-    @Override public String id() { return QueryIds.CURRENT_LOCATION; }
+
+    @Override public String id() { return ID; }
 
 
     public static final double DAY = 86400.0;

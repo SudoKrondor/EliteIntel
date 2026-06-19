@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -18,6 +17,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class TradeProfileTogglePlanetaryPortsCommand implements IntelCommand {
+    public static final String ID = "trade_profile_toggle_planetary_ports";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -36,7 +37,7 @@ public final class TradeProfileTogglePlanetaryPortsCommand implements IntelComma
 
     @Override
     public String id() {
-        return CommandIds.TRADE_PROFILE_TOGGLE_PLANETARY_PORTS;
+        return ID;
     }
 
     @Override

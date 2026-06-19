@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -22,6 +21,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class NavigateToCoordinatesCommand implements IntelCommand {
+    public static final String ID = "navigate_to_coordinates";
+
 
     private static final Logger log = LogManager.getLogger(NavigateToCoordinatesCommand.class);
 
@@ -51,7 +52,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_COORDINATES;
+        return ID;
     }
 
     @Override

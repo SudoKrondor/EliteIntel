@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL
  */
 @RegisterCommand
 public final class DisplayRadarPanelCommand implements IntelCommand {
+    public static final String ID = "display_radar_panel";
+
 
     @Override
     public String id() {
-        return CommandIds.DISPLAY_RADAR_PANEL;
+        return ID;
     }
 
     @Override

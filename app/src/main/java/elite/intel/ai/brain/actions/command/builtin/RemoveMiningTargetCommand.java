@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -23,6 +22,8 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class RemoveMiningTargetCommand implements IntelCommand {
+    public static final String ID = "remove_mining_target";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -40,7 +41,7 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.REMOVE_MINING_TARGET;
+        return ID;
     }
 
     @Override

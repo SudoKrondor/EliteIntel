@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -17,8 +16,10 @@ import java.util.List;
 
 @RegisterQuery
 public class AnalyzeDistanceToStellarObjectQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_distance_to_body";
 
-    @Override public String id() { return QueryIds.DISTANCE_TO_BODY; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

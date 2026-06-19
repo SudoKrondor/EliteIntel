@@ -1,11 +1,9 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.command.CommandIds;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
@@ -24,6 +22,9 @@ import java.util.Map;
 import java.util.PriorityQueue;
 
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Builds the LLM action map (phrase-group -> action id) from the self-describing
@@ -89,11 +90,11 @@ public class AiActionMapGenerator {
 
         // e) non-action additions, appended after the ordered actions (as in actionMap)
         if (conversationalMode) {
-            map.put("general conversation", QueryIds.GENERAL_CONVERSATION);
+            map.put("general conversation", GeneralConversationQueryCommand.ID);
         } else {
-            map.put("ignore_nonsensical_input", CommandIds.IGNORE_NONSENSICAL_INPUT);
+            map.put("ignore_nonsensical_input", IgnoreNonsensicalInputCommand.ID);
         }
-        map.put(CONNECTION_CHECK_COMMAND, QueryIds.CONNECTION_CHECK);
+        map.put(CONNECTION_CHECK_COMMAND, ConnectionCheckQueryCommand.ID);
         CustomCommandRegistry.getInstance().contributeToActionMap(map);
 
         return map;

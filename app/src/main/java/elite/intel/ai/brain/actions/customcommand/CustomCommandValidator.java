@@ -1,13 +1,14 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import elite.intel.ai.brain.AiActionsMap;
-import elite.intel.ai.brain.actions.command.CommandIds;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Utility class for validating custom command definitions. Provides methods to validate
@@ -279,9 +280,9 @@ public final class CustomCommandValidator {
     private static Set<String> builtInPhrases() {
         var full = AiActionsMap.getInstance().actionMap(true);
         Set<String> floating = Set.of(
-                QueryIds.GENERAL_CONVERSATION,
-                CommandIds.IGNORE_NONSENSICAL_INPUT,
-                QueryIds.CONNECTION_CHECK);
+                GeneralConversationQueryCommand.ID,
+                IgnoreNonsensicalInputCommand.ID,
+                ConnectionCheckQueryCommand.ID);
         Set<String> customKeys = new HashSet<>();
         for (CustomCommandDefinition def : CustomCommandRegistry.getInstance().getCustomCommands()) {
             customKeys.add(def.getActionKey());

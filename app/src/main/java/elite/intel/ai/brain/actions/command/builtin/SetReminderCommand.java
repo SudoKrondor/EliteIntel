@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -19,6 +18,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class SetReminderCommand implements IntelCommand {
+    public static final String ID = "set_reminder";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -34,7 +35,7 @@ public final class SetReminderCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.SET_REMINDER;
+        return ID;
     }
 
     @Override

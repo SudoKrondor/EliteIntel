@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -28,10 +27,12 @@ import java.util.Optional;
  */
 @RegisterCommand
 public final class FindTritiumMiningSiteCommand implements IntelCommand {
+    public static final String ID = "find_tritium_mining_site";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_TRITIUM_MINING_SITE;
+        return ID;
     }
 
     @Override

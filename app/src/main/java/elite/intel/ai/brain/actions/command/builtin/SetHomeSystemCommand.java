@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -18,13 +17,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class SetHomeSystemCommand implements IntelCommand {
+    public static final String ID = "set_home_system";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SET_HOME_SYSTEM;
+        return ID;
     }
 
     @Override

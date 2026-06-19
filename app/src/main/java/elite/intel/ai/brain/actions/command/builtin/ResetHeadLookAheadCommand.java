@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,12 +18,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HEAD_LOOK_RESET;
  */
 @RegisterCommand
 public final class ResetHeadLookAheadCommand implements IntelCommand {
+    public static final String ID = "reset_head_look_ahead";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.RESET_HEAD_LOOK_AHEAD;
+        return ID;
     }
 
     @Override

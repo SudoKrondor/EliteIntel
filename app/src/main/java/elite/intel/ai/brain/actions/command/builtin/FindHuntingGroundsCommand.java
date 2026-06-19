@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -23,10 +22,12 @@ import static elite.intel.util.StringUtls.getIntSafely;
  */
 @RegisterCommand
 public final class FindHuntingGroundsCommand implements IntelCommand {
+    public static final String ID = "find_hunting_grounds";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_HUNTING_GROUNDS;
+        return ID;
     }
 
     @Override

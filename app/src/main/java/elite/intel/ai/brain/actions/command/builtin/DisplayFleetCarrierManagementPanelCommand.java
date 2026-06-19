@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,12 +18,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class DisplayFleetCarrierManagementPanelCommand implements IntelCommand {
+    public static final String ID = "display_fleet_carrier_management_panel";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DISPLAY_FLEET_CARRIER_MANAGEMENT_PANEL;
+        return ID;
     }
 
     /// not a sure fire. assumes default UI selection. will fail often.

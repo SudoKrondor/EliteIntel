@@ -1,10 +1,8 @@
 package elite.intel.ai.brain;
 
-import elite.intel.ai.brain.actions.command.CommandIds;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -24,6 +22,9 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Composition + ordering tests for the parallel {@link AiActionMapGenerator}.
@@ -248,9 +249,9 @@ class AiActionMapGeneratorTest {
 
         // Floating additions vary by session mode / are machine-only - excluded from the built-in snapshot.
         Set<String> floating = new HashSet<>(Arrays.asList(
-                QueryIds.GENERAL_CONVERSATION,
-                CommandIds.IGNORE_NONSENSICAL_INPUT,
-                QueryIds.CONNECTION_CHECK));
+                GeneralConversationQueryCommand.ID,
+                IgnoreNonsensicalInputCommand.ID,
+                ConnectionCheckQueryCommand.ID));
         // Custom-command ids come from the local custom_commands.json - excluded for portability.
         Set<String> custom =
                 CustomCommandRegistry.getInstance().getCustomCommands().stream()

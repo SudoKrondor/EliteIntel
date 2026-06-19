@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import elite.intel.gameapi.GameControllerBus;
  */
 @RegisterCommand
 public final class LaunchShipDetachFromStationCommand implements IntelCommand {
+    public static final String ID = "launch_ship_detach_from_station";
+
 
     @Override
     public String id() {
-        return CommandIds.LAUNCH_SHIP_DETACH_FROM_STATION;
+        return ID;
     }
 
     @Override

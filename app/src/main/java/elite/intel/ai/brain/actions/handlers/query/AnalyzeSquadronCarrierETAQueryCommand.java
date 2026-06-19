@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -16,8 +15,10 @@ import java.time.temporal.ChronoUnit;
 
 @RegisterQuery
 public class AnalyzeSquadronCarrierETAQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_squadron_carrier_eta";
 
-    @Override public String id() { return QueryIds.SQUADRON_CARRIER_ETA; }
+
+    @Override public String id() { return ID; }
 
 
     @Override

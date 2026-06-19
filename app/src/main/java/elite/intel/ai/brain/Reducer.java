@@ -1,12 +1,12 @@
 package elite.intel.ai.brain;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import elite.intel.ai.brain.actions.query.QueryIds;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 public class Reducer {
 
@@ -122,9 +122,9 @@ public class Reducer {
         // If no candidate survived reduction, fall back according to the current mode.
         if (result.isEmpty()) {
             if (isConversationMode) {
-                result.put(QueryIds.GENERAL_CONVERSATION, QueryIds.GENERAL_CONVERSATION);
+                result.put(GeneralConversationQueryCommand.ID, GeneralConversationQueryCommand.ID);
             } else {
-                result.put(CommandIds.IGNORE_NONSENSICAL_INPUT, CommandIds.IGNORE_NONSENSICAL_INPUT);
+                result.put(IgnoreNonsensicalInputCommand.ID, IgnoreNonsensicalInputCommand.ID);
             }
         }
 

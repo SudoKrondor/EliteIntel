@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TOGGLE_CARGO_SCO
  */
 @RegisterCommand
 public final class ToggleCargoScoopCommand implements IntelCommand {
+    public static final String ID = "toggle_cargo_scoop";
+
 
     @Override
     public String id() {
-        return CommandIds.TOGGLE_CARGO_SCOOP;
+        return ID;
     }
 
     @Override

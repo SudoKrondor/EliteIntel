@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,10 +18,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HARDPOINTS_TOGGL
  */
 @RegisterCommand
 public final class RetractHardpointsCommand implements IntelCommand {
+    public static final String ID = "retract_hardpoints";
+
 
     @Override
     public String id() {
-        return CommandIds.RETRACT_HARDPOINTS;
+        return ID;
     }
 
     @Override

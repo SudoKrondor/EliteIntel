@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -24,6 +23,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class IncreaseSpeedCommand implements IntelCommand {
+    public static final String ID = "increase_speed";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -42,7 +43,7 @@ public final class IncreaseSpeedCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.INCREASE_SPEED;
+        return ID;
     }
 
     @Override

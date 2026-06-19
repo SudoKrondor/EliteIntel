@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,6 +26,8 @@ import static elite.intel.util.StringUtls.getIntSafely;
  */
 @RegisterCommand
 public final class CalculateNeutronStarRouteCommand implements IntelCommand {
+    public static final String ID = "calculate_neutron_star_route";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -35,7 +36,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.CALCULATE_NEUTRON_STAR_ROUTE;
+        return ID;
     }
 
     @Override

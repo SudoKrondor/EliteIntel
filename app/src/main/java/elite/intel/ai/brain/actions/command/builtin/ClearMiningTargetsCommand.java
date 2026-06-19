@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -15,12 +14,14 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ClearMiningTargetsCommand implements IntelCommand {
+    public static final String ID = "clear_mining_targets";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CLEAR_MINING_TARGETS;
+        return ID;
     }
 
     @Override

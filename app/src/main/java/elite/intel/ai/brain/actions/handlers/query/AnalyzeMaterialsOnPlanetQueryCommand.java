@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -18,8 +17,10 @@ import java.util.List;
 
 @RegisterQuery
 public class AnalyzeMaterialsOnPlanetQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_planet_materials";
 
-    @Override public String id() { return QueryIds.PLANET_MATERIALS; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

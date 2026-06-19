@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -22,8 +21,10 @@ import static elite.intel.util.ExoBio.completedScansForPlanet;
 
 @RegisterQuery
 public class AnalyzeBioSamplesPlanetSurfaceQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_exobiology_samples";
 
-    @Override public String id() { return QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

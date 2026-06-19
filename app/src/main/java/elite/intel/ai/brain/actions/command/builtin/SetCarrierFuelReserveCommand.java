@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,6 +19,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class SetCarrierFuelReserveCommand implements IntelCommand {
+    public static final String ID = "set_carrier_fuel_reserve";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -37,7 +38,7 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.SET_CARRIER_FUEL_RESERVE;
+        return ID;
     }
 
     @Override

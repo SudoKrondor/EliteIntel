@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -18,6 +17,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
+    public static final String ID = "trade_profile_set_max_stops";
+
 
     private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
@@ -36,7 +37,7 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.TRADE_PROFILE_SET_MAX_STOPS;
+        return ID;
     }
 
     @Override

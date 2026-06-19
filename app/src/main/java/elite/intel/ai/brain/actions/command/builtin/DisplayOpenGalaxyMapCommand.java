@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,12 +16,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
+    public static final String ID = "display_open_galaxy_map";
+
 
     private final UINavigator navigator = new UINavigator();
 
     @Override
     public String id() {
-        return CommandIds.DISPLAY_OPEN_GALAXY_MAP;
+        return ID;
     }
 
     @Override

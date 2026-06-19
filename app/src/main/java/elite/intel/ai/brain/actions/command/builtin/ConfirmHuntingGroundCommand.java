@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,6 +18,8 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ConfirmHuntingGroundCommand implements IntelCommand {
+    public static final String ID = "confirm_hunting_ground";
+
 
     private final HuntingGroundManager missionDataManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -26,7 +27,7 @@ public final class ConfirmHuntingGroundCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.CONFIRM_HUNTING_GROUND;
+        return ID;
     }
 
     @Override

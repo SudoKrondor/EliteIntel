@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -17,8 +16,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeDistanceFromLastBioSampleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_distance_to_bio_sample";
 
-    @Override public String id() { return QueryIds.DISTANCE_TO_LAST_BIO_SAMPLE; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
