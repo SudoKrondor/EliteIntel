@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -68,8 +70,8 @@ class CustomCommandValidatorTest {
     @Test
     void validCustomCommandWithParametersHasNoErrors() {
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_paramtest", "Param Test", "param test phrase",
-                List.of(new CustomCommandParameterSpec("lat", "number", true, "latitude", null, null),
-                        new CustomCommandParameterSpec("lon", "number", true, "longitude", null, null)),
+                List.of(new ActionParameterSpec("lat", "number", true, "latitude", null, null),
+                        new ActionParameterSpec("lon", "number", true, "longitude", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("navigate_to_coordinates",
                         Map.of("lat", "${lat}", "lon", "${lon}"))));
 
@@ -79,8 +81,8 @@ class CustomCommandValidatorTest {
     @Test
     void rejectsDuplicateParameterName() {
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_dup", "Dup", "dup phrase",
-                List.of(new CustomCommandParameterSpec("speed", "string", true, "", null, null),
-                        new CustomCommandParameterSpec("speed", "number", false, "", null, null)),
+                List.of(new ActionParameterSpec("speed", "string", true, "", null, null),
+                        new ActionParameterSpec("speed", "number", false, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello", null)));
 
         assertFalse(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
@@ -89,7 +91,7 @@ class CustomCommandValidatorTest {
     @Test
     void rejectsInvalidParameterType() {
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_badtype", "Bad Type", "bad type phrase",
-                List.of(new CustomCommandParameterSpec("val", "integer", true, "", null, null)),
+                List.of(new ActionParameterSpec("val", "integer", true, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello", null)));
 
         assertFalse(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
@@ -98,7 +100,7 @@ class CustomCommandValidatorTest {
     @Test
     void rejectsInvalidParameterName() {
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_badname", "Bad Name", "bad name phrase",
-                List.of(new CustomCommandParameterSpec("bad name!", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("bad name!", "string", true, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello", null)));
 
         assertFalse(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
@@ -108,7 +110,7 @@ class CustomCommandValidatorTest {
     void rejectsUndeclaredParamRefInStepParams() {
         // Step references ${lat} but no parameter named "lat" is declared.
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_undeclared", "Undeclared", "undeclared phrase",
-                List.of(new CustomCommandParameterSpec("lon", "number", true, "", null, null)),
+                List.of(new ActionParameterSpec("lon", "number", true, "", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("navigate_to_coordinates",
                         Map.of("lat", "${lat}", "lon", "${lon}"))));
 
@@ -122,7 +124,7 @@ class CustomCommandValidatorTest {
         // "future_param" is declared but not referenced in any step.
         // This must be allowed (reserved for future conditions/repeat).
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_unused", "Unused Param", "unused param phrase",
-                List.of(new CustomCommandParameterSpec("future_param", "boolean", false, "", null, null)),
+                List.of(new ActionParameterSpec("future_param", "boolean", false, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello", null)));
 
         assertTrue(CustomCommandValidator.validate(customCommand, List.of(), null).isEmpty());
@@ -131,7 +133,7 @@ class CustomCommandValidatorTest {
     @Test
     void rejectsUndeclaredParamRefInSpeakText() {
         CustomCommandDefinition customCommand = customCommandWithParams("custom_command_speakref", "Speak Ref", "speak ref phrase",
-                List.of(new CustomCommandParameterSpec("name", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("name", "string", true, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "Hello ${name}, going to ${dest}", null)));
 
         List<String> errors = CustomCommandValidator.validate(customCommand, List.of(), null);
@@ -222,7 +224,7 @@ class CustomCommandValidatorTest {
     }
 
     private static CustomCommandDefinition customCommandWithParams(String id, String name, String phrases,
-                                                   List<CustomCommandParameterSpec> params, List<CustomCommandStep> steps) {
+                                                   List<ActionParameterSpec> params, List<CustomCommandStep> steps) {
         return new CustomCommandDefinition(id, name, "", phrases, params, steps);
     }
 }

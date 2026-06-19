@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.junit.jupiter.api.Test;
@@ -97,8 +99,8 @@ class CustomCommandExecutionContextTest {
     @Test
     void validateRequiredParamsNoErrorsWhenAllPresent() {
         CustomCommandDefinition customCommand = customCommandWithParams(List.of(
-                new CustomCommandParameterSpec("lat", "number", true, "", null, null),
-                new CustomCommandParameterSpec("lon", "number", true, "", null, null)
+                new ActionParameterSpec("lat", "number", true, "", null, null),
+                new ActionParameterSpec("lon", "number", true, "", null, null)
         ));
         CustomCommandExecutionContext ctx = CustomCommandExecutionContext.fromJson(customCommand,
                 JsonParser.parseString("{\"lat\": -10.5, \"lon\": 45.2}").getAsJsonObject());
@@ -108,9 +110,9 @@ class CustomCommandExecutionContextTest {
     @Test
     void validateRequiredParamsReportsEachMissingRequired() {
         CustomCommandDefinition customCommand = customCommandWithParams(List.of(
-                new CustomCommandParameterSpec("lat", "number", true, "", null, null),
-                new CustomCommandParameterSpec("lon", "number", true, "", null, null),
-                new CustomCommandParameterSpec("comment", "string", false, "", null, null)
+                new ActionParameterSpec("lat", "number", true, "", null, null),
+                new ActionParameterSpec("lon", "number", true, "", null, null),
+                new ActionParameterSpec("comment", "string", false, "", null, null)
         ));
         CustomCommandExecutionContext ctx = CustomCommandExecutionContext.fromJson(customCommand, new JsonObject());
         List<String> errors = ctx.validateRequiredParams();
@@ -122,7 +124,7 @@ class CustomCommandExecutionContextTest {
     @Test
     void validateRequiredParamsIgnoresOptional() {
         CustomCommandDefinition customCommand = customCommandWithParams(List.of(
-                new CustomCommandParameterSpec("hint", "string", false, "", null, null)
+                new ActionParameterSpec("hint", "string", false, "", null, null)
         ));
         CustomCommandExecutionContext ctx = CustomCommandExecutionContext.fromJson(customCommand, new JsonObject());
         assertTrue(ctx.validateRequiredParams().isEmpty());
@@ -143,7 +145,7 @@ class CustomCommandExecutionContextTest {
         return CustomCommandExecutionContext.fromJson(customCommand, params);
     }
 
-    private static CustomCommandDefinition customCommandWithParams(List<CustomCommandParameterSpec> params) {
+    private static CustomCommandDefinition customCommandWithParams(List<ActionParameterSpec> params) {
         return new CustomCommandDefinition("test", "Test", "", "test phrase", params,
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hello", null)));
     }

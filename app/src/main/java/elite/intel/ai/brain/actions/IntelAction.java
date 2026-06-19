@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions;
 
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.session.Status;
 import java.util.List;
 
@@ -19,7 +18,7 @@ public interface IntelAction {
         return true;
     }
 
-    default List<CustomCommandParameterSpec> parameters() {
+    default List<ActionParameterSpec> parameters() {
         return List.of();
     }
 }
