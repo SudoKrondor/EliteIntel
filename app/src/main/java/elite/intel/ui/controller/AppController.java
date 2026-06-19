@@ -124,13 +124,13 @@ public class AppController implements Runnable {
                     AudioCalibrator.calibrateRMS(format);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration complete"));
+                        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
                         appendToLog("Calibration failed: " + ex.getMessage());
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration failed"));
+                        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();

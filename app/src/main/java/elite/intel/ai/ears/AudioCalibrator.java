@@ -4,6 +4,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +53,7 @@ public class AudioCalibrator {
         byte[] buffer = new byte[bufferSize];
 
         // Phase 1: noise floor
-        EventBusManager.publish(new AiVoxResponseEvent("Re-calibrating Audio. Remain silent for audio calibration..."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationRemainSilent")));
         log.info("Prompted for noise calibration, waiting {}ms for TTS", TTS_PROMPT_DELAY_MS);
         try {
             Thread.sleep(TTS_PROMPT_DELAY_MS);
@@ -63,7 +64,7 @@ public class AudioCalibrator {
         double noiseFloor = calibrateNoiseFloor(captureFormat, bufferSize, buffer, info, mixerInfo);
 
         // Phase 2: speech
-        EventBusManager.publish(new AiVoxResponseEvent("Now count to 12 to calibrate audio..."));
+        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationCountTo12")));
         log.info("Prompted for speech calibration, waiting {}ms for TTS", TTS_PROMPT_DELAY_MS);
         try {
             Thread.sleep(TTS_PROMPT_DELAY_MS);
@@ -131,7 +132,7 @@ public class AudioCalibrator {
             }
         } catch (LineUnavailableException | IllegalArgumentException e) {
             log.error("Noise calibration failed: {}", e.getMessage());
-            EventBusManager.publish(new AiVoxResponseEvent("Audio calibration failed. Using default settings."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationUsingDefaults")));
             EventBusManager.publish(new AppLogEvent("Noise calibration failed: " + e.getMessage()));
             return DEFAULT_RMS_THRESHOLD_LOW;
         }
@@ -158,7 +159,7 @@ public class AudioCalibrator {
 
         if (noiseFloor > MAX_NOISE_AVG) {
             log.warn("High noise floor detected ({}); consider quieter environment", (int) noiseFloor);
-            EventBusManager.publish(new AiVoxResponseEvent("Noisy environment detected; calibration may be suboptimal."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationNoisy")));
             EventBusManager.publish(new AppLogEvent("High noise floor: " + (int) noiseFloor + " RMS"));
         }
         return noiseFloor;
@@ -204,7 +205,7 @@ public class AudioCalibrator {
             }
         } catch (LineUnavailableException | IllegalArgumentException e) {
             log.error("Speech calibration failed: {}", e.getMessage());
-            EventBusManager.publish(new AiVoxResponseEvent("Audio calibration failed. Using default settings."));
+            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationUsingDefaults")));
             EventBusManager.publish(new AppLogEvent("Speech calibration failed: " + e.getMessage()));
             return DEFAULT_RMS_THRESHOLD_HIGH;
         } finally {
