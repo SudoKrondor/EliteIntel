@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.actions.command;
 
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 
 import java.util.List;
 
@@ -25,9 +25,9 @@ public final class CommandParamRules {
      * Caller is responsible for the section header and for deciding which commands
      * are active. No-op effect if params is empty (caller should pre-filter).
      */
-    public static void appendCommandBlock(String actionKey, List<CustomCommandParameterSpec> params, StringBuilder sb) {
+    public static void appendCommandBlock(String actionKey, List<ActionParameterSpec> params, StringBuilder sb) {
         sb.append("  ").append(actionKey).append(":\n");
-        for (CustomCommandParameterSpec param : params) {
+        for (ActionParameterSpec param : params) {
             sb.append("    ").append(param.getName())
               .append(" (").append(param.getType());
             if (param.isRequired()) sb.append(", required");

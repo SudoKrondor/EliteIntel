@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TimedReminderManager;
@@ -23,16 +23,16 @@ public final class SetTimedReminderCommand implements IntelCommand {
     public static final String ID = "set_timed_reminder";
 
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "string", true,
                 "The reminder text to store and announce when the timer elapses.",
                 List.of("check fuel", "scoop fuel"),
                 "Extract the reminder text the commander dictates, verbatim.");
         key.validate();
-        CustomCommandParameterSpec minutes = new CustomCommandParameterSpec(
+        ActionParameterSpec minutes = new ActionParameterSpec(
                 "minutes", "number", true,
                 "Number of minutes until the reminder fires.",
                 List.of("5", "30"),
@@ -47,7 +47,7 @@ public final class SetTimedReminderCommand implements IntelCommand {
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

@@ -6,7 +6,7 @@ import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Modal editor for one {@link CustomCommandParameterSpec}.
+ * Modal editor for one {@link ActionParameterSpec}.
  */
 final class CustomCommandParamSpecEditorDialog extends JDialog {
 
@@ -31,9 +31,9 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
     private final JTextField descriptionField = AppTheme.makeTextField();
     private final JTextField examplesField = AppTheme.makeTextField();
     private final JTextField extractionHintField = AppTheme.makeTextField();
-    private CustomCommandParameterSpec result;
+    private ActionParameterSpec result;
 
-    CustomCommandParamSpecEditorDialog(Component parent, CustomCommandParameterSpec spec) {
+    CustomCommandParamSpecEditorDialog(Component parent, ActionParameterSpec spec) {
         super(SwingUtilities.getWindowAncestor(parent),
                 getText("actions.customCommands.editor.param.title"),
                 ModalityType.APPLICATION_MODAL);
@@ -42,12 +42,12 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
         buildUi();
     }
 
-    CustomCommandParameterSpec showDialog() {
+    ActionParameterSpec showDialog() {
         setVisible(true);
         return result;
     }
 
-    private void populate(CustomCommandParameterSpec spec) {
+    private void populate(ActionParameterSpec spec) {
         if (spec == null) return;
         nameField.setText(spec.getName() != null ? spec.getName() : "");
         typeCombo.setSelectedItem(spec.getType() != null ? spec.getType() : "string");
@@ -142,7 +142,7 @@ final class CustomCommandParamSpecEditorDialog extends JDialog {
                 .collect(Collectors.toList());
         String hint = extractionHintField.getText().trim();
 
-        result = new CustomCommandParameterSpec(name, type, required, description,
+        result = new ActionParameterSpec(name, type, required, description,
                 examples.isEmpty() ? null : examples,
                 hint.isBlank() ? null : hint);
         dispose();

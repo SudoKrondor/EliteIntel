@@ -13,7 +13,7 @@ import elite.intel.ui.widget.HudTwoColumns;
 
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandValidator;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
 
 import javax.swing.*;
@@ -198,7 +198,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private void addParam() {
-        CustomCommandParameterSpec spec = new CustomCommandParamSpecEditorDialog(this, null).showDialog();
+        ActionParameterSpec spec = new CustomCommandParamSpecEditorDialog(this, null).showDialog();
         if (spec != null) {
             paramsModel.addParameter(spec);
         }
@@ -207,7 +207,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     private void editParam() {
         int row = selectedParamRow();
         if (row < 0) return;
-        CustomCommandParameterSpec edited = new CustomCommandParamSpecEditorDialog(this, paramsModel.getParameter(row)).showDialog();
+        ActionParameterSpec edited = new CustomCommandParamSpecEditorDialog(this, paramsModel.getParameter(row)).showDialog();
         if (edited != null) {
             paramsModel.setParameter(row, edited);
         }
@@ -344,11 +344,11 @@ public final class CustomCommandEditorDialog extends JDialog {
         }
     }
 
-    private void addMissingCustomCommandParameters(List<CustomCommandParameterSpec> specs) {
+    private void addMissingCustomCommandParameters(List<ActionParameterSpec> specs) {
         if (specs == null || specs.isEmpty()) {
             return;
         }
-        for (CustomCommandParameterSpec spec : specs) {
+        for (ActionParameterSpec spec : specs) {
             String name = spec == null ? null : spec.getName();
             if (name == null || name.isBlank() || paramsModel.hasParameter(name)) {
                 continue;
@@ -553,7 +553,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private static final class ParamsTableModel extends AbstractTableModel {
-        private final List<CustomCommandParameterSpec> params = new ArrayList<>();
+        private final List<ActionParameterSpec> params = new ArrayList<>();
         private final String[] columns = {
                 getText("actions.customCommands.editor.param.column.name"),
                 getText("actions.customCommands.editor.param.column.type"),
@@ -561,22 +561,22 @@ public final class CustomCommandEditorDialog extends JDialog {
                 getText("actions.customCommands.editor.param.column.description")
         };
 
-        void setParameters(List<CustomCommandParameterSpec> newParams) {
+        void setParameters(List<ActionParameterSpec> newParams) {
             params.clear();
             if (newParams != null) params.addAll(newParams);
             fireTableDataChanged();
         }
 
-        List<CustomCommandParameterSpec> parameters() { return List.copyOf(params); }
+        List<ActionParameterSpec> parameters() { return List.copyOf(params); }
 
-        CustomCommandParameterSpec getParameter(int row) { return params.get(row); }
+        ActionParameterSpec getParameter(int row) { return params.get(row); }
 
-        void addParameter(CustomCommandParameterSpec spec) {
+        void addParameter(ActionParameterSpec spec) {
             params.add(spec);
             fireTableRowsInserted(params.size() - 1, params.size() - 1);
         }
 
-        void setParameter(int row, CustomCommandParameterSpec spec) {
+        void setParameter(int row, ActionParameterSpec spec) {
             params.set(row, spec);
             fireTableRowsUpdated(row, row);
         }
@@ -596,7 +596,7 @@ public final class CustomCommandEditorDialog extends JDialog {
 
         @Override
         public Object getValueAt(int row, int col) {
-            CustomCommandParameterSpec spec = params.get(row);
+            ActionParameterSpec spec = params.get(row);
             return switch (col) {
                 case 0 -> spec.getName();
                 case 1 -> spec.getType();

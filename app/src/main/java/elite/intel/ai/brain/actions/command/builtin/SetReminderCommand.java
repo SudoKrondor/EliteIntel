@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
@@ -21,10 +21,10 @@ public final class SetReminderCommand implements IntelCommand {
     public static final String ID = "set_reminder";
 
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "string", true,
                 "The reminder text to store.",
                 List.of("check fuel", "restock limpets"),
@@ -39,7 +39,7 @@ public final class SetReminderCommand implements IntelCommand {
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

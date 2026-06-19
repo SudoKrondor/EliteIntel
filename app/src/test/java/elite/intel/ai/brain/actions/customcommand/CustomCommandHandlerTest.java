@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -398,7 +400,7 @@ class CustomCommandHandlerTest {
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("commodity", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("commodity", "string", true, "", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("builtin_with_params", Map.of("key", "${commodity}")))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -418,8 +420,8 @@ class CustomCommandHandlerTest {
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
                 List.of(
-                        new CustomCommandParameterSpec("lat", "number", true, "", null, null),
-                        new CustomCommandParameterSpec("lon", "number", true, "", null, null)
+                        new ActionParameterSpec("lat", "number", true, "", null, null),
+                        new ActionParameterSpec("lon", "number", true, "", null, null)
                 ),
                 List.of(CustomCommandStep.runCommandWithParams("navigate_fake", Map.of("lat", "${lat}", "lon", "${lon}")))
         );
@@ -440,7 +442,7 @@ class CustomCommandHandlerTest {
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("speed", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("speed", "string", true, "", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("cmd_fake", Map.of("key", "${speed}")))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -454,7 +456,7 @@ class CustomCommandHandlerTest {
     void speakStepResolvesParamTemplate() {
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("target", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("target", "string", true, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "Targeting ${target}", null))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -473,7 +475,7 @@ class CustomCommandHandlerTest {
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("hint", "string", false, "", null, null)),
+                List.of(new ActionParameterSpec("hint", "string", false, "", null, null)),
                 // step doesn't use the optional param at all
                 List.of(new CustomCommandStep(CustomCommandStep.Type.RUN_COMMAND, null, 0, null, "cmd_optional"))
         );
