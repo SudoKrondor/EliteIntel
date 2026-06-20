@@ -169,6 +169,7 @@ test {
         excludeTags 'local-integration'
     }
     systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
+    systemProperty 'elite.intel.db.pool.size', '1'
 }
 
 // Run with: ./gradlew localIntegrationTest
