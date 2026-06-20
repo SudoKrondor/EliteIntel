@@ -45,6 +45,7 @@ public class ApproachBodySubscriber {
             sb.append(localizedEvent("event.approach.body.entering", locationType, location.getPlanetName()));
 
             String currentSystem = event.getStarSystem();
+            location.setStarName(currentSystem);
 
             location.setOrbitalCruiseEntryAltitude(orbitalCruiseEntryAltitude);
 
