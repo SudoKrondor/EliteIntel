@@ -1,19 +1,9 @@
 package elite.intel.devices;
 
-import elite.intel.devices.events.DeviceAxisEvent;
-import elite.intel.devices.events.DeviceButtonEvent;
-import elite.intel.devices.events.DeviceConnectedEvent;
-import elite.intel.devices.events.DeviceDisconnectedEvent;
-import elite.intel.devices.events.DeviceDuplicateWarningEvent;
-import elite.intel.devices.events.DeviceServiceStateEvent;
+import elite.intel.devices.events.*;
 import elite.intel.devices.model.Device;
-import elite.intel.gameapi.EventBusManager;
-import org.lwjgl.sdl.SDLError;
-import org.lwjgl.sdl.SDLEvents;
-import org.lwjgl.sdl.SDLGUID;
-import org.lwjgl.sdl.SDLInit;
-import org.lwjgl.sdl.SDLJoystick;
-import org.lwjgl.sdl.SDL_GUID;
+import elite.intel.gameapi.DeviceBus;
+import org.lwjgl.sdl.*;
 import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,11 +20,12 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.lwjgl.sdl.SDLInit.*;
+import static org.lwjgl.sdl.SDLInit.SDL_INIT_GAMEPAD;
+import static org.lwjgl.sdl.SDLInit.SDL_INIT_JOYSTICK;
 
 /**
  * Polls SDL3 for joystick/HOTAS/gamepad/pedal input on a dedicated platform thread. Publishes
- * connect/disconnect, axis, and button events on the main EventBusManager. Read-only device
+ * connect/disconnect, axis, and button events on DeviceBus. Read-only device
  * access — never writes to the game or any game file.
  *
  * Singleton shared infrastructure: StarVizion, BindForge, and push-to-talk all consume these
@@ -103,7 +94,7 @@ public class DeviceService {
         try {
             if (!initSdl()) return;
             available.set(true);
-            EventBusManager.publish(new DeviceServiceStateEvent(true, null));
+            DeviceBus.publish(new DeviceServiceStateEvent(true, null));
 
             Set<Integer> knownIds = new HashSet<>();
             boolean firstPoll = true;
@@ -194,7 +185,7 @@ public class DeviceService {
                 String err = SDLError.SDL_GetError();
                 log.error("SDL_Init failed: {}", err);
                 running.set(false);
-                EventBusManager.publish(new DeviceServiceStateEvent(false, err));
+                DeviceBus.publish(new DeviceServiceStateEvent(false, err));
                 return false;
             }
             log.info("Device service SDL3 initialized");
@@ -203,7 +194,7 @@ public class DeviceService {
             // NoClassDefFoundError is thrown on second access if Library's static init failed.
             log.error("SDL3 native libraries not available: {}", e.getMessage());
             running.set(false);
-            EventBusManager.publish(new DeviceServiceStateEvent(false, e.getMessage()));
+            DeviceBus.publish(new DeviceServiceStateEvent(false, e.getMessage()));
             return false;
         }
     }
@@ -243,7 +234,7 @@ public class DeviceService {
         Device device = new Device(id, name, axes, buttons, usbPath, guid);
         connectedDevices.add(device);
         log.info("Device connected: {} (id={}, axes={}, buttons={})", name, id, axes, buttons);
-        EventBusManager.publish(new DeviceConnectedEvent(device));
+        DeviceBus.publish(new DeviceConnectedEvent(device));
 
         checkForDuplicate(id, device);
     }
@@ -256,7 +247,7 @@ public class DeviceService {
         vidPidByDevice.remove(id);
         connectedDevices.removeIf(d -> d.id() == id);
         log.info("Device disconnected: id={}", id);
-        EventBusManager.publish(new DeviceDisconnectedEvent(id));
+        DeviceBus.publish(new DeviceDisconnectedEvent(id));
     }
 
     private void pollJoystick(int id, long handle) {
@@ -269,7 +260,7 @@ public class DeviceService {
             if (raw != prev[a]) {
                 prev[a] = raw;
                 float normalized = Math.max(-1f, raw * AXIS_SCALE);
-                EventBusManager.publish(new DeviceAxisEvent(id, a, normalized));
+                DeviceBus.publish(new DeviceAxisEvent(id, a, normalized));
             }
         }
 
@@ -277,7 +268,7 @@ public class DeviceService {
             boolean pressed = SDLJoystick.SDL_GetJoystickButton(handle, b);
             if (pressed != prevBtn[b]) {
                 prevBtn[b] = pressed;
-                EventBusManager.publish(new DeviceButtonEvent(id, b, pressed));
+                DeviceBus.publish(new DeviceButtonEvent(id, b, pressed));
             }
         }
     }
@@ -322,7 +313,7 @@ public class DeviceService {
                 int existingId = entry.getKey();
                 for (Device existing : connectedDevices) {
                     if (existing.id() == existingId) {
-                        EventBusManager.publish(new DeviceDuplicateWarningEvent(existing, newDevice));
+                        DeviceBus.publish(new DeviceDuplicateWarningEvent(existing, newDevice));
                         break;
                     }
                 }

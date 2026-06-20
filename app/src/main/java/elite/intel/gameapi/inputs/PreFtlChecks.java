@@ -1,4 +1,4 @@
-package elite.intel.ai.hands;
+package elite.intel.gameapi.inputs;
 
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;

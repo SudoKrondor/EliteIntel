@@ -7,6 +7,7 @@ import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.model.Device;
+import elite.intel.gameapi.DeviceBus;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttButtonStateEvent;
@@ -59,11 +60,13 @@ public class InputSettingsPanel extends JPanel {
 
     public InputSettingsPanel() {
         EventBusManager.register(this);
+        DeviceBus.register(this);
         buildUi();
     }
 
     public void dispose() {
         EventBusManager.unregister(this);
+        DeviceBus.unregister(this);
     }
 
     public void initData() {

@@ -720,7 +720,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> plotNextNeutronLeg() {
-        return Stream.of("next neutron star jump", "plot route to next neutron star waypoint", "next neutron star");
+        return Stream.of("take me to the next neutron star", "plot route to next neutron star waypoint", "next neutron star");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

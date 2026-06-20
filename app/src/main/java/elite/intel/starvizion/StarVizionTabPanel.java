@@ -3,12 +3,12 @@ package elite.intel.starvizion;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceServiceStateEvent;
+import elite.intel.gameapi.DeviceBus;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
 import elite.intel.starvizion.overlay.KeyboardVizlet;
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 
 import javax.swing.*;
@@ -16,7 +16,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.AppTheme.applyDarkPalette;
+import static elite.intel.ui.theme.AppTheme.makeButton;
 
 /**
  * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows
@@ -46,6 +47,7 @@ public class StarVizionTabPanel extends JPanel {
 
     public StarVizionTabPanel() {
         EventBusManager.register(this);
+        DeviceBus.register(this);
         buildUi();
     }
 
@@ -53,6 +55,7 @@ public class StarVizionTabPanel extends JPanel {
         deactivate();
         if (deviceService != null) deviceService.stop();
         EventBusManager.unregister(this);
+        DeviceBus.unregister(this);
     }
 
     // -- UI -------------------------------------------------------------------

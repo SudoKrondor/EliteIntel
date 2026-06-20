@@ -1,9 +1,8 @@
-package elite.intel.ai.hands;
-
-import elite.intel.ai.hands.events.GameInputSequenceEvent;
-import elite.intel.ai.hands.events.GameInputStep;
+package elite.intel.gameapi.inputs;
 
 import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.ui.UINavigator;

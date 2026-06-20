@@ -3,11 +3,11 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.NeutronStarRouteDao;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.gameapi.EventBusManager;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.util.StringUtls;
 
 /**
