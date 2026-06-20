@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
 import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
@@ -32,7 +33,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static elite.intel.ai.brain.Reducer.trashSttWords;
 import static elite.intel.eventbus.AudioMonitorBus.publish;
 import static java.util.Arrays.copyOf;
 
@@ -415,7 +415,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         int start = 0;
         outer:
         while (start < tokens.length) {
-            for (String trash : trashSttWords) {
+            for (String trash : InputNormalizerLocalizations.trashPhrases()) {
                 String[] trashTokens = trash.split("\\s+");
                 if (start + trashTokens.length > tokens.length) continue;
                 boolean matches = true;

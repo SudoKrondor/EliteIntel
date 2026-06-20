@@ -3,6 +3,8 @@ package elite.intel.ai.brain.i18n.en;
 import elite.intel.ai.brain.i18n.InputNormalizerProvider;
 
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 /**
  * The EnglishInputNormalizerRules class provides synonym substitution rules and noise word patterns
@@ -767,5 +769,46 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("career", "carrier");
         m.put("sip", "ship");
         m.put("aligns", "launch");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Trash phrases — filler / noise utterances the STT emits as standalone output
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public List<String> trashPhrases() {
+        return List.of(
+                "--", "mm-hmm", "uh-huh", "hmm", "mm", "uh", "um", "ah", "oh", "huh", "eh",
+
+                "yeah", "yep", "yup", "nope", "it", "an", "cool", "the",
+                "okay", "ok", "got it", "alright", "alrighty", "sure", "right",
+                "hello", "hi", "hey", "bye", "goodbye",
+                "so", "well", "now", "anyway", "actually", "basically", "literally",
+                "thanks", "thank you", "i'm sorry", "sorry", "excuse me", "pardon",
+                "you know", "i see", "i mean", "of course", "no problem",
+                "i got it", "don't i", "a ", "or ", "she can", "he can", "you can",
+                "like they", "did you", "wh", "i'll", "like", "got a",
+                "blow", "fuck", "shit", "just", "i "
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Stop words — function words excluded from Reducer word-overlap scoring
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public Set<String> stopWords() {
+        return Set.of(
+                // George Carlin list
+                "blow", "fuck", "shit", "piss", "cunt", "cock", "cocksucker", "motherfucker",
+
+                // Function words
+                "a", "an", "the", "to", "of", "in", "on", "at", "by", "for",
+                "with", "and", "or", "is", "are", "am", "be", "do", "does",
+                "what", "where", "how", "which", "any", "our", "my", "me",
+                "we", "us", "i", "you", "it", "this", "that", "get", "have",
+                "has", "can", "could", "would", "should", "not", "no", "up",
+                "here", "there", "some", "much", "many"
+        );
     }
 }
