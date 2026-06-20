@@ -28,7 +28,7 @@ class SupercruiseExitedSubscriberTest {
 
         awaitTrue(() -> {
             LocationData<Long, Long> loc = session.getLocationData();
-            return bodyId == loc.getInGameId() && sysAddr == loc.getSystemAddress();
+            return Long.valueOf(bodyId).equals(loc.getInGameId()) && sysAddr == loc.getSystemAddress();
         });
 
         LocationData<Long, Long> loc = session.getLocationData();
@@ -44,7 +44,7 @@ class SupercruiseExitedSubscriberTest {
 
         subscriber.onSupercruiseExited(supercruiseExitEvent(sysAddr, bodyId, "Galileo", "Station"));
 
-        awaitTrue(() -> bodyId == session.getLocationData().getInGameId());
+        awaitTrue(() -> Long.valueOf(bodyId).equals(session.getLocationData().getInGameId()));
 
         assertEquals(sysAddr, session.getLocationData().getSystemAddress());
     }

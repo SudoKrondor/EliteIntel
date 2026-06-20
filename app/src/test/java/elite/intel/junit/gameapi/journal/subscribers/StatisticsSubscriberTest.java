@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.gameapi.journal.events.StatisticsEvent;
 import elite.intel.gameapi.journal.subscribers.StatisticsSubscriber;
 import elite.intel.session.PlayerSession;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -13,11 +13,20 @@ import java.util.function.BooleanSupplier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Disabled("Ignore this test for now")
 class StatisticsSubscriberTest {
 
     private final StatisticsSubscriber subscriber = new StatisticsSubscriber();
     private final PlayerSession session = PlayerSession.getInstance();
+
+    @BeforeEach
+    void waitForPendingWrites() throws InterruptedException {
+        // Each subscriber VT does multiple sequential DB writes; awaitTrue unblocks on the first
+        // write that matches, leaving later writes still in-flight. Those lagging writes use
+        // INSERT OR REPLACE with a stale read and can overwrite values set by the next test's VT.
+        // 100ms is enough for in-flight writes from the previous test to drain (same pattern as
+        // BountyEventSubscriberTest).
+        Thread.sleep(100);
+    }
 
     @Test
     void combatBountyTotalIsStoredFromCombatSection() throws InterruptedException {
