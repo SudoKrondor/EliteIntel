@@ -3,7 +3,7 @@ package elite.intel.junit.prompt;
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.i18n.Language;
@@ -38,7 +38,7 @@ public class NaturalSpeechIntegrationTestRU {
         WebSocketBroadcaster.getInstance().start();
         capture = new HandlerCapture();
         Thread.sleep(2000);
-        EventBusManager.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
+        GameEventBus.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
         Thread.sleep(4000);
     }
 
@@ -53,7 +53,7 @@ public class NaturalSpeechIntegrationTestRU {
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
-        EventBusManager.publish(new UserInputEvent(input));
+        GameEventBus.publish(new UserInputEvent(input));
 
         HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,
