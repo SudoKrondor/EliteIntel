@@ -1,8 +1,11 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -12,19 +15,10 @@ import elite.intel.util.Cypher;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Composition + ordering tests for the parallel {@link AiActionMapGenerator}.
@@ -41,7 +35,7 @@ class AiActionMapGeneratorTest {
     static void bootstrap() {
         // Lightweight headless bootstrap WITHOUT HeadlessBootstrap.start() (no LLM endpoint, no sleep).
         Cypher.initializeKey();
-        Database.init();
+        Database.init().close();
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
         CustomCommandRegistry.getInstance().load();

@@ -88,7 +88,7 @@ public class JumpCompletedSubscriber {
             boolean roueSet = !orderedRoute.isEmpty();
             DestinationReminderDao.Reminder reminder = destinationReminderManager.getReminder();
             String reminderText = null;
-            if (reminder != null && reminder.getStarSystem().equals(event.getStarSystem())) {
+            if (reminder != null && event.getStarSystem().equals(reminder.getStarSystem())) {
                 reminderText = reminder.getReminder() == null ? "" : reminder.getReminder();
             }
 
