@@ -21,7 +21,7 @@ public class FSSBodySignalsSubscriber {
     @Subscribe
     public void onFssBodySignal(FSSBodySignalsEvent event) {
         Thread.ofVirtual().start(() -> {
-            LocationDto primaryStarLocation = locationManager.findPrimaryStar(playerSession.getPrimaryStarName());
+            LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
             LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
 
             location.setPlanetName(event.getBodyName());

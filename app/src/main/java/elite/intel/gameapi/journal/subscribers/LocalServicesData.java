@@ -21,6 +21,7 @@ public class LocalServicesData {
         final LocationManager locationManager = LocationManager.getInstance();
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
+        currentLocation.setStarName(locationManager.findBySystemAddress(playerSession.getLocationData().getSystemAddress()).getStarName());
         if (marketDto.getData() != null && marketDto.getData().getCommodities() != null) {
             sb.append(" ").append(localizedEvent("event.docked.marketLabel")).append(" ");
             sb.append(marketDto.getData().getName());

@@ -55,6 +55,7 @@ public class TouchdownEventSubscriber {
 
 
             LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
+            currentLocation.setStarName(starSystem);
             currentLocation.setLandingCoordinates(new double[]{event.getLatitude(), event.getLongitude()});
             locationManager.save(currentLocation);
 

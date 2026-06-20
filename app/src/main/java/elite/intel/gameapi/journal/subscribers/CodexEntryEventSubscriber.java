@@ -28,6 +28,7 @@ public class CodexEntryEventSubscriber {
             final Status status = Status.getInstance();
 
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
             playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
             StringBuilder sb = new StringBuilder();
 
