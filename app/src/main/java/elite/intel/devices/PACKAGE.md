@@ -1,6 +1,6 @@
 # `elite.intel.devices` - Developer Reference
 
-The devices package owns joystick, HOTAS, gamepad, and pedal input. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the main EventBus. It is shared infrastructure - StarVizion, BindForge, and push-to-talk all consume these events rather than managing their own SDL3 context.
+The devices package owns joystick, HOTAS, gamepad, and pedal input. It polls SDL3 on a single dedicated platform thread and publishes connect/disconnect, axis, and button events on the DeviceBus. It is shared infrastructure - StarVizion, BindForge, and push-to-talk all consume these events rather than managing their own SDL3 context.
 
 Read-only device access only. This package never writes to the game, the
 `.binds` file, or any other file.
@@ -95,7 +95,7 @@ The loop runs on the `elite-intel-devices` platform thread (not a virtual thread
 
 ## 3. Events
 
-All events are published on `EventBusManager` (the main EventBus).
+All events are published on `DeviceBus`.
 
 | Event | Published when | Key fields |
 |---|---|---|
