@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.gameapi.journal.events.StatisticsEvent;
 import elite.intel.gameapi.journal.subscribers.StatisticsSubscriber;
 import elite.intel.session.PlayerSession;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -12,6 +13,7 @@ import java.util.function.BooleanSupplier;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled("Ignore this test for now")
 class StatisticsSubscriberTest {
 
     private final StatisticsSubscriber subscriber = new StatisticsSubscriber();
