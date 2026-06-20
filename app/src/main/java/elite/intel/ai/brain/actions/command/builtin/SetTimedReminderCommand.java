@@ -2,13 +2,13 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TimedReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -57,7 +57,7 @@ public final class SetTimedReminderCommand implements IntelCommand {
         JsonElement minutesEl = params.get("minutes");
 
         if (isValidReminder(keyEl, minutesEl)) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));
             return;
         }
 
@@ -65,18 +65,18 @@ public final class SetTimedReminderCommand implements IntelCommand {
         try {
             minutes = Integer.parseInt(minutesEl.getAsString().trim());
         } catch (NumberFormatException e) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidDuration")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidDuration")));
             return;
         }
 
         if (minutes <= 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.durationZero")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.durationZero")));
             return;
         }
 
         String text = keyEl.getAsString();
         TimedReminderManager.getInstance().schedule(text, minutes);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
                 StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes)));
     }
 

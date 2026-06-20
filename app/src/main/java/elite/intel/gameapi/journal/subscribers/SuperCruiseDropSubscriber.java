@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.SupercruiseDestinationDropEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -28,7 +28,7 @@ public class SuperCruiseDropSubscriber {
                             - level 3 - 5 threat level medium
                             - level 6 - 8 threat level high
                         """;
-                EventBusManager.publish(new SensorDataEvent(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions));
+                GameEventBus.publish(new SensorDataEvent(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions));
             }
 
 
@@ -41,7 +41,7 @@ public class SuperCruiseDropSubscriber {
 
             String carrierName = playerSession.getFleetCarrierData().getCarrierName();
             if (carrierName != null && event.getType().toUpperCase().startsWith(carrierName.toUpperCase())) {
-                EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName))));
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName))));
             }
         });
     }

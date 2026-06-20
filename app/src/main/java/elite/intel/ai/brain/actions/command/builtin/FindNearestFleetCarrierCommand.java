@@ -5,7 +5,7 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.search.spansh.findcarrier.CarrierAccess;
@@ -40,7 +40,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         if(status.isInSrv() || status.isInMainShip()) {
 
             Number range = GetNumberFromParam.extractRangeParameter(params, 500);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue())));
 
             PlayerSession playerSession = PlayerSession.getInstance();
             FleetCarrierSearchResultsDto fleetCarriers = FleetCarrierSearch.getInstance()
@@ -57,7 +57,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
             }
 
             if (fleetCarriers == null) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable")));
                 return;
             }
 
@@ -70,13 +70,13 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
                                 RoutePlotter routePlotter = new RoutePlotter();
                                 String dateAsString = result.getUpdatedAt();
                                 String timeAgo = TimeUtils.transformToYMDHtimeAgo(dateAsString, TimeUtils.LOCAL_DATE_TIME);
-                                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo)));
+                                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo)));
                                 routePlotter.plotRoute(result.getSystemName());
                             },
-                            () -> EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.notFound")))
+                            () -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.notFound")))
                     );
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
     }
 }

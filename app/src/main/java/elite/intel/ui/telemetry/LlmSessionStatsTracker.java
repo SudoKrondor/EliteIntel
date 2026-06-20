@@ -1,7 +1,7 @@
 package elite.intel.ui.telemetry;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.LlmSessionStatsChangedEvent;
 import elite.intel.ui.event.LlmUsageEvent;
 import elite.intel.ui.event.RestartBrainEvent;
@@ -45,7 +45,7 @@ public class LlmSessionStatsTracker {
     private final Set<String> seenModels = new LinkedHashSet<>();
 
     private LlmSessionStatsTracker() {
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     /** Returns the singleton tracker, creating and registering it on first call. */
@@ -88,7 +88,7 @@ public class LlmSessionStatsTracker {
         synchronized (this) {
             seenModels.add(event.provider() + "  [" + event.model() + "]");
         }
-        EventBusManager.publish(new LlmSessionStatsChangedEvent(snapshot()));
+        UiBus.publish(new LlmSessionStatsChangedEvent(snapshot()));
     }
 
     /** Returns an immutable snapshot of the current accumulated session state. */
@@ -112,7 +112,7 @@ public class LlmSessionStatsTracker {
             seenModels.clear();
         }
         sessionStart = Instant.now();
-        EventBusManager.publish(new LlmSessionStatsChangedEvent(snapshot()));
+        UiBus.publish(new LlmSessionStatsChangedEvent(snapshot()));
     }
 
     private LlmSessionStatsSnapshot snapshot() {

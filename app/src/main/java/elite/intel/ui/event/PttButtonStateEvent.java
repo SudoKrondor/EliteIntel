@@ -1,5 +1,6 @@
 package elite.intel.ui.event;
 
+@SuppressWarnings("ClassCanBeRecord")
 public class PttButtonStateEvent {
 
     private final boolean held;

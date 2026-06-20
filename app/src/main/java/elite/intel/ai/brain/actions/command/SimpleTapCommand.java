@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.command;
 import com.google.gson.JsonObject;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 
 /**
  * Base for the 26 "tap" commands: each subclass is a tiny no-arg class carrying its

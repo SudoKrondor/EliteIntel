@@ -1,7 +1,7 @@
 package elite.intel.ai.hands;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.ui.controller.ManagedService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,7 +63,7 @@ public class HandsService implements ManagedService {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error in HandsService: {}", e.getMessage(), e);
-            EventBusManager.publish(new AiVoxResponseEvent("Error in command handler: " + e.getMessage()));
+            GameEventBus.publish(new AiVoxResponseEvent("Error in command handler: " + e.getMessage()));
         }
     }
 }

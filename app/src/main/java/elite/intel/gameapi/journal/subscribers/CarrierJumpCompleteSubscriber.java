@@ -5,7 +5,8 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.CarrierJumpEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -36,8 +37,8 @@ public class CarrierJumpCompleteSubscriber {
             playerSession.setLastKnownCarrierLocation(starSystem);
 
             if (starPos.length == 3 && starPos[0] == 0.0 && starPos[1] == 0.0 && starPos[2] == 0 && !"sol".equalsIgnoreCase(starSystem)) {
-                EventBusManager.publish(new AppLogEvent(localizedEvent("event.carrier.jumpCompleteStarWarning")));
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.carrier.jumpCompleteNoStar")));
+                UiBus.publish(new AppLogEvent(localizedEvent("event.carrier.jumpCompleteStarWarning")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.carrier.jumpCompleteNoStar")));
             }
 
 
@@ -108,7 +109,7 @@ public class CarrierJumpCompleteSubscriber {
                         Notify user about new carrier location.
                         Example: Carrier jump complete!. New location <starSystem>, remaining fuel supply <fuelSupply> tons. Fuel in reserve <fuelReserve> tons.
                     """;
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new SensorDataEvent(
                             "Carrier Location: " + event.getStarSystem() + " fuelSupply " + postJumpCarrierData.getFuelLevel() + " fuelReserve:" + postJumpCarrierData.getFuelReserve() + remainingRoute,
                             instructions

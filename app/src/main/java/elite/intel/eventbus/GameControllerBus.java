@@ -1,11 +1,11 @@
-package elite.intel.gameapi;
+package elite.intel.eventbus;
 
 import com.google.common.eventbus.EventBus;
 
 /**
  * Dedicated synchronous event bus for game controller (hands) events.
  * <p>
- * Kept separate from {@link EventBusManager} so that keystroke dispatch never
+ * Kept separate from {@link GameEventBus} so that keystroke dispatch never
  * blocks or is blocked by STT/TTS/LLM/journal traffic.
  * <p>
  * Synchronous (not async) by design: keystroke sequences rely on the caller

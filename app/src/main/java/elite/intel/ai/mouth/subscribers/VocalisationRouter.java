@@ -6,7 +6,7 @@ import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
@@ -27,25 +27,25 @@ public class VocalisationRouter {
             // Regular AI response: track playback end so STT is suppressed while the AI is speaking.
             completionFuture = new CompletableFuture<>();
             CompletableFuture<Void> cf = completionFuture;
-            EventBusManager.publish(new IsSpeakingEvent(true));
-            cf.whenComplete((v, t) -> EventBusManager.publish(new IsSpeakingEvent(false)));
+            GameEventBus.publish(new IsSpeakingEvent(true));
+            cf.whenComplete((v, t) -> GameEventBus.publish(new IsSpeakingEvent(false)));
         }
-        EventBusManager.publish(new VocalisationRequestEvent(event.getText(), AiVoxResponseEvent.class, canBeInterrupted, completionFuture));
+        GameEventBus.publish(new VocalisationRequestEvent(event.getText(), AiVoxResponseEvent.class, canBeInterrupted, completionFuture));
     }
 
     @Subscribe
     public void onMissionCriticalAnnouncementEvent(MissionCriticalAnnouncementEvent event) {
-        EventBusManager.publish(new VocalisationRequestEvent(event.getText(), MissionCriticalAnnouncementEvent.class, false));
+        GameEventBus.publish(new VocalisationRequestEvent(event.getText(), MissionCriticalAnnouncementEvent.class, false));
     }
 
     @Subscribe
     public void onVoiceDemoEvent(AiVoxDemoEvent event) {
-        EventBusManager.publish(new VocalisationRequestEvent(event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true));
+        GameEventBus.publish(new VocalisationRequestEvent(event.getText(), event.getVoiceName(), AiVoxDemoEvent.class, true));
     }
 
     @Subscribe
     public void onNavigationVocalisationRequest(NavigationVocalisationEvent event) {
-        EventBusManager.publish(new VocalisationRequestEvent(event.getText(), NavigationVocalisationEvent.class, false));
+        GameEventBus.publish(new VocalisationRequestEvent(event.getText(), NavigationVocalisationEvent.class, false));
     }
 
 
@@ -53,28 +53,28 @@ public class VocalisationRouter {
     @Subscribe
     public void onRadarContactEvent(RadarContactAnnouncementEvent event) {
         if (playerSession.isRadarContactAnnouncementOn()) {
-            EventBusManager.publish(new VocalisationRequestEvent(event.getText(), RadarContactAnnouncementEvent.class, false));
+            GameEventBus.publish(new VocalisationRequestEvent(event.getText(), RadarContactAnnouncementEvent.class, false));
         }
     }
 
     @Subscribe
     public void onDiscoveryAnnouncementEvent(DiscoveryAnnouncementEvent event) {
         if (playerSession.isDiscoveryAnnouncementOn()) {
-            EventBusManager.publish(new VocalisationRequestEvent(event.getText(), DiscoveryAnnouncementEvent.class, true));
+            GameEventBus.publish(new VocalisationRequestEvent(event.getText(), DiscoveryAnnouncementEvent.class, true));
         }
     }
 
     @Subscribe
     public void onMiningAnnouncementEvent(MiningAnnouncementEvent event) {
         if (playerSession.isMiningAnnouncementOn()) {
-            EventBusManager.publish(new VocalisationRequestEvent(event.getText(), MiningAnnouncementEvent.class, false));
+            GameEventBus.publish(new VocalisationRequestEvent(event.getText(), MiningAnnouncementEvent.class, false));
         }
     }
 
     @Subscribe
     public void onRouteAnnouncementEvent(RouteAnnouncementEvent event) {
         if (playerSession.isRouteAnnouncementOn()) {
-            EventBusManager.publish(new VocalisationRequestEvent(event.getText(), RouteAnnouncementEvent.class, true));
+            GameEventBus.publish(new VocalisationRequestEvent(event.getText(), RouteAnnouncementEvent.class, true));
         }
     }
 
@@ -96,7 +96,7 @@ public class VocalisationRouter {
                         .toArray(GoogleVoices[]::new);
                 voice = voices.length > 0 ? voices[(int) (Math.random() * voices.length)].name() : allVoices[0].name();
             }
-            EventBusManager.publish(new VocalisationRequestEvent(event.getText(), voice, RadioTransmissionEvent.class, true, true));
+            GameEventBus.publish(new VocalisationRequestEvent(event.getText(), voice, RadioTransmissionEvent.class, true, true));
         }
     }
 }

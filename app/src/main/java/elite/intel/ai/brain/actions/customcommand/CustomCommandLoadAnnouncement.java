@@ -1,7 +1,8 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
@@ -36,30 +37,30 @@ public class CustomCommandLoadAnnouncement {
         String playerName = PlayerSession.getInstance().getVariablePlayerName();
 
         if (loaded > 0 && skipped > 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.customCommandsLoadedWithSkipped", playerName, loaded, skipped)
             ));
         } else if (loaded > 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.customCommandsLoaded", playerName, loaded)
             ));
         } else if (skipped > 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.customCommandsSkipped", playerName, skipped)
             ));
         }
 
         if (skipped > 0) {
             CustomCommandRegistry.getInstance().getSkippedLabelsOnLastLoad()
-                    .forEach(label -> EventBusManager.publish(new AppLogEvent(
+                    .forEach(label -> UiBus.publish(new AppLogEvent(
                             MultiLingualTextProvider.getText("actions.customCommands.load.invalid", label))));
         }
 
         if (CustomCommandRegistry.getInstance().wasLastLoadRestoredFromBackup()) {
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.customCommandsRestoredFromBackup", playerName)
             ));
-            EventBusManager.publish(new AppLogEvent(
+            UiBus.publish(new AppLogEvent(
                     MultiLingualTextProvider.getText(
                             "actions.customCommands.load.corruptRestoredFromBackup",
                             AppPaths.CUSTOM_COMMANDS_FILE_NAME)));

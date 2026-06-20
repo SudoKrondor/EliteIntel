@@ -6,7 +6,8 @@ import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
@@ -53,7 +54,7 @@ public class LoadoutSubscriber {
                 }
                 shipManager.save(event.getShipId(), shipName, event.getCargoCapacity(), event.getShip(), shipDefaultVoice,
                         hasCommander ? commanderName : null);
-                EventBusManager.publish(new ShipProfileChangedEvent());
+                UiBus.publish(new ShipProfileChangedEvent());
             } else {
                 ship.setCargoCapacity(event.getCargoCapacity());
                 ship.setShipIdentifier(event.getShip());
@@ -62,13 +63,13 @@ public class LoadoutSubscriber {
                     ship.setCommanderName(commanderName);
                 }
                 shipManager.saveShip(ship);
-                EventBusManager.publish(new ShipProfileChangedEvent());
+                UiBus.publish(new ShipProfileChangedEvent());
             }
 
-            EventBusManager.publish(new ActiveShipChangedEvent(shipName));
+            UiBus.publish(new ActiveShipChangedEvent(shipName));
 
             if (Status.getInstance().isOkToAnnounceLoadout()) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName)));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName)));
             }
         });
     }

@@ -2,7 +2,7 @@ package elite.intel.search.spansh.stellarobjects;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.dao.LocationDao;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 
 import java.util.Arrays;
 
@@ -52,7 +52,7 @@ public class StellarObjectSearch {
 
             StellarObjectSearchRequestDto.ReferenceCoords referenceCoords = new StellarObjectSearchRequestDto.ReferenceCoords();
             if(coords == null) {
-                EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.search.stellar.noCoords")));
+                GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.search.stellar.noCoords")));
                 return null;
             }
             referenceCoords.setX(coords.x());

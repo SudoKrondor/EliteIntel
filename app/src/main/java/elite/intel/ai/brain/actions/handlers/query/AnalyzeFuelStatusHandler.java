@@ -16,7 +16,7 @@ public class AnalyzeFuelStatusHandler extends BaseQueryAnalyzer implements Intel
     @Override public String id() { return "analyze_fuel_status_handler"; }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing ship's data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing ship's data. Stand by."));
         //TODO: Convert info in to dtos, and write logic to figure out how much fuel is used per maximum range jump.
         PlayerSession playerSession = PlayerSession.getInstance();
         Status status = Status.getInstance();

@@ -10,7 +10,8 @@ import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -67,7 +68,7 @@ public class CommanderTabPanel extends JPanel {
 
     public CommanderTabPanel() {
         buildUi();
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     @Subscribe
@@ -230,7 +231,7 @@ public class CommanderTabPanel extends JPanel {
         // changed, so an untouched name does not spam "Commander name saved" into the log.
         if (current.equals(stored == null ? "" : stored)) return;
         playerSession.setAlternativeName(current);
-        EventBusManager.publish(new AppLogEvent("Commander name saved"));
+        UiBus.publish(new AppLogEvent("Commander name saved"));
     }
 
     // -------------------------------------------------------------------------
@@ -296,7 +297,7 @@ public class CommanderTabPanel extends JPanel {
                     if (speakerName == null) speakerName = voiceName;
                     String tts = StringUtls.shipIntroduction(
                             playerSession.getConfiguredPlayerName(), speakerName);
-                    EventBusManager.publish(new AiVoxDemoEvent(tts, voiceName));
+                    GameEventBus.publish(new AiVoxDemoEvent(tts, voiceName));
                     ShipManager.getInstance().saveShip(ship);
                 }
                 case COL_PERSONALITY -> {

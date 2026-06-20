@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -23,7 +23,7 @@ public class AnalyzeDistanceFromFleetCarrierQueryCommand extends BaseQueryAnalyz
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing travel telemetry. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing travel telemetry. Stand by."));
 
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
         if (carrierData == null) return process(StringUtls.localizedLlm("query.noData"));

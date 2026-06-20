@@ -3,7 +3,7 @@ package elite.intel.gameapi.gamestate.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.events.DockSRVEvent;
 import elite.intel.gameapi.journal.events.LaunchSRVEvent;
@@ -63,7 +63,7 @@ public class DistanceFromShipTracker {
         boolean isInDonut = distance >= innerDonut && distance <= outerDonut;
 
         if (isInDonut && movingAway && !announcedForCurrentEntry && !status.isInMainShip()) {
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new MissionCriticalAnnouncementEvent(
                             localizedEvent("event.distance.shipProximity", Math.round(distance))
                     )

@@ -12,7 +12,8 @@ import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -142,16 +143,16 @@ public class KokoroTTS implements MouthInterface {
         playbackThread.setDaemon(true);
         playbackThread.start();
 
-        EventBusManager.register(this);
+        GameEventBus.register(this);
         log.info("KokoroTTS started - voice: {} sid={}", KokoroVoices.GEORGE.getDisplayName(), DEFAULT_SID);
-        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
     }
 
     @Override
     public synchronized void stop() {
         running = false;
         try {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
         } catch (IllegalArgumentException ignored) {
             log.warn("Kokoro is not registered on event bus, ignore");
         }
@@ -247,7 +248,7 @@ public class KokoroTTS implements MouthInterface {
         if (sanitizedText.isBlank()) return;
 
         AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
-        EventBusManager.publish(new AiResponseLogEvent(sanitizedText));
+        UiBus.publish(new AiResponseLogEvent(sanitizedText));
 
         // Split on sentence boundaries and enqueue each piece for synthesis
         String[] allSentences = sanitizedText.split("(?<=[.,!?])\\s+(?=\\S)");
@@ -340,7 +341,7 @@ public class KokoroTTS implements MouthInterface {
             } catch (Exception e) {
                 log.warn("KokoroTTS playback error: {}", e.getMessage(), e);
             } finally {
-                EventBusManager.publish(new AppLogEvent(""));
+                UiBus.publish(new AppLogEvent(""));
             }
         }
         closePersistentLine();

@@ -6,8 +6,8 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -44,13 +44,13 @@ public final class DismissShipToOrbitCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
             return;
         }
         if (status.isLanded()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
         }
     }
 }

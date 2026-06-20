@@ -8,7 +8,8 @@ import elite.intel.ai.brain.AIChatInterface;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.commons.AiEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AiResponseLogEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,8 +43,8 @@ public class MistralChatEndPoint extends AiEndPoint implements AIChatInterface {
             JsonArray choices = response.getAsJsonArray("choices");
             if (choices == null || choices.isEmpty()) {
                 log.error("No choices in API response:\n{}", response);
-                EventBusManager.publish(new AiResponseLogEvent(response.toString()));
-                EventBusManager.publish(new AiVoxResponseEvent("Mistral Call failed."));
+                UiBus.publish(new AiResponseLogEvent(response.toString()));
+                GameEventBus.publish(new AiVoxResponseEvent("Mistral Call failed."));
                 return response;
             }
 

@@ -1,6 +1,6 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.NotificationVolumeChangedEvent;
 import elite.intel.ui.event.SpeechSpeedChangeEvent;
@@ -203,19 +203,19 @@ public class AudioSettingsPanel extends JPanel {
         GridBagConstraints ag = baseGbc();
 
         voiceVolumeSlider = makeSlider(0, 100, systemSession.getVoiceVolume());
-        voiceVolumeSlider.addChangeListener(e -> EventBusManager.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
+        voiceVolumeSlider.addChangeListener(e -> UiBus.publish(new SttVolumeChangedEvent(voiceVolumeSlider.getValue())));
         addLevelRow(grid, ag, 0, getText("settings.audio.speechVolume"), voiceVolumeSlider);
 
         speechSpeedSlider = makeSlider(0, 100, (int) (systemSession.getSpeechSpeed() * 100));
-        speechSpeedSlider.addChangeListener(e -> EventBusManager.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
+        speechSpeedSlider.addChangeListener(e -> UiBus.publish(new SpeechSpeedChangeEvent(speechSpeedSlider.getValue() / 100f)));
         addLevelRow(grid, ag, 1, getText("settings.audio.ttsVoiceSpeed"), speechSpeedSlider);
 
         beepVolumeSlider = makeSlider(0, 100, (int) (systemSession.getBeepVolume() * 100));
-        beepVolumeSlider.addChangeListener(e -> EventBusManager.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
+        beepVolumeSlider.addChangeListener(e -> UiBus.publish(new NotificationVolumeChangedEvent(beepVolumeSlider.getValue() / 100f)));
         addLevelRow(grid, ag, 2, getText("settings.audio.beepVolume"), beepVolumeSlider);
 
         sttThreadsSlider = makeSlider(4, 11, systemSession.getSttThreads());
-        sttThreadsSlider.addChangeListener(e -> EventBusManager.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
+        sttThreadsSlider.addChangeListener(e -> UiBus.publish(new SttThreadsChangedEvent(sttThreadsSlider.getValue())));
         addLevelRow(grid, ag, 3, getText("settings.audio.sttThreads"), sttThreadsSlider);
 
         return section;

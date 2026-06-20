@@ -1,20 +1,17 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.theme.HudGlyphs;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.SystemShutDownEvent;
 import elite.intel.ui.event.UpdateAvailableEvent;
 import elite.intel.ui.event.UpdateStartedEvent;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
+import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.util.Updater;
 
 import javax.swing.*;
-
-import elite.intel.ui.i18n.MultiLingualTextProvider;
 
 /**
  * Self-contained "update application" button. Subtle HUD style, owns the
@@ -35,21 +32,21 @@ public class HudUpdateButton extends HudButton {
             setIcon(HudGlyphs.scaledIcon(getClass(), "/images/update.png", HudPalette.HUD_ICON_MAIN));
         }
         addActionListener(e -> onClick());
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     private void onClick() {
         // Notify all instances first, then launch once from this instance.
-        EventBusManager.publish(new UpdateStartedEvent());
+        UiBus.publish(new UpdateStartedEvent());
         Updater.performUpdateAsync().thenAccept(launched -> {
             if (launched) {
-                EventBusManager.publish(new SystemShutDownEvent());
+                UiBus.publish(new SystemShutDownEvent());
             } else {
                 SwingUtilities.invokeLater(() -> {
                     setEnabled(true);
                     setText(MultiLingualTextProvider.getText("settings.update.available"));
                 });
-                EventBusManager.publish(new AppLogEvent(
+                UiBus.publish(new AppLogEvent(
                         "Could not launch updater - is elite_intel_updater.jar present?"));
             }
         });
@@ -73,6 +70,6 @@ public class HudUpdateButton extends HudButton {
 
     /** Unregisters from the event bus. Must be called when the owning panel is disposed. */
     public void dispose() {
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
     }
 }

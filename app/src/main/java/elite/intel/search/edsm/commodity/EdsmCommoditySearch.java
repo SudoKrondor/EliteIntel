@@ -1,7 +1,7 @@
 package elite.intel.search.edsm.commodity;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.edsm.EdsmApiClient;
 import elite.intel.search.edsm.dto.MarketDto;
 import elite.intel.search.edsm.dto.StationsDto;
@@ -71,7 +71,7 @@ public class EdsmCommoditySearch {
             }
         }
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEventPlural(stations.size(), "event.search.commodity.marketsFound")));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEventPlural(stations.size(), "event.search.commodity.marketsFound")));
 
         List<CommoditySearchResult> results = new ArrayList<>();
         for (Station station : stations) {

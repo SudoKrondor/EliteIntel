@@ -1,14 +1,12 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AiResponseLogEvent;
-import elite.intel.ui.event.NormalizedUserInputEvent;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudPalette.*;
 
 public class OBSOverlayWindow extends JFrame {
 
@@ -74,9 +71,9 @@ public class OBSOverlayWindow extends JFrame {
     public void setVisible(boolean visible) {
         if (visible) {
             messages.clear();
-            EventBusManager.register(this);
+            UiBus.register(this);
         } else {
-            EventBusManager.unregister(this);
+            UiBus.unregister(this);
         }
         super.setVisible(visible);
     }

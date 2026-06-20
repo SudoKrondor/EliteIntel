@@ -1,11 +1,15 @@
 package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.ui.event.*;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
+import elite.intel.ui.event.AiResponseLogEvent;
+import elite.intel.ui.event.AppLogDebugEvent;
+import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.ToggleDetailedLogEvent;
 import elite.intel.ui.screen.AiTabPanel;
 
-import java.time.LocalTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AiTabController {
@@ -15,11 +19,13 @@ public class AiTabController {
 
     public AiTabController(AiTabPanel view) {
         this.view = view;
-        EventBusManager.register(this);
+        GameEventBus.register(this);
+        UiBus.register(this);
     }
 
     public void dispose() {
-        EventBusManager.unregister(this);
+        GameEventBus.unregister(this);
+        UiBus.unregister(this);
     }
 
     @Subscribe

@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
@@ -28,9 +28,9 @@ public final class SleepCommand implements IntelCommand {
         SystemSession session = SystemSession.getInstance();
         if (session.isPushToTalkEnabled() && session.isPushToTalkToggleMode()) {
             session.setPushToTalkToggleMode(false);
-            EventBusManager.publish(new PttModeChangedEvent(true));
+            UiBus.publish(new PttModeChangedEvent(true));
         }
         session.stopStartListening(true);
-        EventBusManager.publish(new VoiceInputModeToggleEvent(true));
+        UiBus.publish(new VoiceInputModeToggleEvent(true));
     }
 }

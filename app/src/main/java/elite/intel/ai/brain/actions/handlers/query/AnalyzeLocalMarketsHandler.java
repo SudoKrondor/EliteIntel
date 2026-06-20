@@ -20,7 +20,7 @@ public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements Int
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing local market data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing local market data. Stand by."));
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         MarketDto market = currentLocation.getMarket();
         if (market == null || market.getData() == null) {

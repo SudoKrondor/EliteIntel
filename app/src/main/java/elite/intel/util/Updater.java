@@ -1,6 +1,6 @@
 package elite.intel.util;
 
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.util.OsDetector.OS;
 
@@ -75,7 +75,7 @@ public class Updater {
             Path updaterJar = JAR_DIR.resolve(UPDATER_JAR_NAME);
 
             if (!updaterJar.toFile().exists()) {
-                EventBusManager.publish(new AppLogEvent(
+                UiBus.publish(new AppLogEvent(
                         "Updater jar not found: " + updaterJar));
                 return false;
             }
@@ -89,7 +89,7 @@ public class Updater {
                 return true;       // caller should now exit
 
             } catch (IOException e) {
-                EventBusManager.publish(new AppLogEvent(
+                UiBus.publish(new AppLogEvent(
                         "Failed to launch updater: " + e.getMessage()));
                 return false;
             }
@@ -128,7 +128,7 @@ public class Updater {
                     return remoteBuild > localBuild;
                 }
             } catch (Exception e) {
-                EventBusManager.publish(new AppLogEvent(
+                UiBus.publish(new AppLogEvent(
                         "Update check failed: " + e.getMessage()));
             }
             return false;

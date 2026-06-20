@@ -6,7 +6,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.NeutronStarRouteDao;
 import elite.intel.db.managers.NeutronStarRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.util.StringUtls;
 
@@ -30,12 +30,12 @@ public final class PlotRouteNextNeutronStarWaypointCommand implements IntelComma
     public void execute(JsonObject params, String responseText) {
         NeutronStarRouteDao.Route route = neutronStarRouteManager.getNeutronStarRoute();
         if (route == null || route.getLegs().isEmpty() || route.getLegs().getFirst() == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.notFound")));
             return;
         }
 
         String systemName = route.getLegs().getFirst().getSystemName();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.plotting", systemName)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.plotting", systemName)));
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(systemName);
     }

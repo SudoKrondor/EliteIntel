@@ -7,7 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -44,7 +44,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
             return;
         }
 
@@ -53,7 +53,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
             return;
         }
 
@@ -92,7 +92,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         reminderManager.setReminder(message, destinationSystem);
     }
 }

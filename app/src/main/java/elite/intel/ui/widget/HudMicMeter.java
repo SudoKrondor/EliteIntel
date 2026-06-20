@@ -1,23 +1,12 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
-
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.AudioMonitorEvent;
-import elite.intel.gameapi.AudioMonitorBus;
+import elite.intel.eventbus.AudioMonitorBus;
+import elite.intel.ui.theme.HudPalette;
 
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import javax.swing.*;
+import java.awt.*;
 
 /**
  * Segmented vertical mic-level meter in the HUD visual language (HUD section 4).

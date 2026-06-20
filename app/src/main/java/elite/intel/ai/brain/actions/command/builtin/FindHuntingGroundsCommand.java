@@ -7,7 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.missions.pirates.PirateMassacreMissionSearch;
 import elite.intel.util.StringUtls;
 
@@ -53,9 +53,9 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
                         : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
                 message = providers + " " + nav;
             }
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
         }
     }
 }

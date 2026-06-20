@@ -2,7 +2,7 @@ package elite.intel.devices;
 
 import elite.intel.devices.events.*;
 import elite.intel.devices.model.Device;
-import elite.intel.gameapi.DeviceBus;
+import elite.intel.eventbus.DeviceBus;
 import org.lwjgl.sdl.*;
 import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ import static org.lwjgl.sdl.SDLInit.SDL_INIT_JOYSTICK;
 /**
  * Polls SDL3 for joystick/HOTAS/gamepad/pedal input on a dedicated platform thread. Publishes
  * connect/disconnect, axis, and button events on DeviceBus. Read-only device
- * access — never writes to the game or any game file.
+ * access - never writes to the game or any game file.
  *
  * Singleton shared infrastructure: StarVizion, BindForge, and push-to-talk all consume these
  * events rather than owning their own SDL3 context. Call start() once; stop() to shut down
@@ -42,12 +42,12 @@ public class DeviceService {
 
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean available = new AtomicBoolean(false);
-    private Thread pollThread;
+    private volatile Thread pollThread;
 
     // Written only from the poll thread; readable from any thread via CopyOnWriteArrayList.
     private final CopyOnWriteArrayList<Device> connectedDevices = new CopyOnWriteArrayList<>();
 
-    // Open joystick handles — keyed by SDL JoystickID. Accessed only from pollThread.
+    // Open joystick handles - keyed by SDL JoystickID. Accessed only from pollThread.
     private final Map<Integer, Long> openHandles = new LinkedHashMap<>();
     private final Map<Integer, short[]> prevAxes = new HashMap<>();
     private final Map<Integer, boolean[]> prevButtons = new HashMap<>();
@@ -68,7 +68,9 @@ public class DeviceService {
 
     public boolean isAvailable() { return available.get(); }
 
-    /** Returns a snapshot of currently connected devices — safe to call from any thread. */
+    /**
+     * Returns a snapshot of currently connected devices - safe to call from any thread.
+     */
     public List<Device> getConnectedDevices() {
         return Collections.unmodifiableList(new ArrayList<>(connectedDevices));
     }
@@ -152,7 +154,7 @@ public class DeviceService {
      *   - Group Policy / noexec mount prevents executing binaries from temp directories
      *
      * Both org.lwjgl.system.SharedLibraryExtractPath and org.lwjgl.librarypath are "Dynamic"
-     * configuration properties in LWJGL3 — they are read on every .get() call, so setting them
+     * configuration properties in LWJGL3 - they are read on every .get() call, so setting them
      * here (before any LWJGL3 class is touched) is guaranteed to take effect.
      */
     private void configureLwjglNativePath() {
@@ -177,7 +179,7 @@ public class DeviceService {
     // -------------------------------------------------------------------------
 
     private boolean initSdl() {
-        // Must run before any LWJGL3 class is touched — both config properties are Dynamic.
+        // Must run before any LWJGL3 class is touched - both config properties are Dynamic.
         configureLwjglNativePath();
         try {
             boolean ok = SDLInit.SDL_Init(SDL_INIT_JOYSTICK | SDL_INIT_GAMEPAD);

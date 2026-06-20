@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.TraderType;
@@ -34,12 +34,12 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
         Status status = Status.getInstance();
         if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {
             Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
             TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot")));
         }
     }
 }

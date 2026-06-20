@@ -9,7 +9,7 @@ import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.util.StringUtls;
 
@@ -42,18 +42,18 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
 
         if (target == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noReconSystems")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noReconSystems")));
             return;
         }
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
         if (multipleMissionProviders) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.multipleProviders")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.multipleProviders")));
         }
 
         String starSystem = target.getStarSystem();
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem)));
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(starSystem);

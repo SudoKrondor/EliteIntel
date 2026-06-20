@@ -1,22 +1,22 @@
-package elite.intel.gameapi;
+package elite.intel.eventbus;
 
 import com.google.common.eventbus.AsyncEventBus;
 
 import java.util.concurrent.Executors;
 
 /**
- * Separate async event bus for joystick/HOTAS/gamepad/pedal input events.
+ * Separate async event bus for real-time audio monitoring.
  * <p>
  * Uses Guava AsyncEventBus backed by a single daemon thread so that publishing
- * from DeviceService's 60 Hz poll loop never blocks the main EventBusManager
+ * from Parakeet's hot capture loop never blocks the main GameEventBus
  * (which is synchronous on the caller's thread).
  */
-public class DeviceBus {
+public class AudioMonitorBus {
 
     private static final AsyncEventBus bus = new AsyncEventBus(
-            "device-input",
+            "audio-monitor",
             Executors.newSingleThreadExecutor(r -> {
-                Thread t = new Thread(r, "Device-Input-Bus");
+                Thread t = new Thread(r, "Audio-Monitor-Bus");
                 t.setDaemon(true);
                 return t;
             })

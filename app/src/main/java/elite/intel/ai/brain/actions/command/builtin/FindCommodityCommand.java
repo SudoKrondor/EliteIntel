@@ -9,7 +9,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.edsm.commodity.CommoditySearchResult;
 import elite.intel.search.edsm.commodity.EdsmCommoditySearch;
@@ -80,7 +80,7 @@ public final class FindCommodityCommand implements IntelCommand {
         String starName = playerSession.getPrimaryStarName();
 
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.specify")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.specify")));
             return;
         }
 
@@ -92,12 +92,12 @@ public final class FindCommodityCommand implements IntelCommand {
                 );
 
         if (commodity == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString())));
             return;
         }
 
         String searchMode = StringUtls.localizedLlm(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
@@ -110,13 +110,13 @@ public final class FindCommodityCommand implements IntelCommand {
                 returnClosest
         );
         if (results.isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noMatch")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noMatch")));
             return;
         }
         ReminderManager reminderManager = ReminderManager.getInstance();
         CommoditySearchResult result = results.getFirst();
         String reminder = StringUtls.localizedLlm("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(reminder));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
         reminderManager.setReminder(reminder, result.getStarSystem());
 
         RoutePlotter plotter = new RoutePlotter();

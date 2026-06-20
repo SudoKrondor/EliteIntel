@@ -5,7 +5,7 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
@@ -35,7 +35,7 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         TargetLocation targetLocation = new TargetLocation();
         if (currentLocation.getLandingCoordinates() == null || currentLocation.getLandingCoordinates().length == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable")));
             return;
         }
 
@@ -45,6 +45,6 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         targetLocation.setRequestedTime(System.currentTimeMillis());
         playerSession.setTracking(targetLocation);
 
-        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone")));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone")));
     }
 }

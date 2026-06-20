@@ -1,39 +1,16 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
-import elite.intel.ui.support.AssignKeyboardBindingSelection;
-import elite.intel.ui.support.BindingSaveResultPresenter;
-import elite.intel.ui.support.BindingSlotDisplayFormatter;
-import elite.intel.ui.support.BindingsGroupTableFactory;
-import elite.intel.ui.support.BindingsSelectionController;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.HudBanner;
-import elite.intel.ui.widget.HudFooter;
-import elite.intel.ui.widget.HudPanel;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTextField;
-import elite.intel.ui.widget.StatusBadge;
-
-import elite.intel.ai.hands.BindingGroup;
-import elite.intel.ai.hands.BindingGroupClassifier;
-import elite.intel.ai.hands.BindingModifier;
-import elite.intel.ai.hands.BindingsApplyException;
-import elite.intel.ai.hands.BindingsApplyService;
-import elite.intel.ai.hands.BindingSaveResult;
-import elite.intel.ai.hands.BindingSlotType;
-import elite.intel.ai.hands.BindingsLoader;
-import elite.intel.ai.hands.BindingsMonitor;
-import elite.intel.ai.hands.BindingsWorkingCopyRepository;
-import elite.intel.ai.hands.BindingsWriter;
-import elite.intel.ai.hands.KeyBindingsParser;
-import elite.intel.ai.hands.KeyboardBindingEdit;
-import elite.intel.ai.hands.KeyboardKeyAvailabilityService;
-import elite.intel.gameapi.EventBusManager;
+import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.hands.*;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
+import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import elite.intel.ui.event.KeymapSyncStateChangedEvent;
-import com.google.common.eventbus.Subscribe;
+import elite.intel.ui.support.*;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -42,18 +19,14 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudGlyphs.*;
+import static elite.intel.ui.theme.HudForms.sizeFieldLabel;
+import static elite.intel.ui.theme.HudGlyphs.verticalEllipsisIcon;
 import static elite.intel.ui.theme.HudPalette.*;
-import static elite.intel.ui.theme.HudForms.*;
 
 public class BindForgeTabPanel extends JPanel {
 
@@ -101,11 +74,11 @@ public class BindForgeTabPanel extends JPanel {
         tableFactory = new BindingsGroupTableFactory(selectionController, this::openAssignKeyboardBindingDialog);
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     public void dispose() {
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
     }
 
     @Subscribe
@@ -306,9 +279,9 @@ public class BindForgeTabPanel extends JPanel {
                     getText("bindings.column.primary"),
                     getText("bindings.column.secondary"));
             tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
-            EventBusManager.publish(new BindingsSummaryChangedEvent(missingBindings.size(), usedBindings.size()));
+            UiBus.publish(new BindingsSummaryChangedEvent(missingBindings.size(), usedBindings.size()));
         } catch (Exception e) {
-            EventBusManager.publish(new BindingsSummaryChangedEvent(0, 0));
+            UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
             filePathField.setText(getText("bindings.notAvailable"));
@@ -334,7 +307,7 @@ public class BindForgeTabPanel extends JPanel {
         applyButton.setEnabled(hasDraft && activePresetFileName != null);
         revertButton.setEnabled(activePresetFileName != null && workingCopyRepo.exists(activePresetFileName));
 
-        EventBusManager.publish(new KeymapSyncStateChangedEvent(!hasDraft));
+        UiBus.publish(new KeymapSyncStateChangedEvent(!hasDraft));
     }
 
     private void performApply() {
