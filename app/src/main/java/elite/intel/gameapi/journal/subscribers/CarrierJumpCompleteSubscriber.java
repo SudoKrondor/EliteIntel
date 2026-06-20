@@ -126,6 +126,7 @@ public class CarrierJumpCompleteSubscriber {
     }
 
     private LocationDto fillInWhatWeCan(CarrierJumpEvent event, LocationDto location) {
+        location.setStarName(event.getStarSystem());
         location.setAllegiance(event.getSystemAllegiance());
         location.setX(event.getStarPos()[0]);
         location.setY(event.getStarPos()[1]);

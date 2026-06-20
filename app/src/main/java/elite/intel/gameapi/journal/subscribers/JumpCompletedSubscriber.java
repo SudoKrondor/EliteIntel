@@ -54,7 +54,7 @@ public class JumpCompletedSubscriber {
             neutronStarRouteManager.removeLeg(event.getSystemAddress());
 
             SystemBodiesDto systemBodiesDto = EdsmApiClient.searchSystemBodies(event.getStarSystem());
-            processEdsmData(systemBodiesDto, event.getSystemAddress(), event.getStarPos());
+            processEdsmData(systemBodiesDto, event.getSystemAddress(), event.getStarPos(), event.getStarSystem());
 
             boolean isSellerSystem = monetizeRouteManager.isSeller(event.getStarSystem());
             boolean isBuyerSystem = monetizeRouteManager.isBuyer(event.getStarSystem());
@@ -167,7 +167,7 @@ public class JumpCompletedSubscriber {
     }
 
 
-    private void processEdsmData(SystemBodiesDto systemBodiesDto, long systemAddress, double[] starPos) {
+    private void processEdsmData(SystemBodiesDto systemBodiesDto, long systemAddress, double[] starPos, String starSystem) {
         if (systemBodiesDto == null) return;
         if (systemBodiesDto.getData() == null) return;
         List<BodyData> bodies = systemBodiesDto.getData().getBodies();
@@ -205,6 +205,7 @@ public class JumpCompletedSubscriber {
             stellarObject.setRotationPeriod(data.getRotationalPeriod());
             stellarObject.setVolcanism(data.getVolcanismType());
             stellarObject.setPlanetClass(data.getSpectralClass());
+            stellarObject.setStarName(starSystem);
             locationManager.save(stellarObject);
         }
     }

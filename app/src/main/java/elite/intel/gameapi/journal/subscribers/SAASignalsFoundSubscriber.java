@@ -41,8 +41,8 @@ public class SAASignalsFoundSubscriber {
     public void onSAASignalsFound(SAASignalsFoundEvent event) {
         Thread.ofVirtual().start(() -> {
             StringBuilder sb = new StringBuilder();
+            LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
             LocationDto location = LocationManager.getInstance().findBySystemAddress(event.getSystemAddress(), event.getBodyID());
-            LocationDto primaryStarLocation = locationManager.findPrimaryStar(playerSession.getPrimaryStarName());
             location.setPlanetName(event.getBodyName());
             location.setBodyId(event.getBodyID());
             location.setStarName(primaryStarLocation.getStarName());
@@ -98,6 +98,7 @@ public class SAASignalsFoundSubscriber {
                     ring.setSystemAddress(event.getSystemAddress());
                     ring.setBodyId(event.getBodyID());
                     ring.setPlanetName(event.getBodyName());
+                    ring.setStarName(primaryStarLocation.getStarName());
                     ring.setMaterials(toMaterials(event.getSignals()));
                     ring.setLocationType(PLANETARY_RING);
 
