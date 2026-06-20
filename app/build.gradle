@@ -167,7 +167,7 @@ test {
     useJUnitPlatform {
         excludeTags 'local-integration'
     }
-    systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared'
+    systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
 }
 
 // Run with: ./gradlew localIntegrationTest
