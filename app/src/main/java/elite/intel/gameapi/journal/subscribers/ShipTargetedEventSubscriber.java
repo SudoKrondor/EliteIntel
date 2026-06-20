@@ -16,6 +16,8 @@ import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
+// Instantiated and invoked through SubscriberRegistration and Guava EventBus reflection.
+@SuppressWarnings("unused")
 public class ShipTargetedEventSubscriber {
 
     private static final int[] HULL_ALERT_THRESHOLDS = {75, 50, 25};
