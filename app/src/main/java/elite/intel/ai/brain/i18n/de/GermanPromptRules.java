@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.i18n.de;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
+import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
 
 
 public class GermanPromptRules implements PromptLanguageRules {
@@ -31,7 +31,7 @@ public class GermanPromptRules implements PromptLanguageRules {
         StringBuilder sb = new StringBuilder();
 
         sb.append("- require very high probability match for action →");
-        sb.append(CommandIds.CLEAR_ACTIVE_MISSIONS);
+        sb.append(ClearActiveMissionsCommand.ID);
         sb.append("\n");
         return sb.toString();
     }

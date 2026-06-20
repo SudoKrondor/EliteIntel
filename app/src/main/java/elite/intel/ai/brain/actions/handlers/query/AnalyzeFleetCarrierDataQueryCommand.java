@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -10,20 +9,25 @@ import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
+import elite.intel.ai.brain.actions.command.builtin.SetCarrierFuelReserveCommand;
+import elite.intel.ai.brain.actions.command.builtin.CalculateFleetCarrierRouteCommand;
+import elite.intel.ai.brain.actions.command.builtin.EnterFleetCarrierDestinationCommand;
 
 @RegisterQuery(before = {
-        "query_fleet_carrier_route",
-        "query_fleet_carrier_final_destination",
-        "query_fleet_carrier_eta",
-        "query_distance_to_carrier",
-        "calculate_fleet_carrier_route",
-        "enter_fleet_carrier_destination",
-        "set_carrier_fuel_reserve",
-        "query_squadron_carrier_status_fuel_credit_finance"
+        AnalyzeFleetCarrierRouteQueryCommand.ID,
+        AnalyzeFleetCarrierFinalDestinationQueryCommand.ID,
+        AnalyzeFleetCarrierETAQueryCommand.ID,
+        AnalyzeDistanceFromFleetCarrierQueryCommand.ID,
+        CalculateFleetCarrierRouteCommand.ID,
+        EnterFleetCarrierDestinationCommand.ID,
+        SetCarrierFuelReserveCommand.ID,
+        AnalyzeSquadronCarrierDataQueryCommand.ID
 })
 public class AnalyzeFleetCarrierDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_fleet_carrier_status_fuel_credit_finance";
 
-    @Override public String id() { return QueryIds.FLEET_CARRIER_STATUS; }
+
+    @Override public String id() { return ID; }
 
 
 

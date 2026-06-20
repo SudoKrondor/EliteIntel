@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -20,8 +19,10 @@ import static java.util.Map.ofEntries;
 
 @RegisterQuery
 public class AnalyzeShipLoadoutQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_ship_loadout";
 
-    @Override public String id() { return QueryIds.SHIP_LOADOUT; }
+
+    @Override public String id() { return ID; }
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

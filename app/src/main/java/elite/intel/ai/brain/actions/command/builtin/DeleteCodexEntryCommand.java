@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,13 +16,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class DeleteCodexEntryCommand implements IntelCommand {
+    public static final String ID = "delete_codex_entry";
+
 
     private final CodexEntryManager codexEntryManager = CodexEntryManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DELETE_CODEX_ENTRY;
+        return ID;
     }
 
     @Override

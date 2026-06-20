@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,12 +18,14 @@ import elite.intel.util.json.GetNumberFromParam;
  */
 @RegisterCommand
 public final class FindHumanTechnologyBrokerCommand implements IntelCommand {
+    public static final String ID = "find_human_technology_broker";
+
 
     private static final int DEFAULT_RANGE = 250;
 
     @Override
     public String id() {
-        return CommandIds.FIND_HUMAN_TECHNOLOGY_BROKER;
+        return ID;
     }
 
     @Override

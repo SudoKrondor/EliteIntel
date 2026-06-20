@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.query.QueryRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -21,10 +22,15 @@ class CommandCatalogTest {
     @BeforeAll
     static void loadRegistry() {
         CommandRegistry.getInstance().load();
+        QueryRegistry.getInstance().load();
     }
 
     private static int registrySize() {
         return CommandRegistry.getInstance().byId().size();
+    }
+
+    private static int queryRegistrySize() {
+        return QueryRegistry.getInstance().byId().size();
     }
 
     @Test
@@ -67,6 +73,21 @@ class CommandCatalogTest {
             assertNotEquals(localizationKey(entry.id(), "name"), entry.name(), entry.id());
             assertEquals("Built-in command action: " + entry.id(), entry.description(), entry.id());
         }
+    }
+
+    @Test
+    void builtInEntriesContainCommandsAndQueries() {
+        List<CommandCatalogEntry> builtIn = catalog.builtInEntries();
+        assertEquals(registrySize() + queryRegistrySize(), builtIn.size());
+
+        Map<String, CommandCatalogEntry> byId = builtIn.stream()
+                .collect(Collectors.toMap(CommandCatalogEntry::id, Function.identity()));
+        QueryRegistry.getInstance().byId().keySet().forEach(id -> {
+            CommandCatalogEntry entry = byId.get(id);
+            assertNotNull(entry, id);
+            assertEquals(CommandCatalogEntryType.BUILT_IN_QUERY, entry.type(), id);
+            assertFalse(entry.name().isBlank(), id);
+        });
     }
 
     private CommandCatalogEntryType expectedType(IntelCommand command) {

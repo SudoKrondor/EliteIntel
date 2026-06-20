@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -18,13 +17,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class MonetizeRouteCommand implements IntelCommand {
+    public static final String ID = "monetize_route";
+
 
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
     private final ReminderManager reminderManager = ReminderManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.MONETIZE_ROUTE;
+        return ID;
     }
 
     @Override

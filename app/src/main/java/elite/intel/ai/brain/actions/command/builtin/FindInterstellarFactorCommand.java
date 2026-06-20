@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -23,13 +22,15 @@ import java.util.List;
  */
 @RegisterCommand
 public final class FindInterstellarFactorCommand implements IntelCommand {
+    public static final String ID = "find_interstellar_factor";
+
 
     private final LocationManager locationManager = LocationManager.getInstance();
     private final ReminderManager reminderManager = ReminderManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.FIND_INTERSTELLAR_FACTOR;
+        return ID;
     }
 
     @Override

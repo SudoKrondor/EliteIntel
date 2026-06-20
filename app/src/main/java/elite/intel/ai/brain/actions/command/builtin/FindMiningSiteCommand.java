@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,12 +28,14 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class FindMiningSiteCommand implements IntelCommand {
+    public static final String ID = "find_mining_site";
+
 
     private static final int MAX_DEFAULT_RANGE = 1000;
 
     @Override
     public String id() {
-        return CommandIds.FIND_MINING_SITE;
+        return ID;
     }
 
     @Override

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -16,10 +15,12 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
  */
 @RegisterCommand
 public final class WakeupCommand implements IntelCommand {
+    public static final String ID = "wakeup";
+
 
     @Override
     public String id() {
-        return CommandIds.WAKEUP;
+        return ID;
     }
 
     @Override

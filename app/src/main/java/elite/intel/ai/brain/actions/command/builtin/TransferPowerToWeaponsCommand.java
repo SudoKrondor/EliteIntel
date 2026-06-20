@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -20,12 +19,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class TransferPowerToWeaponsCommand implements IntelCommand {
+    public static final String ID = "transfer_power_to_weapons";
+
 
     private static final Logger log = LogManager.getLogger(TransferPowerToWeaponsCommand.class);
 
     @Override
     public String id() {
-        return CommandIds.TRANSFER_POWER_TO_WEAPONS;
+        return ID;
     }
 
     @Override

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,10 +16,12 @@ import elite.intel.gameapi.GameControllerBus;
  */
 @RegisterCommand
 public final class ToggleNightVisionOnOffCommand implements IntelCommand {
+    public static final String ID = "toggle_night_vision_on_off";
+
 
     @Override
     public String id() {
-        return CommandIds.TOGGLE_NIGHT_VISION_ON_OFF;
+        return ID;
     }
 
     @Override

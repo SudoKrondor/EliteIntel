@@ -1,11 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
@@ -24,11 +23,13 @@ import java.util.List;
  */
 @RegisterCommand
 public final class DecreaseSpeedCommand implements IntelCommand {
+    public static final String ID = "decrease_speed";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key",
                 "number",
                 true,
@@ -42,11 +43,11 @@ public final class DecreaseSpeedCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.DECREASE_SPEED;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

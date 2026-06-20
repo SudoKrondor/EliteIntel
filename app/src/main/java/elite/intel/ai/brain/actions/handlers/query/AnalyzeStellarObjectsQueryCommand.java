@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -21,8 +20,10 @@ import java.util.regex.Pattern;
 
 @RegisterQuery
 public class AnalyzeStellarObjectsQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_stellar_objects";
 
-    @Override public String id() { return QueryIds.QUERY_STELLAR_OBJETS; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

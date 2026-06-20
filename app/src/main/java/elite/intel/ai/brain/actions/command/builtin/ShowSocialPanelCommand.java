@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -22,13 +21,15 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class ShowSocialPanelCommand implements IntelCommand {
+    public static final String ID = "show_social_panel";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SHOW_SOCIAL_PANEL;
+        return ID;
     }
 
     @Override

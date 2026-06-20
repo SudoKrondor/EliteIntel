@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -29,6 +28,8 @@ import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
  */
 @RegisterCommand
 public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand {
+    public static final String ID = "navigate_to_bio_sample_codex_entry";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -37,7 +38,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_BIO_SAMPLE_CODEX_ENTRY;
+        return ID;
     }
 
     @Override

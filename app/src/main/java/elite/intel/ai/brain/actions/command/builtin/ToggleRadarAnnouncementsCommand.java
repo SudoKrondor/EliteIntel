@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -13,10 +12,12 @@ import elite.intel.session.PlayerSession;
  */
 @RegisterCommand
 public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
+    public static final String ID = "toggle_radar_announcements";
+
 
     @Override
     public String id() {
-        return CommandIds.TOGGLE_RADAR_ANNOUNCEMENTS;
+        return ID;
     }
 
     @Override

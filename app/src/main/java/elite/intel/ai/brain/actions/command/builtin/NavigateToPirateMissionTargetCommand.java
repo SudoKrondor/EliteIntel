@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -21,10 +20,12 @@ import java.util.Set;
  */
 @RegisterCommand
 public final class NavigateToPirateMissionTargetCommand implements IntelCommand {
+    public static final String ID = "navigate_to_pirate_mission_target";
+
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_PIRATE_MISSION_TARGET;
+        return ID;
     }
 
     @Override

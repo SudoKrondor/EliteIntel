@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonElement;
@@ -21,8 +20,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 
 @RegisterQuery
 public class AnalyseMaterialsQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_material_inventory";
 
-    @Override public String id() { return QueryIds.MATERIALS_INVENTORY; }
+
+    @Override public String id() { return ID; }
 
 
     // Common question words that are never the item being queried

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -14,6 +13,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
+import elite.intel.util.NavigationUtils;
 import elite.intel.util.StringUtls;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -25,13 +25,15 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class FindBrainTreesCommand implements IntelCommand {
+    public static final String ID = "find_brain_trees";
+
 
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.FIND_BRAIN_TREES;
+        return ID;
     }
 
     @Override
@@ -58,7 +60,8 @@ public final class FindBrainTreesCommand implements IntelCommand {
         if (result == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), result.getDistance(), result.getBodyName())));
+            double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName())));
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(result.getSystemName());
             ReminderManager.getInstance().setReminder(
@@ -66,5 +69,13 @@ public final class FindBrainTreesCommand implements IntelCommand {
                     result.getSystemName()
             );
         }
+    }
+
+    private double calculateDistance(LocationDao.Coordinates coordinates, double x, double y, double z) {
+        return NavigationUtils.calculateGalacticDistance(
+                coordinates.x(), coordinates.y(), coordinates.z(),
+                x, y, z
+
+        );
     }
 }

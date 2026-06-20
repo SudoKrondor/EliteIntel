@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers;
 
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.IntelCommand;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,7 +13,7 @@ import java.util.Map;
 public class CommandHandlerFactory {
 
     private static final Logger log = LogManager.getLogger(CommandHandlerFactory.class);
-    private final Map<String, CommandHandler> commandHandlers = new HashMap<>();
+    private final Map<String, IntelAction> commandHandlers = new HashMap<>();
     private static CommandHandlerFactory instance;
 
     private CommandHandlerFactory() {
@@ -26,7 +26,7 @@ public class CommandHandlerFactory {
         return instance;
     }
 
-    public Map<String, CommandHandler> registerCommandHandlers() {
+    public Map<String, IntelAction> registerCommandHandlers() {
         for (Map.Entry<String, IntelCommand> entry : CommandRegistry.getInstance().byId().entrySet()) {
             commandHandlers.put(entry.getKey(), entry.getValue());
         }
@@ -37,7 +37,7 @@ public class CommandHandlerFactory {
         return commandHandlers;
     }
 
-    public Map<String, CommandHandler> getCommandHandlers() {
+    public Map<String, IntelAction> getCommandHandlers() {
         return commandHandlers;
     }
 

@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.gameapi.EventBusManager;
@@ -18,11 +17,13 @@ import java.util.List;
  */
 @RegisterCommand
 public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
+    public static final String ID = "trade_profile_set_max_stops";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key",
                 "number",
                 true,
@@ -36,11 +37,11 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.TRADE_PROFILE_SET_MAX_STOPS;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

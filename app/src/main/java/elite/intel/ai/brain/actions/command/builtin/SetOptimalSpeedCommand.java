@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -15,10 +14,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED75;
  */
 @RegisterCommand
 public final class SetOptimalSpeedCommand implements IntelCommand {
+    public static final String ID = "set_optimal_speed";
+
 
     @Override
     public String id() {
-        return CommandIds.SET_OPTIMAL_SPEED;
+        return ID;
     }
 
     @Override

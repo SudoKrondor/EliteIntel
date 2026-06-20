@@ -1,16 +1,17 @@
-package elite.intel.ai.brain.actions.customcommand;
+package elite.intel.ai.brain.actions;
 
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Declares one named parameter in a customCommand's invocation contract.
+ * Declares one named parameter in an {@link IntelAction}'s invocation contract.
  * <p>
- * The LLM uses these specs to determine what JSON params to return when invoking the customCommand.
+ * Shared by built-in commands/queries and user-defined custom commands: the LLM uses
+ * these specs to determine what JSON params to return when invoking the action.
  * Gson populates fields directly; call {@link #validate()} after deserialization.
  */
-public final class CustomCommandParameterSpec {
+public final class ActionParameterSpec {
 
     public static final Set<String> VALID_TYPES = Set.of("string", "number", "boolean");
     private static final Pattern VALID_NAME = Pattern.compile("[A-Za-z0-9_]+");
@@ -25,13 +26,13 @@ public final class CustomCommandParameterSpec {
     /**
      * @param name            identifier used in {@code ${name}} templates within step params and SPEAK text
      * @param type            one of {@code "string"}, {@code "number"}, or {@code "boolean"}
-     * @param required        if {@code true}, the customCommand aborts at runtime when this param is absent
+     * @param required        if {@code true}, the action aborts at runtime when this param is absent
      * @param description     human-readable hint shown in the LLM prompt and UI details view
      * @param examples        sample values shown to the LLM to improve extraction accuracy
      * @param extractionHint  optional extra rule appended to the LLM prompt for this parameter
      *                        (e.g. "use NATO alphabet letters verbatim")
      */
-    public CustomCommandParameterSpec(String name, String type, boolean required,
+    public ActionParameterSpec(String name, String type, boolean required,
                                String description, List<String> examples, String extractionHint) {
         this.name = name;
         this.type = type;
@@ -42,7 +43,7 @@ public final class CustomCommandParameterSpec {
     }
 
     @SuppressWarnings("unused")
-    private CustomCommandParameterSpec() {
+    private ActionParameterSpec() {
         name = null;
         type = null;
         required = false;
@@ -54,15 +55,15 @@ public final class CustomCommandParameterSpec {
     /** Validates this spec. Throws {@link IllegalArgumentException} if invalid. */
     public void validate() {
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("CustomCommandParameterSpec: name is required");
+            throw new IllegalArgumentException("ActionParameterSpec: name is required");
         }
         if (!VALID_NAME.matcher(name).matches()) {
             throw new IllegalArgumentException(
-                    "CustomCommandParameterSpec: name '" + name + "' may only contain letters, digits, or underscore");
+                    "ActionParameterSpec: name '" + name + "' may only contain letters, digits, or underscore");
         }
         if (type == null || !VALID_TYPES.contains(type)) {
             throw new IllegalArgumentException(
-                    "CustomCommandParameterSpec: type must be one of " + VALID_TYPES + ", got: " + type);
+                    "ActionParameterSpec: type must be one of " + VALID_TYPES + ", got: " + type);
         }
     }
 

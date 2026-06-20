@@ -5,6 +5,9 @@ import elite.intel.ai.brain.actions.command.CommandKind;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.QueryI18nKeys;
+import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 
@@ -53,6 +56,21 @@ public final class CommandCatalog {
     }
 
     /**
+     * Returns the full built-in catalog: commands (from CommandRegistry) followed by queries
+     * (from QueryRegistry), each block sorted by name then id. Unlike {@link #entries()} — which
+     * stays a command-only projection — this is the surface UI consumers show under "built-in".
+     */
+    public List<CommandCatalogEntry> builtInEntries() {
+        List<CommandCatalogEntry> all = new ArrayList<>(entries());
+        QueryRegistry.getInstance().byId().values().stream()
+                .map(this::entryFromQuery)
+                .sorted(Comparator.comparing(CommandCatalogEntry::name, String.CASE_INSENSITIVE_ORDER)
+                                  .thenComparing(CommandCatalogEntry::id))
+                .forEach(all::add);
+        return Collections.unmodifiableList(all);
+    }
+
+    /**
      * Returns all catalog entries: built-in commands followed by user-defined customCommands.
      * Built-in entries are derived from CommandRegistry.byId() as before; custom command entries
      * are built from the provided list. The existing {@link #entries()} method is unchanged.
@@ -83,9 +101,20 @@ public final class CommandCatalog {
         String id = command.id();
         return new CommandCatalogEntry(
                 id,
-                localizedName(id),
-                localizedDescription(id),
+                localizedName(CommandI18nKeys.nameKey(id), id),
+                localizedDescription(CommandI18nKeys.descriptionKey(id), id, "Built-in command action: "),
                 kindToType(command.kind())
+        );
+    }
+
+    private CommandCatalogEntry entryFromQuery(IntelQuery query) {
+        Objects.requireNonNull(query, "query");
+        String id = query.id();
+        return new CommandCatalogEntry(
+                id,
+                localizedName(QueryI18nKeys.nameKey(id), id),
+                localizedDescription(QueryI18nKeys.descriptionKey(id), id, "Built-in query: "),
+                CommandCatalogEntryType.BUILT_IN_QUERY
         );
     }
 
@@ -97,8 +126,7 @@ public final class CommandCatalog {
         };
     }
 
-    private String localizedName(String id) {
-        String key = CommandI18nKeys.nameKey(id);
+    private String localizedName(String key, String id) {
         String localized = textResolver.apply(key);
         if (!key.equals(localized)) {
             return localized;
@@ -106,13 +134,12 @@ public final class CommandCatalog {
         return humanize(id);
     }
 
-    private String localizedDescription(String id) {
-        String key = CommandI18nKeys.descriptionKey(id);
+    private String localizedDescription(String key, String id, String fallbackPrefix) {
         String localized = textResolver.apply(key);
         if (!key.equals(localized)) {
             return localized;
         }
-        return "Built-in command action: " + id;
+        return fallbackPrefix + id;
     }
 
     private static String humanize(String value) {

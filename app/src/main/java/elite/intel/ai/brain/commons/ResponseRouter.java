@@ -1,12 +1,11 @@
 package elite.intel.ai.brain.commons;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AIRouterInterface;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -23,13 +22,14 @@ import java.util.Map;
 
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 import static elite.intel.util.json.JsonUtils.nullSaveJsonObject;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 
 
 public class ResponseRouter implements AIRouterInterface {
 
     private static final Logger log = LogManager.getLogger(ResponseRouter.class);
     private static final ResponseRouter INSTANCE = new ResponseRouter();
-    private final Map<String, CommandHandler> commandHandlers;
+    private final Map<String, IntelAction> commandHandlers;
     private final Map<String, IntelQuery> queryHandlers;
     private final SystemSession systemSession;
     private final WebSocketBroadcaster webSocketBroadcaster;
@@ -135,7 +135,7 @@ public class ResponseRouter implements AIRouterInterface {
     }
 
 
-    protected Map<String, CommandHandler> getCommandHandlers() {
+    protected Map<String, IntelAction> getCommandHandlers() {
         return commandHandlers;
     }
 
@@ -176,7 +176,7 @@ public class ResponseRouter implements AIRouterInterface {
     private void handleCommand(String action, JsonObject params, String responseText, boolean speakAffirmation) {
         log.info("Command dispatch: action=[{}] params=[{}]", action, params);
         EventBusManager.publish(new AppLogEvent("Processing action: " + action + " with params: " + params.toString()));
-        if (CommandIds.IGNORE_NONSENSICAL_INPUT.equalsIgnoreCase(action)) {
+        if (IgnoreNonsensicalInputCommand.ID.equalsIgnoreCase(action)) {
             /// do nothing and return.
             return;
         }
@@ -185,7 +185,7 @@ public class ResponseRouter implements AIRouterInterface {
             EventBusManager.publish(new AiVoxResponseEvent("%s".formatted(StringUtls.affirmative())));
         }
 
-        CommandHandler handler = getCommandHandlers().get(action);
+        IntelAction handler = getCommandHandlers().get(action);
         if (handler == null) {
             EventBusManager.publish(new MissionCriticalAnnouncementEvent("command not found"));
             return;

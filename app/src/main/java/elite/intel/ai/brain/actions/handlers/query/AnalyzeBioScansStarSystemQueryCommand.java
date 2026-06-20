@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -20,8 +19,10 @@ import java.util.List;
 
 @RegisterQuery
 public class AnalyzeBioScansStarSystemQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_bio_scans_and_samples_in_star_system";
 
-    @Override public String id() { return QueryIds.BIO_SAMPLE_IN_STAR_SYSTEM; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

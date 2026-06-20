@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -12,8 +11,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeTradeProfileQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_trade_profile";
 
-    @Override public String id() { return QueryIds.TRADE_PROFILE_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

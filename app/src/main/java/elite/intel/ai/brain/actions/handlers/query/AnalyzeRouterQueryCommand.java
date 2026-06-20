@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -23,8 +22,10 @@ import static elite.intel.util.NavigationUtils.calculateGalacticDistance;
 
 @RegisterQuery
 public class AnalyzeRouterQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_ship_route_remaining_jumps";
 
-    @Override public String id() { return QueryIds.PLOTTED_ROUTE_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
     private static final Logger log = LogManager.getLogger(AnalyzeRouterQueryCommand.class);
     private final PlayerSession playerSession = PlayerSession.getInstance();

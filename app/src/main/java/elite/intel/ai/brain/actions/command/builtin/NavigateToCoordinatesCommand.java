@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
@@ -22,13 +21,15 @@ import java.util.List;
  */
 @RegisterCommand
 public final class NavigateToCoordinatesCommand implements IntelCommand {
+    public static final String ID = "navigate_to_coordinates";
+
 
     private static final Logger log = LogManager.getLogger(NavigateToCoordinatesCommand.class);
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec lat = new CustomCommandParameterSpec(
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec lat = new ActionParameterSpec(
                 "lat",
                 "number",
                 true,
@@ -36,7 +37,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
                 List.of("12.3456", "-45.0"),
                 "Planetary latitude the commander wants to navigate to."
         );
-        CustomCommandParameterSpec lon = new CustomCommandParameterSpec(
+        ActionParameterSpec lon = new ActionParameterSpec(
                 "lon",
                 "number",
                 true,
@@ -51,11 +52,11 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_COORDINATES;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

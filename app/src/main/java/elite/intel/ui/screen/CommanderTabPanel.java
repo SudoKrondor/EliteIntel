@@ -35,6 +35,7 @@ import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -48,6 +49,15 @@ public class CommanderTabPanel extends JPanel {
     private static final int COL_VOICE = 1;
     private static final int COL_PERSONALITY = 2;
     private static final int COL_GEAR = 3;
+
+    /** i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor. */
+    private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
+
+    /** Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label. */
+    private static String personalityLabel(String enumName) {
+        return getText(PERSONALITY_I18N_PREFIX + enumName.toLowerCase(Locale.ROOT))
+                .toUpperCase(Locale.ROOT);
+    }
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -161,7 +171,7 @@ public class CommanderTabPanel extends JPanel {
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(null));
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer("ship.personality."));
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
 
@@ -201,8 +211,10 @@ public class CommanderTabPanel extends JPanel {
 
         String[] personalityOptions =
                 Arrays.stream(ShipPersonality.values()).map(Enum::name).toArray(String[]::new);
+        // labelFn localizes the dropdown display only; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_PERSONALITY)
-                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(personalityOptions)));
+                .setCellEditor(new HudComboCellEditor(
+                        new HudComboBox<>(personalityOptions, CommanderTabPanel::personalityLabel)));
 
     }
 
@@ -302,27 +314,23 @@ public class CommanderTabPanel extends JPanel {
      */
     private static final class ComboColumnRenderer extends HudTable.CellRenderer {
         /**
-         * null -> raw value (Voice); non-null -> i18n key prefix (Personality).
+         * Display-text mapper applied to the raw cell value; {@code null} renders the value as-is (Voice).
+         * Personality passes {@link CommanderTabPanel#personalityLabel}, the shared owner used by the dropdown editor too.
          */
-        private final String i18nPrefix;
+        private final Function<? super String, String> labelFn;
         private boolean selectedRow;
         // Local pixel geometry - not a colour/font/component-height token.
         private static final int ARROW_AREA = 18;
 
-        ComboColumnRenderer(String i18nPrefix) {
-            this.i18nPrefix = i18nPrefix;
+        ComboColumnRenderer(Function<? super String, String> labelFn) {
+            this.labelFn = labelFn;
         }
 
         @Override
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
             this.selectedRow = isSelected;
-            // Fully qualify to avoid shadowing by the inherited JLabel.getText() no-arg method.
-            Object display = (i18nPrefix != null && value != null)
-                    ? elite.intel.ui.i18n.MultiLingualTextProvider
-                    .getText(i18nPrefix + ((String) value).toLowerCase(Locale.ROOT))
-                    .toUpperCase(Locale.ROOT)
-                    : value;
+            Object display = (labelFn != null && value != null) ? labelFn.apply((String) value) : value;
             super.getTableCellRendererComponent(table, display, isSelected, hasFocus, row, col);
             // Restore vpad from super, widen right side to reserve space for down.
             int vpad = getVerticalPadding();

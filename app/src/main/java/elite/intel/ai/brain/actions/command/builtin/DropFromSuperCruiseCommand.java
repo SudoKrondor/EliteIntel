@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -16,10 +15,12 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXIT_SUPERCRUISE
  */
 @RegisterCommand
 public final class DropFromSuperCruiseCommand implements IntelCommand {
+    public static final String ID = "drop_from_super_cruise";
+
 
     @Override
     public String id() {
-        return CommandIds.DROP_FROM_SUPER_CRUISE;
+        return ID;
     }
 
     @Override

@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -11,8 +10,10 @@ import elite.intel.util.StringUtls;
 
 @RegisterQuery
 public class AnalyzeDistanceFromTheBubbleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_distance_to_bubble_earth_sol_civilization";
 
-    @Override public String id() { return QueryIds.DISTANCE_TO_BUBBLE; }
+
+    @Override public String id() { return ID; }
 
 
     private final LocationManager locationManager = LocationManager.getInstance();

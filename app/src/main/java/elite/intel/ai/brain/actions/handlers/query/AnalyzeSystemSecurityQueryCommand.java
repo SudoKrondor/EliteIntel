@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -15,8 +14,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeSystemSecurityQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_system_security";
 
-    @Override public String id() { return QueryIds.SYSTEM_SECURITY_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

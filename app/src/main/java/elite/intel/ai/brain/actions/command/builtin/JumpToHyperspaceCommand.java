@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -28,6 +27,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TARGET_NEXT_ROUT
  */
 @RegisterCommand
 public final class JumpToHyperspaceCommand implements IntelCommand {
+    public static final String ID = "jump_to_hyperspace";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final UINavigator navigator = new UINavigator();
@@ -35,7 +36,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.JUMP_TO_HYPERSPACE;
+        return ID;
     }
 
     @Override

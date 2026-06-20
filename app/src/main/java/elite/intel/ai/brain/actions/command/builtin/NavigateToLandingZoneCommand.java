@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -19,13 +18,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class NavigateToLandingZoneCommand implements IntelCommand {
+    public static final String ID = "navigate_to_landing_zone";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_LANDING_ZONE;
+        return ID;
     }
 
     @Override

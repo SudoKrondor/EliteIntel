@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -20,12 +19,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED_ZERO;
  */
 @RegisterCommand
 public final class OpenFssScanSystemCommand implements IntelCommand {
+    public static final String ID = "open_fss_scan_system";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.OPEN_FSS_SCAN_SYSTEM;
+        return ID;
     }
 
     @Override

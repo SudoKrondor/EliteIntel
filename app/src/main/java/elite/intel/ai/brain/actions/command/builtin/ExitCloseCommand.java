@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -13,10 +12,12 @@ import elite.intel.ai.hands.UiNavCommon;
  */
 @RegisterCommand
 public final class ExitCloseCommand implements IntelCommand {
+    public static final String ID = "exit_close";
+
 
     @Override
     public String id() {
-        return CommandIds.EXIT_CLOSE;
+        return ID;
     }
 
     @Override

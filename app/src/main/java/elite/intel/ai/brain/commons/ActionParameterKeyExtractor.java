@@ -2,7 +2,7 @@ package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,7 +81,7 @@ public final class ActionParameterKeyExtractor {
      */
     private void extractRegistryParameters(Map<String, Map<String, ActionParameterHint>> hintsByAction) {
         CommandRegistry.getInstance().byId().values().forEach(command -> {
-            for (CustomCommandParameterSpec spec : command.parameters()) {
+            for (ActionParameterSpec spec : command.parameters()) {
                 add(hintsByAction, command.id(), spec.getName(), spec.getType());
             }
         });

@@ -1,11 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.gameapi.FireGroups;
 
 import java.util.List;
@@ -18,11 +17,13 @@ import static elite.intel.gameapi.FireGroups.fireGroupByNato;
  */
 @RegisterCommand
 public final class SelectFireGroupByNatoCommand implements IntelCommand {
+    public static final String ID = "select_fire_group_by_nato";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "string", true,
                 "The fire group identified by its NATO phonetic word (alpha, bravo, charlie, ...).",
                 List.of("alpha", "charlie"),
@@ -33,11 +34,11 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.SELECT_FIRE_GROUP_BY_NATO;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
     }
 

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -21,6 +20,8 @@ import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
  */
 @RegisterCommand
 public final class HonkCommand implements IntelCommand {
+    public static final String ID = "honk";
+
 
     public static final int SCAN_HOLD_MS = 4900;
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -29,7 +30,7 @@ public final class HonkCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.HONK;
+        return ID;
     }
 
     @Override

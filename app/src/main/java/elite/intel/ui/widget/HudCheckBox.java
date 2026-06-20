@@ -83,6 +83,15 @@ public class HudCheckBox extends JCheckBox {
                 HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT);
     }
 
+    /**
+     * Pins the minimum size to the preferred size: this control paints its marker and label itself
+     * within its bounds, so a layout that shrinks it below this would clip the label vertically.
+     */
+    @Override
+    public Dimension getMinimumSize() {
+        return getPreferredSize();
+    }
+
     // -------------------------------------------------------------------------
     // Paint
     // -------------------------------------------------------------------------

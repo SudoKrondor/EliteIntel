@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -12,10 +11,12 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
  */
 @RegisterCommand
 public final class IgnoreNonsensicalInputCommand implements IntelCommand {
+    public static final String ID = "ignore_nonsensical_input";
+
 
     @Override
     public String id() {
-        return CommandIds.IGNORE_NONSENSICAL_INPUT;
+        return ID;
     }
 
     @Override

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -15,10 +14,12 @@ import elite.intel.session.Status;
  */
 @RegisterCommand
 public final class ToggleLightsOnOffCommand implements IntelCommand {
+    public static final String ID = "toggle_lights_on_off";
+
 
     @Override
     public String id() {
-        return CommandIds.TOGGLE_LIGHTS_ON_OFF;
+        return ID;
     }
 
     @Override

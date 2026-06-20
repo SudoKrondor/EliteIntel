@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -17,12 +16,14 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class PlotRouteNextNeutronStarWaypointCommand implements IntelCommand {
+    public static final String ID = "plot_route_next_neutron_star_waypoint";
+
 
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.PLOT_ROUTE_NEXT_NEUTRON_STAR_WAYPOINT;
+        return ID;
     }
 
     @Override

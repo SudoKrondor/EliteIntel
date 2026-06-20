@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -14,10 +13,12 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ToggleRouteAnnouncementsCommand implements IntelCommand {
+    public static final String ID = "toggle_route_announcements";
+
 
     @Override
     public String id() {
-        return CommandIds.TOGGLE_ROUTE_ANNOUNCEMENTS;
+        return ID;
     }
 
     @Override

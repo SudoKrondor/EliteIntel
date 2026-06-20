@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -25,6 +24,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class EnterSuperCruiseCommand implements IntelCommand {
+    public static final String ID = "enter_super_cruise";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
@@ -32,7 +33,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.ENTER_SUPER_CRUISE;
+        return ID;
     }
 
     @Override

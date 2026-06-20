@@ -15,6 +15,11 @@ public enum CommandCatalogEntryType {
     BUILT_IN_ACTION,
 
     /**
+     * Built-in self-describing query (information request) from the QueryRegistry.
+     */
+    BUILT_IN_QUERY,
+
+    /**
      * Reserved for future user-defined editable customCommands.
      */
     CUSTOM_COMMAND
