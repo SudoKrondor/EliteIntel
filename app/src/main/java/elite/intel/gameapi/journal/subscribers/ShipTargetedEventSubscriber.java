@@ -8,7 +8,6 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.Md5Utils;
-import elite.intel.util.RomanNumeralConverter;
 import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,9 +30,6 @@ public class ShipTargetedEventSubscriber {
             GameEventBus.publish(new RadarContactAnnouncementEvent(localizedEvent("event.target.contactLost")));
         }
 
-        String localizedShipName = event.getShipLocalised();
-        String ship = localizedShipName == null ? "" : RomanNumeralConverter.convertRomanInName(localizedShipName);
-        String pilotName = event.getPilotNameLocalised();
         String pilotRank = event.getPilotRank();
         String legalStatus = event.getLegalStatus() == null ? null : event.getLegalStatus().toLowerCase();
         int bounty = event.getBounty();
@@ -58,9 +54,7 @@ public class ShipTargetedEventSubscriber {
             info.append(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));
             info.append(", ");
 
-            if (shieldHealth == 100 && hullHealth == 100) {
-                //info.append("All Systems Normal");
-            } else {
+            if (shieldHealth != 100 || hullHealth != 100) {
                 if (shieldHealth == 0) {
                     info.append(localizedEvent("event.target.shieldsOffline"));
                 } else if (shieldHealth < 50) {

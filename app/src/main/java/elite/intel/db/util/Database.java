@@ -74,8 +74,9 @@ public class Database {
         // Configure HikariCP connection pool
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(url);
-        config.setMaximumPoolSize(10);              // SQLite can handle ~10 concurrent connections with WAL
-        config.setMinimumIdle(2);                   // Keep 2 connections ready
+        int maxPool = Integer.getInteger("elite.intel.db.pool.size", 10);
+        config.setMaximumPoolSize(maxPool);
+        config.setMinimumIdle(Math.min(2, maxPool));
         config.setConnectionTimeout(30000);         // 30 seconds
         config.setIdleTimeout(600000);              // 10 minutes
         config.setMaxLifetime(1800000);             // 30 minutes
