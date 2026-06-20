@@ -334,7 +334,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationName(String stationName) {
-        if (stationName == null) return;
         this.stationName = stationName;
     }
 
@@ -343,7 +342,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationType(String stationType) {
-        if (stationType == null) return;
         this.stationType = stationType;
     }
 
@@ -360,7 +358,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationFaction(String stationFaction) {
-        if (stationFaction == null) return;
         this.stationFaction = stationFaction;
     }
 
@@ -369,7 +366,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationGovernment(String stationGovernment) {
-        if (stationGovernment == null) return;
         this.stationGovernment = stationGovernment;
     }
 
@@ -378,7 +374,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationAllegiance(String stationAllegiance) {
-        if (stationAllegiance == null) return;
         this.stationAllegiance = stationAllegiance;
     }
 
@@ -387,7 +382,7 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationServices(List<String> stationServices) {
-        if (stationServices == null || stationServices.isEmpty()) return;
+        if (stationServices == null) return;
         this.stationServices = stationServices;
     }
 
@@ -396,7 +391,6 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setStationEconomy(String stationEconomy) {
-        if (stationEconomy == null) return;
         this.stationEconomy = stationEconomy;
     }
 

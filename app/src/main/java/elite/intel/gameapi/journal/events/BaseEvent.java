@@ -1,6 +1,7 @@
 package elite.intel.gameapi.journal.events;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.JsonObject;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
@@ -24,10 +25,12 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
         this.endOfLife = Instant.now().plus(ttl);
     }
 
+    @JsonIgnore
     public boolean isReplay() {
         return Instant.parse(timestamp).isBefore(APP_START);
     }
 
+    @JsonIgnore
     public boolean isExpired() {
         if (endOfLife == null) {
             return false;

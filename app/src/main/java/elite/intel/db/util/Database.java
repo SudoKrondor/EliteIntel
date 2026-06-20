@@ -53,18 +53,23 @@ public class Database {
     }
 
     static {
-        Path dbPath;
-        try {
-            dbPath = AppPaths.getDatabasePath();
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to create database directory " + e.getMessage(), e);
+        String overrideUrl = System.getProperty("elite.intel.db.url");
+        String url;
+        if (overrideUrl != null) {
+            url = overrideUrl;
+        } else {
+            Path dbPath;
+            try {
+                dbPath = AppPaths.getDatabasePath();
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to create database directory " + e.getMessage(), e);
+            }
+            url = "jdbc:sqlite:" + dbPath
+                    + "?journal_mode=WAL"
+                    + "&busy_timeout=5000"
+                    + "&synchronous=NORMAL"
+                    + "&foreign_keys=ON";
         }
-
-        String url = "jdbc:sqlite:" + dbPath
-                + "?journal_mode=WAL"      // safe concurrent reads/writes
-                     + "&busy_timeout=5000"     // don't deadlock if two threads hit it
-                + "&synchronous=NORMAL"    // fast + still safe on Linux
-                + "&foreign_keys=ON";      // Ensure Foreign Keys are enforced on every connection
 
         // Configure HikariCP connection pool
         HikariConfig config = new HikariConfig();
