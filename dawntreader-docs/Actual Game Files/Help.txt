@@ -1,0 +1,337 @@
+*************************************************************************************************************************************
+*
+*										Keyboard
+*
+*************************************************************************************************************************************
+Device Name: "Keyboard"
+
+Availiable Keys:
+	"Key_Escape"
+    "Key_1"
+    "Key_2"
+    "Key_3"
+    "Key_4"
+    "Key_5"
+    "Key_6"
+    "Key_7"
+    "Key_8"
+    "Key_9"
+    "Key_0"
+    "Key_Minus"
+    "Key_Equals"
+    "Key_Backspace"
+    "Key_Tab"
+    "Key_Q"
+    "Key_W"
+    "Key_E"
+    "Key_R"
+    "Key_T"
+    "Key_Y"
+    "Key_U"
+    "Key_I"
+    "Key_O"
+    "Key_P"
+    "Key_LeftBracket"
+    "Key_RightBracket"
+    "Key_Enter"
+    "Key_LeftControl"
+    "Key_A"
+    "Key_S"
+    "Key_D"
+    "Key_F"
+    "Key_G"
+    "Key_H"
+    "Key_J"
+    "Key_K"
+    "Key_L"
+    "Key_SemiColon"
+    "Key_Apostrophe"
+    "Key_Grave"
+    "Key_LeftShift"
+    "Key_BackSlash"
+    "Key_Z"
+    "Key_X"
+    "Key_C"
+    "Key_V"
+    "Key_B"
+    "Key_N"
+    "Key_M"
+    "Key_Comma"
+    "Key_Period"
+    "Key_Slash"
+    "Key_RightShift"
+    "Key_Numpad_Multiply"
+    "Key_LeftAlt"
+    "Key_Space"
+    "Key_CapsLock"
+    "Key_F1"
+    "Key_F2"
+    "Key_F3"
+    "Key_F4"
+    "Key_F5"
+    "Key_F6"
+    "Key_F7"
+    "Key_F8"
+    "Key_F9"
+    "Key_F10"
+    "Key_NumLock"
+    "Key_ScrollLock"
+    "Key_Numpad_7"
+    "Key_Numpad_8"
+    "Key_Numpad_9"
+    "Key_Numpad_Subtract"
+    "Key_Numpad_4"
+    "Key_Numpad_5"
+    "Key_Numpad_6"
+    "Key_Numpad_Add"
+    "Key_Numpad_1"
+    "Key_Numpad_2"
+    "Key_Numpad_3"
+    "Key_Numpad_0"
+    "Key_Numpad_Decimal"
+    "Key_OEM_102"
+    "Key_F11"
+    "Key_F12"
+    "Key_F13"
+    "Key_F14"
+    "Key_F15"
+    "Key_Kana"
+    "Key_ABNT_C1"
+    "Key_Convert"
+    "Key_NoConvert"
+    "Key_Yen"
+    "Key_ABNT_C2"
+    "Key_Numpad_Equals"
+    "Key_PrevTrack"
+    "Key_AT"
+    "Key_Colon"
+    "Key_Underline"
+    "Key_Kanji"
+    "Key_Stop"
+    "Key_AX"
+    "Key_Unlabeled"
+    "Key_NextTrack"
+    "Key_Numpad_Enter"
+    "Key_RightControl"
+    "Key_Mute"
+    "Key_Calculator"
+    "Key_PlayPause"
+    "Key_MediaStop"
+    "Key_VolumeDown"
+    "Key_VolumeUp"
+    "Key_WebHome"
+    "Key_Numpad_Comma"
+    "Key_Numpad_Divide"
+    "Key_SYSRQ"
+    "Key_RightAlt"
+    "Key_Pause"
+    "Key_Home"
+    "Key_UpArrow"
+    "Key_PageUp"
+    "Key_LeftArrow"
+    "Key_RightArrow"
+    "Key_End"
+    "Key_DownArrow"
+    "Key_PageDown"
+    "Key_Insert"
+    "Key_Delete"
+    "Key_LeftWin"
+    "Key_RightWin"
+    "Key_Apps"
+    "Key_Power"
+    "Key_Sleep"
+    "Key_Wake"
+    "Key_WebSearch"
+    "Key_WebFavourites"
+    "Key_WebRefresh"
+    "Key_WebStop"
+    "Key_WebForward"
+    "Key_WebBack"
+    "Key_MyComputer"
+    "Key_Mail"
+    "Key_MediaSelect"
+	"Key_GreenModifier"
+	"Key_OrangeModifier"
+	
+*************************************************************************************************************************************
+*
+*										Mouse
+*
+*************************************************************************************************************************************
+Device Name: "Mouse"
+
+Availiable Keys:
+	"Mouse_1"
+	"Mouse_2"
+	"Mouse_3"
+	"Mouse_4"
+	"Mouse_XAxis"
+	"Mouse_YAxis"
+	"Mouse_ZAxis"
+	
+*************************************************************************************************************************************
+*
+*										XBox 360 Gamepad
+*
+*************************************************************************************************************************************
+Device Name: "XB360 Pad"
+
+Availiable Keys:
+	"Pad_DPadUp"
+	"Pad_DPadDown"
+	"Pad_DPadLeft"
+	"Pad_DPadRight"
+	"Pad_Start"
+	"Pad_Back"
+	"Pad_LThumb"
+	"Pad_RThumb"
+	"Pad_LBumper"
+	"Pad_RBumper"
+	"Pad_A"
+	"Pad_B"
+	"Pad_X"
+	"Pad_Y"
+	"Pad_LStickX" 
+	"Pad_LStickY"
+	"Pad_RStickX"
+	"Pad_RStickY"
+	"Pad_LTrigger"
+	"Pad_RTrigger"
+	"Pad_Unplugged"
+	
+*************************************************************************************************************************************
+*
+*										Joysticks/Other
+*
+*************************************************************************************************************************************
+Device Name: 
+
+Availiable Keys:
+	"Joy_1"
+	"Joy_2"
+	"Joy_3"
+	"Joy_4"
+	"Joy_5"
+	"Joy_6"
+	"Joy_7"
+	"Joy_8"
+	"Joy_9"
+	"Joy_10"
+	"Joy_11"
+	"Joy_12"
+	"Joy_13"
+	"Joy_14"
+	"Joy_15"
+	"Joy_16"
+	"Joy_17"
+	"Joy_18"
+	"Joy_19"
+	"Joy_20"
+	"Joy_21"
+	"Joy_22"
+	"Joy_23"
+	"Joy_24"
+	"Joy_25"
+	"Joy_26"
+	"Joy_27"
+	"Joy_28"
+	"Joy_29"
+	"Joy_30"
+	"Joy_31"
+	"Joy_32"
+	"Joy_POV1Up"
+	"Joy_POV1Right"
+	"Joy_POV1Down"
+	"Joy_POV1Left"
+	"Joy_POV2Up"
+	"Joy_POV2Right"
+	"Joy_POV2Down"
+	"Joy_POV2Left"
+	"Joy_POV3Up"
+	"Joy_POV3Right"
+	"Joy_POV3Down"
+	"Joy_POV3Left"
+	"Joy_POV4Up"
+	"Joy_POV4Right"
+	"Joy_POV4Down"
+	"Joy_POV4Left"
+	"Joy_XAxis"
+	"Joy_YAxis"
+	"Joy_ZAxis"
+	"Joy_RXAxis"
+	"Joy_RYAxis"
+	"Joy_RZAxis"
+	"Joy_UAxis"
+	"Joy_VAxis"
+	
+	
+*************************************************************************************************************************************
+*
+*										Options
+*
+*************************************************************************************************************************************
+MouseMode:
+	""
+	"Bindings_MouseAbsPitchRoll"
+	"Bindings_MouseAbsPitchRollInv"
+	"Bindings_MouseAbsPitchYaw"
+	"Bindings_MouseAbsPitchYawInv"
+	"Bindings_MouseRelPitchRoll"
+	"Bindings_MouseRelPitchRollInv"
+	
+MouseSensitivity:
+	Any number greater than 0.0
+
+MouseDeadzone:
+	Any number between 0.0 and 1.0
+
+YawToRollMode:
+YawToRollMode_Landing:
+	"Bindings_YawIntoRollNone"
+	"Bindings_YawIntoRollTime"
+	"Bindings_YawIntoRollLowRoll"
+
+ThrottleRange:
+	""
+	"Bindings_ThrottleForewardOnly"
+
+ThrottleIncrement:
+	Any number between 0.0 and 1.0
+
+GunsightSystem:
+	"Bindings_TraditionalGunsights"
+	"Bindings_TrailingGunsights"
+
+HeadlookMode:
+	"Bindings_HeadlookModeDirect"
+	"Bindings_HeadlookModeAccumulate"
+
+UIFocusMode:
+	"Bindings_FocusModeHold"
+	"Bindings_FocusModeToggle"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
