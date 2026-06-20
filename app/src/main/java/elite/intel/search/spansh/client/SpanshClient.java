@@ -27,8 +27,13 @@ public class SpanshClient {
     private String RESULTS_URL;
 
     public SpanshClient(String BASE_URL, String RESULTS_URL) {
-        this.BASE_URL = BASE_URL;
-        this.RESULTS_URL = RESULTS_URL;
+        this.BASE_URL = spanshUrl(BASE_URL);
+        this.RESULTS_URL = spanshUrl(RESULTS_URL);
+    }
+
+    private static String spanshUrl(String url) {
+        String override = System.getProperty("spansh.base.url");
+        return override == null ? url : url.replace("https://spansh.co.uk", override);
     }
 
 

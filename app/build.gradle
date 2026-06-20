@@ -24,6 +24,7 @@ configurations {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+    testImplementation 'org.wiremock:wiremock:3.13.0'
 
     // Text to Speech
     implementation 'com.google.cloud:google-cloud-texttospeech:2.73.0'

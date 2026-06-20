@@ -20,16 +20,22 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class EdsmApiClient {
     private static final Logger log = LogManager.getLogger(EdsmApiClient.class);
-    private static final String BASE_URL = "https://www.edsm.net";
-    private static final long MIN_INTERVAL_MS = 1_000L;
     private static final AtomicLong lastRequestTime = new AtomicLong(0L);
     private static final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
 
+    private static String baseUrl() {
+        return System.getProperty("edsm.base.url", "https://www.edsm.net");
+    }
+
+    private static long minIntervalMs() {
+        return Long.getLong("edsm.min.interval.ms", 1_000L);
+    }
+
     private static StringBuilder publicUrl(String endpoint) {
-        return new StringBuilder(BASE_URL + endpoint + "?");
+        return new StringBuilder(baseUrl() + endpoint + "?");
     }
 
     public static StarSystemDto searchStarSystem(String starSystemName, int showInformation) {
@@ -350,10 +356,12 @@ public class EdsmApiClient {
     }
 
     private static synchronized void throttle() {
+        long minInterval = minIntervalMs();
+        if (minInterval <= 0) return;
         long now = System.currentTimeMillis();
         long elapsed = now - lastRequestTime.get();
-        if (elapsed < MIN_INTERVAL_MS) {
-            SleepNoThrow.sleep(MIN_INTERVAL_MS - elapsed);
+        if (elapsed < minInterval) {
+            SleepNoThrow.sleep(minInterval - elapsed);
         }
         lastRequestTime.set(System.currentTimeMillis());
     }

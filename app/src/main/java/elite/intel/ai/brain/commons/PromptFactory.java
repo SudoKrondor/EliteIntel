@@ -232,6 +232,7 @@ public class PromptFactory implements AiPromptFactory {
         StringBuilder sb = new StringBuilder();
         sb.append(" Behavior: ");
         sb.append(" Refer to your self as 'I', your loadout and sensor data as 'my' ");
+        sb.append(" Do not start your responses with fillers like 'well', 'oh', 'oh look' go straight to the point");
         sb.append(" Do not end responses with any fillers, or unnecessary phrases like 'Ready for exploration', 'Ready for orders', 'All set', 'Ready to explore', 'Should we proceed?', or similar open-ended questions or remarks.\n");
         sb.append(" Do not use words like 'player' or 'you', it breaks immersion. Use 'we' instead. ");
         sb.append(" Do not confuse 'Next Waypoint' with 'Current Location'");
