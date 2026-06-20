@@ -993,7 +993,7 @@ public class NaturalSpeechIntegrationTestFR {
                 "montre le panneau de navigation",
                 "ouvre la navigation",
                 "affiche le panneau nav",
-                "panneau de gauche"
+                "affiche le panneau de gauche"
         );
     }
 
