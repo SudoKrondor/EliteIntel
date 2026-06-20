@@ -8,7 +8,6 @@ import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.Md5Utils;
-import elite.intel.util.RomanNumeralConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,71 +18,95 @@ import static elite.intel.util.StringUtls.localizedEvent;
 
 public class ShipTargetedEventSubscriber {
 
+    private static final int[] HULL_ALERT_THRESHOLDS = {75, 50, 25};
+
     private final Logger log = LogManager.getLogger(ShipTargetedEventSubscriber.class);
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final MissionManager missionManager = MissionManager.getInstance();
+    private String trackedCombatTarget;
+    private float previousShieldHealth = Float.NaN;
+    private float previousHullHealth = Float.NaN;
 
     @Subscribe public void onShipTargetedEvent(ShipTargetedEvent event) {
 
         log.debug(event.toJson());
 
         if (!event.isTargetLocked()) {
+            resetCombatTracking();
             EventBusManager.publish(new RadarContactAnnouncementEvent(localizedEvent("event.target.contactLost")));
+            return;
         }
 
-        String localizedShipName = event.getShipLocalised();
-        String ship = localizedShipName == null ? "" : RomanNumeralConverter.convertRomanInName(localizedShipName);
-        String pilotName = event.getPilotNameLocalised();
         String pilotRank = event.getPilotRank();
         String legalStatus = event.getLegalStatus() == null ? null : event.getLegalStatus().toLowerCase();
         int bounty = event.getBounty();
         String missionTargetOrNull = isMissionTargetOrNull(event);
 
-        float shieldHealth = event.getShieldHealth();
-        float hullHealth = event.getHullHealth();
-        StringBuilder info = new StringBuilder();
+        announceCombatStatus(event);
+
         if (announceScan(event, legalStatus, missionTargetOrNull)) {
+            String info = localizedEvent(
+                    "event.target.scanSummary",
+                    localizeLegalStatus(legalStatus),
+                    localizePilotRank(pilotRank),
+                    Integer.toString(bounty),
+                    firstAvailable(event.getPilotNameLocalised(), event.getPilotName()),
+                    firstAvailable(event.getShipLocalised(), event.getShip())
+            );
 
-            String contactType = missionTargetOrNull.trim().equals("Mission Target")
-                    ? localizedEvent("event.target.missionTarget")
-                    : localizedEvent("event.target.legalTarget");
-            info.append(localizedEvent("event.target.contact", contactType));
-
-            info.append(localizePilotRank(pilotRank));
-            info.append(", ");
-
-            info.append(localizeLegalStatus(legalStatus));
-            info.append(", ");
-
-            info.append(bounty == 0
-                    ? localizedEvent("event.target.noBounty")
-                    : localizedEvent("event.target.bounty", Integer.toString(bounty)));
-            info.append(", ");
-
-            if (shieldHealth == 100 && hullHealth == 100) {
-                //info.append("All Systems Normal");
-            } else {
-                if (shieldHealth == 0) {
-                    info.append(localizedEvent("event.target.shieldsOffline"));
-                } else if (shieldHealth < 50) {
-                    info.append(", ");
-                    info.append(localizedEvent("event.target.shields", String.format("%.0f", shieldHealth)));
-                }
-
-                info.append(", ");
-                if (hullHealth < 50) {
-                    info.append(", ");
-                    info.append(localizedEvent("event.target.hull", String.format("%.0f", hullHealth)));
-                }
-            }
             String data = buildCanonicalShipString(event);
             String key = Md5Utils.generateMd5(data);
             if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
                 //new scan
                 playerSession.putShipScan(key, data);
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(info.toString()));
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(info));
             }
         }
+    }
+
+    private void announceCombatStatus(ShipTargetedEvent event) {
+        // Incomplete scans report zero health values, so only trust full-scan telemetry.
+        if (event.getScanStage() < 3) return;
+
+        String targetKey = buildCombatTargetKey(event);
+        float shieldHealth = event.getShieldHealth();
+        float hullHealth = event.getHullHealth();
+
+        if (!targetKey.equals(trackedCombatTarget)) {
+            trackedCombatTarget = targetKey;
+            previousShieldHealth = shieldHealth;
+            previousHullHealth = hullHealth;
+            return;
+        }
+
+        if (previousShieldHealth > 0f && shieldHealth <= 0f) {
+            EventBusManager.publish(new MissionCriticalAnnouncementEvent(
+                    localizedEvent("event.target.shieldsOffline")
+            ));
+        }
+
+        for (int threshold : HULL_ALERT_THRESHOLDS) {
+            if (previousHullHealth > threshold && hullHealth <= threshold) {
+                EventBusManager.publish(new MissionCriticalAnnouncementEvent(
+                        localizedEvent("event.target.hull", Math.round(hullHealth))
+                ));
+                break;
+            }
+        }
+
+        previousShieldHealth = shieldHealth;
+        previousHullHealth = hullHealth;
+    }
+
+    private String buildCombatTargetKey(ShipTargetedEvent event) {
+        return firstAvailable(event.getPilotNameLocalised(), event.getPilotName())
+                + "|" + firstAvailable(event.getShipLocalised(), event.getShip());
+    }
+
+    private void resetCombatTracking() {
+        trackedCombatTarget = null;
+        previousShieldHealth = Float.NaN;
+        previousHullHealth = Float.NaN;
     }
 
     private String localizePilotRank(String rank) {
@@ -122,6 +145,12 @@ public class ShipTargetedEventSubscriber {
 
     private String readableJournalValue(String value) {
         return value.replace('_', ' ').trim();
+    }
+
+    private String firstAvailable(String localizedValue, String rawValue) {
+        if (localizedValue != null && !localizedValue.isBlank()) return localizedValue;
+        if (rawValue != null && !rawValue.isBlank()) return readableJournalValue(rawValue);
+        return "";
     }
 
 
