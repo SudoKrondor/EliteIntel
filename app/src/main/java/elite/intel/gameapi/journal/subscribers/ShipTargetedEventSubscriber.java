@@ -9,10 +9,10 @@ import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.Md5Utils;
 import elite.intel.util.RomanNumeralConverter;
-import elite.intel.util.TTSFriendlyNumberConverter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Locale;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
@@ -49,13 +49,15 @@ public class ShipTargetedEventSubscriber {
                     : localizedEvent("event.target.legalTarget");
             info.append(localizedEvent("event.target.contact", contactType));
 
-            info.append(pilotRank == null ? localizedEvent("event.target.rankUnknown") : pilotRank.replace("_", " "));
+            info.append(localizePilotRank(pilotRank));
             info.append(", ");
 
-            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : legalStatus.replace("_", " "));
+            info.append(localizeLegalStatus(legalStatus));
             info.append(", ");
 
-            info.append(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));
+            info.append(bounty == 0
+                    ? localizedEvent("event.target.noBounty")
+                    : localizedEvent("event.target.bounty", Integer.toString(bounty)));
             info.append(", ");
 
             if (shieldHealth == 100 && hullHealth == 100) {
@@ -82,6 +84,44 @@ public class ShipTargetedEventSubscriber {
                 EventBusManager.publish(new MissionCriticalAnnouncementEvent(info.toString()));
             }
         }
+    }
+
+    private String localizePilotRank(String rank) {
+        if (rank == null || rank.isBlank()) return localizedEvent("event.target.rankUnknown");
+
+        String key = switch (normalizeJournalValue(rank)) {
+            case "harmless" -> "event.target.rank.harmless";
+            case "mostlyharmless" -> "event.target.rank.mostlyHarmless";
+            case "novice" -> "event.target.rank.novice";
+            case "competent" -> "event.target.rank.competent";
+            case "expert" -> "event.target.rank.expert";
+            case "master" -> "event.target.rank.master";
+            case "dangerous" -> "event.target.rank.dangerous";
+            case "deadly" -> "event.target.rank.deadly";
+            case "elite" -> "event.target.rank.elite";
+            default -> null;
+        };
+        return key == null ? readableJournalValue(rank) : localizedEvent(key);
+    }
+
+    private String localizeLegalStatus(String status) {
+        if (status == null || status.isBlank()) return localizedEvent("event.target.legalStatusUnknown");
+
+        String key = switch (normalizeJournalValue(status)) {
+            case "clean" -> "event.target.legal.clean";
+            case "wanted" -> "event.target.legal.wanted";
+            case "lawless" -> "event.target.legal.lawless";
+            default -> null;
+        };
+        return key == null ? readableJournalValue(status) : localizedEvent(key);
+    }
+
+    private String normalizeJournalValue(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+    }
+
+    private String readableJournalValue(String value) {
+        return value.replace('_', ' ').trim();
     }
 
 
