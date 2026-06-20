@@ -63,7 +63,9 @@ class EngineerCraftEventSubscriberTest {
 
         awaitTrue(() -> {
             var carbon = materialManager.find("Carbon");
-            return carbon != null && carbon.getAmount() == 7;
+            var iron = materialManager.find("Iron");
+            return carbon != null && carbon.getAmount() == 7
+                    && iron != null && iron.getAmount() == 5;
         });
         assertEquals(7, materialManager.find("Carbon").getAmount());
         assertEquals(5, materialManager.find("Iron").getAmount());
