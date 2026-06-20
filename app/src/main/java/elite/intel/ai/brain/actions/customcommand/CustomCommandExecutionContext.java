@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -52,7 +54,7 @@ public final class CustomCommandExecutionContext {
      */
     public List<String> validateRequiredParams() {
         List<String> errors = new ArrayList<>();
-        for (CustomCommandParameterSpec spec : customCommand.getParameters()) {
+        for (ActionParameterSpec spec : customCommand.getParameters()) {
             if (!spec.isRequired()) continue;
             JsonElement element = jsonParams.get(spec.getName());
             boolean missing = element == null || element.isJsonNull()

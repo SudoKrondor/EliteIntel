@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RadarContactAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.Md5Utils;
@@ -28,7 +28,7 @@ public class ShipTargetedEventSubscriber {
         log.debug(event.toJson());
 
         if (!event.isTargetLocked()) {
-            EventBusManager.publish(new RadarContactAnnouncementEvent(localizedEvent("event.target.contactLost")));
+            GameEventBus.publish(new RadarContactAnnouncementEvent(localizedEvent("event.target.contactLost")));
         }
 
         String localizedShipName = event.getShipLocalised();
@@ -79,7 +79,7 @@ public class ShipTargetedEventSubscriber {
             if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
                 //new scan
                 playerSession.putShipScan(key, data);
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(info.toString()));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(info.toString()));
             }
         }
     }

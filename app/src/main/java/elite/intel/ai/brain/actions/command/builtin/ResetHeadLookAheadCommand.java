@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.UiNavCommon;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.Status;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HEAD_LOOK_RESET;
@@ -19,17 +18,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HEAD_LOOK_RESET;
  */
 @RegisterCommand
 public final class ResetHeadLookAheadCommand implements IntelCommand {
+    public static final String ID = "reset_head_look_ahead";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.RESET_HEAD_LOOK_AHEAD;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

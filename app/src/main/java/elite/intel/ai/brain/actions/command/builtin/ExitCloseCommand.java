@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.UiNavCommon;
+import elite.intel.gameapi.inputs.UiNavCommon;
 
 /**
  * Self-describing "exit close panel" command.
@@ -13,15 +12,12 @@ import elite.intel.ai.hands.UiNavCommon;
  */
 @RegisterCommand
 public final class ExitCloseCommand implements IntelCommand {
+    public static final String ID = "exit_close";
+
 
     @Override
     public String id() {
-        return CommandIds.EXIT_CLOSE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

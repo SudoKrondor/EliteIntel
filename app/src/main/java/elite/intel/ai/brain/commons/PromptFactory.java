@@ -5,11 +5,11 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.NormalizedUserInputEvent;
 import elite.intel.util.Ranks;
 
 import java.util.Map;
@@ -31,7 +31,7 @@ public class PromptFactory implements AiPromptFactory {
     @Override
     public String normalizeInput(String rawUserInput) {
         String corrected = SttCorrector.correct(rawUserInput, sttVocabulary);
-        EventBusManager.publish(new NormalizedUserInputEvent(corrected));
+        GameEventBus.publish(new NormalizedUserInputEvent(corrected));
         return normalizer.normalize(corrected);
     }
 

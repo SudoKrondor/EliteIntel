@@ -11,9 +11,11 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.devices.DeviceService;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.AuxiliaryFilesMonitor;
 import elite.intel.gameapi.DeferredNotificationMonitor;
-import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
@@ -46,7 +48,7 @@ public class AppController implements Runnable {
     private final Map<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
 
     public AppController() {
-        EventBusManager.register(this);
+        UiBus.register(this);
         this.isRunning.set(false);
         startIfWeHaveCredentials();
     }
@@ -57,8 +59,8 @@ public class AppController implements Runnable {
             try {
                 Boolean updateAvailable = checkAsync.get();
                 if (updateAvailable) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Newer version available"));
-                    EventBusManager.publish(new UpdateAvailableEvent());
+                    GameEventBus.publish(new AiVoxResponseEvent("Newer version available"));
+                    UiBus.publish(new UpdateAvailableEvent());
                 }
             } catch (Exception e) {
                 log.warn("Update check failed", e);
@@ -67,7 +69,7 @@ public class AppController implements Runnable {
     }
 
     private void startIfWeHaveCredentials() {
-        EventBusManager.publish(new ToggleServicesEvent(true));
+        UiBus.publish(new ToggleServicesEvent(true));
     }
 
     @Subscribe
@@ -92,15 +94,15 @@ public class AppController implements Runnable {
 
     @Subscribe
     public void onStreamModeToggle(VoiceInputModeToggleEvent event) {
-        EventBusManager.publish(new ToggleWakeWordEvent(event.isStreaming()));
+        UiBus.publish(new ToggleWakeWordEvent(event.isStreaming()));
     }
 
     @Subscribe
     public void toggleStreamingMode(ToggleWakeWordEvent event) {
         appendToLog("Voice input mode toggle");
         systemSession.stopStartListening(event.isOn());
-        EventBusManager.publish(new SleepWakeStateChangedEvent(event.isOn()));
-        EventBusManager.publish(new AiVoxResponseEvent(event.isOn() ? ignoreModeOnMessage() : ignoreModeOffMessage()));
+        UiBus.publish(new SleepWakeStateChangedEvent(event.isOn()));
+        GameEventBus.publish(new AiVoxResponseEvent(event.isOn() ? ignoreModeOnMessage() : ignoreModeOffMessage()));
     }
 
     private String ignoreModeOffMessage() {
@@ -124,13 +126,13 @@ public class AppController implements Runnable {
                     AudioCalibrator.calibrateRMS(format);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration complete"));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
                         appendToLog("Calibration failed: " + ex.getMessage());
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration failed"));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();
@@ -146,7 +148,7 @@ public class AppController implements Runnable {
                 } catch (Exception e) {
                     log.error("Failed to start services, stopping", e);
                     stopServices();
-                    EventBusManager.publish(new ServicesStateEvent(false));
+                    UiBus.publish(new ServicesStateEvent(false));
                 }
             } else {
                 stopServices();
@@ -210,7 +212,7 @@ public class AppController implements Runnable {
     }
 
     private void appendToLog(String data) {
-        EventBusManager.publish(new AppLogEvent(data));
+        UiBus.publish(new AppLogEvent(data));
     }
 
     @Override
@@ -229,7 +231,7 @@ public class AppController implements Runnable {
     private void startServices() {
         if (isRunning.get()) return;
         checkForUpdates();
-        EventBusManager.publish(new ClearConsoleEvent());
+        UiBus.publish(new ClearConsoleEvent());
         initServices();
 
         for (ServiceType type : ServiceType.values()) {
@@ -238,10 +240,10 @@ public class AppController implements Runnable {
         }
 
         isRunning.set(true);
-        EventBusManager.publish(new ServicesStateEvent(true));
+        UiBus.publish(new ServicesStateEvent(true));
 
         Timer connectionCheckTimer = new Timer(2000, e -> {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
             JsonObject direct = new JsonObject();
             direct.addProperty("action", CONNECTION_CHECK_COMMAND);
             direct.add("params", new JsonObject());
@@ -266,9 +268,9 @@ public class AppController implements Runnable {
             }
         }
         this.services.clear();
-        EventBusManager.publish(new ServicesStateEvent(false));
+        UiBus.publish(new ServicesStateEvent(false));
         isRunning.set(false);
-        EventBusManager.publish(new AppLogEvent("All services are stopped\n\n"));
+        UiBus.publish(new AppLogEvent("All services are stopped\n\n"));
     }
 
     private void initServices() {
@@ -277,6 +279,15 @@ public class AppController implements Runnable {
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
+        services.put(ServiceType.DEVICE, new ServiceHolder(() -> new ManagedService() {
+            public void start() {
+                DeviceService.getInstance().start();
+            }
+
+            public void stop() {
+                DeviceService.getInstance().stop();
+            }
+        }));
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
@@ -312,7 +323,7 @@ public class AppController implements Runnable {
     }
 
     private enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, MOUTH, EARS, BRAIN,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

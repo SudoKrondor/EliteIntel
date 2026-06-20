@@ -9,7 +9,7 @@ public interface MouthInterface extends ManagedService {
     void interruptAndClear();
     /**
      * Use elite.intel.gameapi.SubscriberRegistration to subscribe to these events
-     * or add EventBusManager.register(this); in the constructor if your class is a singleton
+     * or add GameEventBus.register(this); in the constructor if your class is a singleton
      */
     @Subscribe void onVoiceProcessEvent(VocalisationRequestEvent event);
 }

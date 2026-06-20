@@ -1,11 +1,16 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
+import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.session.Status;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Utility class for validating custom command definitions. Provides methods to validate
@@ -160,11 +165,11 @@ public final class CustomCommandValidator {
     }
 
     private static void validateParameters(CustomCommandDefinition candidate, List<String> errors) {
-        List<CustomCommandParameterSpec> params = candidate.getParameters();
+        List<ActionParameterSpec> params = candidate.getParameters();
         if (params.isEmpty()) return;
 
         Set<String> seen = new HashSet<>();
-        for (CustomCommandParameterSpec param : params) {
+        for (ActionParameterSpec param : params) {
             if (param == null || param.getName() == null || param.getName().isBlank()) {
                 errors.add("Parameter name is required.");
                 continue;
@@ -176,9 +181,9 @@ public final class CustomCommandValidator {
             if (!seen.add(normalizedName)) {
                 errors.add("Duplicate parameter name: " + param.getName());
             }
-            if (param.getType() == null || !CustomCommandParameterSpec.VALID_TYPES.contains(param.getType())) {
+            if (param.getType() == null || !ActionParameterSpec.VALID_TYPES.contains(param.getType())) {
                 errors.add("Parameter '" + param.getName() + "': type must be one of "
-                        + CustomCommandParameterSpec.VALID_TYPES + ".");
+                        + ActionParameterSpec.VALID_TYPES + ".");
             }
         }
     }
@@ -201,7 +206,7 @@ public final class CustomCommandValidator {
         customCommandIds.add(normalize(candidate.getActionKey()));
 
         Set<String> declaredParamNames = new HashSet<>();
-        for (CustomCommandParameterSpec spec : candidate.getParameters()) {
+        for (ActionParameterSpec spec : candidate.getParameters()) {
             if (spec != null && spec.getName() != null) {
                 declaredParamNames.add(spec.getName());
             }
@@ -275,11 +280,21 @@ public final class CustomCommandValidator {
     }
 
     private static Set<String> builtInPhrases() {
-        Map<String, String> aliases = new java.util.LinkedHashMap<>();
-        AiActionLocalizations.addAliases(aliases, Status.getInstance(), true);
+        var full = AiActionsMap.getInstance().actionMap(true);
+        Set<String> floating = Set.of(
+                GeneralConversationQueryCommand.ID,
+                IgnoreNonsensicalInputCommand.ID,
+                ConnectionCheckQueryCommand.ID);
+        Set<String> customKeys = new HashSet<>();
+        for (CustomCommandDefinition def : CustomCommandRegistry.getInstance().getCustomCommands()) {
+            customKeys.add(def.getActionKey());
+        }
         Set<String> phrases = new HashSet<>();
-        aliases.keySet().forEach(group ->
-                AiActionLocalizations.splitPhraseGroup(group).forEach(phrase -> phrases.add(normalize(phrase))));
+        full.forEach((group, id) -> {
+            if (!floating.contains(id) && !customKeys.contains(id)) {
+                AiActionLocalizations.splitPhraseGroup(group).forEach(phrase -> phrases.add(normalize(phrase)));
+            }
+        });
         return phrases;
     }
 

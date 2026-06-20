@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
@@ -22,15 +21,17 @@ import static elite.intel.util.ExoBio.completedScansForPlanet;
 
 @RegisterQuery
 public class AnalyzeBioSamplesPlanetSurfaceQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_exobiology_samples";
 
-    @Override public String id() { return QueryIds.EXOBIOLOGY_SAMPLES_ON_THIS_PLANET; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing exobiology data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing exobiology data. Stand by."));
 
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());

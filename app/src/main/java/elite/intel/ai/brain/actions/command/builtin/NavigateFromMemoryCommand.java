@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.util.ClipboardUtils;
 
 /**
@@ -14,15 +13,12 @@ import elite.intel.util.ClipboardUtils;
  */
 @RegisterCommand
 public final class NavigateFromMemoryCommand implements IntelCommand {
+    public static final String ID = "navigate_from_memory";
+
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_FROM_MEMORY;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.actions.handlers.query;
+
+import elite.intel.ai.brain.commons.AiEndPoint;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -12,8 +13,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class ConnectionCheckQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = AiEndPoint.CONNECTION_CHECK_COMMAND;
 
-    @Override public String id() { return QueryIds.CONNECTION_CHECK; }
+
+    @Override public String id() { return ID; }
 
 
     @Override

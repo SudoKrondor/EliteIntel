@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.OutfittingDto;
@@ -15,8 +14,10 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeLocalOutfittingQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_local_outfitting";
 
-    @Override public String id() { return QueryIds.LOCAL_OUTFITTING; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -24,7 +25,7 @@ public class AnalyzeLocalOutfittingQueryCommand extends BaseQueryAnalyzer implem
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing outfitting data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing outfitting data. Stand by."));
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         OutfittingDto outfitting = currentLocation.getOutfitting();
         if (outfitting == null || outfitting.getData() == null) {

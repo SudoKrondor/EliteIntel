@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ScannedEvent;
 import elite.intel.session.SystemSession;
 
@@ -15,7 +15,7 @@ public class ScannedEventSubscriber {
     public void onScannedEvent(ScannedEvent event) {
         SystemSession systemSession = SystemSession.getInstance();
         if ("cargo".equalsIgnoreCase(event.getScanType())) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.cargo.scanDetected")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.cargo.scanDetected")));
         }
     }
 }

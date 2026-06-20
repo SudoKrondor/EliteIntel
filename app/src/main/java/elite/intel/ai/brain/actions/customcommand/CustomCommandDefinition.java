@@ -1,5 +1,7 @@
 package elite.intel.ai.brain.actions.customcommand;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +33,7 @@ public final class CustomCommandDefinition {
      */
     private final String phrases;
     /** Optional parameter contract; may be null for parameterless customCommands (backward-compatible). */
-    private final List<CustomCommandParameterSpec> parameters;
+    private final List<ActionParameterSpec> parameters;
     private final List<CustomCommandStep> steps;
 
     /**
@@ -41,7 +43,7 @@ public final class CustomCommandDefinition {
      * @param actionKey LLM-facing routing token; editable, must be unique among customCommands
      */
     public CustomCommandDefinition(String id, String actionKey, String name, String description, String phrases,
-                           List<CustomCommandParameterSpec> parameters, List<CustomCommandStep> steps) {
+                           List<ActionParameterSpec> parameters, List<CustomCommandStep> steps) {
         this.id = id;
         this.actionKey = actionKey;
         this.name = name;
@@ -60,7 +62,7 @@ public final class CustomCommandDefinition {
      * Prefer the 7-arg constructor for new code.
      */
     public CustomCommandDefinition(String id, String name, String description, String phrases,
-                           List<CustomCommandParameterSpec> parameters, List<CustomCommandStep> steps) {
+                           List<ActionParameterSpec> parameters, List<CustomCommandStep> steps) {
         this(id, id, name, description, phrases, parameters, steps);
     }
 
@@ -100,7 +102,7 @@ public final class CustomCommandDefinition {
             throw new IllegalArgumentException("CustomCommand '" + id + "': steps list is empty");
         }
         if (parameters != null) {
-            for (CustomCommandParameterSpec param : parameters) {
+            for (ActionParameterSpec param : parameters) {
                 if (param == null) {
                     throw new IllegalArgumentException("CustomCommand '" + id + "': parameter entry is null");
                 }
@@ -143,6 +145,6 @@ public final class CustomCommandDefinition {
     public String getDescription() { return description != null ? description : ""; }
     public String getPhrases() { return phrases; }
     /** Returns the parameter contract. Empty list means this customCommand has no declared parameters. */
-    public List<CustomCommandParameterSpec> getParameters() { return parameters != null ? parameters : List.of(); }
+    public List<ActionParameterSpec> getParameters() { return parameters != null ? parameters : List.of(); }
     public List<CustomCommandStep> getSteps() { return steps == null ? List.of() : steps; }
 }

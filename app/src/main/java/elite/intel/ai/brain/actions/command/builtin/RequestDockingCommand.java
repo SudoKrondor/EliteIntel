@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -7,7 +6,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.LeftPanel;
@@ -15,23 +14,18 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "request docking".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RequestDockingHandler.
  */
 @RegisterCommand
 public final class RequestDockingCommand implements IntelCommand {
+    public static final String ID = "request_docking";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.REQUEST_DOCKING;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

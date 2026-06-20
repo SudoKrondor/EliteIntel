@@ -5,7 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.search.edsm.dto.MaterialsType;
 import elite.intel.util.StringUtls;
@@ -54,7 +54,7 @@ public class MaterialCollectedSubscriber {
                     ? pending.getFirst()
                     : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
-            EventBusManager.publish(new MiningAnnouncementEvent(announcement));
+            GameEventBus.publish(new MiningAnnouncementEvent(announcement));
         }
     }
 

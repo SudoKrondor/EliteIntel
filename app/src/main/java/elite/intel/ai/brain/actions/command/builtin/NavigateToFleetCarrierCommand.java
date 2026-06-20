@@ -1,12 +1,11 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
@@ -18,15 +17,12 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class NavigateToFleetCarrierCommand implements IntelCommand {
+    public static final String ID = "navigate_to_fleet_carrier";
+
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_FLEET_CARRIER;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -43,7 +39,7 @@ public final class NavigateToFleetCarrierCommand implements IntelCommand {
             } else if (hasHomeSystem) {
                 destination = playerSession.getHomeSystem().getStarName();
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noHomeSystem")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noHomeSystem")));
                 return;
             }
 
@@ -51,10 +47,10 @@ public final class NavigateToFleetCarrierCommand implements IntelCommand {
                 RoutePlotter plotter = new RoutePlotter();
                 plotter.plotRoute(destination);
             } else {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.carrierNotAvailable")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.carrierNotAvailable")));
             }
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
     }
 }

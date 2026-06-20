@@ -3,6 +3,7 @@ package elite.intel.gameapi;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.DeferredNotificationDao;
 import elite.intel.db.managers.DeferredNotificationManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.ui.controller.ManagedService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +57,7 @@ public class DeferredNotificationMonitor implements Runnable, ManagedService {
         while (isRunning) {
             List<DeferredNotificationDao.DeferredNotification> list = manager.get();
             for (DeferredNotificationDao.DeferredNotification notification : list) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(notification.getNotification()));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(notification.getNotification()));
                 manager.delete(notification);
             }
             try {

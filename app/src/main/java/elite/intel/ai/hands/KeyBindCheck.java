@@ -2,7 +2,8 @@ package elite.intel.ai.hands;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.KeyBindingManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.util.StringUtls;
 
@@ -29,18 +30,18 @@ public class KeyBindCheck {
 
         if (!newMissing.isEmpty()) {
             int total = bindingManager.getMissingBindings().size();
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingsMissing", total)
             ));
-            newMissing.forEach(m -> EventBusManager.publish(new AppLogEvent("Missing binding: " + m)));
+            newMissing.forEach(m -> UiBus.publish(new AppLogEvent("Missing binding: " + m)));
         }
 
         if (!newConflicts.isEmpty()) {
             int count = newConflicts.size();
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     StringUtls.localizedSpeech("speech.bindingConflicts", count)
             ));
-            newConflicts.forEach(c -> EventBusManager.publish(new AppLogEvent("Binding conflict: " + c)));
+            newConflicts.forEach(c -> UiBus.publish(new AppLogEvent("Binding conflict: " + c)));
         }
     }
 }

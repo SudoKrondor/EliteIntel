@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.BountyManager;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.RedeemVoucherEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -24,7 +24,7 @@ public class RedeemVoucherSubscriber {
                     A bounty payment was awarded.
                     Notify user about credits received and what factions we received it from.
                 """;
-        EventBusManager.publish(
+        GameEventBus.publish(
                 new SensorDataEvent(
                         new DataDto("Bounty Payment Awarded", event).toYaml(),
                         instructions)

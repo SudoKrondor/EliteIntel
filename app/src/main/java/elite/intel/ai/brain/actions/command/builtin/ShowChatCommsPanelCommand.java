@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -7,8 +6,8 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.CommsPanel;
@@ -19,23 +18,18 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "show chat comms panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenCommsPanelHandler.
  */
 @RegisterCommand
 public final class ShowChatCommsPanelCommand implements IntelCommand {
+    public static final String ID = "show_chat_comms_panel";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SHOW_CHAT_COMMS_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -50,7 +44,7 @@ public final class ShowChatCommsPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
         }
     }
 }

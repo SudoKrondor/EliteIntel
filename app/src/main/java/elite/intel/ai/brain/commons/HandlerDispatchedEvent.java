@@ -1,7 +1,9 @@
 package elite.intel.ai.brain.commons;
 
+import elite.intel.eventbus.GameEventBus;
+
 /**
- * Published on {@link elite.intel.gameapi.EventBusManager} immediately before a command or query
+ * Published on {@link GameEventBus} immediately before a command or query
  * handler's {@code handle()} method is invoked.
  * <p>
  * In production no subscriber listens to this event - zero overhead.

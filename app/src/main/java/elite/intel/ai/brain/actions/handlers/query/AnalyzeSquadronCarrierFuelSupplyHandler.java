@@ -2,11 +2,14 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.db.managers.SquadronCarrierManager;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-public class AnalyzeSquadronCarrierFuelSupplyHandler extends BaseQueryAnalyzer implements QueryHandler {
+public class AnalyzeSquadronCarrierFuelSupplyHandler extends BaseQueryAnalyzer implements IntelQuery {
+
+    @Override public String id() { return "analyze_squadron_carrier_fuel_supply_handler"; }
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

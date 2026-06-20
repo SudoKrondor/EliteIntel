@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.StartJumpEvent;
 import elite.intel.search.edsm.EdsmApiClient;
@@ -42,7 +42,7 @@ public class StartJumpSubscriber {
                     - IF no traffic data is available, omit mentioning traffic info.
                     - IF no deaths data is available, omit mentioning fatalities.
                 """;
-                EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
+                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }
             }); // end virtual thread
         }

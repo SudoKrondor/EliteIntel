@@ -1,14 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.UiNavCommon;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.inputs.UiNavCommon;
 
 /**
  * Self-describing "show station services panel" command.
@@ -17,15 +16,12 @@ import elite.intel.gameapi.GameControllerBus;
  */
 @RegisterCommand
 public final class ShowStationServicesPanelCommand implements IntelCommand {
+    public static final String ID = "show_station_services_panel";
+
 
     @Override
     public String id() {
-        return CommandIds.SHOW_STATION_SERVICES_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

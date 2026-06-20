@@ -1,23 +1,15 @@
 package elite.intel.ai.brain.actions.command;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
-
-import java.util.List;
+import elite.intel.ai.brain.actions.IntelAction;
 
 /**
  * Self-describing built-in command. Owns its own metadata (id, parameter schema,
  * binding, isDangerous, voiceStrategy, description key) and its execution.
- * Extends CommandHandler so a discovered command can later (Stage 2) be dropped
- * straight into the existing handler map; default handle() delegates to execute().
+ * Provides a default {@link #handle} that delegates to {@link #execute}, so a command
+ * drops straight into the handler map dispatched through {@link IntelAction}.
  */
-public interface IntelCommand extends CommandHandler {
-
-    String id();
-
-    default List<CustomCommandParameterSpec> parameters() {
-        return List.of();
-    }
+public interface IntelCommand extends IntelAction {
 
     default boolean isDangerous() {
         return false;
@@ -43,19 +35,11 @@ public interface IntelCommand extends CommandHandler {
         return CommandKind.ACTION;
     }
 
-    /**
-     * Stage-4b scaffold: true when this command's execute() owns real execution
-     * and should replace the legacy handler in the dispatch map. Temporary — to be
-     * removed once every command is migrated and the override becomes unconditional.
-     */
-    default boolean ownsExecution() {
-        return false;
-    }
-
     void execute(JsonObject params, String responseText);
 
     @Override
-    default void handle(String action, JsonObject params, String responseText) {
+    default JsonObject handle(String action, JsonObject params, String responseText) {
         execute(params, responseText);
+        return null;
     }
 }

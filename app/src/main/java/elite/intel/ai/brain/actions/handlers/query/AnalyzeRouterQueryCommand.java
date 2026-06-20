@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
@@ -23,8 +22,10 @@ import static elite.intel.util.NavigationUtils.calculateGalacticDistance;
 
 @RegisterQuery
 public class AnalyzeRouterQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_ship_route_remaining_jumps";
 
-    @Override public String id() { return QueryIds.PLOTTED_ROUTE_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
     private static final Logger log = LogManager.getLogger(AnalyzeRouterQueryCommand.class);
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -34,7 +35,7 @@ public class AnalyzeRouterQueryCommand extends BaseQueryAnalyzer implements Inte
     
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing route telemetry. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing route telemetry. Stand by."));
         Collection<NavRouteDto> orderedRoute = shipRoute.getOrderedRoute();
         LocationDto here = locationManager.findByLocationData(playerSession.getLocationData());
 

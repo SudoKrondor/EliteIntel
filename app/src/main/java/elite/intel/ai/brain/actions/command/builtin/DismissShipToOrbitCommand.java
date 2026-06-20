@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -7,8 +6,8 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -16,24 +15,20 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
  * Stage-4b self-describing command for "dismiss ship to orbit".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy DismissRecallShip. The legacy handler is
+ * The legacy handler is
  * shared with "return to surface" and does not branch on action, so both commands carry
  * an identical body 1:1.
  */
 @RegisterCommand
 public final class DismissShipToOrbitCommand implements IntelCommand {
+    public static final String ID = "dismiss_ship_to_orbit";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DISMISS_SHIP_TO_ORBIT;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -49,13 +44,13 @@ public final class DismissShipToOrbitCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
             return;
         }
         if (status.isLanded()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
         }
     }
 }

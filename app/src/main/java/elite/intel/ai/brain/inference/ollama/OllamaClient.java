@@ -3,7 +3,7 @@ package elite.intel.ai.brain.inference.ollama;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LlmUsageEvent;
@@ -89,9 +89,9 @@ public class OllamaClient extends BaseAiClient implements Client {
     public synchronized JsonObject sendJsonRequest(String request) {
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         OllamaMetadata metadata = GsonFactory.getGson().fromJson(response, OllamaMetadata.class);
-        EventBusManager.publish(new AppLogEvent("Model " + metadata));
+        UiBus.publish(new AppLogEvent("Model " + metadata));
         if (metadata != null) {
-            EventBusManager.publish(new LlmUsageEvent("Ollama",
+            UiBus.publish(new LlmUsageEvent("Ollama",
                     metadata.model() != null ? metadata.model() : "local",
                     metadata.promptTokens(), metadata.completionTokens(), 0, 0,
                     metadata.tokensPerSecond()));

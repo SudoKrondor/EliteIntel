@@ -12,7 +12,7 @@ import elite.intel.ui.widget.HudStepper;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.HudTextField;
 
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
 import elite.intel.ai.brain.commons.ActionParameterKeyExtractor;
 import elite.intel.ai.hands.BindingModifier;
@@ -83,7 +83,7 @@ public final class CustomCommandStepEditorDialog extends JDialog {
     private final JTable stepParamsTable = new JTable(stepParamsModel);
     private final JPanel stepParamsPanel = buildStepParamsPanel();
     private final Set<String> customCommandParameterNames;
-    private final Consumer<List<CustomCommandParameterSpec>> missingCustomCommandParamsConsumer;
+    private final Consumer<List<ActionParameterSpec>> missingCustomCommandParamsConsumer;
     private String lastParamHintActionId;
     private CustomCommandStep result;
 
@@ -91,15 +91,15 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         this(parent, step, List.of(), missingParams -> {});
     }
 
-    CustomCommandStepEditorDialog(Component parent, CustomCommandStep step, List<CustomCommandParameterSpec> customCommandParameters) {
+    CustomCommandStepEditorDialog(Component parent, CustomCommandStep step, List<ActionParameterSpec> customCommandParameters) {
         this(parent, step, customCommandParameters, missingParams -> {});
     }
 
     CustomCommandStepEditorDialog(
             Component parent,
             CustomCommandStep step,
-            List<CustomCommandParameterSpec> customCommandParameters,
-            Consumer<List<CustomCommandParameterSpec>> missingCustomCommandParamsConsumer
+            List<ActionParameterSpec> customCommandParameters,
+            Consumer<List<ActionParameterSpec>> missingCustomCommandParamsConsumer
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("actions.customCommands.editor.step.title"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
@@ -333,12 +333,12 @@ public final class CustomCommandStepEditorDialog extends JDialog {
 
     private void addMissingCustomCommandParams(CustomCommandStep step) {
         if (step.getType() != CustomCommandStep.Type.RUN_COMMAND) { return; }
-        List<CustomCommandParameterSpec> missing = step.getStepParams().entrySet().stream()
+        List<ActionParameterSpec> missing = step.getStepParams().entrySet().stream()
                 .filter(entry -> isSameNameCustomCommandTemplate(entry.getKey(), entry.getValue()))
                 .map(Map.Entry::getKey)
                 .filter(key -> !customCommandParameterNames.contains(key))
                 .distinct()
-                .map(key -> new CustomCommandParameterSpec(
+                .map(key -> new ActionParameterSpec(
                         key,
                         inferredCustomCommandParamType(step.getActionId(), key),
                         true,
@@ -563,11 +563,11 @@ public final class CustomCommandStepEditorDialog extends JDialog {
         public String toString() { return label; }
     }
 
-    private static Set<String> customCommandParameterNames(List<CustomCommandParameterSpec> parameters) {
+    private static Set<String> customCommandParameterNames(List<ActionParameterSpec> parameters) {
         if (parameters == null || parameters.isEmpty()) { return Set.of(); }
         Set<String> names = new LinkedHashSet<>();
         parameters.stream()
-                .map(CustomCommandParameterSpec::getName)
+                .map(ActionParameterSpec::getName)
                 .filter(name -> name != null && !name.isBlank())
                 .forEach(names::add);
         return Set.copyOf(names);

@@ -1,14 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.FleetCarrierManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.util.StringUtls;
 
@@ -20,13 +19,15 @@ import java.util.List;
  */
 @RegisterCommand
 public final class SetCarrierFuelReserveCommand implements IntelCommand {
+    public static final String ID = "set_carrier_fuel_reserve";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
         // Handler reads this value under the key "key" (getAsString -> getIntSafely);
         // type=number is safe because the read is string-based.
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "number", true,
                 "Fleet carrier tritium fuel reserve amount to set.",
                 List.of("500", "1000"),
@@ -37,35 +38,30 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.SET_CARRIER_FUEL_RESERVE;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
             return;
         }
         Integer reserve = StringUtls.getIntSafely(key.getAsString());
         if(reserve == null){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
             return;
         }
         FleetCarrierManager fleetCarrierManager = FleetCarrierManager.getInstance();
         CarrierDataDto dto = fleetCarrierManager.get();
         dto.setFuelReserve(reserve);
         fleetCarrierManager.save(dto);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve)));
     }
 }

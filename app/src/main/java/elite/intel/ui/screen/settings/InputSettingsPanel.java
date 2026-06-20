@@ -7,7 +7,9 @@ import elite.intel.devices.events.DeviceButtonEvent;
 import elite.intel.devices.events.DeviceConnectedEvent;
 import elite.intel.devices.events.DeviceDisconnectedEvent;
 import elite.intel.devices.model.Device;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.DeviceBus;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttButtonStateEvent;
 import elite.intel.ui.event.PttModeChangedEvent;
@@ -58,12 +60,14 @@ public class InputSettingsPanel extends JPanel {
     private boolean suppressPersistence = false;
 
     public InputSettingsPanel() {
-        EventBusManager.register(this);
+        UiBus.register(this);
+        DeviceBus.register(this);
         buildUi();
     }
 
     public void dispose() {
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
+        DeviceBus.unregister(this);
     }
 
     public void initData() {
@@ -77,11 +81,10 @@ public class InputSettingsPanel extends JPanel {
         modeControl.setSelectedIndex(toggleMode ? MODE_TOGGLE : MODE_HOLD);
 
         if (pushToTalkEnabled) {
-            DeviceService.getInstance().start();
             SystemSession.getInstance().stopStartListening(true);
-            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
+            UiBus.publish(new SleepWakeStateChangedEvent(true));
             if (!toggleMode) {
-                EventBusManager.publish(new PttModeChangedEvent(true));
+                UiBus.publish(new PttModeChangedEvent(true));
             }
         }
 
@@ -153,14 +156,14 @@ public class InputSettingsPanel extends JPanel {
         if (modeControl.getSelectedIndex() == MODE_TOGGLE) {
             toggleMode = true;
             SystemSession.getInstance().setPushToTalkToggleMode(true);
-            EventBusManager.publish(new PttModeChangedEvent(false));
+            UiBus.publish(new PttModeChangedEvent(false));
         } else {
             toggleMode = false;
             SystemSession.getInstance().setPushToTalkToggleMode(false);
             // Lock the system to sleeping - PTT button is the only wake trigger in this mode.
             SystemSession.getInstance().stopStartListening(true);
-            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
-            EventBusManager.publish(new PttModeChangedEvent(true));
+            UiBus.publish(new SleepWakeStateChangedEvent(true));
+            UiBus.publish(new PttModeChangedEvent(true));
         }
     }
 
@@ -171,17 +174,16 @@ public class InputSettingsPanel extends JPanel {
         pushToTalkEnabled = enabled;
         setControlsEnabled(enabled);
         if (enabled) {
-            DeviceService.getInstance().start();
             reconcileControllerSelection();
 
             SystemSession.getInstance().stopStartListening(true);
-            EventBusManager.publish(new SleepWakeStateChangedEvent(true));
-            if (!toggleMode) EventBusManager.publish(new PttModeChangedEvent(true));
+            UiBus.publish(new SleepWakeStateChangedEvent(true));
+            if (!toggleMode) UiBus.publish(new PttModeChangedEvent(true));
         } else {
 
             SystemSession.getInstance().stopStartListening(false);
-            EventBusManager.publish(new SleepWakeStateChangedEvent(false));
-            EventBusManager.publish(new PttModeChangedEvent(false));
+            UiBus.publish(new SleepWakeStateChangedEvent(false));
+            UiBus.publish(new PttModeChangedEvent(false));
         }
         SystemSession.getInstance().setPushToTalkEnabled(enabled);
     }
@@ -297,7 +299,7 @@ public class InputSettingsPanel extends JPanel {
     public void onDeviceDisconnected(DeviceDisconnectedEvent event) {
         if (selectedDevice != null && selectedDevice.id() == event.deviceId() && !toggleMode) {
             // Release PTT if the controller disconnects while the button is held.
-            EventBusManager.publish(new PttButtonStateEvent(false));
+            UiBus.publish(new PttButtonStateEvent(false));
         }
         SwingUtilities.invokeLater(() -> {
             suppressPersistence = true;
@@ -326,17 +328,17 @@ public class InputSettingsPanel extends JPanel {
         if (toggleMode) {
             if (event.pressed()) {
                 AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
-                EventBusManager.publish(new TTSInterruptEvent(true));
+                GameEventBus.publish(new TTSInterruptEvent(true));
                 toggleSleepWake();
             }
         } else {
             if (event.pressed()) {
                 AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
-                EventBusManager.publish(new TTSInterruptEvent(true));
-                EventBusManager.publish(new PttButtonStateEvent(true));
+                GameEventBus.publish(new TTSInterruptEvent(true));
+                UiBus.publish(new PttButtonStateEvent(true));
             } else {
                 AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
-                EventBusManager.publish(new PttButtonStateEvent(false));
+                UiBus.publish(new PttButtonStateEvent(false));
             }
         }
     }
@@ -349,11 +351,11 @@ public class InputSettingsPanel extends JPanel {
 
     private void wakeUp() {
         SystemSession.getInstance().stopStartListening(false);
-        EventBusManager.publish(new VoiceInputModeToggleEvent(false));
+        UiBus.publish(new VoiceInputModeToggleEvent(false));
     }
 
     private void sleep() {
         SystemSession.getInstance().stopStartListening(true);
-        EventBusManager.publish(new VoiceInputModeToggleEvent(true));
+        UiBus.publish(new VoiceInputModeToggleEvent(true));
     }
 }

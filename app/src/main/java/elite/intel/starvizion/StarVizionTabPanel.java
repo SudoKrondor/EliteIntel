@@ -3,12 +3,11 @@ package elite.intel.starvizion;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.devices.DeviceService;
 import elite.intel.devices.events.DeviceServiceStateEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.DeviceBus;
 import elite.intel.starvizion.overlay.AxesVizlet;
 import elite.intel.starvizion.overlay.ButtonVizlet;
 import elite.intel.starvizion.overlay.CounterVizlet;
 import elite.intel.starvizion.overlay.KeyboardVizlet;
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 
 import javax.swing.*;
@@ -16,7 +15,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.AppTheme.*;
+import static elite.intel.ui.theme.AppTheme.applyDarkPalette;
+import static elite.intel.ui.theme.AppTheme.makeButton;
 
 /**
  * StarVizion tab — spawns transparent always-on-top Vizlet overlay windows
@@ -38,21 +38,19 @@ public class StarVizionTabPanel extends JPanel {
     private JLabel  statusLabel;
     private boolean active = false;
 
-    private DeviceService deviceService;
     private AxesVizlet  axesVizlet;
     private ButtonVizlet buttonVizlet;
     private KeyboardVizlet keyboardVizlet;
     private CounterVizlet counterVizlet;
 
     public StarVizionTabPanel() {
-        EventBusManager.register(this);
+        DeviceBus.register(this);
         buildUi();
     }
 
     public void dispose() {
         deactivate();
-        if (deviceService != null) deviceService.stop();
-        EventBusManager.unregister(this);
+        DeviceBus.unregister(this);
     }
 
     // -- UI -------------------------------------------------------------------
@@ -111,12 +109,11 @@ public class StarVizionTabPanel extends JPanel {
     }
 
     private void activate() {
-        // Lazy-init device service on first activation — result arrives via DeviceServiceStateEvent
-        if (deviceService == null) {
-            deviceService = DeviceService.getInstance();
-            deviceService.start();
-            statusLabel.setText(getText("starvizion.sdl.initializing"));
-            statusLabel.setForeground(StarVizionPalette.STATUS_PENDING_TEXT);
+        if (!DeviceService.getInstance().isAvailable()) {
+            statusLabel.setText(getText("starvizion.sdl.unavailable"));
+            statusLabel.setForeground(StarVizionPalette.STATUS_UNAVAILABLE_TEXT);
+        } else {
+            statusLabel.setText(" ");
         }
 
         // Spawn vizlets in upper-right, side by side

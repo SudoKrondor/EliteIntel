@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -22,8 +21,10 @@ import java.util.stream.Collectors;
 
 @RegisterQuery
 public class AnalyzeMissionQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_missions_and_rewards";
 
-    @Override public String id() { return QueryIds.ANALYZE_MISSIONS; }
+
+    @Override public String id() { return ID; }
 
 
     private final MissionManager missionManager = MissionManager.getInstance();

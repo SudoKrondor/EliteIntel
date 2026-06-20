@@ -1,14 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.MissionType;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.StringUtls;
 
@@ -21,15 +20,12 @@ import java.util.Set;
  */
 @RegisterCommand
 public final class NavigateToPirateMissionTargetCommand implements IntelCommand {
+    public static final String ID = "navigate_to_pirate_mission_target";
+
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_PIRATE_MISSION_TARGET;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -40,7 +36,7 @@ public final class NavigateToPirateMissionTargetCommand implements IntelCommand 
         Set<String> targetFactions = missionManager.getTargetFactions(missionTypes);
 
         if (targetFactions.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
             return;
         }
 

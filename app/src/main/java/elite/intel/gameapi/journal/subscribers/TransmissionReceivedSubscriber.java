@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
 import elite.intel.session.PlayerSession;
 
@@ -40,7 +40,7 @@ public class TransmissionReceivedSubscriber {
             boolean haveCargo = cargoHoldManager.get() != null && cargoHoldManager.get().getCount() > 0;
 
             if (isPirateMessage(event.getMessageLocalised()) && haveCargo && !isRadioOn) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.pirate.alert")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.pirate.alert")));
                 return;
             }
 
@@ -55,10 +55,10 @@ public class TransmissionReceivedSubscriber {
 
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
-                        EventBusManager.publish(new RadioTransmissionEvent(localizedEvent("event.transmission.trafficControl", event.getFrom(), event.getMessageLocalised())));
+                        GameEventBus.publish(new RadioTransmissionEvent(localizedEvent("event.transmission.trafficControl", event.getFrom(), event.getMessageLocalised())));
                     }
                 } else {
-                    EventBusManager.publish(new RadioTransmissionEvent(event.getMessageLocalised()));
+                    GameEventBus.publish(new RadioTransmissionEvent(event.getMessageLocalised()));
                 }
             }
         });

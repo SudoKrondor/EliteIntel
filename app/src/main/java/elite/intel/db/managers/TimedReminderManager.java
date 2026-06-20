@@ -1,7 +1,7 @@
 package elite.intel.db.managers;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ public final class TimedReminderManager {
 
     public synchronized void schedule(String text, int minutes) {
         ScheduledFuture<?> future = scheduler.schedule(
-                () -> EventBusManager.publish(new MissionCriticalAnnouncementEvent("Reminder: " + text)),
+                () -> GameEventBus.publish(new MissionCriticalAnnouncementEvent("Reminder: " + text)),
                 minutes,
                 TimeUnit.MINUTES
         );

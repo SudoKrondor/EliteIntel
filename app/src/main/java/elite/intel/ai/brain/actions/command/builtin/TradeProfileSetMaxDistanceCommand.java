@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -18,11 +17,13 @@ import java.util.List;
  */
 @RegisterCommand
 public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
+    public static final String ID = "trade_profile_set_max_distance";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key",
                 "number",
                 true,
@@ -36,17 +37,12 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.TRADE_PROFILE_SET_MAX_DISTANCE;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override
@@ -54,13 +50,13 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get("key").getAsString());
 
         if(distanceFromEntry == null){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));
             return;
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setDistanceFromSystemEntry(distanceFromEntry)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry)));
         }
     }
 }

@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -11,10 +10,16 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-@RegisterQuery
+@RegisterQuery(before = {
+        AnalyzeSquadronCarrierRouteQueryCommand.ID,
+        AnalyzeSquadronCarrierFinalDestinationQueryCommand.ID,
+        AnalyzeSquadronCarrierETAQueryCommand.ID
+})
 public class AnalyzeSquadronCarrierDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_squadron_carrier_status_fuel_credit_finance";
 
-    @Override public String id() { return QueryIds.SQUADRON_CARRIER_STATUS; }
+
+    @Override public String id() { return ID; }
 
 
     @Override

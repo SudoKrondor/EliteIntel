@@ -6,7 +6,7 @@ import com.google.gson.JsonParser;
 import elite.intel.ai.brain.AIChatInterface;
 import elite.intel.ai.brain.commons.AiEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -75,7 +75,7 @@ public class LMStudioCommandEndPoint extends AiEndPoint implements AIChatInterfa
         } catch (Exception e) {
             log.error("LM Studio command call failed: {}", e.getMessage(), e);
             log.error("Request body was:\n{}", bodyString != null ? bodyString : "null");
-            EventBusManager.publish(new AiVoxResponseEvent("LLM call failed, check logs"));
+            GameEventBus.publish(new AiVoxResponseEvent("LLM call failed, check logs"));
             return null;
         }
     }

@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.search.edsm.dto.data.DeathsData;
 import elite.intel.search.edsm.dto.data.StarSystemInformation;
@@ -16,13 +15,15 @@ import elite.intel.util.yaml.YamlFactory;
 
 @RegisterQuery
 public class AnalyzeFsdTargetQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_fsd_target";
 
-    @Override public String id() { return QueryIds.FSD_TARGET_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing FSD telemetry. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing FSD telemetry. Stand by."));
         PlayerSession playerSession = PlayerSession.getInstance();
 
         FsdTarget fsdTarget = playerSession.getFsdTarget();

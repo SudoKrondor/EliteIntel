@@ -5,7 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MarketSellEvent;
 import elite.intel.search.spansh.station.marketstation.TradeStopDto;
 import elite.intel.search.spansh.traderoute.TradeCommodity;
@@ -48,10 +48,10 @@ public class MarketSellEventSubscriber {
 
             if (pending.size() == 1) {
                 MarketSellEvent e = pending.getFirst();
-                EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.units", e.getCount(), e.getType(), e.getTotalSale())));
+                GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.units", e.getCount(), e.getType(), e.getTotalSale())));
             } else {
                 long total = pending.stream().mapToLong(MarketSellEvent::getTotalSale).sum();
-                EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.multiple", pending.size(), total)));
+                GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.multiple", pending.size(), total)));
             }
             pending.clear();
 
@@ -77,7 +77,7 @@ public class MarketSellEventSubscriber {
                     tradeMessage = localizedEvent("event.market.trade.head", sourceSystem, sourceStation, commodities, destinationSystem, destinationStation);
                 }
 
-                EventBusManager.publish(new AiVoxResponseEvent(tradeMessage));
+                GameEventBus.publish(new AiVoxResponseEvent(tradeMessage));
                 reminderManager.setReminder(tradeMessage, destinationSystem);
             } else {
                 reminderManager.clear();

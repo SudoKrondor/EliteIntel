@@ -8,7 +8,8 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiCommandInterface;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -47,7 +48,7 @@ public class GeminiCommandEndPoint extends CommandEndPoint implements AiCommandI
                 t.setDaemon(true);
                 return t;
             });
-            EventBusManager.register(this);
+            GameEventBus.register(this);
             log.info("GeminiCommandEndPoint started");
         } else {
             log.debug("GeminiCommandEndPoint already started");
@@ -57,7 +58,7 @@ public class GeminiCommandEndPoint extends CommandEndPoint implements AiCommandI
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) {
                 GeminiClient.getInstance().cancelCurrentRequest();
                 executor.shutdown();
@@ -129,7 +130,7 @@ public class GeminiCommandEndPoint extends CommandEndPoint implements AiCommandI
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
 
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
 
         JsonArray messages = buildSensorMessages(event);
 
@@ -137,7 +138,7 @@ public class GeminiCommandEndPoint extends CommandEndPoint implements AiCommandI
             try {
                 JsonObject apiResponse = GeminiChatEndPoint.getInstance().processAiPrompt(messages, 0.01f);
                 if (apiResponse == null) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
+                    GameEventBus.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
                     return;
                 }
                 getRouter().processAiResponse(apiResponse, null);

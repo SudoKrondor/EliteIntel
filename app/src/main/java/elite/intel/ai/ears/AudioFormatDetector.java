@@ -2,7 +2,7 @@ package elite.intel.ai.ears;
 
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -78,7 +78,7 @@ public class AudioFormatDetector {
             }
         }
         log.warn("No supported audio format found for any probed format combination.");
-        EventBusManager.publish(new AiVoxResponseEvent("No supported audio format found for mono 16-bit input."));
+        GameEventBus.publish(new AiVoxResponseEvent("No supported audio format found for mono 16-bit input."));
         return Optional.empty();
     }
 

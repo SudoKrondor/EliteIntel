@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.UiNavCommon;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.Status;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
@@ -19,17 +18,14 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  */
 @RegisterCommand
 public final class DisplayFleetCarrierManagementPanelCommand implements IntelCommand {
+    public static final String ID = "display_fleet_carrier_management_panel";
+
 
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.DISPLAY_FLEET_CARRIER_MANAGEMENT_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     /// not a sure fire. assumes default UI selection. will fail often.

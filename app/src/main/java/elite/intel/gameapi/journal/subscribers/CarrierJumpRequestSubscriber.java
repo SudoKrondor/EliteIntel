@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.DeferredNotificationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.CarrierJumpRequestEvent;
 import elite.intel.session.PlayerSession;
@@ -51,7 +51,7 @@ public class CarrierJumpRequestSubscriber {
             long millis = Instant.parse(event.getDepartureTime()).toEpochMilli() - (1000 * 60 * 3);
             DeferredNotificationManager.getInstance().scheduleNotification(localizedEvent("event.carrier.departingThreeMinutes"), millis);
             String instructions = "Report the carrier departure. State the destination and the time until departure.";
-            EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
+            GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
         });
     }
 }

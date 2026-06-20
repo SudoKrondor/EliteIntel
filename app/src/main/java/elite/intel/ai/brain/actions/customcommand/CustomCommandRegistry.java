@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import elite.intel.ai.brain.InputNormalizer;
-import elite.intel.ai.brain.actions.command.CommandHandler;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +74,7 @@ public final class CustomCommandRegistry {
     public void replaceCustomCommands(List<CustomCommandDefinition> customCommands) {
         setCustomCommands(customCommands);
         log.info("Custom command registry: {} command(s) active after replace", this.customCommands.size());
-        EventBusManager.publish(new CustomCommandsSummaryChangedEvent(this.customCommands.size()));
+        UiBus.publish(new CustomCommandsSummaryChangedEvent(this.customCommands.size()));
     }
 
     /**
@@ -150,7 +150,7 @@ public final class CustomCommandRegistry {
      * Called from {@code CommandHandlerFactory.registerCommandHandlers()} so that
      * {@code ResponseRouter} routes user-defined action IDs through the normal command dispatch path.
      */
-    public void contributeToHandlerMap(Map<String, CommandHandler> map) {
+    public void contributeToHandlerMap(Map<String, IntelAction> map) {
         Set<String> protectedActionIds = new HashSet<>(map.keySet());
         for (CustomCommandDefinition customCommand : customCommands) {
             if (protectedActionIds.contains(customCommand.getActionKey())) {

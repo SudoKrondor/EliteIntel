@@ -1,10 +1,12 @@
 package elite.intel.starvizion.overlay;
 
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.DeviceBus;
+import elite.intel.eventbus.GameEventBus;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -45,14 +47,16 @@ public abstract class VizletWindow extends JWindow {
 
     /** Show the vizlet and register with the event bus. */
     public void showVizlet() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
+        DeviceBus.register(this);
         setVisible(true);
     }
 
     /** Hide the vizlet and unregister from the event bus. */
     public void closeVizlet() {
         setVisible(false);
-        EventBusManager.unregister(this);
+        GameEventBus.unregister(this);
+        DeviceBus.unregister(this);
         dispose();
     }
 

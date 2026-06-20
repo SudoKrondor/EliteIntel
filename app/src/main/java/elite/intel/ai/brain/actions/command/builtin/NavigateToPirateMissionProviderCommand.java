@@ -1,16 +1,15 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -24,6 +23,8 @@ import java.util.List;
  */
 @RegisterCommand
 public final class NavigateToPirateMissionProviderCommand implements IntelCommand {
+    public static final String ID = "navigate_to_pirate_mission_provider";
+
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -31,12 +32,7 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_PIRATE_MISSION_PROVIDER;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -54,14 +50,14 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
         }
 
         if (location.getStarName().equalsIgnoreCase(targetSystem)){
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem)));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem)));
         }
 
         if (destination == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noKnowingProviders")));
-            EventBusManager.publish(new UserInputEvent(" find hunting grounds"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noKnowingProviders")));
+            GameEventBus.publish(new UserInputEvent(" find hunting grounds"));
         } else {
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(destination);

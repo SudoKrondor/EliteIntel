@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -12,17 +11,14 @@ import elite.intel.db.managers.MissionManager;
  */
 @RegisterCommand
 public final class ClearActiveMissionsCommand implements IntelCommand {
+    public static final String ID = "clear_active_missions";
+
 
     private final MissionManager missionManager = MissionManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CLEAR_ACTIVE_MISSIONS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -7,28 +6,23 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "recover srv".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy RecoverSrvHandler.
  */
 @RegisterCommand
 public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelCommand {
+    public static final String ID = "recover_srv_vehicle_get_on_board_ship";
+
 
     private final UINavigator navigator = new UINavigator();
 
     @Override
     public String id() {
-        return CommandIds.RECOVER_SRV_VEHICLE_GET_ON_BOARD_SHIP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

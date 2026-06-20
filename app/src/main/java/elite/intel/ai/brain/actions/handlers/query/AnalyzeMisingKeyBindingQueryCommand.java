@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -12,8 +11,10 @@ import java.util.List;
 
 @RegisterQuery
 public class AnalyzeMisingKeyBindingQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "check_missing_key_bindings";
 
-    @Override public String id() { return QueryIds.KEY_BINDINGS_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {

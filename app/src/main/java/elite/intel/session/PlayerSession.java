@@ -5,7 +5,7 @@ import elite.intel.db.dao.PlayerDao;
 import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
@@ -52,7 +52,7 @@ public class PlayerSession {
     private boolean shipAutoDeparted = false;
 
     private PlayerSession() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     public String getUUD() {

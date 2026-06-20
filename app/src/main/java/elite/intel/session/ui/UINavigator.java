@@ -4,7 +4,7 @@ import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.GlobalSettingsManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.StatusFlags.GuiFocus;

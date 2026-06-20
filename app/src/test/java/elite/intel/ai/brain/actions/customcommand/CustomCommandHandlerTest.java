@@ -4,12 +4,13 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -143,7 +144,10 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepDelegatesToRegisteredBuiltinHandler() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("builtin_action", fakeBuiltin);
 
         runCustomCommand("""
@@ -393,12 +397,15 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPassesResolvedStepParamsToNestedHandler() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> capturedParams.set(p);
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { capturedParams.set(p); return null; }
+        };
         registerHandler("builtin_with_params", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("commodity", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("commodity", "string", true, "", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("builtin_with_params", Map.of("key", "${commodity}")))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -412,14 +419,17 @@ class CustomCommandHandlerTest {
     @Test
     void runCommandStepPreservesJsonNumberType() {
         AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        CommandHandler fakeBuiltin = (a, p, r) -> capturedParams.set(p);
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { capturedParams.set(p); return null; }
+        };
         registerHandler("navigate_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
                 List.of(
-                        new CustomCommandParameterSpec("lat", "number", true, "", null, null),
-                        new CustomCommandParameterSpec("lon", "number", true, "", null, null)
+                        new ActionParameterSpec("lat", "number", true, "", null, null),
+                        new ActionParameterSpec("lon", "number", true, "", null, null)
                 ),
                 List.of(CustomCommandStep.runCommandWithParams("navigate_fake", Map.of("lat", "${lat}", "lon", "${lon}")))
         );
@@ -435,12 +445,15 @@ class CustomCommandHandlerTest {
     @Test
     void abortsCustomCommandWhenRequiredParamIsMissing() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("cmd_fake", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("speed", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("speed", "string", true, "", null, null)),
                 List.of(CustomCommandStep.runCommandWithParams("cmd_fake", Map.of("key", "${speed}")))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -454,7 +467,7 @@ class CustomCommandHandlerTest {
     void speakStepResolvesParamTemplate() {
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("target", "string", true, "", null, null)),
+                List.of(new ActionParameterSpec("target", "string", true, "", null, null)),
                 List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "Targeting ${target}", null))
         );
         CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
@@ -468,12 +481,15 @@ class CustomCommandHandlerTest {
     @Test
     void optionalParamAbsentDoesNotAbortCustomCommand() {
         AtomicBoolean called = new AtomicBoolean(false);
-        CommandHandler fakeBuiltin = (a, p, r) -> called.set(true);
+        IntelAction fakeBuiltin = new IntelAction() {
+            @Override public String id() { return "fake_builtin"; }
+            @Override public JsonObject handle(String a, JsonObject p, String r) { called.set(true); return null; }
+        };
         registerHandler("cmd_optional", fakeBuiltin);
 
         CustomCommandDefinition customCommand = new CustomCommandDefinition(
                 "m", "M", "", "phrase",
-                List.of(new CustomCommandParameterSpec("hint", "string", false, "", null, null)),
+                List.of(new ActionParameterSpec("hint", "string", false, "", null, null)),
                 // step doesn't use the optional param at all
                 List.of(new CustomCommandStep(CustomCommandStep.Type.RUN_COMMAND, null, 0, null, "cmd_optional"))
         );
@@ -546,7 +562,7 @@ class CustomCommandHandlerTest {
         return GSON.fromJson(json, CustomCommandDefinition.class);
     }
 
-    private void registerHandler(String key, CommandHandler handler) {
+    private void registerHandler(String key, IntelAction handler) {
         CommandHandlerFactory.getInstance().getCommandHandlers().put(key, handler);
         addedHandlerKeys.add(key);
     }

@@ -1,11 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.db.managers.SubSystemsManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,13 +18,15 @@ import java.util.Locale;
  */
 @RegisterCommand
 public final class TargetSubsystemCommand implements IntelCommand {
+    public static final String ID = "target_subsystem";
+
 
     private static final Logger log = LogManager.getLogger(TargetSubsystemCommand.class);
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "string", true,
                 "The ship subsystem to target, e.g. fsd, drive, power distributor, powerplant, life support.",
                 List.of("fsd", "power distributor"),
@@ -36,17 +37,12 @@ public final class TargetSubsystemCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.TARGET_SUBSYSTEM;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override

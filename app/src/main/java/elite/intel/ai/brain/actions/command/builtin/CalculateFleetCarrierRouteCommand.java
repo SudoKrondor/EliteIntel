@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -12,15 +11,12 @@ import elite.intel.util.FleetCarrierRouteCalculator;
  */
 @RegisterCommand
 public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
+    public static final String ID = "calculate_fleet_carrier_route";
+
 
     @Override
     public String id() {
-        return CommandIds.CALCULATE_FLEET_CARRIER_ROUTE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

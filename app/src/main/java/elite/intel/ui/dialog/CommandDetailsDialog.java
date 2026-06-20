@@ -10,7 +10,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntryType;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import javax.swing.*;
@@ -36,7 +36,7 @@ public final class CommandDetailsDialog extends JDialog {
     private final List<String> phrases;
     private final boolean showPhraseCorrection;
     private final String sequenceText;
-    private final List<CustomCommandParameterSpec> customCommandParameters;
+    private final List<ActionParameterSpec> customCommandParameters;
     private final Runnable editAction;
     private final Runnable deleteAction;
 
@@ -94,7 +94,7 @@ public final class CommandDetailsDialog extends JDialog {
             List<String> phrases,
             boolean showPhraseCorrection,
             String sequenceText,
-            List<CustomCommandParameterSpec> customCommandParameters,
+            List<ActionParameterSpec> customCommandParameters,
             Runnable editAction,
             Runnable deleteAction
     ) {
@@ -126,6 +126,11 @@ public final class CommandDetailsDialog extends JDialog {
 
         JButton run = runButton();
         run.addActionListener(event -> runCommand());
+        // Queries are information requests that need live game data + LLM formatting; they are not
+        // directly runnable from the catalog, so keep Run disabled for them.
+        if (entry.type() == CommandCatalogEntryType.BUILT_IN_QUERY) {
+            run.setEnabled(false);
+        }
         JButton close = AppTheme.makeButtonSubtle(getText("button.back"));
         close.addActionListener(event -> dispose());
 
@@ -248,7 +253,7 @@ public final class CommandDetailsDialog extends JDialog {
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         StringBuilder sb = new StringBuilder();
-        for (CustomCommandParameterSpec spec : customCommandParameters) {
+        for (ActionParameterSpec spec : customCommandParameters) {
             sb.append(spec.getName()).append(" (").append(spec.getType());
             if (spec.isRequired()) sb.append(", required");
             sb.append(")");
@@ -422,14 +427,14 @@ public final class CommandDetailsDialog extends JDialog {
     private JsonObject promptForCustomCommandParams() {
         JPanel panel = AppTheme.transparentPanel(new GridBagLayout());
         panel.setBorder(new EmptyBorder(HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING, HudPalette.HUD_PADDING));
-        Map<CustomCommandParameterSpec, JComponent> fields = new LinkedHashMap<>();
+        Map<ActionParameterSpec, JComponent> fields = new LinkedHashMap<>();
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridy = 0;
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        for (CustomCommandParameterSpec spec : customCommandParameters) {
+        for (ActionParameterSpec spec : customCommandParameters) {
             gbc.gridx = 0;
             gbc.weightx = 0.0;
             String labelText = spec.getName() + (spec.isRequired() ? " *" : "");
@@ -465,8 +470,8 @@ public final class CommandDetailsDialog extends JDialog {
         }
 
         JsonObject params = new JsonObject();
-        for (Map.Entry<CustomCommandParameterSpec, JComponent> e : fields.entrySet()) {
-            CustomCommandParameterSpec spec = e.getKey();
+        for (Map.Entry<ActionParameterSpec, JComponent> e : fields.entrySet()) {
+            ActionParameterSpec spec = e.getKey();
             JComponent field = e.getValue();
             if (field instanceof JComboBox<?> combo) {
                 Object selected = combo.getSelectedItem();
@@ -516,6 +521,7 @@ public final class CommandDetailsDialog extends JDialog {
         return switch (type) {
             case BUILT_IN_BINDING -> getText("actions.commands.type.builtInBinding");
             case BUILT_IN_ACTION -> getText("actions.commands.type.builtInAction");
+            case BUILT_IN_QUERY -> getText("actions.commands.type.builtInQuery");
             case CUSTOM_COMMAND -> getText("actions.commands.type.customCommand");
         };
     }

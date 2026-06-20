@@ -1,27 +1,17 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.dialog.AudioInterfaceDialog;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudCommanderBlock;
-import elite.intel.ui.widget.HudLogArea;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudSplitPane;
-import elite.intel.ui.widget.HudStatusReadout;
-import elite.intel.ui.widget.HudTelemetryBlock;
-import elite.intel.ui.widget.HudTelemetryStrip;
-import elite.intel.ui.widget.HudUpdateButton;
-import elite.intel.ui.widget.StatusBadge;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.LoadGameEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.*;
 import elite.intel.util.SleepNoThrow;
 
 import javax.imageio.ImageIO;
@@ -34,7 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
+import static elite.intel.ui.theme.HudPalette.HUD_GAP;
 
 public class AiTabPanel extends JPanel {
 
@@ -81,7 +72,7 @@ public class AiTabPanel extends JPanel {
         this.monoFont = monoFont;
         LlmSessionStatsTracker.getInstance(); // ensure tracker is registered before events flow
         sleeping = SystemSession.getInstance().isSleepingModeOn();
-        EventBusManager.register(this);
+        UiBus.register(this);
         buildUi();
         summaryClockTimer = new Timer(1_000, e -> tickSummaryClock());
         summaryClockTimer.start();
@@ -89,7 +80,7 @@ public class AiTabPanel extends JPanel {
 
     public void dispose() {
         summaryClockTimer.stop();
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
         if (updateAppButton != null) updateAppButton.dispose();
     }
 
@@ -103,13 +94,13 @@ public class AiTabPanel extends JPanel {
         // --- Controls wired up, placed in right sidebar SHORTCUTS ---
         startStopServicesButton = makeButtonSubtle(getText("button.startServices"));
         startStopServicesButton.addActionListener(e -> {
-            EventBusManager.publish(new ToggleServicesEvent(!isServiceRunning.get()));
+            UiBus.publish(new ToggleServicesEvent(!isServiceRunning.get()));
             startStopServicesButton.setEnabled(false);
         });
 
         wakeWordButton = makeButtonSubtle(wakeWordText());
         wakeWordButton.addActionListener(e ->
-                EventBusManager.publish(new ToggleWakeWordEvent(!sleeping)));
+                UiBus.publish(new ToggleWakeWordEvent(!sleeping)));
         wakeWordButton.setEnabled(false);
 
         obsOverlayButton = makeButtonSubtle(obsOverlayText());
@@ -127,7 +118,7 @@ public class AiTabPanel extends JPanel {
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);
-        recalibrateAudioButton.addActionListener(e -> EventBusManager.publish(new RecalibrateAudioEvent()));
+        recalibrateAudioButton.addActionListener(e -> UiBus.publish(new RecalibrateAudioEvent()));
 
         audioDevicesButton = makeButtonSubtle(getText("button.audioDevices"));
         audioDevicesButton.addActionListener(e ->

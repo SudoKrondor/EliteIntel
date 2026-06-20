@@ -2,7 +2,7 @@ package elite.intel.util;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
@@ -35,17 +35,17 @@ public class FleetCarrierRouteCalculator {
         int cargoSpaceUsed = carrierData.getCargoSpaceUsed();
         String destination = ClipboardUtils.getClipboardText();
 
-        EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.accessing")));
+        GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.accessing")));
 
         if(carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.locationUnavailable")));
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.locationUnavailable")));
             return;
         }
 
         LocationDto nearestStartingPoint = NearestKnownLocationSearchClient.findNearest(carrierData.getX(), carrierData.getY(), carrierData.getZ());
 
         if (destination == null || nearestStartingPoint == null) {
-            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.noDestination")));
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.noDestination")));
             return;
         }
 
@@ -64,9 +64,9 @@ public class FleetCarrierRouteCalculator {
         int numJumps = route.size();
 
         if (numJumps == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.navFailed", destination)));
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.navFailed", destination)));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent(
+            GameEventBus.publish(new AiVoxResponseEvent(
                     localizedEvent("event.carrier.route.calculated",
                             destination,
                             localizedEventPlural(numJumps, "event.carrier.jump.count"),

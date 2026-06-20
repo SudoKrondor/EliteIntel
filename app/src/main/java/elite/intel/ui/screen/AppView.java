@@ -1,20 +1,15 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.theme.HudGlyphs;
-import elite.intel.ui.widget.TopStatusBar;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.starvizion.StarVizionTabPanel;
 import elite.intel.ui.controller.AiTabController;
-import elite.intel.ui.event.LanguageChangedEvent;
-import elite.intel.ui.event.ServicesStateEvent;
-import elite.intel.ui.event.ShipProfileChangedEvent;
-import elite.intel.ui.event.SystemShutDownEvent;
-import elite.intel.ui.event.UpdateAvailableEvent;
+import elite.intel.ui.event.*;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudGlyphs;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.TopStatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +23,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudGlyphs.*;
 
 public class AppView extends JFrame implements AppViewInterface {
 
@@ -62,7 +56,7 @@ public class AppView extends JFrame implements AppViewInterface {
         super("--");
         monoFont = loadCustomFont();
         installDarkDefaults();
-        EventBusManager.register(this);
+        UiBus.register(this);
 
         setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/elite-logo.png")));
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);

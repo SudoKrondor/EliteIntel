@@ -1,7 +1,7 @@
 package elite.intel.util;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.NotificationVolumeChangedEvent;
 import org.apache.logging.log4j.LogManager;
@@ -23,7 +23,7 @@ public final class AudioPlayer {
     private static float volume = SystemSession.getInstance().getBeepVolume();
 
     private AudioPlayer() {
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     public static AudioPlayer getInstance() {

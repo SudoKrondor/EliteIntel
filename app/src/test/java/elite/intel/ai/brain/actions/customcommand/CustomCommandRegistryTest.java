@@ -1,8 +1,9 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.Reducer;
-import elite.intel.ai.brain.actions.command.CommandHandler;
+import elite.intel.ai.brain.actions.IntelAction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -139,7 +140,7 @@ class CustomCommandRegistryTest {
                 buildCustomCommand("custom_command_a", "phrase_a"),
                 buildCustomCommand("custom_command_b", "phrase_b")
         ));
-        Map<String, CommandHandler> handlers = new HashMap<>();
+        Map<String, IntelAction> handlers = new HashMap<>();
         registry.contributeToHandlerMap(handlers);
 
         assertTrue(handlers.containsKey("custom_command_a"));
@@ -150,7 +151,7 @@ class CustomCommandRegistryTest {
 
     @Test
     void contributeToHandlerMapDoesNothingWhenEmpty() {
-        Map<String, CommandHandler> handlers = new HashMap<>();
+        Map<String, IntelAction> handlers = new HashMap<>();
         registry.contributeToHandlerMap(handlers);
         assertTrue(handlers.isEmpty());
     }
@@ -158,8 +159,11 @@ class CustomCommandRegistryTest {
     @Test
     void contributeToHandlerMapDoesNotOverrideExistingHandler() {
         registry.setCustomCommands(List.of(buildCustomCommand("existing_action", "phrase")));
-        CommandHandler existingHandler = (action, params, responseText) -> {};
-        Map<String, CommandHandler> handlers = new HashMap<>();
+        IntelAction existingHandler = new IntelAction() {
+            @Override public String id() { return "existing_action"; }
+            @Override public JsonObject handle(String action, JsonObject params, String responseText) { return null; }
+        };
+        Map<String, IntelAction> handlers = new HashMap<>();
         handlers.put("existing_action", existingHandler);
 
         registry.contributeToHandlerMap(handlers);
@@ -174,7 +178,7 @@ class CustomCommandRegistryTest {
         CustomCommandDefinition second = buildCustomCommand("custom_command_dup", "phrase_second");
         registry.setCustomCommands(List.of(first, second));
 
-        Map<String, CommandHandler> handlers = new HashMap<>();
+        Map<String, IntelAction> handlers = new HashMap<>();
         registry.contributeToHandlerMap(handlers);
 
         // Both were put; the map has one entry (last write wins in HashMap)

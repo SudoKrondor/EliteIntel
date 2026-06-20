@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -8,7 +7,7 @@ import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.util.AudioPlayer;
 
@@ -21,15 +20,12 @@ import java.util.Map;
  */
 @RegisterCommand
 public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
+    public static final String ID = "enter_fleet_carrier_destination";
+
 
     @Override
     public String id() {
-        return CommandIds.ENTER_FLEET_CARRIER_DESTINATION;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

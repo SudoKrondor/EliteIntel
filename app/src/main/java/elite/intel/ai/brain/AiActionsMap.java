@@ -1,16 +1,8 @@
 package elite.intel.ai.brain;
-import elite.intel.ai.brain.actions.command.CommandIds;
-
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
-
-import elite.intel.ai.brain.actions.query.QueryIds;
-import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 public class AiActionsMap {
 
@@ -41,23 +33,10 @@ public class AiActionsMap {
      * as a mapping between keys (user input phrases) and values (command actions).
      */
     public Map<String, String> actionMap(boolean isDryRun) {
-        Map<String, String> map = new LinkedHashMap<>();
-
-        // Add aliases only for the currently selected language.
-        AiActionLocalizations.addAliases(map, status, isDryRun);
-
-        // Conversation / ignore fallback is language-independent because these are internal action names.
-        if (systemSession.conversationalModeOn()) {
-            map.put("general conversation", QueryIds.GENERAL_CONVERSATION);
-        } else {
-            map.put("ignore_nonsensical_input", CommandIds.IGNORE_NONSENSICAL_INPUT);
-        }
-
-        // Machine-only command, not user-facing language.
-        map.put(CONNECTION_CHECK_COMMAND, QueryIds.CONNECTION_CHECK);
-
-        CustomCommandRegistry.getInstance().contributeToActionMap(map);
-
-        return map;
+        // Delegated to the self-describing registry generator (C1 migration). The generator
+        // reproduces the full composition and the trailing additions (mode fallback,
+        // CONNECTION_CHECK, custom commands) in the same order the manual addAliases path used.
+        return new AiActionMapGenerator()
+                .generate(status, isDryRun, systemSession.conversationalModeOn());
     }
 }

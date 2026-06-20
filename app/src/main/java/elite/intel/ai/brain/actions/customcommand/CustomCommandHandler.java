@@ -1,13 +1,14 @@
 package elite.intel.ai.brain.actions.customcommand;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.command.CommandHandler;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -37,9 +38,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Dependencies:
  * - Uses {@code CustomCommandDefinition} for defining the custom command's structure.
  * - Relies on {@code CustomCommandSpeakExecutor} for speech execution steps.
- * - Integrates with {@code EventBusManager} to log and publish events during execution.
+ * - Integrates with {@code GameEventBus} to log and publish events during execution.
  */
-public final class CustomCommandHandler implements CommandHandler {
+public final class CustomCommandHandler implements IntelAction {
 
     private static final Logger log = LogManager.getLogger(CustomCommandHandler.class);
 
@@ -60,7 +61,18 @@ public final class CustomCommandHandler implements CommandHandler {
     }
 
     @Override
-    public void handle(String action, JsonObject params, String responseText) {
+    public String id() {
+        return customCommand.getActionKey();
+    }
+
+    /** Exposes the custom command's declared parameter contract for action-map / UI consumers. */
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return customCommand.getParameters();
+    }
+
+    @Override
+    public JsonObject handle(String action, JsonObject params, String responseText) {
         CUSTOM_COMMAND_LOCK.lock();
         try {
             CustomCommandExecutionContext ctx = CustomCommandExecutionContext.fromJson(customCommand, params);
@@ -68,8 +80,8 @@ public final class CustomCommandHandler implements CommandHandler {
             if (!paramErrors.isEmpty()) {
                 String errorSummary = String.join(", ", paramErrors);
                 log.warn("Custom command '{}' aborted: {}", customCommand.getName(), errorSummary);
-                EventBusManager.publish(new AppLogEvent("Custom command '" + customCommand.getName() + "' aborted: " + errorSummary));
-                return;
+                UiBus.publish(new AppLogEvent("Custom command '" + customCommand.getName() + "' aborted: " + errorSummary));
+                return null;
             }
             log.info("Executing custom command '{}' ({} step(s))", customCommand.getName(), customCommand.getSteps().size());
             PendingInputSequence pendingInput = new PendingInputSequence();
@@ -80,11 +92,11 @@ public final class CustomCommandHandler implements CommandHandler {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     log.warn("Custom command '{}' interrupted at step {}", customCommand.getName(), i);
-                    return;
+                    return null;
                 } catch (UnresolvedCustomCommandParamException e) {
                     log.error("Custom command '{}' step {} ({}): {}  step skipped",
                             customCommand.getName(), i, step.getType(), e.getMessage());
-                    EventBusManager.publish(new AppLogEvent(
+                    UiBus.publish(new AppLogEvent(
                             "Custom command step error: " + e.getMessage() + " (step skipped)"));
                 } catch (Exception e) {
                     log.error("Custom command '{}' step {} ({}) failed: {}", customCommand.getName(), i, step.getType(), e.getMessage(), e);
@@ -96,29 +108,30 @@ public final class CustomCommandHandler implements CommandHandler {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("Custom command '{}' interrupted while flushing input sequence", customCommand.getName());
-                return;
+                return null;
             }
             log.debug("Custom command '{}' completed", customCommand.getName());
         } finally {
             CUSTOM_COMMAND_LOCK.unlock();
         }
+        return null;
     }
 
     private void executeStep(CustomCommandStep step, int index, PendingInputSequence pendingInput,
                              CustomCommandExecutionContext ctx) throws InterruptedException {
         switch (step.getType()) {
             case BINDING_TAP -> {
-                EventBusManager.publish(new AppLogEvent("Custom command step: BINDING_TAP " + step.getBindingId()));
+                UiBus.publish(new AppLogEvent("Custom command step: BINDING_TAP " + step.getBindingId()));
                 pendingInput.addInput(GameInputStep.bindingTap(step.getBindingId()));
             }
 
             case BINDING_HOLD -> {
-                EventBusManager.publish(new AppLogEvent("Custom command step: BINDING_HOLD " + step.getBindingId() + " " + step.getDurationMs() + "ms"));
+                UiBus.publish(new AppLogEvent("Custom command step: BINDING_HOLD " + step.getBindingId() + " " + step.getDurationMs() + "ms"));
                 pendingInput.addInput(GameInputStep.bindingHold(step.getBindingId(), step.getDurationMs()));
             }
 
             case DELAY -> {
-                EventBusManager.publish(new AppLogEvent("Custom command step: DELAY " + step.getDurationMs() + "ms"));
+                UiBus.publish(new AppLogEvent("Custom command step: DELAY " + step.getDurationMs() + "ms"));
                 pendingInput.addDelay(GameInputStep.delay(step.getDurationMs()));
             }
 
@@ -126,7 +139,7 @@ public final class CustomCommandHandler implements CommandHandler {
                 // Flush accumulated input before speaking so keystrokes reach the game first.
                 flushPendingInputSteps(pendingInput);
                 String resolvedText = ctx.resolveString(step.getText());
-                EventBusManager.publish(new AppLogEvent("Custom command step: SPEAK " + resolvedText));
+                UiBus.publish(new AppLogEvent("Custom command step: SPEAK " + resolvedText));
                 speakExecutor.speak(resolvedText);
             }
 
@@ -135,7 +148,7 @@ public final class CustomCommandHandler implements CommandHandler {
                 if (keyCode == null) {
                     log.warn("Custom command '{}' step {}: unknown rawKey '{}'  step skipped",
                             customCommand.getName(), index, step.getRawKey());
-                    EventBusManager.publish(new AppLogEvent(
+                    UiBus.publish(new AppLogEvent(
                             "Custom command step: RAW_KEY " + step.getRawKey() + " (unknown key - skipped)"));
                     break;
                 }
@@ -152,31 +165,41 @@ public final class CustomCommandHandler implements CommandHandler {
                 }
                 String logSuffix = (modCode != 0 ? " + " + rawMod : "")
                         + (step.getDurationMs() > 0 ? " " + step.getDurationMs() + "ms" : "");
-                EventBusManager.publish(new AppLogEvent("Custom command step: RAW_KEY " + step.getRawKey() + logSuffix));
+                UiBus.publish(new AppLogEvent("Custom command step: RAW_KEY " + step.getRawKey() + logSuffix));
                 pendingInput.addInput(GameInputStep.rawKey(keyCode, modCode, step.getDurationMs()));
             }
 
             case RUN_COMMAND -> {
                 // Flush before delegating so pending keystrokes are sent before the nested handler runs.
                 flushPendingInputSteps(pendingInput);
-                CommandHandler nested = CommandHandlerFactory.getInstance()
+                IntelAction nested = CommandHandlerFactory.getInstance()
                         .getCommandHandlers()
                         .get(step.getActionId());
                 if (nested == null) {
                     log.warn("Custom command '{}' step {}: unknown actionId '{}' - step skipped",
                             customCommand.getName(), index, step.getActionId());
-                    EventBusManager.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId() + " (unknown - skipped)"));
+                    UiBus.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId() + " (unknown - skipped)"));
                 } else if (nested instanceof CustomCommandHandler) {
                     // Prevent cross-customCommand delegation - customCommands must not call other customCommands.
                     log.warn("Custom command '{}' step {}: RUN_COMMAND may not target another custom command ('{}') - step skipped",
                             customCommand.getName(), index, step.getActionId());
-                    EventBusManager.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId() + " (nested custom command blocked)"));
+                    UiBus.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId() + " (nested custom command blocked)"));
                 } else {
                     // Resolve step-level param mapping; preserves JSON types for bare ${ref} values.
                     Map<String, String> stepParamMapping = step.getStepParams();
                     JsonObject resolvedParams = ctx.resolveStepParams(stepParamMapping);
-                    EventBusManager.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId()));
-                    nested.handle(step.getActionId(), resolvedParams, "");
+                    UiBus.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId()));
+                    try {
+                        nested.handle(step.getActionId(), resolvedParams, "");
+                    } catch (InterruptedException ie) {
+                        throw ie;
+                    } catch (Exception e) {
+                        // A built-in handler's handle() declares throws Exception; isolate the failure to this step.
+                        log.error("Custom command '{}' step {}: RUN_COMMAND {} failed: {}",
+                                customCommand.getName(), index, step.getActionId(), e.getMessage(), e);
+                        UiBus.publish(new AppLogEvent(
+                                "Custom command step: RUN_COMMAND " + step.getActionId() + " failed: " + e.getMessage()));
+                    }
                 }
             }
         }

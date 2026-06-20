@@ -8,9 +8,9 @@ import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.FireGroups;
-import elite.intel.gameapi.GameControllerBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
@@ -95,7 +95,7 @@ public class JumpCompletedSubscriber {
             if (finalDestination != null && finalDestination.equalsIgnoreCase(event.getStarSystem())) {
                 shipRoute.clearRoute();
                 if (reminderText != null && !reminderText.isBlank()) {
-                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 } else {
                     sb.append(localizedEvent("event.route.arrivedFinal", finalDestination));
                 }
@@ -106,7 +106,7 @@ public class JumpCompletedSubscriber {
 
             } else if (roueSet) {
                 if (reminderText != null && !reminderText.isBlank() && reminderText.toLowerCase().contains(event.getStarSystem().toLowerCase(Locale.ROOT))) {
-                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 }
 
                 sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
@@ -127,14 +127,14 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
-                    //EventBusManager.publish(new RouteAnnouncementEvent(sb.toString()));
-                    EventBusManager.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
+                    //GameEventBus.publish(new RouteAnnouncementEvent(sb.toString()));
+                    GameEventBus.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
                 }
                 if (isSellerSystem && station != null) {
-                    EventBusManager.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));
+                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));
                 }
                 if (isBuyerSystem && station != null) {
-                    EventBusManager.publish(new SensorDataEvent("Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to sell."));
+                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to sell."));
                 }
             }
 

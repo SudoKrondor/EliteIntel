@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.db.dao.HelpDao;
 import elite.intel.db.util.Database;
 import elite.intel.util.StringUtls;
@@ -11,7 +12,9 @@ import elite.intel.util.yaml.YamlFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HelpHandler extends BaseQueryAnalyzer implements QueryHandler {
+public class HelpHandler extends BaseQueryAnalyzer implements IntelQuery {
+
+    @Override public String id() { return "help_handler"; }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) {
 

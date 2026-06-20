@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -11,23 +10,18 @@ import elite.intel.session.ui.UINavigator;
 
 /**
  * Stage-4b self-describing command for "show fighter panel".
- * Owns its own execution (ownsExecution() == true): the dispatch map routes this
- * command's execute() in place of the legacy OpenFighterPanelHandler.
  */
 @RegisterCommand
 public final class ShowFighterPanelCommand implements IntelCommand {
+    public static final String ID = "show_fighter_panel";
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.SHOW_FIGHTER_PANEL;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override

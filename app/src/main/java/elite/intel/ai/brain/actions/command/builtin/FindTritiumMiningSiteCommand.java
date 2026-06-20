@@ -1,16 +1,15 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.ReserveLevel;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
@@ -28,15 +27,12 @@ import java.util.Optional;
  */
 @RegisterCommand
 public final class FindTritiumMiningSiteCommand implements IntelCommand {
+    public static final String ID = "find_tritium_mining_site";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_TRITIUM_MINING_SITE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -44,7 +40,7 @@ public final class FindTritiumMiningSiteCommand implements IntelCommand {
         Status status = Status.getInstance();
         if (status.isInSrv() || status.isInMainShip()) {
             Number range = GetNumberFromParam.extractRangeParameter(params, 1000);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
 
             ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
             shipRouteManager.clearRoute();
@@ -58,27 +54,27 @@ public final class FindTritiumMiningSiteCommand implements IntelCommand {
                     );
 
             if (tritiumLocations == null || tritiumLocations.getResults().isEmpty()) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
                 return;
             }
 
             Optional<StellarObjectSearchResultDto.Result> result = tritiumLocations.getResults().stream().findFirst();
             double distance = NavigationUtils.calculateGalacticDistance(result.get().getX(), result.get().getY(), result.get().getZ(), coordinates.x(), coordinates.y(), coordinates.z());
             if(distance > range.intValue()){
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
                 return;
             }
 
 
             String reminder = StringUtls.localizedLlm("handler.carrierFuel.headTo", result.get().getSystemName());
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(reminder));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
             ReminderManager reminderManager = ReminderManager.getInstance();
             reminderManager.setReminder(reminder, result.get().getSystemName());
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(result.get().getSystemName());
 
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.mustBeInShipOrSrv")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.mustBeInShipOrSrv")));
         }
     }
 }

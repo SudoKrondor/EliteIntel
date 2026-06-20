@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -18,11 +17,13 @@ import java.util.List;
  */
 @RegisterCommand
 public final class TradeProfileToggleStrongholdsCommand implements IntelCommand {
+    public static final String ID = "trade_profile_toggle_strongholds";
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec state = new CustomCommandParameterSpec(
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec state = new ActionParameterSpec(
                 "state",
                 "boolean",
                 true,
@@ -36,17 +37,12 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
 
     @Override
     public String id() {
-        return CommandIds.TRADE_PROFILE_TOGGLE_STRONGHOLDS;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override
@@ -55,6 +51,6 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         profileManager.setAllowStrongHolds(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.strongholds", state)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.strongholds", state)));
     }
 }

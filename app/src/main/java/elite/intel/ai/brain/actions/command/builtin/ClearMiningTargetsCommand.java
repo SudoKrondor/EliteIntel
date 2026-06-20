@@ -1,11 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 
@@ -15,23 +14,20 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ClearMiningTargetsCommand implements IntelCommand {
+    public static final String ID = "clear_mining_targets";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CLEAR_MINING_TARGETS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
         playerSession.clearMiningTargets();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetsCleared")));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetsCleared")));
         playerSession.setMiningAnnouncementOn(true);
     }
 }

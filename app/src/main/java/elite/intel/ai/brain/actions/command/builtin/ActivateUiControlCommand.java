@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.command.SimpleTapCommand;
@@ -11,8 +10,10 @@ import elite.intel.ai.hands.Bindings;
  */
 @RegisterCommand
 public final class ActivateUiControlCommand extends SimpleTapCommand {
+    public static final String ID = "activate_ui_control";
+
 
     public ActivateUiControlCommand() {
-        super(CommandIds.ACTIVATE_UI_CONTROL, Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding());
+        super(ID, Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding());
     }
 }

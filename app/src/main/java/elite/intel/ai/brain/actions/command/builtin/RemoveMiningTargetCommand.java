@@ -1,15 +1,14 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 
@@ -23,13 +22,15 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class RemoveMiningTargetCommand implements IntelCommand {
+    public static final String ID = "remove_mining_target";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
-    private static final List<CustomCommandParameterSpec> PARAMETERS = buildParameters();
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
-    private static List<CustomCommandParameterSpec> buildParameters() {
-        CustomCommandParameterSpec key = new CustomCommandParameterSpec(
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
                 "key", "string", true,
                 "The material to remove from the mining target list.",
                 List.of("platinum", "painite"),
@@ -40,24 +41,19 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.REMOVE_MINING_TARGET;
+        return ID;
     }
 
     @Override
-    public List<CustomCommandParameterSpec> parameters() {
+    public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.didNotCatch")));
+            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.didNotCatch")));
             return;
         }
         String target = capitalizeWords(
@@ -67,11 +63,11 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
         );
 
         if (target == null || target.isEmpty()) {
-            EventBusManager.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString())));
+            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString())));
             return;
         } else {
             playerSession.removeMiningTarget(target);
         }
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetRemoved", target)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetRemoved", target)));
     }
 }

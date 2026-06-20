@@ -3,7 +3,7 @@ package elite.intel.ai.brain.inference.openai;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
@@ -57,10 +57,10 @@ public class OpenAiClient extends BaseAiClient implements Client {
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         long elapsed = System.nanoTime() - t0;
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
-        EventBusManager.publish(new AppLogEvent("LLM: " + meta));
+        UiBus.publish(new AppLogEvent("LLM: " + meta));
         if (meta != null && meta.usage() != null) {
             int cached = meta.usage().promptDetails() != null ? meta.usage().promptDetails().cachedTokens() : 0;
-            EventBusManager.publish(new LlmUsageEvent("OpenAI",
+            UiBus.publish(new LlmUsageEvent("OpenAI",
                     meta.model() != null ? meta.model() : MODEL_GPT,
                     meta.usage().promptTokens(), meta.usage().completionTokens(), cached, 0,
                     wallClockTps(elapsed, meta.usage().completionTokens())));

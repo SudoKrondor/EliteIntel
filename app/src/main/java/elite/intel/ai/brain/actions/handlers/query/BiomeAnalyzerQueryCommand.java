@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.ai.brain.commons.BiomeAnalyzer;
 import elite.intel.ai.brain.commons.BiomeAnalyzer.LocationData;
 import elite.intel.db.managers.LocationManager;
@@ -19,8 +18,10 @@ import java.util.Set;
 
 @RegisterQuery
 public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_biome_analysis";
 
-    @Override public String id() { return QueryIds.PLANET_BIOME_ANALYSIS; }
+
+    @Override public String id() { return ID; }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -28,7 +29,7 @@ public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements Inte
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing planetary and biome data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing planetary and biome data. Stand by."));
 
         JsonElement key = params.get("key");
         String planetName = key == null ? null : key.getAsString().replace(" ", "");

@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
@@ -16,8 +15,10 @@ import java.util.Map;
 
 @RegisterQuery
 public class AnalyzeFleetCarrierFinalDestinationQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_fleet_carrier_final_destination";
 
-    @Override public String id() { return QueryIds.FLEET_CARRIER_FINAL_DESTINATION; }
+
+    @Override public String id() { return ID; }
 
 
     private final FleetCarrierRouteManager manager = FleetCarrierRouteManager.getInstance();

@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,7 +8,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.db.managers.ShipLoadoutManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
@@ -27,6 +26,8 @@ import static elite.intel.util.StringUtls.getIntSafely;
  */
 @RegisterCommand
 public final class CalculateNeutronStarRouteCommand implements IntelCommand {
+    public static final String ID = "calculate_neutron_star_route";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -35,12 +36,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.CALCULATE_NEUTRON_STAR_ROUTE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -48,19 +44,19 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
         JsonElement key = params.get("efficiency");
 
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }
 
         int efficiency = getIntSafely(key.getAsString());
         if (efficiency < 1 || efficiency > 100) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         String destination = ClipboardUtils.getClipboardText();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency)));
 
         ShipLoadOutDto shipLoadout = shipLoadoutManager.get();
         if (shipLoadout == null) {
@@ -69,7 +65,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         double maxJumpRange = shipLoadout.getMaxJumpRange();
         if (maxJumpRange < 20) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning")));
         }
 
 
@@ -82,7 +78,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         if (route != null && route.getResult() != null && route.getResult().getTotalJumps() > 0) {
             neutronStarRouteManager.saveNeutronStarRoute(route);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps())));
         }
     }
 }

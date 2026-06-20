@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryIds;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -18,8 +17,10 @@ import java.time.format.DateTimeFormatter;
 
 @RegisterQuery
 public class TimeQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_time";
 
-    @Override public String id() { return QueryIds.TIME_IN_ZONE; }
+
+    @Override public String id() { return ID; }
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
@@ -30,7 +31,7 @@ public class TimeQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
             String formattedTime = localNow.format(formatter);
             return process(StringUtls.localizedLlm("query.time.local", formattedTime));
         } else {
-            ////EventBusManager.publish(new AiVoxResponseEvent("Analyzing temporal data. Stand by."));
+            ////GameEventBus.publish(new AiVoxResponseEvent("Analyzing temporal data. Stand by."));
 
             Instant instant = Clock.systemUTC().instant();
             String utcTime = instant.toString();

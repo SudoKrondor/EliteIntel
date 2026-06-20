@@ -5,7 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.station.traderandbroker.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.TimeUtils;
@@ -45,7 +45,7 @@ public class TradersAndBrokersSearch {
 
         TraderAndBrokerSearchCriteria.ReferenceCoords coordinates = new TraderAndBrokerSearchCriteria.ReferenceCoords();
         if (galacticCoordinates == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.search.noCoords")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.search.noCoords")));
             return null;
         }
 
@@ -84,7 +84,7 @@ public class TradersAndBrokersSearch {
         List<TraderAndBrokerSearchDto.Result> results = SearchForMaterialBrokerOrTrader.findMaterialTrader(criteria);
 
         if (results == null || results.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
             return null;
         }
 
@@ -108,7 +108,7 @@ public class TradersAndBrokersSearch {
         }
 
         if (result != null) {
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new AiVoxResponseEvent(localizedEvent("event.search.headTo",
                             result.getSystemName(),
                             result.getStationName(),

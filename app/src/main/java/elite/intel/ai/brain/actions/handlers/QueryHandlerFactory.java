@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.handlers;
 
-import elite.intel.ai.brain.actions.handlers.query.QueryHandler;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import org.apache.logging.log4j.LogManager;
@@ -13,7 +12,7 @@ public class QueryHandlerFactory {
 
     private static final Logger log = LogManager.getLogger(QueryHandlerFactory.class);
     private static QueryHandlerFactory instance;
-    private final Map<String, QueryHandler> queryHandlers = new HashMap<>();
+    private final Map<String, IntelQuery> queryHandlers = new HashMap<>();
 
     private QueryHandlerFactory() {
         // Private constructor for singleton
@@ -27,7 +26,7 @@ public class QueryHandlerFactory {
     }
 
 
-    public Map<String, QueryHandler> registerQueryHandlers() {
+    public Map<String, IntelQuery> registerQueryHandlers() {
         for (Map.Entry<String, IntelQuery> entry : QueryRegistry.getInstance().byId().entrySet()) {
             queryHandlers.put(entry.getKey(), entry.getValue());
         }

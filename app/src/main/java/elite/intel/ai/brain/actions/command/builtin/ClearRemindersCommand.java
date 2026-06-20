@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -8,7 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TimedReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 /**
@@ -17,18 +16,15 @@ import elite.intel.util.StringUtls;
  */
 @RegisterCommand
 public final class ClearRemindersCommand implements IntelCommand {
+    public static final String ID = "clear_reminders";
+
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
 
     @Override
     public String id() {
-        return CommandIds.CLEAR_REMINDERS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -36,6 +32,6 @@ public final class ClearRemindersCommand implements IntelCommand {
         destinationReminder.clear();
         monetizeRouteManager.clear();
         TimedReminderManager.getInstance().clearAll();
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.reminder.cleared")));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.reminder.cleared")));
     }
 }

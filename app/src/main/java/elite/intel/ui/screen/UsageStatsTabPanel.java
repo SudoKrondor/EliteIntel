@@ -1,20 +1,19 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudBanner;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudStatCell;
-import elite.intel.ui.widget.StatusBadge;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.LlmSessionStatsChangedEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.ServicesStateEvent;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
+import elite.intel.ui.theme.AppTheme;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.HudBanner;
+import elite.intel.ui.widget.HudSection;
+import elite.intel.ui.widget.HudStatCell;
+import elite.intel.ui.widget.StatusBadge;
 
 import javax.swing.*;
 import java.awt.*;
@@ -47,7 +46,7 @@ public class UsageStatsTabPanel extends JPanel {
     private final Timer clockTimer;
 
     public UsageStatsTabPanel() {
-        EventBusManager.register(this);
+        UiBus.register(this);
         buildUi();
         clockTimer = new Timer(1_000, e -> tickClock());
         clockTimer.start();
@@ -55,7 +54,7 @@ public class UsageStatsTabPanel extends JPanel {
 
     public void dispose() {
         clockTimer.stop();
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
     }
 
     @Subscribe

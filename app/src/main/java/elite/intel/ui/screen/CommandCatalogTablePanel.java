@@ -15,6 +15,7 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -28,6 +29,10 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * Read-only command catalog view used to inspect and launch built-in commands.
  */
 public class CommandCatalogTablePanel extends JPanel {
+
+    // Local pixel geometry - column layout, not colour/font/height tokens.
+    private static final int NAME_COLUMN_WIDTH = 420;
+    private static final int TYPE_COLUMN_WIDTH = 270;
 
     private final CommandCatalog commandCatalog = new CommandCatalog();
     private List<CommandCatalogEntry> visibleEntries = List.of();
@@ -93,7 +98,7 @@ public class CommandCatalogTablePanel extends JPanel {
     }
 
     private List<CommandCatalogEntry> sortedEntries() {
-        return commandCatalog.entries().stream()
+        return commandCatalog.builtInEntries().stream()
                 .sorted(Comparator
                         .comparing(CommandCatalogEntry::name, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(CommandCatalogEntry::id))
@@ -141,6 +146,7 @@ public class CommandCatalogTablePanel extends JPanel {
         return switch (type) {
             case BUILT_IN_BINDING -> getText("actions.commands.type.builtInBinding");
             case BUILT_IN_ACTION -> getText("actions.commands.type.builtInAction");
+            case BUILT_IN_QUERY -> getText("actions.commands.type.builtInQuery");
             case CUSTOM_COMMAND -> getText("actions.commands.type.customCommand");
         };
     }
@@ -152,8 +158,15 @@ public class CommandCatalogTablePanel extends JPanel {
         table.setDefaultRenderer(Object.class, new CellRenderer());
         table.putClientProperty(AppTheme.HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(220);
-        table.getColumnModel().getColumn(1).setPreferredWidth(160);
+        // Name column flexes to absorb slack; the type column is pinned to a compact fixed width
+        // (its capped values are short) so it no longer stretches across the table.
+        table.getColumnModel().getColumn(0).setPreferredWidth(NAME_COLUMN_WIDTH);
+        TableColumn typeColumn = table.getColumnModel().getColumn(1);
+        typeColumn.setMinWidth(TYPE_COLUMN_WIDTH);
+        typeColumn.setMaxWidth(TYPE_COLUMN_WIDTH);
+        typeColumn.setPreferredWidth(TYPE_COLUMN_WIDTH);
+        // ValueCellRenderer upper-cases the value in the renderer (section 6) with the default PRIMARY_ACTION colour.
+        typeColumn.setCellRenderer(new HudTable.ValueCellRenderer());
     }
 
     private void installRowHover(JTable table) {

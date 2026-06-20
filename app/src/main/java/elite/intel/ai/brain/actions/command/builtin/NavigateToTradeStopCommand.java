@@ -1,16 +1,15 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.spansh.station.marketstation.TradeStopDto;
 import elite.intel.search.spansh.traderoute.TradeCommodity;
@@ -27,6 +26,8 @@ import java.util.stream.Collectors;
  */
 @RegisterCommand
 public final class NavigateToTradeStopCommand implements IntelCommand {
+    public static final String ID = "navigate_to_trade_stop";
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
@@ -35,12 +36,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
     @Override
     public String id() {
-        return CommandIds.NAVIGATE_TO_TRADE_STOP;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -48,7 +44,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
             return;
         }
 
@@ -57,7 +53,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
             return;
         }
 
@@ -96,7 +92,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         reminderManager.setReminder(message, destinationSystem);
     }
 }

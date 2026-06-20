@@ -3,6 +3,8 @@ package elite.intel.ai.brain.i18n;
 import elite.intel.ai.brain.i18n.en.EnglishInputNormalizerRules;
 
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Per-language synonym substitution rules for {@link elite.intel.ai.brain.InputNormalizer}.
@@ -39,5 +41,27 @@ public interface InputNormalizerProvider {
      */
     default String noiseWordPattern() {
         return null;
+    }
+
+    /**
+     * Short noise/filler phrases that the STT engine produces as standalone utterances.
+     * Any transcript whose tokens consist entirely of these phrases is discarded before
+     * it reaches the AI pipeline. Matching is case-insensitive and punctuation-tolerant.
+     * <p>
+     * Return an empty list if no filtering is needed for this language.
+     */
+    default List<String> trashPhrases() {
+        return List.of();
+    }
+
+    /**
+     * Function words that carry no action-intent signal and should be excluded from
+     * the word-overlap scoring in the Reducer. Matching is case-sensitive after
+     * lower-casing the input token.
+     * <p>
+     * Return an empty set if no stop-word filtering is needed for this language.
+     */
+    default Set<String> stopWords() {
+        return Set.of();
     }
 }

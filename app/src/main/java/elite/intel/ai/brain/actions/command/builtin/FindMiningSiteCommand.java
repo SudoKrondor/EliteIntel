@@ -1,17 +1,16 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.ReserveLevel;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
@@ -29,31 +28,28 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  */
 @RegisterCommand
 public final class FindMiningSiteCommand implements IntelCommand {
+    public static final String ID = "find_mining_site";
+
 
     private static final int MAX_DEFAULT_RANGE = 1000;
 
     @Override
     public String id() {
-        return CommandIds.FIND_MINING_SITE;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
         if (!status.isInMainShip()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.boardShip")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.boardShip")));
             return;
         }
 
         JsonElement mat = params.get("key");
         JsonElement distance = params.get("max_distance");
         if (mat == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.didNotCatch")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.didNotCatch")));
             return;
         }
 
@@ -73,7 +69,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
                 );
 
         if (miningLocations == null || miningLocations.getResults().isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFound")));
             return;
         }
 
@@ -83,9 +79,9 @@ public final class FindMiningSiteCommand implements IntelCommand {
             routePlotter.plotRoute(result.get().getSystemName());
             String reminder = StringUtls.localizedLlm("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
             ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
-            EventBusManager.publish(new AiVoxResponseEvent(reminder));
+            GameEventBus.publish(new AiVoxResponseEvent(reminder));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFoundInRange")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFoundInRange")));
         }
     }
 }

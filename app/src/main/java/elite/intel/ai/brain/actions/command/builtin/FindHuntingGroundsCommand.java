@@ -1,5 +1,4 @@
 package elite.intel.ai.brain.actions.command.builtin;
-import elite.intel.ai.brain.actions.command.CommandIds;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
@@ -8,7 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.missions.pirates.PirateMassacreMissionSearch;
 import elite.intel.util.StringUtls;
 
@@ -23,15 +22,12 @@ import static elite.intel.util.StringUtls.getIntSafely;
  */
 @RegisterCommand
 public final class FindHuntingGroundsCommand implements IntelCommand {
+    public static final String ID = "find_hunting_grounds";
+
 
     @Override
     public String id() {
-        return CommandIds.FIND_HUNTING_GROUNDS;
-    }
-
-    @Override
-    public boolean ownsExecution() {
-        return true;
+        return ID;
     }
 
     @Override
@@ -57,9 +53,9 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
                         : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
                 message = providers + " " + nav;
             }
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(message));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
         }
     }
 }
