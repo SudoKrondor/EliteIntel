@@ -13,9 +13,13 @@ import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class StringUtls {
 
+    private static final Pattern DISPLAY_INTEGER_PATTERN =
+            Pattern.compile("(?<![\\p{L}\\p{N}])([+-]?\\d{4,})(?![\\p{L}\\p{N}])");
 
     public static String subtractString(String a, String b) {
         if (a == null || b == null) return "";
@@ -232,12 +236,45 @@ public class StringUtls {
                 .replace("[", "").replace("]", "")
                 .replace("ETA", ". E.T.A.")
                 .replace(":", " - ")
+                // Join grouped digits so TTS reads "44 543" as one number instead of 44 and 543.
+                .replaceAll("(?<=\\d)[ \\u00A0\\u202F](?=\\d{3}(?:[ \\u00A0\\u202F]\\d{3})*(?!\\d))", "")
                 .replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")      // drop controls, emojis, and standalone symbols
                 .replaceAll("\\.{2,}", " ")                     // "..." → space (espeak-ng stof crash on multi-dot sequences)
                 .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace(", Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .trim();
+    }
+
+    /**
+     * Groups long standalone integers for display without changing the text sent to TTS.
+     * Alphanumeric identifiers are left untouched.
+     */
+    public static String formatNumbersForDisplay(String input) {
+        if (input == null || input.isEmpty()) return input;
+
+        Matcher matcher = DISPLAY_INTEGER_PATTERN.matcher(input);
+        StringBuilder formatted = new StringBuilder(input.length());
+
+        while (matcher.find()) {
+            String value = matcher.group(1);
+            int digitStart = value.charAt(0) == '+' || value.charAt(0) == '-' ? 1 : 0;
+            String sign = value.substring(0, digitStart);
+            String digits = value.substring(digitStart);
+
+            StringBuilder grouped = new StringBuilder(value.length() + digits.length() / 3);
+            grouped.append(sign);
+            int firstGroupLength = digits.length() % 3;
+            if (firstGroupLength == 0) firstGroupLength = 3;
+            grouped.append(digits, 0, firstGroupLength);
+            for (int index = firstGroupLength; index < digits.length(); index += 3) {
+                grouped.append(' ').append(digits, index, index + 3);
+            }
+
+            matcher.appendReplacement(formatted, Matcher.quoteReplacement(grouped.toString()));
+        }
+        matcher.appendTail(formatted);
+        return formatted.toString();
     }
 
     public static String normalizeVersion(String v) {

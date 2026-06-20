@@ -9,7 +9,10 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
 import elite.intel.ai.brain.commons.AiEndPoint;
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.gameapi.SensorDataEvent;
+import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +62,10 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
 
             JsonObject systemMsg = new JsonObject();
             systemMsg.addProperty("role", AIConstants.ROLE_SYSTEM);
-            systemMsg.addProperty("content", apiFactory.getAiPromptFactory().generateAnalysisPrompt() + "\n " + struct.getInstructions());
+            systemMsg.addProperty("content",
+                    apiFactory.getAiPromptFactory().generateAnalysisPrompt()
+                            + "\n" + struct.getInstructions()
+                            + "\n" + finalLanguageRule());
 
             JsonObject userMsg = new JsonObject();
             userMsg.addProperty("role", AIConstants.ROLE_USER);
@@ -103,7 +109,10 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             sensorPrompt.addProperty("role", AIConstants.ROLE_SYSTEM);
 
             /// combine base prompt with event specific instructions
-            sensorPrompt.addProperty("content", ApiFactory.getInstance().getAiPromptFactory().generateSensorPrompt() + "\n\n" + event.getInstructions());
+            sensorPrompt.addProperty("content",
+                    ApiFactory.getInstance().getAiPromptFactory().generateSensorPrompt()
+                            + "\n\n" + event.getInstructions()
+                            + "\n" + finalLanguageRule());
             messages.add(sensorPrompt);
 /*
             JsonObject instructions = new JsonObject();
@@ -142,5 +151,15 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
             err.addProperty("text_to_speech_response", "Sensor analysis failed – check logs");
             return err;
         }
+    }
+
+    /**
+     * Keeps the output-language constraint after query-specific English instructions.
+     */
+    private String finalLanguageRule() {
+        var language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return "FINAL OUTPUT LANGUAGE: " +
+                PromptLocalizations.rulesFor(language).languageName() +
+                " only. Translate all prose.";
     }
 }

@@ -1,10 +1,13 @@
 package elite.intel.ui.event;
 
+import elite.intel.util.StringUtls;
+
 public class AiResponseLogEvent {
-    private String data;
+    private final String data;
 
     public AiResponseLogEvent(String data) {
-        this.data = data;
+        // Format the UI copy only; TTS keeps its ungrouped numeric representation.
+        this.data = StringUtls.formatNumbersForDisplay(data);
     }
 
     public String getData() {
