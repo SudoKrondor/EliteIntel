@@ -1,6 +1,6 @@
 package elite.intel.ui.theme;
 
-import java.awt.Color;
+import java.awt.*;
 
 /**
  * HUD visual design tokens: colours, spacing/metric constants and semantic font roles.
@@ -180,6 +180,7 @@ public final class HudPalette {
     public static final int HUD_METER_READOUT_H = 42;
     public static final float HUD_FONT_BASE = 12f;
     public static final float HUD_FONT_XS   = HUD_FONT_BASE - 1f;  // 11
+    public static final float HUD_FONT_LOG_PANEL = HUD_FONT_BASE + 4f;       // 12
     public static final float HUD_FONT_SM   = HUD_FONT_BASE;       // 12
     public static final float HUD_FONT_MD   = HUD_FONT_BASE + 2f;  // 14
     public static final float HUD_FONT_LG   = HUD_FONT_BASE + 4f;  // 16
