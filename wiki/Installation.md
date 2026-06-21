@@ -16,7 +16,7 @@
 ---
 
 
-3. Set up an LLM. Two options are available:
+4. Set up an LLM. Two options are available:
    - **Local LLM** (free, offline): See the [**Local LLM guide**](installing-local-llms). Requires capable GPU hardware.
    - **Cloud LLM** (easier to set up): See the [**Configure the app**](UI-and-Configuration-Options) guide for API key setup.
 
