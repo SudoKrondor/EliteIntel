@@ -22,13 +22,6 @@ Can be ran 100% off-line or with various cloud services
 
 ---
 
-### Uninstall (Linux)
-
-```shell
-~/.var/app/elite.intel.app/uninstall
-```
-
-----
 For issues, report on Matrix. Bug reports and pull requests are welcome.
 
 Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
