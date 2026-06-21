@@ -10,6 +10,7 @@ import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -161,10 +162,10 @@ public class SubSystemsManager {
         if (trimmed.equalsIgnoreCase(getTarget())) {
             log.debug("[journal] MATCH - stopping");
             continueTargeting = false;
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
         } else {
             log.debug("[journal] no match - continuing");
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         }
         consecutiveTimeouts = 0;
         pause = false;

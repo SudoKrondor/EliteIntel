@@ -11,6 +11,7 @@ import elite.intel.search.spansh.starsystems.StarSystemClient;
 import elite.intel.search.spansh.starsystems.StationSearchResult;
 import elite.intel.search.spansh.starsystems.SystemSearchCriteria;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,7 +86,7 @@ public class EdsmCommoditySearch {
 
             String stationName = station.getName();
             String starSystem = station.getStarSystemName();
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2); // audio indicator of background search
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
 
             for (Commodity entry : commodities) {
                 if (commodityToFind.equalsIgnoreCase(entry.getName())) {
@@ -98,7 +99,7 @@ public class EdsmCommoditySearch {
                         result.setStationType(station.getType());
                         result.setDistanceFromPlayer(station.getTransientDistance());
                         results.add(result);
-                        AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_3); // audio indicator of background search
+                        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
                     }
                 }
             }
