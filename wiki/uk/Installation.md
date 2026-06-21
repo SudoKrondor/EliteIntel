@@ -5,32 +5,16 @@
 
 ---
 
-## <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
+## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
 
 1. Завантажте [👉**інсталятор**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Запустіть інсталятор і дотримуйтесь підказок на екрані.
-   - **Parakeet STT** (локальне розпізнавання мовлення) та **Kokoro TTS** (локальний синтез мовлення) обидва включені. Жодних додаткових кроків або сервісів не потрібно.
 3. Налаштуйте LLM. Доступні два варіанти:
    - **Локальний LLM** (безкоштовно, офлайн): Дивіться [**посібник з локального LLM**](installing-local-llms). Потрібна потужна відеокарта.
-   - **Хмарний LLM** (простіше в налаштуванні): Дивіться посібник [**Налаштування застосунку**](UI-and-Configuration-Options) для налаштування API-ключа.
+   - **Хмарний LLM** (має безкоштовну опцію та простіше в налаштуванні): Дивіться посібник [**Налаштування застосунку**](UI-and-Configuration-Options) для налаштування API-ключа.
 
 ---
 
-## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux
-### Встановлення (будь-який дистрибутив із робочим столом  без sudo)
-1. Завантажте скрипт інсталятора:
-
-```shell
-curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-```
-
-2. Зробіть скрипт виконуваним і запустіть його:
-```shell
-chmod +x installer.sh
-./installer.sh
-```
-Застосунок встановлюється в `~/.var/app/elite.intel.app`.
-Обидва **Parakeet STT** і **Kokoro TTS** входять до складу застосунку. Додаткове встановлення не потрібне. Увімкніть їх у застосунку через прапорці **Settings tab ☑ Use**.
 
 3. Налаштуйте LLM. Доступні два варіанти:
    - **Локальний LLM** (безкоштовно, офлайн): Дивіться [**посібник з локального LLM**](installing-local-llms). Потрібна потужна відеокарта.
@@ -40,12 +24,10 @@ chmod +x installer.sh
 
 ---
 
-### Видалення
-
-Використовуйте прапорець `-d` для видалення застосунку. Інсталятор запитає підтвердження перед видаленням конфігурації та даних API-ключів.
+### Видалення (Linux)
 
 ```shell
-bash installer.sh -d
+~/.var/app/elite.intel.app/uninstall
 ```
 
 ----

@@ -5,32 +5,16 @@
 
 ---
 
-## <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
+## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
 
 1. Скачайте [👉**установщик**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Запустите установщик и следуйте инструкциям на экране.
-   - **Parakeet STT** (локальное распознавание речи) и **Kokoro TTS** (локальный синтез речи) включены в комплект. Дополнительных шагов или служб не требуется.
 3. Настройте LLM. Доступны два варианта:
    - **Локальный LLM** (бесплатно, офлайн): см. руководство [**Локальный LLM**](installing-local-llms). Требуется мощное GPU-оборудование.
-   - **Облачный LLM** (проще в настройке): см. руководство [**Настройка приложения**](UI-and-Configuration-Options) для настройки ключа API.
+   - **Облачный LLM** (есть бесплатный вариант, проще в настройке): см. руководство [**Настройка приложения**](UI-and-Configuration-Options) для настройки ключа API.
 
 ---
 
-## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux
-### Установка (любой десктопный дистрибутив  без sudo)
-1. Скачайте скрипт установщика:
-
-```shell
-curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-```
-
-2. Сделайте скрипт исполняемым и запустите его:
-```shell
-chmod +x installer.sh
-./installer.sh
-```
-Приложение устанавливается в `~/.var/app/elite.intel.app`.
-**Parakeet STT** и **Kokoro TTS** поставляются в комплекте с приложением. Дополнительная установка не требуется. Включите их в приложении через флажки **☑ Use** на вкладке «Настройки».
 
 3. Настройте LLM. Доступны два варианта:
    - **Локальный LLM** (бесплатно, офлайн): см. руководство [**Локальный LLM**](installing-local-llms). Требуется мощное GPU-оборудование.
@@ -40,12 +24,10 @@ chmod +x installer.sh
 
 ---
 
-### Удаление
-
-Используйте флаг `-d` для удаления приложения. Установщик запросит подтверждение перед удалением конфигурации и данных ключей API.
+### Удаление (Linux)
 
 ```shell
-bash installer.sh -d
+~/.var/app/elite.intel.app/uninstall
 ```
 
 ----

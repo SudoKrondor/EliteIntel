@@ -86,35 +86,17 @@
 <h3>If you want version V1.1 join the beta test team.</h3>
 <h3>👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Join the Beta Test Team here V1.1</strong></a>👈</h3>
 <hr>
-<h2><img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
+<h2><img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
 <ol>
 <li>Download the <a href="https://github.com/stone-alex/EliteIntel/releases">👉<strong>installer</strong>👈</a>.</li>
-<li>Run the installer and follow the on-screen prompts.<ul>
-<li><strong>Parakeet STT</strong> (local speech recognition) and <strong>Kokoro TTS</strong> (local text-to-speech) are both included. No additional steps or services are required.</li>
-</ul>
-</li>
+<li>Run the installer and follow the on-screen prompts.</li>
 <li>Set up an LLM. Two options are available:<ul>
 <li><strong>Local LLM</strong> (free, offline): See the <a href="installing-local-llms.html"><strong>Local LLM guide</strong></a>. Requires capable GPU hardware.</li>
-<li><strong>Cloud LLM</strong> (easier to set up): See the <a href="UI-and-Configuration-Options.html"><strong>Configure the app</strong></a> guide for API key setup.</li>
+<li><strong>Cloud LLM</strong> (has a free option and is easier to set up): See the <a href="UI-and-Configuration-Options.html"><strong>Configure the app</strong></a> guide for API key setup.</li>
 </ul>
 </li>
 </ol>
 <hr>
-<h2><img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux</h2>
-<h3>Installation (any desktop distro - no sudo required)</h3>
-<ol>
-<li>Download the installer script:</li>
-</ol>
-<pre><code class="language-shell">curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-</code></pre>
-<ol start="2">
-<li>Make the script executable and run it:</li>
-</ol>
-<pre><code class="language-shell">chmod +x installer.sh
-./installer.sh
-</code></pre>
-<p>The app installs to <code>~/.var/app/elite.intel.app</code>.
-Both <strong>Parakeet STT</strong> and <strong>Kokoro TTS</strong> are bundled with the app. No additional installation is needed. Enable them in the app via the <strong>Settings tab ☑ Use</strong> checkboxes.</p>
 <ol start="3">
 <li>Set up an LLM. Two options are available:<ul>
 <li><strong>Local LLM</strong> (free, offline): See the <a href="installing-local-llms.html"><strong>Local LLM guide</strong></a>. Requires capable GPU hardware.</li>
@@ -124,9 +106,8 @@ Both <strong>Parakeet STT</strong> and <strong>Kokoro TTS</strong> are bundled w
 </ol>
 <p>Setup complete. See <a href="Configuration.html"><strong>Configure the app</strong></a> for next steps.</p>
 <hr>
-<h3>Uninstall</h3>
-<p>Use the <code>-d</code> flag to remove the app. The installer will prompt before deleting configuration and API key data.</p>
-<pre><code class="language-shell">bash installer.sh -d
+<h3>Uninstall (Linux)</h3>
+<pre><code class="language-shell">~/.var/app/elite.intel.app/uninstall
 </code></pre>
 <hr>
 <p>For issues, report on Matrix. Bug reports and pull requests are welcome.</p>

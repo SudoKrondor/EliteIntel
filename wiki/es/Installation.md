@@ -5,32 +5,16 @@
 
 ---
 
-## <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
+## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="images/windows.png" class="inline" height="20" alt="Windows"> Windows
 
 1. Descarga el [👉**instalador**👈](https://github.com/stone-alex/EliteIntel/releases).
 2. Ejecuta el instalador y sigue las instrucciones en pantalla.
-   - **Parakeet STT** (reconocimiento de voz local) y **Kokoro TTS** (síntesis de voz local) están ambos incluidos. No se requieren pasos ni servicios adicionales.
 3. Configura un LLM. Hay dos opciones disponibles:
    - **LLM local** (gratuito, sin conexión): Consulta la [**guía de LLM local**](installing-local-llms). Requiere hardware de GPU adecuado.
-   - **LLM en la nube** (más fácil de configurar): Consulta la guía [**Configurar la app**](UI-and-Configuration-Options) para la configuración de claves API.
+   - **LLM en la nube** (tiene una opción gratuita y es más fácil de configurar): Consulta la guía [**Configurar la app**](UI-and-Configuration-Options) para la configuración de claves API.
 
 ---
 
-## <img src="images/linux.png" class="inline" height="20" alt="Linux"> Linux
-### Instalación (cualquier distribución de escritorio - no se requiere sudo)
-1. Descarga el script instalador:
-
-```shell
-curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-```
-
-2. Dale permisos de ejecución al script y ejecútalo:
-```shell
-chmod +x installer.sh
-./installer.sh
-```
-La app se instala en `~/.var/app/elite.intel.app`.
-Tanto **Parakeet STT** como **Kokoro TTS** están incluidos en la app. No se necesita instalación adicional. Actívalos en la app a través de las casillas **Pestaña de Ajustes ☑ Usar**.
 
 3. Configura un LLM. Hay dos opciones disponibles:
    - **LLM local** (gratuito, sin conexión): Consulta la [**guía de LLM local**](installing-local-llms). Requiere hardware de GPU adecuado.
@@ -40,12 +24,10 @@ Instalación completa. Consulta [**Configurar la app**](Configuration) para los 
 
 ---
 
-### Desinstalación
-
-Usa el indicador `-d` para eliminar la app. El instalador pedirá confirmación antes de borrar los datos de configuración y claves API.
+### Desinstalación (Linux)
 
 ```shell
-bash installer.sh -d
+~/.var/app/elite.intel.app/uninstall
 ```
 
 ----

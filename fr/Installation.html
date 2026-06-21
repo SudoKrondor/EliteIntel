@@ -86,35 +86,17 @@
 <h3>Si vous souhaitez la version V1.1, rejoignez l&#39;équipe de bêta-test.</h3>
 <h3>👉<a href="https://matrix.to/#/#krondor:matrix.org"><strong>Rejoindre l&#39;équipe de bêta-test V1.1 ici</strong></a>👈</h3>
 <hr>
-<h2><img src="../images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
+<h2><img src="../images/linux.png" class="inline" height="20" alt="Linux"> Linux <img src="../images/windows.png" class="inline" height="20" alt="Windows"> Windows</h2>
 <ol>
 <li>Téléchargez le <a href="https://github.com/stone-alex/EliteIntel/releases">👉<strong>programme d&#39;installation</strong>👈</a>.</li>
-<li>Exécutez le programme d&#39;installation et suivez les instructions à l&#39;écran.<ul>
-<li><strong>Parakeet STT</strong> (reconnaissance vocale locale) et <strong>Kokoro TTS</strong> (synthèse vocale locale) sont tous deux inclus. Aucune étape ou service supplémentaire n&#39;est requis.</li>
-</ul>
-</li>
+<li>Exécutez le programme d&#39;installation et suivez les instructions à l&#39;écran.</li>
 <li>Configurez un LLM. Deux options sont disponibles :<ul>
 <li><strong>LLM local</strong> (gratuit, hors ligne) : Consultez le <a href="installing-local-llms.html"><strong>guide LLM local</strong></a>. Nécessite un GPU capable.</li>
-<li><strong>LLM cloud</strong> (plus facile à configurer) : Consultez le guide <a href="UI-and-Configuration-Options.html"><strong>Configurer l&#39;application</strong></a> pour la configuration de la clé API.</li>
+<li><strong>LLM cloud</strong> (a une option gratuite et est plus facile à configurer) : Consultez le guide <a href="UI-and-Configuration-Options.html"><strong>Configurer l&#39;application</strong></a> pour la configuration de la clé API.</li>
 </ul>
 </li>
 </ol>
 <hr>
-<h2><img src="../images/linux.png" class="inline" height="20" alt="Linux"> Linux</h2>
-<h3>Installation (toute distribution avec interface graphique - sans sudo)</h3>
-<ol>
-<li>Téléchargez le script d&#39;installation :</li>
-</ol>
-<pre><code class="language-shell">curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
-</code></pre>
-<ol start="2">
-<li>Rendez le script exécutable et exécutez-le :</li>
-</ol>
-<pre><code class="language-shell">chmod +x installer.sh
-./installer.sh
-</code></pre>
-<p>L&#39;application s&#39;installe dans <code>~/.var/app/elite.intel.app</code>.
-<strong>Parakeet STT</strong> et <strong>Kokoro TTS</strong> sont tous deux inclus dans l&#39;application. Aucune installation supplémentaire n&#39;est nécessaire. Activez-les dans l&#39;application via les cases à cocher <strong>Onglet Paramètres ☑ Utiliser</strong>.</p>
 <ol start="3">
 <li>Configurez un LLM. Deux options sont disponibles :<ul>
 <li><strong>LLM local</strong> (gratuit, hors ligne) : Consultez le <a href="installing-local-llms.html"><strong>guide LLM local</strong></a>. Nécessite un GPU capable.</li>
@@ -124,9 +106,8 @@
 </ol>
 <p>Installation terminée. Consultez <a href="Configuration.html"><strong>Configurer l&#39;application</strong></a> pour les étapes suivantes.</p>
 <hr>
-<h3>Désinstallation</h3>
-<p>Utilisez l&#39;option <code>-d</code> pour supprimer l&#39;application. Le programme d&#39;installation vous demandera confirmation avant de supprimer les données de configuration et de clé API.</p>
-<pre><code class="language-shell">bash installer.sh -d
+<h3>Désinstallation (Linux)</h3>
+<pre><code class="language-shell">~/.var/app/elite.intel.app/uninstall
 </code></pre>
 <hr>
 <p>Pour tout problème, signalez-le sur Matrix. Les rapports de bugs et les pull requests sont les bienvenus.</p>
