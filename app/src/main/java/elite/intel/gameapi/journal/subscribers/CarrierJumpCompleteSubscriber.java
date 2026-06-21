@@ -75,7 +75,9 @@ public class CarrierJumpCompleteSubscriber {
                 location.setX(starPos[0]);
                 location.setY(starPos[1]);
                 location.setZ(starPos[2]);
-                playerSession.setCurrentLocationId(event.getBodyId(), event.getSystemAddress());
+                if (event.getBodyId() != null) {
+                    playerSession.setCurrentLocationId(event.getBodyId(), event.getSystemAddress());
+                }
                 playerSession.setCurrentPrimaryStarName(event.getStarSystem());
                 locationManager.save(location);
             }

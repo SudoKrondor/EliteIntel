@@ -7,6 +7,7 @@ import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.gameapi.journal.subscribers.ApproachBodySubscriber;
+import elite.intel.session.LocationData;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -110,6 +111,43 @@ class ApproachBodySubscriberTest {
         assertEquals(0.0, saved.getGravity());
     }
 
+    @Test
+    void nullBodyIdDoesNotUpdateLocationId() throws InterruptedException {
+        long uniqueSystem = 77777777L;
+        long knownBodyId = 99L;
+        PlayerSession.getInstance().setCurrentLocationId(knownBodyId, uniqueSystem);
+
+        subscriber.onApproachBodyEvent(approachBodyEventNullBodyId(STAR_SYSTEM, uniqueSystem, "Deciat 9"));
+
+        Thread.sleep(300); // virtual thread has no DB change to poll; just wait
+
+        LocationData<Long, Long> loc = PlayerSession.getInstance().getLocationData();
+        assertEquals(knownBodyId, loc.getInGameId(), "null BodyID must not overwrite current_location_id");
+    }
+
+    @Test
+    void bodyIsSavedWhenTrackingIsEnabled() throws InterruptedException {
+        long trackingSystem = 88888888L;
+        long trackingBodyId = 12L;
+
+        TargetLocation tracking = new TargetLocation(true);
+        PlayerSession.getInstance().setTracking(tracking);
+        try {
+            subscriber.onApproachBodyEvent(approachBodyEvent("Tracking System", trackingSystem, "Tracking Body 12", trackingBodyId));
+
+            awaitTrue(() -> {
+                LocationDto loc = locationManager.findBySystemAddress(trackingSystem, trackingBodyId);
+                return "Tracking Body 12".equals(loc.getPlanetName());
+            });
+
+            LocationDto saved = locationManager.findBySystemAddress(trackingSystem, trackingBodyId);
+            assertEquals("Tracking Body 12", saved.getPlanetName());
+            assertEquals("Tracking System", saved.getStarName());
+        } finally {
+            PlayerSession.getInstance().setTracking(new TargetLocation());
+        }
+    }
+
     private static ApproachBodyEvent approachBodyEvent(String starSystem, long systemAddress,
                                                        String body, long bodyId) {
         JsonObject j = new JsonObject();
@@ -119,6 +157,17 @@ class ApproachBodySubscriberTest {
         j.addProperty("SystemAddress", systemAddress);
         j.addProperty("Body", body);
         j.addProperty("BodyID", bodyId);
+        return new ApproachBodyEvent(j);
+    }
+
+    private static ApproachBodyEvent approachBodyEventNullBodyId(String starSystem, long systemAddress, String body) {
+        JsonObject j = new JsonObject();
+        j.addProperty("timestamp", Instant.now().plusSeconds(1).toString());
+        j.addProperty("event", "ApproachBody");
+        j.addProperty("StarSystem", starSystem);
+        j.addProperty("SystemAddress", systemAddress);
+        j.addProperty("Body", body);
+        // BodyID intentionally omitted — Gson will deserialise it as null
         return new ApproachBodyEvent(j);
     }
 
