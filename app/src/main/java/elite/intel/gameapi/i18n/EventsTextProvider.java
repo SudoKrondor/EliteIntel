@@ -1,6 +1,7 @@
 package elite.intel.gameapi.i18n;
 
 import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 
 import java.text.MessageFormat;
 import java.util.Locale;
@@ -22,6 +23,16 @@ public final class EventsTextProvider {
     public static String getText(Language language, String key, Object... args) {
         String pattern = resolveText(locale(language), key);
         return args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+    }
+
+    public static String getText(String key, Object... args) {
+        String pattern = resolveText(locale(), key);
+        return args.length == 0 ? pattern : MessageFormat.format(pattern, args);
+    }
+
+    private static Locale locale() {
+        Language language = SystemSession.getInstance().getLanguage();
+        return locale(language);
     }
 
     private static String resolveText(Locale locale, String key) {
