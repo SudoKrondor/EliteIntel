@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
 import elite.intel.gameapi.journal.events.dto.GenusDto;
@@ -31,7 +31,7 @@ public class AnalyzeBioSamplesPlanetSurfaceQueryCommand extends BaseQueryAnalyze
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing exobiology data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing exobiology data. Stand by."));
 
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());

@@ -2,7 +2,7 @@ package elite.intel.gameapi.gamestate.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.gamestate.status_events.BeingInterdictedEvent;
 import elite.intel.gameapi.gamestate.status_events.InGlideEvent;
@@ -44,41 +44,41 @@ public class StatusEventSubscriber {
                 && !"Speeding".equalsIgnoreCase(legalState)
                 && !"Clean".equalsIgnoreCase(legalState)
                 && !legalState.equalsIgnoreCase(lastAnnouncedLegalState)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.legalStatus", legalState)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.legalStatus", legalState)));
             lastAnnouncedLegalState = legalState;
         }
 
         status.setStatus(event);
-        EventBusManager.publish(new PlayerMovedEvent(event.getLatitude(), event.getLongitude(), event.getPlanetRadius(), event.getAltitude()));
+        GameEventBus.publish(new PlayerMovedEvent(event.getLatitude(), event.getLongitude(), event.getPlanetRadius(), event.getAltitude()));
 
         // --------------------------------------------------------------------------------------
         //TODO: Can throw custom events. like BeingInterdictedEvent if(status.isBeingInterdicted()){ publish event...}
 
-        EventBusManager.publish(new InGlideEvent(status.isGlideMode()));
+        GameEventBus.publish(new InGlideEvent(status.isGlideMode()));
 
         if (status.isBeingInterdicted()) {
-            EventBusManager.publish(new BeingInterdictedEvent());
+            GameEventBus.publish(new BeingInterdictedEvent());
         }
 
         // --------------------------------------------------------------------------------------
         // Mission-critical alerts
         if (status.isLowFuel() && !lowFuelAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowFuel")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowFuel")));
             lowFuelAnnounced = true;
         }
 
         if (status.isLowOxygen() && !lowOxygenAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowOxygen")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowOxygen")));
             lowOxygenAnnounced = true;
         }
 
         if (status.isLowHealth() && !lowHealthAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowHealth")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowHealth")));
             lowHealthAnnounced = true;
         }
 
         if (status.isGlideMode() && !glideAnnounced) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.glideEngaged")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.glideEngaged")));
             glideAnnounced = true;
         } else if (!status.isGlideMode() && glideAnnounced) {
             glideAnnounced = false;

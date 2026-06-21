@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -45,6 +45,7 @@ public class ApproachBodySubscriber {
             sb.append(localizedEvent("event.approach.body.entering", locationType, location.getPlanetName()));
 
             String currentSystem = event.getStarSystem();
+            location.setStarName(currentSystem);
 
             location.setOrbitalCruiseEntryAltitude(orbitalCruiseEntryAltitude);
 
@@ -85,7 +86,7 @@ public class ApproachBodySubscriber {
                             Temperature data is provided in C (Celsius)
                             Gravity around equal to or less than 1G is safe. Issue a gravity warning if gravity is higher than 1G.
                         """;
-                EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
+                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }
         }); // end virtual thread
     }

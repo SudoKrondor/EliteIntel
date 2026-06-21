@@ -5,7 +5,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiCommandInterface;
 import elite.intel.ai.brain.commons.CommandEndPoint;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -34,7 +35,7 @@ public class LMStudioUserInputProcessor extends CommandEndPoint implements AiCom
 
     @Override
     public void start() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
         if (running.compareAndSet(false, true)) {
             this.executor = newSingleThreadExecutor(
                     r -> {
@@ -49,7 +50,7 @@ public class LMStudioUserInputProcessor extends CommandEndPoint implements AiCom
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) {
                 executor.shutdownNow();
                 executor = null;
@@ -71,7 +72,7 @@ public class LMStudioUserInputProcessor extends CommandEndPoint implements AiCom
                 try {
                     processVoiceCommand(event.getUserInput());
                 } catch (Exception e) {
-                    EventBusManager.publish(new AppLogEvent("Error processing user input. See logs."));
+                    UiBus.publish(new AppLogEvent("Error processing user input. See logs."));
                     log.error("Error processing user input", e);
                 }
             }
@@ -114,7 +115,7 @@ public class LMStudioUserInputProcessor extends CommandEndPoint implements AiCom
     public void onSensorDataEvent(SensorDataEvent event) {
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
         JsonObject response = LMStudioAnalysisEndpoint.getInstance().processSensor(event);
         getRouter().processAiResponse(response, "");
     }

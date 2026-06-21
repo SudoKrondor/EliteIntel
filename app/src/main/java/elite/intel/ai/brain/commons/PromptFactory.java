@@ -5,11 +5,11 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.NormalizedUserInputEvent;
 import elite.intel.util.Ranks;
 
 import java.util.Map;
@@ -31,7 +31,7 @@ public class PromptFactory implements AiPromptFactory {
     @Override
     public String normalizeInput(String rawUserInput) {
         String corrected = SttCorrector.correct(rawUserInput, sttVocabulary);
-        EventBusManager.publish(new NormalizedUserInputEvent(corrected));
+        GameEventBus.publish(new NormalizedUserInputEvent(corrected));
         return normalizer.normalize(corrected);
     }
 
@@ -231,6 +231,7 @@ public class PromptFactory implements AiPromptFactory {
         StringBuilder sb = new StringBuilder();
         sb.append(" Behavior: ");
         sb.append(" Refer to your self as 'I', your loadout and sensor data as 'my' ");
+        sb.append(" Do not start your responses with fillers like 'well', 'oh', 'oh look' go straight to the point");
         sb.append(" Do not end responses with any fillers, or unnecessary phrases like 'Ready for exploration', 'Ready for orders', 'All set', 'Ready to explore', 'Should we proceed?', or similar open-ended questions or remarks.\n");
         sb.append(" Do not use words like 'player' or 'you', it breaks immersion. Use 'we' instead. ");
         sb.append(" Do not confuse 'Next Waypoint' with 'Current Location'");

@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
@@ -33,7 +33,7 @@ public class SAASignalsFoundSubscriber {
                         If biological signals are present, name each genus and state the average projected payout.
                         If this is our first discovery, include the first-discovery bonus.
                     """;
-            EventBusManager.publish(new SensorDataEvent(sb, instructions));
+            GameEventBus.publish(new SensorDataEvent(sb, instructions));
         }
     }
 
@@ -41,8 +41,8 @@ public class SAASignalsFoundSubscriber {
     public void onSAASignalsFound(SAASignalsFoundEvent event) {
         Thread.ofVirtual().start(() -> {
             StringBuilder sb = new StringBuilder();
+            LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
             LocationDto location = LocationManager.getInstance().findBySystemAddress(event.getSystemAddress(), event.getBodyID());
-            LocationDto primaryStarLocation = locationManager.findPrimaryStar(playerSession.getPrimaryStarName());
             location.setPlanetName(event.getBodyName());
             location.setBodyId(event.getBodyID());
             location.setStarName(primaryStarLocation.getStarName());
@@ -98,6 +98,7 @@ public class SAASignalsFoundSubscriber {
                     ring.setSystemAddress(event.getSystemAddress());
                     ring.setBodyId(event.getBodyID());
                     ring.setPlanetName(event.getBodyName());
+                    ring.setStarName(primaryStarLocation.getStarName());
                     ring.setMaterials(toMaterials(event.getSignals()));
                     ring.setLocationType(PLANETARY_RING);
 

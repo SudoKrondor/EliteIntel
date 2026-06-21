@@ -3,11 +3,11 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.StringUtls;
 
@@ -36,7 +36,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
         if (mission == null) {
             mission = missionManager.getMissions().values().stream().findFirst().orElse(null);
             if (mission == null) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noMissionsFound")));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noMissionsFound")));
                 return;
             }
         }
@@ -55,7 +55,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
                 mission.getDestinationSystem()
         );
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.headToSystem", mission.getDestinationSystem())));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.headToSystem", mission.getDestinationSystem())));
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(mission.getDestinationSystem());
     }

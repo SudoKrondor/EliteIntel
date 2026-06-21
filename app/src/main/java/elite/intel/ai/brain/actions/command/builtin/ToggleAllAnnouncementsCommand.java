@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 
@@ -26,7 +26,7 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
     @Override
     public void execute(JsonObject params, String responseText) {
         if (params.get("state") == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.llmParamFailed")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.llmParamFailed")));
             return;
         }
         boolean isOn = params.get("state").getAsBoolean();
@@ -37,6 +37,6 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
         playerSession.setMiningAnnouncementOn(isOn);
         playerSession.setNavigationAnnouncementOn(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.all", state)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.all", state)));
     }
 }

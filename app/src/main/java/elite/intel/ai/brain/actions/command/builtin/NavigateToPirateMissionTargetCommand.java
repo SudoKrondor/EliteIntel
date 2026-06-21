@@ -3,11 +3,11 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.MissionType;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.StringUtls;
 
@@ -36,7 +36,7 @@ public final class NavigateToPirateMissionTargetCommand implements IntelCommand 
         Set<String> targetFactions = missionManager.getTargetFactions(missionTypes);
 
         if (targetFactions.isEmpty()) {
-            EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
             return;
         }
 

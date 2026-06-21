@@ -1,17 +1,17 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.command.builtin.CalculateFleetCarrierRouteCommand;
+import elite.intel.ai.brain.actions.command.builtin.EnterFleetCarrierDestinationCommand;
+import elite.intel.ai.brain.actions.command.builtin.SetCarrierFuelReserveCommand;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
-import elite.intel.ai.brain.actions.command.builtin.SetCarrierFuelReserveCommand;
-import elite.intel.ai.brain.actions.command.builtin.CalculateFleetCarrierRouteCommand;
-import elite.intel.ai.brain.actions.command.builtin.EnterFleetCarrierDestinationCommand;
 
 @RegisterQuery(before = {
         AnalyzeFleetCarrierRouteQueryCommand.ID,
@@ -32,7 +32,7 @@ public class AnalyzeFleetCarrierDataQueryCommand extends BaseQueryAnalyzer imple
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing fleet carrier data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing fleet carrier data. Stand by."));
         PlayerSession playerSession = PlayerSession.getInstance();
         CarrierDataDto stats = playerSession.getFleetCarrierData();
 

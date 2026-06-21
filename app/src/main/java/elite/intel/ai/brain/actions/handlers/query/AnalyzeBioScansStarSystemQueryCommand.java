@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
@@ -29,7 +29,7 @@ public class AnalyzeBioScansStarSystemQueryCommand extends BaseQueryAnalyzer imp
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing bio data for star system."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing bio data for star system."));
         List<BioSampleDto> allCompletedBioScans = playerSession.getBioCompletedSamples();
         List<PlanetsToScan> planetsRequireBioScans = planetsWithBioFormsNotYetScanned();
 

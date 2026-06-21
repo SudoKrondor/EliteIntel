@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.MissionRedirectedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
@@ -35,7 +35,7 @@ public class MissionRedirectedSubscriber {
                          - IF new station is present announce new destination station.
                          Example: Mission for <faction> is redirected to <New System> - <New Station>
                     """;
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new SensorDataEvent(
                             new MissionRedirectData(mission.getFaction(), newDestinationSystem, newDestinationStation).toYaml(),
                             instructions

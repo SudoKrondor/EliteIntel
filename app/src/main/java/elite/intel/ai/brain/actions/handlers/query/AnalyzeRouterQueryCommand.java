@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
@@ -35,7 +35,7 @@ public class AnalyzeRouterQueryCommand extends BaseQueryAnalyzer implements Inte
     
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing route telemetry. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing route telemetry. Stand by."));
         Collection<NavRouteDto> orderedRoute = shipRoute.getOrderedRoute();
         LocationDto here = locationManager.findByLocationData(playerSession.getLocationData());
 

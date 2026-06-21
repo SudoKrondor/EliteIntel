@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
@@ -28,7 +28,7 @@ public class AnalyzeMaterialsOnPlanetQueryCommand extends BaseQueryAnalyzer impl
 
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing geological data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing geological data. Stand by."));
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         if (currentLocation.getBodyId() < 0) return process(StringUtls.localizedLlm("query.noLocationData"));

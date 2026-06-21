@@ -4,7 +4,8 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.dao.KeyBindingDao.KeyBinding;
 import elite.intel.db.managers.BindingConflictManager;
 import elite.intel.db.managers.KeyBindingManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
@@ -148,14 +149,14 @@ public class BindingsMonitor {
                 boolean valid = key.reset();
                 if (!valid) {
                     log.error("Watch key no longer valid; directory may be inaccessible");
-                    EventBusManager.publish(new AiVoxResponseEvent("Error: Key bindings directory inaccessible"));
+                    GameEventBus.publish(new AiVoxResponseEvent("Error: Key bindings directory inaccessible"));
                     break;
                 }
 
             }
         } catch (IOException e) {
             log.error("IOException in BindingsMonitor", e);
-            EventBusManager.publish(new AppLogEvent("Please check the bindings directory. Stopping services."));
+            UiBus.publish(new AppLogEvent("Please check the bindings directory. Stopping services."));
         } catch (InterruptedException e) {
             log.info("BindingsMonitor interrupted, shutting down");
             Thread.currentThread().interrupt(); // Restore interrupted status
@@ -168,14 +169,14 @@ public class BindingsMonitor {
         try {
             currentBindsFile = new BindingsLoader().getLatestBindsFile();
             bindings = parser.parseBindings(currentBindsFile);
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
-            EventBusManager.publish(new BindingsUpdatedEvent());
+            UiBus.publish(new BindingsUpdatedEvent());
             log.info("Key bindings updated from: {}", currentBindsFile.getName());
         } catch (Exception e) {
             log.error("Failed to parse key bindings from: {}",
                     currentBindsFile != null ? currentBindsFile.getName() : "null", e);
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new AiVoxResponseEvent("Failed to update key bindings. Plese check the bindings directory. "));
         }
     }

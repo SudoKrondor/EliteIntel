@@ -7,7 +7,7 @@ import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.starsystems.StarSystemResult;
 
 import javax.annotation.Nonnull;
@@ -159,7 +159,7 @@ public class HuntingGroundManager {
                 dao.upsert(provider);
             }
             dao.updateFaction(provider.getId(), providerFaction);
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Mission provider faction updated. " + providerFaction));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Mission provider faction updated. " + providerFaction));
             return Void.class;
         });
     }
@@ -180,7 +180,7 @@ public class HuntingGroundManager {
             HuntingGround system = dao.findByStarSystem(primaryStarName);
             if (system != null && !system.isHasResSite()) {
                 dao.confirm(primaryStarName);
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Recon confirmed for " + primaryStarName + ". Resource Sites Found"));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent("Recon confirmed for " + primaryStarName + ". Resource Sites Found"));
             }
             return Void.class;
         });

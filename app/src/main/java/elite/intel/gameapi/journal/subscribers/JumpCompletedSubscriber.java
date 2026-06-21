@@ -8,9 +8,9 @@ import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.FireGroups;
-import elite.intel.gameapi.GameControllerBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
@@ -54,7 +54,7 @@ public class JumpCompletedSubscriber {
             neutronStarRouteManager.removeLeg(event.getSystemAddress());
 
             SystemBodiesDto systemBodiesDto = EdsmApiClient.searchSystemBodies(event.getStarSystem());
-            processEdsmData(systemBodiesDto, event.getSystemAddress(), event.getStarPos());
+            processEdsmData(systemBodiesDto, event.getSystemAddress(), event.getStarPos(), event.getStarSystem());
 
             boolean isSellerSystem = monetizeRouteManager.isSeller(event.getStarSystem());
             boolean isBuyerSystem = monetizeRouteManager.isBuyer(event.getStarSystem());
@@ -88,14 +88,14 @@ public class JumpCompletedSubscriber {
             boolean roueSet = !orderedRoute.isEmpty();
             DestinationReminderDao.Reminder reminder = destinationReminderManager.getReminder();
             String reminderText = null;
-            if (reminder != null && reminder.getStarSystem().equals(event.getStarSystem())) {
+            if (reminder != null && event.getStarSystem().equals(reminder.getStarSystem())) {
                 reminderText = reminder.getReminder() == null ? "" : reminder.getReminder();
             }
 
             if (finalDestination != null && finalDestination.equalsIgnoreCase(event.getStarSystem())) {
                 shipRoute.clearRoute();
                 if (reminderText != null && !reminderText.isBlank()) {
-                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 } else {
                     sb.append(localizedEvent("event.route.arrivedFinal", finalDestination));
                 }
@@ -106,7 +106,7 @@ public class JumpCompletedSubscriber {
 
             } else if (roueSet) {
                 if (reminderText != null && !reminderText.isBlank() && reminderText.toLowerCase().contains(event.getStarSystem().toLowerCase(Locale.ROOT))) {
-                    EventBusManager.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
                 }
 
                 sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
@@ -127,14 +127,14 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
-                    //EventBusManager.publish(new RouteAnnouncementEvent(sb.toString()));
-                    EventBusManager.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
+                    //GameEventBus.publish(new RouteAnnouncementEvent(sb.toString()));
+                    GameEventBus.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
                 }
                 if (isSellerSystem && station != null) {
-                    EventBusManager.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));
+                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));
                 }
                 if (isBuyerSystem && station != null) {
-                    EventBusManager.publish(new SensorDataEvent("Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to sell."));
+                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to sell."));
                 }
             }
 
@@ -167,7 +167,7 @@ public class JumpCompletedSubscriber {
     }
 
 
-    private void processEdsmData(SystemBodiesDto systemBodiesDto, long systemAddress, double[] starPos) {
+    private void processEdsmData(SystemBodiesDto systemBodiesDto, long systemAddress, double[] starPos, String starSystem) {
         if (systemBodiesDto == null) return;
         if (systemBodiesDto.getData() == null) return;
         List<BodyData> bodies = systemBodiesDto.getData().getBodies();
@@ -205,6 +205,7 @@ public class JumpCompletedSubscriber {
             stellarObject.setRotationPeriod(data.getRotationalPeriod());
             stellarObject.setVolcanism(data.getVolcanismType());
             stellarObject.setPlanetClass(data.getSpectralClass());
+            stellarObject.setStarName(starSystem);
             locationManager.save(stellarObject);
         }
     }

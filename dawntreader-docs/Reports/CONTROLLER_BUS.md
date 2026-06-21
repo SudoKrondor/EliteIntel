@@ -2,7 +2,7 @@
 
 ## What it is
 
-`GameControllerBus` (`elite.intel.gameapi.GameControllerBus`) is a small, dedicated
+`GameControllerBus` (`elite.intel.eventbus.GameControllerBus`) is a small, dedicated
 Guava `EventBus`, kept separate from the main `EventBusManager` so that keystroke
 dispatch into the game is never blocked by — and never blocks — STT/TTS/LLM/journal
 traffic. It is a synchronous message-passing pipe with `publish` / `register` /
@@ -51,7 +51,7 @@ into actual keypresses inside Elite Dangerous:
 
 ## Classes involved
 
-- `elite.intel.gameapi.GameControllerBus` — the dedicated synchronous event bus
+- `elite.intel.eventbus.GameControllerBus` — the dedicated synchronous event bus
 - `elite.intel.ai.hands.events.GameInputSequenceEvent` — typed, immutable list of
   input steps
 - `elite.intel.ai.hands.events.GameInputStep` — one semantic input step (binding tap,

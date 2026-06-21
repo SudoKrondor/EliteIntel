@@ -3,12 +3,12 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsSearch;
 import elite.intel.util.StringUtls;
@@ -37,7 +37,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
     public void execute(JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         if (coordinates == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.noCoords")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.noCoords")));
             return;
         }
         List<InterstellarFactorsResultDto.Result> results = InterstellarFactorsSearch.findNearestInterstellarFactors(
@@ -45,7 +45,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         );
 
         if (results == null || results.isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.interstellarFactors.notFound")));
             return;
         }
 
@@ -55,7 +55,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         routePlotter.plotRoute(starName);
 
         String announcement = StringUtls.localizedLlm("handler.interstellarFactors.visit", stationName, starName);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(announcement));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(announcement));
         reminderManager.setReminder("Visit Interstellar Factors at " + stationName, starName);
     }
 }

@@ -3,7 +3,7 @@ package elite.intel.ai.brain;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,13 +50,13 @@ public class BaseAiClient {
                 String body = response.body();
                 log.error("HTTP {} – response: {}", code, body);
                 if (code == 400 && !systemSession.useLocalCommandLlm()) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Bad Request. Unsupported request format or invalid API key"));
+                    GameEventBus.publish(new AiVoxResponseEvent("Bad Request. Unsupported request format or invalid API key"));
                 } else if (code == 429) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Too Many Requests. Please try again later."));
+                    GameEventBus.publish(new AiVoxResponseEvent("Too Many Requests. Please try again later."));
                 } else if (code == 401) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Invalid API Key. Please check your API Key and try again."));
+                    GameEventBus.publish(new AiVoxResponseEvent("Invalid API Key. Please check your API Key and try again."));
                 } else if (code == 500) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Internal Server Error. Please try again later."));
+                    GameEventBus.publish(new AiVoxResponseEvent("Internal Server Error. Please try again later."));
                 }
                 return createErrorResponse("HTTP " + code);
             }

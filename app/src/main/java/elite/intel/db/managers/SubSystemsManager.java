@@ -1,14 +1,13 @@
 package elite.intel.db.managers;
 
+import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-
-import com.google.common.eventbus.Subscribe;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.SleepNoThrow;
@@ -34,7 +33,7 @@ public class SubSystemsManager {
     private volatile Instant lastKeyPressInstant = Instant.EPOCH;
 
     private SubSystemsManager() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     public static SubSystemsManager getInstance() {

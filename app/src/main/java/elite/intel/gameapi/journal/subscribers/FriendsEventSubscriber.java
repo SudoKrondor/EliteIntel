@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.FriendsEvent;
 
@@ -45,6 +45,6 @@ public class FriendsEventSubscriber {
         });
         pending.clear();
         String instructions = "Report each friend's name and their new status (online, offline, etc.). One friend per sentence.";
-        EventBusManager.publish(new SensorDataEvent("Friends: " + data, instructions));
+        GameEventBus.publish(new SensorDataEvent("Friends: " + data, instructions));
     }
 }

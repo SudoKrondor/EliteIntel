@@ -1,7 +1,9 @@
 package elite.intel.junit.prompt;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.i18n.Language;
@@ -15,8 +17,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import elite.intel.ai.brain.actions.command.builtin.*;
-import elite.intel.ai.brain.actions.handlers.query.*;
 
 
 /**
@@ -63,7 +63,7 @@ public class NaturalSpeechIntegrationTestFR {
         WebSocketBroadcaster.getInstance().start();
         capture = new HandlerCapture();
         Thread.sleep(2000);
-        EventBusManager.publish(new SensorDataEvent("command_verify_connection", "Acknowledge connection"));
+        GameEventBus.publish(new SensorDataEvent("command_verify_connection", "Acknowledge connection"));
         Thread.sleep(4000);
     }
 
@@ -78,7 +78,7 @@ public class NaturalSpeechIntegrationTestFR {
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
-        EventBusManager.publish(new UserInputEvent(input));
+        GameEventBus.publish(new UserInputEvent(input));
 
         HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,

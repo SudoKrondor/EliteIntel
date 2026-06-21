@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.CodexEntryDao.CodexEntry;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.ScanOrganicEvent;
@@ -38,7 +38,7 @@ public class ScanOrganicSubscriber {
 
     private static void announce(String sb) {
         if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
-            EventBusManager.publish(new SensorDataEvent(sb, """
+            GameEventBus.publish(new SensorDataEvent(sb, """
                         Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
                         Rephrase to natural, immersive speech:
                             - Key elements ONLY: genus/species logged, distance/completion if stated.
@@ -60,6 +60,7 @@ public class ScanOrganicSubscriber {
             playerSession.setCurrentPartial(genus);
             String species = subtractString(event.getSpeciesLocalised(), genus);
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
+            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());
 
             boolean isOurDiscovery = currentLocation.isOurDiscovery();

@@ -53,24 +53,30 @@ public class Database {
     }
 
     static {
-        Path dbPath;
-        try {
-            dbPath = AppPaths.getDatabasePath();
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to create database directory " + e.getMessage(), e);
+        String overrideUrl = System.getProperty("elite.intel.db.url");
+        String url;
+        if (overrideUrl != null) {
+            url = overrideUrl;
+        } else {
+            Path dbPath;
+            try {
+                dbPath = AppPaths.getDatabasePath();
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to create database directory " + e.getMessage(), e);
+            }
+            url = "jdbc:sqlite:" + dbPath
+                    + "?journal_mode=WAL"
+                    + "&busy_timeout=5000"
+                    + "&synchronous=NORMAL"
+                    + "&foreign_keys=ON";
         }
-
-        String url = "jdbc:sqlite:" + dbPath
-                + "?journal_mode=WAL"      // safe concurrent reads/writes
-                     + "&busy_timeout=5000"     // don't deadlock if two threads hit it
-                + "&synchronous=NORMAL"    // fast + still safe on Linux
-                + "&foreign_keys=ON";      // Ensure Foreign Keys are enforced on every connection
 
         // Configure HikariCP connection pool
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(url);
-        config.setMaximumPoolSize(10);              // SQLite can handle ~10 concurrent connections with WAL
-        config.setMinimumIdle(2);                   // Keep 2 connections ready
+        int maxPool = Integer.getInteger("elite.intel.db.pool.size", 10);
+        config.setMaximumPoolSize(maxPool);
+        config.setMinimumIdle(Math.min(2, maxPool));
         config.setConnectionTimeout(30000);         // 30 seconds
         config.setIdleTimeout(600000);              // 10 minutes
         config.setMaxLifetime(1800000);             // 30 minutes

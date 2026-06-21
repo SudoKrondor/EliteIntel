@@ -8,7 +8,8 @@ import com.google.gson.JsonSyntaxException;
 import elite.intel.ai.brain.AiCommandInterface;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -29,7 +30,7 @@ public class OpenAiCommandEndPoint extends CommandEndPoint implements AiCommandI
     private ExecutorService executor;
 
     private OpenAiCommandEndPoint() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     public static OpenAiCommandEndPoint getInstance() {
@@ -61,7 +62,7 @@ public class OpenAiCommandEndPoint extends CommandEndPoint implements AiCommandI
                 t.setDaemon(true);
                 return t;
             });
-            EventBusManager.register(this);
+            GameEventBus.register(this);
             log.info("OpenAiCommandEndPoint started");
         } else {
             log.debug("OpenAiCommandEndPoint already started");
@@ -71,7 +72,7 @@ public class OpenAiCommandEndPoint extends CommandEndPoint implements AiCommandI
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) {
                 OpenAiClient.getInstance().cancelCurrentRequest();
                 executor.shutdown();
@@ -142,14 +143,14 @@ public class OpenAiCommandEndPoint extends CommandEndPoint implements AiCommandI
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
 
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
         JsonArray messages = buildSensorMessages(event);
 
         executor.submit(() -> {
             try {
                 JsonObject apiResponse = callOpenAiApi(messages);
                 if (apiResponse == null) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
+                    GameEventBus.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
                     return;
                 }
                 getRouter().processAiResponse(apiResponse, null);

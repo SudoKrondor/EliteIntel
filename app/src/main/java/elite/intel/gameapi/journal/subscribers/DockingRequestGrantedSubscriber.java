@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.DockingGrantedEvent;
 import elite.intel.session.PlayerSession;
 
@@ -17,14 +17,14 @@ public class DockingRequestGrantedSubscriber {
         String playerName = playerSession.getVariablePlayerName();
 
         if (event.getStationName().equalsIgnoreCase(playerSession.getFleetCarrierData().getCallSign())) {
-            EventBusManager.publish(new RadioTransmissionEvent(
+            GameEventBus.publish(new RadioTransmissionEvent(
                     localizedEvent("event.docking.trafficControl",
                             playerSession.getFleetCarrierData().getCarrierName(),
                             event.getLandingPad(),
                             localizedEvent("event.docking.welcomeHome", playerName))
             ));
         } else {
-            EventBusManager.publish(new RadioTransmissionEvent(
+            GameEventBus.publish(new RadioTransmissionEvent(
                     localizedEvent("event.docking.trafficControl",
                             event.getStationName(),
                             event.getLandingPad(),

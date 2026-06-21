@@ -7,7 +7,8 @@ import elite.intel.ai.mouth.AudioDeClicker;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.*;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
@@ -81,12 +82,12 @@ public class GoogleTTSImpl implements MouthInterface {
             log.info("TextToSpeechClient initialized successfully with API key");
         } catch (Exception e) {
             log.error("Failed to initialize TextToSpeechClient: {}", e.getMessage(), e);
-            EventBusManager.publish(new AppLogEvent("Google TTS failed to start: " + e.getMessage()));
+            UiBus.publish(new AppLogEvent("Google TTS failed to start: " + e.getMessage()));
             return;
         }
 
         running = true;
-        EventBusManager.register(this);
+        GameEventBus.register(this);
         ttsProcessingThread = new Thread(this::processTTSQueue, "TTSThread");
         ttsProcessingThread.start();
 
@@ -96,14 +97,14 @@ public class GoogleTTSImpl implements MouthInterface {
 
         log.info("VoiceGenerator started");
         if (systemSession.getRmsThresholdHigh() != null) {
-            EventBusManager.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
+            UiBus.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
         }
-        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
     }
 
     @Override
     public synchronized void stop() {
-        if (running) EventBusManager.unregister(this);
+        if (running) GameEventBus.unregister(this);
         if (ttsProcessingThread == null || !ttsProcessingThread.isAlive()) {
             log.warn("VoiceGenerator is not running");
             return;
@@ -206,7 +207,7 @@ public class GoogleTTSImpl implements MouthInterface {
             }
 
             AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
-            EventBusManager.publish(new AiResponseLogEvent(event.getText()));
+            UiBus.publish(new AiResponseLogEvent(event.getText()));
             log.debug("Added VoiceRequest to queue: text='{}', voice='{}'", event.getText(), voiceName);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -249,7 +250,7 @@ public class GoogleTTSImpl implements MouthInterface {
             } catch (Exception e) {
                 log.error("Unexpected error in VoiceGenerator", e);
             }  finally {
-                EventBusManager.publish(new AppLogEvent(""));
+                UiBus.publish(new AppLogEvent(""));
             }
         }
         closePersistentLine();
@@ -412,7 +413,7 @@ public class GoogleTTSImpl implements MouthInterface {
 
     private void publishCompletionEvent(Class<? extends BaseVoxEvent> originType) {
         try {
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new VocalisationSuccessfulEvent<>(
                             originType.getConstructor(String.class).newInstance("")
                     )

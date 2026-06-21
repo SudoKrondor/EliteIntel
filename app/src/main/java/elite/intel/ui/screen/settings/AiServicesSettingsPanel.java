@@ -1,23 +1,17 @@
 package elite.intel.ui.screen.settings;
 
-import elite.intel.ui.dialog.HudConfirmDialog;
-import elite.intel.ui.widget.HudBanner;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudSegmentedControl;
-import elite.intel.ui.widget.HudTwoColumns;
-import elite.intel.ui.widget.HudUnsavedHint;
-import elite.intel.ui.widget.StatusBadge;
-
 import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -28,8 +22,8 @@ import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Unified AI services tab: routes the language model (LLM) and speech (TTS) each between a
@@ -460,11 +454,11 @@ public class AiServicesSettingsPanel extends JPanel {
         systemSession.setUseLocalTTS(newTtsLocal);
         systemSession.setTtsApiKey(newTtsKey);
 
-        EventBusManager.publish(new AppLogEvent("AI services config saved"));
-        if (brainChanged) EventBusManager.publish(new RestartBrainEvent());
+        UiBus.publish(new AppLogEvent("AI services config saved"));
+        if (brainChanged) UiBus.publish(new RestartBrainEvent());
         if (mouthChanged) {
-            EventBusManager.publish(new TTSProviderChangedEvent());
-            EventBusManager.publish(new RestartMouthEvent());
+            UiBus.publish(new TTSProviderChangedEvent());
+            UiBus.publish(new RestartMouthEvent());
         }
 
         savedLlmLocal = newLocal;

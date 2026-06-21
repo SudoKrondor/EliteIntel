@@ -1,4 +1,4 @@
-package elite.intel.ui.event;
+package elite.intel.gameapi;
 
 public class NormalizedUserInputEvent {
     private String text;

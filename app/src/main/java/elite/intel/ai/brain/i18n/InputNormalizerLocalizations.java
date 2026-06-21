@@ -13,6 +13,8 @@ import elite.intel.session.SystemSession;
 
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Factory that supplies the correct {@link InputNormalizerProvider} for the current
@@ -37,6 +39,14 @@ public final class InputNormalizerLocalizations {
         return rules().noiseWordPattern;
     }
 
+    public static List<String> trashPhrases() {
+        return rules().trashPhrases;
+    }
+
+    public static Set<String> stopWords() {
+        return rules().stopWords;
+    }
+
     private static CachedRules rules() {
         Language lang = SystemSession.getInstance().getLanguage();
         return CACHE.computeIfAbsent(lang, l -> new CachedRules(providerFor(l)));
@@ -55,9 +65,10 @@ public final class InputNormalizerLocalizations {
         };
     }
 
-    private record CachedRules(LinkedHashMap<String, String> synonymMap, String noiseWordPattern) {
+    private record CachedRules(LinkedHashMap<String, String> synonymMap, String noiseWordPattern,
+                               List<String> trashPhrases, Set<String> stopWords) {
         CachedRules(InputNormalizerProvider provider) {
-            this(provider.buildSynonymMap(), provider.noiseWordPattern());
+            this(provider.buildSynonymMap(), provider.noiseWordPattern(), provider.trashPhrases(), provider.stopWords());
         }
     }
 }

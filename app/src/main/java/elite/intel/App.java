@@ -3,15 +3,14 @@ package elite.intel;
 import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.screen.AppView;
+import elite.intel.ui.theme.HudPalette;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -48,7 +47,7 @@ public class App {
         SubscriberRegistration.registerSubscribers();
 
         // spin up the session
-        EventBusManager.publish(new LoadSessionEvent());
+        GameEventBus.publish(new LoadSessionEvent());
 
         // init UI
         System.setProperty("awt.useSystemAAFontSettings", "lcd");

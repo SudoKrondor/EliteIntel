@@ -1,15 +1,13 @@
 package elite.intel.ui.widget;
 
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.ActiveShipChangedEvent;
 import elite.intel.ui.event.CommanderChangedEvent;
+import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
@@ -46,12 +44,12 @@ public class TopStatusBar extends HudPanel {
         add(buildLeftGroup(appName, version), BorderLayout.WEST);
         add(buildRightGroup(), BorderLayout.EAST);
 
-        EventBusManager.register(this);
+        UiBus.register(this);
     }
 
     /** Unregisters all event subscriptions. Must be called when this component is discarded. */
     public void dispose() {
-        EventBusManager.unregister(this);
+        UiBus.unregister(this);
     }
 
     // -- Event handlers --------------------------------------------------------

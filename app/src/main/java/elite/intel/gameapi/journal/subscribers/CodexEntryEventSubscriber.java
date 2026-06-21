@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.CodexEntryDao;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.CodexEntryEvent;
@@ -28,6 +28,7 @@ public class CodexEntryEventSubscriber {
             final Status status = Status.getInstance();
 
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
             playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
             StringBuilder sb = new StringBuilder();
 
@@ -109,7 +110,7 @@ public class CodexEntryEventSubscriber {
                         - Do not append any extra data.
                         - Express credit amounts using K (thousands) or M (millions) shorthand as appropriate (e.g. 50K, 1.2M).
                         """;
-                EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
+                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }
             if ("$Codex_SubCategory_Organic_Structures;".equalsIgnoreCase(event.getSubCategory())) {
                 codexEntryManager.save(event);

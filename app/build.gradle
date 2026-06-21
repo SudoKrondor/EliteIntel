@@ -24,6 +24,7 @@ configurations {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+    testImplementation 'org.wiremock:wiremock:3.13.0'
 
     // Text to Speech
     implementation 'com.google.cloud:google-cloud-texttospeech:2.73.0'
@@ -167,6 +168,8 @@ test {
     useJUnitPlatform {
         excludeTags 'local-integration'
     }
+    systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
+    systemProperty 'elite.intel.db.pool.size', '1'
 }
 
 // Run with: ./gradlew localIntegrationTest

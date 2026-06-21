@@ -3,7 +3,7 @@ package elite.intel.junit.prompt;
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.i18n.Language;
@@ -63,7 +63,7 @@ public class NaturalSpeechIntegrationTestEN {
         Thread.sleep(2000);
         /// this allows LLM to cache the prompt header / same request runs on app
         /// startup.
-        EventBusManager.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
+        GameEventBus.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
         Thread.sleep(4000);
     }
 
@@ -78,7 +78,7 @@ public class NaturalSpeechIntegrationTestEN {
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
         capture.reset();
-        EventBusManager.publish(new UserInputEvent(input));
+        GameEventBus.publish(new UserInputEvent(input));
 
         HandlerDispatchedEvent event = waitForDispatch(expectedAction);
         assertNotNull(event,
@@ -720,7 +720,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> plotNextNeutronLeg() {
-        return Stream.of("next neutron star jump", "plot route to next neutron star waypoint", "next neutron star");
+        return Stream.of("take me to the next neutron star", "plot route to next neutron star waypoint", "next neutron star");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

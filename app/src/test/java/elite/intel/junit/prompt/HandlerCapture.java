@@ -2,7 +2,7 @@ package elite.intel.junit.prompt;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 
 /**
  * Subscribes to {@link HandlerDispatchedEvent} on the main EventBus and captures
@@ -15,7 +15,7 @@ public class HandlerCapture {
     private volatile HandlerDispatchedEvent lastEvent;
 
     public HandlerCapture() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     @Subscribe

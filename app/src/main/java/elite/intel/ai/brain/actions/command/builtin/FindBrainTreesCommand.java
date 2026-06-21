@@ -4,14 +4,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.RoutePlotter;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.BrainTreeManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.util.NavigationUtils;
 import elite.intel.util.StringUtls;
@@ -44,7 +44,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
 
         JsonElement key = params.get("key");
         if (key == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
             return;
         }
 
@@ -58,10 +58,10 @@ public final class FindBrainTreesCommand implements IntelCommand {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
         if (result == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
         } else {
             double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName())));
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(result.getSystemName());
             ReminderManager.getInstance().setReminder(

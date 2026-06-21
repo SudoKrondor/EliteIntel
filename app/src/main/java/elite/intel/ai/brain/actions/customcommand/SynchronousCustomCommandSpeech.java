@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.ears.IsSpeakingEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.eventbus.GameEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -36,16 +36,16 @@ class SynchronousCustomCommandSpeech implements CustomCommandSpeakExecutor {
     @Override
     public void speak(String text) throws InterruptedException {
         CompletableFuture<Void> done = new CompletableFuture<>();
-        EventBusManager.publish(new IsSpeakingEvent(true));
+        GameEventBus.publish(new IsSpeakingEvent(true));
         try {
-            EventBusManager.publish(new AiVoxResponseEvent(text, done));
+            GameEventBus.publish(new AiVoxResponseEvent(text, done));
             done.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("CustomCommand SPEAK timed out after {}s for: '{}'", TIMEOUT_SECONDS, text);
         } catch (ExecutionException e) {
             log.warn("CustomCommand SPEAK completed exceptionally: {}", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
         } finally {
-            EventBusManager.publish(new IsSpeakingEvent(false));
+            GameEventBus.publish(new IsSpeakingEvent(false));
         }
         // InterruptedException propagates to CustomCommandHandler, which will interrupt custom command execution
     }

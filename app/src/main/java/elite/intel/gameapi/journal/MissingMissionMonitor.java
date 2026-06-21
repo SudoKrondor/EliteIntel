@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.HistoricalMissionScanner;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.MissionsEvent;
@@ -32,7 +32,7 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
     private ScheduledExecutorService executor;
 
     private MissingMissionMonitor() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     public static MissingMissionMonitor getInstance() {
@@ -108,7 +108,7 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
             HistoricalMissionScanner scanner = HistoricalMissionScanner.getInstance();
             List<MissionAcceptedEvent> missingMissions = scanner.scanForPendingAcceptedEvents(filtered);
             for (MissionAcceptedEvent mission : missingMissions) {
-                EventBusManager.publish(new AiVoxResponseEvent(
+                GameEventBus.publish(new AiVoxResponseEvent(
                         "%s! i detected a %s mission that i haven't catalogued.".formatted(
                                 PlayerSession.getInstance().getVariablePlayerName(),
                                 mission.getName()

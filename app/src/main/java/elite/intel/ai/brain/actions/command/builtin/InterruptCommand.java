@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 
 /**
  * Stage-4b self-describing command for "interrupt speech".
@@ -23,6 +23,6 @@ public final class InterruptCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        EventBusManager.publish(new TTSInterruptEvent());
+        GameEventBus.publish(new TTSInterruptEvent());
     }
 }

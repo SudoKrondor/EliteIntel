@@ -4,7 +4,7 @@ import com.google.gson.*;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.Client;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,7 +57,7 @@ public abstract class AiEndPoint {
 
         JsonElement element = message.get("content");
         if (element == null) {
-            EventBusManager.publish(new AiVoxResponseEvent("No content in API response message: " + response.toString().replace("\n", "")));
+            GameEventBus.publish(new AiVoxResponseEvent("No content in API response message: " + response.toString().replace("\n", "")));
             throw new RuntimeException("No content in API response message");
         }
         String content = element.getAsString();

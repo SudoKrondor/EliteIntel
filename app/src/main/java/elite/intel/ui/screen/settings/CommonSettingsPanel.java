@@ -1,7 +1,8 @@
 package elite.intel.ui.screen.settings;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -59,8 +60,8 @@ public class CommonSettingsPanel extends JPanel {
             Language language = selected.language();
             if (language == systemSession.getLanguage()) return;
             systemSession.setLanguage(language);
-            EventBusManager.publish(new LanguageChangedEvent());
-            SwingUtilities.invokeLater(() -> EventBusManager.publish(new MissionCriticalAnnouncementEvent(
+            UiBus.publish(new LanguageChangedEvent());
+            SwingUtilities.invokeLater(() -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(
                     StringUtls.localizedSpeech("speech.languageChanged", StringUtls.localizedSpeechLanguageName(language)))));
         });
         g.gridx = 1;
@@ -114,7 +115,7 @@ public class CommonSettingsPanel extends JPanel {
             String path = chooser.getSelectedFile().getAbsolutePath();
             playerSession.setJournalPath(path);
             journalDirField.setText(path);
-            EventBusManager.publish(new AppLogEvent("Journal directory updated"));
+            UiBus.publish(new AppLogEvent("Journal directory updated"));
         }
     }
 

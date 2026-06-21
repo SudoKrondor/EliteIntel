@@ -3,14 +3,14 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.hands.PreFtlChecks;
-import elite.intel.ai.hands.UiNavCommon;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.GlobalSettingsManager;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.inputs.PreFtlChecks;
+import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.Status;
 import elite.intel.session.ui.UINavigator;
 import elite.intel.util.StringUtls;
@@ -43,12 +43,12 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
         if (status.isFsdCharging()) return;
 
         if (status.isFsdMassLocked()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
         } else if (status.isFsdCooldown()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
         } else if (status.isFighterOut()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
         } else if (status.isInMainShip()) {
             if (status.isInSupercruise()) {
                 navigator.closeOpenPanel();
@@ -88,7 +88,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                 }
             }
         } else {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.notInShip")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.notInShip")));
         }
     }
 }

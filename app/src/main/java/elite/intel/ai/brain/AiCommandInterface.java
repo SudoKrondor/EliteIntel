@@ -11,7 +11,7 @@ import elite.intel.ui.controller.ManagedService;
  * react to specific events such as user input and sensor data updates.
  * <p>
  * Implementations of this interface are expected to integrate with event subscription mechanisms
- * such as elite.intel.gameapi.SubscriberRegistration or EventBusManager to handle incoming events.
+ * such as elite.intel.gameapi.SubscriberRegistration or GameEventBus to handle incoming events.
  * These events allow the AI system to process user inputs and sensor state updates, which are
  * essential for generating dynamic and context-aware responses.
  * <p>
@@ -24,13 +24,13 @@ import elite.intel.ui.controller.ManagedService;
 public interface AiCommandInterface extends ManagedService {
     /**
      * Use elite.intel.gameapi.SubscriberRegistration to subscribe to these events
-     * or add EventBusManager.register(this); in the constructor if your class is singleton
+     * or add GameEventBus.register(this); in the constructor if your class is singleton
      */
     @Subscribe void onUserInput(UserInputEvent event);
 
     /**
      * Use elite.intel.gameapi.SubscriberRegistration to subscribe to these events
-     * or add EventBusManager.register(this); in the constructor if your class is singleton
+     * or add GameEventBus.register(this); in the constructor if your class is singleton
      */
     @Subscribe void onSensorDataEvent(SensorDataEvent event);
 }

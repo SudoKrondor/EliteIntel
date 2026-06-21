@@ -6,7 +6,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -32,15 +32,15 @@ public final class SetHomeSystemCommand implements IntelCommand {
     public void execute(JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
         if (coordinates == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.noCoords")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.noCoords")));
             return;
         }
         LocationDto newHome = locationManager.findPrimaryStar(coordinates.primaryStar());
         if (newHome == null || newHome.getSystemAddress() < 1) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar())));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar())));
             return;
         }
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.setting", coordinates.primaryStar())));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.setting", coordinates.primaryStar())));
         playerSession.setHomeSystem(newHome);
     }
 }

@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -18,7 +18,7 @@ public class AnalyzeTradeProfileQueryCommand extends BaseQueryAnalyzer implement
 
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing trade profile. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing trade profile. Stand by."));
         TradeProfileManager tradeProfileManager = TradeProfileManager.getInstance();
         TradeRouteSearchCriteria criteria = tradeProfileManager.getCriteria(false);
         String instructions = """

@@ -7,8 +7,8 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.ShipSettingsManager;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.FireGroups;
-import elite.intel.gameapi.GameControllerBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 

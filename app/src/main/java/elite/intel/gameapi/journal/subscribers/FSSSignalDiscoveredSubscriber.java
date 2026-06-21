@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -68,7 +68,7 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     private void publishVoice(String message) {
-        EventBusManager.publish(new DiscoveryAnnouncementEvent(message));
+        GameEventBus.publish(new DiscoveryAnnouncementEvent(message));
     }
 
 

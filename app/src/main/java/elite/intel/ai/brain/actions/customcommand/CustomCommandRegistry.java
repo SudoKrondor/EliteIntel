@@ -3,7 +3,7 @@ package elite.intel.ai.brain.actions.customcommand;
 import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +74,7 @@ public final class CustomCommandRegistry {
     public void replaceCustomCommands(List<CustomCommandDefinition> customCommands) {
         setCustomCommands(customCommands);
         log.info("Custom command registry: {} command(s) active after replace", this.customCommands.size());
-        EventBusManager.publish(new CustomCommandsSummaryChangedEvent(this.customCommands.size()));
+        UiBus.publish(new CustomCommandsSummaryChangedEvent(this.customCommands.size()));
     }
 
     /**

@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.SupercruiseDestinationDropEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -28,20 +28,22 @@ public class SuperCruiseDropSubscriber {
                             - level 3 - 5 threat level medium
                             - level 6 - 8 threat level high
                         """;
-                EventBusManager.publish(new SensorDataEvent(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions));
+                GameEventBus.publish(new SensorDataEvent(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions));
             }
 
 
             LocationDto location = locationManager.findByMarketId(event.getMarketID());
             if (location.getBodyId() < 1 && location.getSystemAddress() < 1) {
+                long systemAddress = playerSession.getLocationData().getSystemAddress();
                 location.setLocationType(LocationDto.LocationType.STATION);
-                location.setSystemAddress(playerSession.getLocationData().getSystemAddress());
+                location.setSystemAddress(systemAddress);
+                location.setStarName(locationManager.findBySystemAddress(systemAddress).getStarName());
                 locationManager.save(location);
             }
 
             String carrierName = playerSession.getFleetCarrierData().getCarrierName();
             if (carrierName != null && event.getType().toUpperCase().startsWith(carrierName.toUpperCase())) {
-                EventBusManager.publish(new AiVoxResponseEvent(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName))));
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName))));
             }
         });
     }

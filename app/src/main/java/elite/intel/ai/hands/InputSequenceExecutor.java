@@ -4,19 +4,15 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -158,7 +154,7 @@ public class InputSequenceExecutor {
 
     private void handleNoKeyBindingFound(String bindingId) {
         log.warn("No binding found for action: {}", bindingId);
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.keyBindingNotFound", bindingId)));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.keyBindingNotFound", bindingId)));
     }
 
     private int defaultPostInputDelayMs() {

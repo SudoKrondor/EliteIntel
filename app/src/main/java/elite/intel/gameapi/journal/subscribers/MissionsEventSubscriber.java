@@ -3,7 +3,8 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.HistoricalMissionScanner;
 import elite.intel.gameapi.journal.events.MissionsEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -26,7 +27,7 @@ public class MissionsEventSubscriber {
     public void onMissionsEventSubscriber(MissionsEvent event) {
         Thread.ofVirtual().start(() -> {
             if (!event.getActive().isEmpty()) {
-                EventBusManager.register(new MissionCriticalAnnouncementEvent(localizedEventPlural(event.getActive().size(), "event.missions.outstanding")));
+                GameEventBus.register(new MissionCriticalAnnouncementEvent(localizedEventPlural(event.getActive().size(), "event.missions.outstanding")));
             }
             if (!event.getComplete().isEmpty() || !event.getFailed().isEmpty()) {
                 // Removes old and completed missions from the database.
@@ -41,7 +42,7 @@ public class MissionsEventSubscriber {
 
                 if (offset.isEmpty()) return;
                 offset.forEach(missionManager::remove);
-                EventBusManager.publish(new AppLogEvent(localizedEvent("event.missions.removedOld", offset.size())));
+                UiBus.publish(new AppLogEvent(localizedEvent("event.missions.removedOld", offset.size())));
             }
         });
     }

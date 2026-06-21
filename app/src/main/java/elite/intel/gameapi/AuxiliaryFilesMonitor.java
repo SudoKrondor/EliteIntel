@@ -3,6 +3,8 @@ package elite.intel.gameapi;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.ManagedService;
@@ -99,13 +101,13 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
             monitorFiles();
         } catch (IOException e) {
             log.error("IOException in AuxiliaryFilesMonitor", e);
-            EventBusManager.publish(new AppLogEvent("Check Journal directory settings. Stopping services."));
+            UiBus.publish(new AppLogEvent("Check Journal directory settings. Stopping services."));
         } catch (InterruptedException e) {
             log.info("AuxiliaryFilesMonitor interrupted, shutting down");
             Thread.currentThread().interrupt(); // Restore interrupted status
         } catch (Exception e) {
             log.error("Unexpected error in AuxiliaryFilesMonitor", e);
-            EventBusManager.publish(new AppLogEvent("Check Journal directory settings."));
+            UiBus.publish(new AppLogEvent("Check Journal directory settings."));
         }
     }
 
@@ -136,7 +138,7 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
                                 Path fullPath = directory.resolve(fileName);
                                 Object eventObject = readAndParseFile(fullPath, fileName);
                                 if (eventObject != null) {
-                                    EventBusManager.publish(eventObject);
+                                    GameEventBus.publish(eventObject);
                                     log.info("Published update for file: {}", fileName);
                                 }
                             }
@@ -159,7 +161,7 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
                 if (Files.exists(statusPath)) {
                     Object statusEvent = readAndParseFile(statusPath, "Status.json");
                     if (statusEvent != null) {
-                        EventBusManager.publish(statusEvent);
+                        GameEventBus.publish(statusEvent);
                     }
                 }
             }
@@ -175,7 +177,7 @@ public class AuxiliaryFilesMonitor implements Runnable, ManagedService {
             if (Files.exists(filePath)) {
                 Object eventObject = readAndParseFile(filePath, fileName);
                 if (eventObject != null) {
-                    EventBusManager.publish(eventObject);
+                    GameEventBus.publish(eventObject);
                     log.info("Published initial event for file: {}", fileName);
                 }
             }

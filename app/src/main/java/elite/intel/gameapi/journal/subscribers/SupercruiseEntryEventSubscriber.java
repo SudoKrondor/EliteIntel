@@ -20,6 +20,7 @@ public class SupercruiseEntryEventSubscriber {
     public void onSuperCruiseEntryEvent(SupercruiseEntryEvent event) {
         Thread.ofVirtual().start(() -> {
             LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
+            currentLocation.setStarName(locationManager.findBySystemAddress(playerSession.getLocationData().getSystemAddress()).getStarName());
             currentLocation.setStationFaction(null);
             currentLocation.setStationName(null);
             currentLocation.setStationServices(new ArrayList<>());

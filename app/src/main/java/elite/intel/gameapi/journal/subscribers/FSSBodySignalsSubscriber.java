@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -21,7 +21,7 @@ public class FSSBodySignalsSubscriber {
     @Subscribe
     public void onFssBodySignal(FSSBodySignalsEvent event) {
         Thread.ofVirtual().start(() -> {
-            LocationDto primaryStarLocation = locationManager.findPrimaryStar(playerSession.getPrimaryStarName());
+            LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
             LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
 
             location.setPlanetName(event.getBodyName());
@@ -56,9 +56,9 @@ public class FSSBodySignalsSubscriber {
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
                 if (bioSignals > 0)
-                    EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(bioSignals, "event.fss.body.bioSignals")));
+                    GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(bioSignals, "event.fss.body.bioSignals")));
                 if (geoSignals > 0)
-                    EventBusManager.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(geoSignals, "event.fss.body.geoSignals")));
+                    GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(geoSignals, "event.fss.body.geoSignals")));
             }
         });
     }

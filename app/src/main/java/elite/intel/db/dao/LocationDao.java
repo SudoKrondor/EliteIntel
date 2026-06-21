@@ -60,7 +60,7 @@ public interface LocationDao {
     @SqlQuery("select * from location where systemAddress = :systemAddress and json->> '$.bodyId' = :bodyId")
     Location findPrimaryBySystemAddress(long systemAddress, Long bodyId);
 
-    @SqlQuery("select * from location where systemAddress = :systemAddress and json->> '$.locationType' is 'PRIMARY_STAR'")
+    @SqlQuery("select * from location where systemAddress = :systemAddress and json like '%\"locationType\": \"PRIMARY_STAR\"%'")
     Location findPrimaryBySystemAddress(long systemAddress);
 
     @SqlQuery("select * from location where systemAddress = :systemAddress")

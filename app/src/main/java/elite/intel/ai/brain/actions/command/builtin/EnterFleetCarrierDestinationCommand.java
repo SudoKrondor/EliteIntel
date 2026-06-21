@@ -7,7 +7,7 @@ import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.util.AudioPlayer;
 

@@ -5,7 +5,7 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.dao.TradeProfileDao;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.spansh.station.StationSearchClient;
 import elite.intel.search.spansh.station.marketstation.TradeStationSearchCriteria;
@@ -69,7 +69,7 @@ public class TradeProfileManager {
             }
 
             if (criteria.getStation() == null || criteria.getSystem() == null) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Unable to find a suitable initial trade station withing " + MAX_DISTANCE_TO_INITIAL_STATION + " light years."));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent("Unable to find a suitable initial trade station withing " + MAX_DISTANCE_TO_INITIAL_STATION + " light years."));
                 return null;
             }
         }
@@ -87,13 +87,13 @@ public class TradeProfileManager {
         String primaryStarName = playerSession.getPrimaryStarName();
 
         if (galacticCoordinates == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Galactic coordinates are not available."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Galactic coordinates are not available."));
             return true;
         }
 
         /// Sol is 0,0,0 but also if we do not have coordinates, our location will be 0,0,0.
         if (galacticCoordinates.x() == 0 && galacticCoordinates.y() == 0 && galacticCoordinates.z() == 0 && !"Sol".equalsIgnoreCase(primaryStarName)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Galactic coordinates are not available."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Galactic coordinates are not available."));
             return true;
         }
 
@@ -124,12 +124,12 @@ public class TradeProfileManager {
 
 
         if (startingStation.getResults().isEmpty()) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Could not find a suitable starting trade station."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Could not find a suitable starting trade station."));
             return true;
         }
         // only one station should be returned if the station is null - the method will return false.
         if (startingStation.getResults().stream().anyMatch(this::isTooFar)) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Nearest trade station is too far away to calculate a trade route."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Nearest trade station is too far away to calculate a trade route."));
             return true;
         }
         criteria.setStation(startingStation.getResults().stream().findFirst().get().getName());
@@ -147,7 +147,7 @@ public class TradeProfileManager {
 
         boolean isToFar = MAX_DISTANCE_TO_INITIAL_STATION < distance;
         if (isToFar) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("Found trade station within " + (int) distance + " light years."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Found trade station within " + (int) distance + " light years."));
         }
         return isToFar;
     }
@@ -171,7 +171,7 @@ public class TradeProfileManager {
     public boolean setStartingCapitol(Integer startingCapital) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -185,7 +185,7 @@ public class TradeProfileManager {
     public boolean setDistanceFromSystemEntry(Integer distance) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
             return true;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -200,7 +200,7 @@ public class TradeProfileManager {
     public boolean setMaximumStops(Integer maxStops) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -214,7 +214,7 @@ public class TradeProfileManager {
     public boolean setAllowFleetCarrier(boolean allowFleetCarrier) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -228,7 +228,7 @@ public class TradeProfileManager {
     public boolean setAllowPermit(boolean allowPermit) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -242,7 +242,7 @@ public class TradeProfileManager {
     public boolean setAllowProhibitedCargo(boolean allowProhibitedCargo) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data available. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
@@ -257,7 +257,7 @@ public class TradeProfileManager {
     public boolean setAllowPlanetaryPorts(boolean allowPlanetaryPorts) {
         final ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) {
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No ship data availale. Please board a cargo ship."));
             return false;
         }
         TradeProfileDao.TradeProfile profile = getProfile(ship);
