@@ -8,28 +8,30 @@
 
 --- 
 
+## Linux and Windows Installers
+
 Can be ran 100% off-line or with various cloud services
 
-### Windows 🪟
-1. Download the [👉**installer**👈](https://github.com/stone-alex/EliteIntel/releases).
+1. Download the [👉**V1.0 installer**👈](https://github.com/stone-alex/EliteIntel/releases), or Apply for [**V1.1 Beta
+   Test**](https://matrix.to/#/#krondor:matrix.org)
 2. Run the installer and follow the on-screen prompts.
+3. Set up an LLM. Two options are available:
+    - **Local LLM** (free, offline): See the [**Local LLM
+      **](https://www.elite-intel.org/installing-local-llms.html). Requires capable GPU hardware.
+    - **Cloud LLM** (easier to set up): See the [**Cloud LLM**](https://www.elite-intel.org/cloud-llm-options.html).
 
-### Linux 🐧
-- Do not use zip file from the artifacts. That is for updates.
-- NO sudo required!
+---
 
-1. Download the installer script:
+### Uninstall (Linux)
+
 ```shell
-curl -L -o installer.sh https://raw.githubusercontent.com/stone-alex/EliteIntel/refs/heads/master/distribution/installer.sh
+~/.var/app/elite.intel.app/uninstall
 ```
 
-2. Make the script executable and run it:
-```shell
-chmod +x installer.sh
-./installer.sh
-```
-The app installs to `~/.var/app/elite.intel.app`.
-Setup complete. Look for shortcut under games or utilities called Elite Intel.
+----
+For issues, report on Matrix. Bug reports and pull requests are welcome.
+
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈
 
 ### 👉[Free cloud if you don't have hardware for local LLM](https://console.mistral.ai/home)👈
 
