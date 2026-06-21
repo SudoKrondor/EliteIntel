@@ -30,7 +30,6 @@ details, check out `DEVELOPERS.md` in the root. It covers the architecture (deco
 reflection) and principles like DRY and SRP. All PRs go through review.
 
 ## License
-
 The project is open-source under a [Creative Commons license CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en),
 so feel free to check out the code and contribute. (see [DEVELOPERS.md](DEVELOPERS.md) for details)
 
