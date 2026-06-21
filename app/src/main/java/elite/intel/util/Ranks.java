@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
+import static elite.intel.gameapi.i18n.EventsTextProvider.getText;
 
 /**
  * The Ranks class provides various static methods to manage and retrieve mappings
@@ -68,7 +68,7 @@ public class Ranks {
      * Returns the honorific map. Military rank to Honorific mapping.
      * Values are resolved from the active UI language at call time.
      */
-    public static HashMap<String, String> getHonorificMap() {
+    public static HashMap<String, String> getImperialHonorificMap() {
         HashMap<String, String> rankMap = new HashMap<>();
 
         //Imperial ranks
@@ -88,6 +88,41 @@ public class Ranks {
         rankMap.put("Prince",   getText("ranks.honorific.yourHighness"));
         rankMap.put("King",     getText("ranks.honorific.yourMajesty"));
 
+        return rankMap;
+    }
+
+
+    /**
+     * Returns the imperial military rank map int to rank name mapping.
+     *
+     */
+    public static HashMap<Integer, String> getImperialRankMap() {
+        HashMap<Integer, String> rankMap = new HashMap<>();
+        rankMap.put(0, getText("ranks.imperial.none"));
+        rankMap.put(1, getText("ranks.imperial.outsider"));
+        rankMap.put(2, getText("ranks.imperial.serf"));
+        rankMap.put(3, getText("ranks.imperial.master"));
+        rankMap.put(4, getText("ranks.imperial.squire"));
+        rankMap.put(5, getText("ranks.imperial.knight"));
+        rankMap.put(6, getText("ranks.imperial.lord"));
+        rankMap.put(7, getText("ranks.imperial.baron"));
+        rankMap.put(8, getText("ranks.imperial.viscount"));
+        rankMap.put(9, getText("ranks.imperial.count"));
+        rankMap.put(10, getText("ranks.imperial.earl"));
+        rankMap.put(11, getText("ranks.imperial.marquis"));
+        rankMap.put(12, getText("ranks.imperial.duke"));
+        rankMap.put(13, getText("ranks.imperial.prince"));
+        rankMap.put(14, getText("ranks.imperial.king"));
+        return rankMap;
+    }
+
+
+    /**
+     * Returns the federation honorific map rank name to honorific mapping.
+     *
+     */
+    public static HashMap<String, String> getFederationHonorificMap() {
+        HashMap<String, String> rankMap = new HashMap<>();
         //Federation ranks
         rankMap.put("Recruit",              getText("ranks.honorific.recruit"));
         rankMap.put("Cadet",                getText("ranks.honorific.cadet"));
@@ -103,56 +138,6 @@ public class Ranks {
         rankMap.put("Rear Admiral",         getText("ranks.honorific.admiral"));
         rankMap.put("Vice Admiral",         getText("ranks.honorific.admiral"));
         rankMap.put("Admiral",              getText("ranks.honorific.admiral"));
-
-        return rankMap;
-    }
-
-
-    /**
-     * Returns the imperial military rank map int to rank name mapping.
-     *
-     */
-    public static HashMap<Integer, String> getImperialRankMap() {
-        HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "none");
-        rankMap.put(1, "Outsider");
-        rankMap.put(2, "Serf");
-        rankMap.put(3, "Master");
-        rankMap.put(4, "Squire");
-        rankMap.put(5, "Knight");
-        rankMap.put(6, "Lord");
-        rankMap.put(7, "Baron");
-        rankMap.put(8, "Viscount");
-        rankMap.put(9, "Count");
-        rankMap.put(10, "Earl");
-        rankMap.put(11, "Marquis");
-        rankMap.put(12, "Duke");
-        rankMap.put(13, "Prince");
-        rankMap.put(14, "King");
-        return rankMap;
-    }
-
-
-    /**
-     * Returns the federation honorific map rank name to honorific mapping.
-     *
-     */
-    public static HashMap<String, String> getFederationHonorificMap() {
-        HashMap<String, String> rankMap = new HashMap<>();
-        rankMap.put("Recruit", "");
-        rankMap.put("Cadet", "Cadet");
-        rankMap.put("Midshipman", "Midshipman");
-        rankMap.put("Petty Officer", "PO");
-        rankMap.put("Chief Petty Officer", "Chief");
-        rankMap.put("Warrant Officer", "Warrant");
-        rankMap.put("Ensign", "Ensign");
-        rankMap.put("Lieutenant", "Lieutenant");
-        rankMap.put("Lieutenant Commander", "Commander");
-        rankMap.put("Post Commander", "Commander");
-        rankMap.put("Post Captain", "Captain");
-        rankMap.put("Rear Admiral", "Admiral");
-        rankMap.put("Vice Admiral", "Admiral");
-        rankMap.put("Admiral", "Admiral");
         return rankMap;
     }
 
@@ -163,21 +148,21 @@ public class Ranks {
      */
     public static HashMap<Integer, String> getFederationRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "none");
-        rankMap.put(1, "Recruit");
-        rankMap.put(2, "Cadet");
-        rankMap.put(3, "Midshipman");
-        rankMap.put(4, "Petty Officer");
-        rankMap.put(5, "Chief Petty Officer");
-        rankMap.put(6, "Warrant Officer");
-        rankMap.put(7, "Ensign");
-        rankMap.put(8, "Lieutenant");
-        rankMap.put(9, "Lieutenant Commander");
-        rankMap.put(10, "Post Commander");
-        rankMap.put(11, "Post Captain");
-        rankMap.put(12, "Rear Admiral");
-        rankMap.put(13, "Vice Admiral");
-        rankMap.put(14, "Admiral");
+        rankMap.put(0, getText("ranks.federation.none"));
+        rankMap.put(1, getText("ranks.federation.recruit"));
+        rankMap.put(2, getText("ranks.federation.cadet"));
+        rankMap.put(3, getText("ranks.federation.midshipman"));
+        rankMap.put(4, getText("ranks.federation.pettyOfficer"));
+        rankMap.put(5, getText("ranks.federation.chiefPettyOfficer"));
+        rankMap.put(6, getText("ranks.federation.warrant"));
+        rankMap.put(7, getText("ranks.federation.ensign"));
+        rankMap.put(8, getText("ranks.federation.lieutenant"));
+        rankMap.put(9, getText("ranks.federation.lieutenant"));
+        rankMap.put(10, getText("ranks.federation.postCommander"));
+        rankMap.put(11, getText("ranks.federation.postcaptain"));
+        rankMap.put(12, getText("ranks.federation.rearAdmiral"));
+        rankMap.put(13, getText("ranks.federation.viceAdmiral"));
+        rankMap.put(14, getText("ranks.federation.admiral"));
         return rankMap;
     }
 
@@ -188,20 +173,20 @@ public class Ranks {
      */
     public static HashMap<Integer, String> getCombatRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "Harmless");
-        rankMap.put(1, "Mostly Harmless");
-        rankMap.put(2, "Novice");
-        rankMap.put(3, "Competent");
-        rankMap.put(4, "Expert");
-        rankMap.put(5, "Master");
-        rankMap.put(6, "Dangerous");
-        rankMap.put(7, "Deadly");
-        rankMap.put(8, "Elite");
-        rankMap.put(9, "Elite 1");
-        rankMap.put(10, "Elite 2");
-        rankMap.put(11, "Elite 3");
-        rankMap.put(12, "Elite 4");
-        rankMap.put(13, "Elite 5");
+        rankMap.put(0, getText("rank.harmless"));
+        rankMap.put(1, getText("rank.mostlyHarmless"));
+        rankMap.put(2, getText("rank.novice"));
+        rankMap.put(3, getText("rank.competent"));
+        rankMap.put(4, getText("rank.expert"));
+        rankMap.put(5, getText("rank.master"));
+        rankMap.put(6, getText("rank.dangerous"));
+        rankMap.put(7, getText("rank.deadly"));
+        rankMap.put(8, getText("rank.elite"));
+        rankMap.put(9, getText("rank.elite1"));
+        rankMap.put(10, getText("rank.elite2"));
+        rankMap.put(11, getText("rank.elite3"));
+        rankMap.put(12, getText("rank.elite4"));
+        rankMap.put(13, getText("rank.elite5"));
         return rankMap;
     }
 
@@ -212,20 +197,20 @@ public class Ranks {
      */
     public static HashMap<Integer, String> getExobiologyRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "Directionless");
-        rankMap.put(1, "Mostly Directionless");
-        rankMap.put(2, "Compiler");
-        rankMap.put(3, "Cataloguer");
-        rankMap.put(4, "Taxonomist");
-        rankMap.put(5, "Knight");
-        rankMap.put(6, "Ecologist");
-        rankMap.put(7, "Geneticist");
-        rankMap.put(8, "Elite");
-        rankMap.put(9, "Elite 1");
-        rankMap.put(10, "Elite 2");
-        rankMap.put(11, "Elite 3");
-        rankMap.put(12, "Elite 4");
-        rankMap.put(13, "Elite 5");
+        rankMap.put(0, getText("rank.exo.directionless"));
+        rankMap.put(1, getText("rank.exo.mostlyDirectionless"));
+        rankMap.put(2, getText("rank.exo.compiler"));
+        rankMap.put(3, getText("rank.exo.cataloguer"));
+        rankMap.put(4, getText("rank.exo.taxonomist"));
+        rankMap.put(5, getText("rank.exo.knight"));
+        rankMap.put(6, getText("rank.exo.ecologist"));
+        rankMap.put(7, getText("rank.exo.geneticist"));
+        rankMap.put(8, getText("rank.elite"));
+        rankMap.put(9, getText("rank.elite1"));
+        rankMap.put(10, getText("rank.elite2"));
+        rankMap.put(11, getText("rank.elite3"));
+        rankMap.put(12, getText("rank.elite4"));
+        rankMap.put(13, getText("rank.elite5"));
         return rankMap;
     }
 
@@ -236,20 +221,20 @@ public class Ranks {
      */
     public static HashMap<Integer, String> getExplorationRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "Aimless");
-        rankMap.put(1, "Mostly Aimless");
-        rankMap.put(2, "Scout");
-        rankMap.put(3, "Surveyor");
-        rankMap.put(4, "Trailblazer");
-        rankMap.put(5, "Pathfinder");
-        rankMap.put(6, "Ranger");
-        rankMap.put(7, "Pioneer");
-        rankMap.put(8, "Elite");
-        rankMap.put(9, "Elite 1");
-        rankMap.put(10, "Elite 2");
-        rankMap.put(11, "Elite 3");
-        rankMap.put(12, "Elite 4");
-        rankMap.put(13, "Elite 5");
+        rankMap.put(0, getText("rank.exp.aimless"));
+        rankMap.put(1, getText("rank.exp.mostlyAimless"));
+        rankMap.put(2, getText("rank.exp.scout"));
+        rankMap.put(3, getText("rank.exp.surveyor"));
+        rankMap.put(4, getText("rank.exp.trailblazer"));
+        rankMap.put(5, getText("rank.exp.pathfinder"));
+        rankMap.put(6, getText("rank.exp.ranger"));
+        rankMap.put(7, getText("rank.exp.pioneer"));
+        rankMap.put(8, getText("rank.elite"));
+        rankMap.put(9, getText("rank.elite1"));
+        rankMap.put(10, getText("rank.elite2"));
+        rankMap.put(11, getText("rank.elite3"));
+        rankMap.put(12, getText("rank.elite4"));
+        rankMap.put(13, getText("rank.elite5"));
         return rankMap;
     }
 
@@ -259,42 +244,64 @@ public class Ranks {
      */
     public static HashMap<Integer, String> getTradeRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "Penniless");
-        rankMap.put(1, "Mostly Penniless");
-        rankMap.put(2, "Peddler");
-        rankMap.put(3, "Dealer");
-        rankMap.put(4, "Merchant");
-        rankMap.put(5, "Broker");
-        rankMap.put(6, "Entrepreneur");
-        rankMap.put(7, "Tycoon");
-        rankMap.put(8, "Elite");
-        rankMap.put(9, "Elite 1");
-        rankMap.put(10, "Elite 2");
-        rankMap.put(11, "Elite 3");
-        rankMap.put(12, "Elite 4");
-        rankMap.put(13, "Elite 5");
+        rankMap.put(0, getText("rank.trade.penniless"));
+        rankMap.put(1, getText("rank.trade.mostlyPenniless"));
+        rankMap.put(2, getText("rank.trade.peddler"));
+        rankMap.put(3, getText("rank.trade.dealer"));
+        rankMap.put(4, getText("rank.trade.merchant"));
+        rankMap.put(5, getText("rank.trade.broker"));
+        rankMap.put(6, getText("rank.trade.entrepreneur"));
+        rankMap.put(7, getText("rank.trade.tycoon"));
+        rankMap.put(8, getText("rank.elite"));
+        rankMap.put(9, getText("rank.elite1"));
+        rankMap.put(10, getText("rank.elite2"));
+        rankMap.put(11, getText("rank.elite3"));
+        rankMap.put(12, getText("rank.elite4"));
+        rankMap.put(13, getText("rank.elite5"));
         return rankMap;
     }
 
 
     public static HashMap<Integer, String> getMercenaryRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, "Defenceless");
-        rankMap.put(1, "Mostly Defenceless");
-        rankMap.put(2, "Rookie");
-        rankMap.put(3, "Soldier");
-        rankMap.put(4, "Gunslinger");
-        rankMap.put(5, "Warrior");
-        rankMap.put(6, "Entrepreneur");
-        rankMap.put(7, "Gladiator");
-        rankMap.put(8, "Deadeye");
-        rankMap.put(9, "Elite I");
-        rankMap.put(10, "Elite II");
-        rankMap.put(11, "Elite III");
-        rankMap.put(12, "Elite VI");
-        rankMap.put(13, "Elite V");
+        rankMap.put(0, getText("rank.merc.defenceless"));
+        rankMap.put(1, getText("rank.merc.mostlyDefenceless"));
+        rankMap.put(2, getText("rank.merc.rookie"));
+        rankMap.put(3, getText("rank.merc.soldier"));
+        rankMap.put(4, getText("rank.merc.gunslinger"));
+        rankMap.put(5, getText("rank.merc.warrior"));
+        rankMap.put(6, getText("rank.merc.entrepreneur"));
+        rankMap.put(7, getText("rank.merc.gladiator"));
+        rankMap.put(8, getText("rank.merc.deadeye"));
+        rankMap.put(9, getText("rank.merc.eliteI"));
+        rankMap.put(10, getText("rank.merc.eliteII"));
+        rankMap.put(11, getText("rank.merc.eliteIII"));
+        rankMap.put(12, getText("rank.merc.eliteVI"));
+        rankMap.put(13, getText("rank.merc.eliteV"));
         return rankMap;
     }
+
+
+    public static HashMap<String, String> getLocalizedPilotFederationRankMap() {
+        HashMap<String, String> rankMap = new HashMap<>();
+        rankMap.put("Harmless", getText("rank.merc.defenceless"));
+        rankMap.put("Mostly Harmless", getText("rank.merc.mostlyDefenceless"));
+        rankMap.put("Novice", getText("rank.merc.rookie"));
+        rankMap.put("Competent", getText("rank.merc.soldier"));
+        rankMap.put("Expert", getText("rank.merc.gunslinger"));
+        rankMap.put("Master", getText("rank.merc.warrior"));
+        rankMap.put("Dangerous", getText("rank.merc.entrepreneur"));
+        rankMap.put("Deadly", getText("rank.merc.gladiator"));
+        rankMap.put("Elite", getText("rank.merc.deadeye"));
+        rankMap.put("Elite I", getText("rank.merc.eliteI"));
+        rankMap.put("Elite II", getText("rank.merc.eliteII"));
+        rankMap.put("Elite III", getText("rank.merc.eliteIII"));
+        rankMap.put("Elite IV", getText("rank.merc.eliteVI"));
+        rankMap.put("Elite V", getText("rank.merc.eliteV"));
+        return rankMap;
+    }
+
+
 
 
 /**
@@ -316,10 +323,10 @@ public class Ranks {
      */
     public static String getHonorific(int imperial, int federation) {
         if (imperial > federation) {
-            return getHonorificMap().get(getImperialRankMap().get(imperial));
+            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
 
         } else if (federation > imperial) {
-            return getHonorificMap().get(getFederationRankMap().get(federation));
+            return getImperialHonorificMap().get(getFederationRankMap().get(federation));
         } else {
             return chooseAtRandom(imperial, federation);
         }
@@ -329,9 +336,9 @@ public class Ranks {
         Random random = new Random();
         int choice = random.nextInt(2); // Returns 0 or 1
         if (choice == 0) {
-            return getHonorificMap().get(getImperialRankMap().get(imperial));
+            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
         } else {
-            return getHonorificMap().get(getFederationRankMap().get(federation));
+            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
         }
     }
 
@@ -349,7 +356,8 @@ public class Ranks {
 
     public static String getPlayerHonorific() {
         RankAndProgressDto rankDto = PlayerSession.getInstance().getRankAndProgressDto();
-        String honorific = getHonorificMap().get(rankDto.getHighestMilitaryRank());
+        String honorific = getImperialHonorificMap().get(rankDto.getHighestMilitaryRank());
         return honorific != null ? honorific : getText("ranks.honorific.commander");
     }
+
 }

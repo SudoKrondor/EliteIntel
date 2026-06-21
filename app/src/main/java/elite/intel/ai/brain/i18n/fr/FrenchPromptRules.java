@@ -1,43 +1,8 @@
 package elite.intel.ai.brain.i18n.fr;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-import elite.intel.ai.brain.actions.command.builtin.FindNearestFleetCarrierCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployLandingGearCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleDiscoveryAnnouncementsCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetDestinationCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetSubsystemCommand;
-import elite.intel.ai.brain.actions.command.builtin.RetractLandingGearCommand;
-import elite.intel.ai.brain.actions.command.builtin.SetSpeedZeroCommand;
-import elite.intel.ai.brain.actions.command.builtin.EqualizePowerCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierRouteQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowStatusPanelCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterAttackTargetCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToWeaponsCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleAllAnnouncementsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMarketsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCargoHoldQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyseMaterialsQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToShieldsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeShipLoadoutQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToEnginesCommand;
-import elite.intel.ai.brain.actions.command.builtin.SelectFireGroupByNatoCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeStationsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeGeologyInStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployFighterCommand;
-import elite.intel.ai.brain.actions.command.builtin.ActivateUiControlCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFsdTargetQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioSamplesPlanetSurfaceQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowInventoryPanelCommand;
-import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowFighterPanelCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeRouterQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleCargoScoopCommand;
 
 
 public class FrenchPromptRules implements PromptLanguageRules {
@@ -155,5 +120,12 @@ public class FrenchPromptRules implements PromptLanguageRules {
         sb.append(FighterAttackTargetCommand.ID);
         sb.append(".\n");
         return sb.toString();
+    }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return """
+                Describe your rule here
+                """;
     }
 }

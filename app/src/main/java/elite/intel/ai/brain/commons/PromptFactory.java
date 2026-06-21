@@ -192,12 +192,17 @@ public class PromptFactory implements AiPromptFactory {
 
     @Override
     public String generateAnalysisPrompt() {
+        PromptLanguageRules lang = PromptLocalizations.rules();
         StringBuilder sb = new StringBuilder();
         sb.append(responseLanguageRule());
         youAre(sb);
+
+        ///Locale-specific rules for numbers, measurements, time, distances, etc.
+        sb.append(lang.localSpecificNumericFormattingRule());
+
         if (!systemSession.useLocalQueryLlm()) {
             sb.append(getSessionValues());
-            sb.append(appendBehavior());
+            sb.append(appendCloudBehavior());
         } else {
             sb.append(appendLocalBehavior());
         }
@@ -227,7 +232,7 @@ public class PromptFactory implements AiPromptFactory {
 
     @Override
     /// Cloud LLM
-    public String appendBehavior() {
+    public String appendCloudBehavior() {
         StringBuilder sb = new StringBuilder();
         sb.append(" Behavior: ");
         sb.append(" Refer to your self as 'I', your loadout and sensor data as 'my' ");
@@ -270,8 +275,8 @@ public class PromptFactory implements AiPromptFactory {
                 - Do not mention the data format or where it came from.
                 
                 Examples of FORBIDDEN styles:
-                - A statement that mentions notifying the user.
-                - An introductory sentence before the concrete facts.
+                - "Fuel is low, notifying user" → wrong
+                - "The following happened:" → wrong
                 
                 Correct style:
                 - State the concrete fact directly in the mandatory output language.

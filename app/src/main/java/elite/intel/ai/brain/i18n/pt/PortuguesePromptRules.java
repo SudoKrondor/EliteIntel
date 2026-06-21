@@ -23,4 +23,9 @@ public class PortuguesePromptRules implements PromptLanguageRules {
     public String queryPhraseExamples() {
         return "onde / o que / quanto / quantos / há / qual / quais / em que estação / em que sistema";
     }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return "";
+    }
 }

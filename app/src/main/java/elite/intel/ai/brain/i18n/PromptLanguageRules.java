@@ -51,4 +51,11 @@ public interface PromptLanguageRules {
     default String disambiguationHints() {
         return null;
     }
+
+    /**
+     * Provide locale-specific rules for TTS vocalization of larger numbers, temperature readings, currency, time, etc.
+     *
+     *
+     */
+    String localSpecificNumericFormattingRule();
 }

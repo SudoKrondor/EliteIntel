@@ -1,22 +1,8 @@
 package elite.intel.ai.brain.i18n.ru;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.EnterSuperCruiseCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierRouteQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterFireAtWillCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SwitchToCombatModeCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromLastBioSampleQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCurrentLocationQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromTheBubbleQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierFinalDestinationQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SwitchToAnalysisModeCommand;
 
 
 public class RussianPromptRules implements PromptLanguageRules {
@@ -122,5 +108,10 @@ public class RussianPromptRules implements PromptLanguageRules {
 
 
         return sb.toString();
+    }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return "";
     }
 }

@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.i18n.es;
 
-import elite.intel.ai.brain.i18n.PromptLanguageRules;
 import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
+import elite.intel.ai.brain.i18n.PromptLanguageRules;
 
 
 public class SpanishPromptRules implements PromptLanguageRules {
@@ -35,5 +35,10 @@ public class SpanishPromptRules implements PromptLanguageRules {
         sb.append(ClearActiveMissionsCommand.ID);
         sb.append("\n");
         return sb.toString();
+    }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return "";
     }
 }

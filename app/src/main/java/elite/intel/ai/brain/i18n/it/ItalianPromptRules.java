@@ -26,4 +26,9 @@ public class ItalianPromptRules implements PromptLanguageRules {
         // TODO: fill in with natural Italian query phrase examples
         return "";
     }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return "";
+    }
 }

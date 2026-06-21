@@ -1,60 +1,8 @@
 package elite.intel.ai.brain.i18n.en;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-
-import elite.intel.ai.brain.actions.command.builtin.NavigateToCoordinatesCommand;
-import elite.intel.ai.brain.actions.command.builtin.WakeupCommand;
-import elite.intel.ai.brain.actions.command.builtin.ExitCloseCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeleteCodexEntryCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToFleetCarrierCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMissionQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetDestinationCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetSubsystemCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromFleetCarrierQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SetSpeedZeroCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployHardpointsCommand;
-import elite.intel.ai.brain.actions.command.builtin.EqualizePowerCommand;
-import elite.intel.ai.brain.actions.command.builtin.EnterSuperCruiseCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterAttackTargetCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployShieldCellCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToWeaponsCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToMissionTargetCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMisingKeyBindingQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindInterstellarFactorCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleLightsOnOffCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCargoHoldQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyseMaterialsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeExplorationProfitsQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.DismissShipToOrbitCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToShieldsCommand;
-import elite.intel.ai.brain.actions.command.builtin.RecoverSrvVehicleGetOnBoardShipCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceToStellarObjectQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToEnginesCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindHuntingGroundsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.DisplayOpenSystemMapCommand;
-import elite.intel.ai.brain.actions.command.builtin.DisplayOpenGalaxyMapCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToSquadronCarrierCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBountiesCollectedQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.HonkCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromTheBubbleQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeGeologyInStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindBrainTreesCommand;
-import elite.intel.ai.brain.actions.command.builtin.ActivateUiControlCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioSamplesPlanetSurfaceQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.RetractHardpointsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzePlayerProfileQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetHostileHighestThreatCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleCargoScoopCommand;
-import elite.intel.ai.brain.actions.command.builtin.DropFromSuperCruiseCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToBioSampleCodexEntryCommand;
 
 public class EnglishPromptRules implements PromptLanguageRules {
 
@@ -342,5 +290,24 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         return sb.toString();
+    }
+
+    @Override
+    public String localSpecificNumericFormattingRule() {
+        return """
+                Spell out all numbers as words for speech (TTS). Follow these examples exactly:
+                
+                - Credits: 1123 → "one thousand one hundred twenty three credits"
+                - Credits (large): 45000000 → "forty five million credits"
+                - Credits (very large): 2300000000 → "two point three billion credits"
+                - Distance: 1250000 → "one point two five million" (round to 2 decimal places)
+                - Distance (small): 850 → "eight hundred fifty"
+                
+                Rules:
+                - Never read digits one-by-one (say "one thousand", not "one zero zero zero").
+                - Never say "and" between hundreds and tens (say "one hundred twenty three", not "one hundred and twenty three").
+                - For millions and billions, round to 2 decimal places and say "point" (e.g. "three point one four million").
+                - Always spell out the full word for units (credits, light years, etc.) — never abbreviate.
+                """;
     }
 }

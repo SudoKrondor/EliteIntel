@@ -5,6 +5,7 @@ public interface AiPromptFactory {
     String generateAnalysisPrompt();
     String generateUserInputSystemPrompt(String rawUserInput);
     String normalizeInput(String rawUserInput);
-    String appendBehavior();
+
+    String appendCloudBehavior();
     String generateSensorPrompt();
 }
