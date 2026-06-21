@@ -1,22 +1,8 @@
 package elite.intel.ai.brain.i18n.ru;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.EnterSuperCruiseCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierRouteQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterFireAtWillCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SwitchToCombatModeCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromLastBioSampleQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCurrentLocationQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromTheBubbleQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierFinalDestinationQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SwitchToAnalysisModeCommand;
 
 
 public class RussianPromptRules implements PromptLanguageRules {
@@ -57,9 +43,12 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
         sb.append("\n");
 
-        sb.append("- classify queries about bio sample distance: расстояние до последнего биообразца, какие органические объекты ещё нужно сканировать итд. → ");
+        sb.append("- classify DISTANCE QUERIES about bio sample: расстояние до последнего биообразца, как далеко до образца, сколько метров до организма итд. → ");
         sb.append(AnalyzeDistanceFromLastBioSampleQueryCommand.ID);
-        sb.append("\n");
+        sb.append(" ONLY when asking HOW FAR. NEVER when navigating.\n");
+        sb.append("- HARD RULE: навигация / лети к / перейди к / найди ближайший биообразец / кодекс → ");
+        sb.append(NavigateToBioSampleCodexEntryCommand.ID);
+        sb.append(" ONLY. NEVER query_distance_to_bio_sample for navigation commands.\n");
 
         sb.append("- classify commands to fire on target such as : открыть огонь, атака, атакуй итд. → ");
         sb.append(FighterFireAtWillCommand.ID);

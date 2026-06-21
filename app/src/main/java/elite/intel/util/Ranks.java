@@ -356,7 +356,9 @@ public class Ranks {
 
     public static String getPlayerHonorific() {
         RankAndProgressDto rankDto = PlayerSession.getInstance().getRankAndProgressDto();
-        String honorific = getImperialHonorificMap().get(rankDto.getHighestMilitaryRank());
+        HashMap<String, String> honorificMap = getImperialHonorificMap();
+        honorificMap.putAll(getFederationHonorificMap());
+        String honorific = honorificMap.get(rankDto.getHighestMilitaryRank());
         return honorific != null ? honorific : getText("ranks.honorific.commander");
     }
 

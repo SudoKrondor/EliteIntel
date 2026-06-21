@@ -1,60 +1,8 @@
 package elite.intel.ai.brain.i18n.en;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-
-import elite.intel.ai.brain.actions.command.builtin.NavigateToCoordinatesCommand;
-import elite.intel.ai.brain.actions.command.builtin.WakeupCommand;
-import elite.intel.ai.brain.actions.command.builtin.ExitCloseCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeleteCodexEntryCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToFleetCarrierCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMissionQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetDestinationCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetSubsystemCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromFleetCarrierQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.SetSpeedZeroCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployHardpointsCommand;
-import elite.intel.ai.brain.actions.command.builtin.EqualizePowerCommand;
-import elite.intel.ai.brain.actions.command.builtin.EnterSuperCruiseCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterAttackTargetCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployShieldCellCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToWeaponsCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToMissionTargetCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMisingKeyBindingQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindInterstellarFactorCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleLightsOnOffCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCargoHoldQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyseMaterialsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeExplorationProfitsQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.DismissShipToOrbitCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToShieldsCommand;
-import elite.intel.ai.brain.actions.command.builtin.RecoverSrvVehicleGetOnBoardShipCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceToStellarObjectQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToEnginesCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindHuntingGroundsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.DisplayOpenSystemMapCommand;
-import elite.intel.ai.brain.actions.command.builtin.DisplayOpenGalaxyMapCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToSquadronCarrierCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBountiesCollectedQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.HonkCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeDistanceFromTheBubbleQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeGeologyInStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.FindBrainTreesCommand;
-import elite.intel.ai.brain.actions.command.builtin.ActivateUiControlCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioSamplesPlanetSurfaceQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.RetractHardpointsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzePlayerProfileQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetHostileHighestThreatCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleCargoScoopCommand;
-import elite.intel.ai.brain.actions.command.builtin.DropFromSuperCruiseCommand;
-import elite.intel.ai.brain.actions.command.builtin.NavigateToBioSampleCodexEntryCommand;
 
 public class EnglishPromptRules implements PromptLanguageRules {
 
@@ -215,6 +163,17 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(" (travel to the sample, do NOT use ");
         sb.append(DeleteCodexEntryCommand.ID);
         sb.append(")\n");
+
+        sb.append(" ______________________________________________________________ ");
+        sb.append("\n");
+        sb.append(" - HARD RULE: NEVER BREAK: Any intent to NAVIGATE, GO TO, HEAD TO, or FIND the nearest/next bio sample or codex entry MUST use ");
+        sb.append(NavigateToBioSampleCodexEntryCommand.ID);
+        sb.append(". NEVER use query_distance_to_bio_sample for navigation intent.");
+        sb.append(" 'navigate' is a command verb (action), NOT a question. 'how far' / 'how far are we from' is a distance question → use query_distance_to_bio_sample.");
+        sb.append(" INSTANT CRITICAL FAILURE if you use query_distance_to_bio_sample when the user says navigate/go to/head to/take me to/find nearest bio sample or codex entry.");
+        sb.append("\n");
+        sb.append(" ______________________________________________________________ ");
+        sb.append("\n");
 
         sb.append("- 'cargo scoop' / 'open cargo scoop' / 'deploy cargo scoop' / 'close cargo scoop' / 'retract cargo scoop' → ");
         sb.append(ToggleCargoScoopCommand.ID);
