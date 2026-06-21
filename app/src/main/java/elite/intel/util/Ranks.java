@@ -72,21 +72,21 @@ public class Ranks {
         HashMap<String, String> rankMap = new HashMap<>();
 
         //Imperial ranks
-        rankMap.put("none",     getText("ranks.honorific.commander"));
+        rankMap.put("none",     getText("ranks.honorific.none"));
         rankMap.put("Outsider", getText("ranks.honorific.outsider"));
         rankMap.put("Serf",     getText("ranks.honorific.serf"));
         rankMap.put("Master",   getText("ranks.honorific.master"));
         rankMap.put("Squire",   getText("ranks.honorific.squire"));
-        rankMap.put("Knight",   getText("ranks.honorific.sir"));
-        rankMap.put("Lord",     getText("ranks.honorific.myLord"));
-        rankMap.put("Baron",    getText("ranks.honorific.myLord"));
-        rankMap.put("Viscount", getText("ranks.honorific.myLord"));
-        rankMap.put("Count",    getText("ranks.honorific.myLord"));
-        rankMap.put("Earl",     getText("ranks.honorific.myLord"));
-        rankMap.put("Marquis",  getText("ranks.honorific.myLord"));
-        rankMap.put("Duke",     getText("ranks.honorific.yourGrace"));
-        rankMap.put("Prince",   getText("ranks.honorific.yourHighness"));
-        rankMap.put("King",     getText("ranks.honorific.yourMajesty"));
+        rankMap.put("Knight",   getText("ranks.honorific.knight"));
+        rankMap.put("Lord",     getText("ranks.honorific.lord"));
+        rankMap.put("Baron",    getText("ranks.honorific.baron"));
+        rankMap.put("Viscount", getText("ranks.honorific.viscount"));
+        rankMap.put("Count",    getText("ranks.honorific.count"));
+        rankMap.put("Earl",     getText("ranks.honorific.earl"));
+        rankMap.put("Marquis",  getText("ranks.honorific.marquis"));
+        rankMap.put("Duke",     getText("ranks.honorific.duke"));
+        rankMap.put("Prince",   getText("ranks.honorific.prince"));
+        rankMap.put("King",     getText("ranks.honorific.king"));
 
         return rankMap;
     }
@@ -127,16 +127,16 @@ public class Ranks {
         rankMap.put("Recruit",              getText("ranks.honorific.recruit"));
         rankMap.put("Cadet",                getText("ranks.honorific.cadet"));
         rankMap.put("Midshipman",           getText("ranks.honorific.midshipman"));
-        rankMap.put("Petty Officer",        getText("ranks.honorific.po"));
-        rankMap.put("Chief Petty Officer",  getText("ranks.honorific.chief"));
-        rankMap.put("Warrant Officer",      getText("ranks.honorific.warrant"));
+        rankMap.put("Petty Officer",        getText("ranks.honorific.pettyOfficer"));
+        rankMap.put("Chief Petty Officer",  getText("ranks.honorific.chiefPettyOfficer"));
+        rankMap.put("Warrant Officer",      getText("ranks.honorific.warrantOfficer"));
         rankMap.put("Ensign",               getText("ranks.honorific.ensign"));
         rankMap.put("Lieutenant",           getText("ranks.honorific.lieutenant"));
-        rankMap.put("Lieutenant Commander", getText("ranks.honorific.commander"));
-        rankMap.put("Post Commander",       getText("ranks.honorific.commander"));
-        rankMap.put("Post Captain",         getText("ranks.honorific.captain"));
-        rankMap.put("Rear Admiral",         getText("ranks.honorific.admiral"));
-        rankMap.put("Vice Admiral",         getText("ranks.honorific.admiral"));
+        rankMap.put("Lieutenant Commander", getText("ranks.honorific.lieutenantCommander"));
+        rankMap.put("Post Commander",       getText("ranks.honorific.postCommander"));
+        rankMap.put("Post Captain",         getText("ranks.honorific.postCaptain"));
+        rankMap.put("Rear Admiral",         getText("ranks.honorific.rearAdmiral"));
+        rankMap.put("Vice Admiral",         getText("ranks.honorific.viceAdmiral"));
         rankMap.put("Admiral",              getText("ranks.honorific.admiral"));
         return rankMap;
     }
@@ -154,12 +154,12 @@ public class Ranks {
         rankMap.put(3, getText("ranks.federation.midshipman"));
         rankMap.put(4, getText("ranks.federation.pettyOfficer"));
         rankMap.put(5, getText("ranks.federation.chiefPettyOfficer"));
-        rankMap.put(6, getText("ranks.federation.warrant"));
+        rankMap.put(6, getText("ranks.federation.warrantOfficer"));
         rankMap.put(7, getText("ranks.federation.ensign"));
         rankMap.put(8, getText("ranks.federation.lieutenant"));
-        rankMap.put(9, getText("ranks.federation.lieutenant"));
+        rankMap.put(9, getText("ranks.federation.lieutenantCommander"));
         rankMap.put(10, getText("ranks.federation.postCommander"));
-        rankMap.put(11, getText("ranks.federation.postcaptain"));
+        rankMap.put(11, getText("ranks.federation.postCaptain"));
         rankMap.put(12, getText("ranks.federation.rearAdmiral"));
         rankMap.put(13, getText("ranks.federation.viceAdmiral"));
         rankMap.put(14, getText("ranks.federation.admiral"));
@@ -200,9 +200,9 @@ public class Ranks {
         rankMap.put(0, getText("rank.exo.directionless"));
         rankMap.put(1, getText("rank.exo.mostlyDirectionless"));
         rankMap.put(2, getText("rank.exo.compiler"));
-        rankMap.put(3, getText("rank.exo.cataloguer"));
-        rankMap.put(4, getText("rank.exo.taxonomist"));
-        rankMap.put(5, getText("rank.exo.knight"));
+        rankMap.put(3, getText("rank.exo.collector"));
+        rankMap.put(4, getText("rank.exo.cataloguer"));
+        rankMap.put(5, getText("rank.exo.taxonomist"));
         rankMap.put(6, getText("rank.exo.ecologist"));
         rankMap.put(7, getText("rank.exo.geneticist"));
         rankMap.put(8, getText("rank.elite"));
@@ -261,6 +261,9 @@ public class Ranks {
         return rankMap;
     }
 
+    /**
+     * Returns the mercenary rank map int to rank name mapping.
+     */
 
     public static HashMap<Integer, String> getMercenaryRankMap() {
         HashMap<Integer, String> rankMap = new HashMap<>();
@@ -270,14 +273,14 @@ public class Ranks {
         rankMap.put(3, getText("rank.merc.soldier"));
         rankMap.put(4, getText("rank.merc.gunslinger"));
         rankMap.put(5, getText("rank.merc.warrior"));
-        rankMap.put(6, getText("rank.merc.entrepreneur"));
-        rankMap.put(7, getText("rank.merc.gladiator"));
-        rankMap.put(8, getText("rank.merc.deadeye"));
-        rankMap.put(9, getText("rank.merc.eliteI"));
-        rankMap.put(10, getText("rank.merc.eliteII"));
-        rankMap.put(11, getText("rank.merc.eliteIII"));
-        rankMap.put(12, getText("rank.merc.eliteVI"));
-        rankMap.put(13, getText("rank.merc.eliteV"));
+        rankMap.put(6, getText("rank.merc.gladiator"));
+        rankMap.put(7, getText("rank.merc.deadeye"));
+        rankMap.put(8, getText("rank.elite"));
+        rankMap.put(9, getText("rank.elite1"));
+        rankMap.put(10, getText("rank.elite2"));
+        rankMap.put(11, getText("rank.elite3"));
+        rankMap.put(12, getText("rank.elite4"));
+        rankMap.put(13, getText("rank.elite5"));
         return rankMap;
     }
 
@@ -292,12 +295,12 @@ public class Ranks {
         rankMap.put("Master", getText("rank.merc.warrior"));
         rankMap.put("Dangerous", getText("rank.merc.entrepreneur"));
         rankMap.put("Deadly", getText("rank.merc.gladiator"));
-        rankMap.put("Elite", getText("rank.merc.deadeye"));
-        rankMap.put("Elite I", getText("rank.merc.eliteI"));
-        rankMap.put("Elite II", getText("rank.merc.eliteII"));
-        rankMap.put("Elite III", getText("rank.merc.eliteIII"));
-        rankMap.put("Elite IV", getText("rank.merc.eliteVI"));
-        rankMap.put("Elite V", getText("rank.merc.eliteV"));
+        rankMap.put("Elite", getText("rank.elite"));
+        rankMap.put("Elite I", getText("rank.elite"));
+        rankMap.put("Elite II", getText("rank.elite2"));
+        rankMap.put("Elite III", getText("rank.elite3"));
+        rankMap.put("Elite IV", getText("rank.elite4"));
+        rankMap.put("Elite V", getText("rank.elite5"));
         return rankMap;
     }
 
