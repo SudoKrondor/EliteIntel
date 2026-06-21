@@ -198,7 +198,7 @@ public class PromptFactory implements AiPromptFactory {
         youAre(sb);
 
         ///Locale-specific rules for numbers, measurements, time, distances, etc.
-        sb.append(lang.localSpecificNumericFormattingRule());
+        sb.append(lang.localeSpecificFormattingRules());
 
         if (!systemSession.useLocalQueryLlm()) {
             sb.append(getSessionValues());

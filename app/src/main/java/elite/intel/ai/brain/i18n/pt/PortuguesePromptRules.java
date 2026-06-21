@@ -25,7 +25,7 @@ public class PortuguesePromptRules implements PromptLanguageRules {
     }
 
     @Override
-    public String localSpecificNumericFormattingRule() {
+    public String localeSpecificFormattingRules() {
         return "";
     }
 }

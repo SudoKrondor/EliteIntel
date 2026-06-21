@@ -57,5 +57,5 @@ public interface PromptLanguageRules {
      *
      *
      */
-    String localSpecificNumericFormattingRule();
+    String localeSpecificFormattingRules();
 }

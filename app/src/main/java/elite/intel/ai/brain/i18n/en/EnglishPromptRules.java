@@ -293,7 +293,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
     }
 
     @Override
-    public String localSpecificNumericFormattingRule() {
+    public String localeSpecificFormattingRules() {
         return """
                 Spell out all numbers as words for speech (TTS). Follow these examples exactly:
                 

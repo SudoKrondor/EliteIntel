@@ -123,7 +123,7 @@ public class FrenchPromptRules implements PromptLanguageRules {
     }
 
     @Override
-    public String localSpecificNumericFormattingRule() {
+    public String localeSpecificFormattingRules() {
         return """
                 Describe your rule here
                 """;

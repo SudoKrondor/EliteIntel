@@ -37,7 +37,7 @@ public class GermanPromptRules implements PromptLanguageRules {
     }
 
     @Override
-    public String localSpecificNumericFormattingRule() {
+    public String localeSpecificFormattingRules() {
         return "";
     }
 }
