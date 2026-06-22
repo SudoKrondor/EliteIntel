@@ -150,4 +150,69 @@ public class GlobalSettingsManager {
     public boolean getAutoFighterOutFighterDocking() {
         return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAutoFighterOutFighterDocking());
     }
+
+    public void setAnnounceJumpRoute(boolean announceJumpRoute) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceJumpRoute(announceJumpRoute);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceJumpRoute() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceJumpRoute());
+    }
+
+    public void setAnnounceJumpTraffic(boolean announceJumpTraffic) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceJumpTraffic(announceJumpTraffic);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceJumpTraffic() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceJumpTraffic());
+    }
+
+    public void setAnnounceJumpDeaths(boolean announceJumpDeaths) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceJumpDeaths(announceJumpDeaths);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceJumpDeaths() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceJumpDeaths());
+    }
+
+    public void setAnnounceRemainingJumps(boolean announceRemainingJumps) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceRemainingJumps(announceRemainingJumps);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceRemainingJumps() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceRemainingJumps());
+    }
+
+    public void setAnnounceFuelAvailable(boolean announceFuelAvailable) {
+        Database.withDao(GlobalSettingsDao.class, dao -> {
+            GlobalSettingsDao.GlobalSettings settings = dao.get();
+            settings.setAnnounceFuelAvailable(announceFuelAvailable);
+            dao.save(settings);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean getAnnounceFuelAvailable() {
+        return Database.withDao(GlobalSettingsDao.class, dao -> dao.get().isAnnounceFuelAvailable());
+    }
 }
