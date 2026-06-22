@@ -59,6 +59,7 @@ public class ScanOrganicSubscriber {
             String genus = event.getGenusLocalised();
             playerSession.setCurrentPartial(genus);
             String species = subtractString(event.getSpeciesLocalised(), genus);
+            if (event.getBody() == null) return;
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
             currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());

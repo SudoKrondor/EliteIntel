@@ -20,10 +20,7 @@ import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
-import elite.intel.util.AppPaths;
-import elite.intel.util.AudioPlayer;
-import elite.intel.util.SherpaOnnxNatives;
-import elite.intel.util.StringUtls;
+import elite.intel.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -247,7 +244,7 @@ public class KokoroTTS implements MouthInterface {
         String sanitizedText = StringUtls.sanitizeTts(event.getText());
         if (sanitizedText.isBlank()) return;
 
-        AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         UiBus.publish(new AiResponseLogEvent(sanitizedText));
 
         // Split on sentence boundaries and enqueue each piece for synthesis

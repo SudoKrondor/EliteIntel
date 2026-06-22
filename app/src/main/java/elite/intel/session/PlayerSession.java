@@ -168,6 +168,9 @@ public class PlayerSession {
     }
 
     public void setCurrentLocationId(long bodyId, long systemAddress) {
+        if (bodyId == 0 || systemAddress == 0) {
+            return;
+        }
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
             player.setCurrentLocationId(bodyId);

@@ -15,6 +15,7 @@ import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -206,7 +207,7 @@ public class GoogleTTSImpl implements MouthInterface {
                 ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()), event.getOriginType(), event.isRadio(), isLast ? completionFuture : null));
             }
 
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
             UiBus.publish(new AiResponseLogEvent(event.getText()));
             log.debug("Added VoiceRequest to queue: text='{}', voice='{}'", event.getText(), voiceName);
         } catch (InterruptedException e) {

@@ -9,6 +9,7 @@ import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.ui.UINavigator;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
@@ -51,6 +52,6 @@ public class RoutePlotter {
                 GameInputStep.rawKey(KeyProcessor.KEY_ENTER)
         ));
 
-        AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
     }
 }

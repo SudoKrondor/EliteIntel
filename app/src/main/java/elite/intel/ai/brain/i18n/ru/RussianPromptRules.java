@@ -43,9 +43,12 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
         sb.append("\n");
 
-        sb.append("- classify queries about bio sample distance: расстояние до последнего биообразца, какие органические объекты ещё нужно сканировать итд. → ");
+        sb.append("- classify DISTANCE QUERIES about bio sample: расстояние до последнего биообразца, как далеко до образца, сколько метров до организма итд. → ");
         sb.append(AnalyzeDistanceFromLastBioSampleQueryCommand.ID);
-        sb.append("\n");
+        sb.append(" ONLY when asking HOW FAR. NEVER when navigating.\n");
+        sb.append("- HARD RULE: навигация / лети к / перейди к / найди ближайший биообразец / кодекс → ");
+        sb.append(NavigateToBioSampleCodexEntryCommand.ID);
+        sb.append(" ONLY. NEVER query_distance_to_bio_sample for navigation commands.\n");
 
         sb.append("- classify commands to fire on target such as : открыть огонь, атака, атакуй итд. → ");
         sb.append(FighterFireAtWillCommand.ID);

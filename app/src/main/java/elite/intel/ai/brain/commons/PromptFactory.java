@@ -101,6 +101,11 @@ public class PromptFactory implements AiPromptFactory {
         sb.append(" - Command verbs include: ").append(lang.commandVerbExamples()).append("\n");
         sb.append(" - Query phrases include: ").append(lang.queryPhraseExamples()).append("\n");
         sb.append("""
+                 HARD RULE — UNIVERSAL (applies in every language, every context, no exceptions):
+                 - Any input whose primary verb is a navigation/action verb (navigate, go to, head to, take me to, find nearest, plot course to, fly to, move to — or their equivalent in any language) MUST map to a COMMAND action. NEVER to a query. This is true regardless of what object follows the verb.
+                 - Any input that is a distance or status question (how far, how many meters, what is the range, how close, is it near — or their equivalent in any language) MUST map to a QUERY action. NEVER to a command.
+                 - Mapping a navigation verb to a query is an INSTANT CRITICAL FAILURE.
+                 - Mapping a distance/status question to a command is an INSTANT CRITICAL FAILURE.
                  - delete_* actions require explicit intent in user input. Example "delete codex entry" - delete_* action allowed, "codex entry" - delete_* action not allowed.
                 
                 DISAMBIGUATION (game logic applies regardless of language):

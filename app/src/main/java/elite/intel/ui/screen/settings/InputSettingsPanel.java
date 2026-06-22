@@ -20,6 +20,7 @@ import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudSegmentedControl;
 import elite.intel.ui.widget.HudTwoColumns;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -327,17 +328,17 @@ public class InputSettingsPanel extends JPanel {
 
         if (toggleMode) {
             if (event.pressed()) {
-                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
                 GameEventBus.publish(new TTSInterruptEvent(true));
                 toggleSleepWake();
             }
         } else {
             if (event.pressed()) {
-                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
                 GameEventBus.publish(new TTSInterruptEvent(true));
                 UiBus.publish(new PttButtonStateEvent(true));
             } else {
-                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
+                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
                 UiBus.publish(new PttButtonStateEvent(false));
             }
         }

@@ -12,6 +12,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -67,7 +68,7 @@ public final class IncreaseSpeedCommand implements IntelCommand {
         String increase = bindingName();
         for (int i = 0; i < num; i++) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(increase)));
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         }
     }
 }
