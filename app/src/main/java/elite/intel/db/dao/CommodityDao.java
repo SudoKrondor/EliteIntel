@@ -21,6 +21,9 @@ public interface CommodityDao {
     @SqlQuery("SELECT commodity FROM commodities WHERE LOWER(COALESCE(<col>, commodity)) = LOWER(:localizedName) LIMIT 1")
     String getEnglishByLocalizedName(@Define("col") String col, @Bind("localizedName") String localizedName);
 
+    @SqlQuery("SELECT <col> FROM commodities WHERE LOWER(commodity) = LOWER(:englishName) LIMIT 1")
+    String getLocalizedByEnglishName(@Define("col") String col, @Bind("englishName") String englishName);
+
     // optional – one-time init if table empty
     @SqlQuery("SELECT COUNT(*) FROM commodities")
     int count();
