@@ -71,7 +71,7 @@ class LoadGameEventSubscriberTest {
 
         subscriber.onEvent(loadGameEvent("CMDR Test", "asp", 0L));
 
-        awaitTrue(() -> "CMDR Test".equals(session.getInGameName()));
+        awaitTrue(() -> shipRoute.getOrderedRoute().isEmpty());
         assertTrue(shipRoute.getOrderedRoute().isEmpty(), "Deciat leg should have been removed from route");
     }
 
