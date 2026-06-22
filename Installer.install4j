@@ -722,7 +722,8 @@ return console.askYesNo(message, true);
       <laf darkModeStrategy="dark" />
     </unixInstaller>
   </mediaSets>
-  <buildIds buildAll="false">
+  <buildIds>
+    <mediaSet refId="36" />
     <mediaSet refId="37" />
   </buildIds>
 </install4j>

@@ -29,7 +29,7 @@ public final class AiResponseLanguagePolicy {
         }
 
         Language sessionLanguage = systemSession.getLanguage();
-        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES) {
+        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES || sessionLanguage == Language.PT) {
             return sessionLanguage;
         }
 

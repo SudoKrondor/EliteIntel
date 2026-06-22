@@ -28,13 +28,13 @@ public class PromotionSubscriber {
         if (imperialNavyRank != null) {
             String string = Ranks.getImperialRankMap().get(imperialNavyRank);
             GameEventBus.publish(new SensorDataEvent(localizedEvent("event.promotion.imperialNavy", string), "Congratulate the commander on their promotion and state the new rank clearly."));
-            rankAndProgressDto.setMilitaryRankEmpire(string);
+            rankAndProgressDto.setCombatRankEmpire(event.getEmpire());
             session.setRankAndProgressDto(rankAndProgressDto);
         }
         if (federalNavyRank != null) {
             String string = Ranks.getFederationRankMap().get(federalNavyRank);
             GameEventBus.publish(new SensorDataEvent(localizedEvent("event.promotion.federalNavy", string), "Congratulate the commander on their promotion and state the new rank clearly."));
-            rankAndProgressDto.setMilitaryRankFederation(string);
+            rankAndProgressDto.setCombatRankFederation(event.getFederation());
             session.setRankAndProgressDto(rankAndProgressDto);
         }
         if (combatRank != null) {

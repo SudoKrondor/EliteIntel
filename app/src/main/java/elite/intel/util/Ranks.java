@@ -1,7 +1,5 @@
 package elite.intel.util;
 
-import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
-import elite.intel.session.PlayerSession;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
@@ -329,7 +327,7 @@ public class Ranks {
             return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
 
         } else if (federation > imperial) {
-            return getImperialHonorificMap().get(getFederationRankMap().get(federation));
+            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
         } else {
             return chooseAtRandom(imperial, federation);
         }
@@ -357,12 +355,12 @@ public class Ranks {
         }
     }
 
-    public static String getPlayerHonorific() {
-        RankAndProgressDto rankDto = PlayerSession.getInstance().getRankAndProgressDto();
-        HashMap<String, String> honorificMap = getImperialHonorificMap();
-        honorificMap.putAll(getFederationHonorificMap());
-        String honorific = honorificMap.get(rankDto.getHighestMilitaryRank());
-        return honorific != null ? honorific : getText("ranks.honorific.commander");
+    public static String getPlayerHonorific(Integer imperial, Integer federation) {
+        if (imperial >= federation) {
+            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
+        } else {
+            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
+        }
     }
 
 }
