@@ -91,11 +91,12 @@ class PromptComposerTest {
                 7, 15, List.of(ConversationTopic.NAVIGATION, ConversationTopic.TRADE));
         String prefix = composeCommander(List.of(), indexes, "we left Sol heading rimward").messages().get(0).content();
 
-        assertTrue(prefix.contains("llm_memory: 7 / 15 remembered items available."));
-        assertTrue(prefix.contains("topic memory available:"));
+        assertTrue(prefix.contains("### llm_memory"));
+        assertTrue(prefix.contains("7 / 15 remembered items available."));
+        assertTrue(prefix.contains("### Topic memory"));
         assertTrue(prefix.contains("- navigation: " + ConversationTopic.NAVIGATION.description()));
         assertTrue(prefix.contains("- trade: " + ConversationTopic.TRADE.description()));
-        assertTrue(prefix.contains("long-term summary:"));
+        assertTrue(prefix.contains("### Long-term summary"));
         assertTrue(prefix.contains("we left Sol heading rimward"));
     }
 
@@ -104,8 +105,8 @@ class PromptComposerTest {
         String prefix = composeCommander(List.of(),
                 new MemoryAvailabilitySnapshot(0, 15, List.of()), "  ").messages().get(0).content();
 
-        assertTrue(prefix.contains("topic memory available:\n- none"));
-        assertTrue(prefix.contains("long-term summary:\nnone yet."));
+        assertTrue(prefix.contains("### Topic memory\n- none"));
+        assertTrue(prefix.contains("### Long-term summary\nnone yet."));
     }
 
     @Test
@@ -116,7 +117,7 @@ class PromptComposerTest {
         String context = composeCommander(shortTerm,
                 new MemoryAvailabilitySnapshot(0, 15, List.of()), null).messages().get(1).content();
 
-        assertTrue(context.startsWith("Session memory timeline:"));
+        assertTrue(context.startsWith("## Session memory timeline"));
         assertTrue(context.contains("[COMMANDER][navigation][processed] where are we"));
         assertTrue(context.contains("[TOOL_RESULT][navigation][processed] in Sol"));
     }

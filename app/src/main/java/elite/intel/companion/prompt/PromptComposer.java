@@ -83,16 +83,15 @@ public final class PromptComposer {
     private String buildStablePrefix(ThoughtSource source, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
         StringBuilder sb = new StringBuilder();
         sb.append(systemPrompt.staticRules(source));
-        appendTopicEnum(sb);
-        appendLlmMemoryIndex(sb, indexes);
-        appendTopicMemoryIndex(sb, indexes);
-        appendLongTermSummary(sb, longTermSummary);
+        appendTopics(sb);
+        appendMemory(sb, indexes, longTermSummary);
         return sb.toString();
     }
 
     /** Full selectable topic enum; the model needs the valid values for set_topic / recall(topic=...). */
-    private void appendTopicEnum(StringBuilder sb) {
-        sb.append("\nTOPICS (valid values for set_topic and recall(topic=...)):\n");
+    private void appendTopics(StringBuilder sb) {
+        PromptSections.heading(sb, "Topics");
+        sb.append("Valid values for set_topic and recall(topic=...):\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
                 sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
@@ -100,34 +99,34 @@ public final class PromptComposer {
         }
     }
 
-    private void appendLlmMemoryIndex(StringBuilder sb, MemoryAvailabilitySnapshot indexes) {
-        sb.append("\nllm_memory: ")
-                .append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity())
-                .append(" remembered items available. Use recall(scope=llm_memory) to load all.\n");
-    }
+    /** Cheap memory indexes (llm_memory, topic memory) plus the long-term summary, grouped under one header. */
+    private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
+        PromptSections.heading(sb, "Memory");
 
-    /** Lists only topics that actually hold mid-term memory, so recall hints are honest. */
-    private void appendTopicMemoryIndex(StringBuilder sb, MemoryAvailabilitySnapshot indexes) {
+        PromptSections.subheading(sb, "llm_memory");
+        sb.append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity())
+                .append(" remembered items available. Use recall(scope=llm_memory) to load all.\n");
+
+        // Lists only topics that actually hold mid-term memory, so recall hints are honest.
+        PromptSections.subheading(sb, "Topic memory");
         List<ConversationTopic> topics = indexes.topicsWithMemory();
-        sb.append("\ntopic memory available:\n");
         if (topics.isEmpty()) {
             sb.append("- none\n");
-            return;
+        } else {
+            for (ConversationTopic topic : topics) {
+                sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
+            }
         }
-        for (ConversationTopic topic : topics) {
-            sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
-        }
-    }
 
-    private void appendLongTermSummary(StringBuilder sb, String longTermSummary) {
-        sb.append("\nlong-term summary:\n");
-        sb.append(longTermSummary == null || longTermSummary.isBlank() ? "none yet." : longTermSummary.strip());
-        sb.append('\n');
+        PromptSections.subheading(sb, "Long-term summary");
+        sb.append(longTermSummary == null || longTermSummary.isBlank() ? "none yet." : longTermSummary.strip())
+                .append('\n');
     }
 
     /** Per-turn short-term timeline as a context block; dynamic, kept out of the cached prefix. */
     private String buildContextBlock(List<MemoryEntry> shortTerm) {
-        StringBuilder sb = new StringBuilder("Session memory timeline:\n");
+        StringBuilder sb = new StringBuilder();
+        PromptSections.heading(sb, "Session memory timeline");
         if (shortTerm == null || shortTerm.isEmpty()) {
             sb.append("(empty)\n");
             return sb.toString();
@@ -143,12 +142,14 @@ public final class PromptComposer {
 
     private String buildCurrentInput(ThoughtSource source, Urgency urgency, ConversationTopic globalTopic,
                                      ConversationTopic thoughtTopic, String currentInput) {
-        return "Current input:\n"
-                + "source: " + source.name() + '\n'
-                + "urgency: " + urgency.name().toLowerCase(Locale.ROOT) + '\n'
-                + "global topic: " + id(globalTopic) + '\n'
-                + "current topic: " + id(thoughtTopic) + '\n'
-                + "content: " + (currentInput == null ? "" : currentInput) + '\n';
+        StringBuilder sb = new StringBuilder();
+        PromptSections.heading(sb, "Current input");
+        sb.append("source: ").append(source.name()).append('\n')
+                .append("urgency: ").append(urgency.name().toLowerCase(Locale.ROOT)).append('\n')
+                .append("global topic: ").append(id(globalTopic)).append('\n')
+                .append("current topic: ").append(id(thoughtTopic)).append('\n')
+                .append("content: ").append(currentInput == null ? "" : currentInput).append('\n');
+        return sb.toString();
     }
 
     private static String id(ConversationTopic topic) {

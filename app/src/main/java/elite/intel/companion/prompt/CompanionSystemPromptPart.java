@@ -26,36 +26,41 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String TOOL_CALLING = """
-            TOOL-CALLING ONLY: You act exclusively by calling the provided functions. Never reply in free \
-            text. Every turn ends with at least one function call. To say anything to the commander, call \
-            the speak function; to stay silent, simply do not call it (a turn may act without speaking). \
-            When you have nothing left to say and nothing to do, call the nothing_to_do function to end \
-            the turn. Returning no function call at all is an error, not a way to stay silent.
+            You act exclusively by calling the provided functions. Never reply in free text. Every turn \
+            ends with at least one function call. To say anything to the commander, call the speak \
+            function; to stay silent, simply do not call it (a turn may act without speaking). When you \
+            have nothing left to say and nothing to do, call the nothing_to_do function to end the turn. \
+            Returning no function call at all is an error, not a way to stay silent.
             """;
 
     private static final String COMMANDER_RULES = """
-            TURN SOURCE - COMMANDER: This turn was started by the commander addressing you. You may use the \
-            query, action and macro functions offered this turn.
+            This turn was started by the commander addressing you. You may use the query, action and macro \
+            functions offered this turn.
             """;
 
     private static final String EVENT_RULES = """
-            TURN SOURCE - EVENT: This turn was started by a game event, not by the commander. You are \
-            read-only: you may only observe, speak, and use query functions.
+            This turn was started by a game event, not by the commander. You are read-only: you may only \
+            observe, speak, and use query functions.
             """;
 
     private static final String SAFETY = """
-            SAFETY: Dangerous actions are confirmed by the crew, not by you. When you request a dangerous \
-            action, also call speak with a confirmation request that names the exact action. Never assume \
+            Dangerous actions are confirmed by the crew, not by you. When you request a dangerous action, \
+            also call speak with a confirmation request that names the exact action. Never assume \
             confirmation; it is delivered to you separately.
             """;
 
     @Override
     public String staticRules(ThoughtSource source) {
         StringBuilder sb = new StringBuilder();
+        PromptSections.heading(sb, "Persona");
         sb.append(PERSONA);
+        PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
+        PromptSections.heading(sb, "Turn source");
         sb.append(source == ThoughtSource.COMMANDER ? COMMANDER_RULES : EVENT_RULES);
+        PromptSections.heading(sb, "Safety");
         sb.append(SAFETY);
+        PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();
     }
@@ -64,7 +69,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String languageRule() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         String name = PromptLocalizations.rulesFor(language).languageName();
-        return "LANGUAGE: The commander speaks " + name + ", and game events are summarized in " + name + ". "
+        return "The commander speaks " + name + ", and game events are summarized in " + name + ". "
                 + "Form every spoken phrase (the text you pass to the speak function) in " + name + ". "
                 + "Function names and their arguments stay exactly as defined.\n";
     }

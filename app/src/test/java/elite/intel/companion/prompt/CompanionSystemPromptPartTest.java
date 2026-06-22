@@ -27,24 +27,27 @@ class CompanionSystemPromptPartTest {
     @Test
     void alwaysCarriesPersonaToolCallingAndSafety() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
+        assertTrue(text.contains("## Persona"));
         assertTrue(text.contains("junior crew member"));
-        assertTrue(text.contains("TOOL-CALLING ONLY"));
-        assertTrue(text.contains("SAFETY"));
+        assertTrue(text.contains("## Tool calling"));
+        assertTrue(text.contains("## Safety"));
     }
 
     @Test
     void commanderBranchAllowsActionsAndExcludesEventRule() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("TURN SOURCE - COMMANDER"));
-        assertFalse(text.contains("TURN SOURCE - EVENT"));
+        assertTrue(text.contains("## Turn source"));
+        assertTrue(text.contains("started by the commander"));
+        assertFalse(text.contains("started by a game event"));
     }
 
     @Test
     void eventBranchIsReadOnlyAndExcludesCommanderRule() {
         String text = prompt.staticRules(ThoughtSource.EVENT);
-        assertTrue(text.contains("TURN SOURCE - EVENT"));
+        assertTrue(text.contains("## Turn source"));
         assertTrue(text.contains("read-only"));
-        assertFalse(text.contains("TURN SOURCE - COMMANDER"));
+        assertTrue(text.contains("started by a game event"));
+        assertFalse(text.contains("started by the commander"));
     }
 
     @Test
@@ -52,7 +55,7 @@ class CompanionSystemPromptPartTest {
         String name = resolvedLanguageName();
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
 
-        assertTrue(text.contains("LANGUAGE:"));
+        assertTrue(text.contains("## Language"));
         // The commander's language is named, and spoken output is bound to that same language.
         assertTrue(text.contains("The commander speaks " + name));
         assertTrue(text.contains("Form every spoken phrase (the text you pass to the speak function) in " + name));
