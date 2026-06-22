@@ -30,9 +30,10 @@ class EdsmApiClientTest {
     // --- searchStarSystem ---
 
     @Test
-    void searchStarSystem_parsesNameFromResponse() {
+    void searchStarSystem_parsesNameFromArrayResponse() {
+        // EDSM /api-v1/systems always returns an array, even for a single match.
         stubFor(get(urlPathEqualTo("/api-v1/systems"))
-                .willReturn(okJson("{\"name\":\"Sol\",\"information\":{}}")));
+                .willReturn(okJson("[{\"name\":\"Sol\",\"information\":{}}]")));
 
         StarSystemDto dto = EdsmApiClient.searchStarSystem("Sol", 1);
 
@@ -41,9 +42,36 @@ class EdsmApiClientTest {
     }
 
     @Test
+    void searchStarSystem_picksFirstMatchFromMultiElementArray() {
+        stubFor(get(urlPathEqualTo("/api-v1/systems"))
+                .willReturn(okJson("[{\"name\":\"Synuefe NL-N c23-4\",\"information\":"
+                        + "{\"allegiance\":null,\"government\":null,\"security\":\"Anarchy\","
+                        + "\"economy\":\"None\",\"secondEconomy\":\"None\",\"reserve\":null}},"
+                        + "{\"name\":\"Synuefe NL-N c23-5\"}]")));
+
+        StarSystemDto dto = EdsmApiClient.searchStarSystem("Synuefe NL-N c23-4", 1);
+
+        assertNotNull(dto.data);
+        assertEquals("Synuefe NL-N c23-4", dto.data.getName());
+        assertEquals("Anarchy", dto.data.getInformation().getSecurity());
+    }
+
+    @Test
+    void searchStarSystem_returnsBlankDataOnEmptyArray() {
+        // EDSM returns [] when no system matches.
+        stubFor(get(urlPathEqualTo("/api-v1/systems"))
+                .willReturn(okJson("[]")));
+
+        StarSystemDto dto = EdsmApiClient.searchStarSystem("No Such System", 1);
+
+        assertNotNull(dto.data);
+        assertNull(dto.data.getName());
+    }
+
+    @Test
     void searchStarSystem_sendsSystemNameAndShowInformationParams() {
         stubFor(get(urlPathEqualTo("/api-v1/systems"))
-                .willReturn(okJson("{\"name\":\"Sol\"}")));
+                .willReturn(okJson("[{\"name\":\"Sol\"}]")));
 
         EdsmApiClient.searchStarSystem("Sol", 1);
 
@@ -55,7 +83,7 @@ class EdsmApiClientTest {
     @Test
     void searchStarSystem_urlEncodesSpacesInSystemName() {
         stubFor(get(urlPathEqualTo("/api-v1/systems"))
-                .willReturn(okJson("{\"name\":\"Alpha Centauri\"}")));
+                .willReturn(okJson("[{\"name\":\"Alpha Centauri\"}]")));
 
         EdsmApiClient.searchStarSystem("Alpha Centauri", 0);
 
@@ -106,7 +134,7 @@ class EdsmApiClientTest {
         stubFor(get(urlPathEqualTo("/api-v1/systems"))
                 .inScenario("rate-limit")
                 .whenScenarioStateIs("retried")
-                .willReturn(okJson("{\"name\":\"Sol\"}")));
+                .willReturn(okJson("[{\"name\":\"Sol\"}]")));
 
         StarSystemDto dto = EdsmApiClient.searchStarSystem("Sol", 0);
 

@@ -56,7 +56,9 @@ public class EdsmApiClient {
             data = new StarSystemData();
         } else {
             try {
-                data = GsonFactory.getGson().fromJson(response, StarSystemData.class);
+                // /api-v1/systems returns an array of matching systems; take the first match.
+                StarSystemData[] systems = GsonFactory.getGson().fromJson(response, StarSystemData[].class);
+                data = (systems != null && systems.length > 0) ? systems[0] : new StarSystemData();
             } catch (JsonSyntaxException e) {
                 log.warn("Invalid JSON from EDSM: {}", response, e);
                 return new StarSystemDto();
