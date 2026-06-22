@@ -18,7 +18,7 @@ public final class CompanionFunctionTextProvider {
             Map.entry(NothingToDoFunction.ID,
                     "End this turn because there is nothing more to say and nothing to do. This is the explicit way to finish a turn cleanly; returning no function call at all is an error, not this. To merely stay silent while still acting, simply do not call speak."),
             Map.entry(SetTopicFunction.ID,
-                    "Set the current conversation topic to one of the listed valid topics."),
+                    "Switch the conversation to a different topic, chosen from the listed valid topics. Call this only when this turn actually moves the conversation to a topic different from the current topic shown in the current input; otherwise leave the topic unchanged."),
             Map.entry(ClarifyFunction.ID,
                     "Ask the commander a short clarifying question and wait for their reply before acting. Use only when their intent is genuinely ambiguous; unlike speak, this expects an answer to continue the exchange."),
             Map.entry(RememberFunction.ID,

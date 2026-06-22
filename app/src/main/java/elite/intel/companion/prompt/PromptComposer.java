@@ -42,8 +42,7 @@ public final class PromptComposer {
      *
      * @param source           thought source (rendered into the current-input block)
      * @param urgency          thought urgency (rendered into the current-input block)
-     * @param globalTopic      current global TopicModel
-     * @param thoughtTopic     this thought's topic (may be PENDING)
+     * @param currentTopic     the conversation's current topic (the global TopicModel)
      * @param currentInput     the current commander reply or event summary
      * @param selectedTools    Reducer-selected game/query tools
      * @param systemTools      system function tools for this source
@@ -54,8 +53,7 @@ public final class PromptComposer {
     public ComposedPrompt compose(
             ThoughtSource source,
             Urgency urgency,
-            ConversationTopic globalTopic,
-            ConversationTopic thoughtTopic,
+            ConversationTopic currentTopic,
             String currentInput,
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
@@ -66,7 +64,7 @@ public final class PromptComposer {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes, longTermSummary)));
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
-        messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(source, urgency, globalTopic, thoughtTopic, currentInput)));
+        messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(source, urgency, currentTopic, currentInput)));
 
         // Game/query tools first, then system functions; both already chosen upstream.
         List<LlmToolDefinition> tools = new ArrayList<>(selectedTools);
@@ -140,14 +138,13 @@ public final class PromptComposer {
         return sb.toString();
     }
 
-    private String buildCurrentInput(ThoughtSource source, Urgency urgency, ConversationTopic globalTopic,
-                                     ConversationTopic thoughtTopic, String currentInput) {
+    private String buildCurrentInput(ThoughtSource source, Urgency urgency, ConversationTopic currentTopic,
+                                     String currentInput) {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Current input");
         sb.append("source: ").append(source.name()).append('\n')
                 .append("urgency: ").append(urgency.name().toLowerCase(Locale.ROOT)).append('\n')
-                .append("global topic: ").append(id(globalTopic)).append('\n')
-                .append("current topic: ").append(id(thoughtTopic)).append('\n')
+                .append("current topic: ").append(id(currentTopic)).append('\n')
                 .append("content: ").append(currentInput == null ? "" : currentInput).append('\n');
         return sb.toString();
     }

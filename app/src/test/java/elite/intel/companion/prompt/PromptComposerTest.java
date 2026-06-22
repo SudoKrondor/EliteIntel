@@ -38,7 +38,7 @@ class PromptComposerTest {
     private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes, String summary) {
         return composer.compose(
                 ThoughtSource.COMMANDER, Urgency.NORMAL,
-                ConversationTopic.NAVIGATION, ConversationTopic.PENDING,
+                ConversationTopic.NAVIGATION,
                 "set course to Sol",
                 List.of(), List.of(),
                 shortTerm, indexes, summary);
@@ -64,7 +64,7 @@ class PromptComposerTest {
     void eventSourcePicksEventProfileAndSourceRules() {
         ComposedPrompt prompt = composer.compose(
                 ThoughtSource.EVENT, Urgency.URGENT,
-                ConversationTopic.COMBAT, ConversationTopic.COMBAT,
+                ConversationTopic.COMBAT,
                 "hostile interdiction",
                 List.of(), List.of(),
                 List.of(), new MemoryAvailabilitySnapshot(0, 15, List.of()), null);
@@ -136,8 +136,8 @@ class PromptComposerTest {
 
         assertTrue(input.contains("source: COMMANDER"));
         assertTrue(input.contains("urgency: normal"));
-        assertTrue(input.contains("global topic: navigation"));
-        assertTrue(input.contains("current topic: pending"));
+        assertTrue(input.contains("current topic: navigation"));
+        assertFalse(input.contains("pending"));
         assertTrue(input.contains("content: set course to Sol"));
     }
 
@@ -147,7 +147,7 @@ class PromptComposerTest {
         LlmToolDefinition system = new LlmToolDefinition("speak", "d", "", List.of());
         ComposedPrompt prompt = composer.compose(
                 ThoughtSource.COMMANDER, Urgency.NORMAL,
-                ConversationTopic.NAVIGATION, ConversationTopic.PENDING, "go",
+                ConversationTopic.NAVIGATION, "go",
                 List.of(game), List.of(system),
                 List.of(), new MemoryAvailabilitySnapshot(0, 15, List.of()), null);
 
