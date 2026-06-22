@@ -49,6 +49,27 @@ public class Ranks {
             Map.entry("Admiral",              "ranks.federation.admiral")
     );
 
+    private static final Map<String, String> LEGAL_STATUS_I18N_KEY_MAP = Map.ofEntries(
+            Map.entry("Clean", "event.target.legal.clean"),
+            Map.entry("Wanted", "event.target.legal.wanted"),
+            Map.entry("Hostile", "event.target.legal.hostile"),
+            Map.entry("Lawless", "event.target.legal.lawless")
+    );
+
+    /**
+     * Returns the localized display name for the given English legal status sourced from the game journal
+     * (e.g. {@code Clean}, {@code Wanted}, {@code Hostile}, {@code Lawless}).
+     * Falls back to the original value (with underscores replaced by spaces) if no translation key is registered.
+     * Returns {@code null} for {@code null} or blank input so callers can filter it out.
+     */
+    public static String getLocalizedLegalStatus(String englishLegalStatus) {
+        if (englishLegalStatus == null || englishLegalStatus.isBlank()) {
+            return null;
+        }
+        String key = LEGAL_STATUS_I18N_KEY_MAP.get(englishLegalStatus);
+        return key != null ? getText(key) : englishLegalStatus.replace("_", " ");
+    }
+
     /**
      * Returns the localized display name for the given English rank name sourced from the game journal.
      * Falls back to the original English name if no translation key is registered.
