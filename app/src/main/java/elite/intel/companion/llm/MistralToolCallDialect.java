@@ -12,6 +12,7 @@ import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.util.json.GsonFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +39,10 @@ public final class MistralToolCallDialect implements CompanionLlmDialect {
             body.addProperty("tool_choice", "any"); // require a function call
         }
         body.addProperty("prompt_cache_key", request.profile().cacheKey());
-        return body.toString();
+        // Serialize via the shared Gson (HTML escaping disabled), matching how the rest of the app
+        // sends bodies to Mistral; the default body.toString() would unicode-escape characters like
+        // '=' and the apostrophe, bloating the body.
+        return GsonFactory.getGson().toJson(body);
     }
 
     private JsonArray renderMessages(List<LlmMessage> messages) {
