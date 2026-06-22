@@ -143,7 +143,7 @@
 * выполнять read-only queries;
 * вызывать `set_topic`, но только для темы самой мысли;
 * вызывать `speak`, если это разрешено срочностью/болтливостью;
-* вызывать `silence`.
+* вызывать `nothing_to_do`.
 
 `EVENT thought` не может:
 
@@ -876,7 +876,7 @@ COMMANDER system tools:
 
 ```text
 speak
-silence
+nothing_to_do
 clarify
 remember
 recall
@@ -889,12 +889,12 @@ EVENT system tools:
 
 ```text
 speak
-silence
+nothing_to_do
 set_topic
 ```
 
 `EVENT speak` должен быть gated политикой болтливости/срочности.
-Предпочтительный вариант: если `EventSpeechPolicy` / `CommentaryPolicy` не разрешает речь, `speak` вообще не включается в EVENT tools; thought получает `set_topic` и `silence`.
+Предпочтительный вариант: если `EventSpeechPolicy` / `CommentaryPolicy` не разрешает речь, `speak` вообще не включается в EVENT tools; thought получает `set_topic` и `nothing_to_do`.
 
 Системные функции присутствуют в prompt только если разрешены для origin и текущей policy.
 `SYSTEM_FUNCTION` — trusted internal category: она не должна публиковать `GameInputSequenceEvent`, выполнять macro/action behavior или менять game state.
@@ -1469,7 +1469,7 @@ COMMANDER thought получает:
 
 ```text
 speak
-silence
+nothing_to_do
 clarify
 remember
 recall
@@ -1490,9 +1490,9 @@ confirmation_request
 
 Только такой speak проходит сразу при frozen dangerous set.
 
-#### `silence`
+#### `nothing_to_do`
 
-Закрыть ход без озвучки.
+Завершить ход: делать (больше) нечего. Явный терминатор tool-calling-only цикла, отличающий намеренно пустой ход от пустого/битого ответа LLM. Это не «тишина»: не озвучивать — это просто отсутствие вызова `speak`, ход может действовать и молча.
 
 #### `clarify`
 
@@ -1539,7 +1539,7 @@ EVENT thought получает:
 
 ```text
 speak
-silence
+nothing_to_do
 set_topic
 ```
 
@@ -1554,9 +1554,9 @@ set_topic
 Предпочтительно не выдавать `speak` в EVENT tools, если `EventSpeechPolicy` запрещает речь.
 Если `speak` всё же присутствует всегда, executor обязан reject'ить EVENT speak, когда policy запрещает озвучку.
 
-#### `silence`
+#### `nothing_to_do`
 
-Закрыть событийную мысль без озвучки.
+Завершить событийную мысль: реагировать нечем. Не озвучивать — это просто отсутствие вызова `speak`.
 
 #### `set_topic`
 
@@ -1596,7 +1596,7 @@ UserInputEvent
 → tool results written to memory
 → tool results appended to local messageFlow
 → next LLM round
-→ speak/silence/end
+→ speak/nothing_to_do/end
 ```
 
 ---
@@ -1614,7 +1614,7 @@ BaseEvent
 → topic resolved
 → currentInput written to memory
 → allowed query/system tools only
-→ optional speak/silence
+→ optional speak/nothing_to_do
 → end
 ```
 
@@ -1947,7 +1947,7 @@ v0.13 основана на прогоне правдоподобных сцен
 * Не добавлять callback continuation из `LlmGateway`, который может пережить owning thought.
 * Не классифицировать UI-reading tools как `QUERY`, если они нажимают кнопки.
 * Не добавлять gameplay action в system-function registry.
-* Не писать обычный `silence()` в memory timeline как отдельный successful event.
+* Не писать обычный `nothing_to_do()` в memory timeline как отдельный successful event.
 * Не давать compression requests равный приоритет с urgent consciousness requests.
 
 ---

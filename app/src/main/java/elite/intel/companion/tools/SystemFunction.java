@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Self-describing companion system function (speak, silence, set_topic, remember, recall,
+ * Self-describing companion system function (speak, nothing_to_do, set_topic, remember, recall,
  * find_action, change_verbosity), modeled on {@code IntelCommand}: it owns its own metadata
  * (id, parameter schema, description key, the sources that may use it) and is auto-discovered by
  * {@link SystemFunctionRegistry}.
