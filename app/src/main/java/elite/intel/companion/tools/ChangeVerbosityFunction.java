@@ -31,7 +31,7 @@ public final class ChangeVerbosityFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("verbosity", "string", true,
                         "The new verbosity mode: quiet, normal, or chatty.",
-                        List.of("quiet", "normal", "chatty"), null)
+                        List.of(), null)
         );
     }
 

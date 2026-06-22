@@ -32,7 +32,7 @@ public final class SetTopicFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("topic", "string", true,
                         "One of the valid topic ids listed in the TOPICS section.",
-                        List.of("navigation", "combat"), null)
+                        List.of(), null)
         );
     }
 

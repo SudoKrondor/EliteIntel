@@ -33,7 +33,7 @@ public final class ClarifyFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("question", "string", true,
                         "The clarifying question to ask the commander.",
-                        List.of("Did you mean the ship or the carrier?"), null)
+                        List.of(), null)
         );
     }
 

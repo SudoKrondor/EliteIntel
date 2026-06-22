@@ -31,7 +31,7 @@ public final class FindActionFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("query", "string", true,
                         "Description of the action to find.",
-                        List.of("deploy landing gear"), null)
+                        List.of(), null)
         );
     }
 

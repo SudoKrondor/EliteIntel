@@ -33,10 +33,10 @@ public final class RecallFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("scope", "string", true,
                         "Either llm_memory or topic_memory.",
-                        List.of("llm_memory", "topic_memory"), null),
+                        List.of(), null),
                 new ActionParameterSpec("topic", "string", false,
                         "Required when scope is topic_memory: the topic id to recall.",
-                        List.of("navigation"), null),
+                        List.of(), null),
                 new ActionParameterSpec("query", "string", false,
                         "Optional plain-text filter within the topic.",
                         List.of(), null)

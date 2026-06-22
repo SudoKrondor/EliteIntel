@@ -33,7 +33,7 @@ public final class SpeakFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("text", "string", true,
                         "The exact words to speak to the commander.",
-                        List.of("We are approaching the station."), null),
+                        List.of(), null),
                 new ActionParameterSpec("confirmation_request", "boolean", false,
                         "True only if this phrase requests confirmation of a dangerous action; otherwise omit.",
                         List.of(), null)

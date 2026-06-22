@@ -32,7 +32,7 @@ public final class RememberFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec("content", "string", true,
                         "The fact to remember; keep it to at most " + LlmMemory.MAX_CONTENT_LENGTH + " characters.",
-                        List.of("Commander prefers metric units."), null)
+                        List.of(), null)
         );
     }
 
