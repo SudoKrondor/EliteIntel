@@ -9,10 +9,9 @@ import elite.intel.util.json.ToJsonConvertible;
 public class RankAndProgressDto implements ToJsonConvertible {
 
     private String combatRank = "unknown";
-    private String militaryRankEmpire = "unknown";
-    private String militaryRankFederation = "unknown";
+    private Integer combatRankEmpire = -1;
+    private Integer combatRankFederation = -1;
     private String highestMilitaryRank = "unknown";
-    private String honorific = "Commander";
     private String exobiologyRank = "unknown";
     private String explorationRank = "unknown";
     private String mercenaryRank = "unknown";
@@ -39,20 +38,20 @@ public class RankAndProgressDto implements ToJsonConvertible {
         this.combatRank = combatRank;
     }
 
-    public String getMilitaryRankEmpire() {
-        return militaryRankEmpire;
+    public Integer getCombatRankEmpire() {
+        return combatRankEmpire;
     }
 
-    public void setMilitaryRankEmpire(String militaryRankEmpire) {
-        this.militaryRankEmpire = militaryRankEmpire;
+    public void setCombatRankEmpire(Integer combatRankEmpire) {
+        this.combatRankEmpire = combatRankEmpire;
     }
 
-    public String getMilitaryRankFederation() {
-        return militaryRankFederation;
+    public Integer getCombatRankFederation() {
+        return combatRankFederation;
     }
 
-    public void setMilitaryRankFederation(String militaryRankFederation) {
-        this.militaryRankFederation = militaryRankFederation;
+    public void setCombatRankFederation(Integer combatRankFederation) {
+        this.combatRankFederation = combatRankFederation;
     }
 
     public String getHighestMilitaryRank() {
@@ -63,12 +62,13 @@ public class RankAndProgressDto implements ToJsonConvertible {
         this.highestMilitaryRank = highestMilitaryRank;
     }
 
+    /**
+     * Resolves the honorific dynamically from the stored (language-independent) navy rank
+     * indices, so it always reflects the active UI language even after a language switch.
+     */
     public String getHonorific() {
+        String honorific = Ranks.getHonorific(combatRankEmpire, combatRankFederation);
         return honorific == null ? "Commander" : honorific;
-    }
-
-    public void setHonorific(String honorific) {
-        this.honorific = honorific;
     }
 
     public String getExobiologyRank() {
@@ -201,10 +201,9 @@ public class RankAndProgressDto implements ToJsonConvertible {
         this.setExobiologyRank(Ranks.getExobiologyRankMap().get(data.getExobiologist()));
         this.setExplorationRank(Ranks.getExplorationRankMap().get(data.getExplore()));
         this.setHighestMilitaryRank(Ranks.getHighestRankAsString(data.getEmpire(), data.getFederation()));
-        this.setMilitaryRankEmpire(Ranks.getImperialRankMap().get(data.getEmpire()));
-        this.setMilitaryRankFederation(Ranks.getFederationRankMap().get(data.getFederation()));
+        this.setCombatRankEmpire(data.getEmpire());
+        this.setCombatRankFederation(data.getFederation());
         this.setMercenaryRank(Ranks.getMercenaryRankMap().get(data.getSoldier()));
-        this.setHonorific(Ranks.getHonorific(data.getEmpire(), data.getFederation()));
     }
 
     public void setProgressData(PlayerProgressStats data) {

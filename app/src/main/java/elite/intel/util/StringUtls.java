@@ -99,7 +99,10 @@ public class StringUtls {
                 "speech.shipIntroduction",
                 spokenName,
                 safeShipName,
-                Ranks.getPlayerHonorific()
+                Ranks.getPlayerHonorific(
+                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankEmpire(),
+                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankFederation()
+                )
         );
     }
 
