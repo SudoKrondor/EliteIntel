@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.ears.AudioCalibrator;
+import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
@@ -27,6 +28,7 @@ import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.util.*;
@@ -116,23 +118,24 @@ public class AppController implements Runnable {
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
-            appendToLog("Starting audio calibration...");
+            appendToLog(StringUtls.localizedLlm("log.audioCalibrationStarting"));
             EarsInterface ears = services.get(ServiceType.EARS).get();
             if (ears == null) return;
             ears.stop();
             new Thread(() -> {
                 try {
-                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat();
-                    AudioCalibrator.calibrateRMS(format);
+                    Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
+                    AudioCalibrator.calibrateRMS(format, inputMixerInfo);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationComplete")));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        appendToLog("Calibration failed: " + ex.getMessage());
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationFailed")));
+                        appendToLog(StringUtls.localizedLlm("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();
@@ -197,8 +200,13 @@ public class AppController implements Runnable {
         if (ears == null) return;
         appendToLog("Restarting STT service...");
         ears.stop();
-        ears.start();
-        appendToLog("STT service restarted");
+        try {
+            ears.start();
+            appendToLog("STT service restarted");
+        } catch (Exception e) {
+            log.error("Failed to restart STT service", e);
+            appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+        }
     }
 
     private void restartMouthService() {
