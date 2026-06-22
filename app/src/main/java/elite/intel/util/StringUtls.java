@@ -216,9 +216,21 @@ public class StringUtls {
         return Long.parseLong(sb.substring(0, 12));
     }
 
+    /**
+     * Removes conversational filler/discourse openers the LLM tends to prepend despite the
+     * "no filler" instruction in {@link elite.intel.ai.brain.ShipPersonality}. The prompt rule
+     * only reduces frequency; this is the deterministic backstop applied to every TTS string.
+     * Locale-aware: the filler lists live in {@link TtsFillerRules}, keyed on the current
+     * session language.
+     */
+    public static String stripLeadingFillers(String input) {
+        if (input == null) return "";
+        return TtsFillerRules.stripLeading(input, SystemSession.getInstance().getLanguage());
+    }
+
     public static String sanitizeTts(String input) {
         if (input == null) return "";
-        return input
+        return stripLeadingFillers(input)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain
                 .replaceAll("~~([^~\n]*?)~~", "$1")              // ~~strikethrough~~ → plain
