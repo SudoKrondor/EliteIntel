@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
@@ -48,7 +49,16 @@ public class MarketSellEventSubscriber {
 
             if (pending.size() == 1) {
                 MarketSellEvent e = pending.getFirst();
-                GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.units", e.getCount(), e.getType(), e.getTotalSale())));
+                GameEventBus.publish(
+                        new AiVoxResponseEvent(
+                                localizedEvent(
+                                        "event.market.sold.units",
+                                        e.getCount(),
+                                        FuzzySearch.localizedCommodityName(e.getType()),
+                                        e.getTotalSale()
+                                )
+                        )
+                );
             } else {
                 long total = pending.stream().mapToLong(MarketSellEvent::getTotalSale).sum();
                 GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.multiple", pending.size(), total)));

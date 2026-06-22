@@ -15,6 +15,8 @@ import java.util.function.Function;
 public class FuzzySearch {
 
 
+    public static final SystemSession systemSession = SystemSession.getInstance();
+
     public static int levenshteinDistance(String s1, String s2) {
         int[][] dp = new int[s1.length() + 1][s2.length() + 1];
         for (int i = 0; i <= s1.length(); i++) {
@@ -51,6 +53,21 @@ public class FuzzySearch {
         return fuzzyMatch(input, similarity, CommodityDao.class,
                 dao -> dao.getAllLocalizedNamesLowerCase(col),
                 (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+    }
+
+    /**
+     * Resolves the localized display name for an English commodity name (e.g. the
+     * lowercase {@code Type} field from a journal event). Returns the localized name
+     * for the current language, or the original {@code englishName} when the game is
+     * in English or no localized version exists in the DB.
+     */
+    public static String localizedCommodityName(String englishName) {
+        if (englishName == null || englishName.isBlank()) return englishName;
+        Language lang = systemSession.getLanguage();
+        if (lang == Language.EN) return englishName;
+        String col = commodityColumn(lang);
+        String localized = Database.withDao(CommodityDao.class, dao -> dao.getLocalizedByEnglishName(col, englishName));
+        return (localized == null || localized.isBlank()) ? englishName : localized;
     }
 
     public static String fuzzyMaterialNameSearch(String input, int similarity) {
