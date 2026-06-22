@@ -72,6 +72,12 @@ public class ResponseRouter implements AIRouterInterface {
 
             JsonObject params = getAsObjectOrEmpty(jsonResponse);
 
+            // Only user-originated commands carry a started timer; sensor-driven
+            // calls pass a null userInput and are not timed.
+            if (userInput != null) {
+                BrainTimer.stopAndLog(log, action);
+            }
+
             if (!responseText.isEmpty() && action.isEmpty()) {
                 GameEventBus.publish(new AiVoxResponseEvent(responseText));
                 log.info("Response Sent to vocalization: {}", responseText);
