@@ -285,16 +285,16 @@ public class Ranks {
 
     public static HashMap<String, String> getLocalizedPilotFederationRankMap() {
         HashMap<String, String> rankMap = new HashMap<>();
-        rankMap.put("Harmless", getText("rank.merc.defenceless"));
-        rankMap.put("Mostly Harmless", getText("rank.merc.mostlyDefenceless"));
-        rankMap.put("Novice", getText("rank.merc.rookie"));
-        rankMap.put("Competent", getText("rank.merc.soldier"));
-        rankMap.put("Expert", getText("rank.merc.gunslinger"));
-        rankMap.put("Master", getText("rank.merc.warrior"));
-        rankMap.put("Dangerous", getText("rank.merc.entrepreneur"));
-        rankMap.put("Deadly", getText("rank.merc.gladiator"));
+        rankMap.put("Harmless", getText("rank.harmless"));
+        rankMap.put("Mostly Harmless", getText("rank.mostlyHarmless"));
+        rankMap.put("Novice", getText("rank.novice"));
+        rankMap.put("Competent", getText("rank.competent"));
+        rankMap.put("Expert", getText("rank.expert"));
+        rankMap.put("Master", getText("rank.master"));
+        rankMap.put("Dangerous", getText("rank.dangerous"));
+        rankMap.put("Deadly", getText("rank.deadly"));
         rankMap.put("Elite", getText("rank.elite"));
-        rankMap.put("Elite I", getText("rank.elite"));
+        rankMap.put("Elite I", getText("rank.elite1"));
         rankMap.put("Elite II", getText("rank.elite2"));
         rankMap.put("Elite III", getText("rank.elite3"));
         rankMap.put("Elite IV", getText("rank.elite4"));
