@@ -63,8 +63,7 @@ public class ApiFactory {
                 default -> OllamaAnalysisEndpoint.getInstance();
             };
         }
-        String apiKey = SystemSession.getInstance().getAiApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "LLM");
+        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         return switch (provider) {
             case GROK -> GrokAnalysisEndpoint.getInstance();
             case DEEPSEEK -> DeepSeekAnalysisEndpoint.getInstance();
@@ -86,8 +85,7 @@ public class ApiFactory {
             };
         }
 
-        String apiKey = SystemSession.getInstance().getAiApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "LLM");
+        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         return switch (provider) {
             case GROK -> GrokChatEndPoint.getInstance();
             case DEEPSEEK -> DeepSeekChatEndPoint.getInstance();
@@ -103,8 +101,7 @@ public class ApiFactory {
         if (systemSession.useLocalCommandLlm()) {
             return PromptFactory.getInstance();
         }
-        String apiKey = SystemSession.getInstance().getAiApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "LLM");
+        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         return switch (provider) {
             case ANTHROPIC -> AnthropicPromptFactory.getInstance();
             default -> PromptFactory.getInstance();
@@ -119,8 +116,7 @@ public class ApiFactory {
             };
         }
 
-        String apiKey = SystemSession.getInstance().getAiApiKey();
-        ProviderEnum provider = KeyDetector.detectProvider(apiKey, "LLM");
+        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         return switch (provider) {
             case GROK -> GrokCommandEndPoint.getInstance();
             case DEEPSEEK -> DeepSeekCommandEndPoint.getInstance();
