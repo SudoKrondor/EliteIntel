@@ -3,6 +3,7 @@ package elite.intel.companion.tools;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -15,6 +16,14 @@ import java.util.List;
  * (the commander never triggers them by voice).
  */
 public final class SystemFunctionProvider {
+
+    /**
+     * Prompt-order lead group: the universal interaction tools come first; every other function
+     * follows deterministically by id. Registry discovery order is non-deterministic, which would
+     * churn the request and the prompt cache, so the order is fixed here. New functions not listed
+     * here automatically sort into the alphabetical tail - no central list to keep in sync.
+     */
+    private static final List<String> LEAD_ORDER = List.of(SpeakFunction.ID, NothingToDoFunction.ID);
 
     private final SystemFunctionRegistry registry;
     private final CompanionFunctionTextProvider descriptions;
@@ -36,11 +45,20 @@ public final class SystemFunctionProvider {
             registry.load();
         }
         return registry.forSource(source).stream()
+                .sorted(Comparator
+                        .comparingInt((SystemFunction f) -> leadRank(f.id()))
+                        .thenComparing(SystemFunction::id))
                 .map(function -> new LlmToolDefinition(
                         function.id(),
                         descriptions.describe(function.descriptionKey()),
                         "",
                         function.parameters()))
                 .toList();
+    }
+
+    /** Lead-group index, or a value past the group so unlisted functions fall to the alphabetical tail. */
+    private static int leadRank(String id) {
+        int index = LEAD_ORDER.indexOf(id);
+        return index >= 0 ? index : LEAD_ORDER.size();
     }
 }

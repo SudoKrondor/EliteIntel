@@ -45,6 +45,19 @@ class SystemFunctionProviderTest {
     }
 
     @Test
+    void toolsAreInDeterministicLeadThenAlphabeticalOrder() {
+        List<String> commander = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
+                .map(LlmToolDefinition::name).toList();
+        assertEquals(
+                List.of("speak", "nothing_to_do", "change_verbosity", "clarify", "find_action", "recall", "remember", "set_topic"),
+                commander);
+
+        List<String> event = provider.systemFunctions(ThoughtSource.EVENT).stream()
+                .map(LlmToolDefinition::name).toList();
+        assertEquals(List.of("speak", "nothing_to_do", "set_topic"), event);
+    }
+
+    @Test
     void eventToolsAreReadOnlySubset() {
         Set<String> eventNames = names(provider.systemFunctions(ThoughtSource.EVENT));
         assertEquals(Set.of("speak", "nothing_to_do", "set_topic"), eventNames);
