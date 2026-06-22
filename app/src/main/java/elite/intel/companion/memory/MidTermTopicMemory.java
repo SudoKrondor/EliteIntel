@@ -3,7 +3,10 @@ package elite.intel.companion.memory;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Topic-keyed archive of entries evicted from short-term memory. Bounded by max entries per topic;
@@ -12,9 +15,12 @@ import java.util.List;
  */
 class MidTermTopicMemory {
 
+    // EnumMap keeps topics in natural enum order, so the prompt topic index is stable.
+    private final Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
+
     /** Stores an evicted entry under its topic. */
     void add(MemoryEntry entry) {
-        throw new UnsupportedOperationException("TODO: Phase 2");
+        byTopic.computeIfAbsent(entry.topic(), t -> new ArrayList<>()).add(entry);
     }
 
     /** Topic-scoped recall (optional plain-text filter, capped at limit). */
@@ -24,7 +30,13 @@ class MidTermTopicMemory {
 
     /** Topics that currently hold entries (for the prompt topic-memory index). */
     List<ConversationTopic> topicsWithMemory() {
-        throw new UnsupportedOperationException("TODO: Phase 2");
+        List<ConversationTopic> topics = new ArrayList<>();
+        for (Map.Entry<ConversationTopic, List<MemoryEntry>> e : byTopic.entrySet()) {
+            if (!e.getValue().isEmpty()) {
+                topics.add(e.getKey());
+            }
+        }
+        return topics;
     }
 
     /** Evicts per-topic overflow and returns it for consolidation. */
