@@ -3,6 +3,7 @@ package elite.intel.ui.screen.settings;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -116,6 +117,7 @@ public class CommonSettingsPanel extends JPanel {
             playerSession.setJournalPath(path);
             journalDirField.setText(path);
             UiBus.publish(new AppLogEvent("Journal directory updated"));
+            DataDirectoryValidator.validateAndWarn(playerSession.getJournalPath(), DataDirectoryValidator.DirectoryKind.JOURNAL);
         }
     }
 

@@ -3,6 +3,7 @@ package elite.intel.ui.screen;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.*;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
@@ -362,6 +363,7 @@ public class BindForgeTabPanel extends JPanel {
             String path = chooser.getSelectedFile().getAbsolutePath();
             playerSession.setBindingsDir(path);
             bindingsDirField.setText(path);
+            DataDirectoryValidator.validateAndWarn(playerSession.getBindingsDir(), DataDirectoryValidator.DirectoryKind.BINDINGS);
             initData();
         }
     }

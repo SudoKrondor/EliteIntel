@@ -22,6 +22,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static elite.intel.util.StringUtls.localizedSpeech;
+
 public class MissingMissionMonitor implements Runnable, ManagedService {
 
     private static volatile MissingMissionMonitor instance;
@@ -109,7 +111,8 @@ public class MissingMissionMonitor implements Runnable, ManagedService {
             List<MissionAcceptedEvent> missingMissions = scanner.scanForPendingAcceptedEvents(filtered);
             for (MissionAcceptedEvent mission : missingMissions) {
                 GameEventBus.publish(new AiVoxResponseEvent(
-                        "%s! i detected a %s mission that i haven't catalogued.".formatted(
+                        localizedSpeech(
+                                "speech.warning.uncataloguedMissionDetected",
                                 PlayerSession.getInstance().getVariablePlayerName(),
                                 mission.getName()
                         )
