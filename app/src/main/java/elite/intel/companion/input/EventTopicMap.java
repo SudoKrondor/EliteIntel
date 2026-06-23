@@ -38,6 +38,15 @@ public final class EventTopicMap {
         return event == null ? ConversationTopic.UNRESOLVED_GAME_EVENT : topicFor(event.getEventType());
     }
 
+    /**
+     * Whether this journal event type is part of the companion's gameplay taxonomy. This doubles as the
+     * EVENT allow-list ({@code GameEventFilter}): the same curated set that earns a memory topic is the
+     * set worth waking the companion, so there is a single owner of "events that matter".
+     */
+    public static boolean isMapped(String eventType) {
+        return eventType != null && BY_EVENT.containsKey(eventType);
+    }
+
     private static Map<String, ConversationTopic> build() {
         Map<String, ConversationTopic> m = new HashMap<>();
         put(m, ConversationTopic.NAVIGATION,

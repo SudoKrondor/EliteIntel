@@ -11,6 +11,7 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.companion.input.CompanionSubsystemGate;
 import elite.intel.devices.DeviceService;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -290,7 +291,12 @@ public class AppController implements Runnable {
         }));
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
-        services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
+        if (systemSession.companionModeOn()) {
+            services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
+        } else {
+            services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        }
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
@@ -323,7 +329,7 @@ public class AppController implements Runnable {
     }
 
     private enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }
