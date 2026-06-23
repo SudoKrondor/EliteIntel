@@ -126,7 +126,6 @@ public class Bindings {
         BINDING_SHIP_LIGHTS_TOGGLE("ShipSpotLightToggle"),
         BINDING_BUGGY_LIGHTS_TOGGLE("HeadlightsBuggyButton"),
 
-
         BINDING_SELECT_HIGHEST_THREAT("SelectHighestThreat"),
 
         BINDING_TARGET_NEXT_ROUTE_SYSTEM("TargetNextRouteSystem"),
@@ -140,7 +139,6 @@ public class Bindings {
         BINDING_PRIMARY_FIRE("PrimaryFire"),
         BINDING_SECONDARY_FIRE("SecondaryFire"),
         BINDING_CYCLE_NEXT_FIRE_GROUP("CycleFireGroupNext"),
-
 
         AUTO_BREAK_BUGGY_BUTTON("AutoBreakBuggyButton"),
         BACKWARD_KEY("BackwardKey"),
@@ -327,18 +325,6 @@ public class Bindings {
         UI_UP("UI_Up"),
         UP_THRUST_BUTTON("UpThrustButton"),
         USE_SHIELD_CELL("UseShieldCell"),
-        VANITY_CAMERA_EIGHT("VanityCameraEight"),
-        VANITY_CAMERA_FIVE("VanityCameraFive"),
-        VANITY_CAMERA_FOUR("VanityCameraFour"),
-        VANITY_CAMERA_NINE("VanityCameraNine"),
-        VANITY_CAMERA_ONE("VanityCameraOne"),
-        VANITY_CAMERA_SCROLL_LEFT("VanityCameraScrollLeft"),
-        VANITY_CAMERA_SCROLL_RIGHT("VanityCameraScrollRight"),
-        VANITY_CAMERA_SEVEN("VanityCameraSeven"),
-        VANITY_CAMERA_SIX("VanityCameraSix"),
-        VANITY_CAMERA_THREE("VanityCameraThree"),
-        VANITY_CAMERA_TWO("VanityCameraTwo"),
-        WING_NAV_LOCK("WingNavLock")
         ;
         //UP_THRUST_BUTTON("up_thrust_button", "UpThrustButton",GenericGameController.class),
         //DOWN_THRUST_BUTTON("down_thrust_button", "DownThrustButton",GenericGameController.class);
