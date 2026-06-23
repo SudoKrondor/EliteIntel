@@ -32,7 +32,6 @@ import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.EnumSet;
@@ -42,6 +41,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BooleanSupplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -212,10 +214,35 @@ class ThoughtTest {
         assertTrue(hasState(MemoryProcessingState.CANCELLED));
     }
 
+    @Test
+    void interruptWhileWaitingOnLlmSafeFlushesUnresolvedInput() throws InterruptedException {
+        llm.blockForever = true; // the thought will block on the LLM future until interrupted
+        Thought thought = Thought.commander(Urgency.NORMAL, "do something", ctx());
+        Thread worker = new Thread(thought::run, "thought-test");
+        worker.start();
+        waitUntil(() -> !llm.requests.isEmpty()); // it has submitted and is now blocked
+        thought.interrupt();
+        worker.join(2000);
+
+        assertFalse(worker.isAlive(), "interrupted thought must die");
+        assertEquals(1, memory.writes.size(), "safe-flush must not leave a memory hole");
+        MemoryEntry flushed = memory.writes.get(0);
+        assertEquals(MemorySource.COMMANDER, flushed.source());
+        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
+        assertEquals(MemoryProcessingState.INTERRUPTED, flushed.processingState());
+    }
+
     // --- helpers ---
 
     private boolean hasState(MemoryProcessingState state) {
         return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    }
+
+    private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 2000;
+        while (!condition.getAsBoolean() && System.currentTimeMillis() < deadline) {
+            Thread.sleep(5);
+        }
     }
 
     private static JsonObject confirmationRequest(String text) {
@@ -265,14 +292,18 @@ class ThoughtTest {
     // --- fakes ---
 
     private static final class FakeLlm implements LlmGateway {
-        final Deque<LlmResult> scripted = new ArrayDeque<>();
-        final List<LlmRequest> requests = new ArrayList<>();
+        final Deque<LlmResult> scripted = new ConcurrentLinkedDeque<>();
+        final List<LlmRequest> requests = new CopyOnWriteArrayList<>();
         RuntimeException failWith;
+        volatile boolean blockForever;
 
         @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
             requests.add(request);
             if (failWith != null) {
                 return CompletableFuture.failedFuture(failWith);
+            }
+            if (blockForever) {
+                return new CompletableFuture<>(); // never completes; only interrupt (cancel) unblocks it
             }
             return CompletableFuture.completedFuture(scripted.poll());
         }

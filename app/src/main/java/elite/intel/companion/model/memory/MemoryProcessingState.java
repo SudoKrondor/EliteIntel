@@ -19,5 +19,7 @@ public enum MemoryProcessingState {
     /** The commander declined, or no confirmation slot was free; the frozen set was discarded. */
     CANCELLED,
     /** No confirmation arrived within the timeout; the frozen set was discarded. */
-    TIMED_OUT
+    TIMED_OUT,
+    /** The thought was interrupted (safe-flush) before it could resolve to a normal outcome (§2.7). */
+    INTERRUPTED
 }

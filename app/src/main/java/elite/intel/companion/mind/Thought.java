@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,12 +43,16 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A unit of work of the consciousness. Owns its local message flow, request handles, the tool-calling
- * loop, dangerous-action confirmation, and (in a later phase) safe-flush on interrupt.
+ * loop, dangerous-action confirmation, and safe-flush on interrupt.
  * <p>
  * The {@code ThoughtDispatcher} does not know a thought's internal state (tool-calls, handles, message
  * flow); those belong to the thought. There is no per-thought topic field: the memory tag is the global
  * conversation topic for COMMANDER, and the event's static topic for EVENT (see
  * COMPANION_ARCHITECTURE.md §2.4/§2.5).
+ * <p>
+ * Threading: {@link #run} executes on a dispatcher lane thread; {@link #interrupt} is called from another
+ * thread and cooperates via a volatile flag and by cancelling the awaited future, so the lane thread wakes,
+ * safe-flushes and dies. An already-started action/macro is never cancelled (§1.9.41).
  */
 public final class Thought {
 
@@ -66,6 +71,11 @@ public final class Thought {
     /** Memory tag for an EVENT thought (from the static event-type map); null for COMMANDER. */
     private final ConversationTopic eventTopic;
     private final ThoughtContext ctx;
+
+    /** Set by {@link #interrupt} from another thread; the run loop honors it at step boundaries (§2.7). */
+    private volatile boolean interrupted;
+    /** The future the lane thread is currently awaiting (LLM round / confirmation wait), or null. */
+    private volatile CompletableFuture<?> inFlight;
 
     private Thought(ThoughtSource source, Urgency urgency, String currentInput,
                     ConversationTopic eventTopic, ThoughtContext ctx) {
@@ -105,7 +115,15 @@ public final class Thought {
 
         boolean inputRecorded = false;
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
+            if (interrupted) {
+                safeFlush(inputRecorded);
+                return;
+            }
             LlmResult result = submitRound(flow, tools, profile);
+            if (interrupted) {
+                safeFlush(inputRecorded); // interrupt takes precedence over an invalid/cancelled result
+                return;
+            }
             if (result == null || !result.isValid()) {
                 onInvalidResponse(inputRecorded);
                 return;
@@ -134,14 +152,23 @@ public final class Thought {
         // Round cap reached without nothing_to_do: end defensively (real watchdog is the dispatcher's).
     }
 
-    /** One LLM round; a provider/transport failure (exceptional future) is treated as no usable result (§2.9). */
+    /**
+     * One LLM round, registered as the interruptible in-flight handle. A provider/transport failure or an
+     * interrupt-driven cancellation (exceptional future) is treated as no usable result (§2.9/§2.7).
+     */
     private LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
+        CompletableFuture<LlmResult> future = ctx.llmGateway()
+                .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile));
+        inFlight = future;
+        if (interrupted) {
+            future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
+        }
         try {
-            return ctx.llmGateway()
-                    .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile))
-                    .join();
+            return future.join();
         } catch (RuntimeException llmFailure) {
             return null;
+        } finally {
+            inFlight = null;
         }
     }
 
@@ -280,18 +307,25 @@ public final class Thought {
         if (wait == null) {
             return MemoryProcessingState.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
         }
+        inFlight = wait;
+        if (interrupted) {
+            wait.cancel(true);
+        }
         try {
             return wait.get(CONFIRMATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     ? MemoryProcessingState.CONFIRMED
                     : MemoryProcessingState.CANCELLED;
         } catch (TimeoutException timedOut) {
             return MemoryProcessingState.TIMED_OUT;
-        } catch (InterruptedException interrupted) {
+        } catch (CancellationException interruptedWait) {
+            return MemoryProcessingState.INTERRUPTED;
+        } catch (InterruptedException interruptedException) {
             Thread.currentThread().interrupt();
-            return MemoryProcessingState.CANCELLED;
+            return MemoryProcessingState.INTERRUPTED;
         } catch (ExecutionException failed) {
             return MemoryProcessingState.CANCELLED;
         } finally {
+            inFlight = null;
             coordinator.close(wait);
         }
     }
@@ -334,10 +368,33 @@ public final class Thought {
         return source == ThoughtSource.COMMANDER ? ctx.state().globalTopic() : eventTopic;
     }
 
-    /** Interrupts the thought: safe-flush, cancel handles, no new work, then die (§2.7). */
+    /**
+     * Safe-flush on interrupt (§2.7): never leave a memory hole. If the input was not yet recorded, write
+     * it under the source's unresolved fallback as INTERRUPTED; tool results are written as they execute,
+     * so nothing is batched to flush. No new LLM/query/action/speech is started after this.
+     */
+    private void safeFlush(boolean inputRecorded) {
+        if (!inputRecorded) {
+            ConversationTopic topic = source == ThoughtSource.COMMANDER
+                    ? ConversationTopic.UNRESOLVED_COMMANDER_INPUT
+                    : ConversationTopic.UNRESOLVED_GAME_EVENT;
+            MemorySource memorySource = source == ThoughtSource.COMMANDER ? MemorySource.COMMANDER : MemorySource.EVENT;
+            ctx.memoryGateway().write(new MemoryEntry(
+                    Instant.now(), topic, memorySource, currentInput, MemoryProcessingState.INTERRUPTED));
+        }
+    }
+
+    /**
+     * Interrupts the thought from another thread (§2.7): raises the interrupt flag and cancels the awaited
+     * future so the lane thread unblocks, safe-flushes and dies. It never cancels a started action/macro
+     * (§1.9.41) and writes no memory itself - the owning thread owns the safe-flush.
+     */
     public void interrupt() {
-        // TODO: Phase 3 (interrupt) - interrupt/safe-flush.
-        throw new UnsupportedOperationException("TODO: Phase 3 (interrupt)");
+        interrupted = true;
+        CompletableFuture<?> current = inFlight;
+        if (current != null) {
+            current.cancel(true);
+        }
     }
 
     public ThoughtSource source() {
