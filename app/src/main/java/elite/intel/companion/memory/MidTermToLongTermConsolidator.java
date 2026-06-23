@@ -2,8 +2,6 @@ package elite.intel.companion.memory;
 
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.model.Urgency;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -14,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -41,6 +38,7 @@ public final class MidTermToLongTermConsolidator implements MidTermEvictionListe
     private final LlmGateway llmGateway;
     private final SpeechGateway speechGateway;
     private final Executor executor;
+    private final CompressionPromptComposer promptComposer = new CompressionPromptComposer();
 
     private final Object lock = new Object();
     private final List<MemoryEntry> buffer = new ArrayList<>();
@@ -99,26 +97,9 @@ public final class MidTermToLongTermConsolidator implements MidTermEvictionListe
         speechGateway.submit(new SpeechRequest(UUID.randomUUID().toString(), FAILURE_NOTICE, Urgency.NORMAL));
     }
 
-    /** Builds the compression-mode request: English instruction + current summary + buffered entries, no tools. */
+    /** Wraps the composer's compression messages into a no-tools COMPRESSION request. */
     private LlmRequest compressionRequest(String currentSummary, List<MemoryEntry> batch) {
-        String instruction = "You compress old crew memory into a single compact running summary. "
-                + "Merge the new entries into the existing summary, keep what stays relevant, drop trivia, "
-                + "and reply with only the updated summary as plain text, at most "
-                + CompanionMemoryLimits.SUMMARY_MAX_CHARS + " characters.";
-        StringBuilder user = new StringBuilder();
-        user.append("Existing summary:\n").append(currentSummary == null || currentSummary.isBlank() ? "(none)" : currentSummary.strip());
-        user.append("\n\nNew entries to merge:\n");
-        for (MemoryEntry entry : batch) {
-            user.append('[').append(entry.source().name()).append("][").append(id(entry)).append("] ")
-                    .append(entry.content()).append('\n');
-        }
-        List<LlmMessage> messages = List.of(
-                LlmMessage.of(LlmMessageRole.SYSTEM, instruction),
-                LlmMessage.of(LlmMessageRole.USER, user.toString()));
-        return new LlmRequest(UUID.randomUUID().toString(), messages, List.of(), PromptCacheProfile.COMPRESSION);
-    }
-
-    private static String id(MemoryEntry entry) {
-        return entry.topic().name().toLowerCase(Locale.ROOT);
+        return new LlmRequest(UUID.randomUUID().toString(),
+                promptComposer.compose(currentSummary, batch), List.of(), PromptCacheProfile.COMPRESSION);
     }
 }
