@@ -30,12 +30,13 @@ class LoadGameEventSubscriberTest {
     }
 
     @Test
-    void commanderNameAndCreditsAreStoredFromEvent() throws InterruptedException {
+    void commanderNameIsStoredFromEvent() throws InterruptedException {
+        // Credits are no longer this subscriber's responsibility - they are owned by
+        // FinanceSubscriber (see FinanceSubscriberTest.loadGameSetsAbsoluteBalance).
         subscriber.onEvent(loadGameEvent("CMDR Hawkins", "cobra", 1_500_000L));
 
         awaitTrue(() -> "CMDR Hawkins".equals(session.getInGameName()));
         assertEquals("CMDR Hawkins", session.getInGameName());
-        assertEquals(1_500_000L, session.getPersonalCredits());
     }
 
     @Test

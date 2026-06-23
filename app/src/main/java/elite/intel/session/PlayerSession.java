@@ -399,12 +399,35 @@ public class PlayerSession {
     }
 
 
-    public void setPersonalCreditsAvailable(long personalCreditsAvailable) {
+    /**
+     * Sets the absolute personal credit balance. {@code synchronized} on the same monitor
+     * as {@link #adjustCredits(long)} (see its WHY) so a set cannot interleave with a
+     * concurrent read-modify-write.
+     */
+    public synchronized void setPersonalCreditsAvailable(long personalCreditsAvailable) {
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
             player.setPersonalCreditsAvailable(personalCreditsAvailable);
             dao.save(player);
             return Void.class;
+        });
+    }
+
+    /**
+     * Atomically applies a signed delta to the stored personal credit balance and returns
+     * the new balance.
+     * <p>WHY synchronized: at startup two threads write credits - the journal pre-scan
+     * (FinancePreScanAccumulator, on its own virtual thread) and the live journal parser
+     * (FinanceSubscriber). Sharing this monitor with {@link #setPersonalCreditsAvailable(long)}
+     * keeps the read-modify-write atomic and prevents lost updates.
+     */
+    public synchronized long adjustCredits(long delta) {
+        return Database.withDao(PlayerDao.class, dao -> {
+            PlayerDao.Player player = dao.get();
+            long newBalance = player.getPersonalCreditsAvailable() + delta;
+            player.setPersonalCreditsAvailable(newBalance);
+            dao.save(player);
+            return newBalance;
         });
     }
 
