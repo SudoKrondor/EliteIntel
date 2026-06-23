@@ -8,6 +8,7 @@ import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.companion.tools.SystemFunctionResultFields;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -27,12 +28,15 @@ import java.util.concurrent.Executors;
  * functions are not game input; the speech/memory gateways they call own their own ordering/threading).
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
- * data-returning system functions) yields it as-is; a {@code handle} that returns null (side-effect commands,
- * {@code nothing_to_do}) yields a {@code completed_by_executor} status. The gateway never writes to memory.
- * The two lifecycle-only signals ({@code set_topic}, {@code nothing_to_do}) are intercepted by the
- * {@code Thought} and normally never reach the gateway.
+ * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
+ * {@code completed_by_executor} status. The gateway never writes to memory. The lifecycle-only terminator
+ * {@code nothing_to_do} is intercepted by the {@code Thought} and normally never reaches the gateway.
  */
 public final class CompanionExecutionGateway implements ExecutionGateway {
+
+    /** Dispatch-status result for a side-effect tool; the gateway-only "tool" field names which one ran. */
+    private static final String TOOL = "tool";
+    private static final String STATUS_COMPLETED = "completed_by_executor";
 
     private final Map<String, IntelAction> commandHandlers;
     private final Map<String, IntelQuery> queryHandlers;
@@ -105,8 +109,8 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
             return result;
         }
         JsonObject status = new JsonObject();
-        status.addProperty("status", "completed_by_executor");
-        status.addProperty("tool", request.toolName());
+        status.addProperty(SystemFunctionResultFields.STATUS, STATUS_COMPLETED);
+        status.addProperty(TOOL, request.toolName());
         return status;
     }
 

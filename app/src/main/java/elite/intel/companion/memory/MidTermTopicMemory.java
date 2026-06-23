@@ -4,8 +4,10 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -23,9 +25,27 @@ class MidTermTopicMemory {
         byTopic.computeIfAbsent(entry.topic(), t -> new ArrayList<>()).add(entry);
     }
 
-    /** Topic-scoped recall (optional plain-text filter, capped at limit). */
+    /**
+     * Topic-scoped recall: the most recent entries of the topic (up to {@code limit}), optionally filtered
+     * by a case-insensitive plain-text {@code query} on content; returned oldest-to-newest. Empty when the
+     * topic holds nothing or {@code limit <= 0}.
+     */
     List<MemoryEntry> recall(ConversationTopic topic, String query, int limit) {
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        List<MemoryEntry> entries = byTopic.get(topic);
+        if (entries == null || entries.isEmpty() || limit <= 0) {
+            return List.of();
+        }
+        String filter = query == null ? "" : query.strip().toLowerCase(Locale.ROOT);
+        List<MemoryEntry> matched = new ArrayList<>();
+        // Walk newest-first to take the latest N, then return chronological order.
+        for (int i = entries.size() - 1; i >= 0 && matched.size() < limit; i--) {
+            MemoryEntry entry = entries.get(i);
+            if (filter.isEmpty() || entry.content().toLowerCase(Locale.ROOT).contains(filter)) {
+                matched.add(entry);
+            }
+        }
+        Collections.reverse(matched);
+        return matched;
     }
 
     /** Topics that currently hold entries (for the prompt topic-memory index). */

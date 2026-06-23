@@ -33,13 +33,13 @@ class SystemFunctionRegistryTest {
     void discoversAllSystemFunctionsWithUniqueIds() {
         assertEquals(8, registry.byId().size());
         assertEquals(
-                Set.of("speak", "nothing_to_do", "set_topic", "clarify", "remember", "recall", "find_action", "change_verbosity"),
+                Set.of("speak", "nothing_to_do", "change_global_topic", "clarify", "remember", "recall", "find_action", "change_verbosity"),
                 registry.byId().keySet());
     }
 
     @Test
-    void eventSourceGetsOnlySpeakNothingToDoSetTopic() {
-        assertEquals(Set.of("speak", "nothing_to_do", "set_topic"), ids(ThoughtSource.EVENT));
+    void eventSourceGetsOnlySpeakAndNothingToDo() {
+        assertEquals(Set.of("speak", "nothing_to_do"), ids(ThoughtSource.EVENT));
     }
 
     @Test
@@ -50,7 +50,7 @@ class SystemFunctionRegistryTest {
     @Test
     void commanderOnlyFunctionsAreNotOfferedToEvents() {
         Set<String> eventIds = ids(ThoughtSource.EVENT);
-        for (String commanderOnly : Set.of("clarify", "remember", "recall", "find_action", "change_verbosity")) {
+        for (String commanderOnly : Set.of("clarify", "remember", "recall", "find_action", "change_verbosity", "change_global_topic")) {
             assertTrue(registry.find(commanderOnly).isPresent());
             assertTrue(!eventIds.contains(commanderOnly), commanderOnly + " must not reach EVENT thoughts");
         }

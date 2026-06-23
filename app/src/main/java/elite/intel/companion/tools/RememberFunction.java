@@ -2,7 +2,7 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.CompanionGateways;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.memory.LlmMemory;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.util.json.JsonUtils;
@@ -20,6 +20,9 @@ public final class RememberFunction implements SystemFunction {
 
     public static final String ID = "remember";
 
+    private static final String PARAM_CONTENT = "content";
+    private static final String STATUS_REMEMBERED = "remembered";
+
     @Override
     public String id() {
         return ID;
@@ -33,7 +36,7 @@ public final class RememberFunction implements SystemFunction {
     @Override
     public List<ActionParameterSpec> parameters() {
         return List.of(
-                new ActionParameterSpec("content", "string", true,
+                new ActionParameterSpec(PARAM_CONTENT, "string", true,
                         "The fact to remember; keep it to at most " + LlmMemory.MAX_CONTENT_LENGTH + " characters.",
                         List.of(), null)
         );
@@ -51,9 +54,9 @@ public final class RememberFunction implements SystemFunction {
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        CompanionGateways.memory().writeLlmMemory(JsonUtils.getAsStringOrEmpty(params, "content"));
+        CompanionRuntime.memory().writeLlmMemory(JsonUtils.getAsStringOrEmpty(params, PARAM_CONTENT));
         JsonObject result = new JsonObject();
-        result.addProperty("status", "remembered");
+        result.addProperty(SystemFunctionResultFields.STATUS, STATUS_REMEMBERED);
         return result;
     }
 }

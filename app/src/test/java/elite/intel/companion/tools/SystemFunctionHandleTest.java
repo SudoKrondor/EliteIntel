@@ -1,10 +1,13 @@
 package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
-import elite.intel.companion.CompanionGateways;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.Verbosity;
+import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
@@ -19,31 +22,37 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Verifies the executable system-function {@code handle}s drive the companion gateways reached statically
- * via {@link CompanionGateways}: speak/clarify submit speech, remember/recall go through the memory gateway,
- * nothing_to_do is a no-op, and the not-yet-wired functions fail loudly. Fakes back the gateways so the
- * memory-backed functions are testable even though the real store lands in Phase 4.
+ * Verifies the executable system-function {@code handle}s drive the companion services reached statically
+ * via {@link CompanionRuntime}: speak/clarify submit speech, remember/recall go through the memory gateway,
+ * change_verbosity sets shared state, find_action queries the reducer, nothing_to_do is a no-op, and the
+ * still-deferred set_topic fails loudly. Fakes back the services so everything is unit-testable.
  */
 class SystemFunctionHandleTest {
 
     /** Captures the last speech request. */
     private final java.util.List<SpeechRequest> spoken = new java.util.ArrayList<>();
     private final RecordingMemory memory = new RecordingMemory();
+    private final CompanionState state = new CompanionState();
 
     @BeforeEach
     void install() {
-        CompanionGateways.install(null, request -> {
-            spoken.add(request);
-            return CompletableFuture.completedFuture(null);
-        }, null, memory);
+        CompanionRuntime.install(
+                null,
+                request -> {
+                    spoken.add(request);
+                    return CompletableFuture.completedFuture(null);
+                },
+                null,
+                memory,
+                (categories, input) -> List.of(new LlmToolDefinition("lower_landing_gear", "Lower the landing gear", "", List.of())),
+                state);
     }
 
     @AfterEach
     void clear() {
-        CompanionGateways.clear();
+        CompanionRuntime.clear();
     }
 
     private static JsonObject params(String key, String value) {
@@ -112,18 +121,50 @@ class SystemFunctionHandleTest {
     }
 
     @Test
+    void changeVerbositySetsSharedState() {
+        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "chatty"), "");
+
+        assertEquals(Verbosity.CHATTY, state.verbosity());
+        assertEquals("chatty", result.get("verbosity").getAsString());
+    }
+
+    @Test
+    void changeVerbosityRejectsUnknownMode() {
+        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "loud"), "");
+
+        assertEquals("unknown verbosity", result.get("error").getAsString());
+        assertEquals(Verbosity.NORMAL, state.verbosity()); // unchanged
+    }
+
+    @Test
+    void findActionReturnsReducerMatches() {
+        JsonObject result = new FindActionFunction().handle("find_action", params("query", "gear"), "");
+
+        assertEquals(1, result.getAsJsonArray("items").size());
+        JsonObject item = result.getAsJsonArray("items").get(0).getAsJsonObject();
+        assertEquals("lower_landing_gear", item.get("name").getAsString());
+        assertEquals("Lower the landing gear", item.get("description").getAsString());
+    }
+
+    @Test
     void nothingToDoIsNoOp() {
         assertNull(new NothingToDoFunction().handle("nothing_to_do", new JsonObject(), ""));
     }
 
     @Test
-    void deferredFunctionsFailLoudly() {
-        assertThrows(UnsupportedOperationException.class,
-                () -> new SetTopicFunction().handle("set_topic", params("topic", "navigation"), ""));
-        assertThrows(UnsupportedOperationException.class,
-                () -> new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "quiet"), ""));
-        assertThrows(UnsupportedOperationException.class,
-                () -> new FindActionFunction().handle("find_action", params("query", "lower gear"), ""));
+    void changeGlobalTopicSetsSharedState() {
+        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "navigation"), "");
+
+        assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
+        assertEquals("navigation", result.get("topic").getAsString());
+    }
+
+    @Test
+    void changeGlobalTopicRejectsUnknownTopic() {
+        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "nonsense"), "");
+
+        assertEquals("unknown topic", result.get("error").getAsString());
+        assertEquals(ConversationTopic.SOCIAL, state.globalTopic()); // default, unchanged
     }
 
     /** Minimal MemoryGateway fake recording the calls the system functions make. */

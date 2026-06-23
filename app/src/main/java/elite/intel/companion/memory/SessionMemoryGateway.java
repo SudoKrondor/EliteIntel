@@ -46,27 +46,22 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
-        // TODO: Phase 4 - topic-scoped recall.
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        return midTerm.recall(topic, query, limit);
     }
 
     @Override
     public List<String> readLlmMemory() {
-        // TODO: Phase 4 - llm_memory.
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        return llmMemory.all();
     }
 
     @Override
     public void writeLlmMemory(String content) {
-        // TODO: Phase 4 - llm_memory (length/dedup enforcement).
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        llmMemory.add(content);
     }
 
     @Override
     public MemoryAvailabilitySnapshot indexes() {
-        // llm_memory is wired in Phase 4; until then it holds no items, but its capacity is already
-        // known and owned by LlmMemory.
-        return new MemoryAvailabilitySnapshot(0, LlmMemory.MAX_ENTRIES, midTerm.topicsWithMemory());
+        return new MemoryAvailabilitySnapshot(llmMemory.size(), LlmMemory.MAX_ENTRIES, midTerm.topicsWithMemory());
     }
 
     @Override

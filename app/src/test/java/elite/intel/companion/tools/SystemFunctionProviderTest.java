@@ -33,7 +33,7 @@ class SystemFunctionProviderTest {
 
         assertEquals(8, tools.size());
         assertEquals(
-                Set.of("speak", "nothing_to_do", "set_topic", "clarify", "remember", "recall", "find_action", "change_verbosity"),
+                Set.of("speak", "nothing_to_do", "change_global_topic", "clarify", "remember", "recall", "find_action", "change_verbosity"),
                 names(tools));
         for (LlmToolDefinition tool : tools) {
             assertFalse(tool.description() == null || tool.description().isBlank(), tool.name() + " description");
@@ -49,18 +49,18 @@ class SystemFunctionProviderTest {
         List<String> commander = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
                 .map(LlmToolDefinition::name).toList();
         assertEquals(
-                List.of("speak", "nothing_to_do", "change_verbosity", "clarify", "find_action", "recall", "remember", "set_topic"),
+                List.of("speak", "nothing_to_do", "change_global_topic", "change_verbosity", "clarify", "find_action", "recall", "remember"),
                 commander);
 
         List<String> event = provider.systemFunctions(ThoughtSource.EVENT).stream()
                 .map(LlmToolDefinition::name).toList();
-        assertEquals(List.of("speak", "nothing_to_do", "set_topic"), event);
+        assertEquals(List.of("speak", "nothing_to_do"), event);
     }
 
     @Test
     void eventToolsAreReadOnlySubset() {
         Set<String> eventNames = names(provider.systemFunctions(ThoughtSource.EVENT));
-        assertEquals(Set.of("speak", "nothing_to_do", "set_topic"), eventNames);
+        assertEquals(Set.of("speak", "nothing_to_do"), eventNames);
     }
 
     @Test

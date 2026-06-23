@@ -126,7 +126,7 @@
 * выполнять user macros;
 * выполнять read-only queries;
 * использовать полный commander-набор системных функций;
-* вызывать `set_topic`;
+* вызывать `change_global_topic`;
 * менять global `TopicModel`;
 * вызывать `remember`;
 * вызывать `recall`;
@@ -141,7 +141,6 @@
 `EVENT thought` может:
 
 * выполнять read-only queries;
-* вызывать `set_topic`, но только для темы самой мысли;
 * вызывать `speak`, если это разрешено срочностью/болтливостью;
 * вызывать `nothing_to_do`.
 
@@ -155,7 +154,10 @@
 * вызывать `clarify`;
 * вызывать `find_action`;
 * вызывать `change_verbosity`;
+* вызывать `change_global_topic`;
 * менять global `TopicModel`.
+
+Тема EVENT-мысли для записи в память берётся не от LLM, а из статической мапы `event-type → topic` (см. §2.5); событие никогда не двигает глобальную тему разговора.
 
 `EVENT thought` может получить только те `QUERY` tools, которые по implementation contract являются технически read-only.
 Если tool выполняет input, публикует `GameInputSequenceEvent`, вызывает input execution layers, двигает game UI или меняет состояние игры/сессии, это не `QUERY`, а `ACTION`/`MACRO` либо implementation bug.
@@ -189,13 +191,13 @@ LLM в событийной мысли физически не получает 
 
 15. **Один невалидный tool-call делает невалидным весь response.**
     Частичного исполнения нет.
-    Даже валидный `set_topic` из response, где есть другой invalid tool-call, не применяется.
+    Даже валидный `change_global_topic` из response, где есть другой invalid tool-call, не применяется.
 
 16. **Repair/retry не пересобирает tools.**
     Retry использует исходный request payload / tools snapshot и тот же cancellation/owner token.
     `LlmGateway` не вызывает `PromptComposer`, `Reducer`, `ToolAccessPolicy` или `SystemToolProvider`.
 
-17. **`set_topic` из первого валидного response обрабатывается до non-topic tool-calls.**
+17. **`change_global_topic` из первого валидного response обрабатывается до non-topic tool-calls.**
     Это pre-execution step внутри thought lifecycle.
     Но это правило действует только после полной валидации всего tool-call set.
 
@@ -460,11 +462,12 @@ EventFilter
 ```text
 origin = COMMANDER | EVENT
 urgency = normal | urgent
-topic = PENDING | Topic
 currentInput
 localMessageFlow
 request handles
 ```
+
+> **Тема упразднена как поле мысли (см. §2.5).** Отдельного per-thought `topic`/`PENDING` нет: для COMMANDER тег памяти — глобальная тема, для EVENT — из статической мапы событий. Диаграммы lifecycle ниже (§2.5–§2.7, §5) ещё используют старую формулировку `topic = PENDING`/«topic resolved» — будут приведены в соответствие при реализации `Thought.run`.
 
 `currentInput`:
 
@@ -477,63 +480,40 @@ request handles
 
 ### §2.5. Topic resolution
 
-При старте мысли:
-
-```text
-topic = PENDING
-```
-
-Первый LLM turn должен либо вызвать `set_topic`, либо тема будет выставлена fallback-правилом.
-
-Перед исполнением любых non-topic tool-calls весь tool-call set сначала валидируется целиком.
-Если response валиден, `set_topic` из первого turn обрабатывается как pre-execution step, даже если LLM вернула его не первым в списке.
-Если response invalid, `set_topic` из него не применяется.
+Тема — это **одна глобальная тема разговора**, и нужна она только для тегирования записей в памяти. Отдельного per-thought `topic` нет: запись мысли тегируется темой, определённой ниже по источнику.
 
 #### COMMANDER thought
 
-Если `set_topic(validTopic)`:
+Глобальную тему определяет LLM и меняет её **только** через `change_global_topic`. Реплики командира пишутся в память под текущей глобальной темой.
+
+Если `change_global_topic(validTopic)`:
 
 ```text
-thought.topic = validTopic
-global TopicModel = validTopic
+global TopicModel = validTopic   # применяется до записи реплики командира в память
 ```
 
-Если `set_topic(unknownTopic)`:
+Если `change_global_topic(unknownTopic)`:
 
 ```text
-игнорировать
-diagnostics по желанию
+игнорировать (tool result = error), глобальная тема не меняется
 ```
 
-Если LLM не вызвала `set_topic`:
+Если LLM не вызвала `change_global_topic`:
 
 ```text
-thought.topic = current global TopicModel
+глобальная тема остаётся прежней; реплика тегируется текущей глобальной темой
 ```
+
+Порядок: при валидном response `change_global_topic` применяется как pre-execution step (до записи `currentInput`), даже если LLM вернула его не первым; при invalid response он не применяется.
 
 #### EVENT thought
 
-Если `set_topic(validTopic)`:
+EVENT-мысль **не** трогает глобальную тему и не вызывает `change_global_topic` (его нет в её tools). Тема для записи события берётся механически из статической мапы `event-type → topic` (каталог событий). Это даёт честный тег памяти, не перебивая тему разговора командира.
 
 ```text
-thought.topic = validTopic
-global TopicModel не меняется
+global TopicModel — без изменений
+memory tag = staticEventTopic(eventType)   # fallback: unresolved_game_event
 ```
-
-Если `set_topic(unknownTopic)`:
-
-```text
-игнорировать
-diagnostics по желанию
-```
-
-Если LLM не вызвала `set_topic`:
-
-```text
-thought.topic = unresolved_game_event
-```
-
-`EVENT thought` никогда не меняет global `TopicModel`.
 
 ---
 
@@ -710,7 +690,7 @@ Repair/retry может использовать только исходный r
 Retry использует тот же tools snapshot и тот же cancellation/owner token.
 
 Если хотя бы один tool-call invalid, invalid считается весь response.
-Никакие tool-calls из такого response не применяются, включая валидно выглядящий `set_topic`.
+Никакие tool-calls из такого response не применяются, включая валидно выглядящий `change_global_topic`.
 
 Если retry не выполняется или не помогает:
 
@@ -881,7 +861,7 @@ clarify
 remember
 recall
 find_action
-set_topic
+change_global_topic
 change_verbosity
 ```
 
@@ -890,11 +870,10 @@ EVENT system tools:
 ```text
 speak
 nothing_to_do
-set_topic
 ```
 
 `EVENT speak` должен быть gated политикой болтливости/срочности.
-Предпочтительный вариант: если `EventSpeechPolicy` / `CommentaryPolicy` не разрешает речь, `speak` вообще не включается в EVENT tools; thought получает `set_topic` и `nothing_to_do`.
+Предпочтительный вариант: если `EventSpeechPolicy` / `CommentaryPolicy` не разрешает речь, `speak` вообще не включается в EVENT tools; thought получает только `nothing_to_do`.
 
 Системные функции присутствуют в prompt только если разрешены для origin и текущей policy.
 `SYSTEM_FUNCTION` — trusted internal category: она не должна публиковать `GameInputSequenceEvent`, выполнять macro/action behavior или менять game state.
@@ -1419,7 +1398,7 @@ PromptComposer всегда вставляет:
 Полный список тем всегда присутствует в prompt, иначе LLM не знает допустимые значения для:
 
 ```text
-set_topic
+change_global_topic
 recall(topic=...)
 ```
 
@@ -1474,7 +1453,7 @@ clarify
 remember
 recall
 find_action
-set_topic
+change_global_topic
 change_verbosity
 ```
 
@@ -1518,13 +1497,12 @@ scope=topic_memory
 
 Поиск действия по каталогу.
 
-#### `set_topic`
+#### `change_global_topic`
 
-Для COMMANDER thought:
+COMMANDER-only. Меняет глобальную тему разговора:
 
 ```text
-thought.topic = validTopic
-global TopicModel = validTopic
+global TopicModel = validTopic   # тег для записи реплик командира в память
 ```
 
 #### `change_verbosity`
@@ -1540,7 +1518,6 @@ EVENT thought получает:
 ```text
 speak
 nothing_to_do
-set_topic
 ```
 
 #### `speak`
@@ -1558,14 +1535,7 @@ set_topic
 
 Завершить событийную мысль: реагировать нечем. Не озвучивать — это просто отсутствие вызова `speak`.
 
-#### `set_topic`
-
-Для EVENT thought:
-
-```text
-thought.topic = validTopic
-global TopicModel unchanged
-```
+Тему для записи события в память выбирает не LLM, а статическая мапа `event-type → topic` (§2.5).
 
 EVENT thought не получает:
 
@@ -1575,6 +1545,7 @@ recall
 clarify
 find_action
 change_verbosity
+change_global_topic
 ```
 
 ---
@@ -1919,7 +1890,7 @@ v0.13 основана на прогоне правдоподобных сцен
 * `EVENT thought` не получает `ACTION`/`MACRO` tools.
 * Retry использует original immutable tools snapshot.
 * Invalid response не исполняется частично.
-* `set_topic` из invalid response не применяется.
+* `change_global_topic` из invalid response не применяется.
 * `LlmGateway` не callback'ает в `Thought` и не route'ит results в `ExecutionModule`.
 * Только owning `Thought` может consume LLM future/handle и превратить result в tool-calls.
 * `MemoryConsolidator` не использует consciousness pipeline и не получает tools.
@@ -1986,6 +1957,7 @@ v0.13 основана на прогоне правдоподобных сцен
 
 ```text
 elite.intel.companion
+├─ CompanionRuntime     static access point to the running subsystem (gateways + reducer + state)
 ├─ model                ThoughtSource, Urgency, ConversationTopic, IntelActionCategory, Verbosity
 │  ├─ llm               LlmMessage, LlmMessageRole, LlmToolDefinition, LlmToolInvocation,
 │  │                    LlmRequest, LlmResult, PromptCacheProfile
@@ -1993,16 +1965,21 @@ elite.intel.companion
 │  ├─ execution         ExecutionRequest
 │  └─ memory            MemoryEntry, MemorySource, MemoryProcessingState
 ├─ input                CompanionSubsystemGate, GameEventFilter
-├─ mind                 Thought, ThoughtDispatcher, ThoughtContext
-├─ prompt               PromptComposer, ComposedPrompt, IntelActionAccessPolicy
-├─ tools                SystemFunction, RegisterSystemFunction, SystemFunctionRegistry, SystemFunctionProvider
-├─ llm                  LlmGateway
-├─ speech               SpeechGateway
-├─ execution            ExecutionGateway
+├─ mind                 Thought, ThoughtDispatcher, ThoughtContext, CompanionState
+├─ prompt               PromptComposer, ComposedPrompt, IntelActionAccessPolicy,
+│                       CompanionActionReducer, WordOverlapActionReducer, GameToolCandidates
+├─ tools                SystemFunction, RegisterSystemFunction, SystemFunctionRegistry, SystemFunctionProvider,
+│                       + the 8 functions (speak, nothing_to_do, change_global_topic, clarify, remember, recall,
+│                         find_action, change_verbosity), each an IntelAction
+├─ llm                  LlmGateway, CompanionLlmGateway, ...
+├─ speech               SpeechGateway, CompanionSpeechGateway
+├─ execution            ExecutionGateway, CompanionExecutionGateway
 ├─ memory               MemoryGateway, MemoryAvailabilitySnapshot, SessionMemoryGateway,
-│                       ShortTermMemory, MidTermTopicMemory, LongTermMemory, MidTermToLongTermConsolidator
+│                       ShortTermMemory, MidTermTopicMemory, LongTermMemory, LlmMemory, MidTermToLongTermConsolidator
 └─ confirm              DangerousActionConfirmedEvent
 ```
+
+> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel` + `Verbosity`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `change_global_topic` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `change_verbosity` and `find_action` likewise execute and write/read `CompanionState`/`reducer`. The only lifecycle-only signal left is `nothing_to_do` (turn terminator, intercepted by the `Thought`). `LlmMemory` and `MidTermTopicMemory.recall` are implemented, so `remember`/`recall` are functional.
 
 ### §10.3. Уточнения механизмов (отличия от ранних разделов)
 

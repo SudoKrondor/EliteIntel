@@ -86,10 +86,10 @@ public final class PromptComposer {
         return sb.toString();
     }
 
-    /** Full selectable topic enum; the model needs the valid values for set_topic / recall(topic=...). */
+    /** Full selectable topic enum; the model needs the valid values for change_global_topic / recall(topic=...). */
     private void appendTopics(StringBuilder sb) {
         PromptSections.heading(sb, "Topics");
-        sb.append("Valid values for set_topic and recall(topic=...):\n");
+        sb.append("Valid values for change_global_topic and recall(topic=...):\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
                 sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');

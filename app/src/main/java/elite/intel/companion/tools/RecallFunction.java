@@ -3,7 +3,7 @@ package elite.intel.companion.tools;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.CompanionGateways;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -25,6 +25,12 @@ public final class RecallFunction implements SystemFunction {
 
     public static final String ID = "recall";
 
+    private static final String PARAM_SCOPE = "scope";
+    private static final String PARAM_TOPIC = "topic";
+    private static final String PARAM_QUERY = "query";
+    private static final String SCOPE_TOPIC_MEMORY = "topic_memory";
+    private static final String ERROR_UNKNOWN_TOPIC = "unknown topic";
+
     @Override
     public String id() {
         return ID;
@@ -38,13 +44,13 @@ public final class RecallFunction implements SystemFunction {
     @Override
     public List<ActionParameterSpec> parameters() {
         return List.of(
-                new ActionParameterSpec("scope", "string", true,
+                new ActionParameterSpec(PARAM_SCOPE, "string", true,
                         "Either llm_memory or topic_memory.",
                         List.of(), null),
-                new ActionParameterSpec("topic", "string", false,
+                new ActionParameterSpec(PARAM_TOPIC, "string", false,
                         "Required when scope is topic_memory: the topic id to recall.",
                         List.of(), null),
-                new ActionParameterSpec("query", "string", false,
+                new ActionParameterSpec(PARAM_QUERY, "string", false,
                         "Optional plain-text filter within the topic.",
                         List.of(), null)
         );
@@ -66,35 +72,25 @@ public final class RecallFunction implements SystemFunction {
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        String scope = JsonUtils.getAsStringOrEmpty(params, "scope").trim().toLowerCase(Locale.ROOT);
+        String scope = JsonUtils.getAsStringOrEmpty(params, PARAM_SCOPE).trim().toLowerCase(Locale.ROOT);
         JsonObject result = new JsonObject();
-        result.addProperty("scope", scope);
+        result.addProperty(SystemFunctionResultFields.SCOPE, scope);
         JsonArray items = new JsonArray();
-        if (scope.equals("topic_memory")) {
-            ConversationTopic topic = parseTopic(JsonUtils.getAsStringOrEmpty(params, "topic"));
+        if (scope.equals(SCOPE_TOPIC_MEMORY)) {
+            ConversationTopic topic = ConversationTopic.fromSelectableId(JsonUtils.getAsStringOrEmpty(params, PARAM_TOPIC));
             if (topic == null) {
-                result.addProperty("error", "unknown topic");
-                result.add("items", items);
+                result.addProperty(SystemFunctionResultFields.ERROR, ERROR_UNKNOWN_TOPIC);
+                result.add(SystemFunctionResultFields.ITEMS, items);
                 return result;
             }
-            for (MemoryEntry entry : CompanionGateways.memory()
-                    .recallTopicMemory(topic, JsonUtils.getAsStringOrEmpty(params, "query"), TOPIC_RECALL_LIMIT)) {
+            for (MemoryEntry entry : CompanionRuntime.memory()
+                    .recallTopicMemory(topic, JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY), TOPIC_RECALL_LIMIT)) {
                 items.add(entry.content());
             }
         } else {
-            CompanionGateways.memory().readLlmMemory().forEach(items::add);
+            CompanionRuntime.memory().readLlmMemory().forEach(items::add);
         }
-        result.add("items", items);
+        result.add(SystemFunctionResultFields.ITEMS, items);
         return result;
-    }
-
-    /** Resolves a topic id to a selectable {@link ConversationTopic}, or null when unknown/non-selectable. */
-    private static ConversationTopic parseTopic(String id) {
-        try {
-            ConversationTopic topic = ConversationTopic.valueOf(id.trim().toUpperCase(Locale.ROOT));
-            return topic.selectable() ? topic : null;
-        } catch (IllegalArgumentException unknown) {
-            return null;
-        }
     }
 }

@@ -2,10 +2,14 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.ThoughtSource;
+import elite.intel.companion.model.Verbosity;
+import elite.intel.util.json.JsonUtils;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -16,6 +20,10 @@ import java.util.Set;
 public final class ChangeVerbosityFunction implements SystemFunction {
 
     public static final String ID = "change_verbosity";
+
+    private static final String PARAM_VERBOSITY = "verbosity";
+    private static final String STATUS_CHANGED = "verbosity_changed";
+    private static final String ERROR_UNKNOWN = "unknown verbosity";
 
     @Override
     public String id() {
@@ -30,7 +38,7 @@ public final class ChangeVerbosityFunction implements SystemFunction {
     @Override
     public List<ActionParameterSpec> parameters() {
         return List.of(
-                new ActionParameterSpec("verbosity", "string", true,
+                new ActionParameterSpec(PARAM_VERBOSITY, "string", true,
                         "The new verbosity mode: quiet, normal, or chatty.",
                         List.of(), null)
         );
@@ -41,9 +49,19 @@ public final class ChangeVerbosityFunction implements SystemFunction {
         return EnumSet.of(ThoughtSource.COMMANDER);
     }
 
-    /** Deferred: needs a verbosity slot in the session to store the mode. Wired with the verbosity slice. */
+    /** Sets the verbosity slot on the shared {@link elite.intel.companion.mind.CompanionState}. */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        throw new UnsupportedOperationException("change_verbosity not yet wired (verbosity slot slice)");
+        String raw = JsonUtils.getAsStringOrEmpty(params, PARAM_VERBOSITY).trim().toUpperCase(Locale.ROOT);
+        JsonObject result = new JsonObject();
+        try {
+            Verbosity verbosity = Verbosity.valueOf(raw);
+            CompanionRuntime.state().setVerbosity(verbosity);
+            result.addProperty(SystemFunctionResultFields.STATUS, STATUS_CHANGED);
+            result.addProperty(SystemFunctionResultFields.VERBOSITY, verbosity.name().toLowerCase(Locale.ROOT));
+        } catch (IllegalArgumentException unknown) {
+            result.addProperty(SystemFunctionResultFields.ERROR, ERROR_UNKNOWN);
+        }
+        return result;
     }
 }

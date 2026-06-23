@@ -1,8 +1,10 @@
 package elite.intel.companion.model;
 
+import java.util.Locale;
+
 /**
  * Closed set of conversation/experience topics the companion can focus on. Always rendered (with
- * descriptions) into the prompt so the LLM knows the valid values for {@code set_topic} and
+ * descriptions) into the prompt so the LLM knows the valid values for {@code change_global_topic} and
  * {@code recall(topic=...)}.
  * <p>
  * {@link #selectable} marks LLM-facing topics. Non-selectable members are internal sentinels/fallbacks
@@ -47,8 +49,24 @@ public enum ConversationTopic {
         return description;
     }
 
-    /** Whether this topic may be chosen by the LLM (set_topic / recall). */
+    /** Whether this topic may be chosen by the LLM (change_global_topic / recall). */
     public boolean selectable() {
         return selectable;
+    }
+
+    /**
+     * Resolves an LLM-supplied topic id (case-insensitive) to a selectable topic, or {@code null} when it
+     * is unknown or a non-selectable sentinel. Single owner of topic-id parsing for the tools.
+     */
+    public static ConversationTopic fromSelectableId(String id) {
+        if (id == null || id.isBlank()) {
+            return null;
+        }
+        try {
+            ConversationTopic topic = valueOf(id.trim().toUpperCase(Locale.ROOT));
+            return topic.selectable() ? topic : null;
+        } catch (IllegalArgumentException unknown) {
+            return null;
+        }
     }
 }

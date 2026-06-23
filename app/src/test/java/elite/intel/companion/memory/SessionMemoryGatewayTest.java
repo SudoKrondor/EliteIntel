@@ -117,6 +117,27 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void llmMemoryWriteIsReadableAndCounted() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway();
+        gateway.writeLlmMemory("commander prefers Sidewinder");
+        gateway.writeLlmMemory("avoid Thargoids");
+
+        assertEquals(List.of("commander prefers Sidewinder", "avoid Thargoids"), gateway.readLlmMemory());
+        assertEquals(2, gateway.indexes().llmMemoryUsed());
+    }
+
+    @Test
+    void recallTopicMemoryReadsEvictedMidTermEntries() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        for (int i = 0; i < ShortTermMemory.MAX_ENTRIES + 2; i++) {
+            gateway.write(entry(ConversationTopic.NAVIGATION, "nav-" + i));
+        }
+        // The two oldest were evicted into mid-term; short-term recall does not see them, topic recall does.
+        List<MemoryEntry> recalled = gateway.recallTopicMemory(ConversationTopic.NAVIGATION, null, 10);
+        assertEquals(List.of("nav-0", "nav-1"), recalled.stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
     void heuristicEstimatorIsConservativeAndNonNegative() {
         TokenEstimator estimator = new HeuristicTokenEstimator();
         assertEquals(0, estimator.estimate(null));

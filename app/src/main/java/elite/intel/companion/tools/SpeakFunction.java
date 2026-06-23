@@ -2,7 +2,7 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.CompanionGateways;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -24,6 +24,10 @@ public final class SpeakFunction implements SystemFunction {
 
     public static final String ID = "speak";
 
+    private static final String PARAM_TEXT = "text";
+    private static final String PARAM_CONFIRMATION_REQUEST = "confirmation_request";
+    private static final String STATUS_SPOKEN = "spoken";
+
     @Override
     public String id() {
         return ID;
@@ -37,10 +41,10 @@ public final class SpeakFunction implements SystemFunction {
     @Override
     public List<ActionParameterSpec> parameters() {
         return List.of(
-                new ActionParameterSpec("text", "string", true,
+                new ActionParameterSpec(PARAM_TEXT, "string", true,
                         "The exact words to speak to the commander.",
                         List.of(), null),
-                new ActionParameterSpec("confirmation_request", "boolean", false,
+                new ActionParameterSpec(PARAM_CONFIRMATION_REQUEST, "boolean", false,
                         "True only if this phrase requests confirmation of a dangerous action; otherwise omit.",
                         List.of(), null)
         );
@@ -58,10 +62,10 @@ public final class SpeakFunction implements SystemFunction {
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        String toSpeak = JsonUtils.getAsStringOrEmpty(params, "text");
-        CompanionGateways.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
+        String toSpeak = JsonUtils.getAsStringOrEmpty(params, PARAM_TEXT);
+        CompanionRuntime.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
         JsonObject result = new JsonObject();
-        result.addProperty("status", "spoken");
+        result.addProperty(SystemFunctionResultFields.STATUS, STATUS_SPOKEN);
         return result;
     }
 }

@@ -14,9 +14,9 @@ import java.util.Set;
  * <p>
  * Because system functions are {@code IntelAction}s, the {@code ExecutionGateway} runs them through the
  * exact same {@code handle} path as commands/queries/macros and stays agnostic to the tool kind. A
- * function reaches the speech/memory gateways it needs statically via {@code CompanionGateways}. The two
- * lifecycle-only signals ({@code set_topic} pre-execution, {@code nothing_to_do} terminator) are owned by
- * the {@code Thought}, not executed here.
+ * function reaches the gateways/state it needs statically via {@code CompanionRuntime}. The one
+ * lifecycle-only signal, {@code nothing_to_do} (the turn terminator), is owned by the {@code Thought} and
+ * not executed here.
  */
 public interface SystemFunction extends IntelAction {
 

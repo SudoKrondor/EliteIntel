@@ -49,4 +49,35 @@ class MidTermTopicMemoryTest {
                 List.of(ConversationTopic.NAVIGATION, ConversationTopic.COMBAT, ConversationTopic.TRADE),
                 memory.topicsWithMemory());
     }
+
+    @Test
+    void recallReturnsLatestEntriesChronologicallyCappedAtLimit() {
+        MidTermTopicMemory memory = new MidTermTopicMemory();
+        for (int i = 0; i < 5; i++) {
+            memory.add(entry(ConversationTopic.NAVIGATION, "jump-" + i));
+        }
+        // Latest 2, returned oldest-to-newest.
+        List<MemoryEntry> recalled = memory.recall(ConversationTopic.NAVIGATION, null, 2);
+        assertEquals(List.of("jump-3", "jump-4"), recalled.stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
+    void recallFiltersByQueryCaseInsensitively() {
+        MidTermTopicMemory memory = new MidTermTopicMemory();
+        memory.add(entry(ConversationTopic.NAVIGATION, "docked at Jameson"));
+        memory.add(entry(ConversationTopic.NAVIGATION, "jumped to Sol"));
+        memory.add(entry(ConversationTopic.NAVIGATION, "docked at Abraham"));
+
+        List<MemoryEntry> recalled = memory.recall(ConversationTopic.NAVIGATION, "DOCKED", 10);
+        assertEquals(List.of("docked at Jameson", "docked at Abraham"),
+                recalled.stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
+    void recallEmptyForUnknownTopicOrNonPositiveLimit() {
+        MidTermTopicMemory memory = new MidTermTopicMemory();
+        memory.add(entry(ConversationTopic.NAVIGATION, "n"));
+        assertTrue(memory.recall(ConversationTopic.TRADE, null, 10).isEmpty());
+        assertTrue(memory.recall(ConversationTopic.NAVIGATION, null, 0).isEmpty());
+    }
 }

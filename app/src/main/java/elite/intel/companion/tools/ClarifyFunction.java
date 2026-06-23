@@ -2,7 +2,7 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.CompanionGateways;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -24,6 +24,9 @@ public final class ClarifyFunction implements SystemFunction {
 
     public static final String ID = "clarify";
 
+    private static final String PARAM_QUESTION = "question";
+    private static final String STATUS_ASKED = "asked";
+
     @Override
     public String id() {
         return ID;
@@ -37,7 +40,7 @@ public final class ClarifyFunction implements SystemFunction {
     @Override
     public List<ActionParameterSpec> parameters() {
         return List.of(
-                new ActionParameterSpec("question", "string", true,
+                new ActionParameterSpec(PARAM_QUESTION, "string", true,
                         "The clarifying question to ask the commander.",
                         List.of(), null)
         );
@@ -55,10 +58,10 @@ public final class ClarifyFunction implements SystemFunction {
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
-        String question = JsonUtils.getAsStringOrEmpty(params, "question");
-        CompanionGateways.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), question, Urgency.NORMAL));
+        String question = JsonUtils.getAsStringOrEmpty(params, PARAM_QUESTION);
+        CompanionRuntime.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), question, Urgency.NORMAL));
         JsonObject result = new JsonObject();
-        result.addProperty("status", "asked");
+        result.addProperty(SystemFunctionResultFields.STATUS, STATUS_ASKED);
         return result;
     }
 }
