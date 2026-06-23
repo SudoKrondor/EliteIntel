@@ -25,7 +25,8 @@ public final class SpeakFunction implements SystemFunction {
     public static final String ID = "speak";
 
     private static final String PARAM_TEXT = "text";
-    private static final String PARAM_CONFIRMATION_REQUEST = "confirmation_request";
+    /** Argument name marking a dangerous-action confirmation prompt; read by the {@code Thought} (§2.13). */
+    public static final String PARAM_CONFIRMATION_REQUEST = "confirmation_request";
     private static final String STATUS_SPOKEN = "spoken";
 
     @Override

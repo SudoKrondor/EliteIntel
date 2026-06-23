@@ -1,6 +1,8 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.companion.confirm.ConfirmationCoordinator;
+import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
@@ -62,11 +64,13 @@ class ThoughtTest {
     private final FakeMemory memory = new FakeMemory();
     private final RecordingReducer reducer = new RecordingReducer();
     private final CompanionState state = new CompanionState();
+    private DangerousActionPolicy dangerousPolicy = invocation -> false;
+    private final ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
     private ThoughtContext ctx() {
         return new ThoughtContext(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state);
+                reducer, state, dangerousPolicy, coordinator);
     }
 
     @Test
@@ -170,7 +174,69 @@ class ThoughtTest {
         assertEquals(1, speech.requests.size());
     }
 
+    @Test
+    void dangerousActionWaitsForConfirmationThenExecutesOnConfirm() throws InterruptedException {
+        dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
+        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
+                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+
+        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::confirm);
+
+        assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
+        assertTrue(hasState(MemoryProcessingState.AWAITING_CONFIRMATION));
+        assertTrue(hasState(MemoryProcessingState.CONFIRMED));
+    }
+
+    @Test
+    void dangerousActionIsDiscardedOnCancel() throws InterruptedException {
+        dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
+        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
+                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+
+        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::cancel);
+
+        assertFalse(execution.toolNames().contains("self_destruct"), "cancelled dangerous action must not run");
+        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+    }
+
+    @Test
+    void overlappingConfirmationIsRefused() {
+        dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
+        coordinator.open(); // occupy the single confirmation slot
+        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
+                call(SpeakFunction.ID, confirmationRequest("Confirm?"))));
+
+        Thought.commander(Urgency.NORMAL, "self destruct", ctx()).run(); // open() returns null -> no blocking
+
+        assertFalse(execution.toolNames().contains("self_destruct"));
+        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+    }
+
     // --- helpers ---
+
+    private boolean hasState(MemoryProcessingState state) {
+        return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    }
+
+    private static JsonObject confirmationRequest(String text) {
+        JsonObject o = new JsonObject();
+        o.addProperty("text", text);
+        o.addProperty("confirmation_request", true);
+        return o;
+    }
+
+    /** Runs the thought on a worker, nudging the resolver (confirm/cancel) until it finishes. */
+    private static void runResolving(Thought thought, Runnable resolve) throws InterruptedException {
+        Thread worker = new Thread(thought::run, "thought-test");
+        worker.start();
+        long deadline = System.currentTimeMillis() + 5000;
+        while (worker.isAlive() && System.currentTimeMillis() < deadline) {
+            resolve.run();
+            Thread.sleep(10);
+        }
+        worker.join(2000);
+        assertFalse(worker.isAlive(), "thought did not finish");
+    }
 
     private static LlmResult ok(LlmToolInvocation... calls) {
         return new LlmResult(LlmResult.Status.OK, List.of(calls));

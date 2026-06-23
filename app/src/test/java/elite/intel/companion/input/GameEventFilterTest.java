@@ -1,6 +1,7 @@
 package elite.intel.companion.input;
 
 import com.google.gson.JsonObject;
+import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
@@ -138,7 +139,8 @@ class GameEventFilterTest {
         return new ThoughtContext(
                 new InvalidLlm(), new NoSpeech(), new NoExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState());
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
     }
 
     /** Returns INVALID, so an EVENT thought records exactly one unresolved entry and stops (silently). */

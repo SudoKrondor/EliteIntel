@@ -2,6 +2,10 @@ package elite.intel.companion.input;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
+import elite.intel.companion.confirm.ConfirmationCoordinator;
+import elite.intel.companion.confirm.DangerousActionConfirmedEvent;
+import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.CompanionExecutionGateway;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.CompanionLlmGatewayFactory;
@@ -38,6 +42,7 @@ public final class CompanionSubsystemGate implements ManagedService {
 
     private ThoughtDispatcher dispatcher;
     private GameEventFilter gameEventFilter;
+    private ConfirmationCoordinator confirmationCoordinator;
 
     /** Commander voice input gate. */
     @Subscribe
@@ -57,6 +62,18 @@ public final class CompanionSubsystemGate implements ManagedService {
         gameEventFilter.onGameEvent(event);
     }
 
+    /**
+     * Confirmation bus: the commander confirmed a frozen dangerous action. Routed to the coordinator the
+     * waiting thought blocks on (§2.13); a no-op when nothing is awaiting confirmation. The actual voice
+     * code-word / button that publishes this event is an input-layer task (§7.1), still to be wired.
+     */
+    @Subscribe
+    public void onDangerousActionConfirmed(DangerousActionConfirmedEvent event) {
+        if (confirmationCoordinator != null) {
+            confirmationCoordinator.confirm();
+        }
+    }
+
     @Override
     public void start() {
         if (!isCompanionModeOn()) {
@@ -74,8 +91,11 @@ public final class CompanionSubsystemGate implements ManagedService {
         memory.setMidTermEvictionListener(new MidTermToLongTermConsolidator(memory, llm, speech));
         CompanionRuntime.install(llm, speech, execution, memory, reducer, state);
 
+        DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
+        confirmationCoordinator = new ConfirmationCoordinator();
         ThoughtContext ctx = new ThoughtContext(llm, speech, execution, memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state);
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
+                dangerousActionPolicy, confirmationCoordinator);
         dispatcher = new ThoughtDispatcher(ctx);
         dispatcher.start();
         gameEventFilter = new GameEventFilter(dispatcher);
@@ -93,6 +113,7 @@ public final class CompanionSubsystemGate implements ManagedService {
         dispatcher.stop();
         dispatcher = null;
         gameEventFilter = null;
+        confirmationCoordinator = null;
         CompanionRuntime.clear();
     }
 

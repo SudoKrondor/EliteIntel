@@ -3,7 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
-import elite.intel.companion.confirm.DangerousActionConfirmedEvent;
+import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -22,6 +22,7 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
@@ -30,13 +31,18 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A unit of work of the consciousness. Owns its local message flow, request handles, the tool-calling
- * loop, and (in later phases) dangerous-confirmation waiting and safe-flush on interrupt.
+ * loop, dangerous-action confirmation, and (in a later phase) safe-flush on interrupt.
  * <p>
  * The {@code ThoughtDispatcher} does not know a thought's internal state (tool-calls, handles, message
  * flow); those belong to the thought. There is no per-thought topic field: the memory tag is the global
@@ -47,6 +53,9 @@ public final class Thought {
 
     /** Defensive cap on tool rounds until the dispatcher watchdog (Phase 3) owns runaway-loop termination. */
     private static final int MAX_TOOL_ROUNDS = 8;
+
+    /** How long a frozen dangerous set waits for the commander's confirmation before discard (§7.2 setting). */
+    private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
 
     /** Existing llm.properties key for the COMMANDER service phrase spoken on an unrecoverable LLM response. */
     private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
@@ -110,6 +119,12 @@ public final class Thought {
                 preExecuted = applyTopicChange(invocations);
                 recordCurrentInput();
                 inputRecorded = true;
+            }
+
+            // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
+            if (hasDangerousAction(invocations)) {
+                handleDangerousConfirmation(invocations, preExecuted);
+                return; // a dangerous turn is terminal
             }
 
             if (runToolCalls(flow, invocations, preExecuted)) {
@@ -216,6 +231,86 @@ public final class Thought {
                 Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, stringify(result), MemoryProcessingState.PROCESSED));
     }
 
+    /** Whether any tool-call in the validated set is a dangerous action requiring confirmation (§2.13). */
+    private boolean hasDangerousAction(List<LlmToolInvocation> invocations) {
+        for (LlmToolInvocation inv : invocations) {
+            if (ctx.dangerousActionPolicy().isDangerous(inv)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Freezes the validated tool-call set and waits for the commander's confirmation (§2.13/§5.3). The
+     * confirmation_request {@code speak} (if present) is voiced immediately; the rest stays frozen. On
+     * confirm the whole set runs in LLM order; on cancel/timeout it is discarded. The outcome is recorded
+     * and the turn ends (terminal).
+     */
+    private void handleDangerousConfirmation(List<LlmToolInvocation> invocations,
+                                             Map<LlmToolInvocation, JsonObject> preExecuted) {
+        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+                "dangerous action requires confirmation", MemoryProcessingState.AWAITING_CONFIRMATION));
+
+        // The question is voiced now; it is not a tool result, so it is not recorded as one.
+        LlmToolInvocation confirmationSpeak = findConfirmationSpeak(invocations);
+        if (confirmationSpeak != null) {
+            execute(confirmationSpeak);
+        }
+
+        MemoryProcessingState outcome = awaitConfirmationOutcome();
+        if (outcome == MemoryProcessingState.CONFIRMED) {
+            // Execute the frozen set in LLM order, skipping the already-voiced confirmation_request.
+            for (LlmToolInvocation inv : invocations) {
+                if (inv == confirmationSpeak || NothingToDoFunction.ID.equals(inv.name())) {
+                    continue;
+                }
+                JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
+                recordToolResult(result);
+            }
+        }
+        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+                "dangerous action " + outcome.name().toLowerCase(Locale.ROOT), outcome));
+    }
+
+    /** Blocks on the confirmation coordinator; maps confirm/cancel/timeout/overlap to a memory outcome. */
+    private MemoryProcessingState awaitConfirmationOutcome() {
+        ConfirmationCoordinator coordinator = ctx.confirmationCoordinator();
+        CompletableFuture<Boolean> wait = coordinator.open();
+        if (wait == null) {
+            return MemoryProcessingState.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
+        }
+        try {
+            return wait.get(CONFIRMATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    ? MemoryProcessingState.CONFIRMED
+                    : MemoryProcessingState.CANCELLED;
+        } catch (TimeoutException timedOut) {
+            return MemoryProcessingState.TIMED_OUT;
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return MemoryProcessingState.CANCELLED;
+        } catch (ExecutionException failed) {
+            return MemoryProcessingState.CANCELLED;
+        } finally {
+            coordinator.close(wait);
+        }
+    }
+
+    /** The {@code speak} carrying the confirmation_request marker, or null if the LLM included none. */
+    private static LlmToolInvocation findConfirmationSpeak(List<LlmToolInvocation> invocations) {
+        for (LlmToolInvocation inv : invocations) {
+            if (SpeakFunction.ID.equals(inv.name())) {
+                JsonObject args = inv.arguments();
+                if (args.has(SpeakFunction.PARAM_CONFIRMATION_REQUEST)
+                        && args.get(SpeakFunction.PARAM_CONFIRMATION_REQUEST).isJsonPrimitive()
+                        && args.get(SpeakFunction.PARAM_CONFIRMATION_REQUEST).getAsBoolean()) {
+                    return inv;
+                }
+            }
+        }
+        return null;
+    }
+
     /**
      * Handles an unrecoverable LLM response (§2.9): records the still-unwritten input as unresolved; a
      * COMMANDER thought speaks a fixed service phrase, an EVENT thought ends silently.
@@ -241,14 +336,8 @@ public final class Thought {
 
     /** Interrupts the thought: safe-flush, cancel handles, no new work, then die (§2.7). */
     public void interrupt() {
-        // TODO: Phase 3 - interrupt/safe-flush.
-        throw new UnsupportedOperationException("TODO: Phase 3");
-    }
-
-    /** Delivers a confirmation; effective only while awaiting_confirmation (§2.13). */
-    public void onConfirm(DangerousActionConfirmedEvent event) {
-        // TODO: Phase 3 - dangerous confirmation.
-        throw new UnsupportedOperationException("TODO: Phase 3");
+        // TODO: Phase 3 (interrupt) - interrupt/safe-flush.
+        throw new UnsupportedOperationException("TODO: Phase 3 (interrupt)");
     }
 
     public ThoughtSource source() {

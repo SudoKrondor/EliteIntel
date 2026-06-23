@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
@@ -45,7 +46,8 @@ class ThoughtDispatcherTest {
         ThoughtContext ctx = new ThoughtContext(
                 new NothingToDoLlm(), new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState());
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
         return new ThoughtDispatcher(ctx);
     }
 
