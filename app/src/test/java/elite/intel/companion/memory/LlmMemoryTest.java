@@ -27,9 +27,9 @@ class LlmMemoryTest {
         memory.add(null);
         assertEquals(0, memory.size());
 
-        String tooLong = "x".repeat(LlmMemory.MAX_CONTENT_LENGTH + 10);
+        String tooLong = "x".repeat(CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH + 10);
         memory.add(tooLong);
-        assertEquals(LlmMemory.MAX_CONTENT_LENGTH, memory.all().get(0).length());
+        assertEquals(CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH, memory.all().get(0).length());
     }
 
     @Test
@@ -43,12 +43,12 @@ class LlmMemoryTest {
     @Test
     void evictsOldestPastCapacity() {
         LlmMemory memory = new LlmMemory();
-        for (int i = 0; i < LlmMemory.MAX_ENTRIES + 3; i++) {
+        for (int i = 0; i < CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES + 3; i++) {
             memory.add("item-" + i);
         }
-        assertEquals(LlmMemory.MAX_ENTRIES, memory.size());
+        assertEquals(CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, memory.size());
         // The three oldest (item-0..2) were evicted; item-3 is now the oldest.
         assertEquals("item-3", memory.all().get(0));
-        assertTrue(memory.all().contains("item-" + (LlmMemory.MAX_ENTRIES + 2)));
+        assertTrue(memory.all().contains("item-" + (CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES + 2)));
     }
 }

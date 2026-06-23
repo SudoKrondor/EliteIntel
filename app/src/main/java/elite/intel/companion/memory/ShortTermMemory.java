@@ -12,13 +12,6 @@ import java.util.List;
  */
 class ShortTermMemory {
 
-    /** Maximum entries kept in the hot timeline; the primary eviction control. */
-    static final int MAX_ENTRIES = 20;
-    /** Soft token ceiling for the timeline block; a backstop against unusually long entries. */
-    static final int TOKEN_BUDGET = 1200;
-    /** Per-entry token overhead for the framing each entry adds when rendered into the prompt. */
-    static final int ENTRY_FRAMING_OVERHEAD_TOKENS = 4;
-
     private final TokenEstimator tokenEstimator;
     private final List<MemoryEntry> entries = new ArrayList<>();
     private int estimatedTokens;
@@ -45,8 +38,8 @@ class ShortTermMemory {
         // entry remains, so the hot timeline always keeps at least the latest entry even if that one
         // entry alone exceeds the budget.
         while (!entries.isEmpty()
-                && (entries.size() > MAX_ENTRIES
-                || (estimatedTokens > TOKEN_BUDGET && entries.size() > 1))) {
+                && (entries.size() > CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES
+                || (estimatedTokens > CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET && entries.size() > 1))) {
             MemoryEntry oldest = entries.remove(0);
             estimatedTokens -= cost(oldest);
             evicted.add(oldest);
@@ -56,6 +49,6 @@ class ShortTermMemory {
 
     /** Estimated prompt token cost of one entry: its content plus the fixed framing overhead. */
     private int cost(MemoryEntry entry) {
-        return tokenEstimator.estimate(entry.content()) + ENTRY_FRAMING_OVERHEAD_TOKENS;
+        return tokenEstimator.estimate(entry.content()) + CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
     }
 }

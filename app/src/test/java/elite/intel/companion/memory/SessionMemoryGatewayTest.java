@@ -57,15 +57,15 @@ class SessionMemoryGatewayTest {
         // Cost 1 per entry keeps the token budget irrelevant; only the count cap can bite.
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
 
-        for (int i = 0; i < ShortTermMemory.MAX_ENTRIES + 3; i++) {
+        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 3; i++) {
             ConversationTopic topic = i < 3 ? ConversationTopic.MINING : ConversationTopic.TRADE;
             gateway.write(entry(topic, "entry-" + i));
         }
 
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
-        assertEquals(ShortTermMemory.MAX_ENTRIES, timeline.size());
+        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, timeline.size());
         // The three oldest (MINING) were evicted; the newest entry is still the last one written.
-        assertEquals("entry-" + (ShortTermMemory.MAX_ENTRIES + 2), timeline.get(timeline.size() - 1).content());
+        assertEquals("entry-" + (CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 2), timeline.get(timeline.size() - 1).content());
 
         List<ConversationTopic> topics = gateway.indexes().topicsWithMemory();
         assertTrue(topics.contains(ConversationTopic.MINING));
@@ -77,7 +77,7 @@ class SessionMemoryGatewayTest {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
 
         // Two full timelines' worth, alternating topics, so both topics accumulate in mid-term.
-        int total = ShortTermMemory.MAX_ENTRIES * 2;
+        int total = CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES * 2;
         for (int i = 0; i < total; i++) {
             ConversationTopic topic = (i % 2 == 0) ? ConversationTopic.NAVIGATION : ConversationTopic.COMBAT;
             gateway.write(entry(topic, "e" + i));
@@ -85,7 +85,7 @@ class SessionMemoryGatewayTest {
 
         // Hot timeline stays capped at the newest MAX_ENTRIES.
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
-        assertEquals(ShortTermMemory.MAX_ENTRIES, timeline.size());
+        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, timeline.size());
         assertEquals("e" + (total - 1), timeline.get(timeline.size() - 1).content());
 
         // Both topics filled mid-term, reported once each in enum order.
@@ -97,7 +97,7 @@ class SessionMemoryGatewayTest {
     @Test
     void tokenBudgetEvictsButAlwaysKeepsNewestEntry() {
         // One entry alone exceeds the whole budget.
-        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(ShortTermMemory.TOKEN_BUDGET + 1));
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET + 1));
 
         gateway.write(entry(ConversationTopic.EXPLORATION, "a"));
         gateway.write(entry(ConversationTopic.EXPLORATION, "b"));
@@ -113,7 +113,7 @@ class SessionMemoryGatewayTest {
     void indexesReportLlmMemoryCapacity() {
         SessionMemoryGateway gateway = new SessionMemoryGateway();
         assertEquals(0, gateway.indexes().llmMemoryUsed());
-        assertEquals(LlmMemory.MAX_ENTRIES, gateway.indexes().llmMemoryCapacity());
+        assertEquals(CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, gateway.indexes().llmMemoryCapacity());
     }
 
     @Test
@@ -127,9 +127,35 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void longTermSummaryDefaultsEmptyAndIsReplaceable() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway();
+        assertEquals("", gateway.longTermSummary());
+
+        gateway.replaceLongTermSummary("commander has been mining in Borann for hours");
+        assertEquals("commander has been mining in Borann for hours", gateway.longTermSummary());
+    }
+
+    @Test
+    void midTermOverflowIsHandedToTheEvictionListener() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        List<MemoryEntry> evicted = new java.util.ArrayList<>();
+        gateway.setMidTermEvictionListener(evicted::add);
+
+        // Fill short-term (kept) + mid-term to its per-topic cap + 2 more, all one topic, so 2 overflow mid-term.
+        int writes = CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC + 2;
+        for (int i = 0; i < writes; i++) {
+            gateway.write(entry(ConversationTopic.MINING, "m-" + i));
+        }
+
+        assertEquals(2, evicted.size());
+        // The two oldest mid-term entries overflowed first.
+        assertEquals(List.of("m-0", "m-1"), evicted.stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
     void recallTopicMemoryReadsEvictedMidTermEntries() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
-        for (int i = 0; i < ShortTermMemory.MAX_ENTRIES + 2; i++) {
+        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 2; i++) {
             gateway.write(entry(ConversationTopic.NAVIGATION, "nav-" + i));
         }
         // The two oldest were evicted into mid-term; short-term recall does not see them, topic recall does.

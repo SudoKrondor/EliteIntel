@@ -80,4 +80,21 @@ class MidTermTopicMemoryTest {
         assertTrue(memory.recall(ConversationTopic.TRADE, null, 10).isEmpty());
         assertTrue(memory.recall(ConversationTopic.NAVIGATION, null, 0).isEmpty());
     }
+
+    @Test
+    void evictOverflowReturnsOldestBeyondPerTopicCap() {
+        MidTermTopicMemory memory = new MidTermTopicMemory();
+        int over = 3;
+        for (int i = 0; i < CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC + over; i++) {
+            memory.add(entry(ConversationTopic.MINING, "rock-" + i));
+        }
+
+        List<MemoryEntry> evicted = memory.evictOverflow();
+
+        // The three oldest overflow, in chronological order; the topic is left at the cap.
+        assertEquals(List.of("rock-0", "rock-1", "rock-2"), evicted.stream().map(MemoryEntry::content).toList());
+        assertEquals(CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC,
+                memory.recall(ConversationTopic.MINING, null, Integer.MAX_VALUE).size());
+        assertTrue(memory.evictOverflow().isEmpty()); // nothing left to evict
+    }
 }

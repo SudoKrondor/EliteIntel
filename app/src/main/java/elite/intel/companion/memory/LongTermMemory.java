@@ -7,13 +7,16 @@ package elite.intel.companion.memory;
  */
 class LongTermMemory {
 
-    /** Current summary text. */
+    // Empty until the consolidator fills it; replaced atomically as one reference write.
+    private volatile String summary = "";
+
+    /** Current summary text (empty string when nothing has been consolidated yet). */
     String get() {
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        return summary;
     }
 
-    /** Atomically replaces the summary. */
+    /** Atomically replaces the summary; null is normalized to empty. */
     void replace(String summary) {
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        this.summary = summary == null ? "" : summary;
     }
 }

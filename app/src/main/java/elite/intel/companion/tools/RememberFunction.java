@@ -3,7 +3,7 @@ package elite.intel.companion.tools;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.memory.LlmMemory;
+import elite.intel.companion.memory.CompanionMemoryLimits;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.util.json.JsonUtils;
 
@@ -37,7 +37,7 @@ public final class RememberFunction implements SystemFunction {
     public List<ActionParameterSpec> parameters() {
         return List.of(
                 new ActionParameterSpec(PARAM_CONTENT, "string", true,
-                        "The fact to remember; keep it to at most " + LlmMemory.MAX_CONTENT_LENGTH + " characters.",
+                        "The fact to remember; keep it to at most " + CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH + " characters.",
                         List.of(), null)
         );
     }

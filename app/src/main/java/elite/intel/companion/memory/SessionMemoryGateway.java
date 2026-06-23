@@ -19,6 +19,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
     private final LongTermMemory longTerm = new LongTermMemory();
     private final LlmMemory llmMemory = new LlmMemory();
 
+    // Hands mid-term overflow to the consolidator; no-op until wired at subsystem start. The gateway stays
+    // mechanical (it never calls the LLM) - it only forwards evicted entries.
+    private volatile MidTermEvictionListener evictionListener = entry -> {};
+
     /** Production constructor: uses the default heuristic token estimator. */
     public SessionMemoryGateway() {
         this(new HeuristicTokenEstimator());
@@ -29,6 +33,11 @@ public final class SessionMemoryGateway implements MemoryGateway {
         this.shortTerm = new ShortTermMemory(tokenEstimator);
     }
 
+    /** Registers the consolidator that consumes mid-term overflow; defaults to a no-op until set. */
+    public void setMidTermEvictionListener(MidTermEvictionListener listener) {
+        this.evictionListener = listener == null ? entry -> {} : listener;
+    }
+
     @Override
     public void write(MemoryEntry entry) {
         // New entries land in short-term first; whatever overflows the count/token bounds is moved
@@ -36,6 +45,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
         shortTerm.add(entry);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
             midTerm.add(evicted);
+        }
+        // Per-topic mid-term overflow is handed to the consolidator (long-term summary lives behind the LLM).
+        for (MemoryEntry overflow : midTerm.evictOverflow()) {
+            evictionListener.onEvicted(overflow);
         }
     }
 
@@ -61,18 +74,16 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public MemoryAvailabilitySnapshot indexes() {
-        return new MemoryAvailabilitySnapshot(llmMemory.size(), LlmMemory.MAX_ENTRIES, midTerm.topicsWithMemory());
+        return new MemoryAvailabilitySnapshot(llmMemory.size(), CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, midTerm.topicsWithMemory());
     }
 
     @Override
     public String longTermSummary() {
-        // TODO: Phase 4 - long-term summary.
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        return longTerm.get();
     }
 
     @Override
     public void replaceLongTermSummary(String summary) {
-        // TODO: Phase 4 - long-term summary.
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        longTerm.replace(summary);
     }
 }

@@ -1,6 +1,6 @@
 package elite.intel.companion.tools;
 
-import elite.intel.companion.memory.LlmMemory;
+import elite.intel.companion.memory.CompanionMemoryLimits;
 
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public final class CompanionFunctionTextProvider {
             Map.entry(ClarifyFunction.ID,
                     "Ask the commander a short clarifying question and wait for their reply before acting. Use only when their intent is genuinely ambiguous; unlike speak, this expects an answer to continue the exchange."),
             Map.entry(RememberFunction.ID,
-                    "Save a short fact (maximum " + LlmMemory.MAX_CONTENT_LENGTH + " characters) to long-lived memory for later recall."),
+                    "Save a short fact (maximum " + CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH + " characters) to long-lived memory for later recall."),
             Map.entry(RecallFunction.ID,
                     "Load stored memory. scope=llm_memory returns all remembered facts; scope=topic_memory returns entries for one topic (topic required, query optional)."),
             Map.entry(FindActionFunction.ID,

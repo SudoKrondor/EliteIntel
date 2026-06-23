@@ -46,18 +46,18 @@ class ShortTermMemoryTest {
     @Test
     void evictOverflowReturnsNothingWhenWithinLimits() {
         ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
-        for (int i = 0; i < ShortTermMemory.MAX_ENTRIES; i++) {
+        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES; i++) {
             memory.add(entry("e" + i));
         }
         assertTrue(memory.evictOverflow().isEmpty());
-        assertEquals(ShortTermMemory.MAX_ENTRIES, memory.timeline().size());
+        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, memory.timeline().size());
     }
 
     @Test
     void countOverflowEvictsExactOldestInOrder() {
         ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
         int overflow = 3;
-        for (int i = 0; i < ShortTermMemory.MAX_ENTRIES + overflow; i++) {
+        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + overflow; i++) {
             memory.add(entry("e" + i));
         }
 
@@ -67,16 +67,16 @@ class ShortTermMemoryTest {
         assertEquals(List.of("e0", "e1", "e2"), contents(evicted));
         // The hot timeline retains the newest MAX_ENTRIES, oldest-to-newest.
         List<MemoryEntry> timeline = memory.timeline();
-        assertEquals(ShortTermMemory.MAX_ENTRIES, timeline.size());
+        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, timeline.size());
         assertEquals("e3", timeline.get(0).content());
-        assertEquals("e" + (ShortTermMemory.MAX_ENTRIES + overflow - 1), timeline.get(timeline.size() - 1).content());
+        assertEquals("e" + (CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + overflow - 1), timeline.get(timeline.size() - 1).content());
     }
 
     @Test
     void sustainedWritesEvictEveryEntryBeyondCapacityInOrder() {
         // Mirrors the gateway's add-then-evict loop over a long run; collects everything that moved out.
         ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
-        int total = ShortTermMemory.MAX_ENTRIES * 3;
+        int total = CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES * 3;
         List<String> evictedAll = new ArrayList<>();
         for (int i = 0; i < total; i++) {
             memory.add(entry("e" + i));
@@ -85,18 +85,18 @@ class ShortTermMemoryTest {
 
         // Everything except the last MAX_ENTRIES entries flowed to mid-term, in chronological order.
         List<String> expectedEvicted = new ArrayList<>();
-        for (int i = 0; i < total - ShortTermMemory.MAX_ENTRIES; i++) {
+        for (int i = 0; i < total - CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES; i++) {
             expectedEvicted.add("e" + i);
         }
         assertEquals(expectedEvicted, evictedAll);
-        assertEquals(ShortTermMemory.MAX_ENTRIES, memory.timeline().size());
+        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, memory.timeline().size());
         assertEquals("e" + (total - 1), memory.timeline().get(memory.timeline().size() - 1).content());
     }
 
     @Test
     void tokenBudgetEvictsOldestButAlwaysKeepsNewest() {
         // Each entry costs the entire budget, so any second entry forces eviction down to the newest one.
-        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(ShortTermMemory.TOKEN_BUDGET));
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET));
         memory.add(entry("old"));
         memory.add(entry("new"));
 
@@ -108,7 +108,7 @@ class ShortTermMemoryTest {
     @Test
     void tokenBudgetNeverEvictsTheSoleEntry() {
         // A single entry over budget stays: the hot timeline must never go empty on the token rule.
-        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(ShortTermMemory.TOKEN_BUDGET + 1));
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET + 1));
         memory.add(entry("only"));
         assertTrue(memory.evictOverflow().isEmpty());
         assertEquals(List.of("only"), contents(memory.timeline()));

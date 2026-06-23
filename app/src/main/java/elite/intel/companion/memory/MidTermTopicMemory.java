@@ -59,8 +59,14 @@ class MidTermTopicMemory {
         return topics;
     }
 
-    /** Evicts per-topic overflow and returns it for consolidation. */
+    /** Evicts per-topic overflow (oldest beyond the per-topic cap) and returns it for consolidation. */
     List<MemoryEntry> evictOverflow() {
-        throw new UnsupportedOperationException("TODO: Phase 4");
+        List<MemoryEntry> evicted = new ArrayList<>();
+        for (List<MemoryEntry> entries : byTopic.values()) {
+            while (entries.size() > CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC) {
+                evicted.add(entries.remove(0)); // oldest of the topic first
+            }
+        }
+        return evicted;
     }
 }
