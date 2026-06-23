@@ -43,6 +43,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     private ThoughtDispatcher dispatcher;
     private GameEventFilter gameEventFilter;
     private ConfirmationCoordinator confirmationCoordinator;
+    private BargeInController bargeInController;
 
     /** Commander voice input gate. */
     @Subscribe
@@ -99,9 +100,11 @@ public final class CompanionSubsystemGate implements ManagedService {
         dispatcher = new ThoughtDispatcher(ctx);
         dispatcher.start();
         gameEventFilter = new GameEventFilter(dispatcher);
+        bargeInController = new BargeInController(dispatcher);
 
         // Subscribe last, so events only flow once the whole graph is live.
         GameEventBus.register(this);
+        GameEventBus.register(bargeInController);
     }
 
     @Override
@@ -110,9 +113,11 @@ public final class CompanionSubsystemGate implements ManagedService {
             return; // never started (companion mode was off)
         }
         GameEventBus.unregister(this);
+        GameEventBus.unregister(bargeInController);
         dispatcher.stop();
         dispatcher = null;
         gameEventFilter = null;
+        bargeInController = null;
         confirmationCoordinator = null;
         CompanionRuntime.clear();
     }
