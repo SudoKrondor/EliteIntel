@@ -1,5 +1,6 @@
 package elite.intel.companion.tools;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.model.ThoughtSource;
 
@@ -38,5 +39,11 @@ public final class FindActionFunction implements SystemFunction {
     @Override
     public Set<ThoughtSource> sources() {
         return EnumSet.of(ThoughtSource.COMMANDER);
+    }
+
+    /** Deferred: needs the action-catalog search contract (over the reducer/candidates). Wired in its slice. */
+    @Override
+    public JsonObject handle(String action, JsonObject params, String text) {
+        throw new UnsupportedOperationException("find_action not yet wired (catalog search slice)");
     }
 }

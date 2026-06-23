@@ -1,11 +1,17 @@
 package elite.intel.companion.tools;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.companion.CompanionGateways;
 import elite.intel.companion.model.ThoughtSource;
+import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.util.json.JsonUtils;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * System function: speak a phrase to the commander via the SpeechGateway. Available to both sources.
@@ -43,5 +49,19 @@ public final class SpeakFunction implements SystemFunction {
     @Override
     public Set<ThoughtSource> sources() {
         return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
+    }
+
+    /**
+     * Vocalizes the {@code text} through the companion {@link elite.intel.companion.speech.SpeechGateway}.
+     * Fire-and-return: it does not block on playback (TTS runs async); the {@code confirmation_request}
+     * marker is interpreted by the {@code Thought} (dangerous-confirmation gating), not here.
+     */
+    @Override
+    public JsonObject handle(String action, JsonObject params, String text) {
+        String toSpeak = JsonUtils.getAsStringOrEmpty(params, "text");
+        CompanionGateways.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), toSpeak, Urgency.NORMAL));
+        JsonObject result = new JsonObject();
+        result.addProperty("status", "spoken");
+        return result;
     }
 }

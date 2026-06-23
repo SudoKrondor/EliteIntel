@@ -1,5 +1,6 @@
 package elite.intel.companion.tools;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.model.ThoughtSource;
 
@@ -39,5 +40,15 @@ public final class SetTopicFunction implements SystemFunction {
     @Override
     public Set<ThoughtSource> sources() {
         return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
+    }
+
+    /**
+     * Not executed via the gateway: {@code set_topic} is a pre-execution lifecycle step owned by the
+     * {@code Thought} (it sets the thought's topic and, for COMMANDER, the global TopicModel). Wired with
+     * the global TopicModel slice.
+     */
+    @Override
+    public JsonObject handle(String action, JsonObject params, String text) {
+        throw new UnsupportedOperationException("set_topic is applied by the Thought lifecycle (global TopicModel slice)");
     }
 }

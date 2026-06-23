@@ -1,33 +1,24 @@
 package elite.intel.companion.tools;
 
-import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.companion.model.ThoughtSource;
 
-import java.util.List;
 import java.util.Set;
 
 /**
  * Self-describing companion system function (speak, nothing_to_do, set_topic, remember, recall,
- * find_action, change_verbosity), modeled on {@code IntelCommand}: it owns its own metadata
- * (id, parameter schema, description key, the sources that may use it) and is auto-discovered by
- * {@link SystemFunctionRegistry}.
+ * find_action, change_verbosity), modeled on {@code IntelCommand} and - like every other invokable tool -
+ * an {@link IntelAction}: it owns its metadata (id, parameter schema via {@link IntelAction#parameters()},
+ * the sources that may use it, a description key) and its execution via {@link IntelAction#handle}. It is
+ * auto-discovered by {@link SystemFunctionRegistry}.
  * <p>
- * The prompt layer never generates schemas itself; each function describes its parameters via
- * {@link #parameters()}, reusing the existing {@link ActionParameterSpec} (deliberate reuse of the
- * project's parameter-spec owner).
- * <p>
- * System functions are not game actions: they act on the thought/topic/memory or speak via the
- * gateways. The execution contract is defined when the concrete functions are implemented (Phase 2+).
+ * Because system functions are {@code IntelAction}s, the {@code ExecutionGateway} runs them through the
+ * exact same {@code handle} path as commands/queries/macros and stays agnostic to the tool kind. A
+ * function reaches the speech/memory gateways it needs statically via {@code CompanionGateways}. The two
+ * lifecycle-only signals ({@code set_topic} pre-execution, {@code nothing_to_do} terminator) are owned by
+ * the {@code Thought}, not executed here.
  */
-public interface SystemFunction {
-
-    /** Unique tool name as it appears in the native tool schema (e.g. "speak", "set_topic"). */
-    String id();
-
-    /** Parameter schema for native tool-calling; empty for no-arg functions. */
-    default List<ActionParameterSpec> parameters() {
-        return List.of();
-    }
+public interface SystemFunction extends IntelAction {
 
     /** i18n key for this function's description shown to the LLM. */
     String descriptionKey();

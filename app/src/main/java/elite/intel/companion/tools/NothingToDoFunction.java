@@ -1,5 +1,6 @@
 package elite.intel.companion.tools;
 
+import com.google.gson.JsonObject;
 import elite.intel.companion.model.ThoughtSource;
 
 import java.util.EnumSet;
@@ -30,5 +31,14 @@ public final class NothingToDoFunction implements SystemFunction {
     @Override
     public Set<ThoughtSource> sources() {
         return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
+    }
+
+    /**
+     * No-op: ends the turn. {@code nothing_to_do} is a terminator signal owned by the {@code Thought}
+     * (it is not routed to the execution gateway and produces no result to return or record).
+     */
+    @Override
+    public JsonObject handle(String action, JsonObject params, String text) {
+        return null;
     }
 }

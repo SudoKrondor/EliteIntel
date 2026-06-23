@@ -1,11 +1,17 @@
 package elite.intel.companion.tools;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.companion.CompanionGateways;
 import elite.intel.companion.model.ThoughtSource;
+import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.util.json.JsonUtils;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * System function: ask the commander a short clarifying question and wait for the reply before acting.
@@ -40,5 +46,19 @@ public final class ClarifyFunction implements SystemFunction {
     @Override
     public Set<ThoughtSource> sources() {
         return EnumSet.of(ThoughtSource.COMMANDER);
+    }
+
+    /**
+     * Speaks the clarifying {@code question} via the companion
+     * {@link elite.intel.companion.speech.SpeechGateway}. The awaiting-reply state (suspending the thought
+     * until the commander answers) is owned by the thought/dispatcher in a later phase; this only utters it.
+     */
+    @Override
+    public JsonObject handle(String action, JsonObject params, String text) {
+        String question = JsonUtils.getAsStringOrEmpty(params, "question");
+        CompanionGateways.speech().submit(new SpeechRequest(UUID.randomUUID().toString(), question, Urgency.NORMAL));
+        JsonObject result = new JsonObject();
+        result.addProperty("status", "asked");
+        return result;
     }
 }
