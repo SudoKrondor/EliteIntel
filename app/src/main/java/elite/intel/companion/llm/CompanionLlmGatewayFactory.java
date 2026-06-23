@@ -2,6 +2,8 @@ package elite.intel.companion.llm;
 
 import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.brain.LocalLlmProvider;
+import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.session.SystemSession;
 
@@ -20,17 +22,31 @@ public final class CompanionLlmGatewayFactory {
 
     /** Creates the gateway for the configured provider, or fails if it is not yet supported. */
     public static LlmGateway create() {
-        if (SystemSession.getInstance().useLocalCommandLlm()) {
-            throw new UnsupportedOperationException(
-                    "Companion mode currently supports only Mistral; local LLMs are not wired yet.");
+        SystemSession session = SystemSession.getInstance();
+        if (session.useLocalCommandLlm()) {
+            return localGateway(session);
         }
         ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
         if (provider != ProviderEnum.MISTRAL) {
             throw new UnsupportedOperationException(
-                    "Companion mode currently supports only Mistral; configured provider: " + provider);
+                    "Companion mode currently supports only Mistral (cloud); configured provider: " + provider);
         }
         return new CompanionLlmGateway(
                 new MistralLlmAdapter(),
                 body -> MistralClient.getInstance().sendJsonRequest(body));
+    }
+
+    /**
+     * Local provider: LM Studio (OpenAI-compatible) served at the configured address using the command
+     * model, with {@code tool_choice=required} and no Mistral cache key. Ollama is not wired (its native
+     * API is not OpenAI-compatible in the same way).
+     */
+    private static LlmGateway localGateway(SystemSession session) {
+        if (session.getLocalLlmProvider() != LocalLlmProvider.LMSTUDIO) {
+            throw new UnsupportedOperationException(
+                    "Companion local mode currently supports only LM Studio; configured: " + session.getLocalLlmProvider());
+        }
+        LmStudioLlmAdapter adapter = new LmStudioLlmAdapter(session.getLmStudioCommandModel().trim());
+        return new CompanionLlmGateway(adapter, body -> LMStudioClient.getInstance().sendJsonRequest(body));
     }
 }
