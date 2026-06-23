@@ -55,7 +55,30 @@ public final class MistralLlmAdapter implements LlmProviderAdapter {
             if (m.role() == LlmMessageRole.TOOL && m.toolCallId() != null) {
                 msg.addProperty("tool_call_id", m.toolCallId());
             }
+            // Replay the assistant tool-call turn so its tool results are a protocol-valid pair.
+            if (m.role() == LlmMessageRole.ASSISTANT && !m.toolCalls().isEmpty()) {
+                msg.add("tool_calls", renderToolCalls(m.toolCalls()));
+            }
             array.add(msg);
+        }
+        return array;
+    }
+
+    /** Renders an assistant turn's tool invocations; Mistral expects {@code arguments} as a JSON string. */
+    private JsonArray renderToolCalls(List<LlmToolInvocation> toolCalls) {
+        JsonArray array = new JsonArray();
+        for (LlmToolInvocation call : toolCalls) {
+            JsonObject function = new JsonObject();
+            function.addProperty("name", call.name());
+            function.addProperty("arguments", GsonFactory.getGson().toJson(call.arguments()));
+
+            JsonObject entry = new JsonObject();
+            if (call.id() != null) {
+                entry.addProperty("id", call.id());
+            }
+            entry.addProperty("type", "function");
+            entry.add("function", function);
+            array.add(entry);
         }
         return array;
     }

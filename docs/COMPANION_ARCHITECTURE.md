@@ -110,8 +110,9 @@
 
     * `origin`;
     * `urgency`;
-    * `topic = PENDING`;
     * `currentInput`.
+
+   Отдельного per-thought `topic` нет (см. §2.4/§2.5): тег памяти разрешается по источнику — глобальная тема для COMMANDER, тема из статической мапы события для EVENT.
 
 8. **`currentInput` не пишется сразу в память.**
    Это текущий вход мысли, а не прошлое. Он передаётся в `PromptComposer` отдельно и пишется в память только после разрешения темы или fallback.
@@ -467,7 +468,7 @@ localMessageFlow
 request handles
 ```
 
-> **Тема упразднена как поле мысли (см. §2.5).** Отдельного per-thought `topic`/`PENDING` нет: для COMMANDER тег памяти — глобальная тема, для EVENT — из статической мапы событий. Диаграммы lifecycle ниже (§2.5–§2.7, §5) ещё используют старую формулировку `topic = PENDING`/«topic resolved» — будут приведены в соответствие при реализации `Thought.run`.
+> **Тема упразднена как поле мысли (см. §2.5).** Отдельного per-thought `topic` нет: для COMMANDER тег памяти — глобальная тема, для EVENT — из статической мапы событий. Запись входа тегируется этой темой после первого валидного ответа (COMMANDER применяет `change_global_topic` как pre-execution шаг); до первого валидного ответа действует fallback `unresolved_*`.
 
 `currentInput`:
 
@@ -530,10 +531,11 @@ currentInput
 
 ```text
 1. Thought created
-2. topic = PENDING
-3. initial LLM turn resolves topic
-4. currentInput записывается в память
-5. tool-calls выполняются
+2. initial LLM turn returns a valid tool-call set
+3. topic resolved: COMMANDER applies change_global_topic (if called) to the global topic;
+   EVENT uses its static event-type topic
+4. currentInput записывается в память под разрешённой темой
+5. tool-calls выполняются по порядку
 6. tool results пишутся в память отдельно
 ```
 
@@ -559,14 +561,13 @@ currentInput
 
 Safe-flush:
 
-1. Если `currentInput` ещё не записан:
+1. Если `currentInput` ещё не записан (interrupt до первого валидного ответа):
 
-    * если topic resolved → писать с resolved topic;
-    * если topic = PENDING:
-
-        * `COMMANDER` → `unresolved_commander_input`;
-        * `EVENT` → `unresolved_game_event`;
+    * `COMMANDER` → тема `unresolved_commander_input`;
+    * `EVENT` → тема `unresolved_game_event`;
     * `processing_state = interrupted_before_topic_resolution`.
+
+   Если вход уже записан (тема разрешена на первом валидном ответе), перезаписывать его не нужно.
 
 2. Если есть уже полученные query/tool results, но они ещё не записаны:
 
@@ -744,7 +745,6 @@ currentInput
 origin
 urgency
 global TopicModel
-thought topic / PENDING
 Topic enum
 long_term_summary
 memory indexes
@@ -1557,11 +1557,11 @@ change_global_topic
 ```text
 UserInputEvent
 → ThoughtDispatcher
-→ COMMANDER thought(topic=PENDING)
+→ COMMANDER thought
 → PromptComposer initial messages
 → LlmGateway
 → tool-calls
-→ topic resolved
+→ global topic resolved (change_global_topic applied if called)
 → currentInput written to memory
 → execute tool-calls in order
 → tool results written to memory
@@ -1578,11 +1578,11 @@ UserInputEvent
 BaseEvent
 → EventFilter
 → ThoughtDispatcher
-→ EVENT thought(topic=PENDING)
+→ EVENT thought
 → PromptComposer initial messages
 → LlmGateway
 → tool-calls
-→ topic resolved
+→ memory topic from event-type map
 → currentInput written to memory
 → allowed query/system tools only
 → optional speak/nothing_to_do

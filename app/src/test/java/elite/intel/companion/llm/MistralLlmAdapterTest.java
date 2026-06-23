@@ -9,6 +9,7 @@ import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import org.junit.jupiter.api.Test;
 
@@ -56,6 +57,34 @@ class MistralLlmAdapterTest {
         JsonArray messages = json.getAsJsonArray("messages");
         assertEquals("system", messages.get(0).getAsJsonObject().get("role").getAsString());
         assertEquals("user", messages.get(1).getAsJsonObject().get("role").getAsString());
+    }
+
+    @Test
+    void rendersAssistantToolCallsAndToolResult() {
+        JsonObject args = new JsonObject();
+        args.addProperty("text", "hi");
+        LlmRequest req = new LlmRequest("req-2",
+                List.of(LlmMessage.assistantToolCalls(List.of(new LlmToolInvocation("call-1", "speak", args))),
+                        LlmMessage.toolResult("call-1", "{\"status\":\"spoken\"}")),
+                List.of(), PromptCacheProfile.COMMANDER);
+
+        JsonObject json = JsonParser.parseString(adapter.buildRequestBody(req)).getAsJsonObject();
+        JsonArray messages = json.getAsJsonArray("messages");
+
+        JsonObject assistant = messages.get(0).getAsJsonObject();
+        assertEquals("assistant", assistant.get("role").getAsString());
+        JsonObject call = assistant.getAsJsonArray("tool_calls").get(0).getAsJsonObject();
+        assertEquals("call-1", call.get("id").getAsString());
+        assertEquals("function", call.get("type").getAsString());
+        JsonObject function = call.getAsJsonObject("function");
+        assertEquals("speak", function.get("name").getAsString());
+        // Mistral expects arguments as a JSON string, not a nested object.
+        JsonObject parsedArgs = JsonParser.parseString(function.get("arguments").getAsString()).getAsJsonObject();
+        assertEquals("hi", parsedArgs.get("text").getAsString());
+
+        JsonObject tool = messages.get(1).getAsJsonObject();
+        assertEquals("tool", tool.get("role").getAsString());
+        assertEquals("call-1", tool.get("tool_call_id").getAsString());
     }
 
     @Test

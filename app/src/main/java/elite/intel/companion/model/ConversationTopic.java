@@ -7,16 +7,14 @@ import java.util.Locale;
  * descriptions) into the prompt so the LLM knows the valid values for {@code change_global_topic} and
  * {@code recall(topic=...)}.
  * <p>
- * {@link #selectable} marks LLM-facing topics. Non-selectable members are internal sentinels/fallbacks
- * ({@link #PENDING}, the {@code unresolved_*} fallbacks) and must not be offered to the LLM.
+ * {@link #selectable} marks LLM-facing topics. Non-selectable members are internal fallbacks
+ * ({@link #UNRESOLVED_COMMANDER_INPUT}, {@link #UNRESOLVED_GAME_EVENT}) and must not be offered to the LLM.
  * <p>
  * Names/coverage are provisional and expected to be tuned; keep the selectable set compact (~10-15).
  */
 public enum ConversationTopic {
 
-    // --- internal sentinels / fallbacks (never shown as choices to the LLM) ---
-    /** Initial per-thought state before topic resolution. */
-    PENDING("pending topic resolution", false),
+    // --- internal fallbacks (never shown as choices to the LLM) ---
     /** Fallback when a commander input could not be resolved to a topic. */
     UNRESOLVED_COMMANDER_INPUT("unresolved commander input", false),
     /** Fallback when a game event could not be resolved to a topic. */
