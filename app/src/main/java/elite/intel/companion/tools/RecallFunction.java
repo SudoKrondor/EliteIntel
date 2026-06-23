@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.memory.CompanionMemoryLimits;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -18,7 +19,6 @@ import java.util.Set;
  * System function: load stored memory. {@code scope=llm_memory} returns all remembered facts;
  * {@code scope=topic_memory} returns entries for one topic (topic required, query optional). Short-term
  * timeline and long-term summary are not recallable here (already in the prompt). COMMANDER-only.
- * Execution is wired in a later phase; this class only self-describes the tool.
  */
 @RegisterSystemFunction
 public final class RecallFunction implements SystemFunction {
@@ -61,14 +61,10 @@ public final class RecallFunction implements SystemFunction {
         return EnumSet.of(ThoughtSource.COMMANDER);
     }
 
-    /** Default cap for topic-memory recall until it is made a setting. */
-    private static final int TOPIC_RECALL_LIMIT = 10;
-
     /**
      * Reads memory via the {@link elite.intel.companion.memory.MemoryGateway}: {@code scope=llm_memory}
      * returns all remembered facts; {@code scope=topic_memory} returns entries for the given topic
-     * (optional plain-text {@code query} filter). The backing store lands in Phase 4; until then the
-     * gateway call surfaces its not-yet-implemented state.
+     * (optional plain-text {@code query} filter).
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
@@ -84,7 +80,8 @@ public final class RecallFunction implements SystemFunction {
                 return result;
             }
             for (MemoryEntry entry : CompanionRuntime.memory()
-                    .recallTopicMemory(topic, JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY), TOPIC_RECALL_LIMIT)) {
+                    .recallTopicMemory(topic, JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY),
+                            CompanionMemoryLimits.MID_TERM_RECALL_LIMIT)) {
                 items.add(entry.content());
             }
         } else {

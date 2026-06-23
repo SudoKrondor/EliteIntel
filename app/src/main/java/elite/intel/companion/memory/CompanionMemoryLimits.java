@@ -18,6 +18,8 @@ public final class CompanionMemoryLimits {
     // --- mid-term (topic archive) ---
     /** Max entries kept per topic; older ones overflow into the consolidation buffer. */
     public static final int MID_TERM_MAX_ENTRIES_PER_TOPIC = 30;
+    /** Max entries returned by a single topic-memory recall. */
+    public static final int MID_TERM_RECALL_LIMIT = 10;
 
     // --- llm_memory (cyclic scratch) ---
     /** Max items in the cyclic llm_memory. */

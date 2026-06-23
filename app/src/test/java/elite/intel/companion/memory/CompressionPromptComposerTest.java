@@ -1,11 +1,15 @@
 package elite.intel.companion.memory;
 
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -26,6 +30,12 @@ class CompressionPromptComposerTest {
         return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content, MemoryProcessingState.PROCESSED);
     }
 
+    /** Commander's language name, resolved exactly as production does, so the test holds in any environment. */
+    private static String resolvedLanguageName() {
+        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return PromptLocalizations.rulesFor(language).languageName();
+    }
+
     @Test
     void buildsSystemInstructionAndUserBlockWithEntries() {
         List<LlmMessage> messages = composer.compose("known so far",
@@ -38,6 +48,9 @@ class CompressionPromptComposerTest {
         assertEquals(LlmMessageRole.SYSTEM, system.role());
         assertTrue(system.content().contains(String.valueOf(CompanionMemoryLimits.SUMMARY_MAX_CHARS)),
                 "instruction must state the size cap");
+        // Instruction stays English but names the commander's language and binds the summary to it.
+        assertTrue(system.content().contains("write the summary in " + resolvedLanguageName()),
+                "instruction must bind the summary to the commander's language");
 
         LlmMessage user = messages.get(1);
         assertEquals(LlmMessageRole.USER, user.role());

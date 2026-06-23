@@ -13,7 +13,6 @@ import java.util.Set;
 
 /**
  * System function: store a short fact in llm_memory (max 50 characters; code truncates). COMMANDER-only.
- * Execution is wired in a later phase; this class only self-describes the tool.
  */
 @RegisterSystemFunction
 public final class RememberFunction implements SystemFunction {
@@ -49,8 +48,7 @@ public final class RememberFunction implements SystemFunction {
 
     /**
      * Stores the {@code content} in llm_memory via the {@link elite.intel.companion.memory.MemoryGateway}
-     * (length/dedup enforced there). The backing store lands in Phase 4; until then the gateway call
-     * surfaces its not-yet-implemented state.
+     * (length/dedup enforced there).
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
