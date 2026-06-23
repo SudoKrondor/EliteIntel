@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 /**
  * Provider-neutral {@link LlmGateway}: orchestrates render -> send -> parse via the injected
- * {@link CompanionLlmDialect} and {@link LlmTransport}, enforces the tool-call-only contract, and does a
+ * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does a
  * single repair/retry before reporting {@link LlmResult.Status#INVALID_RESPONSE}. A response is valid
  * only when it is one or more tool-calls whose names were actually offered this turn.
  * <p>
@@ -29,12 +29,12 @@ public final class CompanionLlmGateway implements LlmGateway {
 
     private static final LlmResult INVALID = new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
 
-    private final CompanionLlmDialect dialect;
+    private final LlmProviderAdapter adapter;
     private final LlmTransport transport;
     private final Executor executor;
 
-    public CompanionLlmGateway(CompanionLlmDialect dialect, LlmTransport transport) {
-        this(dialect, transport, Executors.newSingleThreadExecutor(runnable -> {
+    public CompanionLlmGateway(LlmProviderAdapter adapter, LlmTransport transport) {
+        this(adapter, transport, Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "companion-llm");
             thread.setDaemon(true);
             return thread;
@@ -42,8 +42,8 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /** Test seam: inject a synchronous/controlled executor. */
-    CompanionLlmGateway(CompanionLlmDialect dialect, LlmTransport transport, Executor executor) {
-        this.dialect = dialect;
+    CompanionLlmGateway(LlmProviderAdapter adapter, LlmTransport transport, Executor executor) {
+        this.adapter = adapter;
         this.transport = transport;
         this.executor = executor;
     }
@@ -51,6 +51,12 @@ public final class CompanionLlmGateway implements LlmGateway {
     @Override
     public CompletableFuture<LlmResult> submit(LlmRequest request) {
         return CompletableFuture.supplyAsync(() -> process(request), executor);
+    }
+
+    @Override
+    public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        // Plain-text turn (request carries no tools): render -> send -> extract text; null on bad output.
+        return CompletableFuture.supplyAsync(() -> adapter.parseText(transport.send(adapter.buildRequestBody(request))), executor);
     }
 
     private LlmResult process(LlmRequest request) {
@@ -64,9 +70,9 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     private LlmResult attempt(LlmRequest request) {
-        String body = dialect.buildRequestBody(request);
+        String body = adapter.buildRequestBody(request);
         JsonObject response = transport.send(body);
-        return dialect.parse(response);
+        return adapter.parse(response);
     }
 
     /** Valid = OK status, at least one tool-call, and every called tool was offered this turn. */

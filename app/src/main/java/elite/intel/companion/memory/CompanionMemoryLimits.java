@@ -25,6 +25,12 @@ public final class CompanionMemoryLimits {
     /** Max characters per llm_memory item (longer content is truncated). */
     public static final int LLM_MEMORY_MAX_CONTENT_LENGTH = 50;
 
+    // --- long-term consolidation ---
+    /** Buffered mid-term entries that trigger a compression pass. */
+    public static final int CONSOLIDATION_BUFFER_THRESHOLD = 20;
+    /** Max characters for the long-term summary; a longer compression output is treated as a failure. */
+    public static final int SUMMARY_MAX_CHARS = 1500;
+
     private CompanionMemoryLimits() {
     }
 }

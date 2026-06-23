@@ -18,12 +18,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mistral implementation of {@link CompanionLlmDialect} (OpenAI-compatible chat-completions with native
- * tool-calling). Forces a function call ({@code tool_choice: "any"}) to honor the tool-calling-only
- * contract, sets {@code prompt_cache_key} from the profile, and omits {@code response_format} (that is
- * the legacy JSON-mode path, not tool-calling).
+ * Mistral implementation of {@link LlmProviderAdapter} (OpenAI-compatible chat-completions). For a
+ * consciousness turn it forces a function call ({@code tool_choice: "any"}) to honor the tool-calling-only
+ * contract; for a compression turn the request carries no tools, so the body is a plain chat request and
+ * the response is parsed as text. Sets {@code prompt_cache_key} from the profile and omits
+ * {@code response_format} (that is the legacy JSON-mode path, not tool-calling).
  */
-public final class MistralToolCallDialect implements CompanionLlmDialect {
+public final class MistralLlmAdapter implements LlmProviderAdapter {
 
     /** Low temperature for stable tool selection. */
     private static final double TEMPERATURE = 0.3;
@@ -124,7 +125,29 @@ public final class MistralToolCallDialect implements CompanionLlmDialect {
         }
     }
 
+    @Override
+    public String parseText(JsonObject response) {
+        try {
+            JsonObject message = messageOf(response);
+            if (message == null || !message.has("content") || message.get("content").isJsonNull()) {
+                return null;
+            }
+            String content = message.get("content").getAsString();
+            return content == null || content.isBlank() ? null : content.strip();
+        } catch (RuntimeException malformed) {
+            return null;
+        }
+    }
+
     private JsonArray toolCallsOf(JsonObject response) {
+        JsonObject message = messageOf(response);
+        if (message == null || !message.has("tool_calls")) {
+            return null;
+        }
+        return message.getAsJsonArray("tool_calls");
+    }
+
+    private JsonObject messageOf(JsonObject response) {
         if (response == null || !response.has("choices")) {
             return null;
         }
@@ -132,11 +155,7 @@ public final class MistralToolCallDialect implements CompanionLlmDialect {
         if (choices == null || choices.isEmpty()) {
             return null;
         }
-        JsonObject message = choices.get(0).getAsJsonObject().getAsJsonObject("message");
-        if (message == null || !message.has("tool_calls")) {
-            return null;
-        }
-        return message.getAsJsonArray("tool_calls");
+        return choices.get(0).getAsJsonObject().getAsJsonObject("message");
     }
 
     /** Mistral sends arguments as a JSON string; tolerate an already-parsed object too. */

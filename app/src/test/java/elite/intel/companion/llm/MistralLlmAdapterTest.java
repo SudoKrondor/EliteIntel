@@ -16,12 +16,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Render and parse coverage for the Mistral (OpenAI-compatible) tool-calling dialect. */
-class MistralToolCallDialectTest {
+/** Render and parse coverage for the Mistral (OpenAI-compatible) adapter: tool-calling and text. */
+class MistralLlmAdapterTest {
 
-    private final MistralToolCallDialect dialect = new MistralToolCallDialect();
+    private final MistralLlmAdapter adapter = new MistralLlmAdapter();
 
     private static LlmToolDefinition speakTool() {
         return new LlmToolDefinition("speak", "Speak to the commander", "",
@@ -37,7 +38,7 @@ class MistralToolCallDialectTest {
 
     @Test
     void buildsToolCallingBodyWithSchemaChoiceAndCacheKey() {
-        String body = dialect.buildRequestBody(request(List.of(speakTool())));
+        String body = adapter.buildRequestBody(request(List.of(speakTool())));
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();
 
         assertEquals("any", json.get("tool_choice").getAsString());
@@ -59,7 +60,7 @@ class MistralToolCallDialectTest {
 
     @Test
     void omitsToolsAndChoiceWhenNoToolsOffered() {
-        String body = dialect.buildRequestBody(request(List.of()));
+        String body = adapter.buildRequestBody(request(List.of()));
         JsonObject json = JsonParser.parseString(body).getAsJsonObject();
 
         assertFalse(json.has("tools"));
@@ -69,7 +70,7 @@ class MistralToolCallDialectTest {
 
     @Test
     void parsesToolCallsIntoInvocations() {
-        LlmResult result = dialect.parse(responseWithToolCall("speak", "{\"text\":\"hi\"}"));
+        LlmResult result = adapter.parse(responseWithToolCall("speak", "{\"text\":\"hi\"}"));
 
         assertTrue(result.isValid());
         assertEquals(1, result.toolInvocations().size());
@@ -79,21 +80,29 @@ class MistralToolCallDialectTest {
 
     @Test
     void rejectsResponseWithoutToolCalls() {
-        JsonObject message = new JsonObject();
-        message.addProperty("content", "just text, no tool call");
-        JsonObject choice = new JsonObject();
-        choice.add("message", message);
-        JsonArray choices = new JsonArray();
-        choices.add(choice);
-        JsonObject response = new JsonObject();
-        response.add("choices", choices);
-
-        assertEquals(LlmResult.Status.INVALID_RESPONSE, dialect.parse(response).status());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(responseWithText("just text, no tool call")).status());
     }
 
     @Test
     void rejectsResponseWithoutChoices() {
-        assertEquals(LlmResult.Status.INVALID_RESPONSE, dialect.parse(new JsonObject()).status());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(new JsonObject()).status());
+    }
+
+    @Test
+    void parsesTextContentForCompression() {
+        assertEquals("a compact summary", adapter.parseText(responseWithText("  a compact summary  ")));
+    }
+
+    @Test
+    void parseTextReturnsNullForBlankOrMissingContent() {
+        assertNull(adapter.parseText(responseWithText("   ")));
+        assertNull(adapter.parseText(new JsonObject()));
+    }
+
+    private static JsonObject responseWithText(String content) {
+        JsonObject message = new JsonObject();
+        message.addProperty("content", content);
+        return wrapMessage(message);
     }
 
     private static JsonObject responseWithToolCall(String name, String argumentsJson) {
@@ -107,6 +116,10 @@ class MistralToolCallDialectTest {
         calls.add(call);
         JsonObject message = new JsonObject();
         message.add("tool_calls", calls);
+        return wrapMessage(message);
+    }
+
+    private static JsonObject wrapMessage(JsonObject message) {
         JsonObject choice = new JsonObject();
         choice.add("message", message);
         JsonArray choices = new JsonArray();

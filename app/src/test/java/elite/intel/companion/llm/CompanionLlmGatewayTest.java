@@ -25,11 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class CompanionLlmGatewayTest {
 
-    /** Dialect stub: renders nothing, returns scripted parse results in order. */
-    private static final class ScriptedDialect implements CompanionLlmDialect {
+    /** Adapter stub: renders nothing, returns scripted parse results in order. */
+    private static final class ScriptedAdapter implements LlmProviderAdapter {
         private final Deque<LlmResult> results = new ArrayDeque<>();
 
-        ScriptedDialect(LlmResult... scripted) {
+        ScriptedAdapter(LlmResult... scripted) {
             for (LlmResult r : scripted) {
                 results.add(r);
             }
@@ -43,6 +43,11 @@ class CompanionLlmGatewayTest {
         @Override
         public LlmResult parse(JsonObject response) {
             return results.poll();
+        }
+
+        @Override
+        public String parseText(JsonObject response) {
+            return null;
         }
     }
 
@@ -67,13 +72,13 @@ class CompanionLlmGatewayTest {
         return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
     }
 
-    private LlmResult run(CompanionLlmDialect dialect) throws Exception {
-        return new CompanionLlmGateway(dialect, countingTransport, Runnable::run).submit(request()).get();
+    private LlmResult run(LlmProviderAdapter adapter) throws Exception {
+        return new CompanionLlmGateway(adapter, countingTransport, Runnable::run).submit(request()).get();
     }
 
     @Test
     void validToolCallSucceedsOnFirstTry() throws Exception {
-        LlmResult result = run(new ScriptedDialect(ok("speak")));
+        LlmResult result = run(new ScriptedAdapter(ok("speak")));
         assertTrue(result.isValid());
         assertEquals("speak", result.toolInvocations().get(0).name());
         assertEquals(1, sends.get());
@@ -81,14 +86,14 @@ class CompanionLlmGatewayTest {
 
     @Test
     void invalidFirstThenValidSucceedsAfterOneRetry() throws Exception {
-        LlmResult result = run(new ScriptedDialect(invalid(), ok("speak")));
+        LlmResult result = run(new ScriptedAdapter(invalid(), ok("speak")));
         assertTrue(result.isValid());
         assertEquals(2, sends.get());
     }
 
     @Test
     void twoInvalidResponsesYieldInvalidResult() throws Exception {
-        LlmResult result = run(new ScriptedDialect(invalid(), invalid()));
+        LlmResult result = run(new ScriptedAdapter(invalid(), invalid()));
         assertFalse(result.isValid());
         assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
         assertEquals(2, sends.get());
@@ -97,7 +102,7 @@ class CompanionLlmGatewayTest {
     @Test
     void callToUnofferedToolIsRejectedThenRetried() throws Exception {
         // "jump" was never offered this turn, so even an OK-status parse is not usable.
-        LlmResult result = run(new ScriptedDialect(ok("jump"), ok("jump")));
+        LlmResult result = run(new ScriptedAdapter(ok("jump"), ok("jump")));
         assertFalse(result.isValid());
         assertEquals(2, sends.get());
     }

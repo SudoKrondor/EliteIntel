@@ -21,4 +21,12 @@ public interface LlmGateway {
      *         unrecoverable bad responses); cancel it to skip (if queued) or discard (if in-flight)
      */
     CompletableFuture<LlmResult> submit(LlmRequest request);
+
+    /**
+     * Runs a plain-text compression turn (no tools) for mid-term to long-term memory consolidation.
+     *
+     * @return a future completing with the model's summary text, or {@code null} when the response is
+     *         empty/malformed; no tool-calling contract applies to this turn
+     */
+    CompletableFuture<String> compressMidTermMemory(LlmRequest request);
 }

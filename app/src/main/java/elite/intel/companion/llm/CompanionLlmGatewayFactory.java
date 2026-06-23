@@ -8,7 +8,7 @@ import elite.intel.session.SystemSession;
 /**
  * Builds the {@link LlmGateway} for the active provider. The provider seam is in place, but only
  * Mistral is wired so far; any other provider (including local LM Studio / Ollama) fails fast with a
- * clear message until its {@link CompanionLlmDialect} is added.
+ * clear message until its {@link LlmProviderAdapter} is added.
  * <p>
  * Companion mode replaces the legacy command mode, so it uses the command-side local toggle to decide
  * local vs cloud, and {@link LlmProviderResolver} to detect the cloud provider (shared with ApiFactory).
@@ -30,7 +30,7 @@ public final class CompanionLlmGatewayFactory {
                     "Companion mode currently supports only Mistral; configured provider: " + provider);
         }
         return new CompanionLlmGateway(
-                new MistralToolCallDialect(),
+                new MistralLlmAdapter(),
                 body -> MistralClient.getInstance().sendJsonRequest(body));
     }
 }
