@@ -1,6 +1,7 @@
 package elite.intel.companion.input;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
@@ -25,7 +26,6 @@ import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
-import elite.intel.session.SystemSession;
 import elite.intel.ui.controller.ManagedService;
 
 /**
@@ -45,13 +45,19 @@ public final class CompanionSubsystemGate implements ManagedService {
     private ConfirmationCoordinator confirmationCoordinator;
     private BargeInController bargeInController;
 
-    /** Commander voice input gate. */
+    /** Commander voice input gate. A spoken confirmation code word confirms a frozen dangerous action. */
     @Subscribe
     public void onUserInput(UserInputEvent event) {
         if (!isCompanionModeOn()) {
             return;
         }
-        dispatcher.submitCommanderInput(event.getUserInput());
+        String input = event.getUserInput();
+        // The code word confirms a pending dangerous action; it is not a new thought (§2.13).
+        if (CompanionConfig.isConfirmationCodeWord(input)) {
+            confirmationCoordinator.confirm();
+            return;
+        }
+        dispatcher.submitCommanderInput(input);
     }
 
     /** Game event gate (journal/status events arrive here as {@code BaseEvent}). */
@@ -124,6 +130,6 @@ public final class CompanionSubsystemGate implements ManagedService {
 
     /** Reads the {@code companionModeOn} gate flag. */
     private boolean isCompanionModeOn() {
-        return SystemSession.getInstance().companionModeOn();
+        return CompanionConfig.companionModeOn();
     }
 }

@@ -11,6 +11,7 @@ import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.CompanionSubsystemGate;
 import elite.intel.devices.DeviceService;
 import elite.intel.eventbus.GameEventBus;
@@ -292,7 +293,7 @@ public class AppController implements Runnable {
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
-        if (systemSession.companionModeOn()) {
+        if (CompanionConfig.companionModeOn()) {
             services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
         } else {
             services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));

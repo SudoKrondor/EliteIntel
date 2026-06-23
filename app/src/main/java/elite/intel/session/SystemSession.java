@@ -280,14 +280,6 @@ public class SystemSession {
     }
 
 
-    /**
-     * Whether companion mode (the "junior crew member" subsystem) replaces the legacy command mode.
-     * Hardcoded on during bring-up; TODO: back by a DB column like {@code useLocalCommandLlm} once tested.
-     */
-    public boolean companionModeOn() {
-        return true;
-    }
-
     public boolean useLocalCommandLlm() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isUseLocalCommandLlm());
     }
