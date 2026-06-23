@@ -11,6 +11,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
@@ -232,7 +233,31 @@ class ThoughtTest {
         assertEquals(MemoryProcessingState.INTERRUPTED, flushed.processingState());
     }
 
+    @Test
+    void quietEventThoughtIsNotOfferedSpeak() {
+        state.setVerbosity(Verbosity.QUIET);
+        llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+
+        assertFalse(offeredTool(SpeakFunction.ID), "QUIET non-urgent event must not be offered speak");
+    }
+
+    @Test
+    void chattyEventThoughtIsOfferedSpeak() {
+        state.setVerbosity(Verbosity.CHATTY);
+        llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+
+        assertTrue(offeredTool(SpeakFunction.ID), "CHATTY event may comment");
+    }
+
     // --- helpers ---
+
+    private boolean offeredTool(String name) {
+        return llm.requests.get(0).tools().stream().anyMatch(tool -> name.equals(tool.name()));
+    }
 
     private boolean hasState(MemoryProcessingState state) {
         return memory.writes.stream().anyMatch(e -> e.processingState() == state);

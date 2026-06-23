@@ -20,6 +20,7 @@ import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
+import elite.intel.companion.prompt.EventSpeechPolicy;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
@@ -176,13 +177,24 @@ public final class Thought {
     private ComposedPrompt composeInitialPrompt() {
         Set<IntelActionCategory> categories = ctx.intelActionAccessPolicy().allowedCategories(source);
         List<LlmToolDefinition> selectedTools = ctx.reducer().selectTools(categories, currentInput);
-        List<LlmToolDefinition> systemTools = ctx.systemFunctionProvider().systemFunctions(source);
         return ctx.promptComposer().compose(
                 source, urgency, ctx.state().globalTopic(), currentInput,
-                selectedTools, systemTools,
+                selectedTools, systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
                 ctx.memoryGateway().indexes(),
                 ctx.memoryGateway().longTermSummary());
+    }
+
+    /**
+     * System tools for this thought; an EVENT thought is denied {@code speak} when commentary is not
+     * allowed by its urgency and the current verbosity (§2.11/§4.2), leaving it only {@code nothing_to_do}.
+     */
+    private List<LlmToolDefinition> systemTools() {
+        List<LlmToolDefinition> tools = ctx.systemFunctionProvider().systemFunctions(source);
+        if (source == ThoughtSource.EVENT && !EventSpeechPolicy.mayComment(urgency, ctx.state().verbosity())) {
+            return tools.stream().filter(tool -> !SpeakFunction.ID.equals(tool.name())).toList();
+        }
+        return tools;
     }
 
     /**
