@@ -178,6 +178,26 @@ class ThoughtDispatcherTest {
         assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "watchdog force-interrupts a stuck thought");
     }
 
+    @Test
+    void aFailingThoughtDoesNotKillTheLane() {
+        // A reducer that always throws makes every thought fail during prompt assembly.
+        ThoughtContext ctx = new ThoughtContext(
+                new NothingToDoLlm(), new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> { throw new RuntimeException("boom"); }, new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("first");
+        dispatcher.submitCommanderInput("second");
+        dispatcher.stop();
+
+        // The lane survived the first failure to process the second, and neither left a memory hole.
+        assertEquals(2, memory.writes.size());
+        assertTrue(memory.writes.stream().allMatch(e -> e.processingState() == MemoryProcessingState.UNRESOLVED));
+    }
+
     // --- helpers ---
 
     private boolean hasState(MemoryProcessingState state) {

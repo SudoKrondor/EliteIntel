@@ -16,8 +16,8 @@ import java.util.UUID;
 /**
  * System function: ask the commander a short clarifying question and wait for the reply before acting.
  * Distinct from speak: it expects an answer that continues the exchange, rather than just uttering a
- * phrase. COMMANDER-only (an EVENT thought never converses). The awaiting-reply state is wired with the
- * thought/dispatcher in a later phase; this class only self-describes the tool.
+ * phrase. COMMANDER-only (an EVENT thought never converses). Today the handle only utters the question;
+ * suspending the thought until the commander answers is a later-phase feature.
  */
 @RegisterSystemFunction
 public final class ClarifyFunction implements SystemFunction {

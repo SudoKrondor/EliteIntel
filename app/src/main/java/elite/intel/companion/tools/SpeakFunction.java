@@ -16,8 +16,7 @@ import java.util.UUID;
 /**
  * System function: speak a phrase to the commander via the SpeechGateway. Available to both sources.
  * The {@code confirmation_request} marker flags a dangerous-action confirmation prompt (§2.13); only
- * such a speak runs immediately while a dangerous tool-call set is frozen. Execution is wired in a
- * later phase; this class only self-describes the tool.
+ * such a speak runs immediately while a dangerous tool-call set is frozen.
  */
 @RegisterSystemFunction
 public final class SpeakFunction implements SystemFunction {

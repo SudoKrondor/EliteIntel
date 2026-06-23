@@ -53,11 +53,12 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Phase 2 consciousness loop: the happy path (single round, multi-round tool round-trip), the
- * change_global_topic pre-execution step before the input is recorded, the EVENT memory tag and
- * query-only access, and the INVALID/provider-failure handling per source (§2.5/§2.6/§2.8/§2.9/§5.1).
- * Real {@link PromptComposer}/{@link IntelActionAccessPolicy}/{@link SystemFunctionProvider}; the
- * gateways are hand-written fakes.
+ * The consciousness loop: the happy path (single round, multi-round tool round-trip), the
+ * change_global_topic pre-execution step before the input is recorded, the EVENT memory tag with
+ * query-only access and verbosity-gated speak, dangerous-action confirmation, interrupt/safe-flush, and
+ * the INVALID/provider-failure handling per source (§2.5/§2.6/§2.8/§2.9/§2.13/§5.1). Real
+ * {@link PromptComposer}/{@link IntelActionAccessPolicy}/{@link SystemFunctionProvider}; the gateways are
+ * hand-written fakes.
  */
 class ThoughtTest {
 

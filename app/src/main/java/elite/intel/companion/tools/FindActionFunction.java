@@ -15,7 +15,6 @@ import java.util.Set;
 
 /**
  * System function: search the action catalog for a ship/game action matching a description. COMMANDER-only.
- * Execution is wired in a later phase; this class only self-describes the tool.
  */
 @RegisterSystemFunction
 public final class FindActionFunction implements SystemFunction {

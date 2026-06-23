@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * System function: change the companion's verbosity mode (how freely EVENT thoughts comment).
- * COMMANDER-only. Execution is wired in a later phase; this class only self-describes the tool.
+ * COMMANDER-only; its {@code handle} sets the verbosity slot on the shared {@code CompanionState}.
  */
 @RegisterSystemFunction
 public final class ChangeVerbosityFunction implements SystemFunction {

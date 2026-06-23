@@ -57,7 +57,7 @@ import java.util.concurrent.TimeoutException;
  */
 public final class Thought {
 
-    /** Defensive cap on tool rounds until the dispatcher watchdog (Phase 3) owns runaway-loop termination. */
+    /** Defensive per-turn round cap, complementing the dispatcher watchdog's wall-clock timeout. */
     private static final int MAX_TOOL_ROUNDS = 8;
 
     /** How long a frozen dangerous set waits for the commander's confirmation before discard (§7.2 setting). */
@@ -109,48 +109,54 @@ public final class Thought {
      * returns an unrecoverable response (§2.5/§2.6/§2.8/§5.1). Blocking: it joins on each gateway future.
      */
     public void run() {
-        ComposedPrompt prompt = composeInitialPrompt();
-        List<LlmMessage> flow = new ArrayList<>(prompt.messages());
-        List<LlmToolDefinition> tools = prompt.tools(); // immutable snapshot, reused every round
-        PromptCacheProfile profile = prompt.profile();
-
         boolean inputRecorded = false;
-        for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
-            if (interrupted) {
-                safeFlush(inputRecorded);
-                return;
-            }
-            LlmResult result = submitRound(flow, tools, profile);
-            if (interrupted) {
-                safeFlush(inputRecorded); // interrupt takes precedence over an invalid/cancelled result
-                return;
-            }
-            if (result == null || !result.isValid()) {
-                onInvalidResponse(inputRecorded);
-                return;
-            }
+        try {
+            ComposedPrompt prompt = composeInitialPrompt();
+            List<LlmMessage> flow = new ArrayList<>(prompt.messages());
+            List<LlmToolDefinition> tools = prompt.tools(); // immutable snapshot, reused every round
+            PromptCacheProfile profile = prompt.profile();
 
-            List<LlmToolInvocation> invocations = result.toolInvocations();
+            for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
+                if (interrupted) {
+                    safeFlush(inputRecorded);
+                    return;
+                }
+                LlmResult result = submitRound(flow, tools, profile);
+                if (interrupted) {
+                    safeFlush(inputRecorded); // interrupt takes precedence over an invalid/cancelled result
+                    return;
+                }
+                if (result == null || !result.isValid()) {
+                    onInvalidResponse(inputRecorded);
+                    return;
+                }
 
-            // First valid response: resolve the topic and record the input before any tool runs (§2.6).
-            Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
-            if (!inputRecorded) {
-                preExecuted = applyTopicChange(invocations);
-                recordCurrentInput();
-                inputRecorded = true;
-            }
+                List<LlmToolInvocation> invocations = result.toolInvocations();
 
-            // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
-            if (hasDangerousAction(invocations)) {
-                handleDangerousConfirmation(invocations, preExecuted);
-                return; // a dangerous turn is terminal
-            }
+                // First valid response: resolve the topic and record the input before any tool runs (§2.6).
+                Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
+                if (!inputRecorded) {
+                    preExecuted = applyTopicChange(invocations);
+                    recordCurrentInput();
+                    inputRecorded = true;
+                }
 
-            if (runToolCalls(flow, invocations, preExecuted)) {
-                return; // nothing_to_do terminated the turn
+                // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
+                if (hasDangerousAction(invocations)) {
+                    handleDangerousConfirmation(invocations, preExecuted);
+                    return; // a dangerous turn is terminal
+                }
+
+                if (runToolCalls(flow, invocations, preExecuted)) {
+                    return; // nothing_to_do terminated the turn
+                }
             }
+            // Round cap reached without nothing_to_do: end defensively (the watchdog is the wall-clock backstop).
+        } catch (RuntimeException unexpected) {
+            // An unexpected failure (e.g. during prompt assembly) must leave no memory hole; the lane logs and survives.
+            onInvalidResponse(inputRecorded);
+            throw unexpected;
         }
-        // Round cap reached without nothing_to_do: end defensively (real watchdog is the dispatcher's).
     }
 
     /**

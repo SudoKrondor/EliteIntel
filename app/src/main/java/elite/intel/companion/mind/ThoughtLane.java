@@ -1,5 +1,8 @@
 package elite.intel.companion.mind;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -13,6 +16,8 @@ import java.util.concurrent.LinkedBlockingDeque;
  * forced to interrupt (cooperative safe-flush).
  */
 final class ThoughtLane {
+
+    private static final Logger log = LogManager.getLogger(ThoughtLane.class);
 
     /** Sentinel that ends the worker loop; offered at the tail so queued thoughts drain before it. */
     private static final Runnable POISON = () -> {};
@@ -78,13 +83,23 @@ final class ThoughtLane {
     }
 
     private void drain() {
-        try {
+        while (true) {
             Runnable task;
-            while ((task = queue.take()) != POISON) {
-                task.run();
+            try {
+                task = queue.take();
+            } catch (InterruptedException stopping) {
+                Thread.currentThread().interrupt();
+                return;
             }
-        } catch (InterruptedException stopping) {
-            Thread.currentThread().interrupt();
+            if (task == POISON) {
+                return;
+            }
+            try {
+                task.run();
+            } catch (Throwable failure) {
+                // A failing thought must never kill the lane - that would silently stop all future thoughts.
+                log.error("Companion thought failed on lane {}", worker.getName(), failure);
+            }
         }
     }
 

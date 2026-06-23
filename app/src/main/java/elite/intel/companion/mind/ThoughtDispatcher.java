@@ -4,6 +4,8 @@ import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.model.Urgency;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,6 +25,8 @@ import java.util.concurrent.TimeUnit;
  * the live thoughts via {@link #interruptLiveThoughts()}.
  */
 public final class ThoughtDispatcher implements ManagedService {
+
+    private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
     /** Grace period for a lane to drain on stop before its live thought is force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
@@ -146,8 +150,13 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /** Watchdog tick: force-interrupt a thought that has been running past the timeout (§2.3). */
     private void checkWatchdog() {
-        interruptIfStuck(commanderLane);
-        interruptIfStuck(eventLane);
+        try {
+            interruptIfStuck(commanderLane);
+            interruptIfStuck(eventLane);
+        } catch (RuntimeException unexpected) {
+            // Never let a tick failure cancel the periodic schedule (scheduleAtFixedRate stops on throw).
+            log.error("Companion watchdog tick failed", unexpected);
+        }
     }
 
     private void interruptIfStuck(ThoughtLane lane) {
