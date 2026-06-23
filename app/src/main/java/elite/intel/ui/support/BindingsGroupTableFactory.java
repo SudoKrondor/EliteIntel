@@ -1,16 +1,13 @@
 package elite.intel.ui.support;
 
+import elite.intel.ai.hands.BindingSlotType;
 import elite.intel.ui.render.BindingSlotCellRenderer;
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudTable;
-
-import elite.intel.ai.hands.BindingSlotType;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -18,9 +15,10 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.AppTheme.HUD_SCROLL_STYLE_LOCKED;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
@@ -29,13 +27,24 @@ public class BindingsGroupTableFactory {
 
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
+    private final Consumer<String> autoFixHandler;
 
     public BindingsGroupTableFactory(
             BindingsSelectionController selectionController,
-            BiConsumer<String, BindingSlotType> slotClickHandler
+            BiConsumer<String, BindingSlotType> slotClickHandler,
+            Consumer<String> autoFixHandler
     ) {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
+        this.autoFixHandler = autoFixHandler;
+    }
+
+    /**
+     * Tables with a fourth column expose a per-row "auto fix" action in that
+     * column; three-column tables (the Used view) have none.
+     */
+    private int autoFixColumn(JTable table) {
+        return autoFixHandler != null && table.getColumnCount() == 4 ? 3 : -1;
     }
 
     public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, String... columnNames) {
@@ -84,13 +93,24 @@ public class BindingsGroupTableFactory {
                     return;
                 }
 
-                CellTarget target = clickableCellAt(table, event.getPoint());
-                if (target == null) {
+                int row = table.rowAtPoint(event.getPoint());
+                if (row < 0) {
+                    return;
+                }
+                int column = table.columnAtPoint(event.getPoint());
+
+                if (column == autoFixColumn(table)) {
+                    String bindingId = selectionController.selectRow(table, row);
+                    autoFixHandler.accept(bindingId);
                     return;
                 }
 
-                String bindingId = selectionController.selectRow(table, target.row());
-                slotClickHandler.accept(bindingId, target.slotType());
+                BindingSlotType slotType = slotTypeForColumn(column);
+                if (slotType == null) {
+                    return;
+                }
+                String bindingId = selectionController.selectRow(table, row);
+                slotClickHandler.accept(bindingId, slotType);
             }
         });
     }
@@ -100,8 +120,7 @@ public class BindingsGroupTableFactory {
         table.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent event) {
-                CellTarget target = clickableCellAt(table, event.getPoint());
-                boolean clickable = target != null;
+                boolean clickable = isClickableCell(table, event.getPoint());
                 table.setCursor(clickable ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
                 setHoveredRow(table, hoveredRowAt(table, event.getPoint()));
             }
@@ -135,11 +154,13 @@ public class BindingsGroupTableFactory {
         return -1;
     }
 
-    private CellTarget clickableCellAt(JTable table, Point point) {
+    private boolean isClickableCell(JTable table, Point point) {
         int row = table.rowAtPoint(point);
+        if (row < 0) {
+            return false;
+        }
         int column = table.columnAtPoint(point);
-        BindingSlotType slotType = slotTypeForColumn(column);
-        return row >= 0 && slotType != null ? new CellTarget(row, slotType) : null;
+        return slotTypeForColumn(column) != null || column == autoFixColumn(table);
     }
 
     private BindingSlotType slotTypeForColumn(int column) {
@@ -148,9 +169,6 @@ public class BindingsGroupTableFactory {
             case 2 -> BindingSlotType.SECONDARY;
             default -> null;
         };
-    }
-
-    private record CellTarget(int row, BindingSlotType slotType) {
     }
 
     private void setHoveredRow(JTable table, int row) {

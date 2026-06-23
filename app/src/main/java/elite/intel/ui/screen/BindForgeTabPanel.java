@@ -17,11 +17,13 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -44,6 +46,7 @@ public class BindForgeTabPanel extends JPanel {
     private final BindingsGroupTableFactory tableFactory;
     private final BindingsWorkingCopyRepository workingCopyRepo = new BindingsWorkingCopyRepository();
     private final BindingsApplyService applyService = new BindingsApplyService();
+    private final MissingBindingAutoAssigner autoAssigner = new MissingBindingAutoAssigner();
 
     private JTextField profileField;
     private JTextField filePathField;
@@ -58,6 +61,7 @@ public class BindForgeTabPanel extends JPanel {
     private StatusBadge syncStatusBadge;
     private JButton applyButton;
     private JButton revertButton;
+    private JButton fixAllButton;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
     /** Working copy file currently loaded in the editor - used for stale checks. */
@@ -69,10 +73,12 @@ public class BindForgeTabPanel extends JPanel {
     /** The preset file name (e.g. {@code Custom.3.0.binds}) - key for the working copy. */
     private String activePresetFileName;
     private boolean assignDialogOpen;
+    private boolean autoFixInProgress;
 
     public BindForgeTabPanel() {
         selectionController = new BindingsSelectionController();
-        tableFactory = new BindingsGroupTableFactory(selectionController, this::openAssignKeyboardBindingDialog);
+        tableFactory = new BindingsGroupTableFactory(
+                selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding);
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
         UiBus.register(this);
@@ -231,8 +237,12 @@ public class BindForgeTabPanel extends JPanel {
         applyButton.setToolTipText(getText("bindings.button.apply.tooltip"));
         applyButton.addActionListener(e -> performApply());
 
-        // Non-modal footer: sync status on the left, REVERT + APPLY (primary) on the right, no BACK.
-        return HudFooter.build(false, null, syncStatusBadge, List.of(revertButton, applyButton));
+        fixAllButton = makeButtonSubtle(getText("bindings.button.fixAll.short"));
+        fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
+        fixAllButton.addActionListener(e -> fixAllMissing());
+
+        // Non-modal footer: sync status on the left, FIX MISSING + REVERT + APPLY (primary) on the right, no BACK.
+        return HudFooter.build(false, null, syncStatusBadge, List.of(fixAllButton, revertButton, applyButton));
     }
 
     public void initData() {
@@ -259,28 +269,34 @@ public class BindForgeTabPanel extends JPanel {
             profileField.setText(activeProfileName(resolvedGameFile));
             filePathField.setText(resolvedGameFile.getAbsolutePath());
 
-            List<String> usedBindings = monitor.findFoundGameBindings(parsedBindings).stream()
-                    .sorted(String::compareToIgnoreCase)
-                    .toList();
+            // Tables show every keyboard-capable control (custom commands can target any of them),
+            // split by whether it currently has a usable keyboard binding.
+            BindingPartition partition = partitionByKeyboardBinding(slots);
+            List<String> usedBindings = partition.used();
+            List<String> missingBindings = partition.missing();
+
             renderGroupedTables(
                     usedBindingsPanel,
-                    groupedBindings(usedBindings, slots),
+                    groupedBindings(usedBindings, slots, false),
                     getText("bindings.column.action"),
                     getText("bindings.column.primary"),
                     getText("bindings.column.secondary"));
             tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
 
-            List<String> missingBindings = monitor.findMissingGameBindings(parsedBindings).stream()
-                    .sorted(String::compareToIgnoreCase)
-                    .toList();
             renderGroupedTables(
                     missingBindingsPanel,
-                    groupedBindings(missingBindings, slots),
+                    groupedBindings(missingBindings, slots, true),
                     getText("bindings.column.action"),
                     getText("bindings.column.primary"),
-                    getText("bindings.column.secondary"));
+                    getText("bindings.column.secondary"),
+                    getText("bindings.column.autofix"));
             tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
-            UiBus.publish(new BindingsSummaryChangedEvent(missingBindings.size(), usedBindings.size()));
+            fixAllButton.setEnabled(!missingBindings.isEmpty());
+
+            // The AiTab badge reflects only the controls EliteIntel itself drives.
+            UiBus.publish(new BindingsSummaryChangedEvent(
+                    monitor.findMissingGameBindings(parsedBindings).size(),
+                    monitor.findFoundGameBindings(parsedBindings).size()));
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
             clearLoadedBindingsSnapshot();
@@ -290,6 +306,7 @@ public class BindForgeTabPanel extends JPanel {
             renderGroupedTables(missingBindingsPanel, Map.of(), getText("bindings.column.action"));
             tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
             tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
+            fixAllButton.setEnabled(false);
         }
         updateSyncStatus();
     }
@@ -334,6 +351,160 @@ public class BindForgeTabPanel extends JPanel {
                     getText("bindings.apply.dialogTitle"),
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void fixAllMissing() {
+        if (activeBindingsFile == null || currentSlots.isEmpty() || autoFixInProgress) {
+            return;
+        }
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                getText("bindings.autofix.confirm.text"),
+                getText("bindings.autofix.confirm.title"),
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        if (choice != JOptionPane.OK_OPTION) {
+            return;
+        }
+
+        MissingBindingAutoAssigner.Plan plan = autoAssigner.planAll(currentSlots);
+        applyPlanInBackground(plan, outcome -> showBatchSummary(outcome, plan));
+    }
+
+    private void autoFixSingleBinding(String bindingId) {
+        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || autoFixInProgress) {
+            return;
+        }
+        MissingBindingAutoAssigner.Plan plan = autoAssigner.planOne(bindingId, currentSlots);
+        if (plan.edits().isEmpty() && plan.skipped().isEmpty()) {
+            return; // already bound or unknown - nothing to do
+        }
+        applyPlanInBackground(plan, outcome -> showSingleResult(bindingId, outcome, plan));
+    }
+
+    /**
+     * Writes a plan off the EDT. Each edit re-reads and rewrites the binds file
+     * (and re-parses it for conflict checks), so a large batch would freeze the
+     * UI if run on the dispatch thread. The file path is captured up front so the
+     * worker never touches mutable UI state; the result dialog and reload are
+     * marshalled back onto the EDT.
+     */
+    private void applyPlanInBackground(MissingBindingAutoAssigner.Plan plan, Consumer<ApplyOutcome> onComplete) {
+        if (plan.edits().isEmpty()) {
+            // Nothing to write (every target was skipped); report without touching the file.
+            onComplete.accept(new ApplyOutcome(0, 0));
+            return;
+        }
+        Path file = activeBindingsFile.toPath();
+        setAutoFixBusy(true);
+        new Thread(() -> {
+            ApplyOutcome outcome = applyPlan(file, plan);
+            SwingUtilities.invokeLater(() -> {
+                setAutoFixBusy(false);
+                initData();
+                onComplete.accept(outcome);
+            });
+        }, "BindingsAutoFix-Thread").start();
+    }
+
+    private void setAutoFixBusy(boolean busy) {
+        autoFixInProgress = busy;
+        setCursor(busy ? Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR) : Cursor.getDefaultCursor());
+        if (busy) {
+            fixAllButton.setEnabled(false);
+        }
+        // When clearing busy, initData() recomputes the button's enabled state.
+    }
+
+    /**
+     * Writes each planned edit to the working copy via {@link BindingsWriter}.
+     * The file's timestamp and size change after every successful write, so the
+     * stale-check snapshot is refreshed before each edit.
+     */
+    private ApplyOutcome applyPlan(Path file, MissingBindingAutoAssigner.Plan plan) {
+        int saved = 0;
+        int failed = 0;
+        for (MissingBindingAutoAssigner.PlannedEdit edit : plan.edits()) {
+            FileTime lastModified;
+            long size;
+            try {
+                lastModified = Files.getLastModifiedTime(file);
+                size = Files.size(file);
+            } catch (IOException e) {
+                // The working copy became unreadable mid-batch: count every
+                // remaining edit as failed so the summary total stays honest.
+                failed = plan.edits().size() - saved;
+                break;
+            }
+            KeyboardBindingEdit kbe = new KeyboardBindingEdit(
+                    file, edit.bindingId(), edit.slotType(), edit.key(), lastModified, size);
+            BindingSaveResult result = edit.modifier() == null
+                    ? bindingsWriter.assignKeyboardKey(kbe)
+                    : bindingsWriter.assignKeyboardKeyWithModifier(kbe, edit.modifier());
+            if (result == BindingSaveResult.SAVED) {
+                saved++;
+            } else {
+                failed++;
+            }
+        }
+        return new ApplyOutcome(saved, failed);
+    }
+
+    private void showBatchSummary(ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
+        StringBuilder sb = new StringBuilder(getText("bindings.autofix.summary", outcome.saved()));
+        if (outcome.failed() > 0) {
+            sb.append('\n').append(getText("bindings.autofix.failed", outcome.failed()));
+        }
+        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.BOTH_SLOTS_OCCUPIED, "bindings.autofix.skipped.bothSlots");
+        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_FREE_KEY, "bindings.autofix.skipped.noFreeKey");
+        appendReason(sb, plan, MissingBindingAutoAssigner.SkipReason.NO_EDITABLE_SLOT, "bindings.autofix.skipped.notEditable");
+
+        JOptionPane.showMessageDialog(
+                this, sb.toString(), getText("bindings.autofix.result.title"), JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void appendReason(
+            StringBuilder sb,
+            MissingBindingAutoAssigner.Plan plan,
+            MissingBindingAutoAssigner.SkipReason reason,
+            String messageKey
+    ) {
+        long count = plan.skipped().stream().filter(s -> s.reason() == reason).count();
+        if (count > 0) {
+            sb.append('\n').append(getText(messageKey, count));
+        }
+    }
+
+    private void showSingleResult(String bindingId, ApplyOutcome outcome, MissingBindingAutoAssigner.Plan plan) {
+        if (outcome.saved() > 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    getText("bindings.autofix.single.success", bindingId),
+                    getText("bindings.autofix.result.title"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        if (outcome.failed() > 0) {
+            JOptionPane.showMessageDialog(
+                    this,
+                    getText("bindings.assign.writeFailed"),
+                    getText("bindings.autofix.result.title"),
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (plan.skipped().isEmpty()) {
+            return;
+        }
+        String messageKey = switch (plan.skipped().get(0).reason()) {
+            case BOTH_SLOTS_OCCUPIED -> "bindings.autofix.single.skipped.bothSlots";
+            case NO_FREE_KEY -> "bindings.autofix.single.skipped.noFreeKey";
+            case NO_EDITABLE_SLOT -> "bindings.autofix.single.skipped.notEditable";
+        };
+        JOptionPane.showMessageDialog(
+                this, getText(messageKey), getText("bindings.autofix.result.title"), JOptionPane.WARNING_MESSAGE);
+    }
+
+    private record ApplyOutcome(int saved, int failed) {
     }
 
     private void revertFromGame() {
@@ -476,18 +647,43 @@ public class BindForgeTabPanel extends JPanel {
 
     private Map<BindingGroup, List<Object[]>> groupedBindings(
             List<String> bindingIds,
-            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots
+            Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
+            boolean withAutoFix
     ) {
         Map<BindingGroup, List<Object[]>> grouped = groupedRows();
         for (String bindingId : bindingIds) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
-            grouped.get(BindingGroupClassifier.classify(bindingId)).add(new Object[] {
-                    bindingId,
-                    slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.primary()),
-                    slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.secondary())
-            });
+            String primary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.primary());
+            String secondary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.secondary());
+            Object[] row = withAutoFix
+                    ? new Object[]{bindingId, primary, secondary, getText("bindings.column.autofix.action")}
+                    : new Object[]{bindingId, primary, secondary};
+            grouped.get(BindingGroupClassifier.classify(bindingId)).add(row);
         }
         return grouped;
+    }
+
+    /**
+     * Splits all keyboard-capable controls into those that already have a usable
+     * keyboard binding and those that do not, using the same definition of "bound"
+     * the auto-assigner targets, so the Missing tab and Fix Missing never diverge.
+     */
+    private BindingPartition partitionByKeyboardBinding(Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots) {
+        List<String> used = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
+        for (Map.Entry<String, KeyBindingsParser.ReadOnlyBindingSlots> entry : slots.entrySet()) {
+            if (autoAssigner.isKeyboardBound(entry.getValue())) {
+                used.add(entry.getKey());
+            } else {
+                missing.add(entry.getKey());
+            }
+        }
+        used.sort(String::compareToIgnoreCase);
+        missing.sort(String::compareToIgnoreCase);
+        return new BindingPartition(used, missing);
+    }
+
+    private record BindingPartition(List<String> used, List<String> missing) {
     }
 
     /**
