@@ -800,7 +800,7 @@ public class BindForgeTabPanel extends JPanel {
                 activeBindingsLastModified,
                 activeBindingsFileSize
         );
-        BindingSaveResult result = saveKeyboardBinding(edit, selection.modifier());
+        BindingSaveResult result = saveKeyboardBinding(edit, selection.modifiers());
         saveResultPresenter.show(result);
 
         if (result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE || result == BindingSaveResult.STALE_FILE) {
@@ -808,10 +808,10 @@ public class BindForgeTabPanel extends JPanel {
         }
     }
 
-    private BindingSaveResult saveKeyboardBinding(KeyboardBindingEdit edit, BindingModifier modifier) {
-        return modifier == null
+    private BindingSaveResult saveKeyboardBinding(KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
+        return modifiers == null || modifiers.isEmpty()
                 ? bindingsWriter.assignKeyboardKey(edit)
-                : bindingsWriter.assignKeyboardKeyWithModifier(edit, modifier);
+                : bindingsWriter.assignKeyboardKeyWithModifiers(edit, modifiers);
     }
 
     private boolean isBasicEditableSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {

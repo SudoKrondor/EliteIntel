@@ -2,19 +2,12 @@ package elite.intel.ai.hands;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Safely assigns one V1-supported keyboard binding to one Primary or Secondary
@@ -49,25 +42,35 @@ public class BindingsWriter {
      * unrelated XML byte-for-byte identical apart from the selected slot.
      */
     public BindingSaveResult assignKeyboardKey(KeyboardBindingEdit edit) {
-        return assignKeyboardKey(edit, null, false);
+        return assignKeyboardKey(edit, List.of(), false);
     }
 
     /**
      * Assigns a keyboard key with exactly one supported keyboard modifier.
      */
     public BindingSaveResult assignKeyboardKeyWithModifier(KeyboardBindingEdit edit, BindingModifier modifier) {
-        if (modifier == null || !modifier.isSupportedKeyboardModifier()) {
+        return assignKeyboardKeyWithModifiers(edit, modifier == null ? List.of() : List.of(modifier));
+    }
+
+    /**
+     * Assigns a keyboard key with a chord of one or more supported keyboard
+     * modifiers (e.g. Left Ctrl + Left Shift). The order of {@code modifiers} is
+     * preserved in the written XML but is not significant to the game.
+     */
+    public BindingSaveResult assignKeyboardKeyWithModifiers(KeyboardBindingEdit edit, List<BindingModifier> modifiers) {
+        if (modifiers == null || modifiers.isEmpty()
+                || !modifiers.stream().allMatch(BindingModifier::isSupportedKeyboardModifier)) {
             return BindingSaveResult.UNSUPPORTED_XML;
         }
         if (edit.clearsSlot()) {
             return BindingSaveResult.UNKNOWN_KEY;
         }
-        return assignKeyboardKey(edit, modifier, true);
+        return assignKeyboardKey(edit, modifiers, true);
     }
 
     private BindingSaveResult assignKeyboardKey(
             KeyboardBindingEdit edit,
-            BindingModifier requestedModifier,
+            List<BindingModifier> requestedModifiers,
             boolean rewriteModifier
     ) {
         if (!edit.clearsSlot() && !EliteKeyboardKeys.isAssignable(edit.key())) {
@@ -95,7 +98,7 @@ public class BindingsWriter {
                 return BindingSaveResult.UNSUPPORTED_XML;
             }
 
-            if (isNoChange(slotXml, edit, requestedModifier, rewriteModifier)) {
+            if (isNoChange(slotXml, edit, requestedModifiers, rewriteModifier)) {
                 return BindingSaveResult.NO_CHANGE;
             }
 
@@ -104,7 +107,7 @@ public class BindingsWriter {
                     edit.bindingId(),
                     edit.slotType(),
                     edit.key(),
-                    rewriteModifier ? requestedModifier : null
+                    rewriteModifier ? requestedModifiers : List.of()
             )) {
                 return BindingSaveResult.KEY_OCCUPIED;
             }
@@ -116,7 +119,7 @@ public class BindingsWriter {
             String updatedXml = replaceRange(
                     encodedXml.xml(),
                     slot.range(),
-                    replacementSlot(edit, requestedModifier, rewriteModifier)
+                    replacementSlot(edit, requestedModifiers, rewriteModifier)
             );
             return writeReplacement(edit.file(), new EncodedXml(updatedXml, encodedXml.hasUtf8Bom()));
         } catch (IOException e) {
@@ -191,7 +194,7 @@ public class BindingsWriter {
     private boolean isNoChange(
             SlotXml slotXml,
             KeyboardBindingEdit edit,
-            BindingModifier requestedModifier,
+            List<BindingModifier> requestedModifiers,
             boolean rewriteModifier
     ) {
         if (edit.clearsSlot()) {
@@ -203,8 +206,10 @@ public class BindingsWriter {
         if (!rewriteModifier) {
             return slotXml.modifiers().isEmpty();
         }
-        return slotXml.modifiers().size() == 1
-                && requestedModifier.equals(slotXml.modifiers().get(0).bindingModifier());
+        Set<BindingModifier> existing = slotXml.modifiers().stream()
+                .map(ModifierXml::bindingModifier)
+                .collect(Collectors.toSet());
+        return existing.equals(new HashSet<>(requestedModifiers));
     }
 
     private SlotXml inspectSlot(String xml, TextRange slotRange, BindingSlotType slotType) {
@@ -223,7 +228,7 @@ public class BindingsWriter {
         String key = attributeValue(startTag, "Key");
         boolean selfClosing = isSelfClosingStartTag(xml, slotRange.start(), startTagEnd);
         if (selfClosing) {
-            return new SlotXml(device, key, List.of(), isEditableMainSlot(device, key), true);
+            return new SlotXml(device, key, List.of(), isEditableMainSlot(device, key));
         }
 
         Matcher closingMatcher = closingTagPattern(slotType.xmlElementName()).matcher(xml);
@@ -240,9 +245,8 @@ public class BindingsWriter {
         }
 
         List<ModifierXml> modifiers = modifierXmls(xml, startTagEnd + 1, closingMatcher.start());
-        boolean supportedModifiers = modifiers.isEmpty()
-                || (modifiers.size() == 1 && modifiers.get(0).supportedForV1Edit());
-        return new SlotXml(device, key, modifiers, isEditableMainSlot(device, key) && supportedModifiers, true);
+        boolean supportedModifiers = modifiers.stream().allMatch(ModifierXml::supportedForV1Edit);
+        return new SlotXml(device, key, modifiers, isEditableMainSlot(device, key) && supportedModifiers);
     }
 
     private boolean isEditableMainSlot(String device, String key) {
@@ -274,15 +278,18 @@ public class BindingsWriter {
         return modifiers;
     }
 
-    private String replacementSlot(KeyboardBindingEdit edit, BindingModifier requestedModifier, boolean rewriteModifier) {
+    private String replacementSlot(KeyboardBindingEdit edit, List<BindingModifier> requestedModifiers, boolean rewriteModifier) {
         if (edit.clearsSlot()) {
             return "<" + edit.slotType().xmlElementName() + " Device=\"{NoDevice}\" Key=\"\" />";
         }
-        if (rewriteModifier) {
-            return "<" + edit.slotType().xmlElementName()
-                    + " Device=\"Keyboard\" Key=\"" + edit.key() + "\">\n"
-                    + "    <Modifier Device=\"Keyboard\" Key=\"" + requestedModifier.key() + "\" />\n"
-                    + "</" + edit.slotType().xmlElementName() + ">";
+        if (rewriteModifier && !requestedModifiers.isEmpty()) {
+            StringBuilder slot = new StringBuilder("<" + edit.slotType().xmlElementName()
+                    + " Device=\"Keyboard\" Key=\"" + edit.key() + "\">\n");
+            for (BindingModifier modifier : requestedModifiers) {
+                slot.append("    <Modifier Device=\"Keyboard\" Key=\"").append(modifier.key()).append("\" />\n");
+            }
+            slot.append("</").append(edit.slotType().xmlElementName()).append(">");
+            return slot.toString();
         }
         return "<" + edit.slotType().xmlElementName()
                 + " Device=\"Keyboard\" Key=\"" + edit.key() + "\" />";
@@ -439,15 +446,10 @@ public class BindingsWriter {
             String device,
             String key,
             List<ModifierXml> modifiers,
-            boolean supportedForV1Edit,
-            boolean syntacticallySupported
+            boolean supportedForV1Edit
     ) {
         private static SlotXml unsupported() {
-            return new SlotXml("", "", List.of(), false, false);
-        }
-
-        private boolean hasModifiers() {
-            return !modifiers.isEmpty();
+            return new SlotXml("", "", List.of(), false);
         }
     }
 

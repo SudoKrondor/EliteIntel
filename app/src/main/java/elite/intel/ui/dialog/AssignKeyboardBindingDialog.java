@@ -1,35 +1,40 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.hands.*;
 import elite.intel.ui.support.AssignKeyboardBindingSelection;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
-
-import elite.intel.ai.hands.BindingModifier;
-import elite.intel.ai.hands.BindingSlotType;
-import elite.intel.ai.hands.KeyBindingsParser;
-import elite.intel.ai.hands.KeyboardKeyAvailabilityService;
+import elite.intel.ui.widget.KeyChordCaptureField;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
 import static elite.intel.ui.theme.HudForms.*;
+import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal selector for one keyboard binding edit.
  * <p>
- * The dialog only returns the selected slot and key token (or clear request);
- * all file validation and XML writing remain in {@code BindingsWriter}.
+ * The chord is captured by pressing the actual key combination (any number of
+ * supported keyboard modifiers, left/right distinct) rather than picking from
+ * drop-downs. The dialog only returns the selected slot, key token, and modifier
+ * list (or a clear request); all file validation and XML writing remain in
+ * {@code BindingsWriter}.
  */
 public class AssignKeyboardBindingDialog extends JDialog {
+    private static final Logger log = LogManager.getLogger(AssignKeyboardBindingDialog.class);
+
     private final KeyboardKeyAvailabilityService availabilityService;
     private final BindingSlotDisplayFormatter slotFormatter = new BindingSlotDisplayFormatter();
     private final Path bindingsFile;
@@ -37,14 +42,19 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final BindingSlotType slotType;
     private final KeyBindingsParser.ReadOnlyBindingSlot currentSlot;
     private final String originalKey;
-    private final BindingModifier originalModifier;
+    private final List<BindingModifier> originalModifiers;
     private final boolean alreadyCleared;
-    private final HudComboBox<KeyOption> keyCombo;
-    private final HudComboBox<ModifierOption> modifierCombo;
+    private final KeyChordCaptureField captureField;
+    private final JButton clearButton;
     private final JButton saveButton;
-    private final JLabel noFreeKeysLabel;
+    private final JLabel invalidKeyLabel;
     private final JLabel alreadyInUseLabel;
-    private boolean refreshingOptions;
+
+    // Pending selection (mirrors what Save would persist).
+    private String selectedKey;
+    private List<BindingModifier> selectedModifiers;
+    private boolean cleared;
+
     private AssignKeyboardBindingSelection selection;
 
     public AssignKeyboardBindingDialog(
@@ -63,15 +73,25 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.currentSlot = currentSlot;
         this.availabilityService = availabilityService;
         this.originalKey = currentKeyboardKey(currentSlot);
-        this.originalModifier = currentSupportedModifier(currentSlot);
+        this.originalModifiers = currentSupportedModifiers(currentSlot);
         this.alreadyCleared = isClearedSlot(currentSlot);
-        this.keyCombo = new HudComboBox<>(new DefaultComboBoxModel<KeyOption>(), KeyOption::label, KeyOption::placeholder);
-        this.modifierCombo = new HudComboBox<>(new DefaultComboBoxModel<ModifierOption>(), ModifierOption::label);
+
+        this.selectedKey = originalKey;
+        this.selectedModifiers = new ArrayList<>(originalModifiers);
+        this.cleared = alreadyCleared;
+
+        this.captureField = new KeyChordCaptureField(
+                currentChordText(),
+                getText("bindings.assign.capture.prompt"),
+                slotFormatter::formatBindingToken,
+                this::onChordCaptured
+        );
+        this.clearButton = makeButtonSubtle(getText("bindings.assign.capture.clear"));
         this.saveButton = makeButton(getText("button.save"));
-        this.noFreeKeysLabel = new JLabel(getText("bindings.assign.noFreeKeys"));
+        this.invalidKeyLabel = new JLabel(getText("bindings.assign.unknownKey"));
         this.alreadyInUseLabel = new JLabel(getText("bindings.assign.alreadyInUse"));
         buildUi();
-        refreshAvailableKeys();
+        updateSaveState();
     }
 
     public Optional<AssignKeyboardBindingSelection> showDialog() {
@@ -97,30 +117,32 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         nextRow(gbc);
         addLabel(content, getText("bindings.assign.newKey"), gbc);
-        keyCombo.addActionListener(e -> {
-            if (!refreshingOptions) {
-                resetModifierWhenClearing();
-            }
-            updateSaveState();
-        });
-        addField(content, keyCombo, gbc, 1, 1.0);
-
-        nextRow(gbc);
-        addLabel(content, getText("bindings.assign.modifier"), gbc);
-        modifierCombo.addActionListener(e -> {
-            if (!refreshingOptions) {
-                KeyOption selectedKey = (KeyOption) keyCombo.getSelectedItem();
-                refreshAvailableKeys(selectedKey == null || selectedKey.clear() ? null : selectedKey.rawKey());
-            }
-        });
-        addField(content, modifierCombo, gbc, 1, 1.0);
+        addField(content, captureField, gbc, 1, 1.0);
 
         nextRow(gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        noFreeKeysLabel.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
-        content.add(noFreeKeysLabel, gbc);
+        clearButton.addActionListener(e -> onClear());
+        JPanel clearRow = transparentPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        clearRow.add(clearButton);
+        content.add(clearRow, gbc);
+
+        nextRow(gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel hint = new JLabel(getText("bindings.assign.capture.hint"));
+        hint.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
+        content.add(hint, gbc);
+
+        nextRow(gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        invalidKeyLabel.setForeground(HUD_COLOR_ROLE_DANGER);
+        invalidKeyLabel.setVisible(false);
+        content.add(invalidKeyLabel, gbc);
 
         nextRow(gbc);
         gbc.gridx = 1;
@@ -150,6 +172,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
 
         setContentPane(AppTheme.hudModalScaffold(spec));
 
+        // The capture field consumes Enter while armed; otherwise Save is the default.
         getRootPane().setDefaultButton(saveButton);
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         pack();
@@ -169,108 +192,57 @@ public class AssignKeyboardBindingDialog extends JDialog {
         panel.add(field, gbc);
     }
 
-    private void refreshAvailableKeys() {
-        refreshAvailableKeys(originalKey);
-    }
-
-    private void refreshAvailableKeys(String preferredKey) {
-        refreshingOptions = true;
-        keyCombo.removeAllItems();
-        try {
-            if (modifierCombo.getItemCount() == 0) {
-                populateModifierOptions();
-                selectOriginalModifier();
-            }
-            if (originalKey == null && !alreadyCleared) {
-                keyCombo.addItem(KeyOption.placeholder(slotFormatter.formatSlot(currentSlot)));
-            }
-            keyCombo.addItem(KeyOption.clear(getText("bindings.status.notDefined")));
-
-            List<String> keys = availabilityService.availableKeys(
-                    bindingsFile,
-                    bindingId,
-                    slotType,
-                    selectedModifier()
-            );
-            if (preferredKey != null && !keys.contains(preferredKey)) {
-                // Keep an occupied selected chord visible; the disabled Save button explains the conflict.
-                keyCombo.addItem(KeyOption.key(preferredKey, formatKeyToken(preferredKey)));
-            }
-            for (String key : keys) {
-                keyCombo.addItem(KeyOption.key(key, formatKeyToken(key)));
-            }
-
-            selectKey(preferredKey);
-            boolean canChange = containsDifferentKey();
-            keyCombo.setEnabled(canChange || originalKey != null);
-            modifierCombo.setEnabled(keyCombo.isEnabled());
-            noFreeKeysLabel.setVisible(!canChange);
-        } catch (Exception e) {
-            keyCombo.setEnabled(false);
-            modifierCombo.setEnabled(false);
-            noFreeKeysLabel.setVisible(true);
-        } finally {
-            refreshingOptions = false;
-        }
+    private void onChordCaptured(KeyChordCaptureField.CapturedChord chord) {
+        cleared = false;
+        selectedKey = chord.key();
+        selectedModifiers = new ArrayList<>(chord.modifiers());
         updateSaveState();
-        revalidate();
-        repaint();
     }
 
-    private void populateModifierOptions() {
-        modifierCombo.removeAllItems();
-        modifierCombo.addItem(ModifierOption.none());
-            BindingModifier.supportedKeyboardModifiers().forEach(modifier ->
-                modifierCombo.addItem(ModifierOption.modifier(modifier, slotFormatter.formatBindingToken(modifier.key()))));
+    private void onClear() {
+        cleared = true;
+        selectedKey = null;
+        selectedModifiers = new ArrayList<>();
+        captureField.showIdleText(getText("bindings.status.notDefined"));
+        updateSaveState();
     }
 
     private void saveSelection() {
-        KeyOption selectedKey = (KeyOption) keyCombo.getSelectedItem();
-        if (selectedKey == null || selectedKey.placeholder() || !isChanged(selectedKey)) {
+        if (!isChanged() || !isValidKey() || isSelectedCombinationOccupied()) {
             return;
         }
-
-        ModifierOption selectedModifier = (ModifierOption) modifierCombo.getSelectedItem();
-        BindingModifier modifier = selectedKey.clear() || selectedModifier == null ? null : selectedModifier.modifier();
-        selection = new AssignKeyboardBindingSelection(slotType, selectedKey.rawKey(), modifier);
+        selection = cleared
+                ? new AssignKeyboardBindingSelection(slotType, null, List.of())
+                : new AssignKeyboardBindingSelection(slotType, selectedKey, selectedModifiers);
         dispose();
     }
 
     private void updateSaveState() {
-        KeyOption selectedKey = (KeyOption) keyCombo.getSelectedItem();
-        modifierCombo.setEnabled(keyCombo.isEnabled());
-        boolean occupied = selectedKey != null && isSelectedCombinationOccupied(selectedKey);
+        boolean invalidKey = !cleared && selectedKey != null && !isValidKey();
+        boolean occupied = !cleared && selectedKey != null && isSelectedCombinationOccupied();
+        invalidKeyLabel.setVisible(invalidKey);
         alreadyInUseLabel.setVisible(occupied);
-        saveButton.setEnabled(selectedKey != null
-                && !selectedKey.placeholder()
-                && isChanged(selectedKey)
-                && !occupied);
+        saveButton.setEnabled(isChanged() && isValidKey() && !occupied);
     }
 
-    private boolean containsDifferentKey() {
-        for (int i = 0; i < keyCombo.getItemCount(); i++) {
-            KeyOption option = keyCombo.getItemAt(i);
-            if (!option.placeholder() && isChanged(option)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean isChanged(KeyOption selectedKey) {
-        if (selectedKey.clear()) {
+    private boolean isChanged() {
+        if (cleared) {
             return !alreadyCleared;
         }
-        String key = selectedKey.rawKey();
-        boolean keyChanged = originalKey == null ? key != null : !originalKey.equals(key);
-        ModifierOption selectedModifier = (ModifierOption) modifierCombo.getSelectedItem();
-        BindingModifier modifier = selectedModifier == null ? null : selectedModifier.modifier();
-        boolean modifierChanged = originalModifier == null ? modifier != null : !originalModifier.equals(modifier);
-        return keyChanged || modifierChanged;
+        if (selectedKey == null) {
+            return false;
+        }
+        boolean keyChanged = !selectedKey.equals(originalKey);
+        boolean modifiersChanged = !new HashSet<>(selectedModifiers).equals(new HashSet<>(originalModifiers));
+        return keyChanged || modifiersChanged;
     }
 
-    private boolean isSelectedCombinationOccupied(KeyOption selectedKey) {
-        if (selectedKey.clear() || selectedKey.rawKey() == null) {
+    private boolean isValidKey() {
+        return cleared || (selectedKey != null && EliteKeyboardKeys.isAssignable(selectedKey));
+    }
+
+    private boolean isSelectedCombinationOccupied() {
+        if (cleared || selectedKey == null) {
             return false;
         }
         try {
@@ -278,54 +250,23 @@ public class AssignKeyboardBindingDialog extends JDialog {
                     bindingsFile,
                     bindingId,
                     slotType,
-                    selectedKey.rawKey(),
-                    selectedModifier()
+                    selectedKey,
+                    selectedModifiers
             );
         } catch (Exception e) {
+            // WHY: an unreadable/unparseable .binds must never be reported as free,
+            // or we would offer a save that could silently clobber another binding.
+            log.warn("Could not check key availability for binding '{}' slot {}: {}",
+                    bindingId, slotType, e.getMessage());
             return true;
         }
     }
 
-    private void resetModifierWhenClearing() {
-        KeyOption selectedKey = (KeyOption) keyCombo.getSelectedItem();
-        if (selectedKey == null || !selectedKey.clear()) {
-            return;
+    private String currentChordText() {
+        if (originalKey == null) {
+            return getText("bindings.status.notDefined");
         }
-        for (int i = 0; i < modifierCombo.getItemCount(); i++) {
-            ModifierOption option = modifierCombo.getItemAt(i);
-            if (option.modifier() == null) {
-                modifierCombo.setSelectedIndex(i);
-                return;
-            }
-        }
-    }
-
-    private void selectKey(String key) {
-        for (int i = 0; i < keyCombo.getItemCount(); i++) {
-            KeyOption option = keyCombo.getItemAt(i);
-            if ((key == null && option.rawKey() == null)
-                    || (key != null && key.equals(option.rawKey()))) {
-                keyCombo.setSelectedIndex(i);
-                return;
-            }
-        }
-        if (keyCombo.getItemCount() > 0) {
-            keyCombo.setSelectedIndex(0);
-        }
-    }
-
-    private void selectOriginalModifier() {
-        for (int i = 0; i < modifierCombo.getItemCount(); i++) {
-            ModifierOption option = modifierCombo.getItemAt(i);
-            if ((originalModifier == null && option.modifier() == null)
-                    || (originalModifier != null && originalModifier.equals(option.modifier()))) {
-                modifierCombo.setSelectedIndex(i);
-                return;
-            }
-        }
-        if (modifierCombo.getItemCount() > 0) {
-            modifierCombo.setSelectedIndex(0);
-        }
+        return slotFormatter.formatChord(originalModifiers, originalKey);
     }
 
     private String currentKeyboardKey(KeyBindingsParser.ReadOnlyBindingSlot slot) {
@@ -336,17 +277,13 @@ public class AssignKeyboardBindingDialog extends JDialog {
         return slot.key();
     }
 
-    private BindingModifier currentSupportedModifier(KeyBindingsParser.ReadOnlyBindingSlot slot) {
-        if (slot == null || slot.bindingModifiers().size() != 1) {
-            return null;
+    private List<BindingModifier> currentSupportedModifiers(KeyBindingsParser.ReadOnlyBindingSlot slot) {
+        if (slot == null) {
+            return List.of();
         }
-        BindingModifier modifier = slot.bindingModifiers().get(0);
-        return modifier.isSupportedKeyboardModifier() ? modifier : null;
-    }
-
-    private BindingModifier selectedModifier() {
-        ModifierOption option = (ModifierOption) modifierCombo.getSelectedItem();
-        return option == null ? null : option.modifier();
+        return slot.bindingModifiers().stream()
+                .filter(BindingModifier::isSupportedKeyboardModifier)
+                .toList();
     }
 
     private boolean isClearedSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {
@@ -359,46 +296,4 @@ public class AssignKeyboardBindingDialog extends JDialog {
                 ? getText("bindings.column.primary")
                 : getText("bindings.column.secondary");
     }
-
-    private String formatKeyToken(String token) {
-        if (token.startsWith("Key_") && token.length() > "Key_".length()) {
-            return getText("bindings.assign.keyDisplay", slotFormatter.formatBindingToken(token), token);
-        }
-        return token;
-    }
-
-    private record KeyOption(String rawKey, String label, boolean placeholder, boolean clear) {
-        private static KeyOption placeholder(String label) {
-            return new KeyOption(null, label, true, false);
-        }
-
-        private static KeyOption clear(String label) {
-            return new KeyOption(null, label, false, true);
-        }
-
-        private static KeyOption key(String rawKey, String label) {
-            return new KeyOption(rawKey, label, false, false);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    private record ModifierOption(BindingModifier modifier, String label) {
-        private static ModifierOption none() {
-            return new ModifierOption(null, getText("bindings.assign.modifier.none"));
-        }
-
-        private static ModifierOption modifier(BindingModifier modifier, String label) {
-            return new ModifierOption(modifier, label);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
 }

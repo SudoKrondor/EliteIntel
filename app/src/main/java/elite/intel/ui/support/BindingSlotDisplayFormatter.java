@@ -53,21 +53,28 @@ public class BindingSlotDisplayFormatter {
         return device.matches("(?i)[0-9a-f]{8}");
     }
 
+    /**
+     * Formats a full keyboard chord (modifiers then main key) as a single label,
+     * e.g. {@code "Left Ctrl + Left Shift + N"}. Shared by the slot readout and the
+     * chord-capture dialog so both render the same way.
+     */
+    public String formatChord(List<BindingModifier> modifiers, String key) {
+        List<String> modifierLabels = modifiers.stream()
+                .filter(modifier -> modifier.key() != null && !modifier.key().isBlank() && !"Key_".equals(modifier.key()))
+                .map(this::formatModifier)
+                .toList();
+        String keyLabel = formatBindingToken(key);
+        if (modifierLabels.isEmpty()) {
+            return keyLabel;
+        }
+        return String.join(" + ", modifierLabels) + " + " + keyLabel;
+    }
+
     private String formatBinding(KeyBindingsParser.ReadOnlyBindingSlot slot) {
         if (slot == null || slot.key() == null || slot.key().isBlank() || "Key_".equals(slot.key())) {
             return getText("bindings.status.notDefined");
         }
-
-        List<String> modifiers = slot.bindingModifiers().stream()
-                .filter(modifier -> modifier.key() != null && !modifier.key().isBlank() && !"Key_".equals(modifier.key()))
-                .map(this::formatModifier)
-                .toList();
-        String key = formatBindingToken(slot.key());
-        if (modifiers.isEmpty()) {
-            return key;
-        }
-
-        return String.join(" + ", modifiers) + " + " + key;
+        return formatChord(slot.bindingModifiers(), slot.key());
     }
 
     private String formatModifier(BindingModifier modifier) {

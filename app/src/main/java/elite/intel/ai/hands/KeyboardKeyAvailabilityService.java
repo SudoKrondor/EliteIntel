@@ -9,12 +9,8 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Computes keyboard-key availability from the whole active {@code .binds} file.
@@ -51,11 +47,11 @@ public class KeyboardKeyAvailabilityService {
      * slot currently being edited.
      */
     public List<String> availableKeys(Path bindsFile, String bindingId, BindingSlotType slotType) throws Exception {
-        return availableKeys(bindsFile, bindingId, slotType, null);
+        return availableKeys(bindsFile, bindingId, slotType, List.of());
     }
 
     /**
-     * Returns keys that are free for the selected V1 keyboard chord.
+     * Returns keys that are free for the selected single-modifier keyboard chord.
      */
     public List<String> availableKeys(
             Path bindsFile,
@@ -63,8 +59,23 @@ public class KeyboardKeyAvailabilityService {
             BindingSlotType slotType,
             BindingModifier modifier
     ) throws Exception {
-        BindingModifier normalizedModifier = normalizeModifier(modifier);
-        Set<String> occupied = occupiedKeyboardKeysForModifier(bindsFile, bindingId, slotType, normalizedModifier);
+        return availableKeys(bindsFile, bindingId, slotType, asModifierList(modifier));
+    }
+
+    /**
+     * Returns keys that are free for the selected keyboard chord, where the chord
+     * may carry any number of supported keyboard modifiers (e.g. Left Ctrl +
+     * Left Shift). Availability is per-chord: a key is free unless another slot
+     * uses it with the exact same modifier set.
+     */
+    public List<String> availableKeys(
+            Path bindsFile,
+            String bindingId,
+            BindingSlotType slotType,
+            Collection<BindingModifier> modifiers
+    ) throws Exception {
+        Set<BindingModifier> normalizedModifiers = normalizeModifiers(modifiers);
+        Set<String> occupied = occupiedKeyboardKeysForModifier(bindsFile, bindingId, slotType, normalizedModifiers);
         List<String> available = new ArrayList<>(EliteKeyboardKeys.assignableKeys().stream()
                 .filter(key -> !occupied.contains(key))
                 .toList());
@@ -82,11 +93,11 @@ public class KeyboardKeyAvailabilityService {
             BindingSlotType slotType,
             String key
     ) throws Exception {
-        return isKeyOccupiedByOtherSlot(bindsFile, bindingId, slotType, key, null);
+        return isKeyOccupiedByOtherSlot(bindsFile, bindingId, slotType, key, List.of());
     }
 
     /**
-     * Save-time conflict check for the selected V1 keyboard chord.
+     * Save-time conflict check for the selected single-modifier keyboard chord.
      */
     public boolean isKeyOccupiedByOtherSlot(
             Path bindsFile,
@@ -95,12 +106,26 @@ public class KeyboardKeyAvailabilityService {
             String key,
             BindingModifier modifier
     ) throws Exception {
-        BindingModifier normalizedModifier = normalizeModifier(modifier);
+        return isKeyOccupiedByOtherSlot(bindsFile, bindingId, slotType, key, asModifierList(modifier));
+    }
+
+    /**
+     * Save-time conflict check for the selected keyboard chord with any number of
+     * supported keyboard modifiers.
+     */
+    public boolean isKeyOccupiedByOtherSlot(
+            Path bindsFile,
+            String bindingId,
+            BindingSlotType slotType,
+            String key,
+            Collection<BindingModifier> modifiers
+    ) throws Exception {
+        Set<BindingModifier> normalizedModifiers = normalizeModifiers(modifiers);
         for (SlotAssignment assignment : keyboardSlotAssignments(bindsFile)) {
             if (!assignment.key().equals(key)) {
                 continue;
             }
-            if (!Objects.equals(assignment.modifier(), normalizedModifier)) {
+            if (!assignment.modifiers().equals(normalizedModifiers)) {
                 continue;
             }
             if (assignment.bindingId().equals(bindingId) && assignment.slotType() == slotType) {
@@ -148,14 +173,14 @@ public class KeyboardKeyAvailabilityService {
             Path bindsFile,
             String bindingId,
             BindingSlotType slotType,
-            BindingModifier modifier
+            Set<BindingModifier> modifiers
     ) throws Exception {
         Set<String> occupied = new LinkedHashSet<>();
         for (SlotAssignment assignment : keyboardSlotAssignments(bindsFile)) {
             if (assignment.bindingId().equals(bindingId) && assignment.slotType() == slotType) {
                 continue;
             }
-            if (Objects.equals(assignment.modifier(), modifier)) {
+            if (assignment.modifiers().equals(modifiers)) {
                 occupied.add(assignment.key());
             }
         }
@@ -179,30 +204,30 @@ public class KeyboardKeyAvailabilityService {
                 continue;
             }
 
-            Optional<BindingModifier> modifier = v1KeyboardModifier(slot);
-            if (modifier.isEmpty() && hasModifierChildren(slot)) {
+            Optional<Set<BindingModifier>> modifiers = supportedKeyboardModifiers(slot);
+            if (modifiers.isEmpty()) {
+                // Slot carries a modifier this editor does not understand (e.g. a
+                // joystick modifier). Skip it so it neither blocks keyboard chords
+                // nor is matched against one.
                 continue;
             }
 
             Node parent = slot.getParentNode();
             String bindingId = parent instanceof Element action ? action.getTagName() : "";
-            assignments.add(new SlotAssignment(bindingId, slotType, key, modifier.orElse(null)));
+            assignments.add(new SlotAssignment(bindingId, slotType, key, modifiers.get()));
         }
     }
 
-    private Optional<BindingModifier> v1KeyboardModifier(Element slot) {
+    /**
+     * Returns the slot's modifier set when it is empty or made up entirely of
+     * supported keyboard modifiers; empty when any modifier is unsupported.
+     */
+    private Optional<Set<BindingModifier>> supportedKeyboardModifiers(Element slot) {
         List<BindingModifier> modifiers = directModifierChildren(slot);
-        if (modifiers.isEmpty()) {
-            return Optional.empty();
-        }
-        if (modifiers.size() == 1 && modifiers.get(0).isSupportedKeyboardModifier()) {
-            return Optional.of(modifiers.get(0));
+        if (modifiers.stream().allMatch(BindingModifier::isSupportedKeyboardModifier)) {
+            return Optional.of(Set.copyOf(modifiers));
         }
         return Optional.empty();
-    }
-
-    private boolean hasModifierChildren(Element slot) {
-        return !directModifierChildren(slot).isEmpty();
     }
 
     private List<BindingModifier> directModifierChildren(Element slot) {
@@ -217,11 +242,21 @@ public class KeyboardKeyAvailabilityService {
         return modifiers;
     }
 
-    private BindingModifier normalizeModifier(BindingModifier modifier) {
-        if (modifier == null) {
-            return null;
+    private List<BindingModifier> asModifierList(BindingModifier modifier) {
+        return modifier == null ? List.of() : List.of(modifier);
+    }
+
+    /**
+     * Keeps only supported keyboard modifiers, collapsing the chord to a set so
+     * modifier order never affects conflict matching.
+     */
+    private Set<BindingModifier> normalizeModifiers(Collection<BindingModifier> modifiers) {
+        if (modifiers == null || modifiers.isEmpty()) {
+            return Set.of();
         }
-        return modifier.isSupportedKeyboardModifier() ? modifier : null;
+        return modifiers.stream()
+                .filter(modifier -> modifier != null && modifier.isSupportedKeyboardModifier())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private boolean isOccupiedKeyboardKey(String device, String key) {
@@ -256,6 +291,7 @@ public class KeyboardKeyAvailabilityService {
         return doc;
     }
 
-    private record SlotAssignment(String bindingId, BindingSlotType slotType, String key, BindingModifier modifier) {
+    private record SlotAssignment(String bindingId, BindingSlotType slotType, String key,
+                                  Set<BindingModifier> modifiers) {
     }
 }
