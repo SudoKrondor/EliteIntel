@@ -27,6 +27,8 @@ import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -56,6 +58,8 @@ import java.util.concurrent.TimeoutException;
  * safe-flushes and dies. An already-started action/macro is never cancelled (§1.9.41).
  */
 public final class Thought {
+
+    private static final Logger log = LogManager.getLogger(Thought.class);
 
     /** Defensive per-turn round cap, complementing the dispatcher watchdog's wall-clock timeout. */
     private static final int MAX_TOOL_ROUNDS = 8;
@@ -173,6 +177,10 @@ public final class Thought {
         try {
             return future.join();
         } catch (RuntimeException llmFailure) {
+            if (!interrupted) {
+                // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
+                log.warn("Companion LLM round failed; treating as no usable result", llmFailure);
+            }
             return null;
         } finally {
             inFlight = null;

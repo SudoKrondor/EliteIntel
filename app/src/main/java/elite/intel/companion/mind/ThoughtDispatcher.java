@@ -123,6 +123,13 @@ public final class ThoughtDispatcher implements ManagedService {
         interruptLive();
     }
 
+    /** Whether both lanes are idle (no live thought, empty queues) - a turn-boundary signal for harnesses. */
+    public boolean isIdle() {
+        ThoughtLane commander = commanderLane;
+        ThoughtLane event = eventLane;
+        return (commander == null || commander.isIdle()) && (event == null || event.isIdle());
+    }
+
     /** Queues a thought; an urgent one interrupts both live thoughts and jumps its queue head (§1.7.29). */
     private void enqueue(ThoughtLane lane, Thought thought, Urgency urgency) {
         if (lane == null) {

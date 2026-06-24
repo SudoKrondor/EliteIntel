@@ -58,6 +58,11 @@ final class ThoughtLane {
         return start != 0 && System.currentTimeMillis() - start > millis;
     }
 
+    /** Whether the lane has no live thought and an empty queue (a turn-boundary signal). */
+    boolean isIdle() {
+        return live == null && queue.isEmpty();
+    }
+
     /** Graceful stop: drain queued thoughts and finish the live one, forcing interrupt only if it hangs. */
     void shutdown(long timeoutMillis) {
         queue.offerLast(POISON);
@@ -73,11 +78,14 @@ final class ThoughtLane {
         return () -> {
             live = thought;
             liveStartMillis = System.currentTimeMillis();
+            log.info("Lane {}: {} ({}) thought started", worker.getName(), thought.source(), thought.urgency());
             try {
                 thought.run();
             } finally {
+                long elapsed = System.currentTimeMillis() - liveStartMillis;
                 live = null;
                 liveStartMillis = 0;
+                log.info("Lane {}: {} thought finished in {} ms", worker.getName(), thought.source(), elapsed);
             }
         };
     }

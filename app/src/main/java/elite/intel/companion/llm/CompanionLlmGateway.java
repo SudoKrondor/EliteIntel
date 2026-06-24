@@ -7,6 +7,8 @@ import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
  * returns immediately with a future.
  */
 public final class CompanionLlmGateway implements LlmGateway {
+
+    private static final Logger log = LogManager.getLogger(CompanionLlmGateway.class);
 
     private static final LlmResult INVALID = new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
 
@@ -65,8 +69,14 @@ public final class CompanionLlmGateway implements LlmGateway {
             return first;
         }
         // Single repair/retry: nudge the model that only a function call is acceptable.
+        log.warn("LLM response not usable (status={}, tool-calls={}); retrying once",
+                first.status(), first.toolInvocations().size());
         LlmResult second = attempt(repair(request));
-        return isUsable(second, request) ? second : INVALID;
+        if (isUsable(second, request)) {
+            return second;
+        }
+        log.warn("LLM response still invalid after retry; returning INVALID_RESPONSE");
+        return INVALID;
     }
 
     private LlmResult attempt(LlmRequest request) {

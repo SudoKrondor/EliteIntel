@@ -45,6 +45,19 @@ public final class CompanionSubsystemGate implements ManagedService {
     private ConfirmationCoordinator confirmationCoordinator;
     private BargeInController bargeInController;
 
+    private final LlmGateway llmOverride;
+    private final ExecutionGateway executionOverride;
+
+    public CompanionSubsystemGate() {
+        this(null, null);
+    }
+
+    /** Test seam: inject a recording execution gateway and/or a tracing LLM gateway for the local eval. */
+    CompanionSubsystemGate(LlmGateway llmOverride, ExecutionGateway executionOverride) {
+        this.llmOverride = llmOverride;
+        this.executionOverride = executionOverride;
+    }
+
     /** Commander voice input gate. A spoken confirmation code word confirms a frozen dangerous action. */
     @Subscribe
     public void onUserInput(UserInputEvent event) {
@@ -90,9 +103,9 @@ public final class CompanionSubsystemGate implements ManagedService {
         // (system functions reaching CompanionRuntime statically) can reach the gateways and state.
         CompanionState state = new CompanionState();
         CompanionActionReducer reducer = new WordOverlapActionReducer();
-        LlmGateway llm = CompanionLlmGatewayFactory.create();
+        LlmGateway llm = llmOverride != null ? llmOverride : CompanionLlmGatewayFactory.create();
         SpeechGateway speech = new CompanionSpeechGateway();
-        ExecutionGateway execution = new CompanionExecutionGateway();
+        ExecutionGateway execution = executionOverride != null ? executionOverride : new CompanionExecutionGateway();
         SessionMemoryGateway memory = new SessionMemoryGateway();
         // Long-term consolidation: hand mid-term overflow to the LLM-backed consolidator (§3.7/§10.3).
         memory.setMidTermEvictionListener(new MidTermToLongTermConsolidator(memory, llm, speech));
@@ -131,5 +144,10 @@ public final class CompanionSubsystemGate implements ManagedService {
     /** Reads the {@code companionModeOn} gate flag. */
     private boolean isCompanionModeOn() {
         return CompanionConfig.companionModeOn();
+    }
+
+    /** Test access to the live dispatcher (e.g. for an idle-based turn boundary in the local eval). */
+    ThoughtDispatcher dispatcher() {
+        return dispatcher;
     }
 }
