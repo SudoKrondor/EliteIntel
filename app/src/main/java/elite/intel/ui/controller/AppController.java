@@ -1,9 +1,32 @@
 package elite.intel.ui.controller;
 
+import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+import javax.sound.sampled.Mixer;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
+
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
+import elite.intel.ai.brain.commons.ResponseRouter;
 import elite.intel.ai.ears.AudioCalibrator;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
@@ -23,26 +46,36 @@ import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.*;
+import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.ClearConsoleEvent;
+import elite.intel.ui.event.LanguageChangedEvent;
+import elite.intel.ui.event.LlmConnectionStatusEvent;
+import elite.intel.ui.event.NotificationVolumeChangedEvent;
+import elite.intel.ui.event.RecalibrateAudioEvent;
+import elite.intel.ui.event.RestartBrainEvent;
+import elite.intel.ui.event.RestartMouthEvent;
+import elite.intel.ui.event.ServicesStateEvent;
+import elite.intel.ui.event.SleepWakeStateChangedEvent;
+import elite.intel.ui.event.SpeechSpeedChangeEvent;
+import elite.intel.ui.event.SttThreadsChangedEvent;
+import elite.intel.ui.event.SttVolumeChangedEvent;
+import elite.intel.ui.event.ToggleServicesEvent;
+import elite.intel.ui.event.ToggleWakeWordEvent;
+import elite.intel.ui.event.UpdateAvailableEvent;
+import elite.intel.ui.event.VoiceInputModeToggleEvent;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import elite.intel.ws.WebSocketBroadcaster;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import javax.sound.sampled.Mixer;
-import javax.swing.*;
-import javax.swing.Timer;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
-import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 public class AppController implements Runnable {
 
     private static final Logger log = LogManager.getLogger(AppController.class);
+
+    private final ExecutorService bgExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "ConnectionCheck-Worker");
+        t.setDaemon(true);
+        return t;
+    });
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -50,6 +83,8 @@ public class AppController implements Runnable {
 
     /// NOTE Order of services is important
     private final Map<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+    private Timer retryConnectionTimer;
+    private int retryAttemptNumber = 0;
 
     public AppController() {
         UiBus.register(this);
@@ -176,6 +211,9 @@ public class AppController implements Runnable {
         brain.stop();
         brain.start();
         appendToLog("LLM service restarted");
+        Timer checkTimer = new Timer(2000, e -> connectionCheck());
+        checkTimer.setRepeats(false);
+        checkTimer.start();
     }
 
     @Subscribe
@@ -256,10 +294,7 @@ public class AppController implements Runnable {
 
         Timer connectionCheckTimer = new Timer(2000, e -> {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-            JsonObject direct = new JsonObject();
-            direct.addProperty("action", CONNECTION_CHECK_COMMAND);
-            direct.add("params", new JsonObject());
-            ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
+            connectionCheck();
         });
         connectionCheckTimer.setRepeats(false);
         connectionCheckTimer.start();
@@ -268,8 +303,53 @@ public class AppController implements Runnable {
         CustomCommandLoadAnnouncement.getInstance().announce();
     }
 
+    @Subscribe
+    public void onLlmConnectionStatus(LlmConnectionStatusEvent event) {
+        ResponseRouter.getInstance().setSuppressConnectionFailSpeech(!event.connected() && retryAttemptNumber > 0);
+        SwingUtilities.invokeLater(() -> {
+            if (event.connected()) {
+                stopRetryTimer();
+            } else if (isRunning.get()) {
+                startRetryTimer();
+            }
+        });
+    }
+
+    private void connectionCheck() {
+        bgExecutor.submit(() -> {
+            try {
+                JsonObject direct = new JsonObject();
+                direct.addProperty("action", CONNECTION_CHECK_COMMAND);
+                direct.add("params", new JsonObject());
+                ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
+            } catch (Exception e) {
+                log.warn("Connection check failed", e);
+            }
+        });
+    }
+
+    private void startRetryTimer() {
+        if (retryConnectionTimer != null && retryConnectionTimer.isRunning()) return;
+        retryConnectionTimer = new Timer(30_000, e -> {
+            retryAttemptNumber++;
+            connectionCheck();
+        });
+        retryConnectionTimer.setRepeats(true);
+        retryConnectionTimer.start();
+        log.info("LLM connection retry timer started (30s interval)");
+    }
+
+    private void stopRetryTimer() {
+        retryAttemptNumber = 0;
+        if (retryConnectionTimer != null) {
+            retryConnectionTimer.stop();
+            retryConnectionTimer = null;
+        }
+    }
+
     private void stopServices() {
         if (!isRunning.get()) return;
+        stopRetryTimer();
         List<ServiceType> reverseOrder = new ArrayList<>(services.keySet());
         Collections.reverse(reverseOrder);
         for (ServiceType type : reverseOrder) {

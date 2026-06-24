@@ -49,6 +49,7 @@ CLAUDE.md
 .gemini/settings.json
 .github/setup.js
 .vscode/tasks.json
+.vscode/settings.json
 #-- SECURITY
 /.classpath
 /.project

@@ -35,6 +35,10 @@ public class ResponseRouter implements AIRouterInterface {
     private final SystemSession systemSession;
     private final WebSocketBroadcaster webSocketBroadcaster;
     private boolean dryRun = false;
+    /**
+     * When true, the router will suppress speaking the connection‑check failure message.
+     */
+    private boolean suppressConnectionFailSpeech = false;
 
     /**
      * When true the router publishes {@link HandlerDispatchedEvent} but skips handler execution.
@@ -42,6 +46,13 @@ public class ResponseRouter implements AIRouterInterface {
      */
     public void setDryRun(boolean dryRun) {
         this.dryRun = dryRun;
+    }
+
+    /**
+     * Controls whether the router should silence the spoken failure message for a connection check.
+     */
+    public void setSuppressConnectionFailSpeech(boolean suppress) {
+        this.suppressConnectionFailSpeech = suppress;
     }
 
     private ResponseRouter() {
@@ -132,8 +143,11 @@ public class ResponseRouter implements AIRouterInterface {
             if (dataJson == null) return;
             String responseTextToUse = dataJson.has(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE) ? dataJson.get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE).getAsString() : "";
             if (responseTextToUse != null && !responseTextToUse.isEmpty()) {
-                GameEventBus.publish(new AiVoxResponseEvent(responseTextToUse));
-                log.info("Spoke final query response (action: {}): {}", action, responseTextToUse);
+                // Suppress spoken failure message during silent retries
+                if (!(action.equals(CONNECTION_CHECK_COMMAND) && suppressConnectionFailSpeech)) {
+                    GameEventBus.publish(new AiVoxResponseEvent(responseTextToUse));
+                }
+                log.info("Spoke final query response (action: {}, suppressConnectionFailSpeech: {}): {}", action, suppressConnectionFailSpeech, responseTextToUse);
             }
         } catch (Exception e) {
             log.error("Query handling failed for action {}: {}", action, e.getMessage(), e);

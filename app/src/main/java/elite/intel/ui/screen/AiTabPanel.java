@@ -67,8 +67,11 @@ public class AiTabPanel extends JPanel {
     private final Timer summaryClockTimer;
     private final Font monoFont;
 
-    public AiTabPanel(Font monoFont) {
+    private final AiUiState uiState;
+
+    public AiTabPanel(Font monoFont, AiUiState uiState) {
         this.monoFont = monoFont;
+        this.uiState = uiState; // stores the LLM connection status
         LlmSessionStatsTracker.getInstance(); // ensure tracker is registered before events flow
         sleeping = SystemSession.getInstance().isSleepingModeOn();
         UiBus.register(this);
@@ -273,6 +276,9 @@ public class AiTabPanel extends JPanel {
     }
 
     private void applyServiceState(boolean running) {
+        if (!running) {
+            uiState.setLlmConnected(null);
+        }
         isServiceRunning.set(running);
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(true);
@@ -435,11 +441,34 @@ public class AiTabPanel extends JPanel {
         boolean running = isServiceRunning.get();
         if (!running) {
             llmBadge.setValue(getText("hud.state.standby"), StatusBadge.State.IDLE);
-        } else if (lastLlmProvider != null && !lastLlmProvider.isBlank()) {
-            llmBadge.setValue(lastLlmProvider, StatusBadge.State.OK);
         } else {
-            llmBadge.setValue(getText("hud.state.active"), StatusBadge.State.OK);
+            Boolean conn = uiState.getLlmConnected();
+            if (conn == null) {
+                llmBadge.setValue(getText("hud.state.standby"), StatusBadge.State.STANDBY);
+            } else if (!conn) {
+                llmBadge.setValue(getText("hud.state.offline"), StatusBadge.State.OFFLINE);
+            } else if (lastLlmProvider != null && !lastLlmProvider.isBlank()) {
+                llmBadge.setValue(lastLlmProvider, StatusBadge.State.OK);
+            } else {
+                llmBadge.setValue(getText("hud.state.active"), StatusBadge.State.OK);
+            }
         }
+    }
+
+    @Subscribe
+    public void onLlmConnectionStatus(LlmConnectionStatusEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            uiState.setLlmConnected(event.connected());
+            refreshLlmBadge();
+        });
+    }
+
+    @Subscribe
+    public void onRestartBrain(RestartBrainEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            uiState.setLlmConnected(null);
+            refreshLlmBadge();
+        });
     }
 
     private void refreshTtsBadge() {
