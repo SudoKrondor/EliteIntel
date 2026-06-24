@@ -24,6 +24,8 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class AddMiningTargetCommand implements IntelCommand {
     public static final String ID = "add_mining_target";
 
+    @Override public String llmDescription() { return "Add a commodity to the mining target list."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 

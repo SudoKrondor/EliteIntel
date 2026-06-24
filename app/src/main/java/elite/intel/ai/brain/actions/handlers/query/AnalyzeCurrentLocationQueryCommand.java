@@ -20,6 +20,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeCurrentLocationQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_current_location";
 
+    @Override public String llmDescription() { return "Report the commander's current system and position."; }
+
 
     @Override public String id() { return ID; }
 

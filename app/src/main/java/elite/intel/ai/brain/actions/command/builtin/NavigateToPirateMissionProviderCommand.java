@@ -25,6 +25,8 @@ import java.util.List;
 public final class NavigateToPirateMissionProviderCommand implements IntelCommand {
     public static final String ID = "navigate_to_pirate_mission_provider";
 
+    @Override public String llmDescription() { return "Plot a route to the pirate mission provider."; }
+
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

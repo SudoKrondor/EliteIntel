@@ -23,6 +23,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowSocialPanelCommand implements IntelCommand {
     public static final String ID = "show_social_panel";
 
+    @Override public String llmDescription() { return "Open the social panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

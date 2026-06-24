@@ -26,6 +26,8 @@ import java.util.List;
 public final class DecreaseSpeedCommand implements IntelCommand {
     public static final String ID = "decrease_speed";
 
+    @Override public String llmDescription() { return "Decrease the throttle."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

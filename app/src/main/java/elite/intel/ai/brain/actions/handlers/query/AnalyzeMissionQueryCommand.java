@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 public class AnalyzeMissionQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_missions_and_rewards";
 
+    @Override public String llmDescription() { return "Report the active missions and their rewards."; }
+
 
     @Override public String id() { return ID; }
 

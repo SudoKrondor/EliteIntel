@@ -18,6 +18,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeSquadronCarrierDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_squadron_carrier_status_fuel_credit_finance";
 
+    @Override public String llmDescription() { return "Report the squadron carrier's status, fuel, and finances."; }
+
 
     @Override public String id() { return ID; }
 

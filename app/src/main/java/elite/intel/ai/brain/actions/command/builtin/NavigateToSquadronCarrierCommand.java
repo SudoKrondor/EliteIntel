@@ -20,6 +20,8 @@ import elite.intel.util.StringUtls;
 public final class NavigateToSquadronCarrierCommand implements IntelCommand {
     public static final String ID = "navigate_to_squadron_carrier";
 
+    @Override public String llmDescription() { return "Plot a route to the squadron carrier."; }
+
 
     @Override
     public String id() {

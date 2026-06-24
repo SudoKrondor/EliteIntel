@@ -21,6 +21,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToWeaponsCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_weapons";
 
+    @Override public String llmDescription() { return "Divert power to weapons."; }
+
 
     private static final Logger log = LogManager.getLogger(TransferPowerToWeaponsCommand.class);
 

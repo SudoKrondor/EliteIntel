@@ -28,6 +28,8 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     public static final String ID = "calculate_neutron_star_route";
 
+    @Override public String llmDescription() { return "Calculate a neutron-boosted economical route to a destination."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

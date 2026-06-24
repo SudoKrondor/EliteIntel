@@ -23,6 +23,8 @@ import elite.intel.util.StringUtls;
 public final class CalculateTradeRouteCommand implements IntelCommand {
     public static final String ID = "calculate_trade_route";
 
+    @Override public String llmDescription() { return "Calculate a profitable trade route."; }
+
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
     private final TradeProfileManager profileManager = TradeProfileManager.getInstance();

@@ -20,6 +20,8 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindHumanTechnologyBrokerCommand implements IntelCommand {
     public static final String ID = "find_human_technology_broker";
 
+    @Override public String llmDescription() { return "Find the nearest human technology broker."; }
+
 
     private static final int DEFAULT_RANGE = 250;
 

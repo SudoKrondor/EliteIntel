@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 public final class NavigateToTradeStopCommand implements IntelCommand {
     public static final String ID = "navigate_to_trade_stop";
 
+    @Override public String llmDescription() { return "Plot a route to the next trade-route stop."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();

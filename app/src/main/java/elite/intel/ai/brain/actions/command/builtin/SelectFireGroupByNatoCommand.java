@@ -19,6 +19,8 @@ import static elite.intel.gameapi.FireGroups.fireGroupByNato;
 public final class SelectFireGroupByNatoCommand implements IntelCommand {
     public static final String ID = "select_fire_group_by_nato";
 
+    @Override public String llmDescription() { return "Select a fire group by its NATO-letter name."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

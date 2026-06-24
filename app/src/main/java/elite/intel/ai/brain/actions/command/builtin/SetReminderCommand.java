@@ -20,6 +20,8 @@ import java.util.List;
 public final class SetReminderCommand implements IntelCommand {
     public static final String ID = "set_reminder";
 
+    @Override public String llmDescription() { return "Set a reminder."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

@@ -20,6 +20,8 @@ import java.util.Set;
 public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_biome_analysis";
 
+    @Override public String llmDescription() { return "Report the biome analysis for the current planet."; }
+
 
     @Override public String id() { return ID; }
 

@@ -22,6 +22,8 @@ import java.util.Objects;
 public final class SetTimedReminderCommand implements IntelCommand {
     public static final String ID = "set_timed_reminder";
 
+    @Override public String llmDescription() { return "Set a reminder that triggers after a specified time."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

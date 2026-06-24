@@ -19,6 +19,8 @@ import java.util.List;
 public final class TradeProfileToggleProhibitedCargoCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_prohibited_cargo";
 
+    @Override public String llmDescription() { return "Toggle whether trade routes may include prohibited cargo."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

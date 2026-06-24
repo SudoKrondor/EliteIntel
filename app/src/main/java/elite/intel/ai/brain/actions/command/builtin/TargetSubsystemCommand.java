@@ -20,6 +20,8 @@ import java.util.Locale;
 public final class TargetSubsystemCommand implements IntelCommand {
     public static final String ID = "target_subsystem";
 
+    @Override public String llmDescription() { return "Target a subsystem on the current target."; }
+
 
     private static final Logger log = LogManager.getLogger(TargetSubsystemCommand.class);
 

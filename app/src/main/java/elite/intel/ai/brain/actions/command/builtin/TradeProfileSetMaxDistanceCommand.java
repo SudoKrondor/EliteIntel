@@ -19,6 +19,8 @@ import java.util.List;
 public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_max_distance";
 
+    @Override public String llmDescription() { return "Set the trade-route maximum distance."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

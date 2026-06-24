@@ -18,6 +18,8 @@ import elite.intel.util.StringUtls;
 public final class ClearRemindersCommand implements IntelCommand {
     public static final String ID = "clear_reminders";
 
+    @Override public String llmDescription() { return "Clear all reminders."; }
+
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();

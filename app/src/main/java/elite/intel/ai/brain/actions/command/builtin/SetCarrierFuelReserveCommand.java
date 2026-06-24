@@ -21,6 +21,8 @@ import java.util.List;
 public final class SetCarrierFuelReserveCommand implements IntelCommand {
     public static final String ID = "set_carrier_fuel_reserve";
 
+    @Override public String llmDescription() { return "Set the fleet carrier's tritium fuel reserve level."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

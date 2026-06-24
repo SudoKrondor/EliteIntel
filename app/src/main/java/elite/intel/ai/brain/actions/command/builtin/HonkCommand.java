@@ -22,6 +22,8 @@ import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
 public final class HonkCommand implements IntelCommand {
     public static final String ID = "honk";
 
+    @Override public String llmDescription() { return "Fire the discovery scanner (honk) to map the system."; }
+
 
     public static final int SCAN_HOLD_MS = 4900;
     private final PlayerSession playerSession = PlayerSession.getInstance();

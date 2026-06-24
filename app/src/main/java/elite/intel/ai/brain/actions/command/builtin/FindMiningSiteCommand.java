@@ -30,6 +30,8 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class FindMiningSiteCommand implements IntelCommand {
     public static final String ID = "find_mining_site";
 
+    @Override public String llmDescription() { return "Find a nearby mining site for a commodity."; }
+
 
     private static final int MAX_DEFAULT_RANGE = 1000;
 

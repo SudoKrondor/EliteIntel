@@ -20,6 +20,8 @@ import elite.intel.util.StringUtls;
 public final class ConfirmHuntingGroundCommand implements IntelCommand {
     public static final String ID = "confirm_hunting_ground";
 
+    @Override public String llmDescription() { return "Confirm the current location as a hunting ground."; }
+
 
     private final HuntingGroundManager missionDataManager = HuntingGroundManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

@@ -108,10 +108,11 @@ final class GameToolCandidates {
             }
             boolean hasPhrases = AiActionAliasTextProvider.hasKey(language, id);
             String phraseGroup = hasPhrases ? AiActionAliasTextProvider.getText(language, id) : "";
-            // The tool name already identifies the action; the description carries only the localized example
-            // phrases (when any). A synthetic "Game action <id>" base would just restate the name and, on an
-            // empty parameter schema, mislead the model into fabricating an argument.
-            String description = examplePhrases(phraseGroup);
+            // The action's own English purpose (llmDescription) is the tool description; until an action has
+            // one, fall back to its example phrases. The tool name already identifies the action, so an
+            // unauthored, phrase-less action gets no description rather than a synthetic name restatement.
+            String authored = action.llmDescription();
+            String description = authored == null || authored.isBlank() ? examplePhrases(phraseGroup) : authored;
             out.add(new Candidate(id, hasPhrases ? phraseGroup : id,
                     new LlmToolDefinition(id, description, phraseGroup, action.parameters())));
         }

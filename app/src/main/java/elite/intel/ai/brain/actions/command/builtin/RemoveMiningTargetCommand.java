@@ -24,6 +24,8 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class RemoveMiningTargetCommand implements IntelCommand {
     public static final String ID = "remove_mining_target";
 
+    @Override public String llmDescription() { return "Remove a commodity from the mining target list."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 

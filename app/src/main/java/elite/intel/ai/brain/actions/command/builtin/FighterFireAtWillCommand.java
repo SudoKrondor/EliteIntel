@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class FighterFireAtWillCommand extends SimpleTapCommand {
     public static final String ID = "fighter_fire_at_will";
 
+    @Override public String llmDescription() { return "Order the ship-launched fighter to fire at will."; }
+
     public FighterFireAtWillCommand() {
         super(ID, Bindings.GameCommand.OPEN_ORDERS.getGameBinding());
     }

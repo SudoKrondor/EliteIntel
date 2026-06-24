@@ -18,6 +18,8 @@ import elite.intel.util.StringUtls;
 public final class PlotRouteNextNeutronStarWaypointCommand implements IntelCommand {
     public static final String ID = "plot_route_next_neutron_star_waypoint";
 
+    @Override public String llmDescription() { return "Plot the next neutron-star waypoint on the route."; }
+
 
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
 

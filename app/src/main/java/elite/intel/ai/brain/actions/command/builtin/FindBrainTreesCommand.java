@@ -27,6 +27,8 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class FindBrainTreesCommand implements IntelCommand {
     public static final String ID = "find_brain_trees";
 
+    @Override public String llmDescription() { return "Find nearby Brain Tree biological sites."; }
+
 
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

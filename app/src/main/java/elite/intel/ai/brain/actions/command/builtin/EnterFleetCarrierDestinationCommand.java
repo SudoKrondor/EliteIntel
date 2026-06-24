@@ -24,6 +24,8 @@ import java.util.Map;
 public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     public static final String ID = "enter_fleet_carrier_destination";
 
+    @Override public String llmDescription() { return "Set the fleet carrier's destination system."; }
+
 
     @Override
     public String id() {

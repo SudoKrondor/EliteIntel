@@ -20,6 +20,8 @@ import elite.intel.util.StringUtls;
 public final class NavigateToMissionTargetCommand implements IntelCommand {
     public static final String ID = "navigate_to_mission_target";
 
+    @Override public String llmDescription() { return "Plot a route to the active mission target."; }
+
 
     private final MissionManager missionManager = MissionManager.getInstance();
 

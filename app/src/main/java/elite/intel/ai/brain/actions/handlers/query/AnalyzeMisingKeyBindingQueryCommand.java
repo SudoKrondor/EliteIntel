@@ -13,6 +13,8 @@ import java.util.List;
 public class AnalyzeMisingKeyBindingQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "check_missing_key_bindings";
 
+    @Override public String llmDescription() { return "Report which required Elite key bindings are missing."; }
+
 
     @Override public String id() { return ID; }
 

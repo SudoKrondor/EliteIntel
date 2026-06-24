@@ -12,6 +12,8 @@ import elite.intel.util.StringUtls;
 public class AnalyzeDistanceFromTheBubbleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_distance_to_bubble_earth_sol_civilization";
 
+    @Override public String llmDescription() { return "Report the distance from the current location to the populated core systems (the Bubble / Sol / Earth)."; }
+
 
     @Override public String id() { return ID; }
 

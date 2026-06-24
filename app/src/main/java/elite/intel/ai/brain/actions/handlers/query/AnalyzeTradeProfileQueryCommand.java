@@ -13,6 +13,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeTradeProfileQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_trade_profile";
 
+    @Override public String llmDescription() { return "Report the configured trade-route search parameters."; }
+
 
     @Override public String id() { return ID; }
 

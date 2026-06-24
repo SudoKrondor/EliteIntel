@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class FighterReturnToShipCommand extends SimpleTapCommand {
     public static final String ID = "fighter_return_to_ship";
 
+    @Override public String llmDescription() { return "Order the ship-launched fighter to return to the ship."; }
+
     public FighterReturnToShipCommand() {
         super(ID, Bindings.GameCommand.BINDING_REQUEST_REQUEST_DOCK.getGameBinding());
     }

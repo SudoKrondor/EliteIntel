@@ -19,6 +19,8 @@ import java.util.List;
 public final class TradeProfileSetBudgetCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_budget";
 
+    @Override public String llmDescription() { return "Set the trade-route search budget."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

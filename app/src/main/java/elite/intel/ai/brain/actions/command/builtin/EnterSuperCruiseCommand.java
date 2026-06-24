@@ -26,6 +26,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class EnterSuperCruiseCommand implements IntelCommand {
     public static final String ID = "enter_super_cruise";
 
+    @Override public String llmDescription() { return "Engage supercruise."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

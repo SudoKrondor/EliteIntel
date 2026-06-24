@@ -15,6 +15,8 @@ import elite.intel.util.StringUtls;
 public class AnalyzeDistanceFromFleetCarrierQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_distance_to_carrier";
 
+    @Override public String llmDescription() { return "Report the distance to the fleet carrier."; }
+
 
     @Override public String id() { return ID; }
 

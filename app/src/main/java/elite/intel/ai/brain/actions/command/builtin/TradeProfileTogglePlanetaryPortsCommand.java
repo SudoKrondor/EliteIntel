@@ -19,6 +19,8 @@ import java.util.List;
 public final class TradeProfileTogglePlanetaryPortsCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_planetary_ports";
 
+    @Override public String llmDescription() { return "Toggle whether trade routes may include planetary ports."; }
+
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 

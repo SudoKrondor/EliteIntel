@@ -15,6 +15,8 @@ import elite.intel.util.StringUtls;
 public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_discovery_announcements";
 
+    @Override public String llmDescription() { return "Toggle exploration discovery announcements on or off."; }
+
 
     @Override
     public String id() {

@@ -20,6 +20,8 @@ import elite.intel.util.StringUtls;
 public final class NavigateToLandingZoneCommand implements IntelCommand {
     public static final String ID = "navigate_to_landing_zone";
 
+    @Override public String llmDescription() { return "Plot a route to the landing zone."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

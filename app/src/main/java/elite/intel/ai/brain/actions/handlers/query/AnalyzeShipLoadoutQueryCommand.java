@@ -21,6 +21,8 @@ import static java.util.Map.ofEntries;
 public class AnalyzeShipLoadoutQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_ship_loadout";
 
+    @Override public String llmDescription() { return "Report the current ship's loadout and installed modules."; }
+
 
     @Override public String id() { return ID; }
 

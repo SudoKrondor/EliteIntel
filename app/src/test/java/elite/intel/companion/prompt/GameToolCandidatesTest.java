@@ -111,4 +111,20 @@ class GameToolCandidatesTest {
         assertTrue(only.tool().description().isEmpty());
         assertFalse(only.tool().description().contains("Game action"));
     }
+
+    @Test
+    void authoredLlmDescriptionIsUsedVerbatimAsTheToolDescription() {
+        IntelAction described = new IntelAction() {
+            @Override public String id() { return "described_action"; }
+            @Override public boolean isVisibleForLLM(Status status) { return true; }
+            @Override public List<ActionParameterSpec> parameters() { return List.of(); }
+            @Override public String llmDescription() { return "Do the specific thing."; }
+            @Override public JsonObject handle(String a, JsonObject p, String t) { return null; }
+        };
+        GameToolCandidates c = candidates(Map.of("described_action", described), Map.of(), List.of());
+
+        GameToolCandidates.Candidate only = c.collect(EnumSet.of(IntelActionCategory.ACTION)).get(0);
+        // The authored English purpose wins over example phrases and is sent as-is.
+        assertEquals("Do the specific thing.", only.tool().description());
+    }
 }

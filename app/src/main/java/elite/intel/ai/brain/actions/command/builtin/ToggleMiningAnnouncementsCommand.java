@@ -15,6 +15,8 @@ import elite.intel.util.StringUtls;
 public final class ToggleMiningAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_mining_announcements";
 
+    @Override public String llmDescription() { return "Toggle mining announcements on or off."; }
+
 
     @Override
     public String id() {

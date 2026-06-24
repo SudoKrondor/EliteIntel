@@ -15,6 +15,8 @@ import elite.intel.util.StringUtls;
 public final class ToggleRadioCommand implements IntelCommand {
     public static final String ID = "toggle_radio";
 
+    @Override public String llmDescription() { return "Toggle radio playback on or off."; }
+
 
     @Override
     public String id() {

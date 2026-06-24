@@ -17,6 +17,8 @@ import elite.intel.util.StringUtls;
 public final class ToggleAllAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_all_announcements";
 
+    @Override public String llmDescription() { return "Toggle all spoken announcements on or off."; }
+
 
     @Override
     public String id() {

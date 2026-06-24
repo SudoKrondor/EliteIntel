@@ -23,6 +23,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ReturnToSurfaceCommand implements IntelCommand {
     public static final String ID = "return_to_surface";
 
+    @Override public String llmDescription() { return "Return to the planet surface."; }
+
 
     private final Status status = Status.getInstance();
 

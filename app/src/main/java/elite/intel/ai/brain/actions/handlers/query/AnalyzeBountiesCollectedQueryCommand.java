@@ -12,6 +12,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeBountiesCollectedQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_total_bounties";
 
+    @Override public String llmDescription() { return "Report the total bounties the commander has collected."; }
+
 
     @Override public String id() { return ID; }
 

@@ -15,6 +15,8 @@ import elite.intel.eventbus.GameEventBus;
 public final class InterruptCommand implements IntelCommand {
     public static final String ID = "interrupt";
 
+    @Override public String llmDescription() { return "Interrupt the companion's current speech or action."; }
+
 
     @Override
     public String id() {
