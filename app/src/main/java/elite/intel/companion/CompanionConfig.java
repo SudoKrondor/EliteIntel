@@ -7,7 +7,7 @@ package elite.intel.companion;
 public final class CompanionConfig {
 
     // TODO: back these by GUI/DB settings.
-    private static final boolean COMPANION_MODE_ON = true;
+    private static final boolean COMPANION_MODE_ON = false;
     private static final String CONFIRMATION_CODE_WORD = "password";
 
     private CompanionConfig() {
