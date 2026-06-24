@@ -1,6 +1,8 @@
 package elite.intel.companion.memory;
 
+import java.time.Instant;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
@@ -8,20 +10,39 @@ import java.util.Locale;
 /**
  * Small cyclic LLM scratch memory. Not split by topic, not consolidated. Bounds come from
  * {@link CompanionMemoryLimits} (max entries, max chars each); a new entry past the cap evicts the
- * oldest; exact duplicates are not added. Package-private internal of {@link SessionMemoryGateway}.
+ * oldest; exact duplicates are not added. Each item carries its write time so a unified recall can sort
+ * conscious facts together with mid-term entries. Package-private internal of {@link SessionMemoryGateway}.
  */
 final class LlmMemory {
 
+    /** One remembered fact with the time it was stored, for unified time-ordered recall. */
+    record Item(Instant at, String content) {}
+
     // Oldest-to-newest; a new entry past the cap evicts the oldest (cyclic).
-    private final Deque<String> items = new ArrayDeque<>();
+    private final Deque<Item> items = new ArrayDeque<>();
 
     /** Package-private: only the memory package constructs this internal store. */
     LlmMemory() {
     }
 
-    /** Returns the whole list, oldest-to-newest (small enough to return entirely). */
+    /** Returns the content of every item, oldest-to-newest (small enough to return entirely). */
     List<String> all() {
-        return List.copyOf(items);
+        List<String> contents = new ArrayList<>(items.size());
+        for (Item item : items) {
+            contents.add(item.content());
+        }
+        return contents;
+    }
+
+    /** Items whose content contains the (lower-cased) query; a blank query matches all. */
+    List<Item> matching(String queryLower) {
+        List<Item> matched = new ArrayList<>();
+        for (Item item : items) {
+            if (queryLower.isEmpty() || item.content().toLowerCase(Locale.ROOT).contains(queryLower)) {
+                matched.add(item);
+            }
+        }
+        return matched;
     }
 
     /**
@@ -41,15 +62,15 @@ final class LlmMemory {
             stored = stored.substring(0, CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH);
         }
         String key = normalize(stored);
-        for (String existing : items) {
-            if (normalize(existing).equals(key)) {
+        for (Item existing : items) {
+            if (normalize(existing.content()).equals(key)) {
                 return; // exact duplicate
             }
         }
         if (items.size() >= CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES) {
             items.removeFirst();
         }
-        items.addLast(stored);
+        items.addLast(new Item(Instant.now(), stored));
     }
 
     /** Current item count. */

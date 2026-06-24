@@ -86,38 +86,14 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void recallLlmMemoryReturnsAllItems() {
-        memory.llmItems = List.of("a", "b");
+    void recallSearchesAllMemoryWithASingleQuery() {
+        memory.matchingItems = List.of("painite in cargo rack seven", "rendezvous at Maia");
 
-        JsonObject result = new RecallFunction().handle("recall", params("scope", "llm_memory"), "");
+        JsonObject result = new SearchInMemoryFunction().handle("search_in_memory", params("query", "painite"), "");
 
+        assertEquals("painite", memory.recalledQuery);
         assertEquals(2, result.getAsJsonArray("items").size());
-        assertEquals("a", result.getAsJsonArray("items").get(0).getAsString());
-    }
-
-    @Test
-    void recallTopicMemoryReturnsEntryContents() {
-        memory.topicEntries = List.of(new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION,
-                MemorySource.COMMANDER, "jumped to Sol", MemoryProcessingState.PROCESSED));
-        JsonObject p = new JsonObject();
-        p.addProperty("scope", "topic_memory");
-        p.addProperty("topic", "navigation");
-
-        JsonObject result = new RecallFunction().handle("recall", p, "");
-
-        assertEquals(ConversationTopic.NAVIGATION, memory.recalledTopic);
-        assertEquals("jumped to Sol", result.getAsJsonArray("items").get(0).getAsString());
-    }
-
-    @Test
-    void recallUnknownTopicReportsError() {
-        JsonObject p = new JsonObject();
-        p.addProperty("scope", "topic_memory");
-        p.addProperty("topic", "does_not_exist");
-
-        JsonObject result = new RecallFunction().handle("recall", p, "");
-
-        assertEquals("unknown topic", result.get("error").getAsString());
+        assertEquals("painite in cargo rack seven", result.getAsJsonArray("items").get(0).getAsString());
     }
 
     @Test
@@ -170,17 +146,19 @@ class SystemFunctionHandleTest {
     /** Minimal MemoryGateway fake recording the calls the system functions make. */
     private static final class RecordingMemory implements MemoryGateway {
         String remembered;
-        List<String> llmItems = List.of();
-        List<MemoryEntry> topicEntries = List.of();
-        ConversationTopic recalledTopic;
+        String recalledQuery;
+        List<String> matchingItems = List.of();
 
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
-            recalledTopic = topic;
-            return topicEntries;
+            throw new UnsupportedOperationException();
         }
-        @Override public List<String> readLlmMemory() { return llmItems; }
+        @Override public List<String> recallMatching(String query, int limit) {
+            recalledQuery = query;
+            return matchingItems;
+        }
+        @Override public List<String> readLlmMemory() { throw new UnsupportedOperationException(); }
         @Override public void writeLlmMemory(String content) { remembered = content; }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }

@@ -38,8 +38,7 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("never invent or guess facts"));
-        // No-fit: use find_action / clarify / decline instead of forcing an unrelated function.
-        assertTrue(text.contains("find_action"));
+        // No-fit: clarify or decline instead of forcing (or pretending to perform) an unrelated function.
         assertTrue(text.contains("clarify"));
         // Polite closing: do not promise to check and then go silent.
         assertTrue(text.contains("fall silent"));

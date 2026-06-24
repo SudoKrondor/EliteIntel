@@ -123,6 +123,7 @@ class MidTermToLongTermConsolidatorTest {
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
+        @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> readLlmMemory() { throw new UnsupportedOperationException(); }
         @Override public void writeLlmMemory(String content) { throw new UnsupportedOperationException(); }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }

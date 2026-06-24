@@ -3,7 +3,10 @@ package elite.intel.companion.memory;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Default {@link MemoryGateway} implementation. Composes the four session memory areas
@@ -61,6 +64,25 @@ public final class SessionMemoryGateway implements MemoryGateway {
     public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
         return midTerm.recall(topic, query, limit);
     }
+
+    @Override
+    public List<String> recallMatching(String query, int limit) {
+        String q = query == null ? "" : query.strip().toLowerCase(Locale.ROOT);
+        // One unified search: mid-term across all topics + the conscious llm_memory facts, merged and
+        // returned newest-first so the model never has to choose a scope or topic.
+        List<TimedHit> hits = new ArrayList<>();
+        for (MemoryEntry entry : midTerm.matchingAcrossTopics(q)) {
+            hits.add(new TimedHit(entry.timestamp(), entry.content()));
+        }
+        for (LlmMemory.Item item : llmMemory.matching(q)) {
+            hits.add(new TimedHit(item.at(), item.content()));
+        }
+        hits.sort(Comparator.comparing(TimedHit::at).reversed());
+        return hits.stream().limit(Math.max(0, limit)).map(TimedHit::content).distinct().toList();
+    }
+
+    /** A matched memory entry with its write time, for merging the two memory areas by recency. */
+    private record TimedHit(java.time.Instant at, String content) {}
 
     @Override
     public List<String> readLlmMemory() {

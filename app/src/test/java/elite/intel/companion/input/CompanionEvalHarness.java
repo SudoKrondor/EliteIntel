@@ -238,15 +238,15 @@ public final class CompanionEvalHarness {
         return null;
     }
 
-    /** Whether the model called recall with the given scope this turn. */
-    public boolean recalled(String scope) {
-        return callsNamed("recall").stream().anyMatch(r -> scope.equalsIgnoreCase(str(r.args(), "scope")));
+    /** Whether the model called search_in_memory this turn. */
+    public boolean recalled() {
+        return called("search_in_memory");
     }
 
-    /** Whether the model called recall(scope=topic_memory) for the given topic id this turn. */
-    public boolean recalledTopic(String topicId) {
-        return callsNamed("recall").stream().anyMatch(r ->
-                "topic_memory".equalsIgnoreCase(str(r.args(), "scope")) && topicId.equalsIgnoreCase(str(r.args(), "topic")));
+    /** The query passed to the first search_in_memory call this turn, or empty when it was not called. */
+    public String recalledQuery() {
+        List<Executed> recalls = callsNamed("search_in_memory");
+        return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
     }
 
     private static String str(JsonObject o, String key) {

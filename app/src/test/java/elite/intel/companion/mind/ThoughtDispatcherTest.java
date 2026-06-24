@@ -250,6 +250,7 @@ class ThoughtDispatcherTest {
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
+        @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
         @Override public List<String> readLlmMemory() { return List.of(); }
         @Override public void writeLlmMemory(String content) { }
         @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(0, 15, List.of()); }

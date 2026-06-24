@@ -130,7 +130,7 @@
 * вызывать `change_global_topic`;
 * менять global `TopicModel`;
 * вызывать `remember`;
-* вызывать `recall`;
+* вызывать `search_in_memory`;
 * менять болтливость;
 * уточнять;
 * искать действие.
@@ -151,9 +151,8 @@
 * выполнять user macros;
 * получать action/macro tools в prompt;
 * вызывать `remember`;
-* вызывать `recall`;
+* вызывать `search_in_memory`;
 * вызывать `clarify`;
-* вызывать `find_action`;
 * вызывать `change_verbosity`;
 * вызывать `change_global_topic`;
 * менять global `TopicModel`.
@@ -859,8 +858,7 @@ speak
 nothing_to_do
 clarify
 remember
-recall
-find_action
+search_in_memory
 change_global_topic
 change_verbosity
 ```
@@ -1249,24 +1247,20 @@ oldest entries evicted
 
 ---
 
-### §3.5. Recall topic memory
+### §3.5. Search in memory
 
-`recall(scope=topic_memory, topic=..., query=...)`:
+`search_in_memory(query)` — единый поиск по памяти, заменивший прежний двухскоупный `recall(scope=...)`:
 
 * доступен только COMMANDER thought;
-* topic обязателен;
-* unknown topic → ignored / empty result / diagnostics;
-* не читает всю обычную память;
-* читает только mid-term topic memory одной темы;
-* не читает short-term memory, потому что short-term уже вставлен в prompt;
-* не читает `long_term_summary`, потому что summary уже вставлен в prompt;
-* не читает `llm_memory`, для этого есть отдельный scope;
-* если query не задан → последние/самые свежие N записей темы;
-* если query задан → простой текстовый фильтр внутри этой темы;
-* максимум N записей;
-* N задаётся настройкой;
-* без LLM;
-* без embeddings на первом этапе.
+* единственный параметр — `query` (без `scope`, без `topic`);
+* ищет сразу по **всей** mid-term topic memory (по всем темам) **и** по `llm_memory` (осознанные факты);
+* фильтр — простое текстовое вхождение `query` (case-insensitive); пустой query → просто самые свежие записи;
+* результаты обоих источников объединяются и сортируются по времени записи (свежие первыми);
+* максимум N записей (N задаётся настройкой);
+* не читает short-term memory и `long_term_summary` — они уже вставлены в prompt целиком;
+* без LLM; без embeddings на первом этапе.
+
+Зачем единый scope: малая локальная модель плохо выбирает scope/topic (в evals `recall(topic_memory)` не вызывался вовсе); один `search_in_memory(query)` убирает это решение — модель просто задаёт, что ищет.
 
 ---
 
@@ -1373,14 +1367,7 @@ collapse spaces
 case-insensitive compare
 ```
 
-`recall(scope=llm_memory)`:
-
-* доступен только COMMANDER thought;
-* не принимает topic;
-* не принимает query;
-* возвращает весь список llm_memory.
-
-Почему можно вернуть всё: максимум 15 × 50 символов.
+Чтение `llm_memory`: осознанные факты доступны через единый `search_in_memory(query)` (§3.5) наравне с mid-term памятью — отдельного scope больше нет. llm_memory мал (максимум 15 × 50 символов), его записи хранятся с отметкой времени, чтобы попадать в общую сортировку поиска по времени.
 
 ---
 
@@ -1399,7 +1386,6 @@ PromptComposer всегда вставляет:
 
 ```text
 change_global_topic
-recall(topic=...)
 ```
 
 Topic enum должен быть компактным: примерно 10–15 тем.
@@ -1416,12 +1402,11 @@ short description
 Пример:
 
 ```text
-llm_memory:
-7 / 15 remembered items available.
-Use recall(scope=llm_memory) to load all.
+Remembered facts:
+7 / 15 items.
 ```
 
-Полное содержимое llm_memory не вставляется автоматически.
+Полное содержимое llm_memory не вставляется автоматически; для поиска по нему используется `search_in_memory(query)`.
 
 #### topic memory index
 
@@ -1433,9 +1418,9 @@ Hints не генерируются LLM.
 Пример:
 
 ```text
-topic memory available:
-- navigation: jumps, routes, systems, docking, location changes
-- trade: market, commodities, prices, cargo, profit
+Topics with stored memory:
+- navigation
+- trade
 ```
 
 ---
@@ -1451,8 +1436,7 @@ speak
 nothing_to_do
 clarify
 remember
-recall
-find_action
+search_in_memory
 change_global_topic
 change_verbosity
 ```
@@ -1481,21 +1465,13 @@ confirmation_request
 
 Записать короткий факт в llm_memory.
 
-#### `recall`
+#### `search_in_memory`
 
-Читать:
+Единый поиск по памяти: `search_in_memory(query)`. Один параметр `query`; ищет одновременно по mid-term памяти всех тем и по `llm_memory`, возвращает свежие совпадения, отсортированные по времени (см. §3.5). Без `scope`/`topic`.
 
-```text
-scope=llm_memory
-scope=topic_memory
-```
+#### `find_action` (retired)
 
-`llm_memory` — без topic/query.
-`topic_memory` — topic обязателен, query опционален.
-
-#### `find_action`
-
-Поиск действия по каталогу.
+Поиск действия по каталогу. **Выведен из обращения**: больше не регистрируется и не предлагается модели (`@RegisterSystemFunction` снята). Причина — редьюсер достаточно надёжно поднимает нужные инструменты, а малая локальная модель за `find_action` не тянется (в evals 0 вызовов). Класс `FindActionFunction` сохранён как наследие; recovery промахов редьюсера, если понадобится, делать **системным fallback'ом** (второй проход с расширенным набором), а не модельным инструментом.
 
 #### `change_global_topic`
 
@@ -1541,9 +1517,8 @@ EVENT thought не получает:
 
 ```text
 remember
-recall
+search_in_memory
 clarify
-find_action
 change_verbosity
 change_global_topic
 ```
@@ -1766,7 +1741,7 @@ In-flight cancelled requests:
 * short-term memory max entries.
 * short-term memory token budget.
 * mid-term max entries per topic.
-* topic memory recall limit N.
+* memory search return limit N (`search_in_memory`).
 * consolidation buffer threshold.
 * long_term_summary compact size limit.
 * llm_memory fixed limits currently agreed:
@@ -1868,7 +1843,7 @@ v0.13 основана на прогоне правдоподобных сцен
 1. простая безопасная голосовая команда;
 2. обычное игровое событие без action;
 3. событие + read-only query;
-4. commander query + recall памяти;
+4. commander query + поиск в памяти (`search_in_memory`);
 5. dangerous action + confirmation;
 6. urgent event interrupt;
 7. barge-in во время TTS;
@@ -1969,8 +1944,8 @@ elite.intel.companion
 ├─ prompt               PromptComposer, ComposedPrompt, IntelActionAccessPolicy,
 │                       CompanionActionReducer, WordOverlapActionReducer, GameToolCandidates
 ├─ tools                SystemFunction, RegisterSystemFunction, SystemFunctionRegistry, SystemFunctionProvider,
-│                       + the 8 functions (speak, nothing_to_do, change_global_topic, clarify, remember, recall,
-│                         find_action, change_verbosity), each an IntelAction
+│                       + the 7 system functions (speak, nothing_to_do, change_global_topic, clarify, remember,
+│                         search_in_memory, change_verbosity), each an IntelAction (FindActionFunction retired, unregistered)
 ├─ llm                  LlmGateway, CompanionLlmGateway, ...
 ├─ speech               SpeechGateway, CompanionSpeechGateway
 ├─ execution            ExecutionGateway, CompanionExecutionGateway
@@ -1979,7 +1954,7 @@ elite.intel.companion
 └─ confirm              DangerousActionConfirmedEvent
 ```
 
-> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel` + `Verbosity`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `change_global_topic` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `change_verbosity` and `find_action` likewise execute and write/read `CompanionState`/`reducer`. The only lifecycle-only signal left is `nothing_to_do` (turn terminator, intercepted by the `Thought`). `LlmMemory` and `MidTermTopicMemory.recall` are implemented, so `remember`/`recall` are functional.
+> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel` + `Verbosity`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `change_global_topic` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `change_verbosity` likewise executes and writes `CompanionState` (`find_action` is retired and no longer registered). The only lifecycle-only signal left is `nothing_to_do` (turn terminator, intercepted by the `Thought`). `LlmMemory` and `MidTermTopicMemory` search are implemented, so `remember`/`search_in_memory` are functional.
 
 ### §10.3. Уточнения механизмов (отличия от ранних разделов)
 
@@ -1990,7 +1965,8 @@ elite.intel.companion
 * **`SpeechRequest` = `(requestId, text, urgency)`.** Различие conscious / system-notification — забота вызывающей стороны, поля `source` нет.
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. В набор tools попадает любой action с `isVisibleForLLM(status) == true` — это автоматически отсекает неуместный в текущем контексте набор (например, on-foot команды, когда командир в корабле). Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
-  * **Локализованные фразы → в `description` игрового tool (hard rule).** Системный промпт и описания tools — на английском (см. решение о языке), но командир может говорить на другом языке. Поэтому если у игровой команды есть локализованные тренировочные фразы, они **вшиваются в текст `description`** (а не только лежат в отдельном поле): примеры реальных фраз на языке командира помогают LLM сопоставить распознанную реплику с нужной командой. Причина именно вшивать: native-рендер (`OpenAiCompatibleLlmAdapter`) сейчас отдаёт провайдеру только `name/description/parameters` — отдельное поле `localizedTrainingPhrases` в провод не уходит, оно сохраняется как нейтральный носитель для будущих адаптеров. У системных функций тренировочных фраз нет (командир не вызывает их голосом).
+  * **Описание игрового tool — авторская английская суть (`llmDescription`).** Описание команды/запроса для провайдера берётся из её собственного `IntelAction.llmDescription()` — короткой английской фразы назначения (что делает / что возвращает). Системные функции описываются так же — каждая переопределяет `llmDescription()`; центральной карты (`CompanionFunctionTextProvider`) больше нет. Локализованные тренировочные фразы в `description` **больше не вшиваются** (прежний hard rule отменён): они кормят **редьюсер** (word-overlap по реплике командира на его языке) через `phraseKey` кандидата, а провайдеру в провод уходит только `name/description/parameters`. Тесты подтвердили: отбор кандидатов идёт по фразам в редьюсере, описание на него не влияет. Пока у действия `llmDescription` пуст — на время миграции `description` падает обратно на список example-фраз; синтетический префикс «Game action `<id>`» убран (он лишь повторял имя и провоцировал фабрикацию аргументов). У системных функций тренировочных фраз нет (командир не вызывает их голосом).
+* **System-prompt steering (`CompanionSystemPromptPart`).** Помимо контракта tool-calling, статический промпт несёт поведенческие правила (steering, не hard-enforcement): (1) **граундинг** — говорить только из результатов функций и памяти, не выдумывать факты (числа/имена/дистанции/статус); для того, что командир сообщил или что ты запомнил, — `search_in_memory`, для текущего состояния корабля/галактики — `query`-функция, при неоднозначности можно дёрнуть оба; (2) **no-fit** — если ни один offered-tool не подходит, не форсировать неуместный и **не делать вид, что выполнил** несуществующее действие, а `clarify` или честно сказать «не могу» и завершить `nothing_to_do`; (3) **вежливое закрытие** — если после проверки ответа/действия всё-таки нет, сказать об этом до конца хода, не «обещать проверить и замолчать». Покрыто `CompanionSystemPromptPartTest`.
 * **`CompanionActionReducer`:** обёртка над `elite.intel.ai.brain.Reducer`; отдельного каталога tools нет — редьюсер сам берёт actions из реестров (`CommandRegistry`/`QueryRegistry`/user macros) и сам конвертирует выживших в `LlmToolDefinition`. Получает `allowedToolCategories` (из `IntelActionAccessPolicy` по origin) и `currentInput`, строит карту разрешённых категорий (ключ — локализованная фраза, либо id при её отсутствии), делегирует словарный отбор старому редьюсеру, отсекает впрыснутый им fallback и возвращает `List<LlmToolDefinition>` для `PromptComposer.selectedTools`. EVENT thought так физически получает только `QUERY`-tools.
 * **LLM provider seam:** провайдер-специфичный рендер/разбор — `LlmProviderAdapter`. Общий OpenAI-совместимый рендер/парсинг живёт в базовом `OpenAiCompatibleLlmAdapter`; тонкие per-provider impl'ы задают только модель, `tool_choice` и `prompt_cache_key`: `MistralLlmAdapter` (cloud — `any`, с cache key) и `LmStudioLlmAdapter` (local LM Studio — `required`, без cache key). Это бывш. `CompanionLlmDialect`/`MistralToolCallDialect`, переименованы. У `LlmGateway` две операции: `submit` (tool-calling сознания) и `compressMidTermMemory(LlmRequest) → CompletableFuture<String>` (текстовый ответ для сжатия памяти; адаптер даёт `parseText`, тело — тот же `buildRequestBody` с пустыми `tools`).
 * **Long-term память реализована:** `LongTermMemory` (холдер), `MidTermTopicMemory.evictOverflow` (per-topic cap), `MidTermEvictionListener` (гейтвей отдаёт overflow, сам LLM не зовёт) и `MidTermToLongTermConsolidator` (буфер→порог→`compressMidTermMemory`→валидация `SUMMARY_MAX_CHARS`→atomic `replaceLongTermSummary`; провал → буфер потерян, summary цела, `SpeechGateway` system-notification). Все лимиты памяти — в `CompanionMemoryLimits`. Подключение listener'а к гейтвею — при bootstrap (`CompanionSubsystemGate`).

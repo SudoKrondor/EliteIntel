@@ -60,20 +60,20 @@ class ConsciousMemoryEvalTest {
         }
 
         List<String> report = new ArrayList<>();
-        report.add(String.format("%-10s | %-26s | %-12s | %-6s | %s", "keyword", "located tier", "recall llm", "hit", "spoken"));
-        report.add("-".repeat(110));
+        report.add(String.format("%-10s | %-26s | %-10s | %-6s | %s", "keyword", "located tier", "recalled", "hit", "spoken"));
+        report.add("-".repeat(108));
         int hits = 0;
         for (Probe p : probes) {
             String tier = h.locateTier(p.locator());
 
             h.say(p.question());
-            boolean recalledLlm = h.recalled("llm_memory");
+            boolean recalled = h.recalled();
             boolean hit = h.spokenContains(p.keyword());
             if (hit) {
                 hits++;
             }
-            report.add(String.format("%-10s | %-26s | %-12s | %-6s | %s",
-                    p.keyword(), tier, recalledLlm ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
+            report.add(String.format("%-10s | %-26s | %-10s | %-6s | %s",
+                    p.keyword(), tier, recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
         }
 
         StringBuilder block = new StringBuilder("\n======== CONSCIOUS MEMORY / llm_memory (theme 5) ========\n");

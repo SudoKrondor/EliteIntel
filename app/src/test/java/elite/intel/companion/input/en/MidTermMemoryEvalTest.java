@@ -65,8 +65,8 @@ class MidTermMemoryEvalTest {
         }
 
         List<String> report = new ArrayList<>();
-        report.add(String.format("%-14s | %-26s | %-12s | %-14s | %-6s | %s", "expected topic", "located tier", "topic ok", "recall topic", "hit", "spoken"));
-        report.add("-".repeat(125));
+        report.add(String.format("%-14s | %-26s | %-12s | %-10s | %-6s | %s", "expected topic", "located tier", "topic ok", "recalled", "hit", "spoken"));
+        report.add("-".repeat(120));
         int hits = 0;
         for (Probe p : probes) {
             String tier = h.locateTier(p.locator());
@@ -74,14 +74,14 @@ class MidTermMemoryEvalTest {
             boolean topicOk = p.expectedTopic().equals(actualTopic);
 
             h.say(p.question());
-            boolean recalledTopic = actualTopic != null && h.recalledTopic(actualTopic);
+            boolean recalled = h.recalled();
             boolean hit = h.spokenContains(p.keyword());
             if (hit) {
                 hits++;
             }
-            report.add(String.format("%-14s | %-26s | %-12s | %-14s | %-6s | %s",
+            report.add(String.format("%-14s | %-26s | %-12s | %-10s | %-6s | %s",
                     p.expectedTopic(), tier, topicOk ? "yes" : "(" + actualTopic + ")",
-                    recalledTopic ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
+                    recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
         }
 
         StringBuilder block = new StringBuilder("\n======== MID-TERM MEMORY BY TOPIC (theme 4) ========\n");

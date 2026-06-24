@@ -73,8 +73,8 @@ class CompanionConversationIntegrationTest {
                 call("c5", "remember", "{\"content\":\"hull is solid\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}"),
                 call("c7", "nothing_to_do", "{}")));
-        // Turn 3, round 1: recall the fact; round 2: speak using it (multi-round round-trip).
-        transport.scripted.add(response(call("c8", "recall", "{\"scope\":\"llm_memory\"}")));
+        // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
+        transport.scripted.add(response(call("c8", "search_in_memory", "{\"query\":\"hull\"}")));
         transport.scripted.add(response(
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}"),
                 call("c10", "nothing_to_do", "{}")));

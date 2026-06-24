@@ -86,10 +86,10 @@ public final class PromptComposer {
         return sb.toString();
     }
 
-    /** Full selectable topic enum; the model needs the valid values for change_global_topic / recall(topic=...). */
+    /** Full selectable topic enum; the model needs the valid values for change_global_topic. */
     private void appendTopics(StringBuilder sb) {
         PromptSections.heading(sb, "Topics");
-        sb.append("Valid values for change_global_topic and recall(topic=...):\n");
+        sb.append("Valid values for change_global_topic:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
                 sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
@@ -100,19 +100,20 @@ public final class PromptComposer {
     /** Cheap memory indexes (llm_memory, topic memory) plus the long-term summary, grouped under one header. */
     private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
         PromptSections.heading(sb, "Memory");
+        sb.append("You carry memory from earlier this session. To answer about something the commander told ")
+                .append("you or that you remembered, call search_in_memory(query) to find it.\n");
 
-        PromptSections.subheading(sb, "llm_memory");
-        sb.append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity())
-                .append(" remembered items available. Use recall(scope=llm_memory) to load all.\n");
+        PromptSections.subheading(sb, "Remembered facts");
+        sb.append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity()).append(" items.\n");
 
-        // Lists only topics that actually hold mid-term memory, so recall hints are honest.
-        PromptSections.subheading(sb, "Topic memory");
+        // Lists only topics that actually hold mid-term memory, so the model knows memory is worth searching.
+        PromptSections.subheading(sb, "Topics with stored memory");
         List<ConversationTopic> topics = indexes.topicsWithMemory();
         if (topics.isEmpty()) {
             sb.append("- none\n");
         } else {
             for (ConversationTopic topic : topics) {
-                sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
+                sb.append("- ").append(id(topic)).append('\n');
             }
         }
 
