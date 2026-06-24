@@ -105,19 +105,17 @@
 <tbody><tr>
 <td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 ГБ</td>
-<td>✅ Рекомендуется. Быстрая, точная, отлично работает для команд и запросов.</td>
+<td>✅ Рекомендуется для V1.0</td>
 </tr>
 <tr>
-<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
-<td>~8.5 ГБ</td>
-<td>Более высокое качество, если позволяет VRAM.</td>
-</tr>
-<tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 ГБ</td>
-<td>Экспериментальная. Возможны пропущенные команды и галлюцинации.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6.3 ГБ</td>
+<td>✅ Рекомендуется для V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Какую модель выбрать?</strong> <code>tulu-3.1-8b-supernova</code> — рекомендуемая модель для <strong>V1.0</strong>. В <strong>V1.1</strong> выполняется переход на <code>google/gemma-4-e4b</code>, которая поддерживает вызов функций (function calling), необходимый для новой функции «компаньон». В командах ниже используется модель V1.1 — для V1.0 замените её на <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <hr>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/2HGFmlZGK1g" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
 
@@ -137,6 +135,10 @@ export PATH=&quot;$HOME/.lmstudio/bin:$PATH&quot;
 </code></pre>
 <hr>
 <h3>Шаг 2  Загрузка модели</h3>
+<p>Для <strong>V1.1</strong> загрузите <code>google/gemma-4-e4b</code>:</p>
+<pre><code class="language-shell">lms get google/gemma-4-e4b
+</code></pre>
+<p>Для <strong>V1.0</strong> загрузите <code>tulu-3.1-8b-supernova</code>:</p>
 <pre><code class="language-shell">lms get tulu3.1
 Searching for models with the term tulu3.1
 No exact match found. Please choose a model from the list below.
@@ -169,7 +171,7 @@ No exact match found. Please choose a model from the list below.
 <hr>
 <h3>Шаг 3  Запуск сервера</h3>
 <p>Загрузите модель и запустите сервер инференса:</p>
-<pre><code class="language-shell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-shell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
 <p><code>--gpu max</code> переносит инференс на GPU для максимальной производительности.</p>
@@ -208,7 +210,7 @@ Environment=&quot;HOME=/home/YOUR_USERNAME&quot;
 Environment=&quot;PATH=/home/YOUR_USERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin&quot;
 Environment=&quot;XDG_RUNTIME_DIR=/run/user/YOUR_UID&quot;
 ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load matrixportalx/tulu-3.1-8b-supernova --yes --context-length 8192
+ExecStartPre=/home/YOUR_USERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
 ExecStart=/home/YOUR_USERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
 ExecStop=/home/YOUR_USERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/YOUR_USERNAME/.lmstudio/bin/lms daemon down

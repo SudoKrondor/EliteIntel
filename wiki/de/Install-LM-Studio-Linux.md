@@ -20,9 +20,10 @@ Um Elite Dangerous und das LLM auf **demselben Rechner** zu betreiben, ist minde
 
 | Modell | Benötigter VRAM | Hinweise |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen. Schnell, präzise, hervorragend für Befehle und Abfragen. |
-| `tulu-3.1-8b-supernova` Q8_0 | ~8,5 GB | Höhere Qualität, wenn VRAM-Spielraum vorhanden. |
-| `qwen3` 8B | ~8 GB | Experimentell. Gelegentlich verpasste Befehle und Halluzinationen möglich. |
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen für V1.0 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Empfohlen für V1.1 |
+
+> **Welches Modell?** `tulu-3.1-8b-supernova` ist das empfohlene Modell für **V1.0**. **V1.1** wechselt zu `google/gemma-4-e4b`, das die für die neue Begleiter-Funktion erforderliche Function-Calling-Unterstützung bietet. Die folgenden Befehle verwenden das V1.1-Modell – ersetze es bei V1.0 durch `tulu-3.1-8b-supernova`.
 
 ---
 
@@ -58,6 +59,14 @@ lms --help
 ---
 
 ### Schritt 2 – Das Modell herunterladen
+
+Für **V1.1** lade `google/gemma-4-e4b` herunter:
+
+```shell
+lms get google/gemma-4-e4b
+```
+
+Für **V1.0** lade `tulu-3.1-8b-supernova` herunter:
 
 ```shell
 lms get tulu3.1
@@ -107,7 +116,7 @@ lms import /path/to/tulu-3.1-8b-supernova-q4_k_m.gguf
 Das Modell laden und den Inferenzserver starten:
 
 ```shell
-lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 ```
 
@@ -168,7 +177,7 @@ Environment="HOME=/home/DEIN_BENUTZERNAME"
 Environment="PATH=/home/DEIN_BENUTZERNAME/.lmstudio/bin:/usr/local/bin:/usr/bin:/bin"
 Environment="XDG_RUNTIME_DIR=/run/user/DEINE_UID"
 ExecStartPre=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms daemon up
-ExecStartPre=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms load matrixportalx/tulu-3.1-8b-supernova --yes --context-length 8192
+ExecStartPre=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms load google/gemma-4-e4b --yes --context-length 8192
 ExecStart=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms server start --bind 0.0.0.0 --port 1234
 ExecStop=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms server stop
 ExecStopPost=/home/DEIN_BENUTZERNAME/.lmstudio/bin/lms daemon down

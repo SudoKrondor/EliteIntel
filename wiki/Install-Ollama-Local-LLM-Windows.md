@@ -16,10 +16,12 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 ### Recommended Model
 
-| Model | VRAM Required | Notes |
-|---|---|---|
-| `tulu3:8b` Q4_K_M | ~5 GB | ✅ Recommended. Reliable for commands and queries. |
-| `qwen3` 8B | ~8 GB | Experimental. Expect occasional missed commands and hallucinations. |
+| Model | VRAM Required  | Notes                  |
+|---|----------------|------------------------|
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB          | ✅ Recommended for V1.0 |
+| `google/gemma-4-e4b` | ~6.3 GB        | ✅ Recommended for V1.1 |
+
+> **Which model?** `tulu-3.1-8b-supernova` is the recommended model for **V1.0**. **V1.1** switches to `google/gemma-4-e4b`, which supports the function calling required by the new companion feature. The commands below use the V1.1 model — on V1.0, substitute `tulu-3.1-8b-supernova`.
 
 > **Note:** For the fastest local inference, consider [LM Studio](Install-LM-Studio-Windows) with `matrixportalx/tulu-3.1-8b-supernova`. In testing, it is noticeably faster than Ollama on the same hardware with the same model.
 
@@ -37,14 +39,16 @@ To run Elite Dangerous and the LLM on the **same machine**, a minimum of an **NV
 
 Open **Command Prompt** or **PowerShell** and run:
 
+For **V1.1**, pull `google/gemma-4-e4b`:
+
 ```shell
-ollama pull tulu3:8b
+ollama pull google/gemma-4-e4b
 ```
 
-Or experimental alternatives:
+For **V1.0**, pull `tulu-3.1-8b-supernova`:
 
 ```shell
-ollama pull qwen3:8b
+ollama pull tulu3:8b
 ```
 
 ---
@@ -90,9 +94,9 @@ Open the **Settings tab** in Elite Intel:
 
 - Leave the **LLM Key** field blank (local Ollama does not require one).
 - **LLM Address** defaults to `http://localhost:11434/api/chat`. If Ollama is on another machine, replace `localhost` with that machine's IP.
-- **LLM Model**: set to `tulu3:8b`.
-- **Command LLM**: set to `tulu3:8b`.
-- **Query LLM**: set to `tulu3:8b`.
+- **LLM Model**: set to `google/gemma-4-e4b`.
+- **Command LLM**: set to `google/gemma-4-e4b`.
+- **Query LLM**: set to `google/gemma-4-e4b`.
 - Click **Stop** then **Start** on the AI tab to apply changes.
 
 ---

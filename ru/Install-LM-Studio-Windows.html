@@ -105,19 +105,17 @@
 <tbody><tr>
 <td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 ГБ</td>
-<td>✅ Рекомендуется. Быстрая, точная, отлично работает для команд и запросов.</td>
+<td>✅ Рекомендуется для V1.0</td>
 </tr>
 <tr>
-<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
-<td>~8.5 ГБ</td>
-<td>Более высокое качество, если позволяет VRAM.</td>
-</tr>
-<tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 ГБ</td>
-<td>Экспериментальная. Возможны пропущенные команды и галлюцинации.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6.3 ГБ</td>
+<td>✅ Рекомендуется для V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Какую модель выбрать?</strong> <code>tulu-3.1-8b-supernova</code> — рекомендуемая модель для <strong>V1.0</strong>. В <strong>V1.1</strong> выполняется переход на <code>google/gemma-4-e4b</code>, которая поддерживает вызов функций (function calling), необходимый для новой функции «компаньон». В командах ниже используется модель V1.1 — для V1.0 замените её на <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <hr>
 <p>Подробный видеоурок от @DawnTreaderToolsoftheElite</p>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/F5RgRRePrTo" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
@@ -136,6 +134,10 @@
 </blockquote>
 <hr>
 <h3>Шаг 2  Загрузка модели</h3>
+<p>Для <strong>V1.1</strong> загрузите <code>google/gemma-4-e4b</code>:</p>
+<pre><code class="language-powershell">lms get google/gemma-4-e4b
+</code></pre>
+<p>Для <strong>V1.0</strong> загрузите <code>tulu-3.1-8b-supernova</code>:</p>
 <pre><code class="language-powershell">lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 </code></pre>
 <p>или</p>
@@ -148,7 +150,7 @@
 <hr>
 <h3>Шаг 3  Запуск сервера</h3>
 <p>Загрузите модель и запустите сервер инференса:</p>
-<pre><code class="language-powershell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-powershell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
 <p><strong>ПРИМЕЧАНИЕ</strong>: Флаг <code>--context-length 8192</code> обязателен. Без него контекстное окно может быть слишком маленьким, что приведёт к усечению промпта, сбоям и галлюцинациям.</p>
@@ -187,7 +189,7 @@ lms server start
 <p>Для автоматической загрузки модели создайте bat-файл:</p>
 <pre><code class="language-batch">@echo off
 %USERPROFILE%\.lmstudio\bin\lms.exe daemon up
-%USERPROFILE%\.lmstudio\bin\lms.exe load tulu-3.1-8b-supernova --yes --context-length 8192 --gpu max
+%USERPROFILE%\.lmstudio\bin\lms.exe load google/gemma-4-e4b --yes --context-length 8192 --gpu max
 %USERPROFILE%\.lmstudio\bin\lms.exe server start
 </code></pre>
 <p>Сохраните его как <code>start-lmstudio.bat</code> в постоянном месте (например, <code>C:\Scripts\</code>) и укажите на этот файл в действии планировщика задач.</p>

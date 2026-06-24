@@ -18,8 +18,10 @@ Para ejecutar Elite Dangerous y el LLM en la **misma máquina**, se requiere com
 
 | Modelo | VRAM requerida | Notas |
 |---|---|---|
-| `Tulu-3.1-8B-SuperNova-Q4_K_M`| ~5 GB | ✅ Recomendado. Fiable para comandos y consultas. |
-| `qwen3` 8B | ~8 GB | Experimental. Se esperan comandos fallidos y alucinaciones ocasionales. |
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Recomendado para V1.0 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Recomendado para V1.1 |
+
+> **¿Qué modelo?** `tulu-3.1-8b-supernova` es el modelo recomendado para **V1.0**. **V1.1** cambia a `google/gemma-4-e4b`, que admite el function calling necesario para la nueva función de compañero. Los comandos siguientes usan el modelo de V1.1: en V1.0, sustitúyelo por `tulu-3.1-8b-supernova`.
 
 > **Nota:** Para la inferencia local más rápida, considera [LM Studio](Install-LM-Studio-Linux) con `matrixportalx/tulu-3.1-8b-supernova`. En las pruebas, es notablemente más rápido que Ollama en el mismo hardware con el mismo modelo.
 
@@ -37,14 +39,16 @@ Ollama se instala como un servicio de systemd y se inicia automáticamente.
 
 ### Paso 2 - Descargar un modelo recomendado
 
+Para **V1.1**, descarga `google/gemma-4-e4b`:
+
 ```shell
-ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+ollama pull google/gemma-4-e4b
 ```
 
-O alternativas experimentales:
+Para **V1.0**, descarga `tulu-3.1-8b-supernova`:
 
 ```shell
-ollama pull qwen3:8b
+ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 ```
 
 ---
@@ -99,8 +103,8 @@ Abre la **pestaña Ajustes** en Elite Intel:
 
 - Deja el campo **Clave LLM** en blanco (Ollama local no requiere ninguna).
 - **Dirección LLM** tiene como valor predeterminado `http://localhost:11434/api/chat`. Si Ollama está en otra máquina, sustituye `localhost` por la IP de esa máquina.
-- **LLM de comandos**: establécelo en `hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest` (o el nombre que muestra `ollama ls`).
-- **LLM de consultas**: establécelo en `hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest` (o el nombre que muestra `ollama ls`).
+- **LLM de comandos**: establécelo en `google/gemma-4-e4b` (o el nombre que muestra `ollama ls`).
+- **LLM de consultas**: establécelo en `google/gemma-4-e4b` (o el nombre que muestra `ollama ls`).
 - Haz clic en **Detener** y luego en **Iniciar** en la pestaña de IA para aplicar los cambios.
 
 ---

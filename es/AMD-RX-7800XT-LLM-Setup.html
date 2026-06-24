@@ -137,9 +137,31 @@ sudo dnf install rocm-smi-devel
 </code></pre>
 <hr>
 <h2>Ejecutar un modelo</h2>
+<table>
+<thead>
+<tr>
+<th>Modelo</th>
+<th>VRAM requerida</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
+<td>~5 GB</td>
+<td>✅ Recomendado para V1.0</td>
+</tr>
+<tr>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6,3 GB</td>
+<td>✅ Recomendado para V1.1</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>¿Qué modelo?</strong> <code>tulu-3.1-8b-supernova</code> es el modelo recomendado para <strong>V1.0</strong>. <strong>V1.1</strong> cambia a <code>google/gemma-4-e4b</code>, que admite el function calling necesario para la nueva función de compañero. Los comandos siguientes usan el modelo de V1.1: en V1.0, sustitúyelo por <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <h3>Paso 3 - Cargar un modelo con aceleración ROCm</h3>
 <p>Al invocar <code>lms load</code>, pasa los indicadores de aceleración de hardware explícitamente. El indicador <code>--gpu max</code> le indica al tiempo de ejecución que cargue el modelo completo en la VRAM.</p>
-<pre><code class="language-bash">HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-bash">HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load google/gemma-4-e4b --context-length 8192 --gpu max
 </code></pre>
 <p>El prefijo <code>HSA_OVERRIDE_GFX_VERSION=11.0.0</code> le indica a la pila ROCm que trate la RX 7800 XT como un objetivo de cómputo compatible de forma nativa, evitando fallos de reserva silenciosa.</p>
 <hr>

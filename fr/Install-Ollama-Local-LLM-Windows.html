@@ -102,16 +102,19 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>tulu3:8b</code> Q4_K_M</td>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 Go</td>
-<td>✅ Recommandé. Fiable pour les commandes et les requêtes.</td>
+<td>✅ Recommandé pour V1.0</td>
 </tr>
 <tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 Go</td>
-<td>Expérimental. Attendez-vous à des commandes manquées occasionnelles et à des hallucinations.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6,3 Go</td>
+<td>✅ Recommandé pour V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Quel modèle ?</strong> <code>tulu-3.1-8b-supernova</code> est le modèle recommandé pour la <strong>V1.0</strong>. La <strong>V1.1</strong> passe à <code>google/gemma-4-e4b</code>, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <blockquote>
 <p><strong>Note :</strong> Pour l&#39;inférence locale la plus rapide, envisagez <a href="Install-LM-Studio-Windows.html">LM Studio</a> avec <code>matrixportalx/tulu-3.1-8b-supernova</code>. Dans nos tests, il est notablement plus rapide qu&#39;Ollama sur le même matériel avec le même modèle.</p>
 </blockquote>
@@ -125,10 +128,11 @@
 <hr>
 <h3>Étape 2 - Télécharger un modèle</h3>
 <p>Ouvrez <strong>l&#39;Invite de commandes</strong> ou <strong>PowerShell</strong> et exécutez :</p>
-<pre><code class="language-shell">ollama pull tulu3:8b
+<p>Pour la <strong>V1.1</strong>, téléchargez <code>google/gemma-4-e4b</code> :</p>
+<pre><code class="language-shell">ollama pull google/gemma-4-e4b
 </code></pre>
-<p>Ou des alternatives expérimentales :</p>
-<pre><code class="language-shell">ollama pull qwen3:8b
+<p>Pour la <strong>V1.0</strong>, téléchargez <code>tulu-3.1-8b-supernova</code> :</p>
+<pre><code class="language-shell">ollama pull tulu3:8b
 </code></pre>
 <hr>
 <h3>Étape 3 - (Optionnel) Optimiser la configuration</h3>
@@ -189,9 +193,9 @@
 <ul>
 <li>Laissez le champ <strong>Clé LLM</strong> vide (Ollama local n&#39;en requiert pas).</li>
 <li><strong>Adresse LLM</strong> par défaut : <code>http://localhost:11434/api/chat</code>. Si Ollama est sur une autre machine, remplacez <code>localhost</code> par l&#39;adresse IP de cette machine.</li>
-<li><strong>Modèle LLM</strong> : définissez sur <code>tulu3:8b</code>.</li>
-<li><strong>LLM de commande</strong> : définissez sur <code>tulu3:8b</code>.</li>
-<li><strong>LLM de requête</strong> : définissez sur <code>tulu3:8b</code>.</li>
+<li><strong>Modèle LLM</strong> : définissez sur <code>google/gemma-4-e4b</code>.</li>
+<li><strong>LLM de commande</strong> : définissez sur <code>google/gemma-4-e4b</code>.</li>
+<li><strong>LLM de requête</strong> : définissez sur <code>google/gemma-4-e4b</code>.</li>
 <li>Cliquez sur <strong>Stop</strong> puis <strong>Start</strong> dans l&#39;onglet IA pour appliquer les modifications.</li>
 </ul>
 <hr>

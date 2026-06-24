@@ -102,16 +102,19 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>Tulu-3.1-8B-SuperNova-Q4_K_M</code></td>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 ГБ</td>
-<td>✅ Рекомендується. Надійна робота з командами та запитами.</td>
+<td>✅ Рекомендовано для V1.0</td>
 </tr>
 <tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 ГБ</td>
-<td>Експериментальна. Можливі пропущені команди та галюцинації.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6.3 ГБ</td>
+<td>✅ Рекомендовано для V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Яку модель обрати?</strong> <code>tulu-3.1-8b-supernova</code> — рекомендована модель для <strong>V1.0</strong>. У <strong>V1.1</strong> відбувається перехід на <code>google/gemma-4-e4b</code>, яка підтримує виклик функцій (function calling), потрібний для нової функції «компаньйон». У командах нижче використовується модель V1.1 — для V1.0 замініть її на <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <blockquote>
 <p><strong>Примітка:</strong> Для найшвидшого локального інференсу розгляньте <a href="Install-LM-Studio-Linux.html">LM Studio</a> з <code>matrixportalx/tulu-3.1-8b-supernova</code>. За результатами тестування, він помітно швидший за Ollama на тому самому обладнанні з тією самою моделлю.</p>
 </blockquote>
@@ -122,10 +125,11 @@
 <p>Ollama встановлюється як служба systemd і запускається автоматично.</p>
 <hr>
 <h3>Крок 2  Завантаження рекомендованої моделі</h3>
-<pre><code class="language-shell">ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+<p>Для <strong>V1.1</strong> завантажте <code>google/gemma-4-e4b</code>:</p>
+<pre><code class="language-shell">ollama pull google/gemma-4-e4b
 </code></pre>
-<p>Або експериментальні альтернативи:</p>
-<pre><code class="language-shell">ollama pull qwen3:8b
+<p>Для <strong>V1.0</strong> завантажте <code>tulu-3.1-8b-supernova</code>:</p>
+<pre><code class="language-shell">ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 </code></pre>
 <hr>
 <h3>Крок 3  (Необов&#39;язково) Налаштування служби Ollama</h3>
@@ -160,8 +164,8 @@ sudo systemctl restart ollama.service
 <ul>
 <li>Залиште поле <strong>LLM Key</strong> порожнім (локальний Ollama ключ не потребує).</li>
 <li><strong>LLM Address</strong> за замовчуванням: <code>http://localhost:11434/api/chat</code>. Якщо Ollama працює на іншій машині, замініть <code>localhost</code> на IP-адресу тієї машини.</li>
-<li><strong>Command LLM</strong>: задайте <code>hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
-<li><strong>Query LLM</strong>: задайте <code>hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
+<li><strong>Command LLM</strong>: задайте <code>google/gemma-4-e4b</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
+<li><strong>Query LLM</strong>: задайте <code>google/gemma-4-e4b</code> (або ім&#39;я з виводу <code>ollama ls</code>).</li>
 <li>Натисніть <strong>Stop</strong>, а потім <strong>Start</strong> на вкладці AI, щоб застосувати зміни.</li>
 </ul>
 <hr>

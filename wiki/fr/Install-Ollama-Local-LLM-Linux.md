@@ -18,8 +18,10 @@ Pour faire fonctionner Elite Dangerous et le LLM sur la **même machine**, un mi
 
 | Modèle | VRAM requise | Notes |
 |---|---|---|
-| `Tulu-3.1-8B-SuperNova-Q4_K_M`| ~5 Go | ✅ Recommandé. Fiable pour les commandes et les requêtes. |
-| `qwen3` 8B | ~8 Go | Expérimental. Attendez-vous à des commandes manquées et à des hallucinations occasionnelles. |
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé pour V1.0 |
+| `google/gemma-4-e4b` | ~6,3 Go | ✅ Recommandé pour V1.1 |
+
+> **Quel modèle ?** `tulu-3.1-8b-supernova` est le modèle recommandé pour la **V1.0**. La **V1.1** passe à `google/gemma-4-e4b`, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par `tulu-3.1-8b-supernova`.
 
 > **Remarque :** Pour l'inférence locale la plus rapide, envisagez [LM Studio](Install-LM-Studio-Linux) avec `matrixportalx/tulu-3.1-8b-supernova`. Lors des tests, il est nettement plus rapide qu'Ollama sur le même matériel avec le même modèle.
 
@@ -37,14 +39,16 @@ Ollama s'installe en tant que service systemd et démarre automatiquement.
 
 ### Étape 2 - Télécharger un modèle recommandé
 
+Pour la **V1.1**, téléchargez `google/gemma-4-e4b` :
+
 ```shell
-ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
+ollama pull google/gemma-4-e4b
 ```
 
-Ou des alternatives expérimentales :
+Pour la **V1.0**, téléchargez `tulu-3.1-8b-supernova` :
 
 ```shell
-ollama pull qwen3:8b
+ollama pull hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 ```
 
 ---
@@ -99,8 +103,8 @@ Ouvrez l'onglet **Settings** dans Elite Intel :
 
 - Laissez le champ **LLM Key** vide (Ollama local n'en requiert pas).
 - **LLM Address** est par défaut `http://localhost:11434/api/chat`. Si Ollama se trouve sur une autre machine, remplacez `localhost` par l'adresse IP de cette machine.
-- **Command LLM** : définissez sur `hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest` (ou le nom affiché par `ollama ls`).
-- **Query LLM** : définissez sur `hf.co/matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF:latest` (ou le nom affiché par `ollama ls`).
+- **Command LLM** : définissez sur `google/gemma-4-e4b` (ou le nom affiché par `ollama ls`).
+- **Query LLM** : définissez sur `google/gemma-4-e4b` (ou le nom affiché par `ollama ls`).
 - Cliquez sur **Stop** puis **Start** dans l'onglet AI pour appliquer les modifications.
 
 ---

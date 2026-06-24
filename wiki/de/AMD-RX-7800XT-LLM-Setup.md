@@ -75,12 +75,19 @@ sudo dnf install rocm-smi-devel
 
 ## Ein Modell ausführen
 
+| Modell | Benötigter VRAM | Hinweise |
+|---|---|---|
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 GB | ✅ Empfohlen für V1.0 |
+| `google/gemma-4-e4b` | ~6,3 GB | ✅ Empfohlen für V1.1 |
+
+> **Welches Modell?** `tulu-3.1-8b-supernova` ist das empfohlene Modell für **V1.0**. **V1.1** wechselt zu `google/gemma-4-e4b`, das die für die neue Begleiter-Funktion erforderliche Function-Calling-Unterstützung bietet. Die folgenden Befehle verwenden das V1.1-Modell – ersetze es bei V1.0 durch `tulu-3.1-8b-supernova`.
+
 ### Schritt 3 – Ein Modell mit ROCm-Beschleunigung laden
 
 Beim Aufruf von `lms load` müssen die Hardware-Beschleunigungsflags explizit angegeben werden. Der Flag `--gpu max` weist die Laufzeitumgebung an, das gesamte Modell in den VRAM zu laden.
 
 ```bash
-HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load google/gemma-4-e4b --context-length 8192 --gpu max
 ```
 
 Das Präfix `HSA_OVERRIDE_GFX_VERSION=11.0.0` teilt dem ROCm-Stack mit, die RX 7800 XT als nativ unterstütztes Compute-Ziel zu behandeln und stille Fallback-Fehler zu umgehen.

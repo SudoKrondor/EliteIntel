@@ -102,16 +102,19 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>tulu3:8b</code> Q4_K_M</td>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 GB</td>
-<td>✅ Recomendado. Fiable para comandos y consultas.</td>
+<td>✅ Recomendado para V1.0</td>
 </tr>
 <tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 GB</td>
-<td>Experimental. Se esperan comandos fallidos y alucinaciones ocasionales.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6,3 GB</td>
+<td>✅ Recomendado para V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>¿Qué modelo?</strong> <code>tulu-3.1-8b-supernova</code> es el modelo recomendado para <strong>V1.0</strong>. <strong>V1.1</strong> cambia a <code>google/gemma-4-e4b</code>, que admite el function calling necesario para la nueva función de compañero. Los comandos siguientes usan el modelo de V1.1: en V1.0, sustitúyelo por <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <blockquote>
 <p><strong>Nota:</strong> Para la inferencia local más rápida, considera <a href="Install-LM-Studio-Windows.html">LM Studio</a> con <code>matrixportalx/tulu-3.1-8b-supernova</code>. En las pruebas, es notablemente más rápido que Ollama en el mismo hardware con el mismo modelo.</p>
 </blockquote>
@@ -125,10 +128,11 @@
 <hr>
 <h3>Paso 2 - Descargar un modelo</h3>
 <p>Abre el <strong>Símbolo del sistema</strong> o <strong>PowerShell</strong> y ejecuta:</p>
-<pre><code class="language-shell">ollama pull tulu3:8b
+<p>Para <strong>V1.1</strong>, descarga <code>google/gemma-4-e4b</code>:</p>
+<pre><code class="language-shell">ollama pull google/gemma-4-e4b
 </code></pre>
-<p>O alternativas experimentales:</p>
-<pre><code class="language-shell">ollama pull qwen3:8b
+<p>Para <strong>V1.0</strong>, descarga <code>tulu-3.1-8b-supernova</code>:</p>
+<pre><code class="language-shell">ollama pull tulu3:8b
 </code></pre>
 <hr>
 <h3>Paso 3 - (Opcional) Ajustar la configuración</h3>
@@ -189,9 +193,9 @@
 <ul>
 <li>Deja el campo <strong>Clave LLM</strong> en blanco (Ollama local no requiere ninguna).</li>
 <li><strong>Dirección LLM</strong> tiene como valor predeterminado <code>http://localhost:11434/api/chat</code>. Si Ollama está en otra máquina, sustituye <code>localhost</code> por la IP de esa máquina.</li>
-<li><strong>Modelo LLM</strong>: establécelo en <code>tulu3:8b</code>.</li>
-<li><strong>LLM de comandos</strong>: establécelo en <code>tulu3:8b</code>.</li>
-<li><strong>LLM de consultas</strong>: establécelo en <code>tulu3:8b</code>.</li>
+<li><strong>Modelo LLM</strong>: establécelo en <code>google/gemma-4-e4b</code>.</li>
+<li><strong>LLM de comandos</strong>: establécelo en <code>google/gemma-4-e4b</code>.</li>
+<li><strong>LLM de consultas</strong>: establécelo en <code>google/gemma-4-e4b</code>.</li>
 <li>Haz clic en <strong>Detener</strong> y luego en <strong>Iniciar</strong> en la pestaña de IA para aplicar los cambios.</li>
 </ul>
 <hr>

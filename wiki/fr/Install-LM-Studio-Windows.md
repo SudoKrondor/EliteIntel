@@ -20,9 +20,10 @@ Pour faire tourner Elite Dangerous et le LLM sur la **même machine**, il faut a
 
 | Modèle | VRAM requise | Notes |
 |---|---|---|
-| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé. Rapide, précis, fonctionne très bien pour les commandes et les requêtes. |
-| `tulu-3.1-8b-supernova` Q8_0 | ~8,5 Go | Qualité supérieure, si la marge de VRAM le permet. |
-| `qwen3` 8B | ~8 Go | Expérimental. Attendez-vous à des commandes manquées et des hallucinations occasionnelles. |
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé pour V1.0 |
+| `google/gemma-4-e4b` | ~6,3 Go | ✅ Recommandé pour V1.1 |
+
+> **Quel modèle ?** `tulu-3.1-8b-supernova` est le modèle recommandé pour la **V1.0**. La **V1.1** passe à `google/gemma-4-e4b`, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par `tulu-3.1-8b-supernova`.
 
 ---
 
@@ -54,6 +55,14 @@ lms --help
 
 ### Étape 2 – Télécharger le modèle
 
+Pour la **V1.1**, téléchargez `google/gemma-4-e4b` :
+
+```powershell
+lms get google/gemma-4-e4b
+```
+
+Pour la **V1.0**, téléchargez `tulu-3.1-8b-supernova` :
+
 ```powershell
 lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 ```
@@ -78,7 +87,7 @@ lms ls
 Chargez le modèle et démarrez le serveur d'inférence :
 
 ```powershell
-lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 ```
 
@@ -129,7 +138,7 @@ Pour charger également le modèle automatiquement, créez plutôt un fichier ba
 ```batch
 @echo off
 %USERPROFILE%\.lmstudio\bin\lms.exe daemon up
-%USERPROFILE%\.lmstudio\bin\lms.exe load tulu-3.1-8b-supernova --yes --context-length 8192 --gpu max
+%USERPROFILE%\.lmstudio\bin\lms.exe load google/gemma-4-e4b --yes --context-length 8192 --gpu max
 %USERPROFILE%\.lmstudio\bin\lms.exe server start
 ```
 

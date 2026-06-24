@@ -105,19 +105,17 @@
 <tbody><tr>
 <td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 GB</td>
-<td>✅ Рекомендована. Швидка, точна, відмінно підходить для команд і запитів.</td>
+<td>✅ Рекомендовано для V1.0</td>
 </tr>
 <tr>
-<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
-<td>~8.5 GB</td>
-<td>Вища якість, якщо є запас VRAM.</td>
-</tr>
-<tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 GB</td>
-<td>Експериментальна. Очікуйте випадкових пропущених команд та галюцинацій.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6.3 GB</td>
+<td>✅ Рекомендовано для V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Яку модель обрати?</strong> <code>tulu-3.1-8b-supernova</code> — рекомендована модель для <strong>V1.0</strong>. У <strong>V1.1</strong> відбувається перехід на <code>google/gemma-4-e4b</code>, яка підтримує виклик функцій (function calling), потрібний для нової функції «компаньйон». У командах нижче використовується модель V1.1 — для V1.0 замініть її на <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <hr>
 <p>Детальний (дуже детальний) відеопосібник від @DawnTreaderToolsoftheElite</p>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/F5RgRRePrTo" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
@@ -136,6 +134,10 @@
 </blockquote>
 <hr>
 <h3>Крок 2  Завантаження моделі</h3>
+<p>Для <strong>V1.1</strong> завантажте <code>google/gemma-4-e4b</code>:</p>
+<pre><code class="language-powershell">lms get google/gemma-4-e4b
+</code></pre>
+<p>Для <strong>V1.0</strong> завантажте <code>tulu-3.1-8b-supernova</code>:</p>
 <pre><code class="language-powershell">lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 </code></pre>
 <p>або</p>
@@ -148,7 +150,7 @@
 <hr>
 <h3>Крок 3  Запуск сервера</h3>
 <p>Завантажте модель та запустіть сервер інференсу:</p>
-<pre><code class="language-powershell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-powershell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
 <p><strong>ПРИМІТКА</strong>: Прапорець <code>--context-length 8192</code> є обов&#39;язковим. Без нього вікно контексту може бути надто малим, що спричиняє обрізання запитів, помилки та галюцинації.</p>
@@ -187,7 +189,7 @@ lms server start
 <p>Щоб також завантажувати модель автоматично, створіть замість цього пакетний файл:</p>
 <pre><code class="language-batch">@echo off
 %USERPROFILE%\.lmstudio\bin\lms.exe daemon up
-%USERPROFILE%\.lmstudio\bin\lms.exe load tulu-3.1-8b-supernova --yes --context-length 8192 --gpu max
+%USERPROFILE%\.lmstudio\bin\lms.exe load google/gemma-4-e4b --yes --context-length 8192 --gpu max
 %USERPROFILE%\.lmstudio\bin\lms.exe server start
 </code></pre>
 <p>Збережіть як <code>start-lmstudio.bat</code> у постійному місці (наприклад, <code>C:\Scripts\</code>) та вкажіть цей файл у дії планувальника завдань.</p>

@@ -137,9 +137,31 @@ sudo dnf install rocm-smi-devel
 </code></pre>
 <hr>
 <h2>Exécuter un modèle</h2>
+<table>
+<thead>
+<tr>
+<th>Modèle</th>
+<th>VRAM requise</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
+<td>~5 Go</td>
+<td>✅ Recommandé pour V1.0</td>
+</tr>
+<tr>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6,3 Go</td>
+<td>✅ Recommandé pour V1.1</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>Quel modèle ?</strong> <code>tulu-3.1-8b-supernova</code> est le modèle recommandé pour la <strong>V1.0</strong>. La <strong>V1.1</strong> passe à <code>google/gemma-4-e4b</code>, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <h3>Étape 3 - Charger un modèle avec l&#39;accélération ROCm</h3>
 <p>Lors de l&#39;invocation de <code>lms load</code>, passez explicitement les indicateurs d&#39;accélération matérielle. L&#39;indicateur <code>--gpu max</code> demande à l&#39;environnement d&#39;exécution de charger l&#39;intégralité du modèle dans la VRAM.</p>
-<pre><code class="language-bash">HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-bash">HSA_OVERRIDE_GFX_VERSION=11.0.0 lms load google/gemma-4-e4b --context-length 8192 --gpu max
 </code></pre>
 <p>Le préfixe <code>HSA_OVERRIDE_GFX_VERSION=11.0.0</code> indique à la pile ROCm de traiter le RX 7800 XT comme une cible de calcul nativement prise en charge, évitant ainsi les échecs silencieux de repli.</p>
 <hr>

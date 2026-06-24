@@ -105,19 +105,17 @@
 <tbody><tr>
 <td><code>tulu-3.1-8b-supernova</code> Q4_K_M</td>
 <td>~5 Go</td>
-<td>✅ Recommandé. Rapide, précis, fonctionne très bien pour les commandes et les requêtes.</td>
+<td>✅ Recommandé pour V1.0</td>
 </tr>
 <tr>
-<td><code>tulu-3.1-8b-supernova</code> Q8_0</td>
-<td>~8,5 Go</td>
-<td>Qualité supérieure, si la marge de VRAM le permet.</td>
-</tr>
-<tr>
-<td><code>qwen3</code> 8B</td>
-<td>~8 Go</td>
-<td>Expérimental. Attendez-vous à des commandes manquées et des hallucinations occasionnelles.</td>
+<td><code>google/gemma-4-e4b</code></td>
+<td>~6,3 Go</td>
+<td>✅ Recommandé pour V1.1</td>
 </tr>
 </tbody></table>
+<blockquote>
+<p><strong>Quel modèle ?</strong> <code>tulu-3.1-8b-supernova</code> est le modèle recommandé pour la <strong>V1.0</strong>. La <strong>V1.1</strong> passe à <code>google/gemma-4-e4b</code>, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par <code>tulu-3.1-8b-supernova</code>.</p>
+</blockquote>
 <hr>
 <p>Tutoriel vidéo très détaillé par @DawnTreaderToolsoftheElite </p>
 <div class="yt-embed"><iframe src="https://www.youtube.com/embed/F5RgRRePrTo" title="YouTube video" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>
@@ -136,6 +134,10 @@
 </blockquote>
 <hr>
 <h3>Étape 2 – Télécharger le modèle</h3>
+<p>Pour la <strong>V1.1</strong>, téléchargez <code>google/gemma-4-e4b</code> :</p>
+<pre><code class="language-powershell">lms get google/gemma-4-e4b
+</code></pre>
+<p>Pour la <strong>V1.0</strong>, téléchargez <code>tulu-3.1-8b-supernova</code> :</p>
 <pre><code class="language-powershell">lms get matrixportalx/Tulu-3.1-8B-SuperNova-Q4_K_M-GGUF
 </code></pre>
 <p>ou</p>
@@ -148,7 +150,7 @@
 <hr>
 <h3>Étape 3 – Démarrer le serveur</h3>
 <p>Chargez le modèle et démarrez le serveur d&#39;inférence :</p>
-<pre><code class="language-powershell">lms load tulu-3.1-8b-supernova --context-length 8192 --gpu max
+<pre><code class="language-powershell">lms load google/gemma-4-e4b --context-length 8192 --gpu max
 lms server start
 </code></pre>
 <p><strong>NOTE</strong> : L&#39;option <code>--context-length 8192</code> est obligatoire. Sans elle, la fenêtre de contexte peut être trop petite, provoquant une troncature des invites, des échecs et des hallucinations.</p>
@@ -187,7 +189,7 @@ lms server start
 <p>Pour charger également le modèle automatiquement, créez plutôt un fichier batch :</p>
 <pre><code class="language-batch">@echo off
 %USERPROFILE%\.lmstudio\bin\lms.exe daemon up
-%USERPROFILE%\.lmstudio\bin\lms.exe load tulu-3.1-8b-supernova --yes --context-length 8192 --gpu max
+%USERPROFILE%\.lmstudio\bin\lms.exe load google/gemma-4-e4b --yes --context-length 8192 --gpu max
 %USERPROFILE%\.lmstudio\bin\lms.exe server start
 </code></pre>
 <p>Enregistrez-le sous <code>start-lmstudio.bat</code> dans un emplacement permanent (par ex. <code>C:\Scripts\</code>) et faites pointer l&#39;action du Planificateur de tâches vers ce fichier.</p>

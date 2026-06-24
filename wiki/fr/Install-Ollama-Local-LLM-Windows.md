@@ -18,8 +18,10 @@ Pour exécuter Elite Dangerous et le LLM sur la **même machine**, un minimum de
 
 | Modèle | VRAM requise | Notes |
 |---|---|---|
-| `tulu3:8b` Q4_K_M | ~5 Go | ✅ Recommandé. Fiable pour les commandes et les requêtes. |
-| `qwen3` 8B | ~8 Go | Expérimental. Attendez-vous à des commandes manquées occasionnelles et à des hallucinations. |
+| `tulu-3.1-8b-supernova` Q4_K_M | ~5 Go | ✅ Recommandé pour V1.0 |
+| `google/gemma-4-e4b` | ~6,3 Go | ✅ Recommandé pour V1.1 |
+
+> **Quel modèle ?** `tulu-3.1-8b-supernova` est le modèle recommandé pour la **V1.0**. La **V1.1** passe à `google/gemma-4-e4b`, qui prend en charge le function calling requis par la nouvelle fonction compagnon. Les commandes ci-dessous utilisent le modèle de la V1.1 — en V1.0, remplacez-le par `tulu-3.1-8b-supernova`.
 
 > **Note :** Pour l'inférence locale la plus rapide, envisagez [LM Studio](Install-LM-Studio-Windows) avec `matrixportalx/tulu-3.1-8b-supernova`. Dans nos tests, il est notablement plus rapide qu'Ollama sur le même matériel avec le même modèle.
 
@@ -37,14 +39,16 @@ Pour exécuter Elite Dangerous et le LLM sur la **même machine**, un minimum de
 
 Ouvrez **l'Invite de commandes** ou **PowerShell** et exécutez :
 
+Pour la **V1.1**, téléchargez `google/gemma-4-e4b` :
+
 ```shell
-ollama pull tulu3:8b
+ollama pull google/gemma-4-e4b
 ```
 
-Ou des alternatives expérimentales :
+Pour la **V1.0**, téléchargez `tulu-3.1-8b-supernova` :
 
 ```shell
-ollama pull qwen3:8b
+ollama pull tulu3:8b
 ```
 
 ---
@@ -90,9 +94,9 @@ Ouvrez l'**onglet Paramètres** dans Elite Intel :
 
 - Laissez le champ **Clé LLM** vide (Ollama local n'en requiert pas).
 - **Adresse LLM** par défaut : `http://localhost:11434/api/chat`. Si Ollama est sur une autre machine, remplacez `localhost` par l'adresse IP de cette machine.
-- **Modèle LLM** : définissez sur `tulu3:8b`.
-- **LLM de commande** : définissez sur `tulu3:8b`.
-- **LLM de requête** : définissez sur `tulu3:8b`.
+- **Modèle LLM** : définissez sur `google/gemma-4-e4b`.
+- **LLM de commande** : définissez sur `google/gemma-4-e4b`.
+- **LLM de requête** : définissez sur `google/gemma-4-e4b`.
 - Cliquez sur **Stop** puis **Start** dans l'onglet IA pour appliquer les modifications.
 
 ---
