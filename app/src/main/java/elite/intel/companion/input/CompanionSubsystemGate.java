@@ -53,7 +53,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     }
 
     /** Test seam: inject a recording execution gateway and/or a tracing LLM gateway for the local eval. */
-    CompanionSubsystemGate(LlmGateway llmOverride, ExecutionGateway executionOverride) {
+    public CompanionSubsystemGate(LlmGateway llmOverride, ExecutionGateway executionOverride) {
         this.llmOverride = llmOverride;
         this.executionOverride = executionOverride;
     }
@@ -147,7 +147,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     }
 
     /** Test access to the live dispatcher (e.g. for an idle-based turn boundary in the local eval). */
-    ThoughtDispatcher dispatcher() {
+    public ThoughtDispatcher dispatcher() {
         return dispatcher;
     }
 }
