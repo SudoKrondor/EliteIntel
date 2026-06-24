@@ -419,6 +419,8 @@ public class KokoroTTS implements MouthInterface {
         return switch (language) {
             case FR -> "fr";
             case ES -> "es";
+            case IT -> "it";
+            case PT -> "pt-br";
             default -> "en-us";
         };
     }
