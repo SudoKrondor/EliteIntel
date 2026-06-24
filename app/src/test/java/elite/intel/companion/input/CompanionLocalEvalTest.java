@@ -92,7 +92,12 @@ class CompanionLocalEvalTest {
     private final List<ExecutionRequest> toolCalls = new CopyOnWriteArrayList<>();
     private final List<String> spoken = new CopyOnWriteArrayList<>();
     private final List<Round> rounds = new CopyOnWriteArrayList<>();
+    // Background memory-compression calls (no tools), recorded async on the consolidator thread. Kept apart
+    // from per-turn rounds so they are not misattributed to whatever commander turn happens to be tracing.
+    private final List<Round> consolidationRounds = new CopyOnWriteArrayList<>();
     private final List<Long> allLatenciesMs = new CopyOnWriteArrayList<>();
+    // Per-turn-round latencies only (excludes the background consolidation calls), for the responsiveness stat.
+    private final List<Long> turnLatenciesMs = new CopyOnWriteArrayList<>();
     // Token totals accumulate across the whole conversation (rounds are cleared every turn).
     private final AtomicLong totalPromptTokens = new AtomicLong();
     private final AtomicLong totalCompletionTokens = new AtomicLong();
@@ -315,8 +320,16 @@ class CompanionLocalEvalTest {
         int promptTokens = usageInt(response, "prompt_tokens");
         int completionTokens = usageInt(response, "completion_tokens");
         int cachedTokens = cachedTokens(response);
-        rounds.add(new Round(JsonParser.parseString(requestBody).getAsJsonObject(), response, latencyMs,
-                promptTokens, completionTokens, cachedTokens));
+        JsonObject request = JsonParser.parseString(requestBody).getAsJsonObject();
+        Round round = new Round(request, response, latencyMs, promptTokens, completionTokens, cachedTokens);
+        // A consciousness turn always offers tools; a memory-compression call carries none. The compression
+        // call runs async on the consolidator thread, so route it to its own bucket instead of the current turn.
+        if (request.has("tools")) {
+            rounds.add(round);
+            turnLatenciesMs.add(latencyMs);
+        } else {
+            consolidationRounds.add(round);
+        }
         allLatenciesMs.add(latencyMs);
         totalPromptTokens.addAndGet(promptTokens);
         totalCompletionTokens.addAndGet(completionTokens);
@@ -367,24 +380,67 @@ class CompanionLocalEvalTest {
     }
 
     private void writeStats() throws Exception {
-        List<Long> l = allLatenciesMs;
-        long total = l.stream().mapToLong(Long::longValue).sum();
-        long max = l.stream().mapToLong(Long::longValue).max().orElse(0);
-        long min = l.stream().mapToLong(Long::longValue).min().orElse(0);
-        long avg = l.isEmpty() ? 0 : total / l.size();
+        traceConsolidation(); // background compression calls get their own section, not a commander turn
+
+        long total = allLatenciesMs.stream().mapToLong(Long::longValue).sum();
+        List<Long> turns = turnLatenciesMs;
+        long turnMax = turns.stream().mapToLong(Long::longValue).max().orElse(0);
+        long turnMin = turns.stream().mapToLong(Long::longValue).min().orElse(0);
+        long turnAvg = turns.isEmpty() ? 0 : turns.stream().mapToLong(Long::longValue).sum() / turns.size();
+        long consTime = consolidationRounds.stream().mapToLong(Round::latencyMs).sum();
+        long consMax = consolidationRounds.stream().mapToLong(Round::latencyMs).max().orElse(0);
+        long consPrompt = consolidationRounds.stream().mapToLong(Round::promptTokens).sum();
+        long consCompletion = consolidationRounds.stream().mapToLong(Round::completionTokens).sum();
         long promptTok = totalPromptTokens.get();
         long completionTok = totalCompletionTokens.get();
         long cachedTok = totalCachedTokens.get();
         long cachePct = promptTok == 0 ? 0 : cachedTok * 100 / promptTok;
         String s = "\n======== LLM STATS ========\n"
-                + "rounds: " + l.size() + "\n"
+                + "rounds: " + allLatenciesMs.size() + " (turn " + turns.size()
+                + ", background consolidation " + consolidationRounds.size() + ")\n"
                 + "total LLM time: " + total + " ms\n"
-                + "per-round latency: avg " + avg + " ms, min " + min + " ms, max " + max + " ms\n"
+                + "per-turn-round latency: avg " + turnAvg + " ms, min " + turnMin + " ms, max " + turnMax + " ms\n"
+                + "consolidation: " + consolidationRounds.size() + " call(s), " + consTime + " ms total, slowest "
+                + consMax + " ms, " + consPrompt + "/" + consCompletion + " prompt/completion tokens\n"
                 + "tokens: prompt " + promptTok + ", completion " + completionTok
                 + ", total " + (promptTok + completionTok) + "\n"
                 + "cached prompt tokens: " + cachedTok + " (" + cachePct + "% of prompt tokens reused from cache)\n";
         System.out.print(s);
         Files.writeString(TRACE_FILE, s, StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+    }
+
+    /** Traces the background memory-compression calls (long-term consolidation) in their own section. */
+    private void traceConsolidation() throws Exception {
+        if (consolidationRounds.isEmpty()) {
+            return;
+        }
+        StringBuilder t = new StringBuilder();
+        t.append("\n========================================================================\n");
+        t.append("BACKGROUND CONSOLIDATION (long-term memory compression - runs off the turn loop)\n");
+        for (int i = 0; i < consolidationRounds.size(); i++) {
+            Round r = consolidationRounds.get(i);
+            t.append("\n--- consolidation call ").append(i + 1).append("  (").append(r.latencyMs()).append(" ms, ")
+                    .append(r.promptTokens()).append(" prompt / ").append(r.completionTokens()).append(" completion / ")
+                    .append(r.cachedTokens()).append(" cached tokens) ---\n");
+            t.append("PROMPT:\n").append(formatPrompt(r.request())).append("\n");
+            t.append("RESPONSE (new summary): ").append(responseText(r.response())).append("\n");
+        }
+        System.out.print(t);
+        Files.writeString(TRACE_FILE, t.toString(), StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+    }
+
+    /** Plain-text content of a response (a compression turn returns text, not tool-calls). */
+    private static String responseText(JsonObject response) {
+        if (response.has("transport_error")) {
+            return "TRANSPORT ERROR: " + str(response, "transport_error");
+        }
+        JsonArray choices = response.getAsJsonArray("choices");
+        if (choices == null || choices.isEmpty()) {
+            return "(no choices)";
+        }
+        JsonObject message = choices.get(0).getAsJsonObject().getAsJsonObject("message");
+        return message != null && message.has("content") && !message.get("content").isJsonNull()
+                ? message.get("content").getAsString() : "(no content)";
     }
 
     private boolean matchesHint(String hint) {
