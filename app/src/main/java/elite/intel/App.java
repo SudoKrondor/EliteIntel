@@ -1,14 +1,17 @@
 package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
 import elite.intel.session.LoadSessionEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.controller.AppController;
-import elite.intel.ui.view.AppView;
+import elite.intel.ui.screen.AppView;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.util.AudioPlayer;
 import elite.intel.util.Cypher;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -27,6 +30,9 @@ public class App {
         // init kry and db first!
         Cypher.initializeKey();
         Database.init();
+        CustomCommandRegistry.getInstance().load();
+        elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().load();
+        elite.intel.ai.brain.actions.query.QueryRegistry.getInstance().load();
 
         // change the debug log level when we have version 1.0
         Configurator.setRootLevel(Level.ALL);
@@ -40,15 +46,23 @@ public class App {
 
         // Event subscribers
         SubscriberRegistration.registerSubscribers();
+        AudioPlayer.getInstance();
 
         // spin up the session
-        EventBusManager.publish(new LoadSessionEvent());
+        GameEventBus.publish(new LoadSessionEvent());
 
         // init UI
+        System.setProperty("awt.useSystemAAFontSettings", "lcd");
+        System.setProperty("swing.aatext", "true");
         FlatLightLaf.setup();
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(new FlatLightLaf());
+                // FlatLaf paints hover/pressed over the renderer; neutralise it here.
+                UIManager.put("TableHeader.hoverBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.hoverForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+                UIManager.put("TableHeader.pressedBackground", HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+                UIManager.put("TableHeader.pressedForeground", HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
             } catch (Exception e) {
                 e.printStackTrace();
             }

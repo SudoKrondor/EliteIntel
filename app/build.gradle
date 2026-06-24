@@ -4,6 +4,9 @@ plugins {
     id 'com.github.johnrengelman.shadow'
 }
 
+// LWJGL3 version used for both API JARs and native extraction
+def lwjglVersion = "3.4.0"
+
 repositories {
     mavenCentral()
     google()
@@ -12,9 +15,16 @@ repositories {
     }
 }
 
+// Separate configuration so the extraction task can resolve native JARs independently
+// of the fat-JAR build (shadow plugin only pulls from runtimeClasspath, not this config).
+configurations {
+    lwjglNatives
+}
+
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
+    testImplementation 'org.wiremock:wiremock:3.13.0'
 
     // Text to Speech
     implementation 'com.google.cloud:google-cloud-texttospeech:2.73.0'
@@ -64,15 +74,28 @@ dependencies {
     implementation 'net.java.dev.jna:jna-platform:5.14.0'
 
     implementation 'org.zeromq:jeromq:0.6.0'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
 
-    // ... existing deps ...
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.0'     // or latest 2.18.x / 2.19.x / 2.21.x
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.0'
     implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.18.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.0'
 
     // WebSocket server for external integrations
     implementation 'org.java-websocket:Java-WebSocket:1.5.7'
+
+    // LWJGL3 with SDL3 bindings — joystick/HOTAS/gamepad/pedal input for StarVizion overlay.
+    // API JARs: compile + runtime.  Native JARs: kept in the fat JAR as a last-resort fallback,
+    // AND extracted to distribution/native/lwjgl/ at build time (see extractLwjglNatives task)
+    // so SdlInputService can point LWJGL3 there instead of %TEMP%, sidestepping AV/noexec issues.
+    implementation "org.lwjgl:lwjgl:${lwjglVersion}"
+    implementation "org.lwjgl:lwjgl-sdl:${lwjglVersion}"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-windows"
+    runtimeOnly "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-linux"
+    lwjglNatives "org.lwjgl:lwjgl:${lwjglVersion}:natives-windows"
+    lwjglNatives "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-windows"
+    lwjglNatives "org.lwjgl:lwjgl:${lwjglVersion}:natives-linux"
+    lwjglNatives "org.lwjgl:lwjgl-sdl:${lwjglVersion}:natives-linux"
 }
 
 
@@ -95,6 +118,7 @@ sourceSets {
         resources {
             srcDirs = ['src/main/resources']
             include '**/*.json'
+            include '**/*.properties'
             include '**/*.conf'
             include '**/*.css'
             include '**/*.png'
@@ -113,6 +137,22 @@ sourceSets {
     }
 }
 
+// Flatten all LWJGL3 native DLLs / SOs out of their versioned JAR paths into one flat dir.
+// SdlInputService points LWJGL3 here via org.lwjgl.system.SharedLibraryExtractPath so the
+// loader never needs to write to %TEMP%, bypassing AV noexec and Unicode-path failures.
+tasks.register('extractLwjglNatives', Sync) {
+    description = 'Pre-extracts LWJGL3 native DLLs/SOs to distribution/native/lwjgl/.'
+    from { configurations.lwjglNatives.collect { zipTree(it) } }
+    into "${rootProject.projectDir}/distribution/native/lwjgl"
+    include '**/*.dll', '**/*.so'
+    exclude '**/META-INF/**'
+    eachFile { fcd ->
+        fcd.relativePath = new RelativePath(true, fcd.name)
+    }
+    includeEmptyDirs = false
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 shadowJar {
     archiveFileName = 'elite_intel.jar'
     manifest {
@@ -120,6 +160,7 @@ shadowJar {
     }
     mergeServiceFiles()
     destinationDirectory = file("${rootProject.projectDir}/distribution")
+    dependsOn extractLwjglNatives
 }
 
 // Default test task — exclude local-integration tests so CI never tries to call Ollama
@@ -127,6 +168,8 @@ test {
     useJUnitPlatform {
         excludeTags 'local-integration'
     }
+    systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
+    systemProperty 'elite.intel.db.pool.size', '1'
 }
 
 // Run with: ./gradlew localIntegrationTest
@@ -141,6 +184,7 @@ tasks.register('localIntegrationTest', Test) {
     testLogging {
         events 'passed', 'failed', 'skipped'
         exceptionFormat 'full'
+        showStandardStreams = true // surface the companion eval's printed conversation
     }
 }
 
@@ -150,4 +194,7 @@ tasks.named('jar') {
 }
 tasks.named('assemble') {
     dependsOn tasks.shadowJar
+}
+tasks.named('startShadowScripts') {
+    dependsOn ':updater:copyUpdaterToDistribution'
 }

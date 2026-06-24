@@ -2,24 +2,32 @@ package elite.intel.ai.mouth.google;
 
 import com.google.cloud.texttospeech.v1.*;
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.GoogleVoices;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.*;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AiResponseLogEvent;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.annotation.Nullable;
 import javax.sound.sampled.*;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,12 +67,10 @@ public class GoogleTTSImpl implements MouthInterface {
 
     @Override
     public synchronized void start() {
-        EventBusManager.register(this);
         if (ttsProcessingThread != null && ttsProcessingThread.isAlive()) {
             log.warn("VoiceGenerator is already running");
             return;
         }
-
 
         try {
             String apiKey = systemSession.getTtsApiKey();
@@ -77,11 +83,12 @@ public class GoogleTTSImpl implements MouthInterface {
             log.info("TextToSpeechClient initialized successfully with API key");
         } catch (Exception e) {
             log.error("Failed to initialize TextToSpeechClient: {}", e.getMessage(), e);
-            EventBusManager.publish(new AppLogEvent("Google TTS failed to start: " + e.getMessage()));
+            UiBus.publish(new AppLogEvent("Google TTS failed to start: " + e.getMessage()));
             return;
         }
 
         running = true;
+        GameEventBus.register(this);
         ttsProcessingThread = new Thread(this::processTTSQueue, "TTSThread");
         ttsProcessingThread.start();
 
@@ -91,14 +98,14 @@ public class GoogleTTSImpl implements MouthInterface {
 
         log.info("VoiceGenerator started");
         if (systemSession.getRmsThresholdHigh() != null) {
-            EventBusManager.publish(new AiResponseLogEvent("Speech enabled"));
+            UiBus.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
         }
-        EventBusManager.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
     }
 
     @Override
     public synchronized void stop() {
-        EventBusManager.unregister(this);
+        if (running) GameEventBus.unregister(this);
         if (ttsProcessingThread == null || !ttsProcessingThread.isAlive()) {
             log.warn("VoiceGenerator is not running");
             return;
@@ -147,8 +154,15 @@ public class GoogleTTSImpl implements MouthInterface {
     public synchronized void interruptAndClear() {
         if(!canBeInterrupted.get()) return;
 
-        ttsQueue.clear();
-        vocalizationQueue.clear();
+        // Drain queues and complete any pending customCommand completion futures to avoid 30s timeout
+        List<VoiceRequest> drainedTts = new ArrayList<>();
+        ttsQueue.drainTo(drainedTts);
+        drainedTts.stream().map(VoiceRequest::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
+
+        List<VocalizationRequest> drainedVox = new ArrayList<>();
+        vocalizationQueue.drainTo(drainedVox);
+        drainedVox.stream().map(VocalizationRequest::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
+
         interruptRequested.set(true);
         SourceDataLine line = currentLine.get();
         if (line != null) {
@@ -186,12 +200,15 @@ public class GoogleTTSImpl implements MouthInterface {
             ;
 
             String[] sentences = text.split("(?<=[.!?])\\s+(?=\\S)");
-            for (String sentence : sentences) {
-                ttsQueue.put(new VoiceRequest(sentence, voiceName, (1f + systemSession.getSpeechSpeed()), event.getOriginType(), event.isRadio()));
+            CompletableFuture<Void> completionFuture = event.getCompletionFuture();
+            for (int i = 0; i < sentences.length; i++) {
+                // Only the last sentence carries the future; earlier sentences pass null
+                boolean isLast = (i == sentences.length - 1);
+                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()), event.getOriginType(), event.isRadio(), isLast ? completionFuture : null));
             }
 
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
-            EventBusManager.publish(new AiResponseLogEvent(event.getText()));
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            UiBus.publish(new AiResponseLogEvent(event.getText()));
             log.debug("Added VoiceRequest to queue: text='{}', voice='{}'", event.getText(), voiceName);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -223,7 +240,8 @@ public class GoogleTTSImpl implements MouthInterface {
                         request.voiceName(),
                         request.speechRate(),
                         request.originType(),
-                        request.isRadio()
+                        request.isRadio(),
+                        request.completionFuture()
                 );
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -233,7 +251,7 @@ public class GoogleTTSImpl implements MouthInterface {
             } catch (Exception e) {
                 log.error("Unexpected error in VoiceGenerator", e);
             }  finally {
-                EventBusManager.publish(new AppLogEvent(""));
+                UiBus.publish(new AppLogEvent(""));
             }
         }
         closePersistentLine();
@@ -248,8 +266,8 @@ public class GoogleTTSImpl implements MouthInterface {
             AudioFormat format = new AudioFormat(24000, 16, 1, true, false);
             DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
             int bufferBytes = (int) (format.getFrameSize() * format.getSampleRate() / 10);
-
-            persistentLine = (SourceDataLine) AudioSystem.getLine(info);
+            Mixer.Info outputMixer = AudioDeviceEnumerator.resolveOutputDevice(systemSession.getAudioOutputDevice());
+            persistentLine = AudioDeviceEnumerator.openOutputLine(info, outputMixer);
             persistentLine.open(format, bufferBytes);
             persistentLine.start();
             log.info("Persistent audio line opened successfully");
@@ -279,7 +297,7 @@ public class GoogleTTSImpl implements MouthInterface {
         }
     }
 
-    private void processVoiceRequest(String text, String voiceName, double speechRate, Class<? extends BaseVoxEvent> originType, boolean isRadio) {
+    private void processVoiceRequest(String text, String voiceName, double speechRate, Class<? extends BaseVoxEvent> originType, boolean isRadio, @Nullable CompletableFuture<Void> completionFuture) {
         if (text == null || text.isEmpty()) {
             return;
         }
@@ -334,8 +352,13 @@ public class GoogleTTSImpl implements MouthInterface {
                 }
             }
             currentLine.set(persistentLine);
-            vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData));
+            ///NOTE: Can be null if the user stops the service
+            if (vocalizationQueue != null)
+                vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, completionFuture));
 
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.debug("TTS request interrupted mid-flight (service stopping), skipping: {}", text);
         } catch (Exception e) {
             log.error("Text-to-speech error: {}", e.getMessage(), e);
         } finally {
@@ -350,7 +373,7 @@ public class GoogleTTSImpl implements MouthInterface {
             try {
                 VocalizationRequest request = vocalizationQueue.poll(1, TimeUnit.SECONDS);
                 if (request == null) continue;
-                vocalize(request.text(), request.voiceName(), request.originType(), request.audioData());
+                vocalize(request.text(), request.voiceName(), request.originType(), request.audioData(), request.completionFuture());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -358,7 +381,7 @@ public class GoogleTTSImpl implements MouthInterface {
         }
     }
 
-    private void vocalize(String text, String voiceName, Class<? extends BaseVoxEvent> originType, byte[] audioData) {
+    private void vocalize(String text, String voiceName, Class<? extends BaseVoxEvent> originType, byte[] audioData, @Nullable CompletableFuture<Void> completionFuture) {
         log.debug("Starting playback on persistent line");
         AudioFormat format = persistentLine.getFormat();
         int bufferBytes = (int) (format.getFrameSize() * format.getSampleRate() / 10);
@@ -383,12 +406,15 @@ public class GoogleTTSImpl implements MouthInterface {
             persistentLine.drain();
         }
         publishCompletionEvent(originType);
+        if (completionFuture != null) {
+            completionFuture.complete(null);
+        }
         log.debug("Audio playback completed in {}ms", System.currentTimeMillis() - writeStartTime);
     }
 
     private void publishCompletionEvent(Class<? extends BaseVoxEvent> originType) {
         try {
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new VocalisationSuccessfulEvent<>(
                             originType.getConstructor(String.class).newInstance("")
                     )
@@ -399,24 +425,11 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     private record VoiceRequest(String text, String voiceName, double speechRate,
-                                Class<? extends BaseVoxEvent> originType, boolean isRadio) {
+                                Class<? extends BaseVoxEvent> originType, boolean isRadio,
+                                @Nullable CompletableFuture<Void> completionFuture) {
     }
 
-    private record VocalizationRequest(String text, String voiceName, Class<? extends BaseVoxEvent> originType, byte[] audioData) {
-        @Override public String text() {
-            return text;
-        }
-
-        @Override public String voiceName() {
-            return voiceName;
-        }
-
-        @Override public Class<? extends BaseVoxEvent> originType() {
-            return originType;
-        }
-
-        @Override public byte[] audioData() {
-            return audioData;
-        }
+    private record VocalizationRequest(String text, String voiceName, Class<? extends BaseVoxEvent> originType,
+                                       byte[] audioData, @Nullable CompletableFuture<Void> completionFuture) {
     }
 }

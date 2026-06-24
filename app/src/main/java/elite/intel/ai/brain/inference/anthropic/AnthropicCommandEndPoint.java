@@ -5,8 +5,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -54,7 +56,7 @@ public class AnthropicCommandEndPoint extends CommandEndPoint implements AiComma
 
     @Override
     public void start() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
         if (running.compareAndSet(false, true)) {
             this.executor = Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "AnthropicCommand-Worker");
@@ -68,7 +70,7 @@ public class AnthropicCommandEndPoint extends CommandEndPoint implements AiComma
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) {
                 executor.shutdownNow();
                 executor = null;
@@ -85,11 +87,16 @@ public class AnthropicCommandEndPoint extends CommandEndPoint implements AiComma
     @Override
     public void onUserInput(UserInputEvent event) {
         if (!running.get()) return;
+        long entryNanos = System.nanoTime();
         if (executor == null) {
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
-        executor.submit(() -> processVoiceCommand(event.getUserInput()));
+        executor.submit(() -> {
+            BrainTimer.start(entryNanos);
+            processVoiceCommand(event.getUserInput());
+        });
     }
 
     @Subscribe
@@ -98,7 +105,7 @@ public class AnthropicCommandEndPoint extends CommandEndPoint implements AiComma
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
 
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
 
         JsonArray messages = new JsonArray();
 
@@ -135,6 +142,10 @@ public class AnthropicCommandEndPoint extends CommandEndPoint implements AiComma
         }
 
         log.info("Anthropic voice input: {}", userInput);
+
+        if (tryProcessExactCustomCommandCommand(userInput)) {
+            return;
+        }
 
         JsonArray request = new JsonArray();
 

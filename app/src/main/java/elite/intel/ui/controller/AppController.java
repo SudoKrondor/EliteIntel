@@ -1,27 +1,38 @@
 package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.ears.AudioCalibrator;
+import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.*;
+import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.input.CompanionSubsystemGate;
+import elite.intel.devices.DeviceService;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.AuxiliaryFilesMonitor;
+import elite.intel.gameapi.DeferredNotificationMonitor;
+import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.*;
+import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import elite.intel.ws.WebSocketBroadcaster;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.Timer;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +42,8 @@ import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 public class AppController implements Runnable {
 
+    private static final Logger log = LogManager.getLogger(AppController.class);
+
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
@@ -39,7 +52,7 @@ public class AppController implements Runnable {
     private final Map<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
 
     public AppController() {
-        EventBusManager.register(this);
+        UiBus.register(this);
         this.isRunning.set(false);
         startIfWeHaveCredentials();
     }
@@ -50,17 +63,17 @@ public class AppController implements Runnable {
             try {
                 Boolean updateAvailable = checkAsync.get();
                 if (updateAvailable) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Newer version available"));
-                    EventBusManager.publish(new UpdateAvailableEvent());
+                    GameEventBus.publish(new AiVoxResponseEvent("Newer version available"));
+                    UiBus.publish(new UpdateAvailableEvent());
                 }
             } catch (Exception e) {
-                //kek
+                log.warn("Update check failed", e);
             }
         });
     }
 
     private void startIfWeHaveCredentials() {
-        EventBusManager.publish(new ToggleServicesEvent(true));
+        UiBus.publish(new ToggleServicesEvent(true));
     }
 
     @Subscribe
@@ -85,44 +98,46 @@ public class AppController implements Runnable {
 
     @Subscribe
     public void onStreamModeToggle(VoiceInputModeToggleEvent event) {
-        EventBusManager.publish(new ToggleWakeWordEvent(event.isStreaming()));
+        UiBus.publish(new ToggleWakeWordEvent(event.isStreaming()));
     }
 
     @Subscribe
     public void toggleStreamingMode(ToggleWakeWordEvent event) {
         appendToLog("Voice input mode toggle");
         systemSession.stopStartListening(event.isOn());
-        EventBusManager.publish(new AiVoxResponseEvent(event.isOn() ? ignoreModeOnMessage() : ignoreModeOffMessage()));
+        UiBus.publish(new SleepWakeStateChangedEvent(event.isOn()));
+        GameEventBus.publish(new AiVoxResponseEvent(event.isOn() ? ignoreModeOnMessage() : ignoreModeOffMessage()));
     }
 
     private String ignoreModeOffMessage() {
-        return "I am listening.";
+        return StringUtls.localizedSpeech("speech.ignoreModeOff");
     }
 
     private String ignoreModeOnMessage() {
-        return "I am sleeping.";
+        return StringUtls.localizedSpeech("speech.ignoreModeOn");
     }
 
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
-            appendToLog("Starting audio calibration...");
+            appendToLog(StringUtls.localizedLlm("log.audioCalibrationStarting"));
             EarsInterface ears = services.get(ServiceType.EARS).get();
             if (ears == null) return;
             ears.stop();
             new Thread(() -> {
                 try {
-                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat();
-                    AudioCalibrator.calibrateRMS(format);
+                    Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
+                    AudioCalibrator.calibrateRMS(format, inputMixerInfo);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration complete"));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        appendToLog("Calibration failed: " + ex.getMessage());
-                        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Audio calibration failed"));
+                        appendToLog(StringUtls.localizedLlm("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();
@@ -132,12 +147,13 @@ public class AppController implements Runnable {
     @Subscribe
     void onToggleServiceEvent(ToggleServicesEvent event) {
         new Thread(() -> {
-            if (event.isStartSercice()) {
+            if (event.isStartService()) {
                 try {
                     startServices();
-                } catch (Exception stop) {
+                } catch (Exception e) {
+                    log.error("Failed to start services, stopping", e);
                     stopServices();
-                    EventBusManager.publish(new ServicesStateEvent(false));
+                    UiBus.publish(new ServicesStateEvent(false));
                 }
             } else {
                 stopServices();
@@ -161,8 +177,38 @@ public class AppController implements Runnable {
     }
 
     @Subscribe
+    void onLanguageChangedEvent(LanguageChangedEvent event) {
+        new Thread(this::restartEarsService, "EarsRestart-Lang-Thread").start();
+        // Delay so the language-change announcement can finish playing before TTS rebuilds
+        new Thread(() -> {
+            try {
+                Thread.sleep(5_000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            restartMouthService();
+        }, "MouthRestart-Lang-Thread").start();
+    }
+
+    @Subscribe
     void onRestartMouthEvent(RestartMouthEvent event) {
         new Thread(this::restartMouthService, "MouthRestart-Thread").start();
+    }
+
+    private void restartEarsService() {
+        if (!isRunning.get()) return;
+        ServiceHolder ears = services.get(ServiceType.EARS);
+        if (ears == null) return;
+        appendToLog("Restarting STT service...");
+        ears.stop();
+        try {
+            ears.start();
+            appendToLog("STT service restarted");
+        } catch (Exception e) {
+            log.error("Failed to restart STT service", e);
+            appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+        }
     }
 
     private void restartMouthService() {
@@ -176,10 +222,7 @@ public class AppController implements Runnable {
     }
 
     private void appendToLog(String data) {
-        String formattedTime = Instant.now()
-                .atZone(ZoneId.systemDefault())
-                .format(DateTimeFormatter.ofPattern("HH:mm:ss.SSSS"));
-        EventBusManager.publish(new AppLogEvent(formattedTime + ": " + data));
+        UiBus.publish(new AppLogEvent(data));
     }
 
     @Override
@@ -198,7 +241,7 @@ public class AppController implements Runnable {
     private void startServices() {
         if (isRunning.get()) return;
         checkForUpdates();
-        EventBusManager.publish(new ClearConsoleEvent());
+        UiBus.publish(new ClearConsoleEvent());
         initServices();
 
         for (ServiceType type : ServiceType.values()) {
@@ -206,20 +249,21 @@ public class AppController implements Runnable {
             if (service != null) service.start();
         }
 
-        String mission_statement = playerSession.getPlayerMissionStatement();
-        playerSession.setPlayerMissionStatement(mission_statement);
-
         isRunning.set(true);
-        EventBusManager.publish(new ServicesStateEvent(true));
+        UiBus.publish(new ServicesStateEvent(true));
 
         Timer connectionCheckTimer = new Timer(2000, e -> {
-            EventBusManager.publish(new AiVoxResponseEvent("Connecting to LLM..."));
-            EventBusManager.publish(new UserInputEvent(CONNECTION_CHECK_COMMAND));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+            JsonObject direct = new JsonObject();
+            direct.addProperty("action", CONNECTION_CHECK_COMMAND);
+            direct.add("params", new JsonObject());
+            ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
         });
         connectionCheckTimer.setRepeats(false);
         connectionCheckTimer.start();
 
         KeyBindCheck.getInstance().check();
+        CustomCommandLoadAnnouncement.getInstance().announce();
     }
 
     private void stopServices() {
@@ -234,26 +278,52 @@ public class AppController implements Runnable {
             }
         }
         this.services.clear();
-        EventBusManager.publish(new ServicesStateEvent(false));
+        UiBus.publish(new ServicesStateEvent(false));
         isRunning.set(false);
-        EventBusManager.publish(new AppLogEvent("All services are stopped\n\n"));
+        UiBus.publish(new AppLogEvent("All services are stopped\n\n"));
     }
 
     private void initServices() {
         stopServices();
         this.services.clear();
+        this.services.putAll(buildServices(CompanionConfig.companionModeOn()));
+    }
+
+    /**
+     * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
+     * nothing is started here) so the registration can be verified in tests without standing up the
+     * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
+     * is registered per {@code companionModeOn} (§0).
+     */
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn) {
+        LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+        services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
+        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
-        services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
-        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
-        services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        services.put(ServiceType.DEVICE, new ServiceHolder(() -> new ManagedService() {
+            public void start() {
+                DeviceService.getInstance().start();
+            }
+
+            public void stop() {
+                DeviceService.getInstance().stop();
+            }
+        }));
+        // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
+        if (companionModeOn) {
+            services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
+        } else {
+            services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        }
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
+        return services;
     }
 
-    private static class ServiceHolder {
+    static class ServiceHolder {
         private final Supplier<? extends ManagedService> creator;
         private ManagedService instance;
 
@@ -279,8 +349,8 @@ public class AppController implements Runnable {
         }
     }
 
-    private enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, MOUTH, EARS, BRAIN,
+    enum ServiceType {
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

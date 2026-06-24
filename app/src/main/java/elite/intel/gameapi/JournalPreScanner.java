@@ -52,10 +52,14 @@ public class JournalPreScanner {
 
         EventBus privateBus = new EventBus("pre-scan");
         privateBus.register(new SilentPersistenceSubscriber());
+        FinancePreScanAccumulator finance = new FinancePreScanAccumulator();
+        privateBus.register(finance);
 
         for (Path file : toScan) {
             processFile(file, privateBus);
         }
+
+        finance.persist();
 
         log.info("JournalPreScanner: done");
     }

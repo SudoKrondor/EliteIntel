@@ -1,8 +1,8 @@
 package elite.intel.ai.mouth.google;
 
+import com.google.cloud.texttospeech.v1.SsmlVoiceGender;
 import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
-import elite.intel.ai.mouth.GoogleVoices;
-import elite.intel.ai.mouth.VoiceProvider;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.util.Arrays;
@@ -94,6 +94,32 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
      */
     @Override
     public VoiceSelectionParams getVoiceParams(String voiceName) {
+        GoogleVoices voice = GoogleVoices.JENNIFER;
+        if (voiceName != null) {
+            try {
+                voice = GoogleVoices.valueOf(voiceName);
+                voiceName = voice.getName();
+            } catch (IllegalArgumentException ignored) {
+                // voiceName may already be the provider display name.
+                for (GoogleVoices candidate : GoogleVoices.values()) {
+                    if (candidate.getName().equals(voiceName)) {
+                        voice = candidate;
+                        break;
+                    }
+                }
+            }
+        }
+
+        String languageCode = googleLanguageCode(SystemSession.getInstance().getLanguage());
+        if (languageCode != null) {
+            String providerVoiceName = googleVoiceName(SystemSession.getInstance().getLanguage(), voice.isMale());
+            return VoiceSelectionParams.newBuilder()
+                    .setLanguageCode(languageCode)
+                    .setName(providerVoiceName)
+                    .setSsmlGender(voice.isMale() ? SsmlVoiceGender.MALE : SsmlVoiceGender.FEMALE)
+                    .build();
+        }
+
         VoiceSelectionParams params = voiceMap.get(voiceName);
         if (params == null) {
             // voiceName may be an enum name (e.g. "EMMA") rather than a display name ("Emma")
@@ -106,5 +132,31 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
             params = voiceMap.get(GoogleVoices.JENNIFER.getName());
         }
         return params;
+    }
+
+    private static String googleLanguageCode(Language language) {
+        return switch (language) {
+            case EN -> null;
+            case RU -> "ru-RU";
+            case UK -> "uk-UA";
+            case DE -> "de-DE";
+            case FR -> "fr-FR";
+            case ES -> "es-ES";
+            case IT -> "it-IT";
+            case PT -> "pt-PT";
+        };
+    }
+
+    private static String googleVoiceName(Language language, boolean male) {
+        return switch (language) {
+            case EN -> "";
+            case RU -> male ? "ru-RU-Standard-B" : "ru-RU-Standard-E";
+            case UK -> "uk-UA-Standard-B";
+            case DE -> male ? "de-DE-Standard-H" : "de-DE-Standard-G";
+            case FR -> male ? "fr-FR-Standard-G" : "fr-FR-Standard-E";
+            case ES -> male ? "es-ES-Standard-B" : "es-ES-Standard-E";
+            case IT -> male ? "it-IT-Standard-C" : "it-IT-Standard-A";
+            case PT -> male ? "pt-PT-Standard-B" : "pt-PT-Standard-A";
+        };
     }
 }

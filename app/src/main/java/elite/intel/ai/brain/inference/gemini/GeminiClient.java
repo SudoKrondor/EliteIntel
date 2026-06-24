@@ -3,7 +3,7 @@ package elite.intel.ai.brain.inference.gemini;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LlmUsageEvent;
@@ -62,9 +62,9 @@ public class GeminiClient extends BaseAiClient implements Client {
             int promptTokens = usage.has("promptTokenCount") ? usage.get("promptTokenCount").getAsInt() : 0;
             int candidateTokens = usage.has("candidatesTokenCount") ? usage.get("candidatesTokenCount").getAsInt() : 0;
             int cachedTokens = usage.has("cachedContentTokenCount") ? usage.get("cachedContentTokenCount").getAsInt() : 0;
-            EventBusManager.publish(new AppLogEvent(
+            UiBus.publish(new AppLogEvent(
                     "LLM Gemini [" + currentModel + "] in=" + promptTokens + " out=" + candidateTokens));
-            EventBusManager.publish(new LlmUsageEvent("Gemini", currentModel, promptTokens, candidateTokens, cachedTokens, 0,
+            UiBus.publish(new LlmUsageEvent("Gemini", currentModel, promptTokens, candidateTokens, cachedTokens, 0,
                     wallClockTps(elapsed, candidateTokens)));
         }
         return response;

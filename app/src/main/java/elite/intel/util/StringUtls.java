@@ -1,10 +1,18 @@
 package elite.intel.util;
 
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
+import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.gameapi.i18n.EventsTextProvider;
+import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.SystemSession;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 
 import javax.annotation.Nullable;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.UUID;
 
 public class StringUtls {
 
@@ -55,11 +63,9 @@ public class StringUtls {
     }
 
     public static String isFuelStarClause(String starClass) {
-        if (starClass == null) {
-            return "";
-        }
+        if (starClass == null) return "";
         boolean isFuelStar = "KGBFOAM".contains(starClass);
-        return isFuelStar ? " Refuel possible. " : " Warning! - No fuel Available at next stop. ";
+        return " " + (isFuelStar ? localizedEvent("event.route.fuelAvailable") : localizedEvent("event.route.noFuel")) + " ";
     }
 
     private static int getHourOfDay() {
@@ -67,24 +73,120 @@ public class StringUtls {
     }
 
     public static String greeting(String playerName) {
-        if (playerName == null || playerName.isEmpty()) {
-            return "Hello, Commander!";
-        }
+        Language language = effectiveTtsLanguage();
+        String spokenName = spokenNameOrCommander(playerName, language);
 
         int hour = getHourOfDay();
-        String timeGreeting;
+        String greetingKey = hour >= 5 && hour < 12
+                ? "speech.greeting.morning"
+                : hour >= 12 && hour < 18
+                ? "speech.greeting.afternoon"
+                : "speech.greeting.evening";
 
-        if (hour >= 5 && hour < 12) {
-            timeGreeting = "Good morning";
-        } else if (hour >= 12 && hour < 18) {
-            timeGreeting = "Good afternoon";
-        } else if (hour >= 18 && hour < 22) {
-            timeGreeting = "Good evening";
-        } else {
-            timeGreeting = "Good evening";
+        return MultiLingualTextProvider.getText(language, greetingKey, spokenName);
+    }
+
+
+    //TODO: remove payer name from method signature once UI changes are in
+    public static String shipIntroduction(String playerName, String shipName) {
+        Language language = effectiveTtsLanguage();
+        String spokenName = spokenNameOrCommander(playerName, language);
+        String safeShipName = shipName == null || shipName.isBlank()
+                ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
+                : shipName;
+        return MultiLingualTextProvider.getText(
+                language,
+                "speech.shipIntroduction",
+                spokenName,
+                safeShipName,
+                Ranks.getPlayerHonorific(
+                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankEmpire(),
+                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankFederation()
+                )
+        );
+    }
+
+    public static String localizedSpeech(String key, Object... args) {
+        return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedLlm(String key, Object... args) {
+        return LlmTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedAiActionKeys(String action) {
+        return AiActionAliasTextProvider.getText(SystemSession.getInstance().getLanguage(), action);
+    }
+
+    public static String localizedEvent(String key, Object... args) {
+        return EventsTextProvider.getText(effectiveTtsLanguage(), key, args);
+    }
+
+    public static String localizedEventPlural(int count, String keyBase, Object... extraArgs) {
+        Language lang = effectiveTtsLanguage();
+        String suffix = pluralSuffix(lang, count);
+        Object[] args = new Object[1 + extraArgs.length];
+        args[0] = count;
+        System.arraycopy(extraArgs, 0, args, 1, extraArgs.length);
+        return EventsTextProvider.getText(lang, keyBase + suffix, args);
+    }
+
+    private static String pluralSuffix(Language lang, int count) {
+        return switch (lang) {
+            case RU, UK -> ruPlural(count);
+            default -> count == 1 ? ".one" : ".many";
+        };
+    }
+
+    private static String ruPlural(int count) {
+        int mod100 = count % 100;
+        int mod10 = count % 10;
+        if (mod100 >= 11 && mod100 <= 19) return ".many";
+        if (mod10 == 1) return ".one";
+        if (mod10 >= 2 && mod10 <= 4) return ".few";
+        return ".many";
+    }
+
+    public static String localizedSpeechLanguageName(Language language) {
+        String key = switch (language) {
+            case EN -> "language.english";
+            case RU -> "language.russian";
+            case UK -> "language.ukrainian";
+            case DE -> "language.german";
+            case FR -> "language.french";
+            case ES -> "language.spanish";
+            case PT -> "language.portuguese";
+            case IT -> "language.italian";
+        };
+        return MultiLingualTextProvider.getText(effectiveTtsLanguage(), key);
+    }
+
+    private static Language effectiveTtsLanguage() {
+        return AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+    }
+
+    private static String spokenNameOrCommander(String playerName, Language language) {
+        if (language == Language.EN) {
+            return asciiTtsNameOrCommander(playerName);
         }
+        if (playerName != null && !playerName.isBlank()) {
+            return playerName;
+        }
+        return MultiLingualTextProvider.getText(language, "speech.commander");
+    }
 
-        return timeGreeting + ", " + playerName + "!";
+    private static String asciiTtsNameOrCommander(String playerName) {
+        if (playerName == null || playerName.isBlank()) {
+            return "Commander";
+        }
+        String normalized = Normalizer.normalize(playerName, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "");
+        String ascii = normalized
+                .replaceAll("[^\\x00-\\x7F]", "")
+                .replaceAll("[^A-Za-z0-9 .'-]", " ")
+                .replaceAll("\\s{2,}", " ")
+                .trim();
+        return ascii.isBlank() ? "Commander" : ascii;
     }
 
 
@@ -114,10 +216,24 @@ public class StringUtls {
         return Long.parseLong(sb.substring(0, 12));
     }
 
+    /**
+     * Removes conversational filler/discourse openers the LLM tends to prepend despite the
+     * "no filler" instruction in {@link elite.intel.ai.brain.ShipPersonality}. The prompt rule
+     * only reduces frequency; this is the deterministic backstop applied to every TTS string.
+     * Locale-aware: the filler lists live in {@link TtsFillerRules}, keyed on the current
+     * session language.
+     */
+    public static String stripLeadingFillers(String input) {
+        if (input == null) return "";
+        return TtsFillerRules.stripLeading(input, SystemSession.getInstance().getLanguage());
+    }
+
     public static String sanitizeTts(String input) {
         if (input == null) return "";
-        return input
-                .replaceAll("[^\\x00-\\x7F]", "")               // strip non-ASCII (emojis, unicode)
+        // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
+        // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
+        // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
+        return Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain
                 .replaceAll("~~([^~\n]*?)~~", "$1")              // ~~strikethrough~~ → plain
@@ -134,6 +250,8 @@ public class StringUtls {
                 .replace("[", "").replace("]", "")
                 .replace("ETA", ". E.T.A.")
                 .replace(":", " - ")
+                .replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")      // drop controls, emojis, and standalone symbols
+                .replaceAll("\\p{M}+", "")                       // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
                 .replaceAll("\\.{2,}", " ")                     // "..." → space (espeak-ng stof crash on multi-dot sequences)
                 .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
@@ -192,13 +310,6 @@ public class StringUtls {
 
 
     public static String affirmative() {
-        List<String> result = Arrays.stream(
-                new String[]{"On it!", "affirmative!", "aye-aye!", "certainly!", "of course!", "rightaway!"}
-        ).filter(Objects::nonNull).toList();
-        if (result.isEmpty()) {
-            return "Commander";
-        }
-
-        return result.get(new Random().nextInt(result.size()));
+        return localizedSpeech("speech.affirmative");
     }
 }

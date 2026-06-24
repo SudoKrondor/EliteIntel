@@ -4,8 +4,10 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -31,7 +33,7 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
     public static OllamaUserInputProcessor getInstance() { return INSTANCE; }
 
     @Override public void start() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
         if (running.compareAndSet(false, true)) {
             this.executor = java.util.concurrent.Executors.newSingleThreadExecutor(
                     r -> { Thread t = new Thread(r, "OllamaCommand-Worker"); t.setDaemon(true); return t; });
@@ -41,7 +43,7 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
 
     @Override public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) { executor.shutdownNow(); executor = null; }
             log.info("OllamaCommandEndPoint stopped");
         }
@@ -49,11 +51,16 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
 
     @Subscribe @Override public void onUserInput(UserInputEvent event) {
         if (!running.get()) return;
+        long entryNanos = System.nanoTime();
         if (executor == null) {
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
-        executor.submit(() -> processVoiceCommand(event.getUserInput()));
+        executor.submit(() -> {
+            BrainTimer.start(entryNanos);
+            processVoiceCommand(event.getUserInput());
+        });
     }
 
     private void processVoiceCommand(String userInput) {
@@ -72,6 +79,10 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
             return;
         }
 
+        if (tryProcessExactCustomCommandCommand(userInput)) {
+            return;
+        }
+
         JsonArray request = buildVoiceCommandMessages(userInput);
 
         JsonObject response = OllamaCommandEndPoint.getInstance().processAiPrompt(request, 0.01f);
@@ -87,7 +98,7 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
     @Subscribe @Override public void onSensorDataEvent(SensorDataEvent event) {
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
         JsonObject response = OllamaAnalysisEndpoint.getInstance().processSensor(event);
         getRouter().processAiResponse(response, "");
     }

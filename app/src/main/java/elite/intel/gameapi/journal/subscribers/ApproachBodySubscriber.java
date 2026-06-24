@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -16,6 +16,8 @@ import elite.intel.util.LocationUtils;
 
 import java.util.List;
 import java.util.Map;
+
+import static elite.intel.util.StringUtls.localizedEvent;
 
 public class ApproachBodySubscriber {
 
@@ -40,14 +42,19 @@ public class ApproachBodySubscriber {
             }
 
             String locationType = location.getLocationType() == null ? "" : location.getLocationType().name();
-            sb.append("Entering orbit for ").append(locationType).append(" ").append(location.getPlanetName()).append(". ");
+            sb.append(localizedEvent("event.approach.body.entering", locationType, location.getPlanetName()));
 
             String currentSystem = event.getStarSystem();
+            location.setStarName(currentSystem);
 
             location.setOrbitalCruiseEntryAltitude(orbitalCruiseEntryAltitude);
 
-            playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
             playerSession.setCurrentPrimaryStarName(event.getStarSystem());
+
+            if (event.getBodyID() == null) return;
+
+            playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
+            locationManager.save(location); // record body before early-return so it is in DB even when tracking is on
 
             if (playerSession.getTracking().isEnabled()) return;
 
@@ -71,8 +78,8 @@ public class ApproachBodySubscriber {
                             extractDataFromEdsm(bodyData, location, sb)
                     );
                 } else { // no data available
-                    sb.append(" No data available for ").append(event.getBody()).append(".");
-                    sb.append(" Check gravity and temperature data before landing");
+                    sb.append(" ").append(localizedEvent("event.approach.body.noData", event.getBody()));
+                    sb.append(" ").append(localizedEvent("event.approach.body.checkData"));
                 }
             }
 
@@ -83,7 +90,7 @@ public class ApproachBodySubscriber {
                             Temperature data is provided in C (Celsius)
                             Gravity around equal to or less than 1G is safe. Issue a gravity warning if gravity is higher than 1G.
                         """;
-                EventBusManager.publish(new SensorDataEvent(sb.toString(), instructions));
+                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }
         }); // end virtual thread
     }
@@ -93,52 +100,49 @@ public class ApproachBodySubscriber {
         double surfaceGravity = formatDouble(location.getGravity());
 
         if (surfaceGravity > 1000) {
-            sb.append(" Warning! anomalous gravity reading received!");
+            sb.append(" ").append(localizedEvent("event.approach.body.gravityAnomaly"));
             /// 9.80665 * massEM / Math.pow(radiusKm / 6371.0, 2);
             double g = LocationUtils.gravityFix(location.getMassEM(), location.getRadius());
-            sb.append(" Calculated gravity: ").append(formatDouble(g)).append("G. ");
+            sb.append(" ").append(localizedEvent("event.approach.body.calculatedGravity", formatDouble(g)));
         } else {
-            sb.append(" Surface Gravity: ").append(surfaceGravity).append("G. ");
+            sb.append(" ").append(localizedEvent("event.approach.body.surfaceGravity", surfaceGravity));
             if (surfaceGravity > 1) {
-                sb.append(" Gravity Warning!!! ");
+                sb.append(" ").append(localizedEvent("event.approach.body.gravityWarning"));
             }
         }
 
 
         if (!"None".equalsIgnoreCase(location.getAtmosphere())) {
-            sb.append(" Atmosphere: ").append(location.getAtmosphere());
-            sb.append(". ");
+            sb.append(" ").append(localizedEvent("event.approach.body.atmosphere", location.getAtmosphere()));
         }
         List<MaterialDto> materials = location.getMaterials();
         if (materials != null && !materials.isEmpty()) {
-            sb.append(" ").append(materials.size()).append(" materials detected. Details available on request. ");
+            sb.append(" ").append(localizedEvent("event.approach.body.materials", materials.size()));
         }
-        sb.append(".");
         double surfaceTemperature = location.getSurfaceTemperature();
         double temperatureInC = surfaceTemperature - 273;
         location.setSurfaceTemperature(temperatureInC);
-        sb.append(" Surface Temperature: ").append((int) temperatureInC).append(" Celsius. ");
-        if (location.isTidalLocked()) sb.append(" The planet is tidally locked. ");
+        sb.append(" ").append(localizedEvent("event.approach.body.temperature", (int) temperatureInC));
+        if (location.isTidalLocked()) sb.append(" ").append(localizedEvent("event.approach.body.tidalLocked"));
     }
 
 
     private void extractDataFromEdsm(BodyData bodyData, LocationDto location, StringBuilder sb) {
         double gravity = formatDouble(bodyData.getGravity());
         location.setGravity(gravity);
-        sb.append(" Surface Gravity: ").append(gravity).append("G. ");
+        sb.append(" ").append(localizedEvent("event.approach.body.surfaceGravity", gravity));
         if (gravity > 1) {
-            sb.append(" Gravity Warning!!! ");
+            sb.append(" ").append(localizedEvent("event.approach.body.gravityWarning"));
         }
         double surfaceTemperatureKelvin = bodyData.getSurfaceTemperature();
         location.setSurfaceTemperature(surfaceTemperatureKelvin);
-        sb.append(" Surface Temperature: ").append((int) (surfaceTemperatureKelvin - 273)).append(" Celsius.");
+        sb.append(" ").append(localizedEvent("event.approach.body.temperature", (int) (surfaceTemperatureKelvin - 273)));
         if (bodyData.getAtmosphereType() != null && !bodyData.getAtmosphereType().isEmpty()) {
-            sb.append(" Atmosphere: ").append(bodyData.getAtmosphereType());
-            sb.append(". ");
+            sb.append(" ").append(localizedEvent("event.approach.body.atmosphere", bodyData.getAtmosphereType()));
         }
         Map<String, Double> materials = bodyData.getMaterials();
         if (materials != null && !materials.isEmpty()) {
-            sb.append(" ").append(materials.size()).append(" materials detected. Details available on request. ");
+            sb.append(" ").append(localizedEvent("event.approach.body.materials", materials.size()));
             for (Map.Entry<String, Double> material : materials.entrySet()) {
                 location.addMaterial(new MaterialDto(material.getKey(), material.getValue()));
             }

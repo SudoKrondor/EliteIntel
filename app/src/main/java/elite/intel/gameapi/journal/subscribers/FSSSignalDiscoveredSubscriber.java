@@ -4,13 +4,15 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.FSSSignalDiscoveredEvent;
 import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.util.TimeUtils;
+
+import static elite.intel.util.StringUtls.localizedEvent;
 
 @SuppressWarnings("unused")
 public class FSSSignalDiscoveredSubscriber {
@@ -34,16 +36,16 @@ public class FSSSignalDiscoveredSubscriber {
             }
 
             if (event.getUssTypeLocalised() != null && event.getUssTypeLocalised().equals("Nonhuman signal source")) {
-                publishVoice("Nonhuman signal source detected! Threat level " + event.getThreatLevel() + "!");
+                publishVoice(localizedEvent("event.fss.signal.nonhuman", event.getThreatLevel()));
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_SALVAGE)) {
-                announceSalvage("Low quality salvage", event);
+                announceSalvage("event.fss.signal.salvage.low", event);
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VALUABLE_SALVAGE)) {
-                announceSalvage("Valuable salvage", event);
+                announceSalvage("event.fss.signal.salvage.valuable", event);
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VERY_VALUABLE_SALVAGE)) {
-                announceSalvage("Very Valuable salvage", event);
+                announceSalvage("event.fss.signal.salvage.veryValuable", event);
             }
         });
     }
@@ -66,18 +68,18 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     private void publishVoice(String message) {
-        EventBusManager.publish(new DiscoveryAnnouncementEvent(message));
+        GameEventBus.publish(new DiscoveryAnnouncementEvent(message));
     }
 
 
-    private void announceSalvage(String qualityLabel, FSSSignalDiscoveredEvent event) {
+    private void announceSalvage(String qualityKey, FSSSignalDiscoveredEvent event) {
         StringBuilder msg = new StringBuilder()
-                .append(qualityLabel).append(" ")
+                .append(localizedEvent(qualityKey)).append(" ")
                 .append(event.getUssTypeLocalised()).append(": ")
                 .append(TimeUtils.secondsToMinutesRemainingString(event.getTimeRemaining()));
 
         if (event.getThreatLevel() > 0) {
-            msg.append(", threat level: ").append(event.getThreatLevel());
+            msg.append(localizedEvent("event.fss.signal.salvage.threatLevel", event.getThreatLevel()));
         }
 
         publishVoice(msg.toString());

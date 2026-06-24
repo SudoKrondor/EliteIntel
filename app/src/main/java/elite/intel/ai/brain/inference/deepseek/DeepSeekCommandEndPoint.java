@@ -7,9 +7,11 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -48,7 +50,7 @@ public class DeepSeekCommandEndPoint extends CommandEndPoint implements AiComman
                 t.setDaemon(true);
                 return t;
             });
-            EventBusManager.register(this);
+            GameEventBus.register(this);
             log.info("DeepSeekCommandEndPoint started");
         } else {
             log.debug("DeepSeekCommandEndPoint already started");
@@ -58,7 +60,7 @@ public class DeepSeekCommandEndPoint extends CommandEndPoint implements AiComman
     @Override
     public void stop() {
         if (running.compareAndSet(true, false)) {
-            EventBusManager.unregister(this);
+            GameEventBus.unregister(this);
             if (executor != null) {
                 DeepSeekClient.getInstance().cancelCurrentRequest();
                 executor.shutdown();
@@ -86,13 +88,16 @@ public class DeepSeekCommandEndPoint extends CommandEndPoint implements AiComman
             log.debug("Ignoring onUserInput: endpoint not running");
             return;
         }
+        long entryNanos = System.nanoTime();
         if (executor == null) {
             log.warn("Executor is null; running onUserInput on caller thread");
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
         executor.submit(() -> {
             try {
+                BrainTimer.start(entryNanos);
                 processVoiceCommand(event.getUserInput());
             } catch (Exception e) {
                 log.error("Error processing user input", e);
@@ -107,6 +112,10 @@ public class DeepSeekCommandEndPoint extends CommandEndPoint implements AiComman
         }
 
         log.info("Sanitized voice userInput:\n{}", userInput);
+
+        if (tryProcessExactCustomCommandCommand(userInput)) {
+            return;
+        }
 
         JsonArray messages = buildVoiceCommandMessages(userInput);
 
@@ -126,14 +135,14 @@ public class DeepSeekCommandEndPoint extends CommandEndPoint implements AiComman
         if (!running.get()) return;
         if (trimToNull(event.getSensorData()) == null) return;
 
-        EventBusManager.publish(new AppLogEvent("Processing Sensor event"));
+        UiBus.publish(new AppLogEvent("Processing Sensor event"));
         JsonArray messages = buildSensorMessages(event);
 
         executor.submit(() -> {
             try {
                 JsonObject apiResponse = callDeepSeekApi(messages);
                 if (apiResponse == null) {
-                    EventBusManager.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
+                    GameEventBus.publish(new AiVoxResponseEvent("Failure processing system request. Check programming"));
                     return;
                 }
                 getRouter().processAiResponse(apiResponse, null);

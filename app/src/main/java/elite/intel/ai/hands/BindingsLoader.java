@@ -50,6 +50,10 @@ public class BindingsLoader {
         return latestFilePath.toFile();
     }
 
+    public String getActivePresetName() {
+        return findActivePresetName(PlayerSession.getInstance().getBindingsDir());
+    }
+
     // Reads the active preset name from StartPreset.*.start (e.g. StartPreset.4.start).
     // The file repeats the preset name on multiple lines; we take the first non-empty one.
     private String findActivePresetName(Path bindingsDir) {

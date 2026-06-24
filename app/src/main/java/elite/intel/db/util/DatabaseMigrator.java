@@ -48,8 +48,19 @@ public class DatabaseMigrator {
             }
 
             for (String stmt : sql.split(";\\s*\n")) {
-                if (!stmt.trim().isEmpty()) {
-                    handle.execute(stmt.trim());
+                String trimmed = stmt.trim();
+                if (trimmed.isEmpty() || isTransactionControl(trimmed)) {
+                    continue;
+                }
+                try {
+                    handle.execute(trimmed);
+                } catch (Exception e) {
+                    if (isDuplicateColumn(e)) {
+                        log.warn("Migration {}: column already exists, skipping: {}",
+                                file, trimmed.replaceAll("\\s+", " ").substring(0, Math.min(80, trimmed.replaceAll("\\s+", " ").length())));
+                    } else {
+                        throw e;
+                    }
                 }
             }
 
@@ -59,6 +70,27 @@ public class DatabaseMigrator {
         log.info("Migrations complete. Applied: {}", allFiles.size());
     }
 
+
+    /** Returns true for bare transaction-control keywords that JDBI manages itself. */
+    private static boolean isTransactionControl(String stmt) {
+        String upper = stmt.toUpperCase();
+        return upper.equals("BEGIN") || upper.equals("COMMIT") || upper.equals("ROLLBACK");
+    }
+
+    /**
+     * Returns true if the exception chain indicates a SQLite "duplicate column name" error.
+     * This happens when a migration's ALTER TABLE ADD COLUMN was already applied outside
+     * the migration system (e.g. manual DB edit or schema applied before the migration existed).
+     * In that case, the column already exists so the migration intent is fulfilled.
+     */
+    private static boolean isDuplicateColumn(Exception e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t.getMessage() != null && t.getMessage().contains("duplicate column name")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static Set<String> findMigrationFiles() throws IOException, URISyntaxException {
         Set<String> files = new TreeSet<>();

@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.CodexEntryDao.CodexEntry;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.ScanOrganicEvent;
@@ -23,6 +23,7 @@ import java.util.Locale;
 import static elite.intel.util.ExoBio.calculateGenusNotYetScanned;
 import static elite.intel.util.ExoBio.completedScansForPlanet;
 import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
+import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.subtractString;
 
 public class ScanOrganicSubscriber {
@@ -37,7 +38,7 @@ public class ScanOrganicSubscriber {
 
     private static void announce(String sb) {
         if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
-            EventBusManager.publish(new SensorDataEvent(sb, """
+            GameEventBus.publish(new SensorDataEvent(sb, """
                         Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
                         Rephrase to natural, immersive speech:
                             - Key elements ONLY: genus/species logged, distance/completion if stated.
@@ -58,7 +59,9 @@ public class ScanOrganicSubscriber {
             String genus = event.getGenusLocalised();
             playerSession.setCurrentPartial(genus);
             String species = subtractString(event.getSpeciesLocalised(), genus);
+            if (event.getBody() == null) return;
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
+            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());
 
             boolean isOurDiscovery = currentLocation.isOurDiscovery();
@@ -73,16 +76,13 @@ public class ScanOrganicSubscriber {
             Integer range = (bioDetails != null) ? (int) bioDetails.colonyRange() : distance;
 
             if (scan1.equalsIgnoreCase(scanType)) {
-                sb.append(" Organic sample detected. Genus: ");
-                sb.append(" ");
-                sb.append("\"").append(genus).append("\"");
-                sb.append(" Species:");
+                sb.append(" ").append(localizedEvent("event.organic.detected"));
+                sb.append(" \"").append(genus).append("\"");
+                sb.append(" ").append(localizedEvent("event.organic.species")).append(" ");
                 sb.append(species);
-                sb.append(" First sample out of three required. ");
+                sb.append(" ").append(localizedEvent("event.organic.firstSample"));
                 if (range != null) {
-                    sb.append(" Required Distance between samples: ");
-                    sb.append(range);
-                    sb.append(" meters. ");
+                    sb.append(" ").append(localizedEvent("event.organic.requiredDistance", range));
                 }
 
                 BioSampleDto bioSampleDto = createBioSampleDto(genus, species, isOurDiscovery);
@@ -98,12 +98,11 @@ public class ScanOrganicSubscriber {
                 currentLocation.addBioScan(bioSampleDto);
                 deleteScannedCodexEntry(genus, currentLocation);
                 locationManager.save(currentLocation);
-                announce("Sample for genus \"" + genus + "\" logged. ");
+                announce(localizedEvent("event.organic.sampleLogged", genus));
             } else if (scan3.equalsIgnoreCase(scanType)) {
                 sb = new StringBuilder();
-                sb.append("Final sample for genus: ");
-                sb.append("\"").append(genus).append("\" logged. ");
-                sb.append("collection complete. ");
+                sb.append(localizedEvent("event.organic.finalSample", genus)).append(" ");
+                sb.append(localizedEvent("event.organic.collectionComplete")).append(" ");
 
                 BioSampleDto bioSampleDto = createBioSampleDto(genus, species, isOurDiscovery);
 
@@ -123,9 +122,9 @@ public class ScanOrganicSubscriber {
                 List<ExoBio.DataDto> completedSpecies = completedScansForPlanet(playerSession.getBioCompletedSamples(), currentLocation.getPlanetName());
                 List<GenusDto> remainingSpecies = calculateGenusNotYetScanned(completedSpecies, allSpecies);
                 if (remainingSpecies.isEmpty()) {
-                    sb.append(" Organic survey complete for this planet.");
+                    sb.append(" ").append(localizedEvent("event.organic.surveyComplete"));
                 } else {
-                    sb.append(" Remaining genus: ");
+                    sb.append(" ").append(localizedEvent("event.organic.remainingGenus")).append(" ");
                     for (GenusDto entry : remainingSpecies) {
                         sb.append(entry.getSpecies()).append(", ");
                     }

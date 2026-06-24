@@ -2,25 +2,29 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.dto.MarketDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements QueryHandler {
+public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements IntelQuery {
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
+    @Override public String id() { return "analyze_local_markets_handler"; }
+
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        //EventBusManager.publish(new AiVoxResponseEvent("Analyzing local market data. Stand by."));
+        //GameEventBus.publish(new AiVoxResponseEvent("Analyzing local market data. Stand by."));
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         MarketDto market = currentLocation.getMarket();
         if (market == null || market.getData() == null) {
-            return process("No market data available for current location.");
+            return process(StringUtls.localizedLlm("query.market.noData"));
         }
 
         String instructions = """

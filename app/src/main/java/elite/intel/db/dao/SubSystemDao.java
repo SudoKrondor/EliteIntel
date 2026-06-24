@@ -19,11 +19,13 @@ public interface SubSystemDao {
     @SqlQuery("SELECT subsystem FROM sub_system WHERE LOWER(subsystem) = LOWER(:subsystem) LIMIT 1")
     String getOriginalCase(@Bind("subsystem") String subsystem);
 
-    // Looks up the subsystem category name by checking whether the stripped journal raw key
-    // (e.g. "ext_drive_class5_a_empire") contains any known machine_key as a substring.
-    // Returns one result. Callers do not care about class/size/grade variant, only the type.
-    @SqlQuery("SELECT subsystem FROM sub_system WHERE :rawKey LIKE '%' || machine_key || '%' AND machine_key IS NOT NULL LIMIT 1")
-    String findSubsystemByRawKey(@Bind("rawKey") String rawKey);
+    /**
+     * Resolves the journal machine_key (e.g. "int_powerplant", "ext_drive", "hpt_beamlaser")
+     * for a canonical subsystem name. machine_key is reliably present in the journal's raw
+     * Subsystem field, unlike Subsystem_Localised, so targeting matches on it.
+     */
+    @SqlQuery("SELECT machine_key FROM sub_system WHERE LOWER(subsystem) = LOWER(:subsystem) AND machine_key IS NOT NULL LIMIT 1")
+    String getMachineKeyBySubsystem(@Bind("subsystem") String subsystem);
 
 
     class SubSystemMapper implements RowMapper<SubSystem> {

@@ -4,11 +4,13 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
 import elite.intel.session.PlayerSession;
 
 import java.util.*;
+
+import static elite.intel.util.StringUtls.localizedEvent;
 
 @SuppressWarnings("unused")
 public class TransmissionReceivedSubscriber {
@@ -38,13 +40,13 @@ public class TransmissionReceivedSubscriber {
             boolean haveCargo = cargoHoldManager.get() != null && cargoHoldManager.get().getCount() > 0;
 
             if (isPirateMessage(event.getMessageLocalised()) && haveCargo && !isRadioOn) {
-                EventBusManager.publish(new MissionCriticalAnnouncementEvent("Pirate Alert!!!"));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.pirate.alert")));
                 return;
             }
 
             if (isRadioOn == null || !isRadioOn) return;
 
-            if (!event.getMessageLocalised().toLowerCase().contains("entered channel")) {
+            if (event.getMessageLocalised() != null && !event.getMessageLocalised().toLowerCase().contains("entered channel")) {
                 boolean isStation = event.getMessage().toLowerCase().contains("station");
 
                 if (event.getFrom().toLowerCase().contains("cruise")) return;
@@ -53,10 +55,10 @@ public class TransmissionReceivedSubscriber {
 
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
-                        EventBusManager.publish(new RadioTransmissionEvent("This is " + event.getFrom() + " traffic control. " + event.getMessageLocalised()));
+                        GameEventBus.publish(new RadioTransmissionEvent(localizedEvent("event.transmission.trafficControl", event.getFrom(), event.getMessageLocalised())));
                     }
                 } else {
-                    EventBusManager.publish(new RadioTransmissionEvent(event.getMessageLocalised()));
+                    GameEventBus.publish(new RadioTransmissionEvent(event.getMessageLocalised()));
                 }
             }
         });

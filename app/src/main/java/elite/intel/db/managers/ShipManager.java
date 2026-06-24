@@ -1,6 +1,5 @@
 package elite.intel.db.managers;
 
-import elite.intel.ai.brain.ShipCadence;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.util.Database;
@@ -30,8 +29,7 @@ public class ShipManager {
             ship.setCargoCapacity(cargoCapacity);
             ship.setShipIdentifier(shipMake);
             ship.setVoice(voice);
-            ship.setPersonality(ShipPersonality.PROFESSIONAL.name());
-            ship.setCadence(ShipCadence.IMPERIAL.name());
+            ship.setPersonality(ShipPersonality.ROGUE.name());
             ship.setCommanderName(commanderName);
             dao.save(ship);
             return Void.TYPE;

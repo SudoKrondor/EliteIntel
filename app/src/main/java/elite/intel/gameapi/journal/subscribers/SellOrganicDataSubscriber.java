@@ -2,23 +2,19 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.CodexEntryManager;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.SellOrganicDataEvent;
 import elite.intel.session.PlayerSession;
 
+/**
+ * Clears collected bio-sample state once organic data has been sold. The spoken
+ * sale summary (credits + by-genus breakdown) is handled by {@code FinanceSubscriber},
+ * the single home for financial announcements.
+ */
 public class SellOrganicDataSubscriber {
 
     @Subscribe
     public void onSellOrganicDataEvent(SellOrganicDataEvent event) {
-        PlayerSession playerSession = PlayerSession.getInstance();
-        playerSession.clearBioSamples();
-        CodexEntryManager codexEntryManager = CodexEntryManager.getInstance();
-        codexEntryManager.clear();
-        String instructions = """
-                    We sold organic data and made credits.
-                    Provide user with a sale summary. Start with total amount collected, then provide a breakdown by genus.
-                """;
-        EventBusManager.publish(new SensorDataEvent(event.toYaml(), instructions));
+        PlayerSession.getInstance().clearBioSamples();
+        CodexEntryManager.getInstance().clear();
     }
 }

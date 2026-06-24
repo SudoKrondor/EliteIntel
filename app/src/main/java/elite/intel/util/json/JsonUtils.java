@@ -117,8 +117,8 @@ public final class JsonUtils {
     }
 
     /**
-     * Strips markdown formatting and non-standard characters, leaving plain spoken text
-     * safe for TTS. Only standard American keyboard characters survive.
+     * Strips markdown formatting and non-TTS-safe characters, leaving plain spoken text
+     * safe for TTS while preserving localized text.
      */
     public static String stripMarkdownForTts(String text) {
         if (text == null || text.isEmpty()) return text;
@@ -152,8 +152,8 @@ public final class JsonUtils {
         // Horizontal rules
         s = s.replaceAll("(?m)^[-*_]{3,}\\s*$", "");
 
-        // Drop any character outside the printable ASCII / standard keyboard range
-        s = s.replaceAll("[^\\x20-\\x7E\\n]", "");
+        // Drop controls, emojis, and standalone symbols while preserving localized text.
+        s = s.replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ");
 
         // Collapse blank lines left by removed table rows / headers
         s = s.replaceAll("(?m)^[ \\t]+$", "");

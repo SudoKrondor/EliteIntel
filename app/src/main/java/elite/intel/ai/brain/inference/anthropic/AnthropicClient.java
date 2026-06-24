@@ -3,7 +3,7 @@ package elite.intel.ai.brain.inference.anthropic;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LlmUsageEvent;
@@ -68,13 +68,13 @@ public class AnthropicClient extends BaseAiClient implements Client {
                 int out = usage.has("output_tokens") ? usage.get("output_tokens").getAsInt() : 0;
                 int cached = usage.has("cache_read_input_tokens") ? usage.get("cache_read_input_tokens").getAsInt() : 0;
                 int written = usage.has("cache_creation_input_tokens") ? usage.get("cache_creation_input_tokens").getAsInt() : 0;
-                EventBusManager.publish(new AppLogEvent(
+                UiBus.publish(new AppLogEvent(
                         "Claude – in= " + in + " out= " + out +
                                 (cached > 0 ? " cache_read= " + cached : "") +
                                 (written > 0 ? " cache_written= " + written : "") +
                                 " tokens"));
                 String model = response.has("model") ? response.get("model").getAsString() : MODEL_COMMAND_MODEL;
-                EventBusManager.publish(new LlmUsageEvent("Claude", model, in, out, cached, written, wallClockTps(elapsed, out)));
+                UiBus.publish(new LlmUsageEvent("Claude", model, in, out, cached, written, wallClockTps(elapsed, out)));
             }
             return response;
         } catch (Exception e) {

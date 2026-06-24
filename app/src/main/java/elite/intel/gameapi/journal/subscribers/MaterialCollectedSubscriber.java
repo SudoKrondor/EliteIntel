@@ -5,7 +5,7 @@ import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.search.edsm.dto.MaterialsType;
 import elite.intel.util.StringUtls;
@@ -16,6 +16,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
 
 public class MaterialCollectedSubscriber {
 
@@ -31,8 +34,9 @@ public class MaterialCollectedSubscriber {
         materialManager.save(event.getName(), determineType(event.getCategory()), event.getCount());
 
         MaterialsDao.Material material = Database.withDao(MaterialsDao.class, dao -> dao.findByExactName(StringUtls.capitalizeWords(event.getName())));
-        String message = "Collected " + event.getCount() + " units of " + event.getName()
-                + (material == null ? "." : ". Total in storage is " + material.getAmount() + " units.");
+        String message = material == null
+                ? localizedEvent("event.material.collected", event.getCount(), event.getName())
+                : localizedEvent("event.material.collectedTotal", event.getCount(), event.getName(), material.getAmount());
 
         synchronized (pending) {
             pending.add(message);
@@ -48,9 +52,9 @@ public class MaterialCollectedSubscriber {
             if (pending.isEmpty()) return;
             String announcement = pending.size() == 1
                     ? pending.getFirst()
-                    : pending.size() + " materials collected.";
+                    : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
-            EventBusManager.publish(new MiningAnnouncementEvent(announcement));
+            GameEventBus.publish(new MiningAnnouncementEvent(announcement));
         }
     }
 

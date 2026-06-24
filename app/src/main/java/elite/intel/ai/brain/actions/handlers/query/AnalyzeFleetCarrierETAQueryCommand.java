@@ -1,0 +1,59 @@
+package elite.intel.ai.brain.actions.handlers.query;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.session.PlayerSession;
+import elite.intel.util.StringUtls;
+import elite.intel.util.yaml.ToYamlConvertable;
+import elite.intel.util.yaml.YamlFactory;
+
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+
+@RegisterQuery
+public class AnalyzeFleetCarrierETAQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
+    public static final String ID = "query_fleet_carrier_eta";
+
+    @Override public String llmDescription() { return "Report the fleet carrier's estimated time of arrival."; }
+
+
+    @Override public String id() { return ID; }
+
+
+    @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
+        PlayerSession playerSession = PlayerSession.getInstance();
+        String carrierDepartureTime = playerSession.getCarrierDepartureTime();
+        if (carrierDepartureTime == null) {
+            return process(StringUtls.localizedLlm("query.carrier.noDepartureTime"));
+        }
+
+        long minutesUntilArrival;
+        try {
+            ZonedDateTime arrival = ZonedDateTime.parse(carrierDepartureTime, DateTimeFormatter.ISO_DATE_TIME);
+            minutesUntilArrival = ChronoUnit.MINUTES.between(ZonedDateTime.now(), arrival);
+        } catch (Exception e) {
+            return process(StringUtls.localizedLlm("query.carrier.noEta"));
+        }
+
+        String instructions = """
+                Report the fleet carrier estimated time of arrival.
+                
+                Data fields:
+                - minutesUntilArrival: pre-computed minutes until the carrier arrives (negative means already arrived)
+                
+                State the arrival time in minutes. If negative, say the carrier has already arrived.
+                """;
+
+        return process(new AiDataStruct(instructions, new DataDto(minutesUntilArrival)), originalUserInput);
+    }
+
+
+    record DataDto(long minutesUntilArrival) implements ToYamlConvertable {
+        @Override public String toYaml() {
+            return YamlFactory.toYaml(this);
+        }
+    }
+}

@@ -59,7 +59,9 @@ public class DockedSubscriber {
                     location.setLocationType(STATION);
                 }
 
-                if (event.getStationFaction() != null) location.setStationFaction(event.getStationFaction().getName());
+                if (event.getStationFaction() != null) {
+                    location.setStationFaction(event.getStationFaction().getName());
+                }
                 locationManager.save(location);
             }); // end virtual thread
         });

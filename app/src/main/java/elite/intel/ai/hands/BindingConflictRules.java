@@ -85,12 +85,15 @@ public class BindingConflictRules {
      * Galnet). Key sharing between these and main-state actions is safe.
      */
     private static boolean isSubStateModeAction(String action) {
-        return action.startsWith("FreeCam") || action.startsWith("MoveFreeCam")
-                || action.startsWith("CamTranslate") || action.startsWith("CamYaw")
-                || action.startsWith("CamZoom") || action.startsWith("FixCamera")
-                || action.startsWith("Vanity") || action.startsWith("PhotoCamera")
+        // WHY: "Cam" is matched as a substring (not a prefix) on purpose - it covers every camera
+        // action family at once: FreeCam*, MoveFreeCam*, FixCamera*, PhotoCamera*, QuitCamera, and
+        // all the CamPitch/CamRoll/CamYaw/CamZoom/CamTranslate axes. No non-camera ED action name
+        // contains "Cam".
+        return action.contains("Cam")
+                || action.startsWith("Vanity")
                 || action.startsWith("MovePlacement") || action.startsWith("Placement")
                 || action.startsWith("GalnetAudio")
+                || action.startsWith("MultiCrew") || action.startsWith("Store")
                 || action.startsWith("ExplorationFSS") || action.startsWith("ExplorationSAA");
     }
 }

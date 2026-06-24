@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.data.EDMaterialCaps;
 import elite.intel.gameapi.journal.events.MaterialsEvent;
 import elite.intel.search.edsm.dto.MaterialsType;
@@ -48,7 +48,7 @@ public class MaterialsEventSubscriber {
                     EDMaterialCaps.getMax(material.getName()
                     )
             );
-            EventBusManager.publish(new AppLogDebugEvent("\tProcessed " + materialName + " " + material.getCount() + " units."));
+            UiBus.publish(new AppLogDebugEvent("\tProcessed " + materialName + " " + material.getCount() + " units."));
             return Void.class;
         });
     }

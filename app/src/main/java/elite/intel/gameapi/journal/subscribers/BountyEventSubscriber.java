@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BountyEvent;
 import elite.intel.gameapi.journal.events.dto.BountyDto;
 import elite.intel.session.PlayerSession;
@@ -11,6 +11,8 @@ import elite.intel.session.PlayerSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import static elite.intel.util.StringUtls.localizedEvent;
 
 @SuppressWarnings("unused")
 public class BountyEventSubscriber {
@@ -44,15 +46,15 @@ public class BountyEventSubscriber {
                     missionManager.getPirateMissionTypes()
             );
             if (!targetFactions.isEmpty() && targetFactions.contains(event.getVictimFaction())) {
-                sb.append(" Mission Kill Confirmed, ");
+                sb.append(localizedEvent("event.bounty.missionKill")).append(" ");
             } else {
-                sb.append(" Kill Confirmed, ");
+                sb.append(localizedEvent("event.bounty.killConfirmed")).append(" ");
             }
 
             long bountyCollected = rewards.stream().mapToLong(r -> r.getReward()).sum();
-            if (rewards.size() > 0) sb.append(bountyCollected + " Bounty Claimed ");
+            if (!rewards.isEmpty()) sb.append(localizedEvent("event.bounty.claimed", bountyCollected));
             playerSession.addBountyReward(event.getTotalReward());
-            EventBusManager.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(sb.toString()));
         });
     }
 }

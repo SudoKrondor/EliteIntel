@@ -2,10 +2,11 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MarketSellEvent;
 import elite.intel.search.spansh.station.marketstation.TradeStopDto;
 import elite.intel.search.spansh.traderoute.TradeCommodity;
@@ -19,6 +20,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static elite.intel.util.StringUtls.localizedEvent;
 
 public class MarketSellEventSubscriber {
 
@@ -45,10 +49,19 @@ public class MarketSellEventSubscriber {
 
             if (pending.size() == 1) {
                 MarketSellEvent e = pending.getFirst();
-                EventBusManager.publish(new AiVoxResponseEvent("Sold " + e.getCount() + " units of " + e.getType() + " for " + e.getTotalSale() + " credits."));
+                GameEventBus.publish(
+                        new AiVoxResponseEvent(
+                                localizedEvent(
+                                        "event.market.sold.units",
+                                        e.getCount(),
+                                        FuzzySearch.localizedCommodityName(e.getType()),
+                                        e.getTotalSale()
+                                )
+                        )
+                );
             } else {
                 long total = pending.stream().mapToLong(MarketSellEvent::getTotalSale).sum();
-                EventBusManager.publish(new AiVoxResponseEvent("Sold " + pending.size() + " commodities for " + total + " credits total."));
+                GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.market.sold.multiple", pending.size(), total)));
             }
             pending.clear();
 
@@ -63,20 +76,19 @@ public class MarketSellEventSubscriber {
                 String sourceStation = nextStop.getTradeStopDto().getSourceStation();
                 String destinationSystem = nextStop.getTradeStopDto().getDestinationSystem();
                 String destinationStation = nextStop.getTradeStopDto().getDestinationStation();
+                String commodities = nextStop.getTradeStopDto().getCommodities().stream()
+                        .map(TradeCommodity::getName)
+                        .collect(Collectors.joining(", "));
 
-                StringBuilder sb = new StringBuilder();
+                String tradeMessage;
                 if (playerSession.getPrimaryStarName().equalsIgnoreCase(sourceSystem)) {
-                    sb.append(" Buy ");
-                    nextStop.getTradeStopDto().getCommodities().forEach(commodity -> sb.append(commodity.getName()).append(", "));
-                    sb.append(" Sell at ").append(destinationSystem).append(", ").append(destinationStation).append(" port.");
+                    tradeMessage = localizedEvent("event.market.trade.buy", commodities, destinationSystem, destinationStation);
                 } else {
-                    sb.append(" Head to ").append(sourceSystem).append(", ").append(sourceStation).append(" and buy ");
-                    nextStop.getTradeStopDto().getCommodities().forEach(commodity -> sb.append(commodity.getName()).append(", "));
-                    sb.append(" Sell at ").append(destinationSystem).append(", ").append(destinationStation).append(" port.");
+                    tradeMessage = localizedEvent("event.market.trade.head", sourceSystem, sourceStation, commodities, destinationSystem, destinationStation);
                 }
 
-                EventBusManager.publish(new AiVoxResponseEvent(sb.toString()));
-                reminderManager.setReminder(sb.toString(), destinationSystem);
+                GameEventBus.publish(new AiVoxResponseEvent(tradeMessage));
+                reminderManager.setReminder(tradeMessage, destinationSystem);
             } else {
                 reminderManager.clear();
             }

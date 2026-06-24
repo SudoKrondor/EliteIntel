@@ -1,9 +1,10 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.hands.events.GameInputEvent;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.GlobalSettingsManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.journal.events.LiftoffEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -21,7 +22,7 @@ public class LiftoffEventSubscriber {
             Thread.ofVirtual().start(() -> {
                 Status status = Status.getInstance();
                 if (status.isInMainShip() && status.isLandingGearDown()) {
-                    GameControllerBus.publish(new GameInputEvent(BINDING_LANDING_GEAR_TOGGLE.getGameBinding(), 0));
+                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
                 }
             });
         }

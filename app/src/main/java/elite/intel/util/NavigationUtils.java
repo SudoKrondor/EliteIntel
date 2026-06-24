@@ -4,6 +4,8 @@ import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static elite.intel.util.StringUtls.localizedEvent;
+
 /**
  * The NavigationUtils class provides a set of utility methods for calculating navigation-related data.
  * These include determining directions, distances, speeds, angles, and bearings between geographical
@@ -80,7 +82,7 @@ public class NavigationUtils {
                 userHeading,
                 Math.round(speed),
                 event.getAltitude(),
-                "Heading " + bearingToTarget + " degrees, distance to target is " + formatDistance(resultForDirections.distanceInMeters())
+                localizedEvent("event.nav.headingDistance", bearingToTarget, formatDistance(resultForDirections.distanceInMeters()))
         );
     }
 
@@ -250,12 +252,11 @@ public class NavigationUtils {
     public static String formatDistance(double meters) {
         double km = meters / 1000;
         if (meters >= 10000) {
-            return (int) km + " kilometers. ";
+            return localizedEvent("event.nav.km", (int) km);
         } else if (meters >= 1000) {
-            return String.format(" %.1f kilometers. ", km);
+            return localizedEvent("event.nav.km", (int) km);
         } else {
-            int n = (int) meters;
-            return n + " meters. ";
+            return localizedEvent("event.nav.meters", (int) meters);
         }
     }
 

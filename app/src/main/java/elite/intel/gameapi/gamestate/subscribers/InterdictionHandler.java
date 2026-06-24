@@ -1,25 +1,36 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.handlers.commands.CommandHandler;
 import elite.intel.gameapi.gamestate.status_events.BeingInterdictedEvent;
+import elite.intel.ai.brain.actions.command.builtin.TargetHostileHighestThreatCommand;
+import elite.intel.ai.brain.actions.command.builtin.SwitchToCombatModeCommand;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import static elite.intel.ai.brain.actions.Commands.ACTIVATE_COMBAT_MODE;
-import static elite.intel.ai.brain.actions.Commands.SELECT_HIGHEST_THREAT;
 
 public class InterdictionHandler {
+
+    private static final Logger log = LogManager.getLogger(InterdictionHandler.class);
 
     private final CommandHandlerFactory commandHandlerFactory = CommandHandlerFactory.getInstance();
 
     @Subscribe
     public void onInterdictedEvent(BeingInterdictedEvent event) {
-        CommandHandler activateCombatMode = commandHandlerFactory.getCommandHandlers().get(ACTIVATE_COMBAT_MODE.getAction());
-        if (activateCombatMode != null)
-            new Thread(() -> activateCombatMode.handle(ACTIVATE_COMBAT_MODE.getAction(), null, "")).start();
+        dispatchAsync(commandHandlerFactory.getCommandHandlers().get(SwitchToCombatModeCommand.ID), SwitchToCombatModeCommand.ID);
+        dispatchAsync(commandHandlerFactory.getCommandHandlers().get(TargetHostileHighestThreatCommand.ID), TargetHostileHighestThreatCommand.ID);
+    }
 
-        CommandHandler handler = commandHandlerFactory.getCommandHandlers().get(SELECT_HIGHEST_THREAT.getAction());
-        if (handler != null)
-            new Thread(() -> handler.handle(SELECT_HIGHEST_THREAT.getAction(), null, "")).start();
+    /** Fires a command handler on its own thread, isolating any handler failure from the event bus. */
+    private void dispatchAsync(IntelAction handler, String action) {
+        if (handler == null) return;
+        new Thread(() -> {
+            try {
+                handler.handle(action, null, "");
+            } catch (Exception e) {
+                log.error("Interdiction handler failed for action {}: {}", action, e.getMessage(), e);
+            }
+        }).start();
     }
 }

@@ -137,7 +137,7 @@ public class CodexEntryEvent extends BaseEvent {
         return systemAddress;
     }
 
-    public long getBodyID() {
+    public Long getBodyID() {
         return bodyID;
     }
 

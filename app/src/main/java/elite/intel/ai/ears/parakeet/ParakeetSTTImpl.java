@@ -2,14 +2,23 @@ package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
+import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.companion.input.BargeInEvent;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.UserInputEvent;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.PttButtonStateEvent;
 import elite.intel.util.AppPaths;
+import elite.intel.util.SherpaOnnxNatives;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NonNull;
@@ -18,16 +27,14 @@ import javax.sound.sampled.*;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayDeque;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static elite.intel.ai.brain.Reducer.passThroughWords;
-import static elite.intel.ai.brain.Reducer.trashSttWords;
-import static elite.intel.gameapi.AudioMonitorBus.publish;
+import static elite.intel.eventbus.AudioMonitorBus.publish;
 import static java.util.Arrays.copyOf;
 
 public class ParakeetSTTImpl implements EarsInterface {
@@ -50,6 +57,8 @@ public class ParakeetSTTImpl implements EarsInterface {
     private final AtomicBoolean isStopping = new AtomicBoolean(false);
     private final AtomicBoolean isListening = new AtomicBoolean(false);
     private final AtomicBoolean isSpeaking = new AtomicBoolean(false);
+    private final AtomicBoolean pttHeld = new AtomicBoolean(false);
+    private final AtomicBoolean pttForceClose = new AtomicBoolean(false);
     private final java.util.concurrent.atomic.AtomicInteger pendingTranscriptions = new java.util.concurrent.atomic.AtomicInteger(0);
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ByteArrayOutputStream audioCollector = new ByteArrayOutputStream();
@@ -66,9 +75,11 @@ public class ParakeetSTTImpl implements EarsInterface {
     public double NOISE_FLOOR;
     private final double MINIMUM_NOISE_FLOOR_TO_RMS_RATIO = 300;
     private Thread processingThread;
+    private Mixer.Info inputMixerInfo;
 
     public ParakeetSTTImpl() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
+        UiBus.register(this);
     }
 
     @Override
@@ -78,7 +89,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             return;
         }
 
-        AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat();
+        inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+        AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
         this.sampleRateHertz = format.getSampleRate();
         this.bufferSize = format.getBufferSize();
         this.captureFormat = format.getCaptureFormat();
@@ -86,7 +98,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         Double high = systemSession.getRmsThresholdHigh();
         Double low = systemSession.getRmsThresholdLow();
         if (high == 0 || low == 0) {
-            RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format);
+            RmsTupple<Double, Double> cal = AudioCalibrator.calibrateRMS(format, inputMixerInfo);
             this.RMS_THRESHOLD_HIGH = cal.getRmsHigh();
             this.NOISE_FLOOR = cal.getRmsLow();
         } else {
@@ -107,11 +119,11 @@ public class ParakeetSTTImpl implements EarsInterface {
         processingThread.start();
 
         if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
-            EventBusManager.publish(new AiVoxResponseEvent("Audio calibration required"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationRequired")));
         } else if (RMS_THRESHOLD_HIGH < 250 || RMS_THRESHOLD_HIGH - NOISE_FLOOR < MINIMUM_NOISE_FLOOR_TO_RMS_RATIO) {
-            EventBusManager.publish(new AiVoxResponseEvent("Voice input enabled. WARNING: Insufficient noise floor to input signal ratio. The communication may be compromised. Please adjust microphone settings."));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {
-            EventBusManager.publish(new AiVoxResponseEvent("Voice input enabled"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
         }
     }
 
@@ -135,10 +147,16 @@ public class ParakeetSTTImpl implements EarsInterface {
             recognizer = null;
         }
         isStopping.set(false);
-        EventBusManager.publish(new AiVoxResponseEvent("Voice input disabled."));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputDisabled")));
     }
 
     private OfflineRecognizer buildRecognizer() {
+        try {
+            SherpaOnnxNatives.load();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to load sherpa-onnx native libraries", e);
+        }
+
         // Windows DLL hell: another app (e.g. LM Studio) may have installed a different
         // onnxruntime.dll into System32. System32 is searched before our native dir for
         // transitive DLL dependencies, so we preload the bundled copy first to win the race.
@@ -195,6 +213,7 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     private void captureLoop() {
+        SpectralNoiseReducer.getInstance().reset();
         if (sampleRateHertz != SAMPLE_RATE) {
             antiAliasingFilter = new AntiAliasingFilter(sampleRateHertz, SAMPLE_RATE);
             resampler = new Resampler(sampleRateHertz, SAMPLE_RATE, CHANNELS);
@@ -204,10 +223,6 @@ public class ParakeetSTTImpl implements EarsInterface {
         int retryCount = 0;
         while (isListening.get()) {
             try {
-                if (isSpeaking.get()) {
-                    Thread.sleep(100);
-                    continue;
-                }
                 runVadAndTranscribe();
                 retryCount = 0;
             } catch (LineUnavailableException e) {
@@ -226,19 +241,19 @@ public class ParakeetSTTImpl implements EarsInterface {
     private void runVadAndTranscribe() throws LineUnavailableException, InterruptedException {
         DataLine.Info info = new DataLine.Info(TargetDataLine.class, captureFormat);
 
-        try (TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info)) {
+        try (TargetDataLine line = AudioDeviceEnumerator.openInputLine(info, inputMixerInfo)) {
             line.open(captureFormat, bufferSize);
             line.start();
             byte[] buffer = new byte[bufferSize];
 
             boolean isActive = false;
+            boolean capturedWhileAwake = false;
             int consecutiveVoice = 0;
             int consecutiveSilence = 0;
             audioCollector.reset();
             preRoll.clear();
 
             while (isListening.get() && line.isOpen()) {
-                if (isSpeaking.get()) break;
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead <= 0) continue;
 
@@ -272,9 +287,10 @@ public class ParakeetSTTImpl implements EarsInterface {
                 }
 
                 boolean justActivated = false;
-                if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES && !isSpeaking.get()) {
+                if (!isActive && consecutiveVoice >= ENTER_VOICE_FRAMES) {
                     isActive = true;
                     justActivated = true;
+                    capturedWhileAwake = pttHeld.get();
                     audioCollector.reset();
                     for (byte[] frame : preRoll) audioCollector.write(frame, 0, frame.length);
                     preRoll.clear();
@@ -286,7 +302,13 @@ public class ParakeetSTTImpl implements EarsInterface {
                     isActive = false;
                     log.debug("VAD: speech ended");
                 }
+                boolean forceClose = pttForceClose.compareAndSet(true, false);
+                if (forceClose && isActive) {
+                    isActive = false;
+                    log.info("PTT: button released, closing VAD");
+                }
                 if (isActive && !justActivated) {
+                    if (pttHeld.get()) capturedWhileAwake = true; // latch: button pressed mid-utterance
                     audioCollector.write(audio, 0, audioLen);
                     if (audioCollector.size() >= MAX_UTTERANCE_BYTES) {
                         isActive = false;
@@ -294,28 +316,33 @@ public class ParakeetSTTImpl implements EarsInterface {
                         log.warn("VAD: max utterance length ({}ms) reached, forcing gate close", MAX_UTTERANCE_MS);
                     }
                 }
+                if (!isActive && systemSession.isNoiseReductionEnabled()) {
+                    SpectralNoiseReducer.getInstance().accumulateNoise(audio, audioLen);
+                }
+
                 if (wasActive && !isActive && audioCollector.size() > 0) {
                     final byte[] utterance = audioCollector.toByteArray();
+                    final boolean awake = capturedWhileAwake;
                     DumpAudioForTesting.getInstance().dumpAudioAsWav(utterance, SAMPLE_RATE);
                     audioCollector.reset();
                     int pending = pendingTranscriptions.get();
                     if (pending > 0) log.warn("Transcription queue backed up: {} utterances waiting", pending);
                     pendingTranscriptions.incrementAndGet();
-                    submitWithTimeout(utterance);
+                    submitWithTimeout(utterance, awake);
                 }
             }
         }
     }
 
-    private void submitWithTimeout(byte[] utterance) {
-        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance));
+    private void submitWithTimeout(byte[] utterance, boolean capturedWhileAwake) {
+        Future<?> future = transcriptionExecutor.submit(() -> transcribeAndDispatch(utterance, capturedWhileAwake));
         Thread watchdog = new Thread(() -> {
             try {
                 future.get(INFERENCE_TIMEOUT_SEC, TimeUnit.SECONDS);
             } catch (java.util.concurrent.TimeoutException e) {
                 future.cancel(true);
                 log.error("Speech To Text hung after {}s - replacing executor", INFERENCE_TIMEOUT_SEC);
-                EventBusManager.publish(new AiVoxResponseEvent("STT hung. Restarting process."));
+                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.sttHungRestarting")));
                 transcriptionExecutor.shutdownNow();
                 transcriptionExecutor = Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "Parakeet-Transcription");
@@ -330,14 +357,20 @@ public class ParakeetSTTImpl implements EarsInterface {
         watchdog.start();
     }
 
-    private void transcribeAndDispatch(byte[] pcmBytes) {
+    private void transcribeAndDispatch(byte[] pcmBytes, boolean capturedWhileAwake) {
         pendingTranscriptions.decrementAndGet();
         try {
+            if (systemSession.isNoiseReductionEnabled()) {
+                pcmBytes = SpectralNoiseReducer.getInstance().denoise(pcmBytes, systemSession.getNoiseReductionStrength());
+            }
             float[] samples = pcm16ToFloat(Amplifier.amplify(padAudio(trimLeadingLowEnergy(pcmBytes))));
 
             long timeStart = System.currentTimeMillis();
             OfflineStream stream = recognizer.createStream();
             try {
+                if (stream.hasOption("language")) {
+                    stream.setOption("language", toLangCode(systemSession.getLanguage()));
+                }
                 stream.acceptWaveform(samples, SAMPLE_RATE);
                 recognizer.decode(stream);
                 OfflineRecognizerResult result = recognizer.getResult(stream);
@@ -351,15 +384,18 @@ public class ParakeetSTTImpl implements EarsInterface {
                 String finalTranscript = stripTrashPrefix(transcript);
                 if (finalTranscript.isBlank()) return;
 
-                EventBusManager.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
+                UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
-                if (systemSession.isSleepingModeOn()) {
+                if (capturedWhileAwake) {
+                    String stripped = stripListenBypassPrefix(finalTranscript);
+                    sendToAi(stripped != null ? stripped : finalTranscript, true);
+                } else if (systemSession.isSleepingModeOn()) {
                     if (passThrough(finalTranscript)) {
                         String stripped = stripListenBypassPrefix(finalTranscript);
-                        sendToAi(stripped != null ? stripped : finalTranscript);
+                        sendToAi(stripped != null ? stripped : finalTranscript, false);
                     }
                 } else {
-                    sendToAi(finalTranscript);
+                    sendToAi(finalTranscript, false);
                 }
             } finally {
                 stream.release();
@@ -380,7 +416,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         int start = 0;
         outer:
         while (start < tokens.length) {
-            for (String trash : trashSttWords) {
+            for (String trash : InputNormalizerLocalizations.trashPhrases()) {
                 String[] trashTokens = trash.split("\\s+");
                 if (start + trashTokens.length > tokens.length) continue;
                 boolean matches = true;
@@ -409,40 +445,90 @@ public class ParakeetSTTImpl implements EarsInterface {
     }
 
     private boolean passThrough(String transcript) {
-        for (String word : passThroughWords) {
-            if (transcript.toLowerCase().contains(word)) return true;
+        // Sleep mode only accepts exact wake phrases or listen-prefix commands at the start.
+        // This prevents phrases like "do not listen open map" from bypassing the gate.
+        return isPureWakePhrase(transcript) || stripListenBypassPrefix(transcript) != null;
+    }
+
+    private boolean isPureWakePhrase(String transcript) {
+        String lower = transcript.trim().toLowerCase(Locale.ROOT);
+        for (String phrase : AiActionLocalizations.wakeBypassPhrases()) {
+            if (lower.equals(phrase.toLowerCase(Locale.ROOT))) return true;
         }
         return false;
     }
 
     /**
-     * If the transcript contains a "listen up" / "listen" bypass prefix followed by
+     * If the transcript starts with a localized listen-type prefix followed by
      * meaningful content, returns the content with the prefix stripped.
-     * Returns null if the transcript is just the keyword alone (e.g. pure "wake up")
-     * or no listen prefix is present - caller should send the original in that case.
+     * Returns null if the transcript is a pure wake phrase or has no listen prefix
+     * caller sends the original unchanged so the AI can route it via WAKEUP.
      */
     private String stripListenBypassPrefix(String transcript) {
-        String lower = transcript.toLowerCase();
-        for (String prefix : new String[]{"listen up ", "listen "}) {
-            int idx = lower.indexOf(prefix);
-            if (idx >= 0) {
-                String remainder = transcript.substring(idx + prefix.length()).trim();
+        return stripPrefixAtStart(transcript, AiActionLocalizations.listenBypassPrefixes());
+    }
+
+    private String stripPrefixAtStart(String transcript, Collection<String> prefixes) {
+        String lower = transcript.toLowerCase(Locale.ROOT);
+        List<String> sortedPrefixes = new ArrayList<>(prefixes);
+        sortedPrefixes.sort(Comparator.comparingInt(String::length).reversed());
+        for (String prefix : sortedPrefixes) {
+            String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
+            if (lower.startsWith(lowerPrefix)
+                    && lower.length() > lowerPrefix.length()
+                    && Character.isWhitespace(lower.charAt(lowerPrefix.length()))) {
+                String remainder = transcript.substring(prefix.length()).trim();
                 if (!remainder.isBlank()) return remainder;
             }
         }
         return null;
     }
 
-    private void sendToAi(String transcript) {
-        EventBusManager.publish(new TTSInterruptEvent());
+    private void sendToAi(String transcript, boolean pttCapture) {
+        if (isSpeaking.get()) {
+            if (pttCapture) {
+                log.info("PTT: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
+                GameEventBus.publish(new TTSInterruptEvent());
+                GameEventBus.publish(new BargeInEvent()); // commander barged in: also interrupt the live companion thought
+            } else if (isInterruptPhrase(transcript)) {
+                log.info("Interrupt phrase detected during TTS playback: {}", transcript);
+                GameEventBus.publish(new TTSInterruptEvent());
+                GameEventBus.publish(new BargeInEvent());
+                return;
+            } else {
+                log.debug("Ignoring transcript while TTS is speaking: {}", transcript);
+                return;
+            }
+        } else {
+            GameEventBus.publish(new TTSInterruptEvent());
+        }
         //AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
         log.info("Dispatching transcript: {}", transcript.replace("computer", ""));
-        EventBusManager.publish(new UserInputEvent(transcript.replace("computer", "")));
+        GameEventBus.publish(new UserInputEvent(transcript.replace("computer", "")));
     }
 
+    /**
+     * Returns true if the transcript exactly matches one of the localized interrupt phrases
+     * for the current language. Used to allow TTS interruption while the app is speaking.
+     */
+    private boolean isInterruptPhrase(String transcript) {
+        String lower = transcript.trim().toLowerCase(Locale.ROOT);
+        for (String phrase : AiActionLocalizations.phrasesForAction(InterruptCommand.ID)) {
+            if (lower.equals(phrase.trim().toLowerCase(Locale.ROOT))) return true;
+        }
+        return false;
+    }
+
+    /** Tracks TTS playback state to gate non-interrupt transcripts while the app is speaking. */
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
         isSpeaking.set(event.isSpeaking());
+    }
+
+    @Subscribe
+    public void onPttButtonState(PttButtonStateEvent event) {
+        pttHeld.set(event.isHeld());
+        if (!event.isHeld()) pttForceClose.set(true);
     }
 
     private byte[] padAudio(byte[] pcm) {
@@ -494,6 +580,19 @@ public class ParakeetSTTImpl implements EarsInterface {
             sum += (double) val * val;
         }
         return Math.sqrt(sum / samples);
+    }
+
+    private static String toLangCode(Language lang) {
+        return switch (lang) {
+            case EN -> "en";
+            case FR -> "fr";
+            case DE -> "de";
+            case ES -> "es";
+            case RU -> "ru";
+            case UK -> "uk";
+            case IT -> "it";
+            case PT -> "pt";
+        };
     }
 
     private void retryWithBackoff(int retryCount) {

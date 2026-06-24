@@ -1,7 +1,7 @@
 package elite.intel.search.edsm.commodity;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.edsm.EdsmApiClient;
 import elite.intel.search.edsm.dto.MarketDto;
 import elite.intel.search.edsm.dto.StationsDto;
@@ -11,11 +11,14 @@ import elite.intel.search.spansh.starsystems.StarSystemClient;
 import elite.intel.search.spansh.starsystems.StationSearchResult;
 import elite.intel.search.spansh.starsystems.SystemSearchCriteria;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import static elite.intel.util.StringUtls.localizedEventPlural;
 
 public class EdsmCommoditySearch {
 
@@ -69,7 +72,7 @@ public class EdsmCommoditySearch {
             }
         }
 
-        EventBusManager.publish(new MissionCriticalAnnouncementEvent("Found " + stations.size() + " markets. Analyzing commodities."));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEventPlural(stations.size(), "event.search.commodity.marketsFound")));
 
         List<CommoditySearchResult> results = new ArrayList<>();
         for (Station station : stations) {
@@ -83,7 +86,7 @@ public class EdsmCommoditySearch {
 
             String stationName = station.getName();
             String starSystem = station.getStarSystemName();
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2); // audio indicator of background search
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
 
             for (Commodity entry : commodities) {
                 if (commodityToFind.equalsIgnoreCase(entry.getName())) {
@@ -96,7 +99,7 @@ public class EdsmCommoditySearch {
                         result.setStationType(station.getType());
                         result.setDistanceFromPlayer(station.getTransientDistance());
                         results.add(result);
-                        AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_3); // audio indicator of background search
+                        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
                     }
                 }
             }

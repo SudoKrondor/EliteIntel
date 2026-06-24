@@ -5,7 +5,7 @@ import elite.intel.db.dao.PlayerDao;
 import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.CarrierStatsEvent;
@@ -52,7 +52,7 @@ public class PlayerSession {
     private boolean shipAutoDeparted = false;
 
     private PlayerSession() {
-        EventBusManager.register(this);
+        GameEventBus.register(this);
     }
 
     public String getUUD() {
@@ -168,6 +168,9 @@ public class PlayerSession {
     }
 
     public void setCurrentLocationId(long bodyId, long systemAddress) {
+        if (bodyId == 0 || systemAddress == 0) {
+            return;
+        }
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
             player.setCurrentLocationId(bodyId);
@@ -396,12 +399,35 @@ public class PlayerSession {
     }
 
 
-    public void setPersonalCreditsAvailable(long personalCreditsAvailable) {
+    /**
+     * Sets the absolute personal credit balance. {@code synchronized} on the same monitor
+     * as {@link #adjustCredits(long)} (see its WHY) so a set cannot interleave with a
+     * concurrent read-modify-write.
+     */
+    public synchronized void setPersonalCreditsAvailable(long personalCreditsAvailable) {
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
             player.setPersonalCreditsAvailable(personalCreditsAvailable);
             dao.save(player);
             return Void.class;
+        });
+    }
+
+    /**
+     * Atomically applies a signed delta to the stored personal credit balance and returns
+     * the new balance.
+     * <p>WHY synchronized: at startup two threads write credits - the journal pre-scan
+     * (FinancePreScanAccumulator, on its own virtual thread) and the live journal parser
+     * (FinanceSubscriber). Sharing this monitor with {@link #setPersonalCreditsAvailable(long)}
+     * keeps the read-modify-write atomic and prevents lost updates.
+     */
+    public synchronized long adjustCredits(long delta) {
+        return Database.withDao(PlayerDao.class, dao -> {
+            PlayerDao.Player player = dao.get();
+            long newBalance = player.getPersonalCreditsAvailable() + delta;
+            player.setPersonalCreditsAvailable(newBalance);
+            dao.save(player);
+            return newBalance;
         });
     }
 
@@ -581,7 +607,7 @@ public class PlayerSession {
         });
     }
 
-    public void setGenusPaymentAnnounced(String genus) {
+    public void addAnnouncedGenusPayment(String genus) {
         genusAnouncements.put(genus, true);
     }
 
@@ -780,19 +806,34 @@ public class PlayerSession {
     }
 
     public String getVariablePlayerName() {
-        String alternativeName = getAlternativeName();
-        String playerName = trimToNull(alternativeName) != null ? alternativeName : getPlayerName();
-        String playerMilitaryRank = getPlayerHighestMilitaryRank();
-        String playerHonorific = Ranks.getPlayerHonorific();
+        String alternativeName = trimToNull(getAlternativeName());
+        String playerName = alternativeName != null ? alternativeName : trimToNull(getPlayerName());
+        String playerMilitaryRank = Ranks.getLocalizedRankName(getPlayerHighestMilitaryRank());
+        String playerHonorific = Ranks.getPlayerHonorific(
+                getRankAndProgressDto().getCombatRankEmpire(),
+                getRankAndProgressDto().getCombatRankFederation()
+        );
+
 
         List<String> result = Arrays.stream(
                 new String[]{alternativeName, playerHonorific, playerName, playerMilitaryRank}
-        ).filter(Objects::nonNull).toList();
+        ).map(name -> trimToNull(name)).filter(Objects::nonNull).toList();
         if (result.isEmpty()) {
             return "Commander";
         }
 
         return result.get(new Random().nextInt(result.size()));
+    }
+
+    public String getConfiguredPlayerName() {
+        String alternativeName = trimToNull(getAlternativeName());
+        if (alternativeName != null) return alternativeName;
+
+        String playerName = trimToNull(getPlayerName());
+        if (playerName != null) return playerName;
+
+        String inGameName = trimToNull(getInGameName());
+        return inGameName != null ? inGameName : "Commander";
     }
 
     public void setShipAutoDeparted(boolean isDeparted) {

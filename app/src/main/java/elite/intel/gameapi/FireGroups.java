@@ -1,7 +1,9 @@
 package elite.intel.gameapi;
 
-import elite.intel.ai.hands.events.GameInputEvent;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.dao.ShipSettingsDao;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.util.SleepNoThrow;
 
@@ -62,7 +64,10 @@ public class FireGroups {
         for (int attempt = 0; attempt < 16; attempt++) {
             if (targetGroup == status.getFireGroup()) break;
             int groupBefore = status.getFireGroup();
-            GameControllerBus.publish(new GameInputEvent(BINDING_CYCLE_NEXT_FIRE_GROUP.getGameBinding(), 0));
+            GameControllerBus.publish(GameInputSequenceEvent.of(
+                    GameInputStep.bindingTap(BINDING_CYCLE_NEXT_FIRE_GROUP.getGameBinding()),
+                    GameInputStep.delay(1000)
+            ));
             long deadline = System.currentTimeMillis() + 1000;
             while (System.currentTimeMillis() < deadline) {
                 SleepNoThrow.sleep(50);

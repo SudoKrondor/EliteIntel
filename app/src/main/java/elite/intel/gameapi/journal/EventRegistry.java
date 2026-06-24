@@ -105,6 +105,26 @@ public class EventRegistry {
         registerEvent("Touchdown", TouchdownEvent.class);
         registerEvent("Shutdown", ShutdownEvent.class);
         registerEvent("SquadronStartup", SquadronStartupEvent.class);
+
+        // Finance: realized credit movements (see FinanceSubscriber)
+        registerEvent("Resurrect", ResurrectEvent.class);
+        registerEvent("ModuleBuy", ModuleBuyEvent.class);
+        registerEvent("ModuleSell", ModuleSellEvent.class);
+        registerEvent("ModuleSellRemote", ModuleSellRemoteEvent.class);
+        registerEvent("RepairAll", RepairAllEvent.class);
+        registerEvent("Repair", RepairEvent.class);
+        registerEvent("RefuelAll", RefuelAllEvent.class);
+        registerEvent("RefuelPartial", RefuelPartialEvent.class);
+        registerEvent("BuyAmmo", BuyAmmoEvent.class);
+        registerEvent("RestockVehicle", RestockVehicleEvent.class);
+        registerEvent("BuyDrones", BuyDronesEvent.class);
+        registerEvent("SellDrones", SellDronesEvent.class);
+        registerEvent("PayFines", PayFinesEvent.class);
+        registerEvent("PayBounties", PayBountiesEvent.class);
+        registerEvent("ShipyardSell", ShipyardSellEvent.class);
+        registerEvent("ShipyardTransfer", ShipyardTransferEvent.class);
+        registerEvent("CarrierBuy", CarrierBuyEvent.class);
+        registerEvent("CarrierBankTransfer", CarrierBankTransferEvent.class);
     }
 
     private static void registerEvent(String eventName, Class<? extends BaseEvent> eventClass) {
@@ -121,8 +141,15 @@ public class EventRegistry {
         // Check timestamp for timed events
         if (!NON_TIMED_EVENTS.contains(eventName)) {
             String timestamp = json.has("timestamp") ? json.get("timestamp").getAsString() : null;
-            if (timestamp != null && !isRecent(timestamp, LONG_THRESHOLD_EVENTS.contains(eventName) ? THRESHOLD_LONG : THRESHOLD)) {
-                log.debug("Skipping outdated event: {} with timestamp: {}", eventName, timestamp);
+            long threshold = LONG_THRESHOLD_EVENTS.contains(eventName) ? THRESHOLD_LONG : THRESHOLD;
+            if (timestamp != null && !isRecent(timestamp, threshold)) {
+                long ageSec = -1;
+                try {
+                    ageSec = ChronoUnit.SECONDS.between(Instant.parse(timestamp), Instant.now());
+                } catch (Exception ignored) {
+                }
+                log.debug("Skipping outdated event: {} timestamp={} age={}s threshold={}s",
+                        eventName, timestamp, ageSec, threshold / 1000);
                 return null;
             }
         }

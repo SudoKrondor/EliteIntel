@@ -10,6 +10,8 @@ import java.nio.file.Path;
 
 public final class AppPaths {
 
+    public static final String CUSTOM_COMMANDS_FILE_NAME = "custom_commands.json";
+
     private static Path APP_DIR;
 
     private AppPaths() {
@@ -22,10 +24,46 @@ public final class AppPaths {
 
     /// --- APP USER DATA LOCATION
     public static Path getDatabasePath() throws IOException {
-        Path base;
+        Path dbDir = getAppDataBase().resolve("elite-intel/db");
+        Files.createDirectories(dbDir);
+        return dbDir.resolve("database.db");
+    }
+
+    /** Returns the custom command JSON file path, creating the custom command data directory if needed. */
+    public static Path getCustomCommandsFilePath() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/custom-commands");
+        Files.createDirectories(dir);
+        return dir.resolve(CUSTOM_COMMANDS_FILE_NAME);
+    }
+
+    /**
+     * Returns the directory for durable, timestamped custom-command backups written before a
+     * destructive import replaces the current set, creating it if needed.
+     */
+    public static Path getCustomCommandsBackupDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/custom-commands/backups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /** Returns the directory for per-preset working copies, creating it if needed. */
+    public static Path getBindingsWorkingDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/bindings");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /** Returns the directory for timestamped game-file backups, creating it if needed. */
+    public static Path getBindingsBackupDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/bindings/backups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    private static Path getAppDataBase() throws IOException {
         if (OsDetector.getOs() == OsDetector.OS.LINUX || OsDetector.getOs() == OsDetector.OS.MAC) {
             String dataHome = System.getenv("XDG_DATA_HOME");
-            base = dataHome != null && !dataHome.isEmpty()
+            return dataHome != null && !dataHome.isEmpty()
                     ? Path.of(dataHome)
                     : Path.of(System.getProperty("user.home"), ".local/share");
         } else if (OsDetector.getOs() == OsDetector.OS.WINDOWS) {
@@ -33,17 +71,10 @@ public final class AppPaths {
             if (localAppData == null || localAppData.isEmpty()) {
                 throw new IllegalStateException("LOCALAPPDATA not set");
             }
-            base = Path.of(localAppData);
-        } else {
-            throw new IllegalStateException("Unsupported OS");
+            return Path.of(localAppData);
         }
-
-        Path dbDir = base.resolve("elite-intel/db");
-        Files.createDirectories(dbDir);  // Ensure it exists
-        return dbDir.resolve("database.db");
+        throw new IllegalStateException("Unsupported OS");
     }
-
-
 
     public static Path getTtsModelDir() {
         return getDistributionFile("tts");

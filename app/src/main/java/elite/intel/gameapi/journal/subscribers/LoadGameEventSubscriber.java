@@ -10,6 +10,8 @@ import elite.intel.session.PlayerSession;
 
 import java.util.List;
 
+import static org.apache.commons.lang3.StringUtils.trimToNull;
+
 public class LoadGameEventSubscriber {
 
     private final ShipRouteManager shipRoute = ShipRouteManager.getInstance();
@@ -19,11 +21,12 @@ public class LoadGameEventSubscriber {
     @Subscribe
     public void onEvent(LoadGameEvent event) {
         Thread.ofVirtual().start(() -> {
-            playerSession.setPlayerName(playerSession.getAlternativeName() == null ? event.getCommander() : playerSession.getAlternativeName());
+            String alternativeName = trimToNull(playerSession.getAlternativeName());
+            playerSession.setPlayerName(alternativeName != null ? alternativeName : event.getCommander());
             playerSession.setInGameName(event.getCommander());
             playerSession.setCurrentShip(event.getShip());
             playerSession.setCurrentShipName(event.getShipName());
-            playerSession.setPersonalCreditsAvailable(event.getCredits());
+            // Credits are owned by FinanceSubscriber (single home for money events).
             playerSession.setGameVersion(event.getGameversion());
             playerSession.setGameBuild(event.getBuild());
             cleanUpRoute(playerSession);

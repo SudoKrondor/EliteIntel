@@ -15,6 +15,7 @@ public class SupercruiseExitedSubscriber {
     @Subscribe
     public void onSupercruiseExited(SupercruiseExitEvent event) {
         Thread.ofVirtual().start(() -> {
+            if (event.getBodyId() == null) return;
                     LocationDto here = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyId());
                     playerSession.setCurrentLocationId(event.getBodyId(), event.getSystemAddress());
 

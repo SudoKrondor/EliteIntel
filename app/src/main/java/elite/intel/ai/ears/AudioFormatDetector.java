@@ -2,14 +2,11 @@ package elite.intel.ai.ears;
 
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
-import javax.sound.sampled.TargetDataLine;
+import javax.sound.sampled.*;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -32,16 +29,20 @@ public class AudioFormatDetector {
     private static final double BUFFER_DURATION_SECONDS = 0.1;
 
     public static Format detectSupportedFormat() {
+        return detectSupportedFormat(null);
+    }
+
+    public static Format detectSupportedFormat(Mixer.Info mixerInfo) {
         AudioFormatDetector detector = new AudioFormatDetector();
         try {
-            return detector.detectSupportedFormatInternal()
+            return detector.detectSupportedFormatInternal(mixerInfo)
                     .orElseThrow(() -> new AudioFormatException("No supported audio format found."));
         } catch (AudioFormatException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Optional<Format> detectSupportedFormatInternal() throws AudioFormatException {
+    public Optional<Format> detectSupportedFormatInternal(Mixer.Info mixerInfo) throws AudioFormatException {
         for (int rate : POSSIBLE_RATES) {
             for (int[] fmt : CANDIDATE_FORMATS) {
                 int bits = fmt[0];
@@ -49,7 +50,18 @@ public class AudioFormatDetector {
                 try {
                     AudioFormat audioFormat = new AudioFormat(rate, bits, channels, true, false);
                     DataLine.Info info = new DataLine.Info(TargetDataLine.class, audioFormat);
-                    if (AudioSystem.isLineSupported(info)) {
+                    boolean supported;
+                    if (mixerInfo == null) {
+                        supported = AudioSystem.isLineSupported(info);
+                    } else {
+                        try {
+                            supported = AudioSystem.getMixer(mixerInfo).isLineSupported(info);
+                        } catch (Exception ex) {
+                            log.warn("Could not query mixer '{}': {}", mixerInfo.getName(), ex.getMessage());
+                            supported = false;
+                        }
+                    }
+                    if (supported) {
                         int bufferSize = calculateBufferSize(audioFormat);
                         if (bufferSize <= 0) {
                             log.warn("Invalid buffer size for {} Hz {}-bit {} ch: {}", rate, bits, channels, bufferSize);
@@ -66,7 +78,7 @@ public class AudioFormatDetector {
             }
         }
         log.warn("No supported audio format found for any probed format combination.");
-        EventBusManager.publish(new AiVoxResponseEvent("No supported audio format found for mono 16-bit input."));
+        GameEventBus.publish(new AiVoxResponseEvent("No supported audio format found for mono 16-bit input."));
         return Optional.empty();
     }
 
@@ -107,14 +119,14 @@ public class AudioFormatDetector {
         return toPCM16Mono(input, input.length, captureFormat);
     }
 
-    // Reads a signed PCM sample of bytesPerSample bytes, preserving sign via MSB-first read.
+    // Reads a signed PCM sample of bytesPerSample bytes, MSB first (for sign extension).
     private static long readSignedSample(byte[] data, int offset, int bytesPerSample, boolean bigEndian) {
         long val;
         if (bigEndian) {
             val = data[offset]; // sign-extend MSB into long
             for (int b = 1; b < bytesPerSample; b++) val = (val << 8) | (data[offset + b] & 0xFF);
         } else {
-            val = data[offset + bytesPerSample - 1]; // MSB is last byte in LE — sign-extend into long
+            val = data[offset + bytesPerSample - 1]; // MSB is last byte in LE  sign-extend into long
             for (int b = bytesPerSample - 2; b >= 0; b--) val = (val << 8) | (data[offset + b] & 0xFF);
         }
         return val;

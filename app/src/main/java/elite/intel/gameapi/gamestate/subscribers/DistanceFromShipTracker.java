@@ -3,7 +3,7 @@ package elite.intel.gameapi.gamestate.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.events.DockSRVEvent;
 import elite.intel.gameapi.journal.events.LaunchSRVEvent;
@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
+import static elite.intel.util.StringUtls.localizedEvent;
 
 
 public class DistanceFromShipTracker {
@@ -62,10 +63,9 @@ public class DistanceFromShipTracker {
         boolean isInDonut = distance >= innerDonut && distance <= outerDonut;
 
         if (isInDonut && movingAway && !announcedForCurrentEntry && !status.isInMainShip()) {
-            EventBusManager.publish(
+            GameEventBus.publish(
                     new MissionCriticalAnnouncementEvent(
-                            String.format("Warning: You are %d meters from your ship, approaching auto-departure zone!",
-                                    Math.round(distance))
+                            localizedEvent("event.distance.shipProximity", Math.round(distance))
                     )
             );
             log.info("Alert triggered: Player moving away from ship at {} meters.", distance);

@@ -1,8 +1,6 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
-import elite.intel.gameapi.EventBusManager;
 import elite.intel.gameapi.journal.events.MiningRefinedEvent;
 import elite.intel.session.PlayerSession;
 import org.apache.logging.log4j.LogManager;
@@ -16,12 +14,6 @@ public class MiningEventSubscriber {
 
     @Subscribe
     public void onMiningRefined(MiningRefinedEvent dto) {
-        Thread.ofVirtual().start(() -> {
-            String material = dto.getTypeLocalised().replace("\"", "").toLowerCase();
-            if (!playerSession.getMiningTargets().contains(material)) {
-                playerSession.addMiningTarget(material);
-                EventBusManager.publish(new MiningAnnouncementEvent(material + " is added to mining targets"));
-            }
-        });
+        // let's not auto-add materials that were refined to mining targets. that seem to be confusing to the users.
     }
 }

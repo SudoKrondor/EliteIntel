@@ -18,25 +18,35 @@ public interface GlobalSettingsDao {
 
     @SqlUpdate("""
                     INSERT OR REPLACE INTO global_settings (id, autoSpeedUpForFtl,
-                                                                autoLightsForFtl, 
-                                                                autoNightVisionOff, 
-                                                                autoCargoScoopRetractForFtl, 
-                                                                autoLandingGearUpForFtl, 
-                                                                autoHardpointsRetractForFtl, 
-                                                                autoGearUpOnTakeOff, 
-                                                                autoExitUiBeforeOpeningAnotherWindow, 
-                                                                autoLightsOffForSrvDeployment, 
-                                                                autoFighterOutFighterDocking) 
+                                                                autoLightsForFtl,
+                                                                autoNightVisionOff,
+                                                                autoCargoScoopRetractForFtl,
+                                                                autoLandingGearUpForFtl,
+                                                                autoHardpointsRetractForFtl,
+                                                                autoGearUpOnTakeOff,
+                                                                autoExitUiBeforeOpeningAnotherWindow,
+                                                                autoLightsOffForSrvDeployment,
+                                                                autoFighterOutFighterDocking,
+                                                                announceJumpRoute,
+                                                                announceJumpTraffic,
+                                                                announceJumpDeaths,
+                                                                announceRemainingJumps,
+                                                                announceFuelAvailable)
                     VALUES (1, :autoSpeedUpForFtl,
                                 :autoLightsForFtl,
                                 :autoNightVisionOff,
-                                :autoCargoScoopRetractForFtl, 
-                                :autoLandingGearUpForFtl, 
-                                :autoHardpointsRetractForFtl, 
-                                :autoGearUpOnTakeOff, 
-                                :autoExitUiBeforeOpeningAnotherWindow, 
-                                :autoLightsOffForSrvDeployment, 
-                                :autoFighterOutFighterDocking)
+                                :autoCargoScoopRetractForFtl,
+                                :autoLandingGearUpForFtl,
+                                :autoHardpointsRetractForFtl,
+                                :autoGearUpOnTakeOff,
+                                :autoExitUiBeforeOpeningAnotherWindow,
+                                :autoLightsOffForSrvDeployment,
+                                :autoFighterOutFighterDocking,
+                                :announceJumpRoute,
+                                :announceJumpTraffic,
+                                :announceJumpDeaths,
+                                :announceRemainingJumps,
+                                :announceFuelAvailable)
             """)
     void save(@BindBean GlobalSettings settings);
 
@@ -55,6 +65,11 @@ public interface GlobalSettingsDao {
             entity.setAutoExitUiBeforeOpeningAnotherWindow(rs.getBoolean("autoExitUiBeforeOpeningAnotherWindow"));
             entity.setAutoLightsOffForSrvDeployment(rs.getBoolean("autoLightsOffForSrvDeployment"));
             entity.setAutoFighterOutFighterDocking(rs.getBoolean("autoFighterOutFighterDocking"));
+            entity.setAnnounceJumpRoute(rs.getBoolean("announceJumpRoute"));
+            entity.setAnnounceJumpTraffic(rs.getBoolean("announceJumpTraffic"));
+            entity.setAnnounceJumpDeaths(rs.getBoolean("announceJumpDeaths"));
+            entity.setAnnounceRemainingJumps(rs.getBoolean("announceRemainingJumps"));
+            entity.setAnnounceFuelAvailable(rs.getBoolean("announceFuelAvailable"));
             return entity;
         }
     }
@@ -71,6 +86,11 @@ public interface GlobalSettingsDao {
         boolean autoExitUiBeforeOpeningAnotherWindow;
         boolean autoLightsOffForSrvDeployment;
         boolean autoFighterOutFighterDocking;
+        boolean announceJumpRoute;
+        boolean announceJumpTraffic;
+        boolean announceJumpDeaths;
+        boolean announceRemainingJumps;
+        boolean announceFuelAvailable;
 
         public boolean isAutoSpeedUpForFtl() {
             return autoSpeedUpForFtl;
@@ -150,6 +170,46 @@ public interface GlobalSettingsDao {
 
         public void setAutoFighterOutFighterDocking(boolean autoFighterOutFighterDocking) {
             this.autoFighterOutFighterDocking = autoFighterOutFighterDocking;
+        }
+
+        public boolean isAnnounceJumpRoute() {
+            return announceJumpRoute;
+        }
+
+        public void setAnnounceJumpRoute(boolean announceJumpRoute) {
+            this.announceJumpRoute = announceJumpRoute;
+        }
+
+        public boolean isAnnounceJumpTraffic() {
+            return announceJumpTraffic;
+        }
+
+        public void setAnnounceJumpTraffic(boolean announceJumpTraffic) {
+            this.announceJumpTraffic = announceJumpTraffic;
+        }
+
+        public boolean isAnnounceJumpDeaths() {
+            return announceJumpDeaths;
+        }
+
+        public void setAnnounceJumpDeaths(boolean announceJumpDeaths) {
+            this.announceJumpDeaths = announceJumpDeaths;
+        }
+
+        public boolean isAnnounceRemainingJumps() {
+            return announceRemainingJumps;
+        }
+
+        public void setAnnounceRemainingJumps(boolean announceRemainingJumps) {
+            this.announceRemainingJumps = announceRemainingJumps;
+        }
+
+        public boolean isAnnounceFuelAvailable() {
+            return announceFuelAvailable;
+        }
+
+        public void setAnnounceFuelAvailable(boolean announceFuelAvailable) {
+            this.announceFuelAvailable = announceFuelAvailable;
         }
     }
 }

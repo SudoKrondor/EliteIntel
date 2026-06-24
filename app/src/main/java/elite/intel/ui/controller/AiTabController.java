@@ -1,9 +1,14 @@
 package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.gameapi.EventBusManager;
-import elite.intel.ui.event.*;
-import elite.intel.ui.view.AiTabPanel;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
+import elite.intel.ui.event.AiResponseLogEvent;
+import elite.intel.ui.event.AppLogDebugEvent;
+import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.ToggleDetailedLogEvent;
+import elite.intel.ui.screen.AiTabPanel;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -14,7 +19,13 @@ public class AiTabController {
 
     public AiTabController(AiTabPanel view) {
         this.view = view;
-        EventBusManager.register(this);
+        GameEventBus.register(this);
+        UiBus.register(this);
+    }
+
+    public void dispose() {
+        GameEventBus.unregister(this);
+        UiBus.unregister(this);
     }
 
     @Subscribe
@@ -25,13 +36,13 @@ public class AiTabController {
     @Subscribe
     public void onAppLogDebugEvent(AppLogDebugEvent event) {
         if (!showDetailedLog.get()) return;
-        view.addSystemMessage(event.getData());
+        view.addSystemMessage(event.getTimestamp(), event.getData());
     }
 
     @Subscribe
     public void onAppLogEvent(AppLogEvent event) {
         if (event.getData() == null || event.getData().isBlank()) return;
-        view.addSystemMessage(event.getData());
+        view.addSystemMessage(event.getTimestamp(), event.getData());
     }
 
     @Subscribe

@@ -63,6 +63,7 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             KeyEvent.VK_PAGE_DOWN,      // E0 51
             // Numpad extended keys
             KeyEvent.VK_DIVIDE,         // E0 35  (numpad /)
+            KeyProcessor.NATIVE_NUMPAD_DIVIDE,
             NATIVE_BASE + 11,           // KEY_NUMENTER → E0 1C
             // PrintScreen
             KeyEvent.VK_PRINTSCREEN     // E0 37
@@ -92,6 +93,11 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         SCAN_MAP.put(NATIVE_BASE + 20, (short) 0x27); // KEY_UGRAVE   → ù (FR, PS/2 ';' position)
         SCAN_MAP.put(NATIVE_BASE + 21, (short) 0x0A); // KEY_CCEDILLA → ç (FR, PS/2 position 9)
         SCAN_MAP.put(NATIVE_BASE + 22, (short) 0x27); // KEY_NTILDE   → ñ (ES, PS/2 ';' position)
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_DIVIDE, (short) 0x35);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_MULTIPLY, (short) 0x37);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_DECIMAL, (short) 0x53);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_ADD, (short) 0x4E);
+        SCAN_MAP.put(KeyProcessor.NATIVE_NUMPAD_SUBTRACT, (short) 0x4A);
 
         // --- Control / editing keys ---
         SCAN_MAP.put(KeyEvent.VK_ESCAPE, (short) 0x01);
@@ -232,6 +238,11 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             log.error("[diag] checkJnaConnectivity failed", t);
         }
         try {
+            checkKeyboardLayout();
+        } catch (Throwable t) {
+            log.error("[diag] checkKeyboardLayout failed", t);
+        }
+        try {
             checkProcessElevation();
         } catch (Throwable t) {
             log.error("[diag] checkProcessElevation failed", t);
@@ -248,6 +259,19 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         log.info("[diag] *** Fix: ED launcher → right-click → Properties → Compatibility    ***");
         log.info("[diag] *** tab → un-check 'Run this program as an administrator'.          ***");
         log.info("=================================================");
+    }
+
+    private static void checkKeyboardLayout() {
+        WinDef.HKL threadHkl = User32.INSTANCE.GetKeyboardLayout(0);
+        WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+        WinDef.HKL fgHkl = null;
+        if (hwnd != null) {
+            int tid = User32.INSTANCE.GetWindowThreadProcessId(hwnd, null);
+            fgHkl = User32.INSTANCE.GetKeyboardLayout(tid);
+        }
+        log.info("[diag] Keyboard layout. This-thread HKL: {} | foreground-window HKL: {}",
+                threadHkl, fgHkl);
+        log.info("[diag] (AZERTY = 0x040C040C, QWERTY-US = 0x04090409; LOWORD=lang, HIWORD=layout)");
     }
 
     private static void checkJnaConnectivity() {
@@ -351,7 +375,7 @@ class WindowsNativeKeyInput implements NativeKeyInput {
 
     @Override
     public boolean handles(int keyCode) {
-        return SCAN_MAP.containsKey(keyCode);
+        return SCAN_MAP.containsKey(keyCode) || KeyProcessor.isNativeCharacterCode(keyCode);
     }
 
     @Override
@@ -364,11 +388,46 @@ class WindowsNativeKeyInput implements NativeKeyInput {
         sendKeyEvent(keyCode, true);
     }
 
+    // Returns the keyboard layout (HKL) of the foreground window's thread i.e. the
+    // layout that the target application (ED) is actively using. This is the correct
+    // layout to pass to MapVirtualKeyEx for letters so that AZERTY/QWERTZ remappings
+    // resolve to the right physical scan code. Returns null on failure (MapVirtualKeyEx
+    // then falls back to the calling thread's layout).
+    private static WinDef.HKL getForegroundWindowLayout() {
+        try {
+            WinDef.HWND hwnd = User32.INSTANCE.GetForegroundWindow();
+            if (hwnd == null) return null;
+            int tid = User32.INSTANCE.GetWindowThreadProcessId(hwnd, null);
+            return User32.INSTANCE.GetKeyboardLayout(tid);
+        } catch (Throwable t) {
+            log.warn("[key] getForegroundWindowLayout failed: {}", t.getMessage());
+            return null;
+        }
+    }
+
     private void sendKeyEvent(int keyCode, boolean isKeyUp) {
         short scan;
         String resolvedVia;
 
-        if (keyCode >= NATIVE_BASE) {
+        if (KeyProcessor.isNativeCharacterCode(keyCode)) {
+            char character = KeyProcessor.nativeCharacter(keyCode);
+            WinDef.HKL hkl = getForegroundWindowLayout();
+            short encodedVk = User32.INSTANCE.VkKeyScanExW(character, hkl);
+            if (encodedVk == -1) {
+                log.warn("[key] VkKeyScanExW could not resolve Frontier character '{}' (U+{})",
+                        character, Integer.toHexString(character));
+                return;
+            }
+            int virtualKey = encodedVk & 0xFF;
+            int vsc = User32.INSTANCE.MapVirtualKeyEx(virtualKey, MAPVK_VK_TO_VSC, hkl);
+            if (vsc == 0) {
+                log.warn("[key] MapVirtualKeyEx could not resolve VK=0x{} for Frontier character '{}'",
+                        Integer.toHexString(virtualKey), character);
+                return;
+            }
+            scan = (short) vsc;
+            resolvedVia = "VkKeyScanExW('" + character + "',hkl=" + hkl + ")";
+        } else if (keyCode >= NATIVE_BASE) {
             Short s = SCAN_MAP.get(keyCode);
             if (s == null) {
                 log.warn("[key] No Windows scan code mapping for NATIVE code 0x{}", Integer.toHexString(keyCode));
@@ -380,10 +439,15 @@ class WindowsNativeKeyInput implements NativeKeyInput {
             boolean isLetter = keyCode >= KeyEvent.VK_A && keyCode <= KeyEvent.VK_Z;
             boolean isNavCluster = keyCode >= KeyEvent.VK_PAGE_UP && keyCode <= KeyEvent.VK_DOWN;
             if (isLetter || isNavCluster) {
-                int vsc = User32.INSTANCE.MapVirtualKeyEx(keyCode, MAPVK_VK_TO_VSC, null);
+                // For letters, pass the foreground window's keyboard layout so that
+                // layout-remapped keys (e.g. AZERTY VK_M → scan 0x33, not QWERTY 0x32)
+                // resolve to the correct physical scan code. Nav cluster scan codes are
+                // layout-independent so null (= calling thread's layout) is fine there.
+                WinDef.HKL hkl = isLetter ? getForegroundWindowLayout() : null;
+                int vsc = User32.INSTANCE.MapVirtualKeyEx(keyCode, MAPVK_VK_TO_VSC, hkl);
                 if (vsc != 0) {
                     scan = (short) vsc;
-                    resolvedVia = isLetter ? "MapVirtualKeyEx(letter)" : "MapVirtualKeyEx(nav)";
+                    resolvedVia = isLetter ? "MapVirtualKeyEx(letter,hkl=" + hkl + ")" : "MapVirtualKeyEx(nav)";
                 } else {
                     log.warn("[key] MapVirtualKeyEx returned 0 for VK=0x{} ({}), falling back to SCAN_MAP",
                             Integer.toHexString(keyCode), keyName(keyCode));

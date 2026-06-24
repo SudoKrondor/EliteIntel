@@ -1,15 +1,17 @@
 package elite.intel.session.ui;
 
 import elite.intel.ai.hands.Bindings;
-import elite.intel.ai.hands.events.GameInputEvent;
-import elite.intel.ai.hands.events.GameTapEvent;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.GlobalSettingsManager;
-import elite.intel.gameapi.GameControllerBus;
+import elite.intel.eventbus.GameControllerBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.StatusFlags.GuiFocus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 import static elite.intel.util.SleepNoThrow.sleep;
 
@@ -51,7 +53,7 @@ public class UINavigator {
      */
     public void openAndNavigate(GuiFocus panel, PanelTab target) {
         // If we already have this panel open and the game confirms it, just navigate.
-        // Verify GuiFocus too — lastOpenedPanel can be stale if the player closed it externally.
+        // Verify GuiFocus too - lastOpenedPanel can be stale if the player closed it externally.
         if (tracker.getLastOpenedPanel() == panel && status.getGuiFocus() == panel) {
             navigateToTargetTab(panel, target);
             return;
@@ -66,7 +68,7 @@ public class UINavigator {
 
         tracker.notifyEliteIntelOpeningPanel(panel);
         // Only send the open keystroke if the game doesn't already report this panel open.
-        // openPanel() is a toggle — sending it while the panel is open would close it.
+        // openPanel() is a toggle - sending it while the panel is open would close it.
         if (status.getGuiFocus() != panel) {
             for (int attempt = 1; attempt <= PANEL_OPEN_MAX_ATTEMPTS; attempt++) {
                 openPanel(panel);
@@ -81,7 +83,7 @@ public class UINavigator {
         state.resetToDefault();
 
         navigateToTargetTab(panel, target);
-        sleep(250);
+        inputDelay(250);
     }
 
 
@@ -113,20 +115,20 @@ public class UINavigator {
 
         if (status.isFssModeActive()) {
 
-            GameControllerBus.publish(new GameInputEvent(Bindings.GameCommand.BINDING_EXPLORATION_FSSQUIT.getGameBinding(), 0));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXPLORATION_FSSQUIT.getGameBinding())));
         }
 
         if (status.isSaaModeActive()) {
-            GameControllerBus.publish(new GameInputEvent(Bindings.GameCommand.EXPLORATION_SAAEXIT_THIRD_PERSON.getGameBinding(), 0));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.EXPLORATION_SAAEXIT_THIRD_PERSON.getGameBinding())));
         }
 
         if (shouldBackOut()) {
             for (int i = 0; i < 10; i++) {
-                GameControllerBus.publish(new GameInputEvent(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding(), 0));
+                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding())));
             }
         } else {
             for (int i = 0; i < 3; i++) {
-                GameControllerBus.publish(new GameInputEvent(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding(), 0));
+                GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_EXIT_KEY.getGameBinding())));
             }
         }
     }
@@ -145,7 +147,7 @@ public class UINavigator {
 
     /**
      * Retrace steps back to the default tab, then close the panel.
-     * Always retraces regardless of how far navigation went — the user
+     * Always retraces regardless of how far navigation went - the user
      * expects panels to be left on the default tab after every close.
      */
     public void closeAndRestore(GuiFocus panel) {
@@ -155,7 +157,7 @@ public class UINavigator {
         }
         navigateToDefaultTab(panel, state.getDefault());
         closePanel(panel);
-        sleep(RANDOM_MAX);
+        inputDelay(RANDOM_MAX);
         tracker.notifyEliteIntelClosedPanel();
         state.resetToDefault();
     }
@@ -183,8 +185,8 @@ public class UINavigator {
         }
 
         for (int i = 0; i < steps; i++) {
-            GameControllerBus.publish(new GameTapEvent(key));
             sleep(TAB_CYCLE_PAUSE_MS);
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(key))); // always tap - binding.hold flag must be ignored for tab cycling
         }
         state.recordTab((Enum & PanelTab) target);
     }
@@ -201,11 +203,12 @@ public class UINavigator {
         if (steps == 0) return;
         String key = Bindings.GameCommand.BINDING_CYCLE_PREVIOUS_PANEL.getGameBinding();
         for (int i = 0; i < steps; i++) {
-            GameControllerBus.publish(new GameTapEvent(key));
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(key))); // always tap - binding.hold flag must be ignored for tab cycling
             sleep(TAB_CYCLE_PAUSE_MS);
         }
         state.recordTab((Enum & PanelTab) defaultTarget);
     }
+
 
     /**
      * Polls {@link Status#getGuiFocus()} until the panel opens or the timeout expires.
@@ -241,12 +244,11 @@ public class UINavigator {
             };
         }
         if (binding != null) {
-            log.info("[panel] opening {} via binding={}", panel, binding);
-            GameControllerBus.publish(new GameTapEvent(binding)); // panel focus keys must be tapped, not held
-        } else {
-            log.warn("[panel] skipping open for {} - not in ship/SRV/fighter (status={})", panel, status.getGuiFocus());
+            GameControllerBus.publish(GameInputSequenceEvent.of(
+                    GameInputStep.bindingTap(binding), // panel focus keys must be tapped, not held
+                    GameInputStep.delay(RANDOM_MAX)
+            ));
         }
-        sleep(RANDOM_MAX);
     }
 
     private void closePanel(GuiFocus panel) {
@@ -255,6 +257,10 @@ public class UINavigator {
     }
 
     public static int randomDelay() {
-        return Math.max((int) (Math.random() * RANDOM_MAX), RANDOM_MIN);
+        return RANDOM_MIN + ThreadLocalRandom.current().nextInt(RANDOM_MAX - RANDOM_MIN + 1);
+    }
+
+    private void inputDelay(int delayMs) {
+        GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(delayMs)));
     }
 }

@@ -24,7 +24,7 @@ import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.*;
 /**
  * Registered only on the pre-scan private EventBus. Never on the main bus!
  * Writes location and ship data to the DB silently; fires no events, makes no
- * network calls, and does not touch the live EventBusManager.
+ * network calls, and does not touch the live GameEventBus.
  */
 public class SilentPersistenceSubscriber {
 

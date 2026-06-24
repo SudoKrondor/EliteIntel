@@ -27,15 +27,14 @@ public interface ShipDao {
 
 
     @SqlUpdate("""
-            INSERT INTO ship (shipName, shipId, shipIdentifier, cargoCapacity, voice, personality, cadence, commanderName)
-                        VALUES (:shipName, :shipId, :shipIdentifier, :cargoCapacity, :voice, :personality, :cadence, :commanderName)
+            INSERT INTO ship (shipName, shipId, shipIdentifier, cargoCapacity, voice, personality, commanderName)
+                        VALUES (:shipName, :shipId, :shipIdentifier, :cargoCapacity, :voice, :personality, :commanderName)
                         ON CONFLICT DO UPDATE SET
                         shipName = excluded.shipName,
                         shipIdentifier = excluded.shipIdentifier,
                         cargoCapacity = excluded.cargoCapacity,
                         voice = excluded.voice,
                         personality = excluded.personality,
-                        cadence = excluded.cadence,
                         commanderName = COALESCE(excluded.commanderName, commanderName)
             """)
     void save(@BindBean ShipDao.Ship ship);
@@ -50,7 +49,6 @@ public interface ShipDao {
             ship.setCargoCapacity(rs.getInt("cargoCapacity"));
             ship.setVoice(rs.getString("voice"));
             ship.setPersonality(rs.getString("personality"));
-            ship.setCadence(rs.getString("cadence"));
             ship.setCommanderName(rs.getString("commanderName"));
             return ship;
         }
@@ -78,7 +76,6 @@ public interface ShipDao {
         private Integer cargoCapacity;
         private String voice;
         private String personality;
-        private String cadence;
         private String commanderName;
 
         public String getShipName() {
@@ -131,14 +128,6 @@ public interface ShipDao {
 
         public void setPersonality(String personality) {
             this.personality = personality;
-        }
-
-        public String getCadence() {
-            return cadence;
-        }
-
-        public void setCadence(String cadence) {
-            this.cadence = cadence;
         }
 
         public String getCommanderName() {

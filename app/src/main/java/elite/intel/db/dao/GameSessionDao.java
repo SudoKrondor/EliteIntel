@@ -20,18 +20,28 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              encryptedEDSSMKey, speechSpeed, localLlmCommandModel, localLlmQueryModel,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
-                                                             localLlmProvider, localLlmAddress, conversationModeOn,
+                                                             localLlmProvider, localLlmAddress, conversationModeOn, companionModeOn,
                                                              ollamaAddress, ollamaCommandModel, ollamaQueryModel,
-                                                             lmStudioAddress, lmStudioCommandModel, lmStudioQueryModel
+                                                             lmStudioAddress, lmStudioCommandModel, lmStudioQueryModel,
+                                                             aiLanguage,
+                                                             audioInputDevice, audioOutputDevice,
+                                                             pushToTalkEnabled, pushToTalkControllerName,
+                                                             pushToTalkButtonIndex, pushToTalkToggleMode,
+                                                             noiseReductionEnabled, noiseReductionStrength
                                                 )
                                   VALUES (1, :aiPersonality, :aiCadence, :aiVoice, :aiApiKey, :ttsApiKey, :sttApiKey,
                                                       :edsmApiKey, :loggingEnabled, :privacyModeOn, :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :encryptedEDSSMKey,  :speechSpeed, :localLlmCommandModel, :localLlmQueryModel,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
-                                                      :localLlmProvider, :localLlmAddress, :conversationModeOn,
+                                                      :localLlmProvider, :localLlmAddress, :conversationModeOn, :companionModeOn,
                                                       :ollamaAddress, :ollamaCommandModel, :ollamaQueryModel,
-                                                      :lmStudioAddress, :lmStudioCommandModel, :lmStudioQueryModel
+                                                      :lmStudioAddress, :lmStudioCommandModel, :lmStudioQueryModel,
+                                                      :aiLanguage,
+                                                      :audioInputDevice, :audioOutputDevice,
+                                                      :pushToTalkEnabled, :pushToTalkControllerName,
+                                                      :pushToTalkButtonIndex, :pushToTalkToggleMode,
+                                                      :noiseReductionEnabled, :noiseReductionStrength
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -77,12 +87,22 @@ public interface GameSessionDao {
             session.setLocalLlmProvider(rs.getString("localLlmProvider"));
             session.setLocalLlmAddress(rs.getString("localLlmAddress"));
             session.setConversationModeOn(rs.getBoolean("conversationModeOn"));
+            session.setCompanionModeOn(rs.getBoolean("companionModeOn"));
             session.setOllamaAddress(rs.getString("ollamaAddress"));
             session.setOllamaCommandModel(rs.getString("ollamaCommandModel"));
             session.setOllamaQueryModel(rs.getString("ollamaQueryModel"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
             session.setLmStudioQueryModel(rs.getString("lmStudioQueryModel"));
+            session.setAiLanguage(rs.getString("aiLanguage"));
+            session.setAudioInputDevice(rs.getString("audioInputDevice"));
+            session.setAudioOutputDevice(rs.getString("audioOutputDevice"));
+            session.setPushToTalkEnabled(rs.getBoolean("pushToTalkEnabled"));
+            session.setPushToTalkControllerName(rs.getString("pushToTalkControllerName"));
+            session.setPushToTalkButtonIndex(rs.getInt("pushToTalkButtonIndex"));
+            session.setPushToTalkToggleMode(rs.getBoolean("pushToTalkToggleMode"));
+            session.setNoiseReductionEnabled(rs.getBoolean("noiseReductionEnabled"));
+            session.setNoiseReductionStrength(rs.getInt("noiseReductionStrength"));
             return session;
         }
     }
@@ -119,12 +139,22 @@ public interface GameSessionDao {
         private String localLlmProvider;
         private String localLlmAddress;
         private boolean conversationModeOn;
+        private boolean companionModeOn;
         private String ollamaAddress;
         private String ollamaCommandModel;
         private String ollamaQueryModel;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
         private String lmStudioQueryModel;
+        private String aiLanguage;
+        private String audioInputDevice;
+        private String audioOutputDevice;
+        private boolean pushToTalkEnabled;
+        private String pushToTalkControllerName;
+        private int pushToTalkButtonIndex = -1;
+        private boolean pushToTalkToggleMode = true;
+        private boolean noiseReductionEnabled = false;
+        private int noiseReductionStrength = 1;
 
 
         public String getAiPersonality() {
@@ -337,6 +367,14 @@ public interface GameSessionDao {
             this.conversationModeOn = conversationModeOn;
         }
 
+        public boolean isCompanionModeOn() {
+            return companionModeOn;
+        }
+
+        public void setCompanionModeOn(boolean companionModeOn) {
+            this.companionModeOn = companionModeOn;
+        }
+
         public String getOllamaAddress() {
             return ollamaAddress;
         }
@@ -383,6 +421,78 @@ public interface GameSessionDao {
 
         public void setLmStudioQueryModel(String lmStudioQueryModel) {
             this.lmStudioQueryModel = lmStudioQueryModel;
+        }
+
+        public String getAiLanguage() {
+            return aiLanguage;
+        }
+
+        public void setAiLanguage(String aiLanguage) {
+            this.aiLanguage = aiLanguage;
+        }
+
+        public String getAudioInputDevice() {
+            return audioInputDevice;
+        }
+
+        public void setAudioInputDevice(String audioInputDevice) {
+            this.audioInputDevice = audioInputDevice;
+        }
+
+        public String getAudioOutputDevice() {
+            return audioOutputDevice;
+        }
+
+        public void setAudioOutputDevice(String audioOutputDevice) {
+            this.audioOutputDevice = audioOutputDevice;
+        }
+
+        public boolean isPushToTalkEnabled() {
+            return pushToTalkEnabled;
+        }
+
+        public void setPushToTalkEnabled(boolean pushToTalkEnabled) {
+            this.pushToTalkEnabled = pushToTalkEnabled;
+        }
+
+        public String getPushToTalkControllerName() {
+            return pushToTalkControllerName;
+        }
+
+        public void setPushToTalkControllerName(String pushToTalkControllerName) {
+            this.pushToTalkControllerName = pushToTalkControllerName;
+        }
+
+        public int getPushToTalkButtonIndex() {
+            return pushToTalkButtonIndex;
+        }
+
+        public void setPushToTalkButtonIndex(int pushToTalkButtonIndex) {
+            this.pushToTalkButtonIndex = pushToTalkButtonIndex;
+        }
+
+        public boolean isPushToTalkToggleMode() {
+            return pushToTalkToggleMode;
+        }
+
+        public void setPushToTalkToggleMode(boolean pushToTalkToggleMode) {
+            this.pushToTalkToggleMode = pushToTalkToggleMode;
+        }
+
+        public boolean isNoiseReductionEnabled() {
+            return noiseReductionEnabled;
+        }
+
+        public void setNoiseReductionEnabled(boolean noiseReductionEnabled) {
+            this.noiseReductionEnabled = noiseReductionEnabled;
+        }
+
+        public int getNoiseReductionStrength() {
+            return noiseReductionStrength;
+        }
+
+        public void setNoiseReductionStrength(int noiseReductionStrength) {
+            this.noiseReductionStrength = noiseReductionStrength;
         }
     }
 }

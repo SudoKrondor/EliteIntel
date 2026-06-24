@@ -60,9 +60,9 @@ public interface TradeProfileDao {
         private boolean allowPermit = false;
         private boolean allowFleetCarrier = false;
         private boolean allowStrongHold = false;
-        private Integer startingBudget = 0;
-        private Integer maxDistanceLs = 0;
-        private Integer maxJumps = 0;
+        private Integer startingBudget = 250_000_000;
+        private Integer maxDistanceLs = 6000;
+        private Integer maxJumps = 4;
 
         @SuppressWarnings("unused") // used for mapping
         public Integer getShipId() {

@@ -1,7 +1,8 @@
 package elite.intel.search.spansh.station;
 
-import com.google.gson.JsonObject;
 import elite.intel.search.spansh.client.SpanshClient;
+import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
+import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsSearchCriteria;
 import elite.intel.search.spansh.station.marketstation.TradeStationSearchCriteria;
 import elite.intel.search.spansh.station.marketstation.TradeStationSearchResultDto;
 import elite.intel.search.spansh.station.traderandbroker.TraderAndBrokerSearchDto;
@@ -34,5 +35,9 @@ public class StationSearchClient extends SpanshClient {
 
     public TradeStationSearchResultDto searchTradeStation(TradeStationSearchCriteria initialStationCriteria) {
         return GsonFactory.getGson().fromJson(performSearch(initialStationCriteria), TradeStationSearchResultDto.class);
+    }
+
+    public InterstellarFactorsResultDto searchInterstellarFactors(InterstellarFactorsSearchCriteria criteria) {
+        return GsonFactory.getGson().fromJson(performSearch(criteria.toJson()), InterstellarFactorsResultDto.class);
     }
 }

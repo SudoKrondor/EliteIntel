@@ -2,9 +2,10 @@ package elite.intel.search.spansh.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import elite.intel.gameapi.EventBusManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 import elite.intel.ws.WebSocketBroadcaster;
@@ -27,8 +28,13 @@ public class SpanshClient {
     private String RESULTS_URL;
 
     public SpanshClient(String BASE_URL, String RESULTS_URL) {
-        this.BASE_URL = BASE_URL;
-        this.RESULTS_URL = RESULTS_URL;
+        this.BASE_URL = spanshUrl(BASE_URL);
+        this.RESULTS_URL = spanshUrl(RESULTS_URL);
+    }
+
+    private static String spanshUrl(String url) {
+        String override = System.getProperty("spansh.base.url");
+        return override == null ? url : url.replace("https://spansh.co.uk", override);
     }
 
 
@@ -86,9 +92,14 @@ public class SpanshClient {
         String body = resp.body();
         if (resp.statusCode() == 400) {
             log.warn("POST failed: {}", body);
-            EventBusManager.publish(new SensorDataEvent(
-                    "Unable to complete search request. Spansh failed with error message: " + body,
-                    "Issue a warning with exact error message returned from API. format for Speech to Text")
+            GameEventBus.publish(new SensorDataEvent(
+                            "Unable to complete search request. Spansh.co.uk failed with error message: " + body,
+                            """
+                                    Issue a warning with exact error message returned from API, let user know that Spansh failed to give us any data.
+                                    Make that point clear. 
+                                    Format your response for Speech to Text
+                                    """
+                    )
             );
         }
 
@@ -151,7 +162,7 @@ public class SpanshClient {
                     .build();
 
             log.info("polling search {} (attempt {}) url: {}", searchRefId, attempt, req.uri());
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_3); // audio indicator of background search
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
 
             HttpResponse<String> resp = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 

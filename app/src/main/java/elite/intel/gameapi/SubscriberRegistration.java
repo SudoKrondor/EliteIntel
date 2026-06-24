@@ -1,6 +1,7 @@
 package elite.intel.gameapi;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.eventbus.GameEventBus;
 import org.reflections.Reflections;
 import org.reflections.scanners.MethodAnnotationsScanner;
 
@@ -20,7 +21,7 @@ import java.util.Set;
 public class SubscriberRegistration {
     /**
      * Registers all subscriber classes containing methods annotated with the {@code @Subscribe} annotation
-     * to the event bus managed by the {@code EventBusManager}.
+     * to the event bus managed by the {@code GameEventBus}.
      *
      * This method uses reflection to scan specific packages for classes housing methods
      * annotated with {@code @Subscribe}. For each identified class, this method attempts
@@ -55,7 +56,7 @@ public class SubscriberRegistration {
         for (Class<?> subscriberClass : subscriberClasses) {
             try {
                 Object subscriberInstance = subscriberClass.getDeclaredConstructor().newInstance();
-                EventBusManager.register(subscriberInstance);
+                GameEventBus.register(subscriberInstance);
             } catch (Exception e) {
                 System.err.println("Failed to instantiate subscriber: " + subscriberClass.getName());
             }

@@ -1,15 +1,15 @@
 package elite.intel.session;
 
 import elite.intel.ai.brain.LocalLlmProvider;
-import elite.intel.ai.brain.ShipCadence;
 import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.mouth.GoogleVoices;
+import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ChatHistoryDao;
 import elite.intel.db.dao.GameSessionDao;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
+import elite.intel.i18n.Language;
 import elite.intel.util.Cypher;
 
 import java.io.BufferedReader;
@@ -45,7 +45,11 @@ public class SystemSession {
         if (ship == null) return GoogleVoices.STEVE;
         String voice = ship.getVoice();
         if (voice == null) return GoogleVoices.STEVE;
-        return GoogleVoices.valueOf(voice);
+        try {
+            return GoogleVoices.valueOf(voice);
+        } catch (IllegalArgumentException e) {
+            return GoogleVoices.STEVE;
+        }
     }
 
 
@@ -54,7 +58,11 @@ public class SystemSession {
         if (ship == null) return KokoroVoices.BELLA;
         String voice = ship.getVoice();
         if (voice == null) return KokoroVoices.BELLA;
-        return KokoroVoices.valueOf(voice);
+        try {
+            return KokoroVoices.valueOf(voice);
+        } catch (IllegalArgumentException e) {
+            return KokoroVoices.BELLA;
+        }
     }
 
     private void setShipVoice(String voice) {
@@ -73,11 +81,6 @@ public class SystemSession {
     }
 
 
-    public ShipCadence getAICadence() {
-        ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return ShipCadence.IMPERIAL;
-        return ShipCadence.valueOf(ship.getCadence());
-    }
 
     public boolean isSleepingModeOn() {
         return Database.withDao(GameSessionDao.class, dao -> {
@@ -153,10 +156,11 @@ public class SystemSession {
 
 
     public void setTtsApiKey(String ttsApiKey) {
-        if (ttsApiKey == null && ttsApiKey.isEmpty()) {
+        if (ttsApiKey == null || ttsApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
                 session.setTtsApiKey(null);
+                session.setEncryptedTTSKey(null);
                 dao.save(session);
                 return Void.class;
             });
@@ -179,10 +183,11 @@ public class SystemSession {
 
 
     public void setAiApiKey(String aiApiKey) {
-        if (aiApiKey == null && aiApiKey.isEmpty()) {
+        if (aiApiKey == null || aiApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
                 session.setAiApiKey(null);
+                session.setEncryptedLLMKey(null);
                 dao.save(session);
                 return Void.class;
             });
@@ -379,6 +384,51 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioQueryModel());
     }
 
+    // Language is shared by GUI and command aliases, but still persisted in the legacy aiLanguage column.
+    public Language getLanguage() {
+        String raw = Database.withDao(GameSessionDao.class, dao -> dao.get().getAiLanguage());
+        try {
+            return Language.valueOf(raw);
+        } catch (Exception e) {
+            return Language.EN;
+        }
+    }
+
+    public void setLanguage(Language language) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setAiLanguage(language.name());
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public String getAudioInputDevice() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getAudioInputDevice());
+    }
+
+    public void setAudioInputDevice(String device) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setAudioInputDevice(device == null || device.isBlank() ? null : device);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public String getAudioOutputDevice() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getAudioOutputDevice());
+    }
+
+    public void setAudioOutputDevice(String device) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setAudioOutputDevice(device == null || device.isBlank() ? null : device);
+            dao.save(session);
+            return null;
+        });
+    }
+
     public void setConversationalMode(boolean b) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
@@ -390,5 +440,96 @@ public class SystemSession {
 
     public boolean conversationalModeOn() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
+    }
+
+    public void setCompanionMode(boolean b) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setCompanionModeOn(b);
+            dao.save(session);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean companionModeOn() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
+    }
+
+    public boolean isPushToTalkEnabled() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkEnabled());
+    }
+
+    public void setPushToTalkEnabled(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkEnabled(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public String getPushToTalkControllerName() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getPushToTalkControllerName());
+    }
+
+    public void setPushToTalkControllerName(String controllerName) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkControllerName(controllerName == null || controllerName.isBlank() ? null : controllerName);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getPushToTalkButtonIndex() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getPushToTalkButtonIndex());
+    }
+
+    public void setPushToTalkButtonIndex(int buttonIndex) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkButtonIndex(buttonIndex);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isPushToTalkToggleMode() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkToggleMode());
+    }
+
+    public void setPushToTalkToggleMode(boolean toggleMode) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setPushToTalkToggleMode(toggleMode);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public boolean isNoiseReductionEnabled() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isNoiseReductionEnabled());
+    }
+
+    public void setNoiseReductionEnabled(boolean enabled) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setNoiseReductionEnabled(enabled);
+            dao.save(session);
+            return null;
+        });
+    }
+
+    public int getNoiseReductionStrength() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().getNoiseReductionStrength());
+    }
+
+    public void setNoiseReductionStrength(int strength) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setNoiseReductionStrength(strength);
+            dao.save(session);
+            return null;
+        });
     }
 }

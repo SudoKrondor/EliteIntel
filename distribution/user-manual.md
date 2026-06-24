@@ -11,13 +11,13 @@ list exists so you know what's possible, not so you can recite scripts.
 - If app can't hear you well: ears problem (noisy room low noise-to-rms ratio, audio not calibrated etc)
 - If app does not speak: mouth problem. Audio connection is not routed properly or routed to an audio end point that you are not monitoring check audio routing at OS level.
 
-### [Full Wiki is here](https://github.com/stone-alex/EliteIntel/wiki)
+### [Full Wiki is here](https://www.elite-intel.org/de)
 
 ## Audio Input
 
 **Calibrate the audio in the app**. If the difference between Noise Floor and RMS is too low (e.g. less than 400) the
-app will have hard time understanding you. A good ratio is at least 800-1000. Speakers and mic do not go together.
-Headphones and mic are recommended.
+app will have hard time understanding you. A good ratio is at least 800-1000.
+If you are using speakers and mic enable Push To Talk, else Headphones and mic are recommended.
 
 ## App
 
@@ -257,9 +257,9 @@ Local LLMs will respond but will be stiff. Cloud LLMs (Claude, OpenAI, xAI, Mist
 
 ---
 
-[More commands here](https://github.com/stone-alex/EliteIntel/wiki/Obscure-System-Commands)
+[More commands here](https://www.elite-intel.org/)
 
 Fly Dangerous, Commander! o7
 
 ----
-Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/stone-alex/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Cretive Commons License |
+Community 👉[**Matrix**](https://matrix.to/#/#krondor:matrix.org)👈 | Open Source [**GitHub**](https://github.com/SudoKrondor/EliteIntel) | [YouTube](https://www.youtube.com/@SudoKrondor) | [Twitch](https://www.twitch.tv/sudokrondor) | Cretive Commons License |

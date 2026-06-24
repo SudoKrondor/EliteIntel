@@ -16,9 +16,26 @@ public class KeyProcessor {
      * routed through NativeKeyInput instead of Robot.
      */
     public static final int NATIVE_BASE = 0x10000;
+    private static final int NATIVE_CHARACTER_BASE = 0x20000;
+    private static final int NATIVE_CHARACTER_LIMIT = NATIVE_CHARACTER_BASE + Character.MAX_VALUE;
 
     private final Robot robot;
     private final NativeKeyInput nativeKeyInput;
+
+    static int nativeCharacterCode(char character) {
+        return NATIVE_CHARACTER_BASE + character;
+    }
+
+    static boolean isNativeCharacterCode(int keyCode) {
+        return keyCode >= NATIVE_CHARACTER_BASE && keyCode <= NATIVE_CHARACTER_LIMIT;
+    }
+
+    static char nativeCharacter(int keyCode) {
+        if (!isNativeCharacterCode(keyCode)) {
+            throw new IllegalArgumentException("Not a native character code: 0x" + Integer.toHexString(keyCode));
+        }
+        return (char) (keyCode - NATIVE_CHARACTER_BASE);
+    }
 
     public static final int KEY_SPACE = KeyEvent.VK_SPACE;
     public static final int KEY_ENTER = KeyEvent.VK_ENTER;
@@ -86,6 +103,11 @@ public class KeyProcessor {
     public static final int KEY_UGRAVE = NATIVE_BASE + 20; // ù (FR AZERTY, ù key position)
     public static final int KEY_CCEDILLA = NATIVE_BASE + 21; // ç (FR AZERTY, number-row position 9)
     public static final int KEY_NTILDE = NATIVE_BASE + 22;   // ñ (ES Spanish, home-row position after L)
+    static final int NATIVE_NUMPAD_DIVIDE = NATIVE_BASE + 23;
+    static final int NATIVE_NUMPAD_MULTIPLY = NATIVE_BASE + 24;
+    static final int NATIVE_NUMPAD_DECIMAL = NATIVE_BASE + 25;
+    static final int NATIVE_NUMPAD_ADD = NATIVE_BASE + 26;
+    static final int NATIVE_NUMPAD_SUBTRACT = NATIVE_BASE + 27;
     public static final int KEY_LEFTCONTROL = NATIVE_BASE + 1;
     public static final int KEY_RIGHTCONTROL = NATIVE_BASE + 2;
     public static final int KEY_LEFTSHIFT = NATIVE_BASE + 3;
