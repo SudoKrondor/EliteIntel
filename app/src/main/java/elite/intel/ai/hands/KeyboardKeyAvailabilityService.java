@@ -128,7 +128,15 @@ public class KeyboardKeyAvailabilityService {
             if (!assignment.modifiers().equals(normalizedModifiers)) {
                 continue;
             }
-            if (assignment.bindingId().equals(bindingId) && assignment.slotType() == slotType) {
+            // A binding never conflicts with itself (either slot).
+            if (assignment.bindingId().equals(bindingId)) {
+                continue;
+            }
+            // The same chord in a mutually-exclusive context (ship / SRV / on-foot / camera /
+            // FSS ...) does NOT collide: Elite only evaluates one context at a time. Without this,
+            // e.g. bare Q used by FreeCamSpeedInc (camera) wrongly blocked it for a ship binding,
+            // contradicting the context-aware keyboard widget. See BindingConflictRules.
+            if (BindingConflictRules.isSafeOverlap(bindingId, assignment.bindingId())) {
                 continue;
             }
             return true;

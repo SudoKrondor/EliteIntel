@@ -9,17 +9,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SafeKeyboardKeysTest {
 
-    private static final Set<String> UNSAFE_KEYS = Set.of(
-            "Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y");
-
     @Test
-    void baseKeysNeverIncludeLayoutSensitiveKeysOrPunctuation() {
-        for (String key : SafeKeyboardKeys.baseKeys()) {
-            assertFalse(UNSAFE_KEYS.contains(key), "unsafe key in pool: " + key);
-            // Only letters, digits, numpad, and function keys - never punctuation tokens.
-            assertTrue(
-                    key.matches("Key_[A-Z]|Key_[0-9]|Key_Numpad_.*|Key_F[0-9]{1,2}"),
-                    "unexpected pool key: " + key);
+    void baseKeysIncludeRelaxedLayoutKeysAndAreAllAssignable() {
+        // AZERTY safety guard relaxed 2026-06-24 (testers confirmed these work). This locks the
+        // relaxation; restore the strict guard by dropping LAYOUT_VARIABLE_KEYS in SafeKeyboardKeys.
+        List<String> base = SafeKeyboardKeys.baseKeys();
+        for (String relaxed : List.of("Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y")) {
+            assertTrue(base.contains(relaxed), "expected relaxed key in pool: " + relaxed);
+        }
+        for (String key : base) {
+            assertTrue(EliteKeyboardKeys.isAssignable(key), "pool key not assignable: " + key);
         }
     }
 

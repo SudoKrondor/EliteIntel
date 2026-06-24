@@ -16,6 +16,7 @@ import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static elite.intel.ui.theme.AppTheme.HUD_SCROLL_STYLE_LOCKED;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
@@ -28,15 +29,18 @@ public class BindingsGroupTableFactory {
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
     private final Consumer<String> autoFixHandler;
+    private final Predicate<String> hasConflict;
 
     public BindingsGroupTableFactory(
             BindingsSelectionController selectionController,
             BiConsumer<String, BindingSlotType> slotClickHandler,
-            Consumer<String> autoFixHandler
+            Consumer<String> autoFixHandler,
+            Predicate<String> hasConflict
     ) {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
         this.autoFixHandler = autoFixHandler;
+        this.hasConflict = hasConflict;
     }
 
     /**
@@ -202,7 +206,7 @@ public class BindingsGroupTableFactory {
         table.setAutoCreateRowSorter(false);
         table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
-        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer());
+        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict));
     }
 
     private void configureColumnWidths(JTable table) {

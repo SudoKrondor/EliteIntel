@@ -7,16 +7,18 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.KeyChordCaptureField;
+import elite.intel.ui.widget.KeyboardAvailabilityView;
+import elite.intel.util.KeyCaptureMapper;
+import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -49,6 +51,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final JButton saveButton;
     private final JLabel invalidKeyLabel;
     private final JLabel alreadyInUseLabel;
+    private final JLabel conflictLabel;
+    private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
+    private final KeyboardAvailabilityView keyboardView;
+    private final Set<String> dialogHeldModifiers = new LinkedHashSet<>();
+    private KeyEventDispatcher modifierTracker;
 
     // Pending selection (mirrors what Save would persist).
     private String selectedKey;
@@ -63,7 +70,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
             String bindingId,
             BindingSlotType slotType,
             KeyBindingsParser.ReadOnlyBindingSlot currentSlot,
-            KeyboardKeyAvailabilityService availabilityService
+            KeyboardKeyAvailabilityService availabilityService,
+            Map<String, KeyBindingsParser.KeyBinding> existingBindings
     ) {
         super(SwingUtilities.getWindowAncestor(parent), getText("bindings.assign.dialogTitle"), ModalityType.APPLICATION_MODAL);
         setUndecorated(true);
@@ -72,6 +80,7 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.slotType = slotType;
         this.currentSlot = currentSlot;
         this.availabilityService = availabilityService;
+        this.existingBindings = existingBindings == null ? Map.of() : existingBindings;
         this.originalKey = currentKeyboardKey(currentSlot);
         this.originalModifiers = currentSupportedModifiers(currentSlot);
         this.alreadyCleared = isClearedSlot(currentSlot);
@@ -90,13 +99,54 @@ public class AssignKeyboardBindingDialog extends JDialog {
         this.saveButton = makeButton(getText("button.save"));
         this.invalidKeyLabel = new JLabel(getText("bindings.assign.unknownKey"));
         this.alreadyInUseLabel = new JLabel(getText("bindings.assign.alreadyInUse"));
+        this.conflictLabel = new JLabel(getText("bindings.assign.conflict"));
+        this.keyboardView = new KeyboardAvailabilityView(bindingId, this.existingBindings);
+        this.keyboardView.setCurrentKey(originalKey);
         buildUi();
         updateSaveState();
     }
 
     public Optional<AssignKeyboardBindingSelection> showDialog() {
-        setVisible(true);
+        installModifierTracker();
+        try {
+            setVisible(true);
+        } finally {
+            removeModifierTracker();
+        }
         return Optional.ofNullable(selection);
+    }
+
+    /**
+     * Tracks modifier key presses for the whole time the dialog is open — not just while the
+     * capture field is armed — so the keyboard map lights up the moment the user holds a modifier,
+     * helping them decide before committing. Never consumes events, so capture and dialog keys work.
+     */
+    private void installModifierTracker() {
+        if (modifierTracker != null) {
+            return;
+        }
+        modifierTracker = e -> {
+            if (KeyCaptureMapper.isModifierOnly(e)) {
+                KeyCaptureMapper.fromKeyEvent(e).ifPresent(token -> {
+                    if (e.getID() == KeyEvent.KEY_PRESSED) {
+                        dialogHeldModifiers.add(token);
+                    } else if (e.getID() == KeyEvent.KEY_RELEASED) {
+                        dialogHeldModifiers.remove(token);
+                    }
+                });
+                keyboardView.setHeldModifiers(dialogHeldModifiers);
+            }
+            return false;
+        };
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(modifierTracker);
+    }
+
+    private void removeModifierTracker() {
+        if (modifierTracker != null) {
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(modifierTracker);
+            modifierTracker = null;
+            dialogHeldModifiers.clear();
+        }
     }
 
     private void buildUi() {
@@ -153,6 +203,49 @@ public class AssignKeyboardBindingDialog extends JDialog {
         alreadyInUseLabel.setVisible(false);
         content.add(alreadyInUseLabel, gbc);
 
+        nextRow(gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        conflictLabel.setVisible(false);
+        content.add(conflictLabel, gbc);
+
+        // Live QWERTY availability map: spans both columns, recolors as modifiers are held.
+        nextRow(gbc);
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(8, 6, 0, 6);
+        JLabel keyboardHint = new JLabel(getText("bindings.assign.keyboard.hint"));
+        keyboardHint.setForeground(HUD_COLOR_ROLE_SECONDARY_TEXT);
+        content.add(keyboardHint, gbc);
+
+        nextRow(gbc);
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(2, 6, 3, 6);
+        content.add(keyboardView, gbc);
+        gbc.gridwidth = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(3, 6, 3, 6);
+
+        // Absorb extra vertical space at the bottom so content top-aligns (removes the centred
+        // top gap), and a conflict message appearing shrinks this filler rather than the keyboard.
+        nextRow(gbc);
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        content.add(Box.createGlue(), gbc);
+        gbc.weighty = 0;
+        gbc.gridwidth = 1;
+
         HudSection bindingSection = HudSection.flat(
                 getText("bindings.assign.section.assignment"), new BorderLayout());
         bindingSection.body().add(content, BorderLayout.CENTER);
@@ -208,7 +301,8 @@ public class AssignKeyboardBindingDialog extends JDialog {
     }
 
     private void saveSelection() {
-        if (!isChanged() || !isValidKey() || isSelectedCombinationOccupied()) {
+        boolean blockingConflict = selectedConflict() != null;
+        if (!isChanged() || !isValidKey() || isSelectedCombinationOccupied() || blockingConflict) {
             return;
         }
         selection = cleared
@@ -220,9 +314,37 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private void updateSaveState() {
         boolean invalidKey = !cleared && selectedKey != null && !isValidKey();
         boolean occupied = !cleared && selectedKey != null && isSelectedCombinationOccupied();
+        // An exact occupancy already shows its own message, so only surface the conflict warning
+        // when the combination isn't already flagged as in-use.
+        BindingConflictScanner.CandidateConflict conflict = occupied ? null : selectedConflict();
         invalidKeyLabel.setVisible(invalidKey);
         alreadyInUseLabel.setVisible(occupied);
-        saveButton.setEnabled(isChanged() && isValidKey() && !occupied);
+        updateConflictLabel(conflict);
+        saveButton.setEnabled(isChanged() && isValidKey() && !occupied && conflict == null);
+    }
+
+    private void updateConflictLabel(BindingConflictScanner.CandidateConflict conflict) {
+        if (conflict == null) {
+            conflictLabel.setVisible(false);
+            return;
+        }
+        // Name the binding it collides with so the user knows what the conflict is.
+        conflictLabel.setText(getText("bindings.assign.conflict",
+                StringUtls.humanizeBindingName(conflict.otherBinding())));
+        conflictLabel.setForeground(HUD_COLOR_ROLE_DANGER);
+        conflictLabel.setVisible(true);
+    }
+
+    /**
+     * The conflict the pending chord would create against another binding (its own slot excluded),
+     * naming the binding it collides with, or {@code null} if clean. Drives the label and save gating.
+     */
+    private BindingConflictScanner.CandidateConflict selectedConflict() {
+        if (cleared || selectedKey == null || !isValidKey()) {
+            return null;
+        }
+        List<String> modifierKeys = selectedModifiers.stream().map(BindingModifier::key).toList();
+        return BindingConflictScanner.candidateConflict(bindingId, selectedKey, modifierKeys, existingBindings);
     }
 
     private boolean isChanged() {

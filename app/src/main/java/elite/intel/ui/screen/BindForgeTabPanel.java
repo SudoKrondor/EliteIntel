@@ -2,6 +2,8 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.*;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -12,6 +14,7 @@ import elite.intel.ui.event.KeymapSyncStateChangedEvent;
 import elite.intel.ui.support.*;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.*;
+import elite.intel.util.StringUtls;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -64,6 +67,10 @@ public class BindForgeTabPanel extends JPanel {
     private JButton fixAllButton;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
+    /**
+     * Ids of bindings in a conflict, driving the RED row coloring; recomputed on each load.
+     */
+    private Set<String> conflictedBindings = Set.of();
     /** Working copy file currently loaded in the editor - used for stale checks. */
     private File activeBindingsFile;
     private FileTime activeBindingsLastModified;
@@ -78,7 +85,10 @@ public class BindForgeTabPanel extends JPanel {
     public BindForgeTabPanel() {
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(
-                selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding);
+                selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding,
+                // Lambda (not conflictedBindings::contains) so it reads the field live: the set is
+                // reassigned on each load, and a bound method ref would pin the initial empty set.
+                id -> conflictedBindings.contains(id));
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
         UiBus.register(this);
@@ -258,6 +268,7 @@ public class BindForgeTabPanel extends JPanel {
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
                     parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
             Map<String, KeyBindingsParser.KeyBinding> parsedBindings = effectiveBindings(slots);
+            conflictedBindings = computeConflictedBindings(parsedBindings);
 
             currentSlots = slots;
             activeBindingsFile = workingCopyPath.toFile();
@@ -299,6 +310,7 @@ public class BindForgeTabPanel extends JPanel {
                     monitor.findFoundGameBindings(parsedBindings).size()));
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
+            conflictedBindings = Set.of();
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
             filePathField.setText(getText("bindings.notAvailable"));
@@ -334,9 +346,15 @@ public class BindForgeTabPanel extends JPanel {
         }
         try {
             Path backupPath = applyService.apply(activePresetFileName, gameBindingsFile.toPath());
-            String successMsg = backupPath != null
+            // Elite only re-reads the .binds when its Controls screen is opened, so remind the
+            // user to cycle that screen to actually load what we just wrote to the game file.
+            String successMsg = (backupPath != null
                     ? getText("bindings.apply.success", backupPath.getFileName())
-                    : getText("bindings.apply.success.noBackup");
+                    : getText("bindings.apply.success.noBackup"))
+                    + System.lineSeparator() + System.lineSeparator()
+                    + getText("bindings.apply.reloadReminder");
+            // Also speak the reload reminder — users reflexively dismiss dialogs without reading.
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.bindingsAppliedReload")));
             JOptionPane.showMessageDialog(
                     this,
                     successMsg,
@@ -712,6 +730,19 @@ public class BindForgeTabPanel extends JPanel {
         return parser.new KeyBinding(slot.key(), slot.modifiers(), slot.hold());
     }
 
+    /**
+     * The ids of all bindings that participate in a conflict, for the RED/green row coloring.
+     */
+    private Set<String> computeConflictedBindings(
+            Map<String, KeyBindingsParser.KeyBinding> bindings) {
+        Set<String> conflicted = new HashSet<>();
+        for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scan(bindings)) {
+            conflicted.add(conflict.actionA());
+            conflicted.add(conflict.actionB());
+        }
+        return conflicted;
+    }
+
     private Map<BindingGroup, List<Object[]>> groupedRows() {
         Map<BindingGroup, List<Object[]>> grouped = new EnumMap<>(BindingGroup.class);
         for (BindingGroup group : BindingGroup.values()) {
@@ -774,7 +805,8 @@ public class BindForgeTabPanel extends JPanel {
                 bindingId,
                 slotType,
                 slot,
-                availabilityService
+                availabilityService,
+                effectiveBindings(currentSlots)
         );
 
         assignDialogOpen = true;
