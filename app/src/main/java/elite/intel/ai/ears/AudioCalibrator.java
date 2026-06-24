@@ -13,6 +13,10 @@ import javax.sound.sampled.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -26,7 +30,12 @@ public class AudioCalibrator {
     private static final Logger log = LogManager.getLogger(AudioCalibrator.class);
     private static final int NOISE_CALIBRATION_DURATION_MS = 5000;
     private static final int SPEECH_CALIBRATION_DURATION_MS = 5000;
-    private static final int TTS_PROMPT_DELAY_MS = 3000;
+    // Upper bound on how long we wait for a TTS prompt to finish playing before
+    // recording. Guards against a TTS pipeline that never signals completion.
+    private static final int TTS_COMPLETION_TIMEOUT_MS = 15000;
+    // Short settle delay after the prompt finishes so the speaker tail/click is
+    // not captured at the start of the recording window.
+    private static final int POST_PROMPT_SETTLE_MS = 300;
     private static final double DEFAULT_RMS_THRESHOLD_HIGH = 0;
     private static final double DEFAULT_RMS_THRESHOLD_LOW = 0;
     // Percentile used to estimate the noise floor from the collected samples.
@@ -45,8 +54,8 @@ public class AudioCalibrator {
     }
 
     public static RmsTupple<Double, Double> calibrateRMS(AudioFormatDetector.Format format, Mixer.Info mixerInfo) {
-        log.info("Starting RMS calibration: noise for {}ms, speech for {}ms, with {}ms TTS delays",
-                NOISE_CALIBRATION_DURATION_MS, SPEECH_CALIBRATION_DURATION_MS, TTS_PROMPT_DELAY_MS);
+        log.info("Starting RMS calibration: noise for {}ms, speech for {}ms",
+                NOISE_CALIBRATION_DURATION_MS, SPEECH_CALIBRATION_DURATION_MS);
 
         AudioFormat captureFormat = format.getCaptureFormat();
         int bufferSize = format.getBufferSize();
@@ -54,25 +63,11 @@ public class AudioCalibrator {
         byte[] buffer = new byte[bufferSize];
 
         // Phase 1: noise floor
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationRemainSilent")));
-        log.info("Prompted for noise calibration, waiting {}ms for TTS", TTS_PROMPT_DELAY_MS);
-        try {
-            Thread.sleep(TTS_PROMPT_DELAY_MS);
-        } catch (InterruptedException e) {
-            log.warn("Noise TTS delay interrupted: {}", e.getMessage());
-            Thread.currentThread().interrupt();
-        }
+        speakPromptAndWait("speech.audioCalibrationRemainSilent");
         double noiseFloor = calibrateNoiseFloor(captureFormat, bufferSize, buffer, info, mixerInfo);
 
         // Phase 2: speech
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationCountTo12")));
-        log.info("Prompted for speech calibration, waiting {}ms for TTS", TTS_PROMPT_DELAY_MS);
-        try {
-            Thread.sleep(TTS_PROMPT_DELAY_MS);
-        } catch (InterruptedException e) {
-            log.warn("Speech TTS delay interrupted: {}", e.getMessage());
-            Thread.currentThread().interrupt();
-        }
+        speakPromptAndWait("speech.audioCalibrationCountTo12");
         double avgSpeechRMS = calibrateSpeech(captureFormat, bufferSize, buffer, info, noiseFloor, mixerInfo);
 
         // VAD trigger = midpoint between noise and speech.
@@ -81,7 +76,7 @@ public class AudioCalibrator {
         double highThreshold;
         if (avgSpeechRMS <= noiseFloor || gap < MIN_SPEECH_NOISE_GAP) {
             log.warn("Insufficient speech/noise separation (gap={}). Speech may not have been detected or environment is too loud.", gap);
-            UiBus.publish(new AppLogEvent("WARNING: Low speech/noise gap (" + (int) gap + "). Try speaking louder or reducing ambient noise."));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationLowGap", String.valueOf((int) gap))));
             // Fallback: 30% above noise floor
             highThreshold = noiseFloor * 1.3 + 50;
         } else {
@@ -100,8 +95,36 @@ public class AudioCalibrator {
 
         log.info("Final calibrated RMS thresholds: HIGH={}, LOW={} (noise floor={}, speech avg={}, gap={})",
                 highThreshold, lowThreshold, (int) noiseFloor, (int) avgSpeechRMS, (int) gap);
-        UiBus.publish(new AppLogEvent("Audio calibration complete: TRIGGER=" + highThreshold + ", NOISE=" + lowThreshold));
+        UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationComplete",
+                String.valueOf(highThreshold), String.valueOf(lowThreshold))));
         return new RmsTupple<>(highThreshold, lowThreshold);
+    }
+
+    /**
+     * Speaks a calibration prompt and blocks until the TTS pipeline finishes playing it
+     * (or until {@link #TTS_COMPLETION_TIMEOUT_MS} elapses), then waits a short settle
+     * delay. This replaces a fixed sleep so a prompt longer than the old delay does not
+     * bleed its audio tail into the recording window - important for localized prompts
+     * whose spoken length varies by language.
+     *
+     * @param speechKey the llm-bundle key of the prompt to speak.
+     */
+    private static void speakPromptAndWait(String speechKey) {
+        CompletableFuture<Void> done = new CompletableFuture<>();
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm(speechKey), done));
+        log.info("Prompted '{}', waiting up to {}ms for TTS to finish", speechKey, TTS_COMPLETION_TIMEOUT_MS);
+        try {
+            done.get(TTS_COMPLETION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            Thread.sleep(POST_PROMPT_SETTLE_MS);
+        } catch (TimeoutException e) {
+            log.warn("TTS prompt '{}' did not finish within {}ms; proceeding with calibration", speechKey, TTS_COMPLETION_TIMEOUT_MS);
+        } catch (ExecutionException e) {
+            log.warn("TTS prompt '{}' completed exceptionally: {}", speechKey,
+                    e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+        } catch (InterruptedException e) {
+            log.warn("TTS prompt wait interrupted: {}", e.getMessage());
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -133,14 +156,14 @@ public class AudioCalibrator {
             }
         } catch (LineUnavailableException | IllegalArgumentException e) {
             log.error("Noise calibration failed: {}", e.getMessage());
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationUsingDefaults")));
-            UiBus.publish(new AppLogEvent("Noise calibration failed: " + e.getMessage()));
-            return DEFAULT_RMS_THRESHOLD_LOW;
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationNoiseFailed", String.valueOf(e.getMessage()))));
+            throw new AudioCalibrationException("Noise calibration failed: " + e.getMessage(), e);
         }
 
         if (samples.isEmpty()) {
             log.warn("No noise samples collected");
-            return DEFAULT_RMS_THRESHOLD_LOW;
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationNoAudio")));
+            throw new AudioCalibrationException("No noise samples collected");
         }
 
         Collections.sort(samples);
@@ -160,8 +183,8 @@ public class AudioCalibrator {
 
         if (noiseFloor > MAX_NOISE_AVG) {
             log.warn("High noise floor detected ({}); consider quieter environment", (int) noiseFloor);
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationNoisy")));
-            UiBus.publish(new AppLogEvent("High noise floor: " + (int) noiseFloor + " RMS"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationNoisy")));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationHighNoise", String.valueOf((int) noiseFloor))));
         }
         return noiseFloor;
     }
@@ -206,9 +229,8 @@ public class AudioCalibrator {
             }
         } catch (LineUnavailableException | IllegalArgumentException e) {
             log.error("Speech calibration failed: {}", e.getMessage());
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.audioCalibrationUsingDefaults")));
-            UiBus.publish(new AppLogEvent("Speech calibration failed: " + e.getMessage()));
-            return DEFAULT_RMS_THRESHOLD_HIGH;
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationSpeechFailed", String.valueOf(e.getMessage()))));
+            throw new AudioCalibrationException("Speech calibration failed: " + e.getMessage(), e);
         } finally {
             log.info("Speech calibration: {} total samples, {} speech samples, avg={}, peak={}",
                     totalSampleCount, speechSampleCount,
@@ -218,7 +240,7 @@ public class AudioCalibrator {
 
         if (speechSampleCount < totalSampleCount / 4) {
             log.warn("Insufficient speech detected ({} speech / {} total). Using noise-based fallback.", speechSampleCount, totalSampleCount);
-            UiBus.publish(new AppLogEvent("Insufficient speech during calibration."));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationInsufficientSpeech")));
             return DEFAULT_RMS_THRESHOLD_HIGH;
         }
 

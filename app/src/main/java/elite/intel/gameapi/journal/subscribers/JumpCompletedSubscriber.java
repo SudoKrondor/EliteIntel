@@ -46,6 +46,7 @@ public class JumpCompletedSubscriber {
     private final ReminderManager destinationReminderManager = ReminderManager.getInstance();
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
+    private final GlobalSettingsManager globalSettings = GlobalSettingsManager.getInstance();
     private final Status status = Status.getInstance();
 
     @Subscribe
@@ -112,13 +113,14 @@ public class JumpCompletedSubscriber {
                 sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
                 List<NavRouteDto> route = shipRoute.getOrderedRoute();
                 int remainingJump = route.size();
-                if (remainingJump > 0) {
-                    route.stream().findFirst().ifPresent(
-                            nextStop -> sb
-                                    .append(" ")
-                                    .append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()))
-                                    .append(isFuelStarClause(nextStop.getStarClass()))
-                    );
+                if (remainingJump > 0 && globalSettings.getAnnounceRemainingJumps()) {
+                    boolean announceFuel = globalSettings.getAnnounceFuelAvailable();
+                    route.stream().findFirst().ifPresent(nextStop -> {
+                        sb.append(" ").append(localizedEvent("event.route.waypoint", nextStop.getName(), nextStop.getStarClass()));
+                        if (announceFuel) {
+                            sb.append(isFuelStarClause(nextStop.getStarClass()));
+                        }
+                    });
                     sb.append(" ").append(localizedEventPlural(remainingJump, "event.route.jumpsLeft"));
                 }
             }

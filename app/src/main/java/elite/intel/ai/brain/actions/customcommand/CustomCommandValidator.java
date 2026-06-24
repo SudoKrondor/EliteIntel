@@ -1,16 +1,15 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-
 import elite.intel.ai.brain.AiActionsMap;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Utility class for validating custom command definitions. Provides methods to validate
@@ -27,9 +26,16 @@ import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryComma
  */
 public final class CustomCommandValidator {
 
-    /** Strict snake_case: lowercase letters, digits, and underscores only. */
-    static final Pattern SAFE_ID = Pattern.compile("[a-z0-9_]+");
-    static final int MIN_ACTION_KEY_LENGTH = 10;
+    /**
+     * Routing-safe key: lowercase letters and decimal digits of <em>any</em> script, plus underscore.
+     * {@code \p{Ll}} keeps cased lowercase letters (Latin {@code a-z}, Cyrillic {@code а-я}, ...),
+     * {@code \p{Lo}} keeps caseless scripts (CJK, Arabic, ...), {@code \p{Nd}} keeps decimal digits.
+     * Uppercase letters, whitespace, colons, dots and hyphens are all excluded, so a key can never
+     * break the {@code "  <key>:\n"} prompt block or carry a script the routing LLM can't echo.
+     * Keys are machine-derived from phrases via {@link CustomCommandKeyDeriver}, never hand-typed.
+     */
+    static final Pattern SAFE_ID = Pattern.compile("[\\p{Ll}\\p{Lo}\\p{Nd}_]+");
+    static final int MIN_ACTION_KEY_LENGTH = 3;
     static final int MAX_ACTION_KEY_LENGTH = 60;
 
     private static final Pattern VALID_PARAM_NAME = Pattern.compile("[A-Za-z0-9_]+");

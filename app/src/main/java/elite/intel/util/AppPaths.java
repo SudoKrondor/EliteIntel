@@ -36,6 +36,16 @@ public final class AppPaths {
         return dir.resolve(CUSTOM_COMMANDS_FILE_NAME);
     }
 
+    /**
+     * Returns the directory for durable, timestamped custom-command backups written before a
+     * destructive import replaces the current set, creating it if needed.
+     */
+    public static Path getCustomCommandsBackupDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/custom-commands/backups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
     /** Returns the directory for per-preset working copies, creating it if needed. */
     public static Path getBindingsWorkingDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/bindings");

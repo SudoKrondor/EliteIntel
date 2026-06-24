@@ -3,7 +3,6 @@ package elite.intel.ui.screen;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.journal.events.LoadGameEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
@@ -500,8 +499,8 @@ public class AiTabPanel extends JPanel {
     }
 
     @Subscribe
-    public void onLoadGame(LoadGameEvent event) {
-        SwingUtilities.invokeLater(() -> commanderBlock.setCredits(event.getCredits()));
+    public void onCreditsUpdated(CreditsUpdatedEvent event) {
+        SwingUtilities.invokeLater(() -> commanderBlock.setCredits(event.getNewBalance()));
     }
 
     /**

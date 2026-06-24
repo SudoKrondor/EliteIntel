@@ -6,6 +6,7 @@ import elite.intel.db.managers.BindingConflictManager;
 import elite.intel.db.managers.KeyBindingManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
@@ -19,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static elite.intel.util.StringUtls.humanizeBindingName;
+import static elite.intel.util.StringUtls.localizedSpeech;
 
 /**
  * The BindingsMonitor class is responsible for monitoring changes to
@@ -109,6 +111,7 @@ public class BindingsMonitor {
     }
 
     private void monitorBindings() {
+        DataDirectoryValidator.validateAndWarn(bindingsDir, DataDirectoryValidator.DirectoryKind.BINDINGS);
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             bindingsDir.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY,
                     StandardWatchEventKinds.ENTRY_CREATE);
@@ -149,7 +152,7 @@ public class BindingsMonitor {
                 boolean valid = key.reset();
                 if (!valid) {
                     log.error("Watch key no longer valid; directory may be inaccessible");
-                    GameEventBus.publish(new AiVoxResponseEvent("Error: Key bindings directory inaccessible"));
+                    GameEventBus.publish(new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsDirectoryInaccessible")));
                     break;
                 }
 
@@ -177,7 +180,7 @@ public class BindingsMonitor {
             log.error("Failed to parse key bindings from: {}",
                     currentBindsFile != null ? currentBindsFile.getName() : "null", e);
             GameEventBus.publish(
-                    new AiVoxResponseEvent("Failed to update key bindings. Plese check the bindings directory. "));
+                    new AiVoxResponseEvent(localizedSpeech("speech.warning.bindingsUpdateFailed")));
         }
     }
 

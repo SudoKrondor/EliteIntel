@@ -1,5 +1,8 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandExportImportService;
+import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.ui.render.HudBooleanCellEditor;
 import elite.intel.ui.render.HudBooleanCellRenderer;
 import elite.intel.ui.render.HudCheckBoxHeaderRenderer;
@@ -8,10 +11,6 @@ import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
-
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandExportImportService;
-import elite.intel.ui.i18n.MultiLingualTextProvider;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.Locale;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal dialog for reviewing and importing custom commands from a JSON export file.
@@ -65,9 +63,21 @@ public final class CustomCommandImportDialog extends JDialog {
      * @return the definitions selected for import, or {@code null} if the user cancelled at any step
      */
     public static List<CustomCommandDefinition> showImportFlow(Component parent, List<CustomCommandDefinition> existing) {
+        return showImportFlow(parent, existing, null);
+    }
+
+    /**
+     * As {@link #showImportFlow(Component, List)} but opens the file picker in {@code startDir} when
+     * non-null - used by "Restore from backup" to land the chooser in the backups folder.
+     */
+    public static List<CustomCommandDefinition> showImportFlow(
+            Component parent, List<CustomCommandDefinition> existing, java.nio.file.Path startDir) {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle(getText("actions.customCommands.import.title"));
         chooser.setFileFilter(new FileNameExtensionFilter("JSON (*.json)", "json"));
+        if (startDir != null && Files.isDirectory(startDir)) {
+            chooser.setCurrentDirectory(startDir.toFile());
+        }
         if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(parent)) != JFileChooser.APPROVE_OPTION) {
             return null;
         }

@@ -50,7 +50,7 @@ public class ShipTargetedEventSubscriber {
             info.append(pilotRankLocalized == null ? localizedEvent("event.target.rankUnknown") : pilotRankLocalized);
             info.append(", ");
 
-            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : legalStatus.replace("_", " "));
+            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : Ranks.getLocalizedLegalStatus(event.getLegalStatus()));
             info.append(", ");
 
             info.append(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));

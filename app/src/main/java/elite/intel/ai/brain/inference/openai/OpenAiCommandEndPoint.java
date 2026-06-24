@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameEventBus;
@@ -100,13 +101,16 @@ public class OpenAiCommandEndPoint extends CommandEndPoint implements AiCommandI
             log.debug("Ignoring onUserInput: endpoint not running");
             return;
         }
+        long entryNanos = System.nanoTime();
         if (executor == null) {
             log.warn("Executor is null; running onUserInput on caller thread");
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
         executor.submit(() -> {
             try {
+                BrainTimer.start(entryNanos);
                 processVoiceCommand(event.getUserInput());
             } catch (Exception e) {
                 log.error("Error processing user input", e);

@@ -220,9 +220,24 @@ public class StringUtls {
         return Long.parseLong(sb.substring(0, 12));
     }
 
+    /**
+     * Removes conversational filler/discourse openers the LLM tends to prepend despite the
+     * "no filler" instruction in {@link elite.intel.ai.brain.ShipPersonality}. The prompt rule
+     * only reduces frequency; this is the deterministic backstop applied to every TTS string.
+     * Locale-aware: the filler lists live in {@link TtsFillerRules}, keyed on the current
+     * session language.
+     */
+    public static String stripLeadingFillers(String input) {
+        if (input == null) return "";
+        return TtsFillerRules.stripLeading(input, SystemSession.getInstance().getLanguage());
+    }
+
     public static String sanitizeTts(String input) {
         if (input == null) return "";
-        return input
+        // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
+        // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
+        // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
+        return Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain
                 .replaceAll("~~([^~\n]*?)~~", "$1")              // ~~strikethrough~~ → plain
@@ -242,6 +257,7 @@ public class StringUtls {
                 // Join grouped digits so TTS reads "44 543" as one number instead of 44 and 543.
                 .replaceAll("(?<=\\d)[ \\u00A0\\u202F](?=\\d{3}(?:[ \\u00A0\\u202F]\\d{3})*(?!\\d))", "")
                 .replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")      // drop controls, emojis, and standalone symbols
+                .replaceAll("\\p{M}+", "")                       // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
                 .replaceAll("\\.{2,}", " ")                     // "..." → space (espeak-ng stof crash on multi-dot sequences)
                 .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
