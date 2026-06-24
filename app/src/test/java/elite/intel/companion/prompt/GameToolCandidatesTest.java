@@ -92,8 +92,8 @@ class GameToolCandidatesTest {
         GameToolCandidates c = candidates(Map.of(), Map.of(), List.of(macro("dock_routine", "dock us, take us in")));
 
         GameToolCandidates.Candidate macro = c.collect(EnumSet.of(IntelActionCategory.MACRO)).get(0);
-        assertTrue(macro.tool().description().contains("dock us, take us in"),
-                "localized phrases must be embedded in the description");
+        assertTrue(macro.tool().description().contains("Example phrases in English: dock us, take us in"),
+                "localized phrases must be embedded in the description and labeled with the resolved language");
         assertEquals("dock us, take us in", macro.tool().localizedTrainingPhrases());
         assertEquals("dock us, take us in", macro.phraseKey());
     }
@@ -106,6 +106,9 @@ class GameToolCandidatesTest {
         GameToolCandidates.Candidate only = c.collect(EnumSet.of(IntelActionCategory.ACTION)).get(0);
         assertEquals("made_up_action", only.phraseKey());
         assertTrue(only.tool().localizedTrainingPhrases().isEmpty());
-        assertFalse(only.tool().description().contains("Example commander phrases"));
+        assertFalse(only.tool().description().contains("Example phrases"));
+        // No synthetic "Game action <id>" base: with no phrases the description is empty, not a name restatement.
+        assertTrue(only.tool().description().isEmpty());
+        assertFalse(only.tool().description().contains("Game action"));
     }
 }

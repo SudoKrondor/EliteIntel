@@ -107,7 +107,9 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         for (LlmToolDefinition tool : tools) {
             JsonObject function = new JsonObject();
             function.addProperty("name", tool.name());
-            function.addProperty("description", tool.description());
+            if (tool.description() != null && !tool.description().isBlank()) {
+                function.addProperty("description", tool.description()); // optional field: omit when empty
+            }
             function.add("parameters", renderParameterSchema(tool.parameters()));
 
             JsonObject entry = new JsonObject();

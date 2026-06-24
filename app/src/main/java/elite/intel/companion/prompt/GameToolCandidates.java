@@ -9,6 +9,7 @@ import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
+import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
@@ -58,6 +59,8 @@ final class GameToolCandidates {
     private final List<CustomCommandDefinition> macros;
     private final Status status;
     private final Language language;
+    /** English exonym of {@link #language} (e.g. "English", "Russian"), naming the example-phrase language. */
+    private final String languageName;
 
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */
     GameToolCandidates() {
@@ -79,6 +82,7 @@ final class GameToolCandidates {
         this.macros = macros;
         this.status = status;
         this.language = language;
+        this.languageName = PromptLocalizations.rulesFor(language).languageName();
     }
 
     /** Visible game tools in the allowed categories, ordered commands, then queries, then macros. */
@@ -104,7 +108,10 @@ final class GameToolCandidates {
             }
             boolean hasPhrases = AiActionAliasTextProvider.hasKey(language, id);
             String phraseGroup = hasPhrases ? AiActionAliasTextProvider.getText(language, id) : "";
-            String description = describe("Game action \"" + id + "\".", phraseGroup);
+            // The tool name already identifies the action; the description carries only the localized example
+            // phrases (when any). A synthetic "Game action <id>" base would just restate the name and, on an
+            // empty parameter schema, mislead the model into fabricating an argument.
+            String description = examplePhrases(phraseGroup);
             out.add(new Candidate(id, hasPhrases ? phraseGroup : id,
                     new LlmToolDefinition(id, description, phraseGroup, action.parameters())));
         }
@@ -125,11 +132,14 @@ final class GameToolCandidates {
         }
     }
 
-    /** Appends the localized example phrases to an English base description when present (§10.3 hard rule). */
-    private static String describe(String base, String phraseGroup) {
-        if (phraseGroup.isBlank()) {
-            return base;
-        }
-        return base + " Example commander phrases (current language): " + phraseGroup + ".";
+    /** Appends the localized example phrases to a base description when present (§10.3 hard rule). */
+    private String describe(String base, String phraseGroup) {
+        String phrases = examplePhrases(phraseGroup);
+        return phrases.isEmpty() ? base : base + " " + phrases;
+    }
+
+    /** The localized example-phrases sentence embedded into a tool description (§10.3), or empty when none. */
+    private String examplePhrases(String phraseGroup) {
+        return phraseGroup.isBlank() ? "" : "Example phrases in " + languageName + ": " + phraseGroup + ".";
     }
 }
