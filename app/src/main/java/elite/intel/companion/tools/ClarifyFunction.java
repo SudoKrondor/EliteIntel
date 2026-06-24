@@ -33,8 +33,8 @@ public final class ClarifyFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Ask the commander a short clarifying question and wait for their reply before acting. Use only when their intent is genuinely ambiguous; unlike speak, this expects an answer to continue the exchange.";
     }
 
     @Override

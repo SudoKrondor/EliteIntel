@@ -23,8 +23,8 @@ public final class NothingToDoFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "End this turn because there is nothing more to say and nothing to do. This is the explicit way to finish a turn cleanly; returning no function call at all is an error, not this. To merely stay silent while still acting, simply do not call speak.";
     }
 
     @Override

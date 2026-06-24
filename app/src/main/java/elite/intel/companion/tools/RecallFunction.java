@@ -37,8 +37,8 @@ public final class RecallFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Load stored memory to answer from what you already know. Call this before answering, or before saying you don't know, whenever the commander asks about something they told you or that you remembered. scope=llm_memory returns all remembered facts; scope=topic_memory returns entries for one topic (topic required, query optional).";
     }
 
     @Override

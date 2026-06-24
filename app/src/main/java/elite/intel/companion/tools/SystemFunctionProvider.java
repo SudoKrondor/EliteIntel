@@ -10,10 +10,10 @@ import java.util.List;
  * Provides the native tool specs for the system functions available to a thought, selected by source
  * via {@link SystemFunctionRegistry}. System functions are always present in the prompt.
  * <p>
- * Each {@link SystemFunction} self-describes its id and parameter schema; this provider only resolves
- * the model-facing description (English, via {@link CompanionFunctionTextProvider}) and packages the
- * result as a provider-neutral {@link LlmToolDefinition}. System functions carry no training phrases
- * (the commander never triggers them by voice).
+ * Each {@link SystemFunction} self-describes its id, parameter schema and English model-facing
+ * {@code llmDescription()}; this provider only packages the result as a provider-neutral
+ * {@link LlmToolDefinition}. System functions carry no training phrases (the commander never triggers
+ * them by voice).
  */
 public final class SystemFunctionProvider {
 
@@ -26,17 +26,15 @@ public final class SystemFunctionProvider {
     private static final List<String> LEAD_ORDER = List.of(SpeakFunction.ID, NothingToDoFunction.ID);
 
     private final SystemFunctionRegistry registry;
-    private final CompanionFunctionTextProvider descriptions;
 
-    /** Production constructor: the shared registry and the English description owner. */
+    /** Production constructor: the shared registry (each function self-describes its English description). */
     public SystemFunctionProvider() {
-        this(SystemFunctionRegistry.getInstance(), new CompanionFunctionTextProvider());
+        this(SystemFunctionRegistry.getInstance());
     }
 
     /** Injectable constructor for tests. */
-    SystemFunctionProvider(SystemFunctionRegistry registry, CompanionFunctionTextProvider descriptions) {
+    SystemFunctionProvider(SystemFunctionRegistry registry) {
         this.registry = registry;
-        this.descriptions = descriptions;
     }
 
     /** Returns the system function tool specs available to the given source. */
@@ -50,7 +48,7 @@ public final class SystemFunctionProvider {
                         .thenComparing(SystemFunction::id))
                 .map(function -> new LlmToolDefinition(
                         function.id(),
-                        descriptions.describe(function.descriptionKey()),
+                        function.llmDescription(),
                         "",
                         function.parameters()))
                 .toList();

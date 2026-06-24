@@ -31,8 +31,8 @@ public final class ChangeVerbosityFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Change how talkative you are by switching the verbosity mode. Use this when the commander asks you to be quieter or more talkative.";
     }
 
     @Override

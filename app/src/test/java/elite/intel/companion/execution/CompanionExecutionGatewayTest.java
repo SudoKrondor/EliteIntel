@@ -54,7 +54,6 @@ class CompanionExecutionGatewayTest {
     private static SystemFunction systemFunction(String id, JsonObject payload) {
         return new SystemFunction() {
             @Override public String id() { return id; }
-            @Override public String descriptionKey() { return id; }
             @Override public java.util.Set<ThoughtSource> sources() { return EnumSet.of(ThoughtSource.COMMANDER); }
             @Override public JsonObject handle(String action, JsonObject params, String text) { return payload; }
         };

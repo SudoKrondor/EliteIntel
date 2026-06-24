@@ -29,8 +29,8 @@ public final class FindActionFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Search the full catalog for a ship action or information query matching a description. Use this when what the commander wants, an action or a piece of information, is not among the functions offered this turn (only a relevant subset is offered each turn).";
     }
 
     @Override

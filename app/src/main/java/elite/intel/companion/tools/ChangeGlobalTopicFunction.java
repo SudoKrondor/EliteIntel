@@ -35,8 +35,8 @@ public final class ChangeGlobalTopicFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Switch the global conversation topic to a different one, chosen from the listed valid topics. Call this only when this turn actually moves the conversation to a topic different from the current topic shown in the current input; otherwise leave the topic unchanged.";
     }
 
     @Override

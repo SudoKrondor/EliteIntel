@@ -16,8 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Verifies the provider turns registered system functions into provider-neutral tool definitions:
  * correct id set per source, a resolved (non-blank) English description for every function, no training
- * phrases, and valid parameter specs. Building the full COMMANDER set also proves every function's
- * descriptionKey resolves (otherwise {@link CompanionFunctionTextProvider} throws).
+ * phrases, and valid parameter specs. Building the full COMMANDER set also proves every function
+ * declares a non-blank English {@code llmDescription()}.
  */
 class SystemFunctionProviderTest {
 

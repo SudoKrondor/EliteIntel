@@ -28,8 +28,8 @@ public final class RememberFunction implements SystemFunction {
     }
 
     @Override
-    public String descriptionKey() {
-        return ID;
+    public String llmDescription() {
+        return "Save a short fact (maximum " + CompanionMemoryLimits.LLM_MEMORY_MAX_CONTENT_LENGTH + " characters) to long-lived memory for later recall. Use this when the commander tells you something worth keeping: a preference, a name, a value, or an instruction.";
     }
 
     @Override
