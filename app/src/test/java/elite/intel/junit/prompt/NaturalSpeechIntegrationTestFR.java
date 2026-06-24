@@ -1628,9 +1628,10 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> fighterOpenOrders() {
         return Stream.of(
-                "ordonne feu à volonté",
                 "chasseur feu à volonté",
-                "active le tire à volonté"
+                "chasseur feu à volonté",
+                "active le tire à volonté",
+                "chasseur mode agressif"
         );
     }
 
