@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A single serialized execution lane for one thought source: a worker thread draining a deque so at most
@@ -27,6 +28,12 @@ final class ThoughtLane {
     private volatile Thought live;
     /** When the live thought started (epoch millis), or 0 when the lane is idle; read by the watchdog. */
     private volatile long liveStartMillis;
+    /**
+     * Submitted-but-not-finished thoughts (queued plus the live one). Incremented synchronously at submit,
+     * before the worker can touch the queue, and decremented only after the thought fully completes - so
+     * {@link #isIdle()} never reports a transient idle in the {@code take()} -> {@code live=} start window.
+     */
+    private final AtomicInteger pending = new AtomicInteger();
 
     ThoughtLane(String name) {
         worker = new Thread(this::drain, name);
@@ -36,11 +43,13 @@ final class ThoughtLane {
 
     /** Queues a normal thought at the tail. */
     void submit(Thought thought) {
+        pending.incrementAndGet(); // count it busy before the worker can dequeue it
         queue.offerLast(wrap(thought));
     }
 
     /** Queues an urgent thought at the head, ahead of any already-queued normal thought. */
     void submitFirst(Thought thought) {
+        pending.incrementAndGet(); // count it busy before the worker can dequeue it
         queue.offerFirst(wrap(thought));
     }
 
@@ -58,9 +67,9 @@ final class ThoughtLane {
         return start != 0 && System.currentTimeMillis() - start > millis;
     }
 
-    /** Whether the lane has no live thought and an empty queue (a turn-boundary signal). */
+    /** Whether the lane has no submitted work left (queued or live) - a race-free turn-boundary signal. */
     boolean isIdle() {
-        return live == null && queue.isEmpty();
+        return pending.get() == 0;
     }
 
     /** Graceful stop: drain queued thoughts and finish the live one, forcing interrupt only if it hangs. */
@@ -85,6 +94,7 @@ final class ThoughtLane {
                 long elapsed = System.currentTimeMillis() - liveStartMillis;
                 live = null;
                 liveStartMillis = 0;
+                pending.decrementAndGet(); // mark idle only after the thought has fully finished
                 log.info("Lane {}: {} thought finished in {} ms", worker.getName(), thought.source(), elapsed);
             }
         };
