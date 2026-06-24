@@ -1,26 +1,20 @@
 package elite.intel.ui.screen;
 
-import elite.intel.ui.dialog.CommandDetailsDialog;
-import elite.intel.ui.dialog.CustomCommandEditorDialog;
-import elite.intel.ui.dialog.CustomCommandExportDialog;
-import elite.intel.ui.dialog.CustomCommandImportDialog;
-import elite.intel.ui.dialog.CustomCommandStepEditorDialog;
+import elite.intel.ai.brain.actions.catalog.CommandCatalog;
+import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
+import elite.intel.ai.brain.actions.customcommand.*;
+import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.ui.dialog.*;
 import elite.intel.ui.render.HudCommandNameCellRenderer;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.HudSearchToolbar;
 import elite.intel.ui.widget.HudTable;
-
-import elite.intel.ai.brain.actions.catalog.CommandCatalog;
-import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
-import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRepository;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
-import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.util.AppPaths;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -29,13 +23,14 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,6 +41,13 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * registry.
  */
 public class CustomCommandsTabPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(CustomCommandsTabPanel.class);
+    /**
+     * How many timestamped pre-import backups to retain; older ones are pruned.
+     */
+    private static final int MAX_BACKUPS = 10;
+    private static final DateTimeFormatter BACKUP_STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
 
     private final CommandCatalog commandCatalog = new CommandCatalog();
     private final CustomCommandRepository customCommandRepository = new CustomCommandRepository();
@@ -120,6 +122,7 @@ public class CustomCommandsTabPanel extends JPanel {
 
     private JPanel actionPanel() {
         JPanel panel = AppTheme.transparentPanel(new FlowLayout(FlowLayout.RIGHT, HudPalette.HUD_GAP, 0));
+        panel.add(secondaryButton("actions.customCommands.action.restore", this::restoreFromBackup));
         panel.add(secondaryButton("actions.customCommands.action.import", this::importCustomCommands));
         panel.add(secondaryButton("actions.customCommands.action.export", this::exportCustomCommands));
         panel.add(primaryButton("actions.customCommands.action.new", this::newCustomCommand));
@@ -226,25 +229,135 @@ public class CustomCommandsTabPanel extends JPanel {
     }
 
     private void importCustomCommands() {
+        importFrom(null);
+    }
+
+    /**
+     * Restores a previously backed-up set: the import flow with the file picker landed in the backups folder.
+     */
+    private void restoreFromBackup() {
+        Path startDir = null;
+        try {
+            startDir = AppPaths.getCustomCommandsBackupDir();
+        } catch (IOException e) {
+            log.warn("Could not resolve custom command backups folder for restore", e);
+        }
+        importFrom(startDir);
+    }
+
+    /**
+     * Imports a custom command set, <em>replacing</em> the current one (not merging). The current set
+     * is written to a durable timestamped backup first so a regretted import can be undone via
+     * "Restore from backup". {@code startDir} optionally lands the file picker in a specific folder.
+     */
+    private void importFrom(Path startDir) {
         List<CustomCommandDefinition> existing = CustomCommandRegistry.getInstance().getCustomCommands();
-        List<CustomCommandDefinition> toImport = CustomCommandImportDialog.showImportFlow(this, existing);
+        // Replace semantics: the chosen file becomes the whole set, so per-command conflicts against
+        // the existing set are irrelevant - pass no existing-set for conflict classification.
+        List<CustomCommandDefinition> toImport = CustomCommandImportDialog.showImportFlow(this, List.of(), startDir);
         if (toImport == null || toImport.isEmpty()) {
             return;
         }
+        if (!confirmReplace(existing.size(), toImport.size())) {
+            return;
+        }
+        Path backup = backupCurrentSet(existing);
+        persistAndRefresh(toImport);
+        showImportSuccess(toImport.size(), backup);
+    }
 
-        // Overwrite existing commands that share an actionKey with an imported command
-        Set<String> importKeys = toImport.stream()
-                .map(d -> d.getActionKey().toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-        List<CustomCommandDefinition> merged = new ArrayList<>(existing);
-        merged.removeIf(e -> importKeys.contains(e.getActionKey().toLowerCase(Locale.ROOT)));
-        merged.addAll(toImport);
-
-        persistAndRefresh(merged);
-        JOptionPane.showMessageDialog(this,
-                getText("actions.customCommands.import.success", toImport.size()),
+    /**
+     * Confirms a destructive replace, stating the counts. Skips the prompt when there is nothing to
+     * lose (no existing commands).
+     */
+    private boolean confirmReplace(int currentCount, int importCount) {
+        if (currentCount == 0) {
+            return true;
+        }
+        int choice = JOptionPane.showConfirmDialog(
+                this,
+                getText("actions.customCommands.import.replaceConfirm", currentCount, importCount),
                 getText("actions.customCommands.import.title"),
-                JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+        return choice == JOptionPane.OK_OPTION;
+    }
+
+    /**
+     * Writes a durable, timestamped copy of {@code current} to the backups folder and prunes old ones.
+     * Returns the backup file, or {@code null} when there was nothing to back up or the write failed
+     * (import still proceeds - the backup is best-effort safety, not a hard dependency).
+     */
+    private Path backupCurrentSet(List<CustomCommandDefinition> current) {
+        if (current == null || current.isEmpty()) {
+            return null;
+        }
+        try {
+            Path dir = AppPaths.getCustomCommandsBackupDir();
+            Path file = dir.resolve("custom_commands_" + LocalDateTime.now().format(BACKUP_STAMP) + ".json");
+            Files.writeString(file, CustomCommandExportImportService.toJson(current), StandardCharsets.UTF_8);
+            pruneBackups(dir);
+            log.info("Backed up {} custom command(s) to {} before import", current.size(), file);
+            return file;
+        } catch (Exception e) {
+            log.warn("Could not back up custom commands before import - proceeding anyway: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Keeps only the newest {@link #MAX_BACKUPS} backups (timestamped names sort chronologically).
+     */
+    private void pruneBackups(Path dir) throws IOException {
+        try (var stream = Files.list(dir)) {
+            List<Path> backups = stream
+                    .filter(p -> {
+                        String name = p.getFileName().toString();
+                        return name.startsWith("custom_commands_") && name.endsWith(".json");
+                    })
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .collect(Collectors.toList());
+            for (int i = 0; i < backups.size() - MAX_BACKUPS; i++) {
+                Files.deleteIfExists(backups.get(i));
+            }
+        }
+    }
+
+    private void showImportSuccess(int count, Path backup) {
+        if (backup == null) {
+            JOptionPane.showMessageDialog(this,
+                    getText("actions.customCommands.import.success", count),
+                    getText("actions.customCommands.import.title"),
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        Object[] options = {
+                getText("button.ok"),
+                getText("actions.customCommands.backup.openFolder")
+        };
+        int choice = JOptionPane.showOptionDialog(
+                this,
+                getText("actions.customCommands.import.successBackup", count),
+                getText("actions.customCommands.import.title"),
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,
+                options,
+                options[0]);
+        if (choice == 1) {
+            openBackupsFolder();
+        }
+    }
+
+    private void openBackupsFolder() {
+        try {
+            Path dir = AppPaths.getCustomCommandsBackupDir();
+            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
+                Desktop.getDesktop().open(dir.toFile());
+            }
+        } catch (Exception e) {
+            log.warn("Could not open custom command backups folder", e);
+        }
     }
 
     private void newCustomCommand() {
