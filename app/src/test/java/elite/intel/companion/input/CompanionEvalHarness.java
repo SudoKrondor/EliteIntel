@@ -249,6 +249,17 @@ public final class CompanionEvalHarness {
         return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
     }
 
+    /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
+    public List<String> recallResult() {
+        List<Executed> recalls = callsNamed("search_in_memory");
+        if (recalls.isEmpty() || !recalls.get(0).result().has("items")) {
+            return List.of();
+        }
+        List<String> items = new ArrayList<>();
+        recalls.get(0).result().getAsJsonArray("items").forEach(e -> items.add(e.getAsString()));
+        return items;
+    }
+
     private static String str(JsonObject o, String key) {
         return o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : "";
     }

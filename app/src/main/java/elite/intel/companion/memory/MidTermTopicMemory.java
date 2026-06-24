@@ -48,17 +48,13 @@ class MidTermTopicMemory {
         return matched;
     }
 
-    /** Entries across all topics whose content contains the (lower-cased) query; blank query matches all. */
-    List<MemoryEntry> matchingAcrossTopics(String queryLower) {
-        List<MemoryEntry> matched = new ArrayList<>();
+    /** Every entry across all topics; the gateway's unified search does the query matching. */
+    List<MemoryEntry> allEntries() {
+        List<MemoryEntry> all = new ArrayList<>();
         for (List<MemoryEntry> entries : byTopic.values()) {
-            for (MemoryEntry entry : entries) {
-                if (queryLower.isEmpty() || entry.content().toLowerCase(Locale.ROOT).contains(queryLower)) {
-                    matched.add(entry);
-                }
-            }
+            all.addAll(entries);
         }
-        return matched;
+        return all;
     }
 
     /** Topics that currently hold entries (for the prompt topic-memory index). */

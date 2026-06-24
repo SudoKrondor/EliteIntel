@@ -34,15 +34,9 @@ final class LlmMemory {
         return contents;
     }
 
-    /** Items whose content contains the (lower-cased) query; a blank query matches all. */
-    List<Item> matching(String queryLower) {
-        List<Item> matched = new ArrayList<>();
-        for (Item item : items) {
-            if (queryLower.isEmpty() || item.content().toLowerCase(Locale.ROOT).contains(queryLower)) {
-                matched.add(item);
-            }
-        }
-        return matched;
+    /** Every item (content + write time), oldest-to-newest; the gateway's unified search does the matching. */
+    List<Item> allItems() {
+        return List.copyOf(items);
     }
 
     /**

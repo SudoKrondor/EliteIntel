@@ -1,12 +1,15 @@
 package elite.intel.companion.memory;
 
+import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Default {@link MemoryGateway} implementation. Composes the four session memory areas
@@ -67,15 +70,20 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public List<String> recallMatching(String query, int limit) {
-        String q = query == null ? "" : query.strip().toLowerCase(Locale.ROOT);
-        // One unified search: mid-term across all topics + the conscious llm_memory facts, merged and
-        // returned newest-first so the model never has to choose a scope or topic.
+        // Unified search across mid-term (all topics) + conscious llm_memory, returned newest-first. Matching
+        // is word-overlap (does the entry share a meaningful word with the query), NOT a contiguous substring,
+        // so the model's paraphrased or whole-question query still finds the stored fact.
+        Set<String> queryTokens = tokens(query);
         List<TimedHit> hits = new ArrayList<>();
-        for (MemoryEntry entry : midTerm.matchingAcrossTopics(q)) {
-            hits.add(new TimedHit(entry.timestamp(), entry.content()));
+        for (MemoryEntry entry : midTerm.allEntries()) {
+            if (matches(queryTokens, entry.content())) {
+                hits.add(new TimedHit(entry.timestamp(), entry.content()));
+            }
         }
-        for (LlmMemory.Item item : llmMemory.matching(q)) {
-            hits.add(new TimedHit(item.at(), item.content()));
+        for (LlmMemory.Item item : llmMemory.allItems()) {
+            if (matches(queryTokens, item.content())) {
+                hits.add(new TimedHit(item.at(), item.content()));
+            }
         }
         hits.sort(Comparator.comparing(TimedHit::at).reversed());
         return hits.stream().limit(Math.max(0, limit)).map(TimedHit::content).distinct().toList();
@@ -83,6 +91,46 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     /** A matched memory entry with its write time, for merging the two memory areas by recency. */
     private record TimedHit(java.time.Instant at, String content) {}
+
+    /** An entry matches when it shares at least one meaningful word with the query; a query with no meaningful
+     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. */
+    private static boolean matches(Set<String> queryTokens, String content) {
+        if (queryTokens.isEmpty()) {
+            return true;
+        }
+        Set<String> contentTokens = tokens(content);
+        for (String q : queryTokens) {
+            for (String c : contentTokens) {
+                if (tokenMatch(q, c)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Two word tokens match when equal, or - a light stemming approximation - one is a prefix of the other and
+     *  both are at least 4 characters, so "prefer"/"preferred", "jump"/"jumps", "rack"/"racks" still match. */
+    private static boolean tokenMatch(String a, String b) {
+        if (a.equals(b)) {
+            return true;
+        }
+        return a.length() >= 4 && b.length() >= 4 && (a.startsWith(b) || b.startsWith(a));
+    }
+
+    /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */
+    private static Set<String> tokens(String text) {
+        if (text == null) {
+            return Set.of();
+        }
+        Set<String> set = new HashSet<>();
+        for (String word : text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+")) {
+            if (word.length() > 2 && !InputNormalizerLocalizations.stopWords().contains(word)) {
+                set.add(word);
+            }
+        }
+        return set;
+    }
 
     @Override
     public List<String> readLlmMemory() {
