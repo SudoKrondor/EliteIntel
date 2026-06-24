@@ -180,6 +180,11 @@ public final class CompanionEvalHarness {
         return List.copyOf(turnCalls);
     }
 
+    /** The tool names executed this turn, in execution order (for tracing the full turn flow). */
+    public List<String> turnToolNames() {
+        return turnCalls.stream().map(Executed::tool).toList();
+    }
+
     /** Executed tool-calls of the given name this turn. */
     public List<Executed> callsNamed(String tool) {
         return turnCalls.stream().filter(c -> c.tool().equals(tool)).toList();

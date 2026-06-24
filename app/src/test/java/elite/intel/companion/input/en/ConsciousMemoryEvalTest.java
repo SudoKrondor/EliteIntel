@@ -89,6 +89,7 @@ class ConsciousMemoryEvalTest {
             report.add(String.format("%-10s | %-26s | %-10s | %-6s | %s",
                     p.keyword(), tier, recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
             report.add("    search: query='" + h.recalledQuery() + "' -> " + h.recallResult());
+            report.add("    calls : " + h.turnToolNames());
         }
 
         StringBuilder block = new StringBuilder("\n======== CONSCIOUS MEMORY / llm_memory (theme 5) ========\n");
