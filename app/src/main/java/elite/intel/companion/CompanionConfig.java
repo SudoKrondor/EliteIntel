@@ -1,21 +1,25 @@
 package elite.intel.companion;
 
+import elite.intel.session.SystemSession;
+
 /**
- * The single place for the companion's currently-hardcoded settings, pending real GUI/DB-backed values.
- * Centralized so the placeholders can later be swapped for persisted configuration in one spot.
+ * The single place for the companion's settings. The companion-mode toggle is DB-backed (parallel to
+ * conversation mode) and read through {@link SystemSession}; the confirmation code word is still a
+ * hardcoded placeholder pending its own GUI/DB-backed value.
  */
 public final class CompanionConfig {
 
-    // TODO: back these by GUI/DB settings.
-    private static final boolean COMPANION_MODE_ON = false;
+    // TODO: back the confirmation code word by GUI/DB settings.
     private static final String CONFIRMATION_CODE_WORD = "password";
 
     private CompanionConfig() {
     }
 
-    /** Whether companion mode replaces the legacy command mode. */
+    /**
+     * Whether companion mode replaces the legacy command mode. DB-backed (defaults off).
+     */
     public static boolean companionModeOn() {
-        return COMPANION_MODE_ON;
+        return SystemSession.getInstance().companionModeOn();
     }
 
     /** The spoken code word that confirms a frozen dangerous action (§2.13). */

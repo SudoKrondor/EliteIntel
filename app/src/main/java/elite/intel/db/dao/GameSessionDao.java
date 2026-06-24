@@ -20,7 +20,7 @@ public interface GameSessionDao {
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              encryptedEDSSMKey, speechSpeed, localLlmCommandModel, localLlmQueryModel,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
-                                                             localLlmProvider, localLlmAddress, conversationModeOn,
+                                                             localLlmProvider, localLlmAddress, conversationModeOn, companionModeOn,
                                                              ollamaAddress, ollamaCommandModel, ollamaQueryModel,
                                                              lmStudioAddress, lmStudioCommandModel, lmStudioQueryModel,
                                                              aiLanguage,
@@ -34,7 +34,7 @@ public interface GameSessionDao {
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :encryptedEDSSMKey,  :speechSpeed, :localLlmCommandModel, :localLlmQueryModel,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
-                                                      :localLlmProvider, :localLlmAddress, :conversationModeOn,
+                                                      :localLlmProvider, :localLlmAddress, :conversationModeOn, :companionModeOn,
                                                       :ollamaAddress, :ollamaCommandModel, :ollamaQueryModel,
                                                       :lmStudioAddress, :lmStudioCommandModel, :lmStudioQueryModel,
                                                       :aiLanguage,
@@ -87,6 +87,7 @@ public interface GameSessionDao {
             session.setLocalLlmProvider(rs.getString("localLlmProvider"));
             session.setLocalLlmAddress(rs.getString("localLlmAddress"));
             session.setConversationModeOn(rs.getBoolean("conversationModeOn"));
+            session.setCompanionModeOn(rs.getBoolean("companionModeOn"));
             session.setOllamaAddress(rs.getString("ollamaAddress"));
             session.setOllamaCommandModel(rs.getString("ollamaCommandModel"));
             session.setOllamaQueryModel(rs.getString("ollamaQueryModel"));
@@ -138,6 +139,7 @@ public interface GameSessionDao {
         private String localLlmProvider;
         private String localLlmAddress;
         private boolean conversationModeOn;
+        private boolean companionModeOn;
         private String ollamaAddress;
         private String ollamaCommandModel;
         private String ollamaQueryModel;
@@ -363,6 +365,14 @@ public interface GameSessionDao {
 
         public void setConversationModeOn(boolean conversationModeOn) {
             this.conversationModeOn = conversationModeOn;
+        }
+
+        public boolean isCompanionModeOn() {
+            return companionModeOn;
+        }
+
+        public void setCompanionModeOn(boolean companionModeOn) {
+            this.companionModeOn = companionModeOn;
         }
 
         public String getOllamaAddress() {

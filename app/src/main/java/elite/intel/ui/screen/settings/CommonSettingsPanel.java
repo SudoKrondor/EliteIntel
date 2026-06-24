@@ -35,6 +35,7 @@ public class CommonSettingsPanel extends JPanel {
 
     private HudComboBox<LanguageOption> languageCombo;
     private JCheckBox conversationModeCheckBox;
+    private JCheckBox companionModeCheckBox;
     private JTextField journalDirField;
 
     public CommonSettingsPanel() {
@@ -84,6 +85,19 @@ public class CommonSettingsPanel extends JPanel {
         cg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
         body.add(conversationModeCheckBox, cg);
 
+        // Companion mode toggle, right column under conversation mode (row 1, col 3).
+        companionModeCheckBox = makeCheckBox(getText("player.companionMode"), false);
+        companionModeCheckBox.addActionListener(e ->
+                systemSession.setCompanionMode(companionModeCheckBox.isSelected()));
+        GridBagConstraints mg = baseGbc();
+        mg.gridx = 3;
+        mg.gridy = 1;
+        mg.weightx = 0;
+        mg.fill = GridBagConstraints.NONE;
+        mg.anchor = GridBagConstraints.WEST;
+        mg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
+        body.add(companionModeCheckBox, mg);
+
         // Row 1 - journal directory under language (label + field + compact picker).
         GridBagConstraints jg = baseGbc();
         jg.gridy = 1;
@@ -124,6 +138,7 @@ public class CommonSettingsPanel extends JPanel {
     public void initData() {
         selectLanguage(systemSession.getLanguage());
         conversationModeCheckBox.setSelected(systemSession.conversationalModeOn());
+        companionModeCheckBox.setSelected(systemSession.companionModeOn());
         journalDirField.setText(playerSession.getJournalPath().toString());
     }
 

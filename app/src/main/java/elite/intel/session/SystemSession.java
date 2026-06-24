@@ -442,6 +442,19 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
 
+    public void setCompanionMode(boolean b) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setCompanionModeOn(b);
+            dao.save(session);
+            return Void.TYPE;
+        });
+    }
+
+    public boolean companionModeOn() {
+        return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
+    }
+
     public boolean isPushToTalkEnabled() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().isPushToTalkEnabled());
     }

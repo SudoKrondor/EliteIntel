@@ -286,6 +286,19 @@ public class AppController implements Runnable {
     private void initServices() {
         stopServices();
         this.services.clear();
+        this.services.putAll(buildServices(CompanionConfig.companionModeOn()));
+    }
+
+    /**
+     * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
+     * nothing is started here) so the registration can be verified in tests without standing up the
+     * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
+     * is registered per {@code companionModeOn} (§0).
+     */
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn) {
+        LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+        services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
+        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
@@ -299,7 +312,7 @@ public class AppController implements Runnable {
             }
         }));
         // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
-        if (CompanionConfig.companionModeOn()) {
+        if (companionModeOn) {
             services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
         } else {
             services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
@@ -307,9 +320,10 @@ public class AppController implements Runnable {
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
+        return services;
     }
 
-    private static class ServiceHolder {
+    static class ServiceHolder {
         private final Supplier<? extends ManagedService> creator;
         private ManagedService instance;
 
@@ -335,7 +349,7 @@ public class AppController implements Runnable {
         }
     }
 
-    private enum ServiceType {
+    enum ServiceType {
         JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }

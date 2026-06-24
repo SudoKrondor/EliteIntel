@@ -5,12 +5,15 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The centralized hardcoded settings and the confirmation code-word matcher. */
+/**
+ * The companion-mode toggle (DB-backed) and the confirmation code-word matcher.
+ */
 class CompanionConfigTest {
 
     @Test
-    void companionModeIsHardcodedOn() {
-        assertTrue(CompanionConfig.companionModeOn());
+    void companionModeDefaultsOff() {
+        // DB-backed flag (parallel to conversation mode); the seeded game_session row defaults it off.
+        assertFalse(CompanionConfig.companionModeOn());
     }
 
     @Test
