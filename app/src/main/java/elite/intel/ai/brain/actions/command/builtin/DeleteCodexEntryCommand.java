@@ -1,11 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.CodexEntryManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -30,14 +29,13 @@ public final class DeleteCodexEntryCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         TargetLocation tracking = playerSession.getTracking();
-        if (tracking != null) {
-            codexEntryManager.deleteTrackedEntry(tracking);
-            playerSession.setTracking(null);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.codex.deleted")));
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.codex.noTracking")));
+        if (tracking == null) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.codex.noTracking"));
         }
+        codexEntryManager.deleteTrackedEntry(tracking);
+        playerSession.setTracking(null);
+        return CommandOutcome.critical(StringUtls.localizedLlm("handler.codex.deleted"));
     }
 }

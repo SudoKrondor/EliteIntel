@@ -40,6 +40,10 @@ public class AnalyzeDistanceFromTheBubbleQueryCommand extends BaseQueryAnalyzer 
         int hours = (int) (totalMinutes / 60);
         int minutes = (int) (totalMinutes % 60);
 
-        return process(StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes));
+        return process(
+                StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes),
+                new DataDto(distLy, fuelTons, hours, minutes));
     }
+
+    record DataDto(int distanceLy, int carrierFuelTons, int travelHours, int travelMinutes) {}
 }

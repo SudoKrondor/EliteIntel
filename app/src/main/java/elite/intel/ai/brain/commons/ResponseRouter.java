@@ -3,6 +3,7 @@ package elite.intel.ai.brain.commons;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AIRouterInterface;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
@@ -254,13 +255,32 @@ public class ResponseRouter implements AIRouterInterface {
             try {
                 GameEventBus.publish(new HandlerDispatchedEvent(action, handler.getClass().getSimpleName(), true));
                 if (dryRun) return;
-                handler.handle(action, params, responseText);
+                speakOutcome(handler.handle(action, params, responseText));
             } catch (Exception e) {
                 GameEventBus.publish(new AiVoxResponseEvent("Error processing command for action " + action + " see logs."));
                 log.error("Command handling failed for action {}: {}", action, e.getMessage(), e);
             }
         }).start();
         log.debug("Handled command action: {}", action);
+    }
+
+    /**
+     * Renders a command's returned {@link CommandOutcome} to voice: a normal outcome to an interruptible
+     * {@link AiVoxResponseEvent}, a critical one to a {@link MissionCriticalAnnouncementEvent}. Additive
+     * and safe during the handler migration: a not-yet-migrated command still self-narrates and returns
+     * {@code null} (or an outcome with no spoken text), which speaks nothing here - no double narration.
+     */
+    private void speakOutcome(JsonObject outcome) {
+        String text = CommandOutcome.spokenText(outcome);
+        if (text.isEmpty()) {
+            return;
+        }
+        if (CommandOutcome.isCritical(outcome)) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(text));
+        } else {
+            GameEventBus.publish(new AiVoxResponseEvent(text));
+        }
+        log.info("Spoke command outcome: {}", text);
     }
 
 

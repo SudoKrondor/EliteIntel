@@ -25,7 +25,7 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInSrv()) {
@@ -40,6 +40,7 @@ public final class ToggleLightsOnOffCommand implements IntelCommand {
         if (status.isInMainShip()) {
             toggleLights(Bindings.GameCommand.BINDING_SHIP_LIGHTS_TOGGLE.getGameBinding());
         }
+        return null;
     }
 
     private void toggleLights(String binding) {

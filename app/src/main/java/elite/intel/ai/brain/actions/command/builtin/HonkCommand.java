@@ -36,7 +36,7 @@ public final class HonkCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         ShipSettingsDao.ShipSettings shipSettings = shipSettingsManager.getSettings(playerSession.getShipLoadout().getShipId());
 
         boolean isHudInCombatMode = !status.isAnalysisMode();
@@ -60,5 +60,6 @@ public final class HonkCommand implements IntelCommand {
         if (isHudInCombatMode) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
         }
+        return null;
     }
 }

@@ -24,7 +24,8 @@ public final class InterruptCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         GameEventBus.publish(new TTSInterruptEvent());
+        return null;
     }
 }

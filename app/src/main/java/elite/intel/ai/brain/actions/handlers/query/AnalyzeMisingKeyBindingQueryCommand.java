@@ -28,9 +28,12 @@ public class AnalyzeMisingKeyBindingQueryCommand extends BaseQueryAnalyzer imple
             for (KeyBinding key : missingBindings) {
                 sb.append(key.getKeyBinding()).append(", ");
             }
-            return process(StringUtls.localizedLlm("query.bindings.missing", sb.toString()));
+            List<String> names = missingBindings.stream().map(KeyBinding::getKeyBinding).toList();
+            return process(StringUtls.localizedLlm("query.bindings.missing", sb.toString()), new DataDto(names));
         } else {
             return process(StringUtls.localizedLlm("query.bindings.none"));
         }
     }
+
+    record DataDto(List<String> missingBindings) {}
 }

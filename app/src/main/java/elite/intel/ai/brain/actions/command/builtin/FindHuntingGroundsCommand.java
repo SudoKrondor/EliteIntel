@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.missions.pirates.PirateMassacreMissionSearch;
 import elite.intel.util.StringUtls;
 
@@ -33,7 +32,7 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         int range = params.get("key") == null
                 || getIntSafely(params.get("key").getAsString()) == null
                 || params.isEmpty() ? 100 : params.get("key").getAsInt();
@@ -41,23 +40,22 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
         PirateMassacreMissionSearch missionSearch = PirateMassacreMissionSearch.getInstance();
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = missionSearch.findHuntingSpotsInRange(range);
 
-        if (huntingGrounds != null) {
-            String message;
-            if (huntingGrounds.isEmpty()) {
-                message = StringUtls.localizedLlm("handler.pirate.noProviders");
-            } else {
-                String providers = huntingGrounds.size() == 1
-                        ? StringUtls.localizedLlm("handler.pirate.foundProvidersOne")
-                        : StringUtls.localizedLlm("handler.pirate.foundProvidersMany", huntingGrounds.size());
-                boolean reconRequired = huntingGrounds.stream().anyMatch(data -> !data.getTarget().isHasResSite());
-                String nav = reconRequired
-                        ? StringUtls.localizedLlm("handler.pirate.reconRequired")
-                        : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
-                message = providers + " " + nav;
-            }
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
+        if (huntingGrounds == null) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range));
         }
+        String message;
+        if (huntingGrounds.isEmpty()) {
+            message = StringUtls.localizedLlm("handler.pirate.noProviders");
+        } else {
+            String providers = huntingGrounds.size() == 1
+                    ? StringUtls.localizedLlm("handler.pirate.foundProvidersOne")
+                    : StringUtls.localizedLlm("handler.pirate.foundProvidersMany", huntingGrounds.size());
+            boolean reconRequired = huntingGrounds.stream().anyMatch(data -> !data.getTarget().isHasResSite());
+            String nav = reconRequired
+                    ? StringUtls.localizedLlm("handler.pirate.reconRequired")
+                    : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
+            message = providers + " " + nav;
+        }
+        return CommandOutcome.critical(message);
     }
 }

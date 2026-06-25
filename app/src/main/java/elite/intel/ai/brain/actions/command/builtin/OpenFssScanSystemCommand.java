@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -32,15 +31,13 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         if (status.isScoopingFuel()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.scooping")));
-            return;
+            return CommandOutcome.speak(StringUtls.localizedLlm("handler.supercruise.scooping"));
         }
 
         if (!status.isInSupercruise()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise")));
-            return;
+            return CommandOutcome.speak(StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise"));
         }
 
         String stop = BINDING_SET_SPEED_ZERO.getGameBinding();
@@ -51,5 +48,6 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
                 GameInputStep.delay(200),
                 GameInputStep.bindingTap(fssControl)
         ));
+        return null;
     }
 }

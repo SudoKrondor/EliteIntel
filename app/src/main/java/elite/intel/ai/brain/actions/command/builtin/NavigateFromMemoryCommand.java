@@ -24,8 +24,8 @@ public final class NavigateFromMemoryCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(ClipboardUtils.getClipboardText());
+        return plotter.plotRoute(ClipboardUtils.getClipboardText());
     }
 }

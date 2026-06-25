@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -42,12 +41,11 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
-            return;
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.notFound"));
         }
 
         GameEvents.CargoEvent shipCargo = playerSession.getShipCargo();
@@ -55,8 +53,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
-            return;
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops"));
         }
 
         String sourceSystem = nextStop.getTradeStopDto().getSourceSystem();
@@ -94,7 +91,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         reminderManager.setReminder(message, destinationSystem);
+        return CommandOutcome.critical(message);
     }
 }

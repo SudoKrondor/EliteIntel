@@ -29,7 +29,7 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
         Status status = Status.getInstance();
         if (status.isInMainShip() || status.isInFighter()) {
@@ -41,5 +41,6 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
         } if(status.isOnFoot()){
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_GALAXY_MAP_HUMANOID.getGameBinding())));
         }
+        return null;
     }
 }

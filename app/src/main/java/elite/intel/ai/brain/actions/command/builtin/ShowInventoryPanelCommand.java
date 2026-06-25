@@ -29,9 +29,10 @@ public final class ShowInventoryPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.INVENTORY);
         }
+        return null;
     }
 }
