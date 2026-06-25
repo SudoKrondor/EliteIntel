@@ -1,5 +1,6 @@
 package elite.intel.companion.mind;
 
+import elite.intel.companion.input.EventInputFormatter;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.model.Urgency;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -179,8 +180,8 @@ public final class ThoughtDispatcher implements ManagedService {
         }
     }
 
-    /** The current input text for an EVENT thought is the event's own JSON (non-mutating, unlike toYaml). */
+    /** The current input text for an EVENT thought is the shared prompt/memory event envelope. */
     private static String summarize(BaseEvent event) {
-        return event.toJson();
+        return EventInputFormatter.format(event);
     }
 }
