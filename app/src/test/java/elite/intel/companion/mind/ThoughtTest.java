@@ -31,6 +31,7 @@ import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
+import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -131,7 +132,7 @@ class ThoughtTest {
     void eventThoughtIsQueryOnlyAndTaggedFromEventTopic() {
         llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, BaseEvent.Importance.HIGH, ctx()).run();
 
         assertEquals(EnumSet.of(IntelActionCategory.QUERY), reducer.lastCategories,
                 "EVENT thought is offered only QUERY game tools");
@@ -139,6 +140,22 @@ class ThoughtTest {
         assertEquals(MemorySource.EVENT, input.source());
         assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
         assertTrue(speech.requests.isEmpty());
+    }
+
+    @Test
+    void normalEventThoughtRecordsMemoryWithoutEngagingLlm() {
+        // NORMAL importance: the thought records the event to memory and ends - no LLM round, no speech.
+        Thought.event(Urgency.NORMAL, "docked at station", ConversationTopic.NAVIGATION,
+                BaseEvent.Importance.NORMAL, ctx()).run();
+
+        assertTrue(llm.requests.isEmpty(), "NORMAL event must not engage the LLM");
+        assertTrue(speech.requests.isEmpty(), "NORMAL event is never spoken");
+        assertEquals(1, memory.writes.size(), "NORMAL event is recorded once");
+        MemoryEntry input = memory.writes.get(0);
+        assertEquals(MemorySource.EVENT, input.source());
+        assertEquals(ConversationTopic.NAVIGATION, input.topic());
+        assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
+        assertEquals("docked at station", input.content());
     }
 
     @Test
@@ -161,7 +178,7 @@ class ThoughtTest {
     void eventInvalidResponseRecordsUnresolvedSilently() {
         llm.scripted.add(invalid());
 
-        Thought.event(Urgency.NORMAL, "scanned by ship", ConversationTopic.COMBAT, ctx()).run();
+        Thought.event(Urgency.NORMAL, "scanned by ship", ConversationTopic.COMBAT, BaseEvent.Importance.HIGH, ctx()).run();
 
         assertEquals(ConversationTopic.UNRESOLVED_GAME_EVENT, memory.writes.get(0).topic());
         assertEquals(MemoryProcessingState.UNRESOLVED, memory.writes.get(0).processingState());
@@ -239,7 +256,7 @@ class ThoughtTest {
         state.setVerbosity(Verbosity.QUIET);
         llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, BaseEvent.Importance.HIGH, ctx()).run();
 
         assertFalse(offeredTool(SpeakFunction.ID), "QUIET non-urgent event must not be offered speak");
     }
@@ -249,7 +266,7 @@ class ThoughtTest {
         state.setVerbosity(Verbosity.CHATTY);
         llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, BaseEvent.Importance.HIGH, ctx()).run();
 
         assertTrue(offeredTool(SpeakFunction.ID), "CHATTY event may comment");
     }

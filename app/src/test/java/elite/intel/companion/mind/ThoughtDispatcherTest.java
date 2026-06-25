@@ -84,6 +84,27 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void normalEventIsRecordedWithoutEngagingLlm() {
+        // A NORMAL event short-circuits inside the thought: memory is written, the LLM is never called.
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("NORMAL event must not engage the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(failIfCalled));
+        dispatcher.start();
+        dispatcher.submitEvent(new FakeEvent("MarketSell", BaseEvent.Importance.NORMAL));
+        dispatcher.stop();
+
+        assertEquals(1, memory.writes.size());
+        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
+        assertEquals(MemoryProcessingState.PROCESSED, memory.writes.get(0).processingState());
+    }
+
+    @Test
     void commanderAndEventUseSeparateLanes() {
         ThoughtDispatcher dispatcher = dispatcher();
         dispatcher.start();
@@ -275,13 +296,20 @@ class ThoughtDispatcherTest {
 
     private static final class FakeEvent extends BaseEvent {
         private final String type;
+        private final Importance importance;
 
         FakeEvent(String type) {
+            this(type, Importance.HIGH); // default: exercise the full thinking loop
+        }
+
+        FakeEvent(String type, Importance importance) {
             super(Instant.now().toString(), Duration.ofMinutes(1), type);
             this.type = type;
+            this.importance = importance;
         }
 
         @Override public String getEventType() { return type; }
+        @Override public Importance importance() { return importance; }
         @Override public JsonObject toJsonObject() { return new JsonObject(); }
     }
 }

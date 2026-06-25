@@ -35,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Mechanical allow-list behaviour: only gameplay-taxonomy event types pass, the non-gameplay
- * {@code BaseEvent}s sharing the bus (notably {@code UserInput}) are rejected, and an accepted event is
- * routed to the dispatcher while a rejected one is dropped.
+ * Mechanical gate behaviour: only gameplay-taxonomy event types pass the allow-list, the non-gameplay
+ * {@code BaseEvent}s sharing the bus (notably {@code UserInput}) are rejected, {@code LOW}-importance
+ * events are dropped, and an accepted event is routed to the dispatcher while a rejected one is dropped.
  */
 class GameEventFilterTest {
 
@@ -58,6 +58,13 @@ class GameEventFilterTest {
         // UserInput extends BaseEvent and shares the bus; it must not spawn an EVENT thought.
         GameEventFilter filter = new GameEventFilter(new ThoughtDispatcher(null));
         assertFalse(filter.accept(event("UserInput")));
+    }
+
+    @Test
+    void lowImportanceEventIsRejected() {
+        // A mapped gameplay type still drops if its importance is LOW (the "ignore completely" tier).
+        GameEventFilter filter = new GameEventFilter(new ThoughtDispatcher(null));
+        assertFalse(filter.accept(event("FSDJump", BaseEvent.Importance.LOW)));
     }
 
     @Test
@@ -129,8 +136,13 @@ class GameEventFilterTest {
     // --- helpers ---
 
     private static BaseEvent event(String type) {
+        return event(type, BaseEvent.Importance.NORMAL); // default: passes the importance gate
+    }
+
+    private static BaseEvent event(String type, BaseEvent.Importance importance) {
         return new BaseEvent(Instant.now().toString(), Duration.ofMinutes(1), type) {
             @Override public String getEventType() { return type; }
+            @Override public Importance importance() { return importance; }
             @Override public JsonObject toJsonObject() { return new JsonObject(); }
         };
     }

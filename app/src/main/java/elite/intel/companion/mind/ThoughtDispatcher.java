@@ -71,13 +71,20 @@ public final class ThoughtDispatcher implements ManagedService {
         enqueue(commanderLane, Thought.commander(urgency, input, ctx), urgency);
     }
 
-    /** Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. */
+    /**
+     * Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. The event's
+     * {@link BaseEvent#importance()} is forwarded to the thought (a forwarded property, not an interpretation
+     * of meaning): a {@code NORMAL} event is recorded to memory without engaging the LLM, a {@code HIGH} one
+     * runs the full thinking loop (see {@code Thought#run} and COMPANION_ARCHITECTURE.md §2.2).
+     */
     public void submitEvent(BaseEvent event) {
         if (event == null) {
             return;
         }
         Urgency urgency = urgencyPolicy.forEvent(event);
-        enqueue(eventLane, Thought.event(urgency, summarize(event), EventTopicMap.topicFor(event), ctx), urgency);
+        enqueue(eventLane,
+                Thought.event(urgency, summarize(event), EventTopicMap.topicFor(event), event.importance(), ctx),
+                urgency);
     }
 
     @Override

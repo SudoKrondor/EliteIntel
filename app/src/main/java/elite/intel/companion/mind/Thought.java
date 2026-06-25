@@ -24,6 +24,7 @@ import elite.intel.companion.prompt.EventSpeechPolicy;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
@@ -75,6 +76,8 @@ public final class Thought {
     private final String currentInput;
     /** Memory tag for an EVENT thought (from the static event-type map); null for COMMANDER. */
     private final ConversationTopic eventTopic;
+    /** Importance of the originating event for an EVENT thought; null for COMMANDER. Drives the NORMAL short-circuit. */
+    private final BaseEvent.Importance importance;
     private final ThoughtContext ctx;
 
     /** Set by {@link #interrupt} from another thread; the run loop honors it at step boundaries (§2.7). */
@@ -83,11 +86,12 @@ public final class Thought {
     private volatile CompletableFuture<?> inFlight;
 
     private Thought(ThoughtSource source, Urgency urgency, String currentInput,
-                    ConversationTopic eventTopic, ThoughtContext ctx) {
+                    ConversationTopic eventTopic, BaseEvent.Importance importance, ThoughtContext ctx) {
         this.source = source;
         this.urgency = urgency;
         this.currentInput = currentInput;
         this.eventTopic = eventTopic;
+        this.importance = importance;
         this.ctx = ctx;
     }
 
@@ -96,15 +100,18 @@ public final class Thought {
      * (which a {@code change_global_topic} call may move during the thought).
      */
     public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
-        return new Thought(ThoughtSource.COMMANDER, urgency, input, null, ctx);
+        return new Thought(ThoughtSource.COMMANDER, urgency, input, null, null, ctx);
     }
 
     /**
      * Creates a thought from a filtered game event. Its memory tag is fixed at birth from the static
-     * event-type map; an EVENT thought never moves the global conversation topic.
+     * event-type map; an EVENT thought never moves the global conversation topic. The event's importance
+     * drives behaviour in {@link #run}: a {@code NORMAL} event is recorded to memory without engaging the
+     * LLM, a {@code HIGH} one runs the full thinking loop ({@code LOW} never reaches here - the filter drops it).
      */
-    public static Thought event(Urgency urgency, String summary, ConversationTopic eventTopic, ThoughtContext ctx) {
-        return new Thought(ThoughtSource.EVENT, urgency, summary, eventTopic, ctx);
+    public static Thought event(Urgency urgency, String summary, ConversationTopic eventTopic,
+                                BaseEvent.Importance importance, ThoughtContext ctx) {
+        return new Thought(ThoughtSource.EVENT, urgency, summary, eventTopic, importance, ctx);
     }
 
     /**
@@ -113,6 +120,12 @@ public final class Thought {
      * returns an unrecoverable response (§2.5/§2.6/§2.8/§5.1). Blocking: it joins on each gateway future.
      */
     public void run() {
+        // NORMAL events are recorded to memory but never engage the LLM or speak (importance taxonomy,
+        // COMPANION_ARCHITECTURE.md §2.2): write the memory entry under the event's static topic and end.
+        if (source == ThoughtSource.EVENT && importance == BaseEvent.Importance.NORMAL) {
+            recordCurrentInput();
+            return;
+        }
         boolean inputRecorded = false;
         try {
             ComposedPrompt prompt = composeInitialPrompt();

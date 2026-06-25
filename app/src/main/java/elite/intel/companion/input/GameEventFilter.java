@@ -12,10 +12,11 @@ import java.util.function.LongSupplier;
  * and forwards accepted events to the {@code ThoughtDispatcher}. It does not write memory, determine
  * urgency, call the LLM, run tools, or change topic (see COMPANION_ARCHITECTURE.md §2.2).
  * <p>
- * Two mechanical gates: an allow-list by event type ({@link EventTopicMap}) and a per-type cooldown.
- * Each accepted EVENT spawns an LLM thought, so the cooldown collapses bursts of the same high-frequency
- * type (e.g. {@code ShipTargeted}, {@code Cargo}) - the first occurrence passes immediately, repeats
- * within {@link #COOLDOWN_MILLIS} are dropped. Per-type cooldown tuning is a later refinement.
+ * Three mechanical gates: a structural allow-list by event type ({@link EventTopicMap}), a semantic
+ * importance gate ({@link BaseEvent#importance()} - {@code LOW} events are noise and never reach a
+ * thought), and a per-type cooldown. Each accepted EVENT spawns a thought, so the cooldown collapses
+ * bursts of the same high-frequency type - the first occurrence passes immediately, repeats within
+ * {@link #COOLDOWN_MILLIS} are dropped. Per-type cooldown tuning is a later refinement.
  */
 public final class GameEventFilter {
 
@@ -44,17 +45,25 @@ public final class GameEventFilter {
     }
 
     /**
-     * Whether the event type is worthy of attention. Mechanical allow-list: only event types in the
-     * companion's gameplay taxonomy ({@link EventTopicMap}) pass. This deliberately rejects the
-     * non-gameplay {@code BaseEvent}s that share the bus - notably {@code UserInput} (the commander's
-     * voice line, already handled by the commander path), {@code SaveSession} and {@code ClearSessionCache}.
-     * <p>
+     * Whether the event is worthy of attention. Two mechanical gates:
+     * <ul>
+     *   <li><b>Structural</b> - the type must be in the companion's gameplay taxonomy ({@link EventTopicMap}).
+     *       This rejects non-gameplay {@code BaseEvent}s that share the bus - notably {@code UserInput} (the
+     *       commander's voice line, handled by the commander path), {@code SaveSession}, {@code ClearSessionCache}.</li>
+     *   <li><b>Semantic</b> - the event's {@link BaseEvent#importance()} must not be {@code LOW}. {@code LOW}
+     *       is the "ignore completely" tier (high-frequency telemetry such as {@code FSSSignalDiscovered},
+     *       {@code MaterialCollected}, {@code Cargo}, {@code FSDTarget}). Importance is read per instance, so
+     *       payload-dependent events drop here too (e.g. a non-target {@code ProspectedAsteroid}, a non-Wanted
+     *       {@code ShipTargeted}, a non-pirate {@code ReceiveText}).</li>
+     * </ul>
      * The rest is already filtered upstream: {@code EventRegistry} drops unregistered event types and
      * {@code JournalParser} drops replay/expired/stale events before publishing, and the high-frequency
      * status stream (PlayerMoved/InGlide/...) is not a {@code BaseEvent} and never reaches here.
      */
     public boolean accept(BaseEvent event) {
-        return event != null && EventTopicMap.isMapped(event.getEventType());
+        return event != null
+                && EventTopicMap.isMapped(event.getEventType())
+                && event.importance() != BaseEvent.Importance.LOW;
     }
 
     /**
