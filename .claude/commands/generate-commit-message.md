@@ -1,6 +1,6 @@
 ---
 description: Draft a human-readable commit message describing what changed, written to commit-message.txt
-argument-hint: "[ticket key e.g. KAN-61] [--staged]"
+argument-hint: "[ticket key e.g. KAN-XYZ] [--staged]"
 ---
 
 Optional input: $ARGUMENTS
@@ -45,22 +45,6 @@ Format:
 
 Example shape (illustrative, not a template to copy verbatim):
 
-```
-KAN-61 Tracked personal credits live during a session
-
-- Added live credit-balance tracking: realized journal transactions now adjust the
-  stored balance and refresh the front-tab display via the UI bus, instead of
-  only updating on game reload.
-- Reconstructed the balance at startup from the last LoadGame anchor plus realized
-  deltas, so a mid-session app start shows the correct total.
-- Routed financial announcements through the LLM so they are spoken in the user's
-  language with personality.
-
-Tests: added coverage for the credit math, startup reconstruction, and the
-live/pre-scan event-set contract.
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
-```
 
 # 4. Output
 
