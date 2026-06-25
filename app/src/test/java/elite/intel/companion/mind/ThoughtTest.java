@@ -9,21 +9,17 @@ import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
-import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.execution.ExecutionRequest;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
+import elite.intel.companion.prompt.CompanionNarrationPolicy;
+import elite.intel.companion.prompt.CompanionNarrationPolicy.Narration;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
@@ -34,24 +30,13 @@ import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The consciousness loop: the happy path (single round, multi-round tool round-trip), the
@@ -78,6 +63,12 @@ class ThoughtTest {
                 reducer, state, dangerousPolicy, coordinator);
     }
 
+    private ThoughtContext ctx(CompanionNarrationPolicy narration) {
+        return new ThoughtContext(llm, speech, execution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                reducer, state, dangerousPolicy, coordinator, narration);
+    }
+
     @Test
     void commanderSpeaksThenEndsInOneRound() {
         llm.scripted.add(ok(call(SpeakFunction.ID, text("on it")), call(NothingToDoFunction.ID, new JsonObject())));
@@ -94,6 +85,58 @@ class ThoughtTest {
         assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
         assertEquals("set speed to 50", input.content());
         assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());
+    }
+
+    /**
+     * Narration stub: close_panel is silent, ship_status is narratable, everything else neutral.
+     */
+    private static CompanionNarrationPolicy narration() {
+        return new CompanionNarrationPolicy(id -> switch (id) {
+            case "close_panel" -> Narration.SILENT_COMMAND;
+            case "ship_status" -> Narration.NARRATABLE;
+            default -> Narration.NEUTRAL;
+        });
+    }
+
+    @Test
+    void commanderSilentCommandTurnDropsSpeak() {
+        llm.scripted.add(ok(call("close_panel", new JsonObject()),
+                call(SpeakFunction.ID, text("closing the panel")),
+                call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "close the panel", ctx(narration())).run();
+
+        assertEquals(List.of("close_panel"), execution.toolNames(),
+                "silent command runs; the co-occurring speak is withheld (never executed)");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.content().contains("narration_suppressed")),
+                "the withheld speak leaves a narration_suppressed tool result so the flow stays consistent");
+    }
+
+    @Test
+    void commanderMixedTurnStillSpeaks() {
+        // A silent command alongside a narratable query: the query answer is worth voicing, so speak runs.
+        llm.scripted.add(ok(call("close_panel", new JsonObject()),
+                call("ship_status", new JsonObject()),
+                call(SpeakFunction.ID, text("panel closed; hull at 100%")),
+                call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "close the panel and how is the ship", ctx(narration())).run();
+
+        assertTrue(execution.toolNames().contains(SpeakFunction.ID),
+                "a turn with any narratable action still speaks");
+    }
+
+    @Test
+    void commanderTrailingSpeakRoundIsSuppressedForSilentTurn() {
+        // The silent command runs in round 0; the LLM speaks only in round 1. Turn-level accounting must
+        // still suppress that trailing speak.
+        llm.scripted.add(ok(call("close_panel", new JsonObject())));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("done")), call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "close the panel", ctx(narration())).run();
+
+        assertEquals(List.of("close_panel"), execution.toolNames(),
+                "speak emitted in a later round of a silent-only turn is still withheld");
     }
 
     @Test

@@ -4,18 +4,9 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
-import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.EventInputKind;
-import elite.intel.companion.model.IntelActionCategory;
-import elite.intel.companion.model.ThoughtSource;
-import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.*;
 import elite.intel.companion.model.execution.ExecutionRequest;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
-import elite.intel.companion.model.llm.PromptCacheProfile;
+import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
@@ -33,18 +24,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * A unit of work of the consciousness. Owns its local message flow, request handles, the tool-calling
@@ -81,6 +62,14 @@ public final class Thought {
     /** Importance of the originating event for an EVENT thought; null for COMMANDER. Drives the NORMAL short-circuit. */
     private final BaseEvent.Importance importance;
     private final ThoughtContext ctx;
+
+    /**
+     * Turn-scoped narration accounting (COMMANDER only). Set as rounds execute: {@code turnRanNarratable}
+     * once any query or non-silent command runs, {@code turnRanSilentCommand} once any {@code silentInCompanion}
+     * command runs. A {@code speak} is dropped while a turn has run silent commands and nothing narratable.
+     */
+    private boolean turnRanNarratable;
+    private boolean turnRanSilentCommand;
 
     /** Set by {@link #interrupt} from another thread; the run loop honors it at step boundaries (§2.7). */
     private volatile boolean interrupted;
@@ -277,6 +266,7 @@ public final class Thought {
      */
     private boolean runToolCalls(List<LlmMessage> flow, List<LlmToolInvocation> invocations,
                                  Map<LlmToolInvocation, JsonObject> preExecuted) {
+        boolean suppressSpeak = shouldSuppressSpeak(invocations);
         boolean terminate = false;
         List<LlmMessage> toolResults = new ArrayList<>();
         for (LlmToolInvocation inv : invocations) {
@@ -284,7 +274,12 @@ public final class Thought {
                 terminate = true;
                 continue;
             }
-            JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
+            // A speak voiced only to acknowledge silent (cosmetic) commands is dropped: the command still
+            // ran, but no TTS fires. A synthetic result keeps the assistant/tool-result pairing intact so a
+            // following round stays valid, and tells the LLM the narration was intentionally withheld.
+            JsonObject result = suppressSpeak && SpeakFunction.ID.equals(inv.name())
+                    ? narrationSuppressedResult(inv.name())
+                    : (preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv));
             recordToolResult(result);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
         }
@@ -293,6 +288,40 @@ public final class Thought {
             flow.addAll(toolResults);
         }
         return terminate;
+    }
+
+    /**
+     * Folds this round's game actions into the turn's narration accounting and decides whether the round's
+     * {@code speak} should be withheld. Only COMMANDER turns are gated (EVENT speech has its own policy via
+     * {@link #systemTools()}); a speak is dropped when the turn has run at least one silent command and
+     * nothing narratable (a query or non-silent command), so a turn whose sole effect was a cosmetic UI
+     * command stays quiet while a mixed turn still speaks.
+     */
+    private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
+        if (source != ThoughtSource.COMMANDER) {
+            return false;
+        }
+        for (LlmToolInvocation inv : invocations) {
+            if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
+                continue;
+            }
+            switch (ctx.narrationPolicy().classify(inv.name())) {
+                case NARRATABLE -> turnRanNarratable = true;
+                case SILENT_COMMAND -> turnRanSilentCommand = true;
+                case NEUTRAL -> { /* no opinion: neither forces nor suppresses speech */ }
+            }
+        }
+        return turnRanSilentCommand && !turnRanNarratable;
+    }
+
+    /**
+     * Synthetic tool result standing in for a withheld {@code speak} on a silent-command turn.
+     */
+    private static JsonObject narrationSuppressedResult(String toolName) {
+        JsonObject suppressed = new JsonObject();
+        suppressed.addProperty("status", "narration_suppressed");
+        suppressed.addProperty("tool", toolName);
+        return suppressed;
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */

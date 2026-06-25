@@ -113,8 +113,19 @@ public class AudioDeviceEnumerator {
         try {
             return (TargetDataLine) AudioSystem.getMixer(mixerInfo).getLine(info);
         } catch (Exception e) {
-            log.warn("Cannot open input on '{}', using system default: {}", mixerInfo.getName(), e.getMessage());
-            return (TargetDataLine) AudioSystem.getLine(info);
+            // Do NOT silently fall back to the system default device. Switching mics behind
+            // the user's back calibrates/captures against a device they did not select and,
+            // when that default cannot honour the requested format, surfaces as a misleading
+            // "format not supported" error against the wrong line. Fail on the chosen device
+            // so callers can retry it (transient contention) or report it truthfully.
+            log.warn("Cannot open input on '{}': {}", mixerInfo.getName(), e.getMessage());
+            if (e instanceof LineUnavailableException lue) {
+                throw lue;
+            }
+            LineUnavailableException ex = new LineUnavailableException(
+                    "Cannot open input on '" + mixerInfo.getName() + "': " + e.getMessage());
+            ex.initCause(e);
+            throw ex;
         }
     }
 

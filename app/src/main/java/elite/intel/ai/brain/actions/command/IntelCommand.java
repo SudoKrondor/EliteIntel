@@ -15,6 +15,16 @@ public interface IntelCommand extends IntelAction {
         return false;
     }
 
+    /**
+     * Indicates whether the command should operate silently within a companion context.
+     *
+     * @return {@code true} if the command operates silently when executed in a companion context,
+     * otherwise {@code false}. Default is silent.
+     */
+    default boolean silentInCompanion() {
+        return true;
+    }
+
     default VoiceStrategy voiceStrategy() {
         return VoiceStrategy.CANNED;
     }

@@ -54,6 +54,14 @@ public class AudioCalibrator {
     // noise floor is ~0-30 and a pure ratio would set the gate down in mic self-noise.
     private static final double MIN_GATE_OPEN_ABS = 120.0;
     private static final double MAX_NOISE_AVG = 800.0;
+    // Bounded retry for opening the capture line. On Windows the mic is frequently
+    // grabbed for a moment by another process (Discord, a browser, the game's own
+    // voice chat), which surfaces - confusingly - as an IllegalArgumentException
+    // "...not supported" rather than a clean LineUnavailableException. A short retry
+    // rides out that transient contention so a one-off race no longer aborts an
+    // otherwise valid calibration.
+    private static final int OPEN_MAX_ATTEMPTS = 4;
+    private static final int OPEN_RETRY_BASE_DELAY_MS = 250;
 
 
     public static RmsTupple<Double, Double> calibrateRMS(AudioFormatDetector.Format format) {
@@ -159,9 +167,7 @@ public class AudioCalibrator {
         List<Double> samples = new ArrayList<>();
         long startTime = System.currentTimeMillis();
 
-        try (TargetDataLine line = AudioDeviceEnumerator.openInputLine(info, mixerInfo)) {
-            line.open(format, bufferSize);
-            line.start();
+        try (TargetDataLine line = openAndStartWithRetry(format, bufferSize, info, mixerInfo)) {
             while (System.currentTimeMillis() - startTime < NOISE_CALIBRATION_DURATION_MS) {
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead > 0) {
@@ -169,10 +175,6 @@ public class AudioCalibrator {
                     samples.add(calculateRMS(mono16, mono16.length));
                 }
             }
-        } catch (LineUnavailableException | IllegalArgumentException e) {
-            log.error("Noise calibration failed: {}", e.getMessage());
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationNoiseFailed", String.valueOf(e.getMessage()))));
-            throw new AudioCalibrationException("Noise calibration failed: " + e.getMessage(), e);
         }
 
         if (samples.isEmpty()) {
@@ -226,9 +228,7 @@ public class AudioCalibrator {
         int totalSampleCount = 0;
         long startTime = System.currentTimeMillis();
 
-        try (TargetDataLine line = AudioDeviceEnumerator.openInputLine(info, mixerInfo)) {
-            line.open(format, bufferSize);
-            line.start();
+        try (TargetDataLine line = openAndStartWithRetry(format, bufferSize, info, mixerInfo)) {
             while (System.currentTimeMillis() - startTime < SPEECH_CALIBRATION_DURATION_MS) {
                 int bytesRead = line.read(buffer, 0, buffer.length);
                 if (bytesRead > 0) {
@@ -242,10 +242,6 @@ public class AudioCalibrator {
                     }
                 }
             }
-        } catch (LineUnavailableException | IllegalArgumentException e) {
-            log.error("Speech calibration failed: {}", e.getMessage());
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationSpeechFailed", String.valueOf(e.getMessage()))));
-            throw new AudioCalibrationException("Speech calibration failed: " + e.getMessage(), e);
         } finally {
             log.info("Speech calibration: {} total samples, {} speech samples, avg={}, peak={}",
                     totalSampleCount, speechSampleCount,
@@ -260,6 +256,57 @@ public class AudioCalibrator {
         }
 
         return sumSpeechRMS / speechSampleCount;
+    }
+
+    /**
+     * Opens and starts the capture line, retrying transient open failures with a short
+     * backoff before giving up. This rides out the common Windows case where the mic is
+     * momentarily held by another process and the JVM reports it as a confusing
+     * "format not supported" error rather than a clean unavailable-line error.
+     * <p>
+     * Because production logs are pinned to ERROR level, the user cannot see WARN/INFO
+     * diagnostics; each transient retry and the final give-up are therefore surfaced to
+     * the UI as localized {@link AppLogEvent} notices so the user gets a readable account
+     * of what happened (and what to do about it).
+     *
+     * @return an opened, started {@link TargetDataLine}; the caller owns closing it.
+     * @throws AudioCalibrationException if the line cannot be opened after all attempts.
+     */
+    private static TargetDataLine openAndStartWithRetry(AudioFormat format, int bufferSize, DataLine.Info info, Mixer.Info mixerInfo) {
+        String deviceName = mixerInfo != null ? mixerInfo.getName() : "default";
+        Exception last = null;
+        for (int attempt = 1; attempt <= OPEN_MAX_ATTEMPTS; attempt++) {
+            TargetDataLine line = null;
+            try {
+                line = AudioDeviceEnumerator.openInputLine(info, mixerInfo);
+                line.open(format, bufferSize);
+                line.start();
+                if (attempt > 1) {
+                    log.info("Audio input '{}' opened on attempt {}/{}", deviceName, attempt, OPEN_MAX_ATTEMPTS);
+                }
+                return line;
+            } catch (LineUnavailableException | IllegalArgumentException e) {
+                last = e;
+                if (line != null) line.close();
+                log.warn("Audio input '{}' open attempt {}/{} failed: {}", deviceName, attempt, OPEN_MAX_ATTEMPTS, e.getMessage());
+                UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationDeviceBusyRetry",
+                        deviceName, String.valueOf(attempt), String.valueOf(OPEN_MAX_ATTEMPTS))));
+                if (attempt < OPEN_MAX_ATTEMPTS) {
+                    try {
+                        Thread.sleep((long) OPEN_RETRY_BASE_DELAY_MS * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new AudioCalibrationException("Interrupted while retrying audio input open", ie);
+                    }
+                }
+            }
+        }
+        log.error("Audio input '{}' unavailable after {} attempts: {}", deviceName, OPEN_MAX_ATTEMPTS,
+                last != null ? last.getMessage() : "unknown");
+        UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationDeviceUnavailable",
+                deviceName, String.valueOf(OPEN_MAX_ATTEMPTS))));
+        throw new AudioCalibrationException(
+                "Audio input '" + deviceName + "' unavailable after " + OPEN_MAX_ATTEMPTS + " attempts", last);
     }
 
     private static double calculateRMS(byte[] buffer, int length) {
