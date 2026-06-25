@@ -125,10 +125,14 @@ public class CarrierJumpEvent extends BaseEvent {
         return "CarrierJump";
     }
 
-    /** The fleet carrier arrived in a new system. */
+    /**
+     * NORMAL: CarrierJumpCompleteSubscriber already owns the spoken "carrier jump complete" callout
+     * via EventNarrator, which now narrates in every mode. Kept in memory but off the consciousness's
+     * spoken channel so the arrival is not announced twice.
+     */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

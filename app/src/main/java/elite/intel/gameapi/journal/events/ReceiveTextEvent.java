@@ -69,14 +69,16 @@ public class ReceiveTextEvent extends BaseEvent {
 
     /**
      * Payload-dependent. Almost all text is high-frequency NPC chatter the companion ignores. The one
-     * exception worth speaking is a pirate hail while we are actually carrying cargo - a real threat.
+     * exception is a pirate hail while we are carrying cargo - a real threat - which
+     * TransmissionReceivedSubscriber voices via EventNarrator (now narrating in every mode), so it is
+     * NORMAL (memory only, not re-spoken by the consciousness).
      */
     @Override
     public Importance importance() {
         if (!isPirateMessage()) return Importance.LOW;
         CargoHoldManager cargo = CargoHoldManager.getInstance();
         boolean haveCargo = cargo.get() != null && cargo.get().getCount() > 0;
-        return haveCargo ? Importance.HIGH : Importance.LOW;
+        return haveCargo ? Importance.NORMAL : Importance.LOW;
     }
 
     @Override

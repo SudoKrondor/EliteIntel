@@ -42,10 +42,14 @@ public class BountyEvent extends BaseEvent {
         return "Bounty";
     }
 
-    /** Kill confirmed or mission kill; core combat feedback. */
+    /**
+     * NORMAL: BountyEventSubscriber already owns the spoken "kill confirmed / mission kill" callout
+     * via EventNarrator, which now narrates in every mode. Kept in memory but off the consciousness's
+     * spoken channel so the kill is not announced twice.
+     */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

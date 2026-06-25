@@ -276,10 +276,14 @@ public class FSDJumpEvent extends BaseEvent {
         return "FSDJump";
     }
 
-    /** Arrival in a new system is a natural beat the companion may remark on. */
+    /**
+     * NORMAL: JumpCompletedSubscriber owns the spoken arrival/route callouts via EventNarrator (and
+     * the legacy SensorDataEvent path), now narrating in every mode. Kept in memory but off the
+     * consciousness's spoken channel so the arrival is not announced twice.
+     */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

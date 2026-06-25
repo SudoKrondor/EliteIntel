@@ -80,17 +80,18 @@ public class ShipTargetedEvent extends BaseEvent {
     }
 
     /**
-     * Payload-dependent. Mirrors ShipTargetedEventSubscriber.announceScan: a target only matters
-     * once the scan is complete and the ship is Wanted. Whether that Wanted ship also belongs to a
-     * pirate-mission target faction only changes the spoken wording (mission vs legal target) and is
-     * the subscriber's concern, not the significance. Every other lock is constant targeting
+     * Payload-dependent. Mirrors ShipTargetedEventSubscriber.announceScan: a target only matters once
+     * the scan is complete and the ship is Wanted - and that case is already voiced by the subscriber
+     * via EventNarrator (now narrating in every mode), so it is NORMAL (memory only, not re-spoken by
+     * the consciousness). Whether the Wanted ship also belongs to a pirate-mission target faction only
+     * changes the subscriber's wording, not the significance. Every other lock is constant targeting
      * telemetry the companion ignores.
      */
     @Override
     public Importance importance() {
         if (scanStage == 0) return Importance.LOW; // scan not finished: status/health not yet reliable
         if (legalStatus == null || !"wanted".equalsIgnoreCase(legalStatus)) return Importance.LOW;
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override
