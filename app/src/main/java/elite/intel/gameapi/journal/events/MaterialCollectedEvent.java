@@ -30,6 +30,11 @@ public class MaterialCollectedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Picked up engineering materials; carries the material category, name, and amount. Fires often.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

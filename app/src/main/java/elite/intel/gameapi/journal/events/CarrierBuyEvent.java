@@ -38,6 +38,11 @@ public class CarrierBuyEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Purchased a fleet carrier; carries the deployment location and the price.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

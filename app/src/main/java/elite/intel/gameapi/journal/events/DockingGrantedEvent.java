@@ -35,6 +35,11 @@ public class DockingGrantedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A station granted your docking request; carries the station name and the assigned landing pad.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

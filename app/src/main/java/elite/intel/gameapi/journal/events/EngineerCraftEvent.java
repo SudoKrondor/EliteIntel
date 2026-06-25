@@ -61,6 +61,11 @@ public class EngineerCraftEvent extends BaseEvent {
         return "EngineerCraft";
     }
 
+    @Override
+    public String llmDescription() {
+        return "Applied an engineer modification to a module; carries the engineer, blueprint, level, and resulting effects.";
+    }
+
     // Getters
     public String getSlot() {
         return slot;

@@ -32,6 +32,11 @@ public class MaterialsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of all engineering materials held (raw, manufactured, encoded); written at game load. Background list.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

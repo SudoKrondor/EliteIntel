@@ -55,6 +55,11 @@ public class ShipyardBuyEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Bought a new ship at a shipyard; carries the ship type and the price paid.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

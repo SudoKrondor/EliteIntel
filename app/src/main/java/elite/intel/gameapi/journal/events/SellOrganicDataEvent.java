@@ -85,6 +85,11 @@ public class SellOrganicDataEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Sold exobiology (organic) scan data at Vista Genomics; carries the species sold and the total value.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

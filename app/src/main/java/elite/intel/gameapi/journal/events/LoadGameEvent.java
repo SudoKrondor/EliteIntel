@@ -84,6 +84,11 @@ public class LoadGameEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Game session loaded; carries the commander, current ship, and credit balance. Background, fires at startup.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

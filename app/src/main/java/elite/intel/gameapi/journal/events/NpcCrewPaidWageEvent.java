@@ -32,6 +32,11 @@ public class NpcCrewPaidWageEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Paid wages to an NPC crew member; carries the crew name and the amount.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

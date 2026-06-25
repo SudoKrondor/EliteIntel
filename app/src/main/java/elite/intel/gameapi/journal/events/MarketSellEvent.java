@@ -45,6 +45,11 @@ public class MarketSellEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Sold cargo at a station market; carries the commodity, quantity sold, and total sale value.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

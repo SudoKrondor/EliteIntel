@@ -69,6 +69,11 @@ public class MissionCompletedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Completed a mission; carries the mission name, the giving faction, and the reward (credits, materials, or commodities).";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -32,6 +32,11 @@ public class PayFinesEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Paid off outstanding fines; carries the amount.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

@@ -126,6 +126,11 @@ public class CarrierJumpEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Your fleet carrier completed a jump while you were aboard; carries the destination system and body.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

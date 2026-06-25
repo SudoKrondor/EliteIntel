@@ -18,6 +18,11 @@ public class ShutdownEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "The game is shutting down and the play session ended.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

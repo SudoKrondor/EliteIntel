@@ -27,6 +27,11 @@ public class FriendsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A friend's online status changed; carries the friend name and status (Online, Offline, Requested, and so on).";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -79,6 +79,11 @@ public class SAASignalsFoundEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A detailed surface scan found signal sources on a body (geological, biological, human, and so on); carries the body and the signal types with counts.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

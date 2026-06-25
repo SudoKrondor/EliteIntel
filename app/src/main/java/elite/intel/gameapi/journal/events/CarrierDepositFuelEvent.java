@@ -34,6 +34,11 @@ public class CarrierDepositFuelEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Deposited tritium fuel into the fleet carrier; carries the amount and the new fuel total.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

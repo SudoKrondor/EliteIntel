@@ -277,6 +277,11 @@ public class FSDJumpEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Arrived in a new star system via a hyperspace jump; carries the destination system name, jump distance in light years, and fuel used.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

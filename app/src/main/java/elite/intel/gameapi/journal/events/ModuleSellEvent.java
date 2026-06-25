@@ -38,6 +38,11 @@ public class ModuleSellEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Sold a module at outfitting; carries the module and the sale value.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

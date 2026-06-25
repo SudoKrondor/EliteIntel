@@ -16,6 +16,11 @@ public class NavRouteClearEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Cleared the plotted navigation route.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

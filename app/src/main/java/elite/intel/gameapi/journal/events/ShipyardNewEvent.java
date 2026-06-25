@@ -29,6 +29,11 @@ public class ShipyardNewEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A newly purchased ship was delivered and made active; carries the ship type and id.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

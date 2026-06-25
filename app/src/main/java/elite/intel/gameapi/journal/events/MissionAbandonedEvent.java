@@ -31,6 +31,11 @@ public class MissionAbandonedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Abandoned a mission; carries the mission name and the giving faction.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

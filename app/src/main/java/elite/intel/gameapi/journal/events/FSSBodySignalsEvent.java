@@ -59,6 +59,11 @@ public class FSSBodySignalsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "The full-spectrum scanner reported signal sources on a body (for example biological or geological counts); carries the body and the signal list.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

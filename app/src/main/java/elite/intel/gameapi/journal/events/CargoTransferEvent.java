@@ -25,6 +25,11 @@ public class CargoTransferEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Transferred cargo between the ship and an SRV or fleet carrier; carries the commodities and the direction.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

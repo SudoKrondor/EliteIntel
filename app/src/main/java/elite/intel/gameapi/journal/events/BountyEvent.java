@@ -43,6 +43,11 @@ public class BountyEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "You were awarded a bounty for destroying a wanted ship; carries the target ship, the awarding faction(s), and the total reward.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -41,6 +41,11 @@ public class SquadronStartupEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Reports your squadron membership at game load; carries the squadron name and your rank. Background.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

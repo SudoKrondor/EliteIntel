@@ -50,6 +50,11 @@ public class ProgressEvent extends BaseEvent implements PlayerProgressStats {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of rank progress percentages (combat, trade, exploration, and so on). Background.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

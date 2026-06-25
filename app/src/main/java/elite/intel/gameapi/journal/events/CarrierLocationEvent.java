@@ -39,6 +39,11 @@ public class CarrierLocationEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Reports the fleet carrier's current star system, for example after it jumped.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -28,6 +28,11 @@ public class LaunchDroneEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Launched a limpet drone; carries the drone type (collector, prospector, and so on).";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

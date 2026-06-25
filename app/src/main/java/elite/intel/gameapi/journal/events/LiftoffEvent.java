@@ -71,6 +71,11 @@ public class LiftoffEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Lifted off from a planetary surface back into flight; carries latitude and longitude.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

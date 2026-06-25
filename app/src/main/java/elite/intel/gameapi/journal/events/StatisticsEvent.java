@@ -82,6 +82,11 @@ public class StatisticsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of lifetime player statistics; written at game load. Background detail.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

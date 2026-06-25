@@ -38,6 +38,11 @@ public class SellDronesEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Sold limpet drones; carries the count and value.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

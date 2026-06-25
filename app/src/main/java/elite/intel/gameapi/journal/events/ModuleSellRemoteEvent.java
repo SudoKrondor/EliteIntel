@@ -38,6 +38,11 @@ public class ModuleSellRemoteEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Sold a stored module remotely; carries the module and the sale value.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

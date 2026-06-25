@@ -39,6 +39,11 @@ public class SAAScanCompleteEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Completed mapping a body with the detailed surface scanner; carries the body name and probes used.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

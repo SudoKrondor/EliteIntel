@@ -31,6 +31,11 @@ public class MissionFailedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A mission failed; carries the mission name and the giving faction.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

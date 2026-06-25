@@ -45,6 +45,11 @@ public class StartJumpEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "The frame shift drive started charging for a jump; JumpType says hyperspace (with destination system and star class) or supercruise.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

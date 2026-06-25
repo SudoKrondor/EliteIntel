@@ -34,6 +34,11 @@ public class ProspectedAsteroidEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A prospector limpet analysed an asteroid; carries the materials present with their proportions and the overall content level.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

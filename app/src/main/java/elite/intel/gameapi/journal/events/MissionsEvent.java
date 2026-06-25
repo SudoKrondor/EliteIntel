@@ -81,6 +81,11 @@ public class MissionsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of all active, completed, and failed missions; written at game load. Background list.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

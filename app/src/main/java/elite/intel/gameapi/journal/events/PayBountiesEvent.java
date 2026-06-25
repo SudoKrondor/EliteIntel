@@ -33,6 +33,11 @@ public class PayBountiesEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Paid off outstanding bounties; carries the amount.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

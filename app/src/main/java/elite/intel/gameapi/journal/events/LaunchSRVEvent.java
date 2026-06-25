@@ -39,6 +39,11 @@ public class LaunchSRVEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Deployed an SRV from the ship onto the planetary surface; carries the SRV loadout.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

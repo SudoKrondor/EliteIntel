@@ -31,6 +31,11 @@ public class DockSRVEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Recalled the SRV back aboard the ship.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

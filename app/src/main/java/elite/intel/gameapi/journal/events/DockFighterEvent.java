@@ -25,6 +25,11 @@ public class DockFighterEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Docked a deployed ship-launched fighter back into the mother ship.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

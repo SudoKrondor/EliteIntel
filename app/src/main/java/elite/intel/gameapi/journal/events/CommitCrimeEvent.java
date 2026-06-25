@@ -41,6 +41,11 @@ public class CommitCrimeEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "You committed a crime (assault, murder, fine, and so on); carries the crime type, the victim faction, and any bounty or fine incurred.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

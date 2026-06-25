@@ -98,6 +98,11 @@ public class MissionAcceptedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Accepted a mission; carries the mission name, the giving faction, destination, and reward.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

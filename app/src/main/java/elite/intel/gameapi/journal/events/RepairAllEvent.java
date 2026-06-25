@@ -26,6 +26,11 @@ public class RepairAllEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Paid to repair all ship damage; carries the cost.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

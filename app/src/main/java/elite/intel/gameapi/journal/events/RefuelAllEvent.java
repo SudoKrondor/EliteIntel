@@ -29,6 +29,11 @@ public class RefuelAllEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Refueled the ship completely at a station; carries the cost and amount.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

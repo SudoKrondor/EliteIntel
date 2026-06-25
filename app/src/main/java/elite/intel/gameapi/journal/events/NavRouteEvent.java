@@ -18,6 +18,11 @@ public class NavRouteEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Plotted a multi-jump route; carries the ordered list of systems in the route.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

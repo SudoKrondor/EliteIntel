@@ -175,6 +175,11 @@ public class LocationEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Reports your current location at game load or after respawn; carries the star system, body, and whether you are docked.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -29,6 +29,11 @@ public class RepairEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Paid to repair a specific item or module; carries the item and the cost.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

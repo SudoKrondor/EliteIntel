@@ -51,6 +51,11 @@ public class PromotionEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Ranked up in a career (combat, trade, exploration, CQC, Federation or Empire); carries which rank and the new level.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -55,6 +55,11 @@ public class ScanOrganicEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Scanned a biological organism on foot; carries the species and genus and the scan stage (Log, Sample, or Analyse).";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

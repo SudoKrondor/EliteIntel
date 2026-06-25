@@ -71,6 +71,11 @@ public class TouchdownEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Landed on a planetary surface; carries latitude, longitude, and the nearest point of interest.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

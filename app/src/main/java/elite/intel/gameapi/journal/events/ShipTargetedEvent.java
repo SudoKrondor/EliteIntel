@@ -80,6 +80,11 @@ public class ShipTargetedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "You locked onto a ship. Once the scan completes it reports the pilot rank, legal status, bounty, faction, and shield and hull health.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

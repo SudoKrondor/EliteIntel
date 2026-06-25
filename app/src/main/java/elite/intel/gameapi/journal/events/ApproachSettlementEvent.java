@@ -112,6 +112,11 @@ public class ApproachSettlementEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Approached a planetary settlement; carries the settlement name and the body it sits on.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

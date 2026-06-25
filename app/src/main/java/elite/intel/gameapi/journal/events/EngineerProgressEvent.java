@@ -24,6 +24,11 @@ public class EngineerProgressEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Engineer unlock or progress update; carries the engineer and your rank or progress. Snapshot.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

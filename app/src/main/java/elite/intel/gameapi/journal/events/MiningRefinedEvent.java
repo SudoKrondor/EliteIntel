@@ -27,6 +27,11 @@ public class MiningRefinedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Refined a unit of mined material into the cargo hold; carries the commodity. Fires often while mining.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

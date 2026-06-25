@@ -81,6 +81,11 @@ public class CarrierStatsEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of fleet carrier statistics (balance, fuel, cargo, crew, services). Background detail.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

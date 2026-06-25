@@ -46,6 +46,11 @@ public class MissionRedirectedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A mission objective was redirected to a new destination; carries the mission name and the new system and station.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

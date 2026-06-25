@@ -48,6 +48,11 @@ public class SupercruiseExitEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Dropped from supercruise into normal space; carries the star system and the body you arrived at.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

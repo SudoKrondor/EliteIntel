@@ -35,6 +35,11 @@ public class SupercruiseEntryEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Entered supercruise from normal space; carries the current star system.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

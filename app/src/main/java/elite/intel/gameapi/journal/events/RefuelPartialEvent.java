@@ -29,6 +29,11 @@ public class RefuelPartialEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Partially refueled the ship (for example via an auto-refuel service); carries the cost and amount.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

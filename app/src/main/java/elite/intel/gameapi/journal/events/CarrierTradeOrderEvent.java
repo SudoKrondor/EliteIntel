@@ -47,6 +47,11 @@ public class CarrierTradeOrderEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Set or cancelled a buy/sell order on the fleet carrier's market; carries the commodity, amount, and price.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

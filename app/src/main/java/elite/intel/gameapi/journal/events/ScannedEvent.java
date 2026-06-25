@@ -22,6 +22,11 @@ public class ScannedEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Another vessel or authority is scanning you; carries the scan type (cargo, data link, crime, and so on).";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

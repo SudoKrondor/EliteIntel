@@ -28,6 +28,11 @@ public class CargoEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of the current cargo hold; carries the list of commodities and their counts.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -38,6 +38,11 @@ public class ReceiveTextEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Received a text message; carries the sender, the channel (npc, local, wing, squadron, direct), and the message. Very high frequency, mostly NPC chatter.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -35,6 +35,11 @@ public class RestockVehicleEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Restocked SRVs or fighters; carries the type, count, and cost.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

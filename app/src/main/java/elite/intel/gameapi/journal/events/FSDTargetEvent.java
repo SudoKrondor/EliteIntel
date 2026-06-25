@@ -34,6 +34,11 @@ public class FSDTargetEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Selected the next destination system for the jump; carries the target system, its star class, and jumps remaining in the route.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

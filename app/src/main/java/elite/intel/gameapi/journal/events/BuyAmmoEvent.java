@@ -26,6 +26,11 @@ public class BuyAmmoEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Restocked weapon ammunition; carries the cost.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

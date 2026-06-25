@@ -28,6 +28,11 @@ public class CommanderEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Identifies the commander at game load; carries the commander name. Background.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

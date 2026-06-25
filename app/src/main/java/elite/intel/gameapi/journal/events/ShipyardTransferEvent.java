@@ -41,6 +41,11 @@ public class ShipyardTransferEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Requested transfer of a stored ship to the current station; carries the ship, distance, transfer time, and cost.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

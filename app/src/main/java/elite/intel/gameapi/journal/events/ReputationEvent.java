@@ -38,6 +38,11 @@ public class ReputationEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "A snapshot of your reputation with the major factions (Federation, Empire, Alliance, Independent). Background.";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

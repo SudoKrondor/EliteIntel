@@ -40,6 +40,11 @@ public class CarrierBankTransferEvent extends BaseEvent {
     }
 
     @Override
+    public String llmDescription() {
+        return "Moved credits between your account and the fleet carrier balance; carries the amount.";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }
