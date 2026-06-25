@@ -43,9 +43,25 @@ class SafeKeyboardKeysTest {
 
         int baseCount = SafeKeyboardKeys.baseKeys().size();
         int modifierCount = SafeKeyboardKeys.safeModifiers().size();
-        assertEquals(baseCount * modifierCount + baseCount, chords.size());
+        // OS-reserved chords (e.g. Alt+F4) are filtered out of the pool, so the count is the full
+        // product minus those exclusions - computed the same way the pool builds it.
+        long reservedCombos = 0;
+        long reservedPlain = 0;
+        for (String key : SafeKeyboardKeys.baseKeys()) {
+            for (BindingModifier modifier : SafeKeyboardKeys.safeModifiers()) {
+                if (ReservedKeyChords.isReserved(key, List.of(modifier.key()))) {
+                    reservedCombos++;
+                }
+            }
+            if (ReservedKeyChords.isReserved(key, List.of())) {
+                reservedPlain++;
+            }
+        }
+        long expectedCombos = (long) baseCount * modifierCount - reservedCombos;
+        long expectedPlain = baseCount - reservedPlain;
+        assertEquals(expectedCombos + expectedPlain, chords.size());
 
-        // First chord is a combo on the first base key with the first safe modifier.
+        // First chord is a combo on the first base key with the first safe modifier (not reserved).
         assertEquals(SafeKeyboardKeys.baseKeys().get(0), chords.get(0).key());
         assertEquals(SafeKeyboardKeys.safeModifiers().get(0), chords.get(0).modifier());
 
@@ -57,7 +73,7 @@ class SafeKeyboardKeysTest {
                 break;
             }
         }
-        assertEquals(baseCount * modifierCount, firstPlain, "plain keys must follow every combo");
+        assertEquals(expectedCombos, firstPlain, "plain keys must follow every combo");
         for (int i = firstPlain; i < chords.size(); i++) {
             assertFalse(chords.get(i).hasModifier());
         }

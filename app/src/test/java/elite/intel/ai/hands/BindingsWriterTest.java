@@ -823,6 +823,105 @@ class BindingsWriterTest {
         assertEquals(0, backups(file).size());
     }
 
+    @Test
+    void assigningOverAHoldSlotKeepsTheHoldChild() throws Exception {
+        // Press-and-hold bindings (e.g. on-foot weapon switch) carry a <Hold Value="1" /> child.
+        // Reassigning the key must not silently turn the binding into a tap: the Hold child survives.
+        Path file = writeBinds("""
+                <Root>
+                    <HumanoidSwitchWeapon>
+                        <Primary Device="Keyboard" Key="Key_1">
+                            <Hold Value="1" />
+                        </Primary>
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </HumanoidSwitchWeapon>
+                </Root>
+                """);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "HumanoidSwitchWeapon", BindingSlotType.PRIMARY, "Key_M"));
+
+        String updated = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(BindingSaveResult.SAVED, result);
+        assertTrue(updated.contains("""
+                <Primary Device="Keyboard" Key="Key_M">
+                    <Hold Value="1" />
+                </Primary>
+                """.stripTrailing()));
+    }
+
+    @Test
+    void assigningWithModifierOverAHoldSlotKeepsHoldAndAddsModifier() throws Exception {
+        Path file = writeBinds("""
+                <Root>
+                    <OrderHoldFire>
+                        <Primary Device="Keyboard" Key="Key_F3">
+                            <Hold Value="1" />
+                        </Primary>
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </OrderHoldFire>
+                </Root>
+                """);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKeyWithModifier(
+                edit(file, "OrderHoldFire", BindingSlotType.PRIMARY, "Key_M"),
+                new BindingModifier("Keyboard", "Key_LeftControl"));
+
+        String updated = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(BindingSaveResult.SAVED, result);
+        assertTrue(updated.contains("""
+                <Primary Device="Keyboard" Key="Key_M">
+                    <Hold Value="1" />
+                    <Modifier Device="Keyboard" Key="Key_LeftControl" />
+                </Primary>
+                """.stripTrailing()));
+    }
+
+    @Test
+    void plainSaveOverAHoldAndModifierSlotKeepsHoldAndDropsModifier() throws Exception {
+        Path file = writeBinds("""
+                <Root>
+                    <OrderHoldFire>
+                        <Primary Device="Keyboard" Key="Key_F3">
+                            <Hold Value="1" />
+                            <Modifier Device="Keyboard" Key="Key_LeftControl" />
+                        </Primary>
+                        <Secondary Device="{NoDevice}" Key="" />
+                    </OrderHoldFire>
+                </Root>
+                """);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "OrderHoldFire", BindingSlotType.PRIMARY, "Key_M"));
+
+        String updated = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(BindingSaveResult.SAVED, result);
+        assertTrue(updated.contains("<Hold Value=\"1\" />"));
+        assertFalse(updated.contains("<Modifier"));
+    }
+
+    @Test
+    void clearingAHoldSlotWritesNoDeviceBlankAndDropsHold() throws Exception {
+        Path file = writeBinds("""
+                <Root>
+                    <EjectAllCargo>
+                        <Primary Device="{NoDevice}" Key="" />
+                        <Secondary Device="Keyboard" Key="Key_Delete">
+                            <Hold Value="1" />
+                        </Secondary>
+                    </EjectAllCargo>
+                </Root>
+                """);
+
+        BindingSaveResult result = new BindingsWriter().assignKeyboardKey(
+                edit(file, "EjectAllCargo", BindingSlotType.SECONDARY, null));
+
+        String updated = Files.readString(file, StandardCharsets.UTF_8);
+        assertEquals(BindingSaveResult.SAVED, result);
+        assertTrue(updated.contains("<Secondary Device=\"{NoDevice}\" Key=\"\" />"));
+        assertFalse(updated.contains("<Hold"));
+    }
+
     private KeyboardBindingEdit edit(
             Path file,
             String bindingId,

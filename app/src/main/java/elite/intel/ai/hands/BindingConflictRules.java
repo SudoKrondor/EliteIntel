@@ -7,29 +7,19 @@ import java.util.Map;
 
 /**
  * Curated descriptions for known-dangerous binding pairs.
- * Also owns the context-group logic used by conflict detection.
+ * Also owns the context-group logic used by conflict detection: which actions live in mutually
+ * exclusive input contexts ({@link #contextOf}) and which live in modal sub-state overlays
+ * ({@link #isSubStateModeAction}). Two actions can only conflict when they share both a context and
+ * an exact chord.
  */
 public class BindingConflictRules {
 
     private static final Map<String, String> DESCRIPTIONS = new HashMap<>();
 
     static {
-        // UI navigation keys firing ship actions accidentally
-        put("UI_Back", "ToggleFlightAssist", "Closing a panel will toggle flight assist");
-        put("UI_Back", "DeployHardpointToggle", "Closing a panel will deploy or retract hardpoints");
-        put("UI_Back", "ToggleCargoScoop", "Closing a panel will toggle the cargo scoop");
-        put("UI_Back", "LandingGearToggle", "Closing a panel will toggle landing gear");
-        put("UI_Back", "ShipSpotLightToggle", "Closing a panel will toggle ship lights");
-        put("UI_Back", "NightVisionToggle", "Closing a panel will toggle night vision");
-        put("UI_Back", "Supercruise", "Closing a panel will engage or exit supercruise");
-        put("UI_Back", "Hyperspace", "Closing a panel will initiate a hyperspace jump");
-        put("UI_Back", "RecallDismissShip", "Closing a panel will recall or dismiss the ship");
-
-        put("UI_Toggle", "ToggleFlightAssist", "Toggling the UI will toggle flight assist");
-        put("UI_Toggle", "DeployHardpointToggle", "Toggling the UI will deploy or retract hardpoints");
-        put("UI_Toggle", "ToggleCargoScoop", "Toggling the UI will toggle the cargo scoop");
-        put("UI_Toggle", "NightVisionToggle", "Toggling the UI will activate night vision");
-        put("UI_Toggle", "Supercruise", "Toggling the UI will engage or exit supercruise");
+        // NOTE: UI_* navigation keys are NOT listed here. The UI panel is its own input context
+        // (the game disables ship controls while a panel is open), so UI_* never co-fires with a
+        // ship action - see contextOf(). Two UI_* actions on one chord still conflict (same context).
 
         // Dangerous hardware action pairs
         put("DeployHardpointToggle", "LandingGearToggle", "Deploying hardpoints will also toggle landing gear");
@@ -52,16 +42,16 @@ public class BindingConflictRules {
      * Returns true when two actions sharing a key is safe and should not be flagged.
      * <p>
      * Safe cases:
-     * - Different vehicle states (ship / buggy / humanoid) - mutually exclusive, player
-     * can only be in one at a time. The AiActionsMap also filters on state, so the
-     * game itself prevents simultaneous activation.
-     * - Either action belongs to a sub-state overlay (camera, FSS, Galnet) - these
-     * modes are only active inside a specific overlay and cannot fire alongside
-     * regular ship actions.
+     * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
+     * only one is active at a time. The game disables the others' controls while one is active, so a
+     * shared key cannot fire two of them. In particular a UI_* or construction-panel action never
+     * collides with a ship action (e.g. {@code CycleNextSubsystem} vs {@code UI_Right}).
+     * - Either action belongs to a sub-state overlay (camera, FSS, Galnet, radial wheels) - these
+     * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
     public static boolean isSafeOverlap(String a, String b) {
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
-        return !vehicleStateOf(a).equals(vehicleStateOf(b));
+        return !contextOf(a).equals(contextOf(b));
     }
 
     /**
@@ -72,17 +62,27 @@ public class BindingConflictRules {
     }
 
     /**
-     * Ship / buggy (SRV) / humanoid (on-foot) - the three mutually exclusive player states.
+     * The mutually exclusive input context an action belongs to. Only one is ever active, so two
+     * actions in different contexts can share a key without ever co-firing:
+     * <ul>
+     *   <li>{@code ui} - panel/menu navigation (UI_* keys); ship controls are disabled while a panel is open;</li>
+     *   <li>{@code construction} - the colonisation/construction panel, a separate UI panel;</li>
+     *   <li>{@code buggy} - SRV (_Buggy) controls;</li>
+     *   <li>{@code humanoid} - on-foot controls;</li>
+     *   <li>{@code ship} - everything else (cockpit flight).</li>
+     * </ul>
      */
-    private static String vehicleStateOf(String action) {
+    private static String contextOf(String action) {
+        if (action.startsWith("UI_")) return "ui";
+        if (action.contains("Construction")) return "construction";
         if (action.endsWith("_Buggy")) return "buggy";
         if (action.contains("Humanoid")) return "humanoid";
         return "ship";
     }
 
     /**
-     * Sub-state overlays active only inside a specific mode (camera, FSS scanner,
-     * Galnet). Key sharing between these and main-state actions is safe.
+     * Sub-state overlays active only inside a specific mode (camera, FSS scanner, Galnet, radial
+     * wheels). Key sharing between these and main-state actions is safe.
      */
     private static boolean isSubStateModeAction(String action) {
         // WHY: "Cam" is matched as a substring (not a prefix) on purpose - it covers every camera
@@ -90,6 +90,10 @@ public class BindingConflictRules {
         // all the CamPitch/CamRoll/CamYaw/CamZoom/CamTranslate axes. No non-camera ED action name
         // contains "Cam".
         return action.contains("Cam")
+                // Radial wheels (HumanoidItemWheel*, HumanoidEmoteWheel*, HumanoidUtilityWheel*) are
+                // modal UI components: while a wheel is shown the game blocks every other control, so
+                // they cannot co-fire with any other action.
+                || action.contains("Wheel")
                 || action.startsWith("Vanity")
                 || action.startsWith("MovePlacement") || action.startsWith("Placement")
                 || action.startsWith("GalnetAudio")

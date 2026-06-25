@@ -45,7 +45,14 @@ public class AudioCalibrator {
     // Fraction of the noise-to-speech gap used to set the VAD trigger.
     // 0.5 = midpoint: triggers halfway between ambient and average speech.
     private static final double GATE_MIDPOINT_FACTOR = 0.5;
-    private static final double MIN_SPEECH_NOISE_GAP = 150.0;
+    // Minimum acceptable separation between the gate-open level and the noise floor,
+    // expressed as a true RATIO (gateOpen >= noiseFloor * ratio) so it scales with the
+    // environment instead of a fixed additive margin. 2.0x is ~6 dB - below this the
+    // top quartile of ambient noise reliably crosses the gate and false-triggers.
+    private static final double MIN_GATE_TO_NOISE_RATIO = 2.0;
+    // Absolute lower bound on the gate-open margin, for near-silent rooms where the
+    // noise floor is ~0-30 and a pure ratio would set the gate down in mic self-noise.
+    private static final double MIN_GATE_OPEN_ABS = 120.0;
     private static final double MAX_NOISE_AVG = 800.0;
 
 
@@ -70,20 +77,28 @@ public class AudioCalibrator {
         speakPromptAndWait("speech.audioCalibrationCountTo12");
         double avgSpeechRMS = calibrateSpeech(captureFormat, bufferSize, buffer, info, noiseFloor, mixerInfo);
 
-        // VAD trigger = midpoint between noise and speech.
-        // Always above ambient, always below speech, regardless of absolute levels.
+        // VAD gate-open = midpoint between noise and speech (always above ambient,
+        // always below speech), but never closer to the floor than the minimum
+        // ratio/absolute margin. We reject only when the *speech* itself fails to
+        // clear that margin - i.e. the environment is genuinely unusable - rather
+        // than silently accepting a gate sitting in the noise.
         double gap = avgSpeechRMS - noiseFloor;
+        double minOpen = Math.max(noiseFloor * MIN_GATE_TO_NOISE_RATIO, noiseFloor + MIN_GATE_OPEN_ABS);
+        double midpointOpen = noiseFloor + gap * GATE_MIDPOINT_FACTOR;
         double highThreshold;
-        if (avgSpeechRMS <= noiseFloor || gap < MIN_SPEECH_NOISE_GAP) {
-            log.warn("Insufficient speech/noise separation (gap={}). Speech may not have been detected or environment is too loud.", gap);
+        if (avgSpeechRMS <= noiseFloor || midpointOpen < minOpen) {
+            log.warn("Insufficient speech/noise separation (noiseFloor={}, speechAvg={}, gap={}). " +
+                            "Environment too loud or mic gain too low; gate clamped to minimum ratio above floor, speech may be missed.",
+                    (int) noiseFloor, (int) avgSpeechRMS, (int) gap);
             UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationLowGap", String.valueOf((int) gap))));
-            // Fallback: 30% above noise floor
-            highThreshold = noiseFloor * 1.3 + 50;
+            highThreshold = minOpen;
         } else {
-            highThreshold = noiseFloor + gap * GATE_MIDPOINT_FACTOR;
+            highThreshold = midpointOpen;
         }
 
-        // noiseFloor is stored as-is (raw measured ambient level)
+        // noiseFloor is stored as-is (raw measured ambient level). The runtime VAD
+        // derives the gate-CLOSE level from (noiseFloor, highThreshold) as a
+        // Schmitt trigger, so no separate close value is persisted.
         double lowThreshold = noiseFloor;
 
         highThreshold = Math.round(highThreshold * 100.0) / 100.0;

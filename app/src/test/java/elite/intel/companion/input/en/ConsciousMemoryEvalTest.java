@@ -33,7 +33,21 @@ class ConsciousMemoryEvalTest {
             new Probe("remember that I prefer trading and exploration over combat",
                     "what kind of activities do I prefer", "trading", "trading"),
             new Probe("remember that our wing leader is Commander Hale",
-                    "who is our wing leader", "hale", "hale"));
+                    "who is our wing leader", "hale", "hale"),
+            new Probe("remember that my home system is Shinrarta Dezhra",
+                    "what is my home system", "shinrarta", "shinrarta"),
+            new Probe("remember that our ship is named the Stardust Drifter",
+                    "what is our ship called", "stardust", "stardust"),
+            new Probe("remember that our rendezvous contact is Agent Vasquez",
+                    "who is our rendezvous contact", "vasquez", "vasquez"),
+            new Probe("remember that our priority cargo is medical supplies",
+                    "what is our priority cargo", "medical", "medical"),
+            new Probe("remember that our fuel reserve limit is 20 percent",
+                    "what is our fuel reserve limit", "20", "20"),
+            new Probe("remember that our emergency callsign is Mayday Seven",
+                    "what is our emergency callsign", "mayday", "mayday"),
+            new Probe("remember that our destination beacon is at Hutton Orbital",
+                    "where is our destination beacon", "hutton", "hutton"));
 
     private static final List<String> FILLER = List.of(
             "what is our current location", "what's the time", "what's our heading", "are there contacts on radar",
@@ -74,6 +88,8 @@ class ConsciousMemoryEvalTest {
             }
             report.add(String.format("%-10s | %-26s | %-10s | %-6s | %s",
                     p.keyword(), tier, recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
+            report.add("    search: query='" + h.recalledQuery() + "' -> " + h.recallResult());
+            report.add("    calls : " + h.turnToolNames());
         }
 
         StringBuilder block = new StringBuilder("\n======== CONSCIOUS MEMORY / llm_memory (theme 5) ========\n");

@@ -759,7 +759,6 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("skoop", "scoop");
         m.put("cmm commodities", "cmm composites");
         m.put("alex sounds right", "alexandrite");
-        m.put("center", "entry");
         m.put("next zip", "exit");
         m.put("recovered", "recover");
         m.put("break over", "recover");

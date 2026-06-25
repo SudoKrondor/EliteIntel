@@ -3,6 +3,7 @@ package elite.intel.ui.widget;
 import elite.intel.ai.hands.BindingConflictScanner;
 import elite.intel.ai.hands.EliteKeyboardKeys;
 import elite.intel.ai.hands.KeyBindingsParser;
+import elite.intel.ai.hands.ReservedKeyChords;
 
 import javax.swing.*;
 import java.awt.*;
@@ -185,6 +186,11 @@ public class KeyboardAvailabilityView extends JPanel {
     private Color statusColor(String token) {
         if (!EliteKeyboardKeys.isAssignable(token)) {
             return HUD_COLOR_ROLE_DISABLED;
+        }
+        // OS-reserved chords (Alt+F4, Linux Ctrl+Alt+F*) can never be assigned: flag amber so the
+        // user sees why the key turns unavailable when the reserved modifiers are held.
+        if (ReservedKeyChords.isReserved(token, heldModifiers)) {
+            return HUD_COLOR_ROLE_WARNING;
         }
         boolean conflicts = BindingConflictScanner.candidateConflict(
                 bindingId, token, heldModifiers, existingBindings) != null;

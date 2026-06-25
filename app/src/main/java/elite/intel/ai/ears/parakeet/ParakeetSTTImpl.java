@@ -71,9 +71,19 @@ public class ParakeetSTTImpl implements EarsInterface {
     private int sampleRateHertz;
     private int bufferSize;
     private AudioFormat captureFormat;
-    public double RMS_THRESHOLD_HIGH;
-    public double NOISE_FLOOR;
-    private final double MINIMUM_NOISE_FLOOR_TO_RMS_RATIO = 300;
+    public double RMS_THRESHOLD_HIGH;   // gate-OPEN level
+    public double RMS_THRESHOLD_LOW;    // gate-CLOSE level (Schmitt-trigger hysteresis)
+    public double NOISE_FLOOR;          // raw ambient floor (leading-trim + HUD)
+    // Gate-close sits midway between the raw noise floor and the open level, so a
+    // dip to just below HIGH does not close the gate - only a drop back toward the
+    // ambient floor does. Provides amplitude hysteresis on top of the time-based
+    // EXIT_SILENCE_FRAMES guard.
+    private static final double GATE_CLOSE_FRACTION = 0.5;
+    // Minimum acceptable separation between gate-open and noise floor, as a ratio
+    // (~6 dB). Mirrors AudioCalibrator; below this the user is warned at startup.
+    private static final double MIN_GATE_TO_NOISE_RATIO = 2.0;
+    // Absolute sanity floor for the gate-open level (very quiet rooms).
+    private static final double MIN_GATE_OPEN_ABS = 250;
     private Thread processingThread;
     private Mixer.Info inputMixerInfo;
 
@@ -105,6 +115,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             this.RMS_THRESHOLD_HIGH = high;
             this.NOISE_FLOOR = low;
         }
+        // Derive the gate-close level from the persisted (floor, open) pair.
+        this.RMS_THRESHOLD_LOW = NOISE_FLOOR + (RMS_THRESHOLD_HIGH - NOISE_FLOOR) * GATE_CLOSE_FRACTION;
 
         recognizer = buildRecognizer();
         log.info("Parakeet recognizer loaded from {}", AppPaths.getParakeetModelDir());
@@ -120,7 +132,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationRequired")));
-        } else if (RMS_THRESHOLD_HIGH < 250 || RMS_THRESHOLD_HIGH - NOISE_FLOOR < MINIMUM_NOISE_FLOOR_TO_RMS_RATIO) {
+        } else if (RMS_THRESHOLD_HIGH < MIN_GATE_OPEN_ABS || RMS_THRESHOLD_HIGH < NOISE_FLOOR * MIN_GATE_TO_NOISE_RATIO) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
@@ -278,11 +290,19 @@ public class ParakeetSTTImpl implements EarsInterface {
                 preRoll.addLast(copyOf(audio, audioLen));
                 if (preRoll.size() > PRE_ROLL_FRAMES) preRoll.removeFirst();
 
+                // Schmitt-trigger hysteresis: the gate opens only above the HIGH
+                // level, but stays open until rms falls below the lower CLOSE level
+                // for EXIT_SILENCE_FRAMES. Trailing quiet speech (between LOW and
+                // HIGH) keeps the gate open instead of clipping the tail of an
+                // utterance, while opening still requires a clear voice onset.
                 if (rms > RMS_THRESHOLD_HIGH) {
                     consecutiveVoice++;
-                    consecutiveSilence = 0;
                 } else {
                     consecutiveVoice = 0;
+                }
+                if (rms > RMS_THRESHOLD_LOW) {
+                    consecutiveSilence = 0;
+                } else {
                     consecutiveSilence++;
                 }
 

@@ -25,8 +25,10 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             functions, JSON, or that you are an AI. Speak only from function results and your memory; never \
             invent or guess facts such as numbers, names, distances, or status. Use search_in_memory for anything the \
             commander told you or that you remembered, and a query function for the current ship or galaxy \
-            state; when it could be either, do both and answer from whatever has it. Say you cannot only when \
-            neither memory nor a function can provide it.
+            state; when it could be either, do both and answer from whatever has it. When you call \
+            search_in_memory or a query to answer, wait for its result before answering - never say you \
+            cannot in the same response that calls it. Say you cannot only when neither memory nor a \
+            function can provide it.
             """;
 
     private static final String TOOL_CALLING = """

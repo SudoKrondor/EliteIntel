@@ -180,6 +180,11 @@ public final class CompanionEvalHarness {
         return List.copyOf(turnCalls);
     }
 
+    /** The tool names executed this turn, in execution order (for tracing the full turn flow). */
+    public List<String> turnToolNames() {
+        return turnCalls.stream().map(Executed::tool).toList();
+    }
+
     /** Executed tool-calls of the given name this turn. */
     public List<Executed> callsNamed(String tool) {
         return turnCalls.stream().filter(c -> c.tool().equals(tool)).toList();
@@ -247,6 +252,17 @@ public final class CompanionEvalHarness {
     public String recalledQuery() {
         List<Executed> recalls = callsNamed("search_in_memory");
         return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+    }
+
+    /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
+    public List<String> recallResult() {
+        List<Executed> recalls = callsNamed("search_in_memory");
+        if (recalls.isEmpty() || !recalls.get(0).result().has("items")) {
+            return List.of();
+        }
+        List<String> items = new ArrayList<>();
+        recalls.get(0).result().getAsJsonArray("items").forEach(e -> items.add(e.getAsString()));
+        return items;
     }
 
     private static String str(JsonObject o, String key) {

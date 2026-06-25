@@ -1,6 +1,7 @@
 package elite.intel.util;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.eventbus.AudioBeepCueBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
@@ -26,6 +27,7 @@ public final class AudioPlayer {
     private AudioPlayer() {
         UiBus.register(this);
         GameEventBus.register(this);
+        AudioBeepCueBus.register(this);
         volume = SystemSession.getInstance().getBeepVolume();
     }
 
