@@ -1,6 +1,7 @@
 package elite.intel.search.edsm.commodity;
 
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.AudioBeepCueBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.edsm.EdsmApiClient;
 import elite.intel.search.edsm.dto.MarketDto;
@@ -86,7 +87,7 @@ public class EdsmCommoditySearch {
 
             String stationName = station.getName();
             String starSystem = station.getStarSystemName();
-            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            AudioBeepCueBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
 
             for (Commodity entry : commodities) {
                 if (commodityToFind.equalsIgnoreCase(entry.getName())) {
@@ -99,7 +100,7 @@ public class EdsmCommoditySearch {
                         result.setStationType(station.getType());
                         result.setDistanceFromPlayer(station.getTransientDistance());
                         results.add(result);
-                        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
+                        AudioBeepCueBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_3));
                     }
                 }
             }
