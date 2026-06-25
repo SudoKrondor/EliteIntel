@@ -20,7 +20,7 @@ import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
  */
 @RegisterCommand
 public final class HonkCommand implements IntelCommand {
-    public static final String ID = "honk";
+    public static final String ID = "discovery_scan_honk";
 
     @Override public String llmDescription() { return "Fire the discovery scanner (honk) to map the system."; }
 
