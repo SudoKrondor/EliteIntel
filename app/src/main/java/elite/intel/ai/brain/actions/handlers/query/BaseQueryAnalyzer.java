@@ -5,10 +5,7 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.SystemSession;
-import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
@@ -45,8 +42,6 @@ public class BaseQueryAnalyzer {
             return result;
         }
 
-        // Legacy: the second-pass analysis LLM is slow, so give the commander a "stand by" while it runs.
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("query.analyzing")));
         AiAnalysisInterface aiAnalysisInterface = ApiFactory.getInstance().getAnalysisEndpoint();
         JsonObject analysis = aiAnalysisInterface.analyzeData(originalUserInput, struct);
         WebSocketBroadcaster.getInstance().broadcast(analysis);

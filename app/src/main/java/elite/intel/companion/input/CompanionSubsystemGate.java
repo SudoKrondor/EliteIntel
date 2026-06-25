@@ -24,6 +24,7 @@ import elite.intel.companion.speech.CompanionSpeechGateway;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
@@ -65,6 +66,11 @@ public final class CompanionSubsystemGate implements ManagedService {
             return;
         }
         String input = event.getUserInput();
+        // Mirror the legacy command path (PromptFactory.normalizeInput): surface the commander's spoken
+        // words to the UI ("ВВОД ПОЛЬЗОВАТЕЛЯ" panel / OBS overlay), which listen on NormalizedUserInputEvent.
+        if (input != null && !input.isBlank()) {
+            GameEventBus.publish(new NormalizedUserInputEvent(input));
+        }
         // The code word confirms a pending dangerous action; it is not a new thought (§2.13).
         if (CompanionConfig.isConfirmationCodeWord(input)) {
             confirmationCoordinator.confirm();
