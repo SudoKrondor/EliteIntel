@@ -123,13 +123,20 @@ public class JumpCompletedSubscriber {
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
                     //GameEventBus.publish(new RouteAnnouncementEvent(sb.toString()));
-                    GameEventBus.publish(new SensorDataEvent(sb.toString(), "Announce this route information."));
+                    GameEventBus.publish(new SensorDataEvent(sb.toString(), "Announce this route information.",
+                            SensorDataEvent.TOPIC_NAVIGATION));
                 }
                 if (isSellerSystem && station != null) {
-                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to buy."));
+                    GameEventBus.publish(new SensorDataEvent(
+                            "Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(),
+                            "Remind the commander of their active trade route: state the station name and the commodity to buy.",
+                            SensorDataEvent.TOPIC_TRADE));
                 }
                 if (isBuyerSystem && station != null) {
-                    GameEventBus.publish(new SensorDataEvent("Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(), "Remind the commander of their active trade route: state the station name and the commodity to sell."));
+                    GameEventBus.publish(new SensorDataEvent(
+                            "Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(),
+                            "Remind the commander of their active trade route: state the station name and the commodity to sell.",
+                            SensorDataEvent.TOPIC_TRADE));
                 }
             }
 

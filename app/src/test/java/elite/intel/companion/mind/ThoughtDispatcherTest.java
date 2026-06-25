@@ -9,6 +9,7 @@ import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
@@ -21,13 +22,16 @@ import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
+import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -126,6 +130,39 @@ class ThoughtDispatcherTest {
         assertEquals(1, memory.writes.size());
         assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
         assertEquals(MemoryProcessingState.PROCESSED, memory.writes.get(0).processingState());
+    }
+
+    @Test
+    void sensorNarrationUsesProvidedTopicAndNarrationOnlyToolsEvenWhenQuiet() {
+        CapturingLlm llm = new CapturingLlm();
+        CompanionState state = new CompanionState();
+        state.setVerbosity(Verbosity.QUIET);
+        ThoughtContext ctx = new ThoughtContext(
+                llm, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> { throw new AssertionError("sensor narration must not select query tools"); },
+                state, invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        dispatcher.start();
+
+        dispatcher.submitSensorData(new SensorDataEvent(
+                "In route to Sol, G class star.",
+                "Announce this route information.",
+                SensorDataEvent.TOPIC_NAVIGATION));
+        dispatcher.stop();
+
+        assertEquals(1, llm.requests.size());
+        assertEquals(Set.of(SpeakFunction.ID, NothingToDoFunction.ID),
+                llm.requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()));
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry entry = memory.writes.get(0);
+        assertEquals(ConversationTopic.NAVIGATION, entry.topic());
+        JsonObject input = JsonParser.parseString(entry.content()).getAsJsonObject();
+        assertEquals("SensorData", input.get("event_type").getAsString());
+        assertEquals("navigation", input.get("topic").getAsString());
+        assertEquals("Announce this route information.", input.get("instructions").getAsString());
+        assertEquals("sensorData: In route to Sol, G class star.", input.get("payload").getAsString());
     }
 
     @Test
