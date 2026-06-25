@@ -150,7 +150,7 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     private static String googleVoiceName(Language language, boolean male) {
         return switch (language) {
             case EN -> "";
-            case RU -> male ? "ru-RU-Standard-B" : "ru-RU-Standard-E";
+            case RU -> male ? "ru-RU-Standard-B" : "ru-RU-Chirp3-HD-Leda";
             case UK -> "uk-UA-Standard-B";
             case DE -> male ? "de-DE-Standard-H" : "de-DE-Standard-G";
             case FR -> male ? "fr-FR-Standard-G" : "fr-FR-Standard-E";

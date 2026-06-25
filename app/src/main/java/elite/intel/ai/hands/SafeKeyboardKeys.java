@@ -99,12 +99,22 @@ public final class SafeKeyboardKeys {
         List<Chord> chords = new ArrayList<>();
         for (String key : BASE_KEYS) {
             for (BindingModifier modifier : SAFE_MODIFIERS) {
-                chords.add(new Chord(key, modifier));
+                addUnlessReserved(chords, new Chord(key, modifier));
             }
         }
         for (String key : BASE_KEYS) {
-            chords.add(new Chord(key, null));
+            addUnlessReserved(chords, new Chord(key, null));
         }
         return List.copyOf(chords);
+    }
+
+    /**
+     * Keeps OS-reserved chords (e.g. Alt+F4) out of the auto-assign pool.
+     */
+    private static void addUnlessReserved(List<Chord> chords, Chord chord) {
+        List<String> modifierKeys = chord.modifier() == null ? List.of() : List.of(chord.modifier().key());
+        if (!ReservedKeyChords.isReserved(chord.key(), modifierKeys)) {
+            chords.add(chord);
+        }
     }
 }

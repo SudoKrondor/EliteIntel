@@ -65,12 +65,15 @@ public class BindForgeTabPanel extends JPanel {
     private JButton applyButton;
     private JButton revertButton;
     private JButton fixAllButton;
+    private JCheckBox conflictsOnlyCheck;
 
     private Map<String, KeyBindingsParser.ReadOnlyBindingSlots> currentSlots = Map.of();
     /**
-     * Ids of bindings in a conflict, driving the RED row coloring; recomputed on each load.
+     * Each conflicting binding id mapped to the (sorted) ids it shares a chord with. Drives the RED
+     * row coloring (via {@code keySet}) and the hover callout (via the partner list); recomputed on
+     * each load.
      */
-    private Set<String> conflictedBindings = Set.of();
+    private Map<String, Set<String>> conflictsByBinding = Map.of();
     /** Working copy file currently loaded in the editor - used for stale checks. */
     private File activeBindingsFile;
     private FileTime activeBindingsLastModified;
@@ -86,9 +89,10 @@ public class BindForgeTabPanel extends JPanel {
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(
                 selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding,
-                // Lambda (not conflictedBindings::contains) so it reads the field live: the set is
-                // reassigned on each load, and a bound method ref would pin the initial empty set.
-                id -> conflictedBindings.contains(id));
+                // Lambda (not a bound method ref) so it reads the field live: the map is
+                // reassigned on each load, and a bound method ref would pin the initial empty map.
+                id -> conflictsByBinding.containsKey(id),
+                this::buildConflictPopupContent);
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
         UiBus.register(this);
@@ -251,8 +255,13 @@ public class BindForgeTabPanel extends JPanel {
         fixAllButton.setToolTipText(getText("bindings.button.fixAll.tooltip"));
         fixAllButton.addActionListener(e -> fixAllMissing());
 
-        // Non-modal footer: sync status on the left, FIX MISSING + REVERT + APPLY (primary) on the right, no BACK.
-        return HudFooter.build(false, null, syncStatusBadge, List.of(fixAllButton, revertButton, applyButton));
+        conflictsOnlyCheck = makeCheckBox(getText("bindings.filter.conflictsOnly"), false);
+        conflictsOnlyCheck.addActionListener(e -> renderBindingTables());
+
+        // Non-modal footer: sync status on the left, then the conflicts-only filter, FIX MISSING,
+        // REVERT and APPLY (primary) on the right, no BACK.
+        return HudFooter.build(false, null, syncStatusBadge,
+                List.of(conflictsOnlyCheck, fixAllButton, revertButton, applyButton));
     }
 
     public void initData() {
@@ -268,7 +277,7 @@ public class BindForgeTabPanel extends JPanel {
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots =
                     parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
             Map<String, KeyBindingsParser.KeyBinding> parsedBindings = effectiveBindings(slots);
-            conflictedBindings = computeConflictedBindings(parsedBindings);
+            conflictsByBinding = computeConflicts(parsedBindings);
 
             currentSlots = slots;
             activeBindingsFile = workingCopyPath.toFile();
@@ -280,29 +289,7 @@ public class BindForgeTabPanel extends JPanel {
             profileField.setText(activeProfileName(resolvedGameFile));
             filePathField.setText(resolvedGameFile.getAbsolutePath());
 
-            // Tables show every keyboard-capable control (custom commands can target any of them),
-            // split by whether it currently has a usable keyboard binding.
-            BindingPartition partition = partitionByKeyboardBinding(slots);
-            List<String> usedBindings = partition.used();
-            List<String> missingBindings = partition.missing();
-
-            renderGroupedTables(
-                    usedBindingsPanel,
-                    groupedBindings(usedBindings, slots, false),
-                    getText("bindings.column.action"),
-                    getText("bindings.column.primary"),
-                    getText("bindings.column.secondary"));
-            tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
-
-            renderGroupedTables(
-                    missingBindingsPanel,
-                    groupedBindings(missingBindings, slots, true),
-                    getText("bindings.column.action"),
-                    getText("bindings.column.primary"),
-                    getText("bindings.column.secondary"),
-                    getText("bindings.column.autofix"));
-            tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
-            fixAllButton.setEnabled(!missingBindings.isEmpty());
+            renderBindingTables();
 
             // The AiTab badge reflects only the controls EliteIntel itself drives.
             UiBus.publish(new BindingsSummaryChangedEvent(
@@ -310,7 +297,7 @@ public class BindForgeTabPanel extends JPanel {
                     monitor.findFoundGameBindings(parsedBindings).size()));
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
-            conflictedBindings = Set.of();
+            conflictsByBinding = Map.of();
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
             filePathField.setText(getText("bindings.notAvailable"));
@@ -731,16 +718,118 @@ public class BindForgeTabPanel extends JPanel {
     }
 
     /**
-     * The ids of all bindings that participate in a conflict, for the RED/green row coloring.
+     * Maps every conflicting binding id to the (sorted) ids it shares a chord with. The {@code keySet}
+     * drives the RED/green row coloring; the partner lists feed the hover callout.
      */
-    private Set<String> computeConflictedBindings(
+    private Map<String, Set<String>> computeConflicts(
             Map<String, KeyBindingsParser.KeyBinding> bindings) {
-        Set<String> conflicted = new HashSet<>();
+        Map<String, Set<String>> conflicts = new HashMap<>();
         for (BindingConflictScanner.Conflict conflict : BindingConflictScanner.scan(bindings)) {
-            conflicted.add(conflict.actionA());
-            conflicted.add(conflict.actionB());
+            conflicts.computeIfAbsent(conflict.actionA(), k -> new TreeSet<>()).add(conflict.actionB());
+            conflicts.computeIfAbsent(conflict.actionB(), k -> new TreeSet<>()).add(conflict.actionA());
         }
-        return conflicted;
+        return conflicts;
+    }
+
+    /**
+     * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
+     * counts and the Fix Missing enabled state always reflect the full (unfiltered) data, so the
+     * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
+     */
+    private void renderBindingTables() {
+        // Drop any open conflict callout before the tables (and their hover listeners) are rebuilt.
+        tableFactory.hideConflictPopup();
+
+        // Tables show every keyboard-capable control (custom commands can target any of them),
+        // split by whether it currently has a usable keyboard binding.
+        BindingPartition partition = partitionByKeyboardBinding(currentSlots);
+        List<String> usedBindings = partition.used();
+        List<String> missingBindings = partition.missing();
+
+        renderGroupedTables(
+                usedBindingsPanel,
+                groupedBindings(filterConflictsOnly(usedBindings), currentSlots, false),
+                getText("bindings.column.action"),
+                getText("bindings.column.primary"),
+                getText("bindings.column.secondary"));
+        tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
+
+        renderGroupedTables(
+                missingBindingsPanel,
+                groupedBindings(filterConflictsOnly(missingBindings), currentSlots, true),
+                getText("bindings.column.action"),
+                getText("bindings.column.primary"),
+                getText("bindings.column.secondary"),
+                getText("bindings.column.autofix"));
+        tabs.setTitleAt(1, getText("bindings.missingBindings", missingBindings.size()));
+        fixAllButton.setEnabled(!missingBindings.isEmpty());
+    }
+
+    /**
+     * When the filter is on, narrows the ids to those that participate in a conflict; otherwise a no-op.
+     */
+    private List<String> filterConflictsOnly(List<String> bindingIds) {
+        if (conflictsOnlyCheck == null || !conflictsOnlyCheck.isSelected()) {
+            return bindingIds;
+        }
+        return bindingIds.stream().filter(conflictsByBinding::containsKey).toList();
+    }
+
+    /**
+     * Builds the themed hover-callout content for a conflicting binding, or {@code null} if it has no
+     * conflict. Names the shared chord and lists, humanized, every binding it collides with.
+     */
+    private JComponent buildConflictPopupContent(String bindingId) {
+        Set<String> partners = conflictsByBinding.get(bindingId);
+        if (partners == null || partners.isEmpty()) {
+            return null;
+        }
+
+        HudPanel card = new HudPanel(new BorderLayout(), HUD_COLOR_ROLE_DANGER, HudPanel.Variant.FRAMED);
+        JPanel body = transparentPanel(null);
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBorder(new EmptyBorder(6, 10, 6, 10));
+
+        JLabel title = new JLabel(getText("bindings.conflict.popup.title", conflictChordText(bindingId)));
+        title.setForeground(HUD_COLOR_ROLE_DANGER);
+        title.setFont(title.getFont().deriveFont(Font.BOLD));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        body.add(title);
+
+        for (String partner : partners) {
+            JLabel item = new JLabel("• " + StringUtls.humanizeBindingName(partner));
+            item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+            item.setAlignmentX(Component.LEFT_ALIGNMENT);
+            body.add(item);
+        }
+
+        card.add(body, BorderLayout.CENTER);
+        return card;
+    }
+
+    /**
+     * The formatted chord (e.g. "Left Ctrl + A") of the slot that puts {@code bindingId} into conflict.
+     */
+    private String conflictChordText(String bindingId) {
+        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
+        if (slots == null) {
+            return "";
+        }
+        KeyBindingsParser.ReadOnlyBindingSlot slot = conflictingSlot(slots);
+        return slot == null ? "" : slotFormatter.formatChord(slot.bindingModifiers(), slot.key());
+    }
+
+    /**
+     * The keyboard-usable slot the conflict scanner matched on - primary first, then secondary.
+     */
+    private KeyBindingsParser.ReadOnlyBindingSlot conflictingSlot(KeyBindingsParser.ReadOnlyBindingSlots slots) {
+        if (slots.primary() != null && slots.primary().keyboardUsable()) {
+            return slots.primary();
+        }
+        if (slots.secondary() != null && slots.secondary().keyboardUsable()) {
+            return slots.secondary();
+        }
+        return null;
     }
 
     private Map<BindingGroup, List<Object[]>> groupedRows() {
@@ -785,6 +874,9 @@ public class BindForgeTabPanel extends JPanel {
         if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null || assignDialogOpen) {
             return;
         }
+        // Opening the dialog comes from a row click, so no mouseExited fires to dismiss the hover
+        // callout - drop it explicitly so it does not float over the modal.
+        tableFactory.hideConflictPopup();
 
         KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
         KeyBindingsParser.ReadOnlyBindingSlot slot = slotType == BindingSlotType.PRIMARY
@@ -806,7 +898,9 @@ public class BindForgeTabPanel extends JPanel {
                 slotType,
                 slot,
                 availabilityService,
-                effectiveBindings(currentSlots)
+                effectiveBindings(currentSlots),
+                conflictsByBinding.get(bindingId),
+                conflictChordText(bindingId)
         );
 
         assignDialogOpen = true;

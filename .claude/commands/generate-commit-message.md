@@ -30,33 +30,33 @@ Group related changes into themes. A theme spans whatever files implement it; do
 
 # 3. Write the message
 
+This message is a record of work already done, not a plan. Every bullet describes something that now exists in the diff, never something that should happen next. If a bullet could be mistaken for a to-do item or a code review comment, rewrite it.
+
 Format:
 
-- **Summary line**: imperative mood, concise (aim <= 72 chars). If a ticket key was passed in the arguments, prefix it:
+- **Summary line**: past tense, concise (aim <= 72 chars). If a ticket key was passed in the arguments, prefix it:
   `KAN-61 <summary>`.
 - Blank line.
-- **Body
-  **: bullet points grouped by theme. Each bullet states WHAT changed and, where it aids understanding, WHY or the key implementation choice. Describe functionality and implementation, not a list of files. It is fine to name a component/area (e.g. "credit tracking", "journal parser") when it helps the reader, but do not enumerate changed files.
-- If tests were added or updated, include a short `Tests:` line or bullet.
+- **Body**: bullet points grouped by theme, past tense throughout (e.g. "Added", "Fixed",
+  "Reworked", not "Add", "Fix", "Rework"). Each bullet states WHAT changed and, where it aids understanding, WHY or the key implementation choice. Describe functionality and implementation, not a list of files. It is fine to name a component/area (e.g. "credit tracking", "journal parser") when it helps the reader, but do not enumerate changed files.
+- If tests were added or updated, include a short `Tests:` line or bullet, past tense.
 - Use plain hyphens, never em dashes ("-").
 - Keep it factual and reviewable; no filler.
-- Append the repo trailer on its own line (the user may delete it):
-  `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`
 
 Example shape (illustrative, not a template to copy verbatim):
 
 ```
-KAN-61 Track personal credits live during a session
+KAN-61 Tracked personal credits live during a session
 
-- Add live credit-balance tracking: realized journal transactions adjust the
+- Added live credit-balance tracking: realized journal transactions now adjust the
   stored balance and refresh the front-tab display via the UI bus, instead of
   only updating on game reload.
-- Reconstruct the balance at startup from the last LoadGame anchor plus realized
+- Reconstructed the balance at startup from the last LoadGame anchor plus realized
   deltas, so a mid-session app start shows the correct total.
-- Route financial announcements through the LLM so they are spoken in the user's
+- Routed financial announcements through the LLM so they are spoken in the user's
   language with personality.
 
-Tests: add coverage for the credit math, startup reconstruction, and the
+Tests: added coverage for the credit math, startup reconstruction, and the
 live/pre-scan event-set contract.
 
 Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>

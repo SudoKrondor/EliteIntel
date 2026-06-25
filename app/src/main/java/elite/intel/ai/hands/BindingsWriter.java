@@ -119,7 +119,7 @@ public class BindingsWriter {
             String updatedXml = replaceRange(
                     encodedXml.xml(),
                     slot.range(),
-                    replacementSlot(edit, requestedModifiers, rewriteModifier)
+                    replacementSlot(edit, requestedModifiers, rewriteModifier, slotXml)
             );
             return writeReplacement(edit.file(), new EncodedXml(updatedXml, encodedXml.hasUtf8Bom()));
         } catch (IOException e) {
@@ -226,9 +226,10 @@ public class BindingsWriter {
 
         String device = attributeValue(startTag, "Device");
         String key = attributeValue(startTag, "Key");
+        String holdAttr = attributeValue(startTag, "Hold");
         boolean selfClosing = isSelfClosingStartTag(xml, slotRange.start(), startTagEnd);
         if (selfClosing) {
-            return new SlotXml(device, key, List.of(), isEditableMainSlot(device, key));
+            return new SlotXml(device, key, List.of(), null, holdAttr, isEditableMainSlot(device, key));
         }
 
         Matcher closingMatcher = closingTagPattern(slotType.xmlElementName()).matcher(xml);
@@ -237,16 +238,30 @@ public class BindingsWriter {
         }
 
         String body = xml.substring(startTagEnd + 1, closingMatcher.start());
+        // A slot body may contain <Modifier> chord keys and a <Hold Value="..."/> flag (press-and-hold
+        // bindings, e.g. on-foot weapon switch, fleet orders). Both are supported and preserved; any
+        // other child element is an advanced structure this minimal writer must not rewrite.
         Matcher childMatcher = Pattern.compile("<(?!/|!|\\?)([A-Za-z_][A-Za-z0-9_.:-]*)(?=[\\s>/])").matcher(body);
         while (childMatcher.find()) {
-            if (!"Modifier".equals(childMatcher.group(1))) {
+            String childName = childMatcher.group(1);
+            if (!"Modifier".equals(childName) && !"Hold".equals(childName)) {
                 return SlotXml.unsupported();
             }
         }
 
+        String holdChild = firstSelfClosingElement(body, "Hold");
         List<ModifierXml> modifiers = modifierXmls(xml, startTagEnd + 1, closingMatcher.start());
         boolean supportedModifiers = modifiers.stream().allMatch(ModifierXml::supportedForV1Edit);
-        return new SlotXml(device, key, modifiers, isEditableMainSlot(device, key) && supportedModifiers);
+        return new SlotXml(device, key, modifiers, holdChild, holdAttr,
+                isEditableMainSlot(device, key) && supportedModifiers);
+    }
+
+    /**
+     * The raw text of the first self-closing {@code <tagName ... />} in {@code body}, or {@code null}.
+     */
+    private String firstSelfClosingElement(String body, String tagName) {
+        Matcher matcher = Pattern.compile("<" + Pattern.quote(tagName) + "\\b[^>]*?/>").matcher(body);
+        return matcher.find() ? matcher.group() : null;
     }
 
     private boolean isEditableMainSlot(String device, String key) {
@@ -278,21 +293,40 @@ public class BindingsWriter {
         return modifiers;
     }
 
-    private String replacementSlot(KeyboardBindingEdit edit, List<BindingModifier> requestedModifiers, boolean rewriteModifier) {
+    private String replacementSlot(
+            KeyboardBindingEdit edit,
+            List<BindingModifier> requestedModifiers,
+            boolean rewriteModifier,
+            SlotXml existing
+    ) {
+        String element = edit.slotType().xmlElementName();
         if (edit.clearsSlot()) {
-            return "<" + edit.slotType().xmlElementName() + " Device=\"{NoDevice}\" Key=\"\" />";
+            // Clearing removes the binding entirely, so any hold flag goes with it.
+            return "<" + element + " Device=\"{NoDevice}\" Key=\"\" />";
         }
-        if (rewriteModifier && !requestedModifiers.isEmpty()) {
-            StringBuilder slot = new StringBuilder("<" + edit.slotType().xmlElementName()
-                    + " Device=\"Keyboard\" Key=\"" + edit.key() + "\">\n");
+
+        // Preserve the press-and-hold nature of the binding across a key reassignment.
+        String holdAttr = existing == null ? "" : existing.holdAttr();
+        String holdChild = existing == null ? null : existing.holdChild();
+        String openTag = "<" + element + " Device=\"Keyboard\" Key=\"" + edit.key() + "\""
+                + (holdAttr == null || holdAttr.isBlank() ? "" : " Hold=\"" + holdAttr + "\"");
+
+        boolean hasModifiers = rewriteModifier && !requestedModifiers.isEmpty();
+        if (!hasModifiers && holdChild == null) {
+            return openTag + " />";
+        }
+
+        StringBuilder slot = new StringBuilder(openTag).append(">\n");
+        if (holdChild != null) {
+            slot.append("    ").append(holdChild).append("\n");
+        }
+        if (hasModifiers) {
             for (BindingModifier modifier : requestedModifiers) {
                 slot.append("    <Modifier Device=\"Keyboard\" Key=\"").append(modifier.key()).append("\" />\n");
             }
-            slot.append("</").append(edit.slotType().xmlElementName()).append(">");
-            return slot.toString();
         }
-        return "<" + edit.slotType().xmlElementName()
-                + " Device=\"Keyboard\" Key=\"" + edit.key() + "\" />";
+        slot.append("</").append(element).append(">");
+        return slot.toString();
     }
 
     private String replaceRange(String xml, TextRange range, String replacement) {
@@ -446,10 +480,12 @@ public class BindingsWriter {
             String device,
             String key,
             List<ModifierXml> modifiers,
+            String holdChild,
+            String holdAttr,
             boolean supportedForV1Edit
     ) {
         private static SlotXml unsupported() {
-            return new SlotXml("", "", List.of(), false);
+            return new SlotXml("", "", List.of(), null, "", false);
         }
     }
 

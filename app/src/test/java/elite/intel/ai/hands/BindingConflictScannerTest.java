@@ -89,6 +89,48 @@ class BindingConflictScannerTest {
         assertTrue(conflicts.isEmpty());
     }
 
+    @Test
+    void uiNavigationNeverConflictsWithShipAction() {
+        // The UI panel is its own input context - ship controls are disabled while it is open, so a
+        // shared key cannot fire both. CycleNextSubsystem (ship) vs UI_Right (UI) is safe.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CycleNextSubsystem", Set.of("Key_RightArrow"),
+                "UI_Right", Set.of("Key_RightArrow")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void twoUiActionsOnTheSameChordStillConflict() {
+        // UI is a context, not a blanket sub-state: two panel actions on one chord do collide.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "UI_Up", Set.of("Key_W"),
+                "UI_Down", Set.of("Key_W")));
+
+        assertEquals(1, conflicts.size());
+    }
+
+    @Test
+    void constructionPanelNeverConflictsWithShipAction() {
+        // The construction/colonisation panel is a separate UI panel, mutually exclusive with flight.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "ChangeConstructionOption", Set.of("Key_J"),
+                "Hyperspace", Set.of("Key_J")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void radialWheelNeverConflictsWithOtherHumanoidAction() {
+        // While a radial wheel is shown the game blocks every other control, so the wheel cannot
+        // co-fire with another on-foot action even though both are in the humanoid context.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "HumanoidItemWheelButton", Set.of("Key_G"),
+                "HumanoidPrimaryInteractButton", Set.of("Key_G")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
     // --- candidateConflict: vetting a single chord before it is saved ---
 
     @Test
