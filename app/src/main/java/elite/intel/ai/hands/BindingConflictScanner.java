@@ -5,21 +5,21 @@ import java.util.*;
 /**
  * Detects keyboard binding conflicts using Elite Dangerous's input-matching model.
  * <p>
- * ED matches a binding by its <strong>exact</strong> chord — the main key plus exactly its modifier
+ * ED matches a binding by its <strong>exact</strong> chord - the main key plus exactly its modifier
  * set. Holding extra modifiers does NOT trigger a binding that has fewer of them: bare {@code Key_6}
  * (galaxy map) and {@code Ctrl+Alt+Key_6} (pitch) coexist and fire distinctly. So two bindings
  * conflict only when they share the <strong>identical</strong> key-set, within the same active context.
  * <p>
  * (An earlier model treated a bare key as a subset that "swallowed" modified chords on that key.
- * In-game testing disproved it — the failure that suggested it was a stale-bindings state, where ED
+ * In-game testing disproved it - the failure that suggested it was a stale-bindings state, where ED
  * had not re-read the {@code .binds}, not a real conflict.)
  * <p>
  * A binding's key-set is the unordered union of its primary key and modifiers, because ED's
- * {@code <Primary>}/{@code <Modifier>} slots are positional only — "Ctrl+Y" is the same chord no
+ * {@code <Primary>}/{@code <Modifier>} slots are positional only - "Ctrl+Y" is the same chord no
  * matter which key sits in which slot.
  * <p>
- * Context filtering — mutually exclusive vehicle states (ship / SRV / on-foot) and sub-mode overlays
- * (camera, FSS, SAA, store, …) — is delegated to {@link BindingConflictRules}.
+ * Context filtering - mutually exclusive vehicle states (ship / SRV / on-foot) and sub-mode overlays
+ * (camera, FSS, SAA, store, …) - is delegated to {@link BindingConflictRules}.
  * <p>
  * Pure and side-effect free, so it is unit-testable without the file watcher or database.
  */
@@ -35,6 +35,14 @@ public final class BindingConflictScanner {
      * The conflict a candidate chord would create, naming the binding it collides with.
      */
     public record CandidateConflict(String otherBinding) {
+    }
+
+    /**
+     * A ship action and its SRV ({@code _Buggy}) twin that are bound to <em>different</em> chords.
+     * Not a conflict - the two never co-fire - but a soft suggestion to unify, since many players
+     * prefer the same key in both vehicles. Ordered so {@code shipAction} is the ship variant.
+     */
+    public record Recommendation(String shipAction, String buggyAction) {
     }
 
     private BindingConflictScanner() {
@@ -76,6 +84,40 @@ public final class BindingConflictScanner {
             }
         }
         return conflicts;
+    }
+
+    /**
+     * Suggests ship/SRV control twins that are bound to different chords, so the editor can nudge the
+     * player to unify them. Only twins where <em>both</em> halves are bound qualify; an unbound twin
+     * is a missing-binding concern handled elsewhere, not a recommendation.
+     *
+     * @param bindings action name → parsed binding, as from {@code BindingsMonitor.getBindings()}
+     * @return one recommendation per mismatched twin pair, in deterministic order
+     */
+    public static List<Recommendation> recommendVehicleTwins(Map<String, KeyBindingsParser.KeyBinding> bindings) {
+        return recommendVehicleTwinsKeysets(toKeysets(bindings));
+    }
+
+    /**
+     * Keyset-based core, so it can be tested without KeyBindings.
+     */
+    static List<Recommendation> recommendVehicleTwinsKeysets(Map<String, Set<String>> keysets) {
+        List<Recommendation> recommendations = new ArrayList<>();
+        for (Map.Entry<String, Set<String>> entry : new TreeMap<>(keysets).entrySet()) {
+            String buggy = entry.getKey();
+            String ship = BindingConflictRules.shipTwinOf(buggy);
+            if (ship == null) {
+                continue; // not an SRV variant
+            }
+            Set<String> shipKeyset = keysets.get(ship);
+            if (shipKeyset == null) {
+                continue; // ship twin unbound → missing-binding concern, not a recommendation
+            }
+            if (!shipKeyset.equals(entry.getValue())) {
+                recommendations.add(new Recommendation(ship, buggy));
+            }
+        }
+        return recommendations;
     }
 
     /**

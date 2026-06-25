@@ -1,16 +1,13 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.hands.events.GameInputSequenceEvent;
-import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
-import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.FireGroups;
+import elite.intel.gameapi.DiscoveryScanner;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
@@ -22,7 +19,6 @@ import elite.intel.search.edsm.dto.SystemBodiesDto;
 import elite.intel.search.edsm.dto.TrafficDto;
 import elite.intel.search.edsm.dto.data.BodyData;
 import elite.intel.session.PlayerSession;
-import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 
 import java.util.ArrayList;
@@ -30,8 +26,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static elite.intel.ai.hands.Bindings.GameCommand.*;
-import static elite.intel.gameapi.FireGroups.fireGroupInSettings;
 import static elite.intel.util.GravityCalculator.calculateSurfaceGravity;
 import static elite.intel.util.StringUtls.*;
 
@@ -47,7 +41,6 @@ public class JumpCompletedSubscriber {
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final GlobalSettingsManager globalSettings = GlobalSettingsManager.getInstance();
-    private final Status status = Status.getInstance();
 
     @Subscribe
     public void onFSDJumpEvent(FSDJumpEvent event) {
@@ -142,27 +135,7 @@ public class JumpCompletedSubscriber {
 
             ShipSettingsDao.ShipSettings shipSettings = shipSettingsManager.getSettings(playerSession.getShipLoadout().getShipId());
             if (!event.isReplay() && shipSettings.isHonkOnJump()) {
-                boolean isInCombatMode = !status.isAnalysisMode();
-                /// Change to analysis mode
-                if (isInCombatMode) {
-                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_ANALYSIS_MODE.getGameBinding())));
-                }
-
-                /// Switch fire-group
-                FireGroups.cycleToGroup(fireGroupInSettings(shipSettings));
-
-                /// Scan
-                int honkTrigger = shipSettings.getHonkTrigger(); /// 1 primary, 2 secondary
-                if (honkTrigger == 1) {
-                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_PRIMARY_FIRE.getGameBinding(), 6000)));
-                } else {
-                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingHold(BINDING_SECONDARY_FIRE.getGameBinding(), 6000)));
-                }
-
-                /// change back to combat mode - if the user was in combat mode
-                if (isInCombatMode) {
-                    GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
-                }
+                DiscoveryScanner.honk(shipSettings);
             }
 
         }); // end virtual thread

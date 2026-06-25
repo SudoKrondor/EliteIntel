@@ -131,6 +131,47 @@ class BindingConflictScannerTest {
         assertTrue(conflicts.isEmpty());
     }
 
+    // --- recommendVehicleTwins: nudging ship/SRV twins onto the same key ---
+
+    @Test
+    void twinsOnDifferentKeysAreRecommendedToUnify() {
+        List<BindingConflictScanner.Recommendation> recs = BindingConflictScanner.recommendVehicleTwinsKeysets(bindings(
+                "HeadLookToggle", Set.of("Key_O"),
+                "HeadLookToggle_Buggy", Set.of("Key_P")));
+
+        assertEquals(1, recs.size());
+        assertEquals("HeadLookToggle", recs.get(0).shipAction());
+        assertEquals("HeadLookToggle_Buggy", recs.get(0).buggyAction());
+    }
+
+    @Test
+    void twinsOnTheSameKeyAreNotRecommended() {
+        // Already unified - nothing to nudge. (And the scanner never flags it as a conflict either.)
+        List<BindingConflictScanner.Recommendation> recs = BindingConflictScanner.recommendVehicleTwinsKeysets(bindings(
+                "HeadLookToggle", Set.of("Key_O"),
+                "HeadLookToggle_Buggy", Set.of("Key_O")));
+
+        assertTrue(recs.isEmpty());
+    }
+
+    @Test
+    void unboundTwinIsNotRecommended() {
+        // Only the SRV variant is bound; the ship twin's absence is a missing-binding concern.
+        List<BindingConflictScanner.Recommendation> recs = BindingConflictScanner.recommendVehicleTwinsKeysets(bindings(
+                "HeadLookToggle_Buggy", Set.of("Key_P")));
+
+        assertTrue(recs.isEmpty());
+    }
+
+    @Test
+    void nonTwinActionsAreNeverRecommended() {
+        List<BindingConflictScanner.Recommendation> recs = BindingConflictScanner.recommendVehicleTwinsKeysets(bindings(
+                "GalaxyMapOpen", Set.of("Key_O"),
+                "SystemMapOpen", Set.of("Key_P")));
+
+        assertTrue(recs.isEmpty());
+    }
+
     // --- candidateConflict: vetting a single chord before it is saved ---
 
     @Test

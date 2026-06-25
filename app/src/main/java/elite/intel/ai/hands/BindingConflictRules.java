@@ -61,6 +61,24 @@ public class BindingConflictRules {
         return a.compareTo(b) <= 0 ? a + "|" + b : b + "|" + a;
     }
 
+    private static final String BUGGY_SUFFIX = "_Buggy";
+
+    /**
+     * The ship action that is the same logical control as the given SRV ({@code _Buggy}) action, or
+     * {@code null} when the action is not an SRV variant.
+     * <p>
+     * Ship and SRV are mutually exclusive vehicles with effectively the same controls. Elite names
+     * every SRV action {@code <ShipAction>_Buggy}, so stripping the suffix yields its ship twin. A
+     * control and its twin sharing a key never conflict ({@link #isSafeOverlap}); binding them to the
+     * <em>same</em> key is the recommended-but-not-required setup, which the editor nudges toward.
+     */
+    public static String shipTwinOf(String action) {
+        if (action == null || !action.endsWith(BUGGY_SUFFIX)) {
+            return null;
+        }
+        return action.substring(0, action.length() - BUGGY_SUFFIX.length());
+    }
+
     /**
      * The mutually exclusive input context an action belongs to. Only one is ever active, so two
      * actions in different contexts can share a key without ever co-firing:

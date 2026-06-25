@@ -10,6 +10,8 @@ public final class GameInputStep {
     public enum Type {
         BINDING_TAP,
         BINDING_HOLD,
+        BINDING_DOWN,
+        BINDING_UP,
         RAW_KEY,
         TEXT,
         DELAY
@@ -46,6 +48,23 @@ public final class GameInputStep {
      */
     public static GameInputStep bindingHold(String bindingId, int holdMs) {
         return new GameInputStep(Type.BINDING_HOLD, requireBindingId(bindingId), 0, null, requireNonNegative(holdMs, "holdMs"), 0);
+    }
+
+    /**
+     * Presses an Elite Dangerous binding down and leaves it held. Must be paired with a later
+     * {@link #bindingUp(String)} for the same binding, otherwise the key stays stuck down.
+     * Use when the release moment is decided by an external signal rather than a fixed duration
+     * (e.g. holding the discovery-scanner trigger until the scan completes).
+     */
+    public static GameInputStep bindingDown(String bindingId) {
+        return new GameInputStep(Type.BINDING_DOWN, requireBindingId(bindingId), 0, null, 0, 0);
+    }
+
+    /**
+     * Releases an Elite Dangerous binding previously held by {@link #bindingDown(String)}.
+     */
+    public static GameInputStep bindingUp(String bindingId) {
+        return new GameInputStep(Type.BINDING_UP, requireBindingId(bindingId), 0, null, 0, 0);
     }
 
     /**
