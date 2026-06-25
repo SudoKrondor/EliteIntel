@@ -66,6 +66,12 @@ public class FSSSignalDiscoveredEvent extends BaseEvent {
         return "FSSSignalDiscovered";
     }
 
+    /** About half of all journal volume; pure scanner telemetry. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "The full-spectrum scanner picked up one signal source in the system (station, fleet carrier, unidentified signal, resource site, and so on). Very high frequency: one per signal.";

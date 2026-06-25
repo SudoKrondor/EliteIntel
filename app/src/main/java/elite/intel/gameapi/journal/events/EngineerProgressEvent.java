@@ -23,6 +23,12 @@ public class EngineerProgressEvent extends BaseEvent {
         return "EngineerProgress";
     }
 
+    /** Engineer progress snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Engineer unlock or progress update; carries the engineer and your rank or progress. Snapshot.";

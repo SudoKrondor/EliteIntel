@@ -34,6 +34,12 @@ public class RestockVehicleEvent extends BaseEvent {
         return "RestockVehicle";
     }
 
+    /** Routine restock spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Restocked SRVs or fighters; carries the type, count, and cost.";

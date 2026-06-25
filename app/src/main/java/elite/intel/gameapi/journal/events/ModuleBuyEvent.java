@@ -44,6 +44,12 @@ public class ModuleBuyEvent extends BaseEvent {
         return "ModuleBuy";
     }
 
+    /** Routine outfitting spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Bought and fitted a module at outfitting; carries the module and the price paid.";

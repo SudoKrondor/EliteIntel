@@ -37,6 +37,12 @@ public class ReputationEvent extends BaseEvent {
         return "Reputation";
     }
 
+    /** Reputation snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of your reputation with the major factions (Federation, Empire, Alliance, Independent). Background.";

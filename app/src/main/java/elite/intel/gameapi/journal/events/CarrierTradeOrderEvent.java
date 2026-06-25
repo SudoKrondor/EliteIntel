@@ -46,6 +46,12 @@ public class CarrierTradeOrderEvent extends BaseEvent {
         return "CarrierTradeOrder";
     }
 
+    /** Carrier market order; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Set or cancelled a buy/sell order on the fleet carrier's market; carries the commodity, amount, and price.";

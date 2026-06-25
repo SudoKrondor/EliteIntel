@@ -58,6 +58,12 @@ public class DisembarkEvent extends BaseEvent {
         return "Disembark";
     }
 
+    /** Routine on-foot transition; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Disembarked on foot from the ship or SRV; carries whether it is at a station, settlement, or on a planet surface.";

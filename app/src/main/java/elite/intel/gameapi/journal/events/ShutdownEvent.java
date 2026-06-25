@@ -17,6 +17,12 @@ public class ShutdownEvent extends BaseEvent {
         return "Shutdown";
     }
 
+    /** Session end; recorded, nothing to say. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "The game is shutting down and the play session ended.";

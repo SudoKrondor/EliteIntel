@@ -24,6 +24,12 @@ public class DockFighterEvent extends BaseEvent {
         return "DockFighter";
     }
 
+    /** Routine fighter recall; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Docked a deployed ship-launched fighter back into the mother ship.";

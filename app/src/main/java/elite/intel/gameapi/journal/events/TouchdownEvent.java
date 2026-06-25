@@ -70,6 +70,12 @@ public class TouchdownEvent extends BaseEvent {
         return "Touchdown";
     }
 
+    /** Routine landing; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Landed on a planetary surface; carries latitude, longitude, and the nearest point of interest.";

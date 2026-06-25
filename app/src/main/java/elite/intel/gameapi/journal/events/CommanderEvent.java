@@ -27,6 +27,12 @@ public class CommanderEvent extends BaseEvent {
         return "Commander";
     }
 
+    /** Load snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Identifies the commander at game load; carries the commander name. Background.";

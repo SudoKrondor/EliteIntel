@@ -83,6 +83,12 @@ public class LoadGameEvent extends BaseEvent {
         return "LoadGame";
     }
 
+    /** Session load snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Game session loaded; carries the commander, current ship, and credit balance. Background, fires at startup.";

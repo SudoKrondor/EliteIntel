@@ -44,6 +44,12 @@ public class StartJumpEvent extends BaseEvent {
         return "StartJump";
     }
 
+    /** The game voices the jump countdown; record only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "The frame shift drive started charging for a jump; JumpType says hyperspace (with destination system and star class) or supercruise.";

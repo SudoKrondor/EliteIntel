@@ -68,6 +68,12 @@ public class MissionCompletedEvent extends BaseEvent {
         return "MissionCompleted";
     }
 
+    /** Mission outcome worth a remark. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "Completed a mission; carries the mission name, the giving faction, and the reward (credits, materials, or commodities).";

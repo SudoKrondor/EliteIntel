@@ -34,6 +34,12 @@ public class ShipyardSellEvent extends BaseEvent {
         return "ShipyardSell";
     }
 
+    /** Sold a stored ship; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Sold a stored ship; carries the ship type and the value.";

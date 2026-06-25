@@ -33,6 +33,12 @@ public class FSDTargetEvent extends BaseEvent {
         return "FSDTarget";
     }
 
+    /** Frequent target-selection telemetry. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Selected the next destination system for the jump; carries the target system, its star class, and jumps remaining in the route.";

@@ -111,6 +111,12 @@ public class ApproachSettlementEvent extends BaseEvent {
         return "ApproachSettlement";
     }
 
+    /** Routine approach; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Approached a planetary settlement; carries the settlement name and the body it sits on.";

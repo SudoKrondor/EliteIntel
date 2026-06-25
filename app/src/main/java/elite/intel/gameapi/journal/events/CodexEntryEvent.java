@@ -83,6 +83,12 @@ public class CodexEntryEvent extends BaseEvent {
         return "CodexEntry";
     }
 
+    /** A new discovery worth a remark. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "Logged a codex discovery (astronomical, biological, geological, and so on); carries the entry name and category.";

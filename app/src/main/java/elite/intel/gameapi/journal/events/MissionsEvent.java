@@ -80,6 +80,12 @@ public class MissionsEvent extends BaseEvent {
         return "Missions";
     }
 
+    /** Load snapshot of missions; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of all active, completed, and failed missions; written at game load. Background list.";

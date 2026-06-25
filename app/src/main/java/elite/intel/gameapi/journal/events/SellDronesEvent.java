@@ -37,6 +37,12 @@ public class SellDronesEvent extends BaseEvent {
         return "SellDrones";
     }
 
+    /** Routine limpet sale; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Sold limpet drones; carries the count and value.";

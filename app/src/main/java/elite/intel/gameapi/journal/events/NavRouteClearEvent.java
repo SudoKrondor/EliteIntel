@@ -15,6 +15,12 @@ public class NavRouteClearEvent extends BaseEvent {
         return "NavRouteClear";
     }
 
+    /** Route cleared; nothing to remember. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Cleared the plotted navigation route.";

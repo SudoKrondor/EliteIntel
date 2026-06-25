@@ -61,6 +61,12 @@ public class EngineerCraftEvent extends BaseEvent {
         return "EngineerCraft";
     }
 
+    /** Engineering modification applied; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Applied an engineer modification to a module; carries the engineer, blueprint, level, and resulting effects.";

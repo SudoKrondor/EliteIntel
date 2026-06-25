@@ -40,6 +40,12 @@ public class CommitCrimeEvent extends BaseEvent {
         return "CommitCrime";
     }
 
+    /** A bounty or fine placed on the commander; they should know. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "You committed a crime (assault, murder, fine, and so on); carries the crime type, the victim faction, and any bounty or fine incurred.";

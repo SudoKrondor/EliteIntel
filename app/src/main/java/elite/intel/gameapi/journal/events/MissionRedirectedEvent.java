@@ -45,6 +45,12 @@ public class MissionRedirectedEvent extends BaseEvent {
         return "MissionRedirected";
     }
 
+    /** Mission objective changed; worth telling the commander. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "A mission objective was redirected to a new destination; carries the mission name and the new system and station.";

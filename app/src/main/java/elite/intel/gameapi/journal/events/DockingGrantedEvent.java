@@ -34,6 +34,12 @@ public class DockingGrantedEvent extends BaseEvent {
         return "DockingGranted";
     }
 
+    /** Station comms already voice the grant; record only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A station granted your docking request; carries the station name and the assigned landing pad.";

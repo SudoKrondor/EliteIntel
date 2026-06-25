@@ -81,6 +81,12 @@ public class StatisticsEvent extends BaseEvent {
         return "Statistics";
     }
 
+    /** Lifetime stats snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of lifetime player statistics; written at game load. Background detail.";

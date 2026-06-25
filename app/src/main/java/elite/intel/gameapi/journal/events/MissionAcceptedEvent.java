@@ -97,6 +97,12 @@ public class MissionAcceptedEvent extends BaseEvent {
         return "MissionAccepted";
     }
 
+    /** New objective worth acknowledging. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "Accepted a mission; carries the mission name, the giving faction, destination, and reward.";

@@ -80,6 +80,12 @@ public class CarrierStatsEvent extends BaseEvent {
         return "CarrierStats";
     }
 
+    /** Carrier stats snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of fleet carrier statistics (balance, fuel, cargo, crew, services). Background detail.";

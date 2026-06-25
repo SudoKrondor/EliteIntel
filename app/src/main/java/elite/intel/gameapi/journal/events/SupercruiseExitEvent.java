@@ -47,6 +47,12 @@ public class SupercruiseExitEvent extends BaseEvent {
         return "SupercruiseExit";
     }
 
+    /** Routine flight transition; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Dropped from supercruise into normal space; carries the star system and the body you arrived at.";

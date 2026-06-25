@@ -17,6 +17,12 @@ public class NavRouteEvent extends BaseEvent {
         return "NavRoute";
     }
 
+    /** Route plotted; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Plotted a multi-jump route; carries the ordered list of systems in the route.";

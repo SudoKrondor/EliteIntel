@@ -33,6 +33,12 @@ public class CarrierDepositFuelEvent extends BaseEvent {
         return "CarrierDepositFuel";
     }
 
+    /** Routine carrier refuel; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Deposited tritium fuel into the fleet carrier; carries the amount and the new fuel total.";

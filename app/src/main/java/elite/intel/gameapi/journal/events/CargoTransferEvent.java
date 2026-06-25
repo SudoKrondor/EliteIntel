@@ -24,6 +24,12 @@ public class CargoTransferEvent extends BaseEvent {
         return "CargoTransfer";
     }
 
+    /** Routine cargo move; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Transferred cargo between the ship and an SRV or fleet carrier; carries the commodities and the direction.";

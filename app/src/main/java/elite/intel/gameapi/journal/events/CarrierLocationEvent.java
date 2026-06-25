@@ -38,6 +38,12 @@ public class CarrierLocationEvent extends BaseEvent {
         return "CarrierLocation";
     }
 
+    /** Carrier location snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Reports the fleet carrier's current star system, for example after it jumped.";

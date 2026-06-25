@@ -54,6 +54,12 @@ public class ShipyardBuyEvent extends BaseEvent {
         return "ShipyardBuy";
     }
 
+    /** Bought a ship; the new ship is announced via ShipyardNew. Memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Bought a new ship at a shipyard; carries the ship type and the price paid.";

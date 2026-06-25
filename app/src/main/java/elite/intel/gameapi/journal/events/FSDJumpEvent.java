@@ -276,6 +276,12 @@ public class FSDJumpEvent extends BaseEvent {
         return "FSDJump";
     }
 
+    /** Arrival in a new system is a natural beat the companion may remark on. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "Arrived in a new star system via a hyperspace jump; carries the destination system name, jump distance in light years, and fuel used.";

@@ -58,6 +58,12 @@ public class ScanBaryCentreEvent extends BaseEvent {
         return "ScanBaryCentre";
     }
 
+    /** Background barycentre detail. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Scanned the barycentre (shared orbital centre) of a multi-body group; carries the system and body id. Background detail.";

@@ -28,6 +28,12 @@ public class ShipyardNewEvent extends BaseEvent {
         return "ShipyardNew";
     }
 
+    /** A new ship joined the fleet. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "A newly purchased ship was delivered and made active; carries the ship type and id.";

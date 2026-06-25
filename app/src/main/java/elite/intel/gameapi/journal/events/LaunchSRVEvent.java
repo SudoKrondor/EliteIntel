@@ -38,6 +38,12 @@ public class LaunchSRVEvent extends BaseEvent {
         return "LaunchSRV";
     }
 
+    /** Routine SRV deploy; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Deployed an SRV from the ship onto the planetary surface; carries the SRV loadout.";

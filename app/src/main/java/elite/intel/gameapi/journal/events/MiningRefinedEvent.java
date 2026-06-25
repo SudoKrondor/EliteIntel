@@ -26,6 +26,12 @@ public class MiningRefinedEvent extends BaseEvent {
         return "MiningRefined";
     }
 
+    /** High-frequency mining telemetry. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Refined a unit of mined material into the cargo hold; carries the commodity. Fires often while mining.";

@@ -67,6 +67,12 @@ public class LoadoutEvent extends BaseEvent {
         return "Loadout";
     }
 
+    /** Loadout snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of the current ship's full loadout; written on boarding or any module change. Background detail.";

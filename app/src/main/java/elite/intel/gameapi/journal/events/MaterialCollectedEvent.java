@@ -29,6 +29,12 @@ public class MaterialCollectedEvent extends BaseEvent {
         return "MaterialCollected";
     }
 
+    /** High-frequency pickup telemetry. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Picked up engineering materials; carries the material category, name, and amount. Fires often.";

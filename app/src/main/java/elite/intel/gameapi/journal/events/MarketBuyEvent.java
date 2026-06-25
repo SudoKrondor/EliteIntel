@@ -40,6 +40,12 @@ public class MarketBuyEvent extends BaseEvent {
         return "MarketBuy";
     }
 
+    /** Routine purchase; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Bought cargo at a station market; carries the commodity, quantity, and total price paid.";

@@ -42,6 +42,12 @@ public class BountyEvent extends BaseEvent {
         return "Bounty";
     }
 
+    /** Kill confirmed or mission kill; core combat feedback. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "You were awarded a bounty for destroying a wanted ship; carries the target ship, the awarding faction(s), and the total reward.";

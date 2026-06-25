@@ -32,6 +32,12 @@ public class PayBountiesEvent extends BaseEvent {
         return "PayBounties";
     }
 
+    /** Routine bounty payment; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Paid off outstanding bounties; carries the amount.";

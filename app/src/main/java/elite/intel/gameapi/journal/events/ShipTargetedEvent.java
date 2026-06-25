@@ -79,6 +79,20 @@ public class ShipTargetedEvent extends BaseEvent {
         return "ShipTargeted";
     }
 
+    /**
+     * Payload-dependent. Mirrors ShipTargetedEventSubscriber.announceScan: a target only matters
+     * once the scan is complete and the ship is Wanted. Whether that Wanted ship also belongs to a
+     * pirate-mission target faction only changes the spoken wording (mission vs legal target) and is
+     * the subscriber's concern, not the significance. Every other lock is constant targeting
+     * telemetry the companion ignores.
+     */
+    @Override
+    public Importance importance() {
+        if (scanStage == 0) return Importance.LOW; // scan not finished: status/health not yet reliable
+        if (legalStatus == null || !"wanted".equalsIgnoreCase(legalStatus)) return Importance.LOW;
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "You locked onto a ship. Once the scan completes it reports the pilot rank, legal status, bounty, faction, and shield and hull health.";

@@ -39,6 +39,12 @@ public class CarrierBankTransferEvent extends BaseEvent {
         return "CarrierBankTransfer";
     }
 
+    /** Routine carrier bank transfer; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Moved credits between your account and the fleet carrier balance; carries the amount.";

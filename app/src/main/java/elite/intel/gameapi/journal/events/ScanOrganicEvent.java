@@ -54,6 +54,16 @@ public class ScanOrganicEvent extends BaseEvent {
         return "ScanOrganic";
     }
 
+    /**
+     * Payload-dependent. The final "Analyse" stage completes a new exobiology sample (and its
+     * payout) - worth a remark. The earlier Log and Sample stages are routine progress, kept in
+     * memory but not spoken.
+     */
+    @Override
+    public Importance importance() {
+        return "Analyse".equalsIgnoreCase(scanType) ? Importance.HIGH : Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Scanned a biological organism on foot; carries the species and genus and the scan stage (Log, Sample, or Analyse).";

@@ -31,6 +31,12 @@ public class NpcCrewPaidWageEvent extends BaseEvent {
         return "NpcCrewPaidWage";
     }
 
+    /** Routine automatic wage; noise. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
     @Override
     public String llmDescription() {
         return "Paid wages to an NPC crew member; carries the crew name and the amount.";

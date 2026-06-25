@@ -125,6 +125,12 @@ public class CarrierJumpEvent extends BaseEvent {
         return "CarrierJump";
     }
 
+    /** The fleet carrier arrived in a new system. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
     @Override
     public String llmDescription() {
         return "Your fleet carrier completed a jump while you were aboard; carries the destination system and body.";

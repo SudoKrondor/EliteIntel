@@ -25,6 +25,12 @@ public class RepairAllEvent extends BaseEvent {
         return "RepairAll";
     }
 
+    /** Routine repair spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "Paid to repair all ship damage; carries the cost.";

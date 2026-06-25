@@ -31,6 +31,12 @@ public class MaterialsEvent extends BaseEvent {
         return "Materials";
     }
 
+    /** Materials snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
     @Override
     public String llmDescription() {
         return "A snapshot of all engineering materials held (raw, manufactured, encoded); written at game load. Background list.";
