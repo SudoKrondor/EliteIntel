@@ -1,12 +1,11 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
@@ -69,7 +68,7 @@ public class LoadoutSubscriber {
             UiBus.publish(new ActiveShipChangedEvent(shipName));
 
             if (Status.getInstance().isOkToAnnounceLoadout()) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName)));
+                EventNarrator.critical(StringUtls.shipIntroduction(playerSession.getPlayerName(), shipName));
             }
         });
     }

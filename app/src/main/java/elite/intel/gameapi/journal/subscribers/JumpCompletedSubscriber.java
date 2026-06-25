@@ -3,7 +3,7 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
@@ -96,7 +96,7 @@ public class JumpCompletedSubscriber {
             if (finalDestination != null && finalDestination.equalsIgnoreCase(event.getStarSystem())) {
                 shipRoute.clearRoute();
                 if (reminderText != null && !reminderText.isBlank()) {
-                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    EventNarrator.say(localizedEvent("event.route.reminder", reminderText));
                 } else {
                     sb.append(localizedEvent("event.route.arrivedFinal", finalDestination));
                 }
@@ -107,7 +107,7 @@ public class JumpCompletedSubscriber {
 
             } else if (roueSet) {
                 if (reminderText != null && !reminderText.isBlank() && reminderText.toLowerCase().contains(event.getStarSystem().toLowerCase(Locale.ROOT))) {
-                    GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.route.reminder", reminderText)));
+                    EventNarrator.say(localizedEvent("event.route.reminder", reminderText));
                 }
 
                 sb.append(localizedEvent("event.route.arrived", event.getStarSystem()));
