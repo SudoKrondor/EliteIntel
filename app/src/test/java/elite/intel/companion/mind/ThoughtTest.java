@@ -130,6 +130,23 @@ class ThoughtTest {
     }
 
     @Test
+    void commanderCommandIsFireAndForgetAndDoesNotBlockTheLane() {
+        // A long-running command must not pin the lane: run() returns while the handler is still in flight,
+        // and the spoken outcome is voiced by the completion callback when the handler finishes later.
+        execution.deferTools.add("ship_status");
+        llm.scripted.add(ok(call("ship_status", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "calculate a long route", ctx(narration())).run();
+
+        assertTrue(execution.toolNames().contains("ship_status"), "the command was dispatched");
+        assertTrue(speech.requests.isEmpty(), "nothing is voiced while the handler is still running");
+
+        execution.complete("ship_status", outcomeText("route found"));
+        assertEquals(List.of("route found"), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the deterministic outcome is voiced by the completion callback once the handler finishes");
+    }
+
+    @Test
     void commanderMissionCriticalOutcomeVocalizedOnUrgentChannel() {
         // A mission-critical command outcome (e.g. a plotted trade-stop instruction) is voiced on the
         // urgent channel so it preempts current speech, exactly as the legacy MissionCritical channel did.
@@ -430,6 +447,11 @@ class ThoughtTest {
     private static final class FakeExecution implements ExecutionGateway {
         final List<ExecutionRequest> requests = new ArrayList<>();
         final Map<String, JsonObject> resultsByTool = new HashMap<>();
+        /**
+         * Tools whose future is left pending so a test can complete it later (models a slow handler).
+         */
+        final Set<String> deferTools = new HashSet<>();
+        final Map<String, CompletableFuture<JsonObject>> deferred = new HashMap<>();
         CompanionState stateToMutate;
 
         @Override public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
@@ -441,7 +463,16 @@ class ThoughtTest {
                     stateToMutate.setGlobalTopic(topic);
                 }
             }
+            if (deferTools.contains(request.toolName())) {
+                CompletableFuture<JsonObject> pending = new CompletableFuture<>();
+                deferred.put(request.toolName(), pending);
+                return pending; // never completes here; the test completes it to model the handler finishing
+            }
             return CompletableFuture.completedFuture(resultsByTool.getOrDefault(request.toolName(), new JsonObject()));
+        }
+
+        void complete(String tool, JsonObject result) {
+            deferred.get(tool).complete(result);
         }
 
         List<String> toolNames() {

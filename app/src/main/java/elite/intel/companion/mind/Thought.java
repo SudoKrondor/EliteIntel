@@ -261,9 +261,17 @@ public final class Thought {
     }
 
     /**
-     * Executes the round's tool-calls in LLM order, recording each result to memory; {@code nothing_to_do}
-     * is the lifecycle terminator (not executed, not recorded). The assistant turn and its tool results are
-     * appended to the flow only when another round will run, so a terminating turn sends nothing back.
+     * Executes the round's tool-calls in LLM order, recording each synchronous result to memory;
+     * {@code nothing_to_do} is the lifecycle terminator (not executed, not recorded). The assistant turn and
+     * its tool results are appended to the flow only when another round will run, so a terminating turn sends
+     * nothing back.
+     * <p>
+     * A COMMANDER command/query is dispatched fire-and-forget (see {@link #dispatchFireAndForget}): the lane
+     * never blocks on a handler, so a multi-minute search cannot freeze command input. Its spoken outcome is
+     * vocalized, and its real result recorded, by the completion callback whenever the handler finishes; the
+     * LLM flow gets a synthetic {@code dispatched} marker (never persisted) so the turn can end without
+     * waiting. Everything else - {@code speak}, system functions, and all EVENT tool-calls (whose results the
+     * LLM narrates) - runs synchronously.
      *
      * @return {@code true} if {@code nothing_to_do} ended the turn
      */
@@ -277,14 +285,20 @@ public final class Thought {
                 terminate = true;
                 continue;
             }
+            if (!preExecuted.containsKey(inv) && isFireAndForget(inv)) {
+                // COMMANDER command/query: dispatch without blocking the lane. The completion callback is the
+                // sole memory writer and vocalizer for this tool; the LLM flow gets a marker so the turn can
+                // end without waiting, but the marker is not persisted - only the real outcome is, when ready.
+                dispatchFireAndForget(inv);
+                toolResults.add(LlmMessage.toolResult(inv.id(), stringify(dispatchedResult(inv.name()))));
+                continue;
+            }
             // A speak voiced only alongside a command/query (whose result is voiced deterministically) is
-            // dropped: the action still ran, but the LLM's speak fires no TTS. A synthetic result keeps the
-            // assistant/tool-result pairing intact so a following round stays valid, and tells the LLM the
-            // narration was intentionally withheld.
+            // dropped: the action still ran, but the LLM's speak fires no TTS. The synthetic result keeps the
+            // assistant/tool-result pairing intact and tells the LLM the narration was withheld.
             JsonObject result = suppressSpeak && SpeakFunction.ID.equals(inv.name())
                     ? narrationSuppressedResult(inv.name())
                     : (preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv));
-            vocalizeDeterministicOutcome(inv, result);
             recordToolResult(result);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
         }
@@ -293,6 +307,53 @@ public final class Thought {
             flow.addAll(toolResults);
         }
         return terminate;
+    }
+
+    /**
+     * Whether a tool-call is dispatched fire-and-forget rather than awaited. Only a COMMANDER command/query
+     * qualifies: its outcome is vocalized deterministically (the LLM does not consume the result), so the
+     * lane need not wait for it. EVENT tool-calls and system functions are awaited - the LLM narrates from
+     * their results - and {@code speak}/{@code nothing_to_do} are handled before this is reached.
+     */
+    private boolean isFireAndForget(LlmToolInvocation inv) {
+        if (source != ThoughtSource.COMMANDER) {
+            return false;
+        }
+        Narration narration = ctx.narrationPolicy().classify(inv.name());
+        return narration == Narration.NARRATABLE || narration == Narration.SILENT_COMMAND;
+    }
+
+    /**
+     * Dispatches a command/query without blocking the lane (§1.9 responsiveness). The handler runs on the
+     * execution gateway's pool; whenever it finishes - 1ms or minutes later - the completion callback voices
+     * its deterministic outcome and records the real result. The topic is captured now so a late result is
+     * filed under the topic that was current when the commander asked, even if the global topic has since
+     * moved. The thought may have ended by then; the background job and its callback outlive it.
+     */
+    private void dispatchFireAndForget(LlmToolInvocation inv) {
+        ConversationTopic topic = memoryTopic();
+        CompletableFuture<JsonObject> future;
+        try {
+            future = ctx.executionGateway().submit(new ExecutionRequest(newId(), inv.name(), inv.arguments()));
+        } catch (RuntimeException dispatchFailed) {
+            recordToolResultUnderTopic(topic, executionError(inv.name(), dispatchFailed));
+            return;
+        }
+        future.whenComplete((result, error) -> {
+            JsonObject outcome = error != null ? executionError(inv.name(), error) : result;
+            vocalizeDeterministicOutcome(inv, outcome);
+            recordToolResultUnderTopic(topic, outcome);
+        });
+    }
+
+    /**
+     * Synthetic tool result standing in for a fire-and-forget dispatch whose real result arrives later.
+     */
+    private static JsonObject dispatchedResult(String toolName) {
+        JsonObject dispatched = new JsonObject();
+        dispatched.addProperty("status", "dispatched");
+        dispatched.addProperty("tool", toolName);
+        return dispatched;
     }
 
     /**
@@ -364,12 +425,19 @@ public final class Thought {
                     .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments()))
                     .join();
         } catch (RuntimeException failed) {
-            Throwable cause = failed.getCause() != null ? failed.getCause() : failed;
-            JsonObject error = new JsonObject();
-            error.addProperty("error", String.valueOf(cause.getMessage()));
-            error.addProperty("tool", inv.name());
-            return error;
+            return executionError(inv.name(), failed);
         }
+    }
+
+    /**
+     * A failed execution rendered as an error result the LLM can read (the cause is unwrapped if present).
+     */
+    private static JsonObject executionError(String tool, Throwable failed) {
+        Throwable cause = failed.getCause() != null ? failed.getCause() : failed;
+        JsonObject error = new JsonObject();
+        error.addProperty("error", String.valueOf(cause.getMessage()));
+        error.addProperty("tool", tool);
+        return error;
     }
 
     /** Records the current input under the resolved topic before tool-calls run (§2.6). */
@@ -381,8 +449,15 @@ public final class Thought {
 
     /** Records one tool result on the timeline as TOOL_RESULT under the current topic. */
     private void recordToolResult(JsonObject result) {
+        recordToolResultUnderTopic(memoryTopic(), result);
+    }
+
+    /**
+     * Records one tool result as TOOL_RESULT under a given topic (captured for a late fire-and-forget result).
+     */
+    private void recordToolResultUnderTopic(ConversationTopic topic, JsonObject result) {
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, stringify(result), MemoryProcessingState.PROCESSED));
+                Instant.now(), topic, MemorySource.TOOL_RESULT, stringify(result), MemoryProcessingState.PROCESSED));
     }
 
     /** Whether any tool-call in the validated set is a dangerous action requiring confirmation (§2.13). */

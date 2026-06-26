@@ -1,15 +1,10 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
-import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.memory.MemoryEntry;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Default {@link MemoryGateway} implementation. Composes the four session memory areas
@@ -17,6 +12,12 @@ import java.util.Set;
  * between them. The internal stores are package-private; nothing outside this package touches them.
  * <p>
  * Session-only: nothing is persisted to disk.
+ * <p>
+ * Thread-safety: the public methods are {@code synchronized} because writers now arrive from several
+ * threads - the COMMANDER and EVENT lane workers, and the execution gateway's pool threads when a
+ * fire-and-forget command/query completes and records its result. The internal stores are plain
+ * collections, so all access is serialized here; reads return snapshots ({@code List.copyOf}), so a
+ * caller iterates outside the lock safely.
  */
 public final class SessionMemoryGateway implements MemoryGateway {
 
@@ -45,7 +46,7 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public void write(MemoryEntry entry) {
+    public synchronized void write(MemoryEntry entry) {
         // New entries land in short-term first; whatever overflows the count/token bounds is moved
         // into mid-term topic memory by topic (never duplicated across both levels).
         shortTerm.add(entry);
@@ -59,17 +60,17 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public List<MemoryEntry> readShortTermTimeline() {
+    public synchronized List<MemoryEntry> readShortTermTimeline() {
         return shortTerm.timeline();
     }
 
     @Override
-    public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
+    public synchronized List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
         return midTerm.recall(topic, query, limit);
     }
 
     @Override
-    public List<String> recallMatching(String query, int limit) {
+    public synchronized List<String> recallMatching(String query, int limit) {
         // Unified search across mid-term (all topics) + conscious llm_memory, returned newest-first. Matching
         // is word-overlap (does the entry share a meaningful word with the query), NOT a contiguous substring,
         // so the model's paraphrased or whole-question query still finds the stored fact.
@@ -133,27 +134,27 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public List<String> readLlmMemory() {
+    public synchronized List<String> readLlmMemory() {
         return llmMemory.all();
     }
 
     @Override
-    public void writeLlmMemory(String content) {
+    public synchronized void writeLlmMemory(String content) {
         llmMemory.add(content);
     }
 
     @Override
-    public MemoryAvailabilitySnapshot indexes() {
+    public synchronized MemoryAvailabilitySnapshot indexes() {
         return new MemoryAvailabilitySnapshot(llmMemory.size(), CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, midTerm.topicsWithMemory());
     }
 
     @Override
-    public String longTermSummary() {
+    public synchronized String longTermSummary() {
         return longTerm.get();
     }
 
     @Override
-    public void replaceLongTermSummary(String summary) {
+    public synchronized void replaceLongTermSummary(String summary) {
         longTerm.replace(summary);
     }
 }
