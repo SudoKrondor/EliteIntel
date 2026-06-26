@@ -110,8 +110,10 @@ class ThoughtTest {
                 "silent command runs; the co-occurring speak is withheld (never executed)");
         assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("narration_suppressed")),
                 "the withheld speak said nothing, so it leaves no narration_suppressed noise in memory");
+        assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
         assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
-                "nothing was spoken this turn, so there is no COMPANION entry");
+                "the immediate command ack is not recorded as a COMPANION line");
     }
 
     @Test
@@ -125,8 +127,10 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the query's outcome text is vocalized deterministically");
+        assertEquals(2, speech.requests.size(),
+                "the command is acknowledged immediately, then its outcome text is vocalized deterministically");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals("hull at 100 percent", speech.requests.get(1).text());
         assertFalse(execution.toolNames().contains(SpeakFunction.ID),
                 "the LLM's own speak is withheld once a command/query owns the spoken outcome");
     }
@@ -140,8 +144,10 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the deterministic outcome is voiced in-thread, not by a later callback");
+        assertEquals(2, speech.requests.size(),
+                "the immediate ack is voiced before execution; the deterministic outcome is voiced in-thread");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals("hull at 100 percent", speech.requests.get(1).text());
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
                         && e.content().contains("hull at 100 percent")),
                 "the command result is recorded synchronously");
@@ -210,9 +216,11 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "next trade stop", ctx(actionTypes())).run();
 
-        assertEquals(1, speech.requests.size());
-        assertEquals("travel to Sol and buy gold", speech.requests.get(0).text());
-        assertEquals(Urgency.URGENT, speech.requests.get(0).urgency(), "mission-critical outcome preempts");
+        assertEquals(2, speech.requests.size());
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals(Urgency.NORMAL, speech.requests.get(0).urgency(), "immediate command ack is normal priority");
+        assertEquals("travel to Sol and buy gold", speech.requests.get(1).text());
+        assertEquals(Urgency.URGENT, speech.requests.get(1).urgency(), "mission-critical outcome preempts");
     }
 
     @Test

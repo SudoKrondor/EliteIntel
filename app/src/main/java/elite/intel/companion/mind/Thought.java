@@ -98,6 +98,15 @@ public abstract class Thought {
     }
 
     /**
+     * Verbatim narration whose {@code spokenSignal} is completed when the companion's playback finishes, for a
+     * synchronous caller (e.g. a bridged macro SPEAK step) that blocks until the line is actually spoken.
+     */
+    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
+                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal) {
+        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal);
+    }
+
+    /**
      * Creates a reflex thought: a commander input the {@code ReflexResolver} matched verbatim to exactly one
      * safe, parameterless command. It runs on the commander lane like a {@link CommanderThought} but skips the
      * LLM entirely - it just records the input, executes the resolved command, and voices/remembers its
