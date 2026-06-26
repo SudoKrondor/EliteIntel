@@ -247,6 +247,7 @@ public class StringUtls {
                 .replace("*", " ")                              // any stray asterisks
                 .replace("`", "")                               // any stray backticks
                 .replace("\"", "")
+                .replace(". .", ".")
                 .replace("[", "").replace("]", "")
                 .replace("ETA", ". E.T.A.")
                 .replace(":", " - ")
@@ -256,6 +257,7 @@ public class StringUtls {
                 .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace(", Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
+                .replace("Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .trim();
     }
 

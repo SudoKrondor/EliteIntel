@@ -102,7 +102,13 @@ public final class FindCommodityCommand implements IntelCommand {
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
+        if (cargoCapacity == 0) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.commodity.noCargoCapacity"));
+        }
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
+        if (maxDistanceFromArrival == 0) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.commodity.maxDistanceFromArrivalNoSet"));
+        }
         List<CommoditySearchResult> results = EdsmCommoditySearch.search(
                 commodity,
                 starName,

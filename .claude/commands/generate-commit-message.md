@@ -41,6 +41,7 @@ Format:
   "Reworked", not "Add", "Fix", "Rework"). Each bullet states WHAT changed and, where it aids understanding, WHY or the key implementation choice. Describe functionality and implementation, not a list of files. It is fine to name a component/area (e.g. "credit tracking", "journal parser") when it helps the reader, but do not enumerate changed files.
 - If tests were added or updated, include a short `Tests:` line or bullet, past tense.
 - Use plain hyphens, never em dashes ("-").
+- Do not hard-wrap lines with \n
 - Keep it factual and reviewable; no filler.
 
 Example shape (illustrative, not a template to copy verbatim):
@@ -48,5 +49,5 @@ Example shape (illustrative, not a template to copy verbatim):
 
 # 4. Output
 
-Write the message to `commit-message.txt` in the repo root and print it inline. Do not run
-`git add` or `git commit`. Mention that the draft is ready for the user to review and commit.
+Write the message to `commit-message.txt` in the repo root and print it inline. Do not run `git add` or
+`git commit`. Mention that the draft is ready for the user to review and commit.
