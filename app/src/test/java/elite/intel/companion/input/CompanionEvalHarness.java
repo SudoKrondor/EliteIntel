@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
+import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.companion.CompanionRuntime;
@@ -16,6 +18,7 @@ import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
 import elite.intel.db.util.Database;
@@ -34,9 +37,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -70,6 +75,8 @@ public final class CompanionEvalHarness {
     private final List<Executed> turnCalls = new CopyOnWriteArrayList<>();
     private final List<Long> latenciesMs = new CopyOnWriteArrayList<>();
     private final AtomicLong rounds = new AtomicLong();
+    // Identities of short-term entries already reported, so each memoryDeltaBlock() shows only new writes.
+    private final Set<String> seenMemory = new HashSet<>();
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -105,6 +112,8 @@ public final class CompanionEvalHarness {
             registry.load();
         }
         Map<String, SystemFunction> systemFunctions = registry.byId();
+        // Queries are read-only (they press no keys), so the eval runs them for real - see recordingExecution.
+        Map<String, IntelQuery> queryHandlers = QueryHandlerFactory.getInstance().registerQueryHandlers();
 
         model = SystemSession.getInstance().getLmStudioCommandModel().trim();
         LlmTransport tracing = body -> {
@@ -123,23 +132,29 @@ public final class CompanionEvalHarness {
         };
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
-        // Recording execution: game commands recorded but never executed (no keystrokes); system functions
-        // (speak, recall, remember, change_global_topic, ...) run so memory/topic/verbosity/speech evolve.
+        // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
+        // executed (they would press keys); QUERIES and system functions (speak, recall, remember,
+        // change_global_topic, ...) run for real, so the LLM and memory get the actual query result and the
+        // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
-            SystemFunction fn = systemFunctions.get(request.toolName());
+            String toolName = request.toolName();
+            SystemFunction fn = systemFunctions.get(toolName);
+            IntelQuery query = queryHandlers.get(toolName);
             JsonObject result = null;
-            if (fn != null) {
-                try {
-                    result = fn.handle(request.toolName(), request.arguments(), "");
-                } catch (Exception ignored) {
-                    // a system-function failure in the eval must not abort the turn
+            try {
+                if (fn != null) {
+                    result = fn.handle(toolName, request.arguments(), "");
+                } else if (query != null) {
+                    result = query.handle(toolName, request.arguments(), ""); // read-only: safe to run in the eval
                 }
+            } catch (Exception ignored) {
+                // a system-function/query failure in the eval must not abort the turn
             }
             if (result == null) {
                 result = new JsonObject();
-                result.addProperty("status", fn != null ? "ok" : "recorded");
+                result.addProperty("status", (fn != null || query != null) ? "ok" : "recorded");
             }
-            turnCalls.add(new Executed(request.toolName(), request.arguments(), result));
+            turnCalls.add(new Executed(toolName, request.arguments(), result));
             return CompletableFuture.completedFuture(result);
         };
 
@@ -153,6 +168,8 @@ public final class CompanionEvalHarness {
         Files.writeString(traceFile, "Companion eval - " + Instant.now() + " (model=" + model + ")\n",
                 StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         Thread.sleep(1500);
+        // Treat any boot-time entries as already seen, so the first memoryDeltaBlock() reports only real input.
+        memory.readShortTermTimeline().forEach(e -> seenMemory.add(memoryKey(e)));
     }
 
     /** Stops the subsystem; safe to call when never booted. */
@@ -303,6 +320,55 @@ public final class CompanionEvalHarness {
 
     private static boolean contains(String haystack, String needleLower) {
         return haystack != null && haystack.toLowerCase(Locale.ROOT).contains(needleLower);
+    }
+
+    // --- memory-fill tracing (shared by every theme eval) ---
+
+    /**
+     * The short-term writes since the previous call, formatted as the prompt shows them
+     * ({@code [SOURCE][topic] content}), with the running short-term total - so each turn's report can show
+     * exactly what that input wrote to memory and how the hot timeline accumulates and evicts over the run.
+     */
+    public String memoryDeltaBlock() {
+        List<MemoryEntry> added = newMemoryThisTurn();
+        StringBuilder block = new StringBuilder(
+                String.format("    memory +%d (short-term total: %d):%n", added.size(), memory.readShortTermTimeline().size()));
+        for (MemoryEntry e : added) {
+            block.append("      ").append(renderEntry(e)).append("\n");
+        }
+        return block.toString();
+    }
+
+    /** The whole short-term timeline at the end of the run, oldest-to-newest - the accumulated memory state. */
+    public String shortTermDumpBlock() {
+        List<MemoryEntry> timeline = memory.readShortTermTimeline();
+        StringBuilder dump = new StringBuilder(
+                String.format("%n---- short-term timeline at end (%d entries, oldest first) ----%n", timeline.size()));
+        for (MemoryEntry e : timeline) {
+            dump.append("  ").append(renderEntry(e)).append("\n");
+        }
+        return dump.toString();
+    }
+
+    /** Short-term entries written since the previous {@link #memoryDeltaBlock()} call (matched by identity). */
+    private List<MemoryEntry> newMemoryThisTurn() {
+        List<MemoryEntry> added = new ArrayList<>();
+        for (MemoryEntry e : memory.readShortTermTimeline()) {
+            if (seenMemory.add(memoryKey(e))) {
+                added.add(e);
+            }
+        }
+        return added;
+    }
+
+    /** Renders a memory entry exactly as the prompt shows it: {@code [SOURCE][topic] content}. */
+    private static String renderEntry(MemoryEntry e) {
+        return String.format("[%s][%s] %s",
+                e.source().name(), e.topic().name().toLowerCase(Locale.ROOT), e.content());
+    }
+
+    private static String memoryKey(MemoryEntry e) {
+        return e.timestamp() + "|" + e.source() + "|" + e.content();
     }
 
     public MemoryGateway memory() {

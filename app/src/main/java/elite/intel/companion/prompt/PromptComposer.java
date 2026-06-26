@@ -126,6 +126,13 @@ public final class PromptComposer {
                 sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
             }
         }
+        // The topic is sticky and never moves on its own; tell the model to keep it current so an earlier
+        // subject does not keep tagging unrelated turns (the cause of topic "stickiness").
+        sb.append("The current topic is shown with each input. It stays until you move it, so it does not "
+                + "follow the conversation by itself. At the start of a turn, compare the new input's subject "
+                + "to the current topic: if it belongs to a different topic above, call change_global_topic "
+                + "for that topic before any other function. Move it only on a real subject change - keep it "
+                + "when the input still fits the current topic.\n");
     }
 
     /** Cheap memory indexes (llm_memory, topic memory) plus the long-term summary, grouped under one header. */
@@ -163,8 +170,7 @@ public final class PromptComposer {
         }
         for (MemoryEntry entry : shortTerm) {
             sb.append('[').append(entry.source().name()).append(']')
-                    .append('[').append(id(entry.topic())).append(']')
-                    .append('[').append(entry.processingState().name().toLowerCase(Locale.ROOT)).append("] ")
+                    .append('[').append(id(entry.topic())).append("] ")
                     .append(entry.content()).append('\n');
         }
         return sb.toString();

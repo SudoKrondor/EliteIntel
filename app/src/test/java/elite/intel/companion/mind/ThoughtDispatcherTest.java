@@ -15,12 +15,13 @@ import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
+import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
+import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -73,6 +74,54 @@ class ThoughtDispatcherTest {
 
         assertEquals(1, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+    }
+
+    @Test
+    void reflexInputExecutesTheCommandWithoutEngagingLlm() {
+        // The reflex resolver matches the input to one safe parameterless command: it runs directly and the
+        // LLM is never engaged (the dispatcher routes to a ReflexThought, not a CommanderThought).
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("a reflex must not engage the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(),
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)),
+                invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, UrgencyPolicy.normalOnly(), reflex);
+        dispatcher.start();
+        dispatcher.submitCommanderInput("navigation");
+        dispatcher.stop();
+
+        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals("navigation", memory.writes.get(0).content());
+        MemoryEntry outcome = memory.writes.get(1);
+        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
+        assertEquals("command open_nav executed", outcome.content());
+    }
+
+    @Test
+    void nonReflexInputFallsThroughToTheCommanderLlmPath() {
+        // The resolver matches nothing, so the input takes the normal CommanderThought path - the LLM is engaged.
+        CapturingLlm llm = new CapturingLlm();
+        ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), UrgencyPolicy.normalOnly(), noReflex);
+        dispatcher.start();
+        dispatcher.submitCommanderInput("how is the ship");
+        dispatcher.stop();
+
+        assertTrue(llm.requests.size() >= 1, "a non-reflex commander input engages the LLM");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
     }
 
     @Test
@@ -287,10 +336,10 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("slow task");   // runs, blocks on the LLM
         waitUntil(() -> llm.calls.get() >= 1);           // the normal thought is live and blocked
         dispatcher.submitCommanderInput("urgent stop");  // urgent: interrupts the live thought, jumps the head
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "preempted thought safe-flushes as INTERRUPTED");
+        assertTrue(hasUnresolvedInput(), "preempted thought safe-flushes as INTERRUPTED");
         assertTrue(llm.calls.get() >= 2, "the urgent thought ran after preempting the normal one");
     }
 
@@ -303,10 +352,10 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("slow task");   // blocks on the LLM
         waitUntil(() -> llm.calls.get() >= 1);
         dispatcher.interruptLiveThoughts();              // barge-in path
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "barge-in interrupts the live thought");
+        assertTrue(hasUnresolvedInput(), "barge-in interrupts the live thought");
     }
 
     @Test
@@ -317,10 +366,10 @@ class ThoughtDispatcherTest {
         dispatcher.start();
 
         dispatcher.submitCommanderInput("stuck task"); // blocks on the LLM forever
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "watchdog force-interrupts a stuck thought");
+        assertTrue(hasUnresolvedInput(), "watchdog force-interrupts a stuck thought");
     }
 
     @Test
@@ -359,13 +408,15 @@ class ThoughtDispatcherTest {
 
         // The lane survived the first failure to process the second, and neither left a memory hole.
         assertEquals(2, memory.writes.size());
-        assertTrue(memory.writes.stream().allMatch(e -> e.processingState() == MemoryProcessingState.UNRESOLVED));
+        assertTrue(memory.writes.stream()
+                .allMatch(e -> e.topic() == ConversationTopic.UNRESOLVED_COMMANDER_INPUT));
     }
 
     // --- helpers ---
 
-    private boolean hasState(MemoryProcessingState state) {
-        return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    /** A safe-flushed/interrupted thought records its input under the unresolved-commander-input topic. */
+    private boolean hasUnresolvedInput() {
+        return memory.writes.stream().anyMatch(e -> e.topic() == ConversationTopic.UNRESOLVED_COMMANDER_INPUT);
     }
 
     private static void waitUntil(BooleanSupplier condition) throws InterruptedException {

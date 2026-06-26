@@ -90,11 +90,13 @@ class ConsciousMemoryEvalTest {
                     p.keyword(), tier, recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
             report.add("    search: query='" + h.recalledQuery() + "' -> " + h.recallResult());
             report.add("    calls : " + h.turnToolNames());
+            report.add(h.memoryDeltaBlock()); // what the probe turn wrote to memory
         }
 
         StringBuilder block = new StringBuilder("\n======== CONSCIOUS MEMORY / llm_memory (theme 5) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("hits: %d / %d%n", hits, probes.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

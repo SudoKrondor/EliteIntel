@@ -20,6 +20,7 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
+import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -79,11 +80,13 @@ class CompanionConversationIntegrationTest {
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}"),
                 call("c10", "nothing_to_do", "{}")));
 
+        // A conversation is sequential: each turn is submitted and drained before the next, so the
+        // remember -> recall dependency holds (the bounded commander pool would otherwise race the turns).
         dispatcher.start();
-        dispatcher.submitCommanderInput("take us to the next system");
-        dispatcher.submitCommanderInput("how is the ship");
-        dispatcher.submitCommanderInput("what did I tell you to remember");
-        dispatcher.stop(); // drains the lane: every turn has completed
+        playTurn(dispatcher, "take us to the next system");
+        playTurn(dispatcher, "how is the ship");
+        playTurn(dispatcher, "what did I tell you to remember");
+        dispatcher.stop();
 
         // The global topic moved across turns (real change_global_topic handle on the real state).
         assertEquals(ConversationTopic.SHIP_STATUS, state.globalTopic());
@@ -112,7 +115,22 @@ class CompanionConversationIntegrationTest {
         ThoughtContext ctx = new ThoughtContext(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
                 notDangerous, coordinator);
-        return new ThoughtDispatcher(ctx);
+        // Pin the reflex gate off this run (no game tools / no commands), so every turn stays LLM-driven.
+        return new ThoughtDispatcher(ctx, new ReflexResolver(() -> List.of(), notDangerous));
+    }
+
+    /** Submits one commander turn and waits for the lane to drain it, so the conversation plays sequentially. */
+    private static void playTurn(ThoughtDispatcher dispatcher, String input) {
+        dispatcher.submitCommanderInput(input);
+        long deadline = System.currentTimeMillis() + 5000;
+        while (!dispatcher.isIdle() && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
 
     private static Map<String, SystemFunction> systemFunctions() {

@@ -6,6 +6,7 @@ import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
@@ -15,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.EnumMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +59,7 @@ public final class ThoughtDispatcher implements ManagedService {
 
     private final ThoughtContext ctx;
     private final UrgencyPolicy urgencyPolicy;
+    private final ReflexResolver reflexResolver;
     private final long watchdogTimeoutMillis;
     private final long watchdogIntervalMillis;
 
@@ -65,30 +68,59 @@ public final class ThoughtDispatcher implements ManagedService {
     private volatile ScheduledExecutorService watchdog;
 
     public ThoughtDispatcher(ThoughtContext ctx) {
-        this(ctx, UrgencyPolicy.normalOnly(), WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(),
+                WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+    }
+
+    /** Wires the dispatcher with an explicit reflex resolver (production wiring, or a test pinning the gate). */
+    public ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver) {
+        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy to exercise preemption. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy) {
-        this(ctx, urgencyPolicy, WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+        this(ctx, urgencyPolicy, new ReflexResolver(),
+                WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+    }
+
+    /** Test seam: inject the reflex resolver to exercise reflex-vs-commander routing. */
+    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
+        this(ctx, urgencyPolicy, reflexResolver, WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy and watchdog timing. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
+        this(ctx, urgencyPolicy, new ReflexResolver(),
+                watchdogTimeoutMillis, watchdogIntervalMillis);
+    }
+
+    /** Canonical constructor: all collaborators and watchdog timing explicit. */
+    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
+                      long watchdogTimeoutMillis, long watchdogIntervalMillis) {
         this.ctx = ctx;
         this.urgencyPolicy = urgencyPolicy;
+        this.reflexResolver = reflexResolver;
         this.watchdogTimeoutMillis = watchdogTimeoutMillis;
         this.watchdogIntervalMillis = watchdogIntervalMillis;
     }
 
-    /** Accepts a commander reply, creates a COMMANDER thought, and queues it on the commander lane. */
+    /**
+     * Accepts a commander reply and queues it on the commander lane. The reflex gate runs first
+     * ({@link ReflexResolver}): an input that matches a training phrase verbatim and resolves to exactly one
+     * safe, parameterless command becomes a deterministic {@code ReflexThought} (no LLM); everything else
+     * becomes a full {@code CommanderThought}.
+     */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
             return;
         }
         Urgency urgency = urgencyPolicy.forCommander(input);
-        enqueue(ThoughtSource.COMMANDER, Thought.commander(urgency, input, ctx), urgency);
+        Optional<String> reflexCommand = reflexResolver.resolve(input);
+        Thought thought = reflexCommand
+                .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
+                .orElseGet(() -> Thought.commander(urgency, input, ctx));
+        enqueue(ThoughtSource.COMMANDER, thought, urgency);
     }
 
     /**

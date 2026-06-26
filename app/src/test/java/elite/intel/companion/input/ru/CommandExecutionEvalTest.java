@@ -69,11 +69,13 @@ class CommandExecutionEvalTest {
                     c.argContains() == null ? "-" : (argOk ? "ok" : "MISS"),
                     h.turnCalls().stream().map(Executed::tool).toList()
                             + (called && !args.isEmpty() ? " args=" + args : "")));
+            report.add(h.memoryDeltaBlock()); // what this command wrote to memory, this turn
         }
 
         StringBuilder block = new StringBuilder("\n======== RU COMMAND EXECUTION (theme 1) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("score: %d / %d%n", hits, cases.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

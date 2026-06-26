@@ -81,11 +81,13 @@ class MidTermMemoryEvalTest {
             report.add(String.format("%-14s | %-26s | %-12s | %-10s | %-6s | %s",
                     p.expectedTopic(), tier, topicOk ? "yes" : "(" + actualTopic + ")",
                     recalled ? "yes" : "no", hit ? "yes" : "no", h.spokenTexts()));
+            report.add(h.memoryDeltaBlock()); // what the probe turn wrote to memory
         }
 
         StringBuilder block = new StringBuilder("\n======== RU MID-TERM MEMORY BY TOPIC (theme 4) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("hits: %d / %d%n", hits, probes.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

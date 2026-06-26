@@ -9,7 +9,6 @@ import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +31,7 @@ class PromptComposerTest {
     private final PromptComposer composer = new PromptComposer(source -> STATIC_MARKER + source.name() + '\n');
 
     private static MemoryEntry entry(MemorySource source, ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, source, content, MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), topic, source, content);
     }
 
     private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes, String summary) {
@@ -130,8 +129,8 @@ class PromptComposerTest {
                 new MemoryAvailabilitySnapshot(0, 15, List.of()), null).messages().get(1).content();
 
         assertTrue(context.startsWith("## Session memory timeline"));
-        assertTrue(context.contains("[COMMANDER][navigation][processed] where are we"));
-        assertTrue(context.contains("[TOOL_RESULT][navigation][processed] in Sol"));
+        assertTrue(context.contains("[COMMANDER][navigation] where are we"));
+        assertTrue(context.contains("[TOOL_RESULT][navigation] in Sol"));
     }
 
     @Test

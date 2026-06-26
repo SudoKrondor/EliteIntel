@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -8,11 +9,12 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -93,6 +95,16 @@ public abstract class Thought {
      */
     public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic, ThoughtContext ctx) {
         return new VerbatimNarrationThought(urgency, text, topic, ctx);
+    }
+
+    /**
+     * Creates a reflex thought: a commander input the {@code ReflexResolver} matched verbatim to exactly one
+     * safe, parameterless command. It runs on the commander lane like a {@link CommanderThought} but skips the
+     * LLM entirely - it just records the input, executes the resolved command, and voices/remembers its
+     * outcome ({@link #recordOutcome}). Anything ambiguous, parameterized or dangerous is never a reflex.
+     */
+    public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtContext ctx) {
+        return new ReflexThought(urgency, input, commandId, ctx);
     }
 
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */
@@ -183,7 +195,7 @@ public abstract class Thought {
     /** Records the current input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput, MemoryProcessingState.PROCESSED));
+                Instant.now(), memoryTopic(), memorySource(), currentInput));
     }
 
     /**
@@ -196,12 +208,72 @@ public abstract class Thought {
             return;
         }
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryProcessingState.PROCESSED));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
     protected static String spokenTextOf(LlmToolInvocation speak) {
         return JsonUtils.getAsStringOrEmpty(speak.arguments(), SpeakFunction.PARAM_TEXT);
+    }
+
+    /**
+     * Voices and remembers a tool outcome by action type - the handler owns speech, not the LLM. Shared by
+     * every executor of the commander lane ({@link CommanderThought}'s full loop and the deterministic
+     * {@link ReflexThought}):
+     * <ul>
+     *   <li><b>COMMAND</b>: voice the handler's text (mission-critical -&gt; urgent), or an affirmative ack
+     *       when it is a side-effect with no text; remember "command &lt;id&gt; executed" + text/description.</li>
+     *   <li><b>QUERY</b>: voice the answer and remember it verbatim as the companion's own line (COMPANION).</li>
+     *   <li><b>MACRO</b>: voice nothing (a macro narrates its own steps); remember "macro &lt;id&gt; executed"
+     *       + description.</li>
+     *   <li><b>SYSTEM/UNKNOWN</b>: no speech and no timeline entry here (the result still rides the flow).</li>
+     * </ul>
+     *
+     * @param tools the rendered tool snapshot a description is read from; pass {@link List#of()} when there is
+     *              no prompt (a reflex), in which case the side-effect memory carries no description detail
+     */
+    protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
+        String text = CommandOutcome.spokenText(result);
+        switch (ctx.actionTypeResolver().resolve(inv.name())) {
+            case COMMAND -> {
+                if (text.isBlank()) {
+                    voice(StringUtls.affirmative(), false);
+                    rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
+                } else {
+                    voice(text, CommandOutcome.isCritical(result));
+                    rememberAction("command " + inv.name() + " executed", text);
+                }
+            }
+            case QUERY -> {
+                if (!text.isBlank()) {
+                    voice(text, CommandOutcome.isCritical(result));
+                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
+                }
+            }
+            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
+            case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
+        }
+    }
+
+    /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
+    protected void voice(String text, boolean critical) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
+    }
+
+    /** The description shown to the LLM for a tool id (its {@code llmDescription} / fallback), or empty. */
+    protected static String description(String id, List<LlmToolDefinition> tools) {
+        return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
+                .map(LlmToolDefinition::description).orElse("");
+    }
+
+    /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */
+    protected void rememberAction(String lead, String detail) {
+        String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
+        ctx.memoryGateway().write(new MemoryEntry(
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content));
     }
 
     /**

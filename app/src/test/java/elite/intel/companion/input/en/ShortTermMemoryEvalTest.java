@@ -60,11 +60,13 @@ class ShortTermMemoryEvalTest {
                 hits++;
             }
             report.add(String.format("%-26s | %-22s | %-6s | %s", p.keyword(), tier, hit ? "yes" : "no", h.spokenTexts()));
+            report.add(h.memoryDeltaBlock()); // what the plant + probe wrote to memory, this probe
         }
 
         StringBuilder block = new StringBuilder("\n======== SHORT-TERM MEMORY (theme 3) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("score: %d / %d%n", hits, probes.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

@@ -65,11 +65,13 @@ class BehavioralEvalTest {
             String outcome = clarify ? "clarify" : honestMiss ? "honest" : h.spokenTexts().isEmpty() ? "silent" : "FABRICATED?";
             report.add(String.format("%-64s | %-8s | %-12s | %s",
                     ask, clarify ? "yes" : "no", outcome, h.spokenTexts()));
+            report.add(h.memoryDeltaBlock()); // what this ask wrote to memory
         }
 
         StringBuilder block = new StringBuilder("\n======== RU BEHAVIORAL / not-knowing (theme 7) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("handled well (clarified / honest): %d / %d%n", good, asks.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

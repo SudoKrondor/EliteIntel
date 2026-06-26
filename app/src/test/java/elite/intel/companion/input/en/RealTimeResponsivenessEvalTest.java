@@ -109,6 +109,7 @@ class RealTimeResponsivenessEvalTest {
                         + "(arrival span %d ms, processing backlog %d ms)%n",
                 stream.size(), STREAM_INTERVAL_MS, drainMs, arrivalSpanMs, backlogMs));
         block.append(backlogMs <= arrivalSpanMs ? "kept up with the stream\n" : "FELL BEHIND the stream\n");
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(turnMs.isEmpty(), "no turns were timed");

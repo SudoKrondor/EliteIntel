@@ -15,8 +15,8 @@ import java.util.UUID;
 
 /**
  * System function: speak a phrase to the commander via the SpeechGateway. Available to both sources.
- * The {@code confirmation_request} marker flags a dangerous-action confirmation prompt (§2.13); only
- * such a speak runs immediately while a dangerous tool-call set is frozen.
+ * Dangerous-action confirmation is not the model's concern: it is detected and voiced by the
+ * {@code CommanderThought} after the response (§2.13), so this function carries no confirmation marker.
  */
 @RegisterSystemFunction
 public final class SpeakFunction implements SystemFunction {
@@ -25,8 +25,6 @@ public final class SpeakFunction implements SystemFunction {
 
     /** Argument carrying the text to vocalize; read by the {@code Thought} to record the companion's words. */
     public static final String PARAM_TEXT = "text";
-    /** Argument name marking a dangerous-action confirmation prompt; read by the {@code Thought} (§2.13). */
-    public static final String PARAM_CONFIRMATION_REQUEST = "confirmation_request";
     private static final String STATUS_SPOKEN = "spoken";
 
     @Override
@@ -44,9 +42,6 @@ public final class SpeakFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec(PARAM_TEXT, "string", true,
                         "The exact words to speak to the commander.",
-                        List.of(), null),
-                new ActionParameterSpec(PARAM_CONFIRMATION_REQUEST, "boolean", false,
-                        "True only if this phrase requests confirmation of a dangerous action; otherwise omit.",
                         List.of(), null)
         );
     }
@@ -58,8 +53,7 @@ public final class SpeakFunction implements SystemFunction {
 
     /**
      * Vocalizes the {@code text} through the companion {@link elite.intel.companion.speech.SpeechGateway}.
-     * Fire-and-return: it does not block on playback (TTS runs async); the {@code confirmation_request}
-     * marker is interpreted by the {@code Thought} (dangerous-confirmation gating), not here.
+     * Fire-and-return: it does not block on playback (TTS runs async).
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {

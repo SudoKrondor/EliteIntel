@@ -13,7 +13,6 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
@@ -81,7 +80,6 @@ class ThoughtTest {
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, input.source());
         assertEquals(ConversationTopic.SOCIAL, input.topic());
-        assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
         assertEquals("set speed to 50", input.content());
         MemoryEntry spoken = memory.writes.get(1);
         assertEquals(MemorySource.COMPANION, spoken.source(), "the companion's reply is recorded as COMPANION");
@@ -147,6 +145,42 @@ class ThoughtTest {
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
                         && e.content().contains("hull at 100 percent")),
                 "the command result is recorded synchronously");
+    }
+
+    @Test
+    void reflexExecutesCommandVoicesOutcomeAndRemembersWithoutLlm() {
+        // A reflex runs the resolved command directly - no LLM round - and voices/remembers its outcome
+        // through the same per-type handling as the full loop.
+        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
+
+        Thought.reflex(Urgency.NORMAL, "how is the ship", "ship_status", ctx(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty(), "a reflex never engages the LLM");
+        assertEquals(List.of("ship_status"), execution.toolNames(), "the resolved command is executed directly");
+        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the command's outcome is voiced");
+        assertEquals(2, memory.writes.size());
+        MemoryEntry input = memory.writes.get(0);
+        assertEquals(MemorySource.COMMANDER, input.source());
+        assertEquals("how is the ship", input.content());
+        MemoryEntry outcome = memory.writes.get(1);
+        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
+        assertEquals("command ship_status executed: hull at 100 percent", outcome.content());
+    }
+
+    @Test
+    void reflexSilentCommandAcknowledgesAndRemembersExecution() {
+        // close_panel is a side-effect command with no spoken text: the reflex acks and records the execution.
+        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty());
+        assertEquals(List.of("close_panel"), execution.toolNames());
+        assertEquals(1, speech.requests.size(), "a side-effect command is acknowledged");
+        assertFalse(speech.requests.get(0).text().isBlank());
+        assertEquals(2, memory.writes.size());
+        assertEquals("close the panel", memory.writes.get(0).content());
+        assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());
+        assertEquals("command close_panel executed", memory.writes.get(1).content());
     }
 
     @Test
@@ -239,7 +273,6 @@ class ThoughtTest {
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.EVENT, input.source());
         assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
-        assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
         assertEquals("jumped to Sol", input.content());
     }
 
@@ -296,7 +329,6 @@ class ThoughtTest {
         assertEquals(1, memory.writes.size());
         MemoryEntry entry = memory.writes.get(0);
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, entry.topic());
-        assertEquals(MemoryProcessingState.UNRESOLVED, entry.processingState());
         assertEquals(1, speech.requests.size(), "commander hears a service phrase");
         assertNotNull(speech.requests.get(0).text());
         assertFalse(speech.requests.get(0).text().isBlank());
@@ -309,46 +341,45 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "anything", ctx()).run();
 
-        assertEquals(MemoryProcessingState.UNRESOLVED, memory.writes.get(0).processingState());
+        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, memory.writes.get(0).topic());
         assertEquals(1, speech.requests.size());
     }
 
     @Test
     void dangerousActionWaitsForConfirmationThenExecutesOnConfirm() throws InterruptedException {
+        // The model is unaware of danger: it just calls the action. The thought voices the confirmation itself.
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::confirm);
 
         assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
-        assertTrue(hasState(MemoryProcessingState.AWAITING_CONFIRMATION));
-        assertTrue(hasState(MemoryProcessingState.CONFIRMED));
+        assertFalse(speech.requests.isEmpty(), "the thought voices a confirmation prompt before running it");
+        assertTrue(hasContent("dangerous action requires confirmation"));
+        assertTrue(hasContent("dangerous action confirmed"));
     }
 
     @Test
     void dangerousActionIsDiscardedOnCancel() throws InterruptedException {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::cancel);
 
         assertFalse(execution.toolNames().contains("self_destruct"), "cancelled dangerous action must not run");
-        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+        assertTrue(hasContent("dangerous action cancelled"));
     }
 
     @Test
     void overlappingConfirmationIsRefused() {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
         coordinator.open(); // occupy the single confirmation slot
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         Thought.commander(Urgency.NORMAL, "self destruct", ctx()).run(); // open() returns null -> no blocking
 
         assertFalse(execution.toolNames().contains("self_destruct"));
-        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+        assertTrue(hasContent("dangerous action cancelled"));
     }
 
     @Test
@@ -366,13 +397,12 @@ class ThoughtTest {
         MemoryEntry flushed = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, flushed.source());
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
-        assertEquals(MemoryProcessingState.INTERRUPTED, flushed.processingState());
     }
 
     // --- helpers ---
 
-    private boolean hasState(MemoryProcessingState state) {
-        return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    private boolean hasContent(String content) {
+        return memory.writes.stream().anyMatch(e -> content.equals(e.content()));
     }
 
     private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
@@ -380,13 +410,6 @@ class ThoughtTest {
         while (!condition.getAsBoolean() && System.currentTimeMillis() < deadline) {
             Thread.sleep(5);
         }
-    }
-
-    private static JsonObject confirmationRequest(String text) {
-        JsonObject o = new JsonObject();
-        o.addProperty("text", text);
-        o.addProperty("confirmation_request", true);
-        return o;
     }
 
     /** Runs the thought on a worker, nudging the resolver (confirm/cancel) until it finishes. */
