@@ -46,6 +46,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     private ConfirmationCoordinator confirmationCoordinator;
     private BargeInController bargeInController;
     private CompanionSensorDataBridge sensorDataBridge;
+    private CompanionAnnouncementBridge announcementBridge;
 
     private final LlmGateway llmOverride;
     private final ExecutionGateway executionOverride;
@@ -128,11 +129,13 @@ public final class CompanionSubsystemGate implements ManagedService {
         gameEventFilter = new GameEventFilter(dispatcher);
         bargeInController = new BargeInController(dispatcher);
         sensorDataBridge = new CompanionSensorDataBridge(dispatcher);
+        announcementBridge = new CompanionAnnouncementBridge(dispatcher);
 
         // Subscribe last, so events only flow once the whole graph is live.
         GameEventBus.register(this);
         GameEventBus.register(bargeInController);
         GameEventBus.register(sensorDataBridge);
+        GameEventBus.register(announcementBridge);
     }
 
     @Override
@@ -143,11 +146,13 @@ public final class CompanionSubsystemGate implements ManagedService {
         GameEventBus.unregister(this);
         GameEventBus.unregister(bargeInController);
         GameEventBus.unregister(sensorDataBridge);
+        GameEventBus.unregister(announcementBridge);
         dispatcher.stop();
         dispatcher = null;
         gameEventFilter = null;
         bargeInController = null;
         sensorDataBridge = null;
+        announcementBridge = null;
         confirmationCoordinator = null;
         CompanionRuntime.clear();
     }

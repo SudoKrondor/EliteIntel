@@ -5,6 +5,7 @@ import elite.intel.ai.ears.IsSpeakingEvent;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.*;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
@@ -45,6 +46,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onNavigationVocalisationRequest(NavigationVocalisationEvent event) {
+        if (companionVoicesNarration()) return;
         GameEventBus.publish(new VocalisationRequestEvent(event.getText(), NavigationVocalisationEvent.class, false));
     }
 
@@ -52,6 +54,7 @@ public class VocalisationRouter {
     /// --- on/off based on user settings
     @Subscribe
     public void onRadarContactEvent(RadarContactAnnouncementEvent event) {
+        if (companionVoicesNarration()) return;
         if (playerSession.isRadarContactAnnouncementOn()) {
             GameEventBus.publish(new VocalisationRequestEvent(event.getText(), RadarContactAnnouncementEvent.class, false));
         }
@@ -59,6 +62,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onDiscoveryAnnouncementEvent(DiscoveryAnnouncementEvent event) {
+        if (companionVoicesNarration()) return;
         if (playerSession.isDiscoveryAnnouncementOn()) {
             GameEventBus.publish(new VocalisationRequestEvent(event.getText(), DiscoveryAnnouncementEvent.class, true));
         }
@@ -66,6 +70,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onMiningAnnouncementEvent(MiningAnnouncementEvent event) {
+        if (companionVoicesNarration()) return;
         if (playerSession.isMiningAnnouncementOn()) {
             GameEventBus.publish(new VocalisationRequestEvent(event.getText(), MiningAnnouncementEvent.class, false));
         }
@@ -73,9 +78,20 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onRouteAnnouncementEvent(RouteAnnouncementEvent event) {
+        if (companionVoicesNarration()) return;
         if (playerSession.isRouteAnnouncementOn()) {
             GameEventBus.publish(new VocalisationRequestEvent(event.getText(), RouteAnnouncementEvent.class, true));
         }
+    }
+
+    /**
+     * In companion mode the companion voices (and remembers) these curated announcements via
+     * {@code CompanionAnnouncementBridge}; the legacy TTS path stays silent for them to avoid double speech.
+     * Radio transmission and the always-pass-through events (AI response, mission-critical, voice demo) are
+     * not affected.
+     */
+    private static boolean companionVoicesNarration() {
+        return CompanionConfig.companionModeOn();
     }
 
     @Subscribe

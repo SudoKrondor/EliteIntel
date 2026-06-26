@@ -86,7 +86,7 @@ public class CodexEntryEvent extends BaseEvent {
     /** A new discovery worth a remark. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

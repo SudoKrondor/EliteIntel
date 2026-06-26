@@ -257,6 +257,22 @@ class ThoughtTest {
     }
 
     @Test
+    void verbatimNarrationRecordsThenVoicesTheLineWithoutLlm() {
+        // A curated announcement already carries finished text: remember it, then voice it verbatim, no LLM.
+        Thought.verbatimNarration(Urgency.URGENT, "Target material detected, Commander.",
+                ConversationTopic.MINING, ctx()).run();
+
+        assertTrue(llm.requests.isEmpty(), "verbatim narration never engages the LLM");
+        assertEquals(1, memory.writes.size(), "the curated line is remembered as the companion's words");
+        MemoryEntry spoken = memory.writes.get(0);
+        assertEquals(MemorySource.COMPANION, spoken.source());
+        assertEquals(ConversationTopic.MINING, spoken.topic());
+        assertEquals("Target material detected, Commander.", spoken.content());
+        assertEquals(List.of("Target material detected, Commander."),
+                speech.requests.stream().map(SpeechRequest::text).toList(), "and voiced verbatim");
+    }
+
+    @Test
     void commanderInvalidResponseRecordsUnresolvedAndSpeaks() {
         llm.scripted.add(invalid());
 

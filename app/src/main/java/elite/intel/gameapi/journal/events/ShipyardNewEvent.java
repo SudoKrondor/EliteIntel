@@ -31,7 +31,7 @@ public class ShipyardNewEvent extends BaseEvent {
     /** A new ship joined the fleet. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

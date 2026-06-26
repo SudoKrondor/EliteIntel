@@ -61,7 +61,7 @@ public class ScanOrganicEvent extends BaseEvent {
      */
     @Override
     public Importance importance() {
-        return "Analyse".equalsIgnoreCase(scanType) ? Importance.HIGH : Importance.NORMAL;
+        return Importance.NORMAL;
     }
 
     @Override

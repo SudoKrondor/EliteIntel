@@ -71,7 +71,7 @@ public class MissionCompletedEvent extends BaseEvent {
     /** Mission outcome worth a remark. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

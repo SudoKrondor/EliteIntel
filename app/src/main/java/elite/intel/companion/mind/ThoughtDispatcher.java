@@ -117,6 +117,19 @@ public final class ThoughtDispatcher implements ManagedService {
                 urgency);
     }
 
+    /**
+     * Accepts a curated announcement that already carries finished text (mining/discovery/route/radar/
+     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane. The line is
+     * remembered and voiced verbatim in the companion's voice - no LLM phrasing.
+     */
+    public void submitVerbatimNarration(String text, ConversationTopic topic) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        Urgency urgency = Urgency.URGENT;
+        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx), urgency);
+    }
+
     @Override
     public void start() {
         if (lanes == null) {

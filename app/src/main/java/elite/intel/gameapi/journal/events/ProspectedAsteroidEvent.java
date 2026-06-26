@@ -48,7 +48,7 @@ public class ProspectedAsteroidEvent extends BaseEvent {
         Set<String> miningTargets = PlayerSession.getInstance().getMiningTargets();
         for (Material material : materials) {
             if (material == null || material.getName() == null || material.getName().isEmpty()) continue;
-            if (miningTargets.contains(capitalizeWords(material.getName()))) return Importance.HIGH;
+            if (miningTargets.contains(capitalizeWords(material.getName()))) return Importance.NORMAL;
         }
         return Importance.LOW;
     }

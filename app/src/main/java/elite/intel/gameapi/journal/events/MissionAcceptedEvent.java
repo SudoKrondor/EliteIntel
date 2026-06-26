@@ -100,7 +100,7 @@ public class MissionAcceptedEvent extends BaseEvent {
     /** New objective worth acknowledging. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

@@ -48,7 +48,7 @@ public class MissionRedirectedEvent extends BaseEvent {
     /** Mission objective changed; worth telling the commander. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

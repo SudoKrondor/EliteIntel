@@ -40,7 +40,7 @@ public class CarrierBuyEvent extends BaseEvent {
     /** Bought a fleet carrier; major purchase. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

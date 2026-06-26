@@ -87,6 +87,14 @@ public abstract class Thought {
         return new NarrationThought(urgency, summary, eventTopic, ctx);
     }
 
+    /**
+     * Creates a thought from a curated announcement that already carries finished text. It is voiced verbatim
+     * (no LLM phrasing) in the companion's voice and recorded as the companion's own words under the topic.
+     */
+    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic, ThoughtContext ctx) {
+        return new VerbatimNarrationThought(urgency, text, topic, ctx);
+    }
+
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */
     public abstract void run();
 

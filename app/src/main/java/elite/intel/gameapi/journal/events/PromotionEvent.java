@@ -53,7 +53,7 @@ public class PromotionEvent extends BaseEvent {
     /** Rank-up milestone. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override

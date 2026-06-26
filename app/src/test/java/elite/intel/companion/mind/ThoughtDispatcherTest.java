@@ -199,6 +199,36 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void verbatimNarrationIsRecordedAndVoicedWithoutEngagingLlm() {
+        FakeSpeech speech = new FakeSpeech();
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("verbatim narration must not engage the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                failIfCalled, speech, new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        dispatcher.start();
+        dispatcher.submitVerbatimNarration("Target material detected.", ConversationTopic.MINING);
+        dispatcher.stop();
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry spoken = memory.writes.get(0);
+        assertEquals(MemorySource.COMPANION, spoken.source());
+        assertEquals(ConversationTopic.MINING, spoken.topic());
+        assertEquals("Target material detected.", spoken.content());
+        assertEquals(1, speech.requests.size(), "the line is voiced verbatim");
+        assertEquals("Target material detected.", speech.requests.get(0).text());
+    }
+
+    @Test
     void commanderAndEventUseSeparateLanes() {
         ThoughtDispatcher dispatcher = dispatcher();
         dispatcher.start();

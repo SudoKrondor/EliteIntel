@@ -36,7 +36,7 @@ public class ResurrectEvent extends BaseEvent {
     /** Death and respawn; a major moment. */
     @Override
     public Importance importance() {
-        return Importance.HIGH;
+        return Importance.NORMAL;
     }
 
     @Override
