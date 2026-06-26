@@ -120,61 +120,26 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderQueryOutcomeVocalizedDeterministicallyAndLlmSpeakDropped() {
-        // A query owns its spoken outcome: its text_to_speech_response is voiced verbatim through the speech
-        // gateway, and the LLM's own speak for the same turn is dropped (never re-voiced or rephrased).
-        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
+    void commanderCommandWithholdsLlmSpeakAndRecordsExecution() {
+        // A command self-narrates its own outcome (via the handler's events, owned by the bridge), so the
+        // LLM's own speak for the same turn is dropped; only the immediate ack is voiced here, and the
+        // execution is recorded. An IntelCommand returns no text_to_speech_response, so nothing is voiced
+        // inline for the outcome.
+        execution.resultsByTool.put("ship_status", new JsonObject());
         llm.scripted.add(ok(call("ship_status", new JsonObject()),
                 call(SpeakFunction.ID, text("let me check the ship")),
                 call(NothingToDoFunction.ID, new JsonObject())));
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertEquals(2, speech.requests.size(),
-                "the command is acknowledged immediately, then its outcome text is vocalized deterministically");
-        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
-        assertEquals("hull at 100 percent", speech.requests.get(1).text());
+        assertEquals(1, speech.requests.size(),
+                "only the immediate command ack is voiced; the command self-narrates the rest");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the voice is the immediate command ack");
         assertFalse(execution.toolNames().contains(SpeakFunction.ID),
-                "the LLM's own speak is withheld once a command/query owns the spoken outcome");
-    }
-
-    @Test
-    void commanderCommandTextResultIsVoicedAndRecordedSynchronously() {
-        // Fire-and-forget reverted: the command runs in-thread; its deterministic outcome is voiced and the
-        // real result is recorded (and fed back into the flow for the LLM to chain on).
-        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
-        llm.scripted.add(ok(call("ship_status", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
-
-        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
-
-        assertEquals(2, speech.requests.size(),
-                "the immediate ack is voiced before execution; the deterministic outcome is voiced in-thread");
-        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
-        assertEquals("hull at 100 percent", speech.requests.get(1).text());
+                "the LLM's own speak is withheld once a command owns the spoken outcome");
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
-                        && e.content().contains("hull at 100 percent")),
-                "the command result is recorded synchronously");
-    }
-
-    @Test
-    void reflexExecutesCommandVoicesOutcomeAndRemembersWithoutLlm() {
-        // A reflex runs the resolved command directly - no LLM round - and voices/remembers its outcome
-        // through the same per-type handling as the full loop.
-        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
-
-        Thought.reflex(Urgency.NORMAL, "how is the ship", "ship_status", ctx(actionTypes())).run();
-
-        assertTrue(llm.requests.isEmpty(), "a reflex never engages the LLM");
-        assertEquals(List.of("ship_status"), execution.toolNames(), "the resolved command is executed directly");
-        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the command's outcome is voiced");
-        assertEquals(2, memory.writes.size());
-        MemoryEntry input = memory.writes.get(0);
-        assertEquals(MemorySource.COMMANDER, input.source());
-        assertEquals("how is the ship", input.content());
-        MemoryEntry outcome = memory.writes.get(1);
-        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
-        assertEquals("command ship_status executed: hull at 100 percent", outcome.content());
+                        && e.content().contains("command ship_status executed")),
+                "the command execution is recorded");
     }
 
     @Test
@@ -217,24 +182,6 @@ class ThoughtTest {
         assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
         assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
                 "recordOutcome no longer records the query answer; the bridge owns that");
-    }
-
-    @Test
-    void commanderMissionCriticalOutcomeVocalizedOnUrgentChannel() {
-        // A mission-critical command outcome (e.g. a plotted trade-stop instruction) is voiced on the
-        // urgent channel so it preempts current speech, exactly as the legacy MissionCritical channel did.
-        JsonObject critical = outcomeText("travel to Sol and buy gold");
-        critical.addProperty("mission_critical", true);
-        execution.resultsByTool.put("close_panel", critical); // a command stub (NARRATABLE) carrying a critical outcome
-        llm.scripted.add(ok(call("close_panel", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
-
-        Thought.commander(Urgency.NORMAL, "next trade stop", ctx(actionTypes())).run();
-
-        assertEquals(2, speech.requests.size());
-        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
-        assertEquals(Urgency.NORMAL, speech.requests.get(0).urgency(), "immediate command ack is normal priority");
-        assertEquals("travel to Sol and buy gold", speech.requests.get(1).text());
-        assertEquals(Urgency.URGENT, speech.requests.get(1).urgency(), "mission-critical outcome preempts");
     }
 
     @Test
