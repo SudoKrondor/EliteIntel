@@ -1,8 +1,6 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
@@ -58,13 +56,7 @@ public class CarrierJumpCompleteSubscriber {
                         .get(fleetCarrierRouteManager.getFleetCarrierRoute().size() - 1)
                         .getSystemName();
                 ClipboardUtils.setClipboardText(systemName);
-                // Event path: this subscriber owns speaking the recalculated-route outcome (companion-mode
-                // commentary on this is a later journal-subscriber concern).
-                JsonObject routeOutcome = FleetCarrierRouteCalculator.calculate();
-                String routeText = CommandOutcome.spokenText(routeOutcome);
-                if (!routeText.isEmpty()) {
-                    EventNarrator.say(routeText);
-                }
+                FleetCarrierRouteCalculator.calculate();
             }
 
             int fuelUsed = currentLocationLeg == null ? 0 : currentLocationLeg.getFuelUsed();

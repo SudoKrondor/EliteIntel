@@ -48,7 +48,7 @@ public final class TargetSubsystemCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         log.debug("TargetSubSystemHandler received params: {}", params);
         JsonElement key = params.get("key");
 
@@ -70,6 +70,5 @@ public final class TargetSubsystemCommand implements IntelCommand {
             log.debug("LLM key=[{}] normalized to=[{}]", key.getAsString(), subSystem);
         }
         SubSystemsManager.getInstance().targetSubSystem(subSystem);
-        return null;
     }
 }

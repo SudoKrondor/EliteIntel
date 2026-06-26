@@ -27,9 +27,8 @@ public final class HonkCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         ShipSettingsDao.ShipSettings shipSettings = shipSettingsManager.getSettings(playerSession.getShipLoadout().getShipId());
         DiscoveryScanner.honk(shipSettings);
-        return null;
     }
 }

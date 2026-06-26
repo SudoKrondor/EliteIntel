@@ -30,7 +30,7 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
@@ -48,6 +48,5 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
             ));
             navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
         }
-        return null;
     }
 }

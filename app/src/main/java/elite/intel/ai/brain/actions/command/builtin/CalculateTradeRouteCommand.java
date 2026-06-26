@@ -1,11 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.db.managers.TradeRouteManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.traderoute.TradeRouteResponse;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.search.spansh.traderoute.TradeRouteTransaction;
@@ -35,43 +37,52 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
-            return CommandOutcome.speak(StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity")));
+            return;
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
+
         if (criteria == null) {
-            return null;
+            return;
         }
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName)));
+            return;
         }
 
         if (criteria.getMaxJumps() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName)));
+            return;
         }
+
 
         if (criteria.getMaxLsFromArrival() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName)));
+            return;
         }
 
         TradeRouteResponse route = tradeRouteManager.calculateTradeRoute(criteria);
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
             if (criteria.getStation() != null) {
-                return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.notFound"));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
+            } else {
+                String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding)));
             }
-            String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding));
+            return;
         }
         long totalProfit = route.getResult().stream()
                 .mapToLong(TradeRouteTransaction::getTotalProfit)
                 .sum();
 
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit)));
     }
 }

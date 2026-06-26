@@ -27,7 +27,7 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         UiNavCommon.prepToKnownUiPositionWhileInTheShipAtStation();
         GameControllerBus.publish(GameInputSequenceEvent.of(
@@ -35,6 +35,5 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
         ));
-        return null;
     }
 }

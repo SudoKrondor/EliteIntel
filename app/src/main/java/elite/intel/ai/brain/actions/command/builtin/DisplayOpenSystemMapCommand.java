@@ -29,7 +29,7 @@ public final class DisplayOpenSystemMapCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
         Status status = Status.getInstance();
         if (status.isInMainShip() || status.isInFighter()) {
@@ -43,6 +43,5 @@ public final class DisplayOpenSystemMapCommand implements IntelCommand {
         if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_SYSTEM_MAP_HUMANOID.getGameBinding())));
         }
-        return null;
     }
 }

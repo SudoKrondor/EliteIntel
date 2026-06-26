@@ -2,12 +2,13 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.db.managers.ShipLoadoutManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
@@ -41,29 +42,34 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         JsonElement key = params.get("efficiency");
 
         if (key == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.neutronRoute.efficiency"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
+            return;
         }
 
         int efficiency = getIntSafely(key.getAsString());
         if (efficiency < 1 || efficiency > 100) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.neutronRoute.efficiency"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
+            return;
         }
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         String destination = ClipboardUtils.getClipboardText();
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency)));
 
         ShipLoadOutDto shipLoadout = shipLoadoutManager.get();
         if (shipLoadout == null) {
-            return null;
+            return;
         }
 
         double maxJumpRange = shipLoadout.getMaxJumpRange();
-        // Low-range note is folded into the single outcome rather than spoken separately.
-        String warning = maxJumpRange < 20 ? StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning") : "";
+        if (maxJumpRange < 20) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning")));
+        }
+
 
         NeutronStarRouteClient client = new NeutronStarRouteClient();
         NeutronStarRoute route = client.calculateRoute(
@@ -74,10 +80,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         if (route != null && route.getResult() != null && route.getResult().getTotalJumps() > 0) {
             neutronStarRouteManager.saveNeutronStarRoute(route);
-            String found = StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps());
-            return CommandOutcome.critical(warning.isEmpty() ? found : warning + " " + found);
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps())));
         }
-        // No route found: surface the low-range warning if there was one, otherwise stay silent.
-        return warning.isEmpty() ? null : CommandOutcome.critical(warning);
     }
 }

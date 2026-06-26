@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 
@@ -23,14 +24,15 @@ public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (params.get("state") == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.common.llmParamFailed"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.llmParamFailed")));
+            return;
         }
         boolean isOn = params.get("state").getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setDiscoveryAnnouncementOn(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.announcements.discovery", state));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.announcements.discovery", state)));
     }
 }

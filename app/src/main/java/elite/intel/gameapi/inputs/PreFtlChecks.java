@@ -1,11 +1,11 @@
 package elite.intel.gameapi.inputs;
 
-import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -13,31 +13,26 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 public class PreFtlChecks {
 
-    /**
-     * Runs the automated pre-FTL cleanup (retract hardpoints/gear/scoop, lights, etc.) and returns the
-     * combined outcome (see {@link CommandOutcome}) instead of narrating itself, so the calling command
-     * folds it into its own outcome. The auto-cleanup steps run as side-effect input; their notes are
-     * appended to the spoken outcome the caller returns.
-     */
-    public static JsonObject preJumpCheck(Status status, String message) {
-        StringBuilder spoken = new StringBuilder(message);
+
+    public static void preJumpCheck(Status status, String message) {
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         GlobalSettingsManager settingsManager = GlobalSettingsManager.getInstance();
         if (status.isHardpointsDeployed() && !status.isInSupercruise() && settingsManager.getAutoHardpointsRetractForFtl()) {
-            spoken.append(" ").append(StringUtls.localizedLlm("handler.preFtl.retractingHardpoints"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.retractingHardpoints")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_HARDPOINTS_TOGGLE.getGameBinding()),
                     GameInputStep.delay(2000)
             ));
         }
         if (status.isLandingGearDown() && !status.isInSupercruise() && settingsManager.getAutoLandingGearUpForFtl()) {
-            spoken.append(" ").append(StringUtls.localizedLlm("handler.preFtl.retractingGear"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.retractingGear")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding()),
                     GameInputStep.delay(2000)
             ));
         }
         if (status.isCargoScoopDeployed() && !status.isInSupercruise() && settingsManager.getAutoCargoScoopRetractForFtl()) {
-            spoken.append(" ").append(StringUtls.localizedLlm("handler.preFtl.closingCargo"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.closingCargo")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_TOGGLE_CARGO_SCOOP.getGameBinding()),
                     GameInputStep.delay(2000)
@@ -54,12 +49,11 @@ public class PreFtlChecks {
 
         if (!status.isInSupercruise() && status.isFighterOut() && settingsManager.getAutoFighterOutFighterDocking()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-            spoken.append(" ").append(StringUtls.localizedLlm("handler.supercruise.fighterOut"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
         }
 
         if (settingsManager.getAutoSpeedUpForFtl()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding())));
         }
-        return CommandOutcome.critical(spoken.toString());
     }
 }

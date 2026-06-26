@@ -1,12 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -33,7 +34,7 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_RECALL_DISMISS_SHIP.getGameBinding())));
         } else if (status.isOnFoot()) {
@@ -45,11 +46,13 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            return CommandOutcome.speak(StringUtls.localizedLlm("speech.shipDismissRejected"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
+            return;
         }
         if (status.isLanded()) {
-            return CommandOutcome.speak(StringUtls.localizedLlm("speech.shipDismissed"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
+        } else {
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
         }
-        return CommandOutcome.speak(StringUtls.localizedLlm("speech.shipRecall"));
     }
 }

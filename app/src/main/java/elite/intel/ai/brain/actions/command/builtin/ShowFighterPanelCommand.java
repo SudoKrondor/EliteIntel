@@ -27,10 +27,9 @@ public final class ShowFighterPanelCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.FIGHTER);
         }
-        return null;
     }
 }

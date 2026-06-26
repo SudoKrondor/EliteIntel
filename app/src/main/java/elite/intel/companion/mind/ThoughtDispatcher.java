@@ -161,11 +161,23 @@ public final class ThoughtDispatcher implements ManagedService {
      * remembered and voiced verbatim in the companion's voice - no LLM phrasing.
      */
     public void submitVerbatimNarration(String text, ConversationTopic topic) {
+        submitVerbatimNarration(text, topic, Urgency.URGENT, null);
+    }
+
+    /**
+     * Verbatim narration with an explicit urgency and an optional {@code spokenSignal} completed when playback
+     * ends - used to bridge a command/macro's own narration ({@code AiVoxResponseEvent}/
+     * {@code MissionCriticalAnnouncementEvent}) so a synchronous caller waits the same as on the legacy path.
+     */
+    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
+                                        java.util.concurrent.CompletableFuture<Void> spokenSignal) {
         if (text == null || text.isBlank()) {
+            if (spokenSignal != null) {
+                spokenSignal.complete(null); // never strand a caller blocked on an empty line
+            }
             return;
         }
-        Urgency urgency = Urgency.URGENT;
-        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx), urgency);
+        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal), urgency);
     }
 
     @Override

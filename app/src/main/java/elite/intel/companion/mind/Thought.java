@@ -1,7 +1,8 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
+import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -13,6 +14,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
@@ -95,6 +97,15 @@ public abstract class Thought {
      */
     public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic, ThoughtContext ctx) {
         return new VerbatimNarrationThought(urgency, text, topic, ctx);
+    }
+
+    /**
+     * Verbatim narration whose {@code spokenSignal} is completed when the companion's playback finishes, for a
+     * synchronous caller (e.g. a bridged macro SPEAK step) that blocks until the line is actually spoken.
+     */
+    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
+                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal) {
+        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal);
     }
 
     /**
@@ -217,42 +228,45 @@ public abstract class Thought {
     }
 
     /**
-     * Voices and remembers a tool outcome by action type - the handler owns speech, not the LLM. Shared by
-     * every executor of the commander lane ({@link CommanderThought}'s full loop and the deterministic
-     * {@link ReflexThought}):
-     * <ul>
-     *   <li><b>COMMAND</b>: voice the handler's text (mission-critical -&gt; urgent), or an affirmative ack
-     *       when it is a side-effect with no text; remember "command &lt;id&gt; executed" + text/description.</li>
-     *   <li><b>QUERY</b>: voice the answer and remember it verbatim as the companion's own line (COMPANION).</li>
-     *   <li><b>MACRO</b>: voice nothing (a macro narrates its own steps); remember "macro &lt;id&gt; executed"
-     *       + description.</li>
-     *   <li><b>SYSTEM/UNKNOWN</b>: no speech and no timeline entry here (the result still rides the flow).</li>
-     * </ul>
-     *
-     * @param tools the rendered tool snapshot a description is read from; pass {@link List#of()} when there is
-     *              no prompt (a reflex), in which case the side-effect memory carries no description detail
+     * Records a tool outcome by action type. Commands are self-narrating after the command-outcome revert, so
+     * blank command results are remembered but not acknowledged here. A query answer is self-narrating too: it
+     * is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
+     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration - it is not voiced
+     * or recorded here.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
-        String text = CommandOutcome.spokenText(result);
+        String text = spokenTextOf(result);
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
             case COMMAND -> {
                 if (text.isBlank()) {
-                    voice(StringUtls.affirmative(), false);
                     rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
                 } else {
-                    voice(text, CommandOutcome.isCritical(result));
+                    voice(text, isMissionCritical(result));
                     rememberAction("command " + inv.name() + " executed", text);
                 }
             }
             case QUERY -> {
+                // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 if (!text.isBlank()) {
-                    voice(text, CommandOutcome.isCritical(result));
-                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
+                    GameEventBus.publish(new AiVoxResponseEvent(text));
                 }
             }
             case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
+    }
+
+    /** The handler-provided spoken text in a tool result, or empty when absent. */
+    protected static String spokenTextOf(JsonObject result) {
+        return JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+    }
+
+    /** Backward-compatible mission-critical marker for any remaining structured tool result. */
+    private static boolean isMissionCritical(JsonObject result) {
+        return result != null
+                && result.has("mission_critical")
+                && result.get("mission_critical").isJsonPrimitive()
+                && result.get("mission_critical").getAsBoolean();
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */

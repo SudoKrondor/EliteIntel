@@ -1,6 +1,8 @@
 package elite.intel.companion.mind;
 
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -25,6 +27,7 @@ import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
@@ -110,8 +113,10 @@ class ThoughtTest {
                 "silent command runs; the co-occurring speak is withheld (never executed)");
         assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("narration_suppressed")),
                 "the withheld speak said nothing, so it leaves no narration_suppressed noise in memory");
+        assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
         assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
-                "nothing was spoken this turn, so there is no COMPANION entry");
+                "the immediate command ack is not recorded as a COMPANION line");
     }
 
     @Test
@@ -125,14 +130,16 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the query's outcome text is vocalized deterministically");
+        assertEquals(2, speech.requests.size(),
+                "the command is acknowledged immediately, then its outcome text is vocalized deterministically");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals("hull at 100 percent", speech.requests.get(1).text());
         assertFalse(execution.toolNames().contains(SpeakFunction.ID),
                 "the LLM's own speak is withheld once a command/query owns the spoken outcome");
     }
 
     @Test
-    void commanderCommandOutcomeIsVoicedAndRecordedSynchronously() {
+    void commanderCommandTextResultIsVoicedAndRecordedSynchronously() {
         // Fire-and-forget reverted: the command runs in-thread; its deterministic outcome is voiced and the
         // real result is recorded (and fed back into the flow for the LLM to chain on).
         execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
@@ -140,8 +147,10 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the deterministic outcome is voiced in-thread, not by a later callback");
+        assertEquals(2, speech.requests.size(),
+                "the immediate ack is voiced before execution; the deterministic outcome is voiced in-thread");
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals("hull at 100 percent", speech.requests.get(1).text());
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
                         && e.content().contains("hull at 100 percent")),
                 "the command result is recorded synchronously");
@@ -169,14 +178,14 @@ class ThoughtTest {
     }
 
     @Test
-    void reflexSilentCommandAcknowledgesAndRemembersExecution() {
-        // close_panel is a side-effect command with no spoken text: the reflex acks and records the execution.
+    void reflexSilentCommandRemembersExecutionWithoutAck() {
+        // Command handlers are self-narrating after the command-outcome revert: a blank command result is
+        // remembered, but the companion must not add a second affirmative voice.
         Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
 
         assertTrue(llm.requests.isEmpty());
         assertEquals(List.of("close_panel"), execution.toolNames());
-        assertEquals(1, speech.requests.size(), "a side-effect command is acknowledged");
-        assertFalse(speech.requests.get(0).text().isBlank());
+        assertTrue(speech.requests.isEmpty(), "silent self-narrating commands are not acknowledged by companion");
         assertEquals(2, memory.writes.size());
         assertEquals("close the panel", memory.writes.get(0).content());
         assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());
@@ -184,19 +193,30 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderQueryAnswerIsVoicedAndRememberedAsCompanionLine() {
+    void commanderQueryAnswerIsPublishedAsAiVoxForTheBridge() {
+        // Self-narrating queries: the answer is published as an AiVoxResponseEvent (mirroring the legacy
+        // router) for CompanionAnnouncementBridge to voice and remember; recordOutcome no longer voices it.
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
         execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
         llm.scripted.add(ok(call("scan_system", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
+        List<String> voxTexts = new ArrayList<>();
+        Object collector = new Object() {
+            @Subscribe public void on(AiVoxResponseEvent e) { voxTexts.add(e.getText()); }
+        };
+        GameEventBus.register(collector);
+        try {
+            Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
+        } finally {
+            GameEventBus.unregister(collector);
+        }
 
-        assertEquals(List.of("two stars and a gas giant"),
-                speech.requests.stream().map(SpeechRequest::text).toList(), "the query answer is voiced");
-        MemoryEntry answer = memory.writes.get(memory.writes.size() - 1);
-        assertEquals(MemorySource.COMPANION, answer.source(), "the answer is the companion's own remembered line");
-        assertEquals("two stars and a gas giant", answer.content());
+        assertEquals(List.of("two stars and a gas giant"), voxTexts,
+                "the query answer is published as an AiVoxResponseEvent for the bridge to voice and remember");
+        assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
+                "recordOutcome no longer records the query answer; the bridge owns that");
     }
 
     @Test
@@ -210,9 +230,11 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "next trade stop", ctx(actionTypes())).run();
 
-        assertEquals(1, speech.requests.size());
-        assertEquals("travel to Sol and buy gold", speech.requests.get(0).text());
-        assertEquals(Urgency.URGENT, speech.requests.get(0).urgency(), "mission-critical outcome preempts");
+        assertEquals(2, speech.requests.size());
+        assertFalse(speech.requests.get(0).text().isBlank(), "the first voice is the immediate command ack");
+        assertEquals(Urgency.NORMAL, speech.requests.get(0).urgency(), "immediate command ack is normal priority");
+        assertEquals("travel to Sol and buy gold", speech.requests.get(1).text());
+        assertEquals(Urgency.URGENT, speech.requests.get(1).urgency(), "mission-critical outcome preempts");
     }
 
     @Test

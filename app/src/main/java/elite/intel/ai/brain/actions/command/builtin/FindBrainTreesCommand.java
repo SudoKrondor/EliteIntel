@@ -2,14 +2,15 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.BrainTreeManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.util.NavigationUtils;
@@ -38,14 +39,15 @@ public final class FindBrainTreesCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (brainTreeManager.getCount() == 0) {
             brainTreeManager.retrieveFromSpansh();
         }
 
         JsonElement key = params.get("key");
         if (key == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.brainTrees.didNotCatch"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
+            return;
         }
 
         String material =
@@ -58,16 +60,17 @@ public final class FindBrainTreesCommand implements IntelCommand {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
         if (result == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.brainTrees.notFound"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.notFound")));
+        } else {
+            double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName())));
+            RoutePlotter plotter = new RoutePlotter();
+            plotter.plotRoute(result.getSystemName());
+            ReminderManager.getInstance().setReminder(
+                    StringUtls.localizedLlm("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
+                    result.getSystemName()
+            );
         }
-        double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
-        RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(result.getSystemName());
-        ReminderManager.getInstance().setReminder(
-                StringUtls.localizedLlm("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
-                result.getSystemName()
-        );
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()));
     }
 
     private double calculateDistance(LocationDao.Coordinates coordinates, double x, double y, double z) {

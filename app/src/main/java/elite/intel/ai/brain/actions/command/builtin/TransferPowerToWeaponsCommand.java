@@ -32,7 +32,7 @@ public final class TransferPowerToWeaponsCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -42,7 +42,6 @@ public final class TransferPowerToWeaponsCommand implements IntelCommand {
         if (status.isInSrv()) {
             powerToWeaponsSRV();
         }
-        return null;
     }
 
     private void powerToWeaponsSRV() {
