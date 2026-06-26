@@ -51,5 +51,6 @@ public class BindForgeTabPanel extends JPanel {
 
     public void initData() {
         bindingProfilePanel.initData();
+        bindingManagementPanel.initData();
     }
 }

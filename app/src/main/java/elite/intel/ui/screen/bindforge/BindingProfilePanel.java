@@ -2,8 +2,6 @@ package elite.intel.ui.screen.bindforge;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.hands.*;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
@@ -61,6 +59,7 @@ public class BindingProfilePanel extends JPanel {
     private JTextField bindingsDirField;
     private JPanel keyboardOnlyBanner;
     private BindingSaveResultPresenter saveResultPresenter;
+    private BindingApplyResultPresenter applyResultPresenter;
     private JPanel usedBindingsPanel;
     private JPanel missingBindingsPanel;
     private JScrollPane usedBindingsScrollPane;
@@ -107,6 +106,7 @@ public class BindingProfilePanel extends JPanel {
                 this::buildRowCalloutContent);
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
+        applyResultPresenter = new BindingApplyResultPresenter(this);
         UiBus.register(this);
     }
 
@@ -347,28 +347,10 @@ public class BindingProfilePanel extends JPanel {
         }
         try {
             Path backupPath = applyService.apply(activePresetFileName, gameBindingsFile.toPath());
-            // Elite only re-reads the .binds when its Controls screen is opened, so remind the
-            // user to cycle that screen to actually load what we just wrote to the game file.
-            String successMsg = (backupPath != null
-                    ? getText("bindings.apply.success", backupPath.getFileName())
-                    : getText("bindings.apply.success.noBackup"))
-                    + System.lineSeparator() + System.lineSeparator()
-                    + getText("bindings.apply.reloadReminder");
-            // Also speak the reload reminder — users reflexively dismiss dialogs without reading.
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.bindingsAppliedReload")));
-            JOptionPane.showMessageDialog(
-                    this,
-                    successMsg,
-                    getText("bindings.apply.dialogTitle"),
-                    JOptionPane.INFORMATION_MESSAGE);
+            applyResultPresenter.showSuccess(backupPath);
             updateSyncStatus();
         } catch (BindingsApplyException e) {
-            String errorMessage = e.localizationKey() == null ? e.getMessage() : getText(e.localizationKey());
-            JOptionPane.showMessageDialog(
-                    this,
-                    getText("bindings.apply.error", errorMessage),
-                    getText("bindings.apply.dialogTitle"),
-                    JOptionPane.ERROR_MESSAGE);
+            applyResultPresenter.showError(e);
         }
     }
 
@@ -559,8 +541,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     private File resolveGameBindsFile() throws Exception {
-        File currentFile = monitor.getCurrentBindsFile();
-        return currentFile != null ? currentFile : loader.getLatestBindsFile();
+        return monitor.resolveActiveBindsFile();
     }
 
     private String activeProfileName(File bindingsFile) {

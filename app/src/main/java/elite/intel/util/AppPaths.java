@@ -60,6 +60,18 @@ public final class AppPaths {
         return dir;
     }
 
+    /**
+     * Returns the directory for user-facing, on-demand player backups (bindings/preset
+     * snapshots, and later other profile data), creating it if needed. Deliberately separate
+     * from {@link #getBindingsBackupDir()}, which is an internal safety net tied to the
+     * apply-pipeline rather than a user-triggered feature.
+     */
+    public static Path getPlayerBackupsDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/playerbackups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
     private static Path getAppDataBase() throws IOException {
         if (OsDetector.getOs() == OsDetector.OS.LINUX || OsDetector.getOs() == OsDetector.OS.MAC) {
             String dataHome = System.getenv("XDG_DATA_HOME");

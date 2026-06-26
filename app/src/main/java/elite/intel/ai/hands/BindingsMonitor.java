@@ -206,6 +206,16 @@ public class BindingsMonitor {
     }
 
     /**
+     * Returns the file currently being monitored, falling back to a fresh
+     * {@link BindingsLoader#getLatestBindsFile()} lookup if monitoring hasn't started or hasn't
+     * found one yet. Shared by anything that needs "the active game binds file" outside the
+     * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
+     */
+    public File resolveActiveBindsFile() throws Exception {
+        return currentBindsFile != null ? currentBindsFile : new BindingsLoader().getLatestBindsFile();
+    }
+
+    /**
      * Detects binding conflicts among GameCommand bindings and persists them.
      * Returns descriptions of newly detected conflicts only - empty list means
      * nothing changed.
