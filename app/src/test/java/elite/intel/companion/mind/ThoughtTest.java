@@ -1,6 +1,8 @@
 package elite.intel.companion.mind;
 
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -25,6 +27,7 @@ import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
@@ -190,19 +193,30 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderQueryAnswerIsVoicedAndRememberedAsCompanionLine() {
+    void commanderQueryAnswerIsPublishedAsAiVoxForTheBridge() {
+        // Self-narrating queries: the answer is published as an AiVoxResponseEvent (mirroring the legacy
+        // router) for CompanionAnnouncementBridge to voice and remember; recordOutcome no longer voices it.
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
         execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
         llm.scripted.add(ok(call("scan_system", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
+        List<String> voxTexts = new ArrayList<>();
+        Object collector = new Object() {
+            @Subscribe public void on(AiVoxResponseEvent e) { voxTexts.add(e.getText()); }
+        };
+        GameEventBus.register(collector);
+        try {
+            Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
+        } finally {
+            GameEventBus.unregister(collector);
+        }
 
-        assertEquals(List.of("two stars and a gas giant"),
-                speech.requests.stream().map(SpeechRequest::text).toList(), "the query answer is voiced");
-        MemoryEntry answer = memory.writes.get(memory.writes.size() - 1);
-        assertEquals(MemorySource.COMPANION, answer.source(), "the answer is the companion's own remembered line");
-        assertEquals("two stars and a gas giant", answer.content());
+        assertEquals(List.of("two stars and a gas giant"), voxTexts,
+                "the query answer is published as an AiVoxResponseEvent for the bridge to voice and remember");
+        assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
+                "recordOutcome no longer records the query answer; the bridge owns that");
     }
 
     @Test

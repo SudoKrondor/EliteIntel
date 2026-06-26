@@ -2,6 +2,7 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -13,6 +14,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
@@ -226,9 +228,11 @@ public abstract class Thought {
     }
 
     /**
-     * Records a tool outcome by action type. Commands are self-narrating again after the command-outcome
-     * revert, so blank command results are remembered but not acknowledged here; query answers still return a
-     * {@code text_to_speech_response} and are voiced as the companion's own line.
+     * Records a tool outcome by action type. Commands are self-narrating after the command-outcome revert, so
+     * blank command results are remembered but not acknowledged here. A query answer is self-narrating too: it
+     * is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
+     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration - it is not voiced
+     * or recorded here.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
         String text = spokenTextOf(result);
@@ -242,9 +246,9 @@ public abstract class Thought {
                 }
             }
             case QUERY -> {
+                // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 if (!text.isBlank()) {
-                    voice(text, isMissionCritical(result));
-                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
+                    GameEventBus.publish(new AiVoxResponseEvent(text));
                 }
             }
             case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
