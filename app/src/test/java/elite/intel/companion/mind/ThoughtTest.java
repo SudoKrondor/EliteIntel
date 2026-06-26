@@ -17,8 +17,8 @@ import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
-import elite.intel.companion.prompt.CompanionNarrationPolicy;
-import elite.intel.companion.prompt.CompanionNarrationPolicy.Narration;
+import elite.intel.companion.tools.IntelActionTypeResolver;
+import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
@@ -62,10 +62,10 @@ class ThoughtTest {
                 reducer, state, dangerousPolicy, coordinator);
     }
 
-    private ThoughtContext ctx(CompanionNarrationPolicy narration) {
+    private ThoughtContext ctx(IntelActionTypeResolver resolver) {
         return new ThoughtContext(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator, narration);
+                reducer, state, dangerousPolicy, coordinator, resolver);
     }
 
     @Test
@@ -90,13 +90,13 @@ class ThoughtTest {
     }
 
     /**
-     * Narration stub: close_panel is silent, ship_status is narratable, everything else neutral.
+     * Action-type stub: close_panel and ship_status are commands, everything else a system function.
+     * close_panel returns no spoken text (a side-effect command); ship_status returns an outcome.
      */
-    private static CompanionNarrationPolicy narration() {
-        return new CompanionNarrationPolicy(id -> switch (id) {
-            case "close_panel" -> Narration.SILENT_COMMAND;
-            case "ship_status" -> Narration.NARRATABLE;
-            default -> Narration.NEUTRAL;
+    private static IntelActionTypeResolver actionTypes() {
+        return new IntelActionTypeResolver(id -> switch (id) {
+            case "close_panel", "ship_status" -> IntelActionType.COMMAND;
+            default -> IntelActionType.SYSTEM;
         });
     }
 
@@ -106,7 +106,7 @@ class ThoughtTest {
                 call(SpeakFunction.ID, text("closing the panel")),
                 call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "close the panel", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
 
         assertEquals(List.of("close_panel"), execution.toolNames(),
                 "silent command runs; the co-occurring speak is withheld (never executed)");
@@ -125,7 +125,7 @@ class ThoughtTest {
                 call(SpeakFunction.ID, text("let me check the ship")),
                 call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
         assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
                 "the query's outcome text is vocalized deterministically");
@@ -134,20 +134,35 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderCommandIsFireAndForgetAndDoesNotBlockTheLane() {
-        // A long-running command must not pin the lane: run() returns while the handler is still in flight,
-        // and the spoken outcome is voiced by the completion callback when the handler finishes later.
-        execution.deferTools.add("ship_status");
+    void commanderCommandOutcomeIsVoicedAndRecordedSynchronously() {
+        // Fire-and-forget reverted: the command runs in-thread; its deterministic outcome is voiced and the
+        // real result is recorded (and fed back into the flow for the LLM to chain on).
+        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
         llm.scripted.add(ok(call("ship_status", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "calculate a long route", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
-        assertTrue(execution.toolNames().contains("ship_status"), "the command was dispatched");
-        assertTrue(speech.requests.isEmpty(), "nothing is voiced while the handler is still running");
+        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the deterministic outcome is voiced in-thread, not by a later callback");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
+                        && e.content().contains("hull at 100 percent")),
+                "the command result is recorded synchronously");
+    }
 
-        execution.complete("ship_status", outcomeText("route found"));
-        assertEquals(List.of("route found"), speech.requests.stream().map(SpeechRequest::text).toList(),
-                "the deterministic outcome is voiced by the completion callback once the handler finishes");
+    @Test
+    void commanderQueryAnswerIsVoicedAndRememberedAsCompanionLine() {
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
+        llm.scripted.add(ok(call("scan_system", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
+
+        assertEquals(List.of("two stars and a gas giant"),
+                speech.requests.stream().map(SpeechRequest::text).toList(), "the query answer is voiced");
+        MemoryEntry answer = memory.writes.get(memory.writes.size() - 1);
+        assertEquals(MemorySource.COMPANION, answer.source(), "the answer is the companion's own remembered line");
+        assertEquals("two stars and a gas giant", answer.content());
     }
 
     @Test
@@ -156,10 +171,10 @@ class ThoughtTest {
         // urgent channel so it preempts current speech, exactly as the legacy MissionCritical channel did.
         JsonObject critical = outcomeText("travel to Sol and buy gold");
         critical.addProperty("mission_critical", true);
-        execution.resultsByTool.put("close_panel", critical); // SILENT_COMMAND id reused as a command stub
+        execution.resultsByTool.put("close_panel", critical); // a command stub (NARRATABLE) carrying a critical outcome
         llm.scripted.add(ok(call("close_panel", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "next trade stop", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "next trade stop", ctx(actionTypes())).run();
 
         assertEquals(1, speech.requests.size());
         assertEquals("travel to Sol and buy gold", speech.requests.get(0).text());
@@ -173,7 +188,7 @@ class ThoughtTest {
         llm.scripted.add(ok(call("close_panel", new JsonObject())));
         llm.scripted.add(ok(call(SpeakFunction.ID, text("done")), call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "close the panel", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
 
         assertEquals(List.of("close_panel"), execution.toolNames(),
                 "speak emitted in a later round of a silent-only turn is still withheld");
@@ -447,11 +462,6 @@ class ThoughtTest {
     private static final class FakeExecution implements ExecutionGateway {
         final List<ExecutionRequest> requests = new ArrayList<>();
         final Map<String, JsonObject> resultsByTool = new HashMap<>();
-        /**
-         * Tools whose future is left pending so a test can complete it later (models a slow handler).
-         */
-        final Set<String> deferTools = new HashSet<>();
-        final Map<String, CompletableFuture<JsonObject>> deferred = new HashMap<>();
         CompanionState stateToMutate;
 
         @Override public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
@@ -463,16 +473,7 @@ class ThoughtTest {
                     stateToMutate.setGlobalTopic(topic);
                 }
             }
-            if (deferTools.contains(request.toolName())) {
-                CompletableFuture<JsonObject> pending = new CompletableFuture<>();
-                deferred.put(request.toolName(), pending);
-                return pending; // never completes here; the test completes it to model the handler finishing
-            }
             return CompletableFuture.completedFuture(resultsByTool.getOrDefault(request.toolName(), new JsonObject()));
-        }
-
-        void complete(String tool, JsonObject result) {
-            deferred.get(tool).complete(result);
         }
 
         List<String> toolNames() {

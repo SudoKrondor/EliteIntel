@@ -3,68 +3,81 @@ package elite.intel.companion.mind;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A single serialized execution lane for one thought source: a worker thread draining a deque so at most
- * one thought is live at a time. Normal thoughts queue at the tail and urgent thoughts jump to the head
- * (§1.7.28/§1.7.29), and the live thought is exposed so it can be interrupted for preemption or shutdown.
+ * An execution lane for one thought source: a bounded pool of worker threads draining one deque, so up to
+ * {@code concurrency} thoughts of this source are live at a time (the others wait in the deque). Normal
+ * thoughts queue at the tail and urgent thoughts jump to the head (§1.7.28/§1.7.29); every live thought is
+ * tracked so it can be interrupted for preemption, the watchdog, or shutdown.
  * <p>
- * Shutdown is graceful: a poison pill queued at the tail lets the worker finish the live thought and drain
- * the queue before it exits; only if the worker does not finish within the join window is the live thought
- * forced to interrupt (cooperative safe-flush).
+ * A single-worker lane ({@code concurrency == 1}) keeps the original "one live thought" behaviour for the
+ * memory-only EVENT and the short NARRATION lanes; the COMMANDER lane runs several workers so a long
+ * synchronous command/query (whose slow part is the handler, not the LLM round) does not block new commander
+ * input - other commander thoughts run on the free workers meanwhile.
+ * <p>
+ * Shutdown is graceful: one poison pill per worker lets the workers finish their live thoughts and drain the
+ * queue before they exit; only workers that do not finish within the join window are forced to interrupt.
  */
 final class ThoughtLane {
 
     private static final Logger log = LogManager.getLogger(ThoughtLane.class);
 
-    /** Sentinel that ends the worker loop; offered at the tail so queued thoughts drain before it. */
+    /** Sentinel that ends a worker loop; one is offered per worker so queued thoughts drain before them. */
     private static final Runnable POISON = () -> {};
 
     private final BlockingDeque<Runnable> queue = new LinkedBlockingDeque<>();
-    private final Thread worker;
-    private volatile Thought live;
-    /** When the live thought started (epoch millis), or 0 when the lane is idle; read by the watchdog. */
-    private volatile long liveStartMillis;
+    private final List<Thread> workers = new ArrayList<>();
+    /** Currently live (running) thoughts mapped to their start time (epoch millis); read by the watchdog. */
+    private final Map<Thought, Long> live = new ConcurrentHashMap<>();
     /**
-     * Submitted-but-not-finished thoughts (queued plus the live one). Incremented synchronously at submit,
-     * before the worker can touch the queue, and decremented only after the thought fully completes - so
-     * {@link #isIdle()} never reports a transient idle in the {@code take()} -> {@code live=} start window.
+     * Submitted-but-not-finished thoughts (queued plus live). Incremented synchronously at submit, before a
+     * worker can dequeue, and decremented only after the thought fully completes - so {@link #isIdle()} never
+     * reports a transient idle in the {@code take()} -> running window.
      */
     private final AtomicInteger pending = new AtomicInteger();
 
-    ThoughtLane(String name) {
-        worker = new Thread(this::drain, name);
-        worker.setDaemon(true);
-        worker.start();
+    ThoughtLane(String name, int concurrency) {
+        int workerCount = Math.max(1, concurrency);
+        for (int i = 0; i < workerCount; i++) {
+            Thread worker = new Thread(this::drain, workerCount == 1 ? name : name + "-" + i);
+            worker.setDaemon(true);
+            worker.start();
+            workers.add(worker);
+        }
     }
 
     /** Queues a normal thought at the tail. */
     void submit(Thought thought) {
-        pending.incrementAndGet(); // count it busy before the worker can dequeue it
+        pending.incrementAndGet(); // count it busy before a worker can dequeue it
         queue.offerLast(wrap(thought));
     }
 
     /** Queues an urgent thought at the head, ahead of any already-queued normal thought. */
     void submitFirst(Thought thought) {
-        pending.incrementAndGet(); // count it busy before the worker can dequeue it
+        pending.incrementAndGet(); // count it busy before a worker can dequeue it
         queue.offerFirst(wrap(thought));
     }
 
-    /** Interrupts the currently live thought, if any (cooperative; it safe-flushes and dies). */
+    /** Interrupts every currently live thought (cooperative; each safe-flushes and dies). */
     void interruptLive() {
-        Thought current = live;
-        if (current != null) {
-            current.interrupt();
-        }
+        live.keySet().forEach(Thought::interrupt);
     }
 
-    /** Whether the live thought has been running longer than the given duration (watchdog check, §2.3). */
-    boolean liveLongerThan(long millis) {
-        long start = liveStartMillis;
-        return start != 0 && System.currentTimeMillis() - start > millis;
+    /** Interrupts each live thought running longer than the given duration (watchdog check, §2.3). */
+    void interruptStuck(long millis) {
+        long now = System.currentTimeMillis();
+        live.forEach((thought, start) -> {
+            if (now - start > millis) {
+                thought.interrupt();
+            }
+        });
     }
 
     /** Whether the lane has no submitted work left (queued or live) - a race-free turn-boundary signal. */
@@ -72,30 +85,29 @@ final class ThoughtLane {
         return pending.get() == 0;
     }
 
-    /** Graceful stop: drain queued thoughts and finish the live one, forcing interrupt only if it hangs. */
+    /** Graceful stop: drain queued thoughts and finish the live ones, forcing interrupt only if a worker hangs. */
     void shutdown(long timeoutMillis) {
-        queue.offerLast(POISON);
-        join(timeoutMillis);
-        if (worker.isAlive()) {
-            interruptLive(); // live thought stuck (e.g. slow LLM): make it safe-flush and die
-            worker.interrupt();
-            join(timeoutMillis);
+        workers.forEach(worker -> queue.offerLast(POISON));
+        joinAll(timeoutMillis);
+        if (workers.stream().anyMatch(Thread::isAlive)) {
+            interruptLive(); // some live thought is stuck (e.g. slow LLM): make it safe-flush and die
+            workers.forEach(Thread::interrupt);
+            joinAll(timeoutMillis);
         }
     }
 
     private Runnable wrap(Thought thought) {
         return () -> {
-            live = thought;
-            liveStartMillis = System.currentTimeMillis();
-            log.info("Lane {}: {} ({}) thought started", worker.getName(), thought.source(), thought.urgency());
+            long startMillis = System.currentTimeMillis();
+            live.put(thought, startMillis);
+            log.info("Lane {}: {} ({}) thought started", Thread.currentThread().getName(), thought.source(), thought.urgency());
             try {
                 thought.run();
             } finally {
-                long elapsed = System.currentTimeMillis() - liveStartMillis;
-                live = null;
-                liveStartMillis = 0;
+                live.remove(thought);
                 pending.decrementAndGet(); // mark idle only after the thought has fully finished
-                log.info("Lane {}: {} thought finished in {} ms", worker.getName(), thought.source(), elapsed);
+                log.info("Lane {}: {} thought finished in {} ms",
+                        Thread.currentThread().getName(), thought.source(), System.currentTimeMillis() - startMillis);
             }
         };
     }
@@ -115,17 +127,19 @@ final class ThoughtLane {
             try {
                 task.run();
             } catch (Throwable failure) {
-                // A failing thought must never kill the lane - that would silently stop all future thoughts.
-                log.error("Companion thought failed on lane {}", worker.getName(), failure);
+                // A failing thought must never kill its worker - that would shrink the lane's capacity.
+                log.error("Companion thought failed on lane {}", Thread.currentThread().getName(), failure);
             }
         }
     }
 
-    private void join(long timeoutMillis) {
-        try {
-            worker.join(timeoutMillis);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    private void joinAll(long timeoutMillis) {
+        for (Thread worker : workers) {
+            try {
+                worker.join(timeoutMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

@@ -42,7 +42,13 @@ public final class ThoughtDispatcher implements ManagedService {
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
-    /** Grace period for a lane to drain on stop before its live thought is force-interrupted. */
+    /**
+     * Max commander thoughts live at once: a long synchronous command/query occupies a worker, so several
+     * lets new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
+     * stay single-worker (no slow handlers there).
+     */
+    private static final int MAX_LIVE_COMMANDER_THOUGHTS = 5;
+    /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
     private static final long WATCHDOG_TIMEOUT_MILLIS = 60_000;
@@ -134,9 +140,9 @@ public final class ThoughtDispatcher implements ManagedService {
     public void start() {
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander"));
-            built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event"));
-            built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration"));
+            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", MAX_LIVE_COMMANDER_THOUGHTS));
+            built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
+            built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration", 1));
             lanes = built; // single volatile publish of the fully-built lane set
         }
         if (watchdog == null) {
@@ -212,9 +218,7 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     private void interruptIfStuck(ThoughtLane lane) {
-        if (lane.liveLongerThan(watchdogTimeoutMillis)) {
-            lane.interruptLive();
-        }
+        lane.interruptStuck(watchdogTimeoutMillis);
     }
 
     /** The current input text for an EVENT thought is the shared prompt/memory event envelope. */

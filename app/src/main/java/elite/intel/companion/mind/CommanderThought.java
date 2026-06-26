@@ -8,7 +8,6 @@ import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
-import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
@@ -19,12 +18,12 @@ import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.CompanionNarrationPolicy.Narration;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
+import elite.intel.util.StringUtls;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -112,11 +111,11 @@ public final class CommanderThought extends Thought {
 
                 // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
                 if (hasDangerousAction(invocations)) {
-                    handleDangerousConfirmation(invocations, preExecuted);
+                    handleDangerousConfirmation(tools, invocations, preExecuted);
                     return; // a dangerous turn is terminal
                 }
 
-                if (executeRound(flow, invocations, preExecuted)) {
+                if (executeRound(flow, tools, invocations, preExecuted)) {
                     return; // nothing_to_do terminated the turn
                 }
             }
@@ -158,16 +157,18 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Executes the round's tool-calls in LLM order. A command/query is dispatched fire-and-forget (see
-     * {@link #dispatchFireAndForget}): the lane never blocks on a handler, so a multi-minute search cannot
-     * freeze command input. Its spoken outcome is vocalized, and its real result recorded, by the completion
-     * callback whenever the handler finishes; the LLM flow gets a synthetic {@code dispatched} marker (never
-     * persisted) so the turn can end without waiting. {@code speak} is voiced (or withheld) here, system
-     * functions run synchronously, and {@code nothing_to_do} is the lifecycle terminator.
+     * Executes the round's tool-calls in LLM order, synchronously, and voices/remembers each outcome by its
+     * action type via {@link #recordOutcome} (the handler owns speech, not the LLM). The result always feeds
+     * the flow so the LLM can chain on it next round; {@code speak} is voiced or withheld here, and
+     * {@code nothing_to_do} is the lifecycle terminator.
+     * <p>
+     * Synchronous on purpose (the fire-and-forget dispatch was reverted): a long command holds the lane until
+     * it finishes. Decoupling a slow command's outcome from the thought is a separate, cause-level change.
      *
      * @return {@code true} if {@code nothing_to_do} ended the turn
      */
-    private boolean executeRound(List<LlmMessage> flow, List<LlmToolInvocation> invocations,
+    private boolean executeRound(List<LlmMessage> flow, List<LlmToolDefinition> tools,
+                                 List<LlmToolInvocation> invocations,
                                  Map<LlmToolInvocation, JsonObject> preExecuted) {
         boolean suppressSpeak = shouldSuppressSpeak(invocations);
         boolean terminate = false;
@@ -177,32 +178,25 @@ public final class CommanderThought extends Thought {
                 terminate = true;
                 continue;
             }
-            if (!preExecuted.containsKey(inv) && isFireAndForget(inv)) {
-                // Command/query: dispatch without blocking the lane. The completion callback is the sole memory
-                // writer and vocalizer for this tool; the LLM flow gets a marker so the turn can end without
-                // waiting, but the marker is not persisted - only the real outcome is, when ready.
-                dispatchFireAndForget(inv);
-                toolResults.add(LlmMessage.toolResult(inv.id(), stringify(dispatchedResult(inv.name()))));
-                continue;
-            }
             if (SpeakFunction.ID.equals(inv.name())) {
                 if (suppressSpeak) {
-                    // A command/query already owns the spoken outcome this turn, so the LLM's speak fires no
+                    // A game action already owns the spoken outcome this turn, so the LLM's speak fires no
                     // TTS - nothing is said, nothing is recorded. The synthetic result keeps the
                     // assistant/tool-result pairing intact and tells the LLM the narration was withheld.
                     toolResults.add(LlmMessage.toolResult(inv.id(), stringify(narrationSuppressedResult(inv.name()))));
                 } else {
-                    // The companion's own voice: vocalize and record the words said as a COMPANION entry (not a
-                    // {"status":"spoken"} ack), so a later turn knows it already answered.
+                    // The companion's own voice (pure conversation / memory recall): vocalize and record the
+                    // words said as a COMPANION entry, so a later turn knows it already answered.
                     JsonObject result = execute(inv);
                     recordCompanionSpeech(spokenTextOf(inv));
                     toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
                 }
                 continue;
             }
-            // System functions (change_global_topic, remember, search): execute and record the tool result.
+            // Game tool / system function: execute synchronously. The result always feeds the flow; speech
+            // and timeline memory depend on the action type.
             JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
-            recordToolResult(result);
+            recordOutcome(inv, result, tools);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
         }
         if (!terminate) {
@@ -213,90 +207,77 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Whether a tool-call is dispatched fire-and-forget rather than awaited. A command/query qualifies: its
-     * outcome is vocalized deterministically (the LLM does not consume the result), so the lane need not wait
-     * for it. {@code speak}/{@code nothing_to_do} are handled before this is reached; system functions
-     * ({@link Narration#NEUTRAL}) are awaited.
-     */
-    private boolean isFireAndForget(LlmToolInvocation inv) {
-        Narration narration = ctx.narrationPolicy().classify(inv.name());
-        return narration == Narration.NARRATABLE || narration == Narration.SILENT_COMMAND;
-    }
-
-    /**
-     * Dispatches a command/query without blocking the lane (§1.9 responsiveness). The handler runs on the
-     * execution gateway's pool; whenever it finishes - 1ms or minutes later - the completion callback voices
-     * its deterministic outcome and records the real result. The topic is captured now so a late result is
-     * filed under the topic that was current when the commander asked, even if the global topic has since
-     * moved. The thought may have ended by then; the background job and its callback outlive it.
-     */
-    private void dispatchFireAndForget(LlmToolInvocation inv) {
-        ConversationTopic topic = memoryTopic();
-        CompletableFuture<JsonObject> future;
-        try {
-            future = ctx.executionGateway().submit(new ExecutionRequest(newId(), inv.name(), inv.arguments()));
-        } catch (RuntimeException dispatchFailed) {
-            recordToolResultUnderTopic(topic, executionError(inv.name(), dispatchFailed));
-            return;
-        }
-        future.whenComplete((result, error) -> {
-            JsonObject outcome = error != null ? executionError(inv.name(), error) : result;
-            vocalizeDeterministicOutcome(inv, outcome);
-            recordToolResultUnderTopic(topic, outcome);
-        });
-    }
-
-    /**
-     * Synthetic tool result standing in for a fire-and-forget dispatch whose real result arrives later.
-     */
-    private static JsonObject dispatchedResult(String toolName) {
-        JsonObject dispatched = new JsonObject();
-        dispatched.addProperty("status", "dispatched");
-        dispatched.addProperty("tool", toolName);
-        return dispatched;
-    }
-
-    /**
-     * Folds this round's game actions into the turn's narration accounting and decides whether the round's
-     * {@code speak} should be withheld. A command/query owns its spoken outcome deterministically (vocalized
-     * verbatim or silent), so once any command/query has run this turn the LLM's own {@code speak} is dropped
-     * - the LLM neither re-voices nor rephrases a handler result. A turn that ran no command/query (only
-     * system functions such as memory recall, or pure conversation) still speaks.
+     * Decides whether the round's {@code speak} should be withheld. A command, query or macro owns its spoken
+     * outcome deterministically (the handler's text, an ack, or its own steps), so once any of them has run
+     * this turn the LLM's own {@code speak} is dropped. A turn that ran no game action (only system functions
+     * or pure conversation) still speaks.
      */
     private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
         for (LlmToolInvocation inv : invocations) {
             if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
                 continue;
             }
-            Narration narration = ctx.narrationPolicy().classify(inv.name());
-            if (narration == Narration.NARRATABLE || narration == Narration.SILENT_COMMAND) {
-                turnRanGameAction = true; // a command/query ran; its outcome is voiced (or silent) deterministically
+            switch (ctx.actionTypeResolver().resolve(inv.name())) {
+                case COMMAND, QUERY, MACRO -> turnRanGameAction = true;
+                default -> { }
             }
         }
         return turnRanGameAction;
     }
 
     /**
-     * Deterministic vocalization of a command/query outcome: the handler - not the LLM - owns whether and
-     * what a result says. A {@code handle()} that returned a {@code text_to_speech_response} (a
-     * {@code CommandOutcome} string or a query's analysis sentence) is voiced verbatim through the speech
-     * gateway, on the urgent channel when the outcome is mission-critical; a side-effect outcome (no spoken
-     * text) stays silent. System functions ({@link Narration#NEUTRAL}) own their own speech and are skipped.
+     * Voices and remembers a tool outcome by action type - the handler owns speech, not the LLM:
+     * <ul>
+     *   <li><b>COMMAND</b>: voice the handler's text (mission-critical -&gt; urgent), or an affirmative ack
+     *       when it is a side-effect with no text; remember "command &lt;id&gt; executed" + text/description.</li>
+     *   <li><b>QUERY</b>: voice the answer and remember it verbatim as the companion's own line (COMPANION).</li>
+     *   <li><b>MACRO</b>: voice nothing (a macro narrates its own steps); remember "macro &lt;id&gt; executed"
+     *       + description.</li>
+     *   <li><b>SYSTEM/UNKNOWN</b>: no speech and no timeline entry here (the result still rides the flow).</li>
+     * </ul>
      */
-    private void vocalizeDeterministicOutcome(LlmToolInvocation inv, JsonObject result) {
-        if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
+    private void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
+        String text = CommandOutcome.spokenText(result);
+        switch (ctx.actionTypeResolver().resolve(inv.name())) {
+            case COMMAND -> {
+                if (text.isBlank()) {
+                    voice(StringUtls.affirmative(), false);
+                    rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
+                } else {
+                    voice(text, CommandOutcome.isCritical(result));
+                    rememberAction("command " + inv.name() + " executed", text);
+                }
+            }
+            case QUERY -> {
+                if (!text.isBlank()) {
+                    voice(text, CommandOutcome.isCritical(result));
+                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
+                }
+            }
+            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
+            case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
+        }
+    }
+
+    /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
+    private void voice(String text, boolean critical) {
+        if (text == null || text.isBlank()) {
             return;
         }
-        Narration narration = ctx.narrationPolicy().classify(inv.name());
-        if (narration != Narration.NARRATABLE && narration != Narration.SILENT_COMMAND) {
-            return; // only command/query outcomes are vocalized here
-        }
-        String spoken = CommandOutcome.spokenText(result);
-        if (spoken.isBlank()) {
-            return; // side-effect outcome: silent by design
-        }
-        Urgency speechUrgency = CommandOutcome.isCritical(result) ? Urgency.URGENT : Urgency.NORMAL;
-        ctx.speechGateway().submit(new SpeechRequest(newId(), spoken, speechUrgency));
+        ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
+    }
+
+    /** The description shown to the LLM for a tool id (its {@code llmDescription} / fallback), or empty. */
+    private static String description(String id, List<LlmToolDefinition> tools) {
+        return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
+                .map(LlmToolDefinition::description).orElse("");
+    }
+
+    /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */
+    private void rememberAction(String lead, String detail) {
+        String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
+        ctx.memoryGateway().write(new MemoryEntry(
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, MemoryProcessingState.PROCESSED));
     }
 
     /**
@@ -326,7 +307,7 @@ public final class CommanderThought extends Thought {
      * words; the rest stays frozen. On confirm the whole set runs in LLM order; on cancel/timeout it is
      * discarded. The outcome is recorded and the turn ends (terminal).
      */
-    private void handleDangerousConfirmation(List<LlmToolInvocation> invocations,
+    private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
                                              Map<LlmToolInvocation, JsonObject> preExecuted) {
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action requires confirmation", MemoryProcessingState.AWAITING_CONFIRMATION));
@@ -341,13 +322,14 @@ public final class CommanderThought extends Thought {
 
         MemoryProcessingState outcome = awaitConfirmationOutcome();
         if (outcome == MemoryProcessingState.CONFIRMED) {
-            // Execute the frozen set in LLM order, skipping the already-voiced confirmation_request.
+            // Execute the frozen set in LLM order, skipping the already-voiced confirmation_request. Each
+            // outcome is voiced and remembered by its action type, exactly like a normal turn (§recordOutcome).
             for (LlmToolInvocation inv : invocations) {
                 if (inv == confirmationSpeak || NothingToDoFunction.ID.equals(inv.name())) {
                     continue;
                 }
                 JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
-                recordToolResult(result);
+                recordOutcome(inv, result, tools);
             }
         }
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
@@ -421,19 +403,6 @@ public final class CommanderThought extends Thought {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput, MemoryProcessingState.INTERRUPTED));
         }
-    }
-
-    /** Records one tool result on the timeline as TOOL_RESULT under the current topic. */
-    private void recordToolResult(JsonObject result) {
-        recordToolResultUnderTopic(memoryTopic(), result);
-    }
-
-    /**
-     * Records one tool result as TOOL_RESULT under a given topic (captured for a late fire-and-forget result).
-     */
-    private void recordToolResultUnderTopic(ConversationTopic topic, JsonObject result) {
-        ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), topic, MemorySource.TOOL_RESULT, stringify(result), MemoryProcessingState.PROCESSED));
     }
 
     /** The fixed, code-generated "cannot execute" phrase in the commander's language (no LLM). */

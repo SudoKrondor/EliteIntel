@@ -6,7 +6,7 @@ import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.prompt.CompanionActionReducer;
-import elite.intel.companion.prompt.CompanionNarrationPolicy;
+import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
@@ -30,11 +30,11 @@ public record ThoughtContext(
         CompanionState state,
         DangerousActionPolicy dangerousActionPolicy,
         ConfirmationCoordinator confirmationCoordinator,
-        CompanionNarrationPolicy narrationPolicy
+        IntelActionTypeResolver actionTypeResolver
 ) {
     /**
-     * Backward-compatible constructor for call sites predating the narration policy; defaults it to the
-     * registry-backed {@link CompanionNarrationPolicy}. New code may pass an explicit policy (e.g. a test seam).
+     * Backward-compatible constructor for call sites predating the action-type resolver; defaults it to the
+     * registry-backed {@link IntelActionTypeResolver}. New code may pass an explicit resolver (e.g. a test seam).
      */
     public ThoughtContext(
             LlmGateway llmGateway,
@@ -50,6 +50,6 @@ public record ThoughtContext(
             ConfirmationCoordinator confirmationCoordinator) {
         this(llmGateway, speechGateway, executionGateway, memoryGateway, promptComposer,
                 intelActionAccessPolicy, systemFunctionProvider, reducer, state,
-                dangerousActionPolicy, confirmationCoordinator, new CompanionNarrationPolicy());
+                dangerousActionPolicy, confirmationCoordinator, new IntelActionTypeResolver());
     }
 }

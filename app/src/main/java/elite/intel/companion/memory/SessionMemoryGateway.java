@@ -13,11 +13,10 @@ import java.util.*;
  * <p>
  * Session-only: nothing is persisted to disk.
  * <p>
- * Thread-safety: the public methods are {@code synchronized} because writers now arrive from several
- * threads - the COMMANDER and EVENT lane workers, and the execution gateway's pool threads when a
- * fire-and-forget command/query completes and records its result. The internal stores are plain
- * collections, so all access is serialized here; reads return snapshots ({@code List.copyOf}), so a
- * caller iterates outside the lock safely.
+ * Thread-safety: the public methods are {@code synchronized} because writers arrive from several threads -
+ * the EVENT/NARRATION lane workers and the bounded pool of COMMANDER lane workers (several commander
+ * thoughts run at once). The internal stores are plain collections, so all access is serialized here; reads
+ * return snapshots ({@code List.copyOf}), so a caller iterates outside the lock safely.
  */
 public final class SessionMemoryGateway implements MemoryGateway {
 

@@ -324,6 +324,25 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void aBlockedCommanderThoughtDoesNotBlockNewCommanderInput() throws InterruptedException {
+        // A long command occupies a worker; with the bounded commander pool a new commander thought runs on a
+        // free worker instead of queuing behind the blocked one.
+        BlockFirstLlm llm = new BlockFirstLlm(); // first thought blocks on the LLM forever; later ones end
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("slow one");   // takes the first LLM call and blocks (worker A)
+        waitUntil(() -> llm.calls.get() >= 1);
+        dispatcher.submitCommanderInput("quick one");   // must run concurrently, not wait for the blocked one
+        waitUntil(() -> memory.writes.stream().anyMatch(e -> "quick one".equals(e.content())));
+
+        assertTrue(memory.writes.stream().anyMatch(
+                        e -> e.source() == MemorySource.COMMANDER && "quick one".equals(e.content())),
+                "a second commander thought runs while the first is blocked");
+        dispatcher.stop();
+    }
+
+    @Test
     void aFailingThoughtDoesNotKillTheLane() {
         // A reducer that always throws makes every thought fail during prompt assembly.
         ThoughtContext ctx = new ThoughtContext(
