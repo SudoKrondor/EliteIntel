@@ -239,6 +239,11 @@ public abstract class Thought {
             case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
             case QUERY -> {
                 // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
+                // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
+                // the single owner of verbatim narration (topic tagging + completion-future handling), so the
+                // answer converges with command/macro narration on one path, mirroring the legacy router.
+                // This relies on an implicit ordering: the bridge must be subscribed and the legacy
+                // VocalisationRouter silenced in companion mode - otherwise the answer is double-voiced or lost.
                 String answer = spokenTextOf(result);
                 if (!answer.isBlank()) {
                     GameEventBus.publish(new AiVoxResponseEvent(answer));
