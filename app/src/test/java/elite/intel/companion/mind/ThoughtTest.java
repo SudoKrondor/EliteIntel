@@ -343,6 +343,34 @@ class ThoughtTest {
     }
 
     @Test
+    void verbatimNarrationCompletesSpokenSignalWhenPlaybackEnds() {
+        // A bridged synchronous caller (e.g. a macro SPEAK step) blocks on this signal until playback finishes.
+        CompletableFuture<Void> signal = new CompletableFuture<>();
+
+        Thought.verbatimNarration(Urgency.URGENT, "Reminder set, Commander.",
+                ConversationTopic.NAVIGATION, ctx(), signal).run();
+
+        assertTrue(signal.isDone() && !signal.isCompletedExceptionally(),
+                "the signal completes when the gateway reports playback finished");
+    }
+
+    @Test
+    void verbatimNarrationCompletesSpokenSignalEvenIfVoicingFails() {
+        // If voicing cannot even start, the caller must not be stranded for its full timeout.
+        SpeechGateway throwing = request -> { throw new RuntimeException("tts down"); };
+        ThoughtContext failingCtx = new ThoughtContext(llm, throwing, execution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                reducer, state, dangerousPolicy, coordinator);
+        CompletableFuture<Void> signal = new CompletableFuture<>();
+
+        assertThrows(RuntimeException.class, () -> Thought.verbatimNarration(Urgency.URGENT, "boom",
+                ConversationTopic.NAVIGATION, failingCtx, signal).run());
+
+        assertTrue(signal.isCompletedExceptionally(),
+                "a startup failure completes the signal (exceptionally) instead of stranding the caller");
+    }
+
+    @Test
     void commanderInvalidResponseRecordsUnresolvedAndSpeaks() {
         llm.scripted.add(invalid());
 
