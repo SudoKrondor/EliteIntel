@@ -57,6 +57,7 @@ public class BindingsMonitor {
     private static final Logger log = LogManager.getLogger(BindingsMonitor.class);
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
+    private final BindingsLoader bindingsLoader = new BindingsLoader();
     private final KeyBindingManager keyBindingManager = KeyBindingManager.getInstance();
     private final BindingConflictManager conflictManager = BindingConflictManager.getInstance();
     private Path bindingsDir;
@@ -148,7 +149,7 @@ public class BindingsMonitor {
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            File activeFile = new BindingsLoader().getLatestBindsFile();
+                            File activeFile = bindingsLoader.getLatestBindsFile();
                             boolean activeFileWasModified = activeFile.getName().equals(changed.toString());
                             boolean activeFileChanged = !activeFile.equals(currentBindsFile);
                             if (activeFileWasModified || activeFileChanged) {
@@ -183,7 +184,7 @@ public class BindingsMonitor {
 
     private void parseAndUpdateBindings() {
         try {
-            currentBindsFile = new BindingsLoader().getLatestBindsFile();
+            currentBindsFile = bindingsLoader.getLatestBindsFile();
             bindings = parser.parseBindings(currentBindsFile);
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
@@ -212,7 +213,7 @@ public class BindingsMonitor {
      * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
      */
     public File resolveActiveBindsFile() throws Exception {
-        return currentBindsFile != null ? currentBindsFile : new BindingsLoader().getLatestBindsFile();
+        return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
     }
 
     /**
