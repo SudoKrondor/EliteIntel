@@ -5,15 +5,15 @@ package elite.intel.companion.model.llm;
  * it belongs to. Each profile owns a stable {@link #cacheKey()} (sent as Mistral {@code prompt_cache_key})
  * so requests of the same profile share a cached prefix.
  * <p>
- * Consciousness splits into COMMANDER/EVENT (which have different stable prefixes); compression is its
- * own profile.
+ * The two prompt-composing thoughts have different stable prefixes: COMMANDER (full consciousness) and
+ * NARRATION (lean subscriber-narration prompt). Compression is its own profile.
  */
 public enum PromptCacheProfile {
 
     /** Commander consciousness turn. */
     COMMANDER("companion-commander"),
-    /** Event consciousness turn. */
-    EVENT("companion-event"),
+    /** Subscriber-prepared narration turn (its own lean prompt prefix). */
+    NARRATION("companion-narration"),
     /** Mid-term -> long-term memory compression. */
     COMPRESSION("companion-compression");
 

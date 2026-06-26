@@ -61,6 +61,24 @@ public final class PromptComposer {
             MemoryAvailabilitySnapshot indexes,
             String longTermSummary
     ) {
+        return switch (source) {
+            case COMMANDER -> composeCommander(source, urgency, currentTopic, currentInput,
+                    selectedTools, systemTools, shortTerm, indexes, longTermSummary);
+            case NARRATION -> composeNarration(source, urgency, currentTopic, currentInput, systemTools, shortTerm);
+            // EVENT thoughts are memory-only (see EventThought); they never reach here.
+            case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
+        };
+    }
+
+    /**
+     * Full consciousness prompt: stable prefix (rules + topic enum + memory indexes), the timeline context
+     * block, the current-input block, the reduced game tools plus system functions, and the COMMANDER cache
+     * profile.
+     */
+    private ComposedPrompt composeCommander(
+            ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
+            List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
+            List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes, longTermSummary)));
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
@@ -70,11 +88,24 @@ public final class PromptComposer {
         List<LlmToolDefinition> tools = new ArrayList<>(selectedTools);
         tools.addAll(systemTools);
 
-        PromptCacheProfile profile = source == ThoughtSource.COMMANDER
-                ? PromptCacheProfile.COMMANDER
-                : PromptCacheProfile.EVENT;
+        return new ComposedPrompt(List.copyOf(messages), List.copyOf(tools), PromptCacheProfile.COMMANDER);
+    }
 
-        return new ComposedPrompt(List.copyOf(messages), List.copyOf(tools), profile);
+    /**
+     * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
+     * a narration thought has only speak/nothing_to_do), the timeline for continuity, the sensor data as the
+     * current input, the system tools, and its own NARRATION cache profile so it never shares the commander
+     * prefix. {@code selectedTools}/{@code indexes}/{@code longTermSummary} do not apply here.
+     */
+    private ComposedPrompt composeNarration(
+            ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
+            List<LlmToolDefinition> systemTools, List<MemoryEntry> shortTerm) {
+        List<LlmMessage> messages = new ArrayList<>();
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, systemPrompt.staticRules(source)));
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
+        messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(source, urgency, currentTopic, currentInput)));
+
+        return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
 
     /** Stable narrative + topic enum (truly stable) followed by the slowly-changing memory indexes. */

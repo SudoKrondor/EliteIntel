@@ -89,7 +89,7 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void eventCurrentInputUsesLlmDescriptionInPromptAndMemory() {
+    void highEventCurrentInputUsesLlmDescriptionInMemory() {
         CapturingLlm llm = new CapturingLlm();
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
         dispatcher.start();
@@ -97,23 +97,18 @@ class ThoughtDispatcherTest {
                 "The ship completed a hyperspace jump.", "arrived in Sol"));
         dispatcher.stop();
 
-        assertEquals(1, llm.requests.size());
+        assertTrue(llm.requests.isEmpty(), "a HIGH event is memory-only and never engages the LLM");
         assertEquals(1, memory.writes.size());
 
-        String memoryContent = memory.writes.get(0).content();
-        String promptContent = llm.requests.get(0).messages().get(2).content();
-        assertTrue(promptContent.contains(memoryContent),
-                "prompt and memory must use the same formatted event currentInput");
-
-        JsonObject input = JsonParser.parseString(memoryContent).getAsJsonObject();
+        JsonObject input = JsonParser.parseString(memory.writes.get(0).content()).getAsJsonObject();
         assertEquals("FSDJump", input.get("event_type").getAsString());
         assertEquals("The ship completed a hyperspace jump.", input.get("description").getAsString());
         assertEquals("arrived in Sol", input.getAsJsonObject("payload").get("detail").getAsString());
     }
 
     @Test
-    void normalEventIsRecordedWithoutEngagingLlm() {
-        // A NORMAL event short-circuits inside the thought: memory is written, the LLM is never called.
+    void normalEventIsDroppedWithoutEngagingLlm() {
+        // A NORMAL event is dropped inside the thought: nothing is recorded and the LLM is never called.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("NORMAL event must not engage the LLM");
@@ -127,20 +122,35 @@ class ThoughtDispatcherTest {
         dispatcher.submitEvent(new FakeEvent("MarketSell", BaseEvent.Importance.NORMAL));
         dispatcher.stop();
 
-        assertEquals(1, memory.writes.size());
-        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
-        assertEquals(MemoryProcessingState.PROCESSED, memory.writes.get(0).processingState());
+        assertTrue(memory.writes.isEmpty(), "a NORMAL event is not retained in memory");
     }
 
     @Test
-    void sensorNarrationUsesProvidedTopicAndNarrationOnlyToolsEvenWhenQuiet() {
-        CapturingLlm llm = new CapturingLlm();
+    void sensorNarrationOffersOnlyNarrationToolsEvenWhenQuietAndRecordsTheSpokenLine() {
+        List<LlmRequest> requests = new CopyOnWriteArrayList<>();
+        LlmGateway llm = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                requests.add(request);
+                JsonObject speakArgs = new JsonObject();
+                speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "Plotting a route to Sol, Commander.");
+                LlmToolInvocation speak = new LlmToolInvocation(UUID.randomUUID().toString(), SpeakFunction.ID, speakArgs);
+                LlmToolInvocation done = new LlmToolInvocation(UUID.randomUUID().toString(),
+                        NothingToDoFunction.ID, new JsonObject());
+                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(speak, done)));
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
         CompanionState state = new CompanionState();
         state.setVerbosity(Verbosity.QUIET);
         ThoughtContext ctx = new ThoughtContext(
                 llm, new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> { throw new AssertionError("sensor narration must not select query tools"); },
+                (categories, currentInput) -> {
+                    assertTrue(categories.isEmpty(), "sensor narration is offered no game-tool categories");
+                    return List.of();
+                },
                 state, invocation -> false, new ConfirmationCoordinator());
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
         dispatcher.start();
@@ -151,18 +161,41 @@ class ThoughtDispatcherTest {
                 SensorDataEvent.TOPIC_NAVIGATION));
         dispatcher.stop();
 
-        assertEquals(1, llm.requests.size());
+        assertEquals(1, requests.size(), "narration is a single short round");
         assertEquals(Set.of(SpeakFunction.ID, NothingToDoFunction.ID),
-                llm.requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()));
+                requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()),
+                "narration offers only speak + nothing_to_do, even when QUIET");
 
+        // Only the spoken line is recorded, under the provided topic - the raw sensor data is not persisted.
         assertEquals(1, memory.writes.size());
-        MemoryEntry entry = memory.writes.get(0);
-        assertEquals(ConversationTopic.NAVIGATION, entry.topic());
-        JsonObject input = JsonParser.parseString(entry.content()).getAsJsonObject();
-        assertEquals("SensorData", input.get("event_type").getAsString());
-        assertEquals("navigation", input.get("topic").getAsString());
-        assertEquals("Announce this route information.", input.get("instructions").getAsString());
-        assertEquals("sensorData: In route to Sol, G class star.", input.get("payload").getAsString());
+        MemoryEntry spoken = memory.writes.get(0);
+        assertEquals(MemorySource.COMPANION, spoken.source());
+        assertEquals(ConversationTopic.NAVIGATION, spoken.topic());
+        assertEquals("Plotting a route to Sol, Commander.", spoken.content());
+    }
+
+    @Test
+    void aBlockedNarrationDoesNotDelayEventRecording() throws InterruptedException {
+        // Narration blocks on the LLM (live on its own lane); a HIGH event must still record immediately,
+        // because it runs on the separate event lane - not queued behind the slow narration.
+        BlockFirstLlm llm = new BlockFirstLlm();
+        ThoughtContext ctx = new ThoughtContext(
+                llm, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        dispatcher.start();
+
+        dispatcher.submitSensorData(new SensorDataEvent(
+                "In route to Sol.", "Announce it.", SensorDataEvent.TOPIC_NAVIGATION));
+        waitUntil(() -> llm.calls.get() >= 1);     // the narration is live and blocked on the LLM
+        dispatcher.submitEvent(new FakeEvent("FSDJump", BaseEvent.Importance.HIGH));
+        waitUntil(() -> !memory.writes.isEmpty()); // the event records without waiting for narration
+
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.EVENT),
+                "a HIGH event records immediately on its own lane, not behind the blocked narration");
+        dispatcher.stop();
     }
 
     @Test

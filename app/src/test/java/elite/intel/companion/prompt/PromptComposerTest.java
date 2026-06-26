@@ -61,16 +61,27 @@ class PromptComposerTest {
     }
 
     @Test
-    void eventSourcePicksEventProfileAndSourceRules() {
+    void narrationSourcePicksNarrationProfileAndLeanPrompt() {
+        LlmToolDefinition speak = new LlmToolDefinition("speak", "d", "", List.of());
         ComposedPrompt prompt = composer.compose(
-                ThoughtSource.EVENT, Urgency.URGENT,
+                ThoughtSource.NARRATION, Urgency.URGENT,
                 ConversationTopic.COMBAT,
-                "hostile interdiction",
-                List.of(), List.of(),
-                List.of(), new MemoryAvailabilitySnapshot(0, 15, List.of()), null);
+                "fuel reserve critical",
+                List.of(), List.of(speak),
+                List.of(), new MemoryAvailabilitySnapshot(7, 15, List.of(ConversationTopic.NAVIGATION)), "summary text");
 
-        assertEquals(PromptCacheProfile.EVENT, prompt.profile());
-        assertTrue(prompt.messages().get(0).content().contains("EVENT"));
+        assertEquals(PromptCacheProfile.NARRATION, prompt.profile());
+        // 3 messages: the narration static block, the timeline, the current input.
+        assertEquals(3, prompt.messages().size());
+        String system = prompt.messages().get(0).content();
+        assertTrue(system.startsWith(STATIC_MARKER));
+        assertTrue(system.contains("NARRATION"));
+        // Lean: the commander-only stable-prefix sections are not stacked onto the narration block.
+        assertFalse(system.contains("Topics"));
+        assertFalse(system.contains("Remembered facts"));
+        assertFalse(system.contains("Long-term summary"));
+        // Only the system functions are offered (a narration thought has no game tools).
+        assertEquals(List.of(speak), prompt.tools());
     }
 
     @Test

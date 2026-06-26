@@ -23,7 +23,8 @@ public final class SpeakFunction implements SystemFunction {
 
     public static final String ID = "speak";
 
-    private static final String PARAM_TEXT = "text";
+    /** Argument carrying the text to vocalize; read by the {@code Thought} to record the companion's words. */
+    public static final String PARAM_TEXT = "text";
     /** Argument name marking a dangerous-action confirmation prompt; read by the {@code Thought} (§2.13). */
     public static final String PARAM_CONFIRMATION_REQUEST = "confirmation_request";
     private static final String STATUS_SPOKEN = "spoken";
@@ -52,7 +53,7 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public Set<ThoughtSource> sources() {
-        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
+        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT, ThoughtSource.NARRATION);
     }
 
     /**

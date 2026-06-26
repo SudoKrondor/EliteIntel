@@ -29,7 +29,7 @@ public final class NothingToDoFunction implements SystemFunction {
 
     @Override
     public Set<ThoughtSource> sources() {
-        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
+        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT, ThoughtSource.NARRATION);
     }
 
     /**

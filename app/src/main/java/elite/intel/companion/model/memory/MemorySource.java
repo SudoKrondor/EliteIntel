@@ -8,5 +8,7 @@ public enum MemorySource {
     COMMANDER,
     EVENT,
     TOOL_RESULT,
-    SYSTEM
+    SYSTEM,
+    /** The companion's own spoken words (a {@code speak}/clarification/confirmation it uttered). */
+    COMPANION
 }

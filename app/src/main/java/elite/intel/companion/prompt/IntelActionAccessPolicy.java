@@ -21,6 +21,8 @@ public final class IntelActionAccessPolicy {
         return switch (source) {
             case COMMANDER -> EnumSet.of(IntelActionCategory.QUERY, IntelActionCategory.ACTION, IntelActionCategory.MACRO);
             case EVENT -> EnumSet.of(IntelActionCategory.QUERY);
+            // Subscriber-prepared narration gets no game tools: the data is already calculated and filtered.
+            case NARRATION -> EnumSet.noneOf(IntelActionCategory.class);
         };
     }
 }
