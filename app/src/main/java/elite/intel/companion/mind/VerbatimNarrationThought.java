@@ -39,17 +39,31 @@ public final class VerbatimNarrationThought extends Thought {
     /** Remember the line first, then voice it verbatim - no LLM, no tools. */
     @Override
     public void run() {
-        recordCompanionSpeech(currentInput);
-        CompletableFuture<Void> played = ctx.speechGateway().submit(new SpeechRequest(newId(), currentInput, urgency()));
-        if (spokenSignal != null) {
-            // Mirror the legacy AiVoxResponseEvent future: complete the caller's signal when playback ends.
-            played.whenComplete((v, ex) -> {
-                if (ex != null) {
-                    spokenSignal.completeExceptionally(ex);
-                } else {
-                    spokenSignal.complete(null);
-                }
-            });
+        try {
+            recordCompanionSpeech(currentInput);
+            CompletableFuture<Void> played = ctx.speechGateway().submit(new SpeechRequest(newId(), currentInput, urgency()));
+            // A synchronous caller waits for playback, not for this thought to return; mirror the legacy
+            // AiVoxResponseEvent future by completing its signal when the gateway reports playback finished.
+            played.whenComplete((v, ex) -> completeSpokenSignal(ex));
+        } catch (RuntimeException startupFailure) {
+            // Voicing could not even start: complete the signal now so a synchronous caller (a macro SPEAK
+            // step blocked on it) is not stranded for its full timeout. WHY: the caller's own timeout is only
+            // the last-resort backstop for the cases this cannot reach - the thought dropped before it runs
+            // (forced shutdown) or the gateway never reporting completion.
+            completeSpokenSignal(startupFailure);
+            throw startupFailure;
+        }
+    }
+
+    /** Completes the optional synchronous-caller signal once (idempotent); a failure propagates as exceptional. */
+    private void completeSpokenSignal(Throwable error) {
+        if (spokenSignal == null) {
+            return;
+        }
+        if (error != null) {
+            spokenSignal.completeExceptionally(error);
+        } else {
+            spokenSignal.complete(null);
         }
     }
 
