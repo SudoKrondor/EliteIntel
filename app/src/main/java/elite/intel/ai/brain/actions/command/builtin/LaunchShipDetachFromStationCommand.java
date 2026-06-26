@@ -27,13 +27,12 @@ public final class LaunchShipDetachFromStationCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         UiNavCommon.prepToKnownUiPositionWhileInTheShipAtStation();
         GameControllerBus.publish(GameInputSequenceEvent.of(
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
         ));
-        return null;
     }
 }

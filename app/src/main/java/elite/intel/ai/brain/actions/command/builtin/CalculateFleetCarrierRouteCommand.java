@@ -22,7 +22,7 @@ public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
-        return FleetCarrierRouteCalculator.calculate();
+    public void execute(JsonObject params, String responseText) {
+        FleetCarrierRouteCalculator.calculate();
     }
 }

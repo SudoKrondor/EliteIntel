@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
@@ -28,19 +29,21 @@ public final class NavigateToSquadronCarrierCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
-        if (!status.isInSrv() && !status.isInMainShip()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv"));
-        }
-        PlayerSession playerSession = PlayerSession.getInstance();
-        CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
+        if (status.isInSrv() || status.isInMainShip()) {
+            PlayerSession playerSession = PlayerSession.getInstance();
+            CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
-        if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable"));
-        }
+            if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
+                return;
+            }
 
-        RoutePlotter plotter = new RoutePlotter();
-        return plotter.plotRoute(squadronCarrier.getStarName());
+            RoutePlotter plotter = new RoutePlotter();
+            plotter.plotRoute(squadronCarrier.getStarName());
+        } else {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+        }
     }
 }

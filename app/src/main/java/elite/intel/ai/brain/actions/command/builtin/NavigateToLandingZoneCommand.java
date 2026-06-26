@@ -1,10 +1,11 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
@@ -31,12 +32,13 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         TargetLocation targetLocation = new TargetLocation();
         if (currentLocation.getLandingCoordinates() == null || currentLocation.getLandingCoordinates().length == 0) {
-            return CommandOutcome.speak(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable"));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable")));
+            return;
         }
 
         targetLocation.setLatitude(currentLocation.getLandingCoordinates()[0]);
@@ -45,6 +47,6 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         targetLocation.setRequestedTime(System.currentTimeMillis());
         playerSession.setTracking(targetLocation);
 
-        return CommandOutcome.speak(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone"));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone")));
     }
 }

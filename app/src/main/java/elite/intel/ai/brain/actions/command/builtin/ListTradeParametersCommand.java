@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 /**
@@ -23,7 +24,7 @@ public final class ListTradeParametersCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.listParams"));
+    public void execute(JsonObject params, String responseText) {
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.listParams")));
     }
 }

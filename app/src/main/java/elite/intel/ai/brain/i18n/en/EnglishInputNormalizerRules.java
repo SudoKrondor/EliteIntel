@@ -768,6 +768,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("career", "carrier");
         m.put("sip", "ship");
         m.put("aligns", "launch");
+        m.put("flip", "fleet");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

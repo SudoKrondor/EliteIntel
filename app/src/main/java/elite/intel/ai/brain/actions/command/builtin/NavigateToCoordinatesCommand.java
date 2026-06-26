@@ -2,9 +2,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -62,11 +63,12 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         PlayerSession playerSession = PlayerSession.getInstance();
 
-        if (params.get("lat") == null || params.get("lon") == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.common.sayAgain"));
+        if(params.get("lat") == null || params.get("lon") == null) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.sayAgain")));
+            return;
         }
 
         double latitude = params.get("lat").getAsDouble();
@@ -74,15 +76,16 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
         if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
             log.error("Invalid coordinates: " + latitude + ", " + longitude);
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.invalidCoords"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.invalidCoords")));
+        } else {
+            TargetLocation tracking = playerSession.getTracking();
+            tracking.setEnabled(true);
+            tracking.setLatitude(latitude);
+            tracking.setLongitude(longitude);
+            tracking.setRequestedTime(System.currentTimeMillis());
+            playerSession.setTracking(tracking);
+            log.info("Starting navigation to coordinates: " + latitude + ", " + longitude);
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.startingNavCoords", latitude, longitude)));
         }
-        TargetLocation tracking = playerSession.getTracking();
-        tracking.setEnabled(true);
-        tracking.setLatitude(latitude);
-        tracking.setLongitude(longitude);
-        tracking.setRequestedTime(System.currentTimeMillis());
-        playerSession.setTracking(tracking);
-        log.info("Starting navigation to coordinates: " + latitude + ", " + longitude);
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.startingNavCoords", latitude, longitude));
     }
 }

@@ -1,14 +1,15 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
 import elite.intel.db.managers.LocationManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.util.StringUtls;
 
@@ -32,7 +33,7 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         HuntingGroundManager manager = HuntingGroundManager.getInstance();
         LocationManager locationManager = LocationManager.getInstance();
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = manager.findTargetSystemInRangeForRecon(locationManager.getGalacticCoordinates());
@@ -43,20 +44,20 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
 
         if (target == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.pirate.noReconSystems"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noReconSystems")));
+            return;
         }
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
+        if (multipleMissionProviders) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.multipleProviders")));
+        }
+
         String starSystem = target.getStarSystem();
 
-        // Single outcome: when several providers exist, fold that note into the recon announcement.
-        String announcement = StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem);
-        if (multipleMissionProviders) {
-            announcement = StringUtls.localizedLlm("handler.pirate.multipleProviders") + " " + announcement;
-        }
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem)));
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(starSystem);
-        return CommandOutcome.critical(announcement);
     }
 }

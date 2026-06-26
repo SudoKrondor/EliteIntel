@@ -32,7 +32,7 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -43,7 +43,6 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
             powerToSystemsSRV();
         }
 
-        return null;
     }
 
     private void powerToSystemsSRV() {

@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.TraderType;
@@ -31,18 +32,16 @@ public final class FindManufacturedMaterialTraderCommand implements IntelCommand
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
-        if (!status.isInSrv() && !status.isInMainShip()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv"));
+        if(status.isInSrv() || status.isInMainShip()) {
+            Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType())));
+            TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
+            RoutePlotter routePlotter = new RoutePlotter();
+            routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
+        } else {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
-        Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
-        RoutePlotter routePlotter = new RoutePlotter();
-        JsonObject plotOutcome = routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
-        if (plotOutcome != null) {
-            return plotOutcome;
-        }
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType()));
     }
 }

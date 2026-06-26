@@ -26,7 +26,7 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isAnalysisMode()) {
@@ -38,6 +38,5 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
             }
         }
-        return null;
     }
 }

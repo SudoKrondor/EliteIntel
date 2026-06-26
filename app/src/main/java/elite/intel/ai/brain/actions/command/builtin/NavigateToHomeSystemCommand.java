@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
@@ -30,20 +31,19 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
-        if (!status.isInSrv() && !status.isInMainShip()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv"));
+        if(status.isInSrv() || status.isInMainShip()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.plottingHome")));
+            LocationDto location = playerSession.getHomeSystem();
+            if (location.getBodyId() == -1) {
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.homeNotSet")));
+                return;
+            }
+            RoutePlotter plotter = new RoutePlotter();
+            plotter.plotRoute(location.getStarName());
+        } else {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
         }
-        LocationDto location = playerSession.getHomeSystem();
-        if (location.getBodyId() == -1) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.homeNotSet"));
-        }
-        RoutePlotter plotter = new RoutePlotter();
-        JsonObject plotOutcome = plotter.plotRoute(location.getStarName());
-        if (plotOutcome != null) {
-            return plotOutcome;
-        }
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.plottingHome"));
     }
 }

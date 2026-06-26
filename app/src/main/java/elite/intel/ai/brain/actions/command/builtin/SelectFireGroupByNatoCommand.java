@@ -45,22 +45,21 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
 
         JsonElement key = params.get("key");
         if (key == null) {
-            return null;
+            return;
         }
 
         String nato = key.getAsString();
         if (nato == null) {
-            return null;
+            return;
         }
 
         int fireGroupInSettings = fireGroupByNato(nato);
-        if (fireGroupInSettings == -1) return null;
+        if (fireGroupInSettings == -1) return;
 
         FireGroups.cycleToGroup(fireGroupInSettings);
-        return null;
     }
 }
