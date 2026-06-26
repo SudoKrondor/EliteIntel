@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.dao.KeyBindingDao.KeyBinding;
 import elite.intel.db.managers.KeyBindingManager;
 import elite.intel.util.StringUtls;
@@ -28,12 +28,9 @@ public class AnalyzeMisingKeyBindingQueryCommand extends BaseQueryAnalyzer imple
             for (KeyBinding key : missingBindings) {
                 sb.append(key.getKeyBinding()).append(", ");
             }
-            List<String> names = missingBindings.stream().map(KeyBinding::getKeyBinding).toList();
-            return process(StringUtls.localizedLlm("query.bindings.missing", sb.toString()), new DataDto(names));
+            return process(StringUtls.localizedLlm("query.bindings.missing", sb.toString()));
         } else {
             return process(StringUtls.localizedLlm("query.bindings.none"));
         }
     }
-
-    record DataDto(List<String> missingBindings) {}
 }

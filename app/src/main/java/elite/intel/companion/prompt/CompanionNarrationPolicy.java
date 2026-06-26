@@ -7,14 +7,18 @@ import elite.intel.ai.brain.actions.query.QueryRegistry;
 import java.util.function.Function;
 
 /**
- * Classifies a tool-call id by how it should affect companion narration, so a {@code Thought} can decide
- * whether the commander turn's {@code speak} is worth voicing. The companion drops its {@code speak} only
- * when every game action a turn ran was a {@link Narration#SILENT_COMMAND} (see {@code IntelCommand#silentInCompanion}).
+ * Classifies a tool-call id as a game command/query versus a neutral system function, so a {@code Thought}
+ * can tell whether a commander turn ran a command/query. A command/query owns its spoken outcome
+ * deterministically - the handler's {@code text_to_speech_response} is voiced verbatim and a side-effect
+ * stays silent - so once one runs the LLM's own {@code speak} is withheld for that turn (no re-voicing or
+ * rephrasing). A turn that ran no command/query (only system functions such as memory recall, or pure
+ * conversation) still speaks.
  * <p>
- * Queries are always {@link Narration#NARRATABLE} - they exist to answer the commander, so suppressing their
- * spoken result would defeat the request. System functions, macros and anything unknown are
- * {@link Narration#NEUTRAL}: they neither force nor suppress speech, so a turn made only of them keeps the
- * default (speak) behaviour.
+ * Commands classify as {@link Narration#SILENT_COMMAND} or {@link Narration#NARRATABLE} (the
+ * {@code IntelCommand#silentInCompanion} hint is retained but both are now treated alike for the
+ * speak-withhold decision); queries are always {@link Narration#NARRATABLE}. System functions, macros and
+ * anything unknown are {@link Narration#NEUTRAL}: they are not handler outcomes, so they neither vocalize
+ * here nor withhold the LLM's speak.
  */
 public final class CompanionNarrationPolicy {
 

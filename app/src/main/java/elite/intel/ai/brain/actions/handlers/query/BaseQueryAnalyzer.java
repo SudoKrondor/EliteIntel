@@ -5,25 +5,23 @@ import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
-import elite.intel.session.SystemSession;
-import elite.intel.util.json.GsonFactory;
 import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Shared base for query handlers, owning the query result contract. The shape the consciousness / legacy
- * router receives is consistent by meaning:
+ * Shared base for query handlers. A query's outcome is deterministic and owned by the handler: it always
+ * resolves to a spoken {@code text_to_speech_response} that the active mode owner vocalizes verbatim - the
+ * legacy {@code ResponseRouter} in command mode, the companion {@code Thought} in companion mode. The mode
+ * never re-decides whether or what a query says.
  * <ul>
- *   <li>{@link #process(AiData, String)} and {@link #process(String, Object)} - the query has data:
- *       companion gets {@code {data: <raw fields>}} ({@link AIConstants#PROPERTY_DATA}) to narrate itself;
- *       legacy phrases it (analysis LLM for {@code AiData}, or the supplied canned localized sentence for
- *       the dual-path).</li>
- *   <li>{@link #process(String)} - a short status / inherently-textual answer (no data, error, help,
- *       conversation): both modes get {@code {text_to_speech_response: ...}} spoken directly.</li>
+ *   <li>{@link #process(AiData, String)} - the query has data fields: the analysis LLM phrases them into a
+ *       spoken sentence (the analysis <em>result</em> is what gets vocalized, not the raw fields).</li>
+ *   <li>{@link #process(String)} - a short, inherently-textual answer (status, error, help, no data):
+ *       spoken directly with no analysis pass.</li>
  * </ul>
- * So a companion query result carries {@code data} when there are fields to reason over, otherwise a direct
- * {@code text_to_speech_response} - never a pre-formatted prose sentence dressed up as data.
+ * Both modes receive the same {@code {text_to_speech_response: ...}} shape; the companion does not get raw
+ * data to phrase itself, so a query never falls silent at the LLM's discretion.
  */
 public class BaseQueryAnalyzer {
 
@@ -32,14 +30,8 @@ public class BaseQueryAnalyzer {
     protected JsonObject process(AiData struct, String originalUserInput) {
 
         log.info("Processing data: \n\n{}\n\n", struct.getData().toYaml());
-        if(originalUserInput == null) {originalUserInput = "";}
-
-        // Companion mode owns narration: hand back the raw data for the consciousness to phrase, skipping the
-        // legacy second-pass analysis LLM (and its TTS-formatted response). Legacy keeps the analysis pass.
-        if (SystemSession.getInstance().companionModeOn()) {
-            JsonObject result = new JsonObject();
-            result.add(AIConstants.PROPERTY_DATA, GsonFactory.getGson().toJsonTree(struct.getData()));
-            return result;
+        if (originalUserInput == null) {
+            originalUserInput = "";
         }
 
         AiAnalysisInterface aiAnalysisInterface = ApiFactory.getInstance().getAnalysisEndpoint();
@@ -50,21 +42,6 @@ public class BaseQueryAnalyzer {
             analysis = GenericResponse.getInstance().genericResponse("LLM failed to process this request.");
         }
         return analysis;
-    }
-
-    /**
-     * Dual-path result for a query that already computes a deterministic spoken sentence: legacy speaks the
-     * canned {@code legacySpokenText} directly (no analysis LLM), while the companion receives
-     * {@code companionData} as raw fields under {@code data} to narrate itself. Keeps the companion contract
-     * consistent (data when there are fields) without changing legacy's localized phrasing.
-     */
-    protected JsonObject process(String legacySpokenText, Object companionData) {
-        if (SystemSession.getInstance().companionModeOn()) {
-            JsonObject result = new JsonObject();
-            result.add(AIConstants.PROPERTY_DATA, GsonFactory.getGson().toJsonTree(companionData));
-            return result;
-        }
-        return process(legacySpokenText);
     }
 
     protected JsonObject process(String message) {

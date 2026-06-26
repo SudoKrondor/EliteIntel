@@ -45,7 +45,11 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String COMMANDER_RULES = """
             This turn was started by the commander addressing you. You may use the query, action and macro \
-            functions offered this turn.
+            functions offered this turn. When you call a query or action function, its result is spoken to \
+            the commander automatically in the ship's voice - do not also call speak to repeat or rephrase \
+            that result; just continue with any further action or end with nothing_to_do. Use speak yourself \
+            only to converse, to ask for clarification, or to confirm a dangerous action. To answer from your \
+            own memory, call search_in_memory and then speak what you recall.
             """;
 
     private static final String EVENT_RULES = """

@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.util.NavigationUtils;
@@ -41,9 +41,6 @@ public class AnalyzeDistanceFromTheBubbleQueryCommand extends BaseQueryAnalyzer 
         int minutes = (int) (totalMinutes % 60);
 
         return process(
-                StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes),
-                new DataDto(distLy, fuelTons, hours, minutes));
+                StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes));
     }
-
-    record DataDto(int distanceLy, int carrierFuelTons, int travelHours, int travelMinutes) {}
 }

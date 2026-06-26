@@ -53,9 +53,6 @@ public class AnalyzeDistanceFromFleetCarrierQueryCommand extends BaseQueryAnalyz
 
         int numberOfJumps = (int) (distance / jumpRange) + 1;
         return process(
-                StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps),
-                new DataDto((int) distance, numberOfJumps));
+                StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps));
     }
-
-    record DataDto(int distanceLy, int jumps) {}
 }

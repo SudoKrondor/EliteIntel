@@ -113,17 +113,36 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderMixedTurnStillSpeaks() {
-        // A silent command alongside a narratable query: the query answer is worth voicing, so speak runs.
-        llm.scripted.add(ok(call("close_panel", new JsonObject()),
-                call("ship_status", new JsonObject()),
-                call(SpeakFunction.ID, text("panel closed; hull at 100%")),
+    void commanderQueryOutcomeVocalizedDeterministicallyAndLlmSpeakDropped() {
+        // A query owns its spoken outcome: its text_to_speech_response is voiced verbatim through the speech
+        // gateway, and the LLM's own speak for the same turn is dropped (never re-voiced or rephrased).
+        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
+        llm.scripted.add(ok(call("ship_status", new JsonObject()),
+                call(SpeakFunction.ID, text("let me check the ship")),
                 call(NothingToDoFunction.ID, new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "close the panel and how is the ship", ctx(narration())).run();
+        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(narration())).run();
 
-        assertTrue(execution.toolNames().contains(SpeakFunction.ID),
-                "a turn with any narratable action still speaks");
+        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the query's outcome text is vocalized deterministically");
+        assertFalse(execution.toolNames().contains(SpeakFunction.ID),
+                "the LLM's own speak is withheld once a command/query owns the spoken outcome");
+    }
+
+    @Test
+    void commanderMissionCriticalOutcomeVocalizedOnUrgentChannel() {
+        // A mission-critical command outcome (e.g. a plotted trade-stop instruction) is voiced on the
+        // urgent channel so it preempts current speech, exactly as the legacy MissionCritical channel did.
+        JsonObject critical = outcomeText("travel to Sol and buy gold");
+        critical.addProperty("mission_critical", true);
+        execution.resultsByTool.put("close_panel", critical); // SILENT_COMMAND id reused as a command stub
+        llm.scripted.add(ok(call("close_panel", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "next trade stop", ctx(narration())).run();
+
+        assertEquals(1, speech.requests.size());
+        assertEquals("travel to Sol and buy gold", speech.requests.get(0).text());
+        assertEquals(Urgency.URGENT, speech.requests.get(0).urgency(), "mission-critical outcome preempts");
     }
 
     @Test
@@ -366,6 +385,15 @@ class ThoughtTest {
     private static JsonObject text(String value) {
         JsonObject o = new JsonObject();
         o.addProperty("text", value);
+        return o;
+    }
+
+    /**
+     * A command/query outcome carrying a spoken text_to_speech_response, as a handler's handle() returns.
+     */
+    private static JsonObject outcomeText(String value) {
+        JsonObject o = new JsonObject();
+        o.addProperty("text_to_speech_response", value);
         return o;
     }
 

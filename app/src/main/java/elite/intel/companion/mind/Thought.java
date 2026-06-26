@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
@@ -11,6 +12,7 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.companion.prompt.CompanionNarrationPolicy.Narration;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.EventSpeechPolicy;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
@@ -64,12 +66,13 @@ public final class Thought {
     private final ThoughtContext ctx;
 
     /**
-     * Turn-scoped narration accounting (COMMANDER only). Set as rounds execute: {@code turnRanNarratable}
-     * once any query or non-silent command runs, {@code turnRanSilentCommand} once any {@code silentInCompanion}
-     * command runs. A {@code speak} is dropped while a turn has run silent commands and nothing narratable.
+     * Turn-scoped narration accounting (COMMANDER only). Set once any game command/query runs this turn.
+     * A command/query owns its spoken outcome deterministically - its {@code text_to_speech_response} is
+     * vocalized verbatim (see {@link #vocalizeDeterministicOutcome}), a side-effect stays silent - so the
+     * LLM's own {@code speak} is withheld for the rest of the turn to avoid re-voicing or rephrasing it.
+     * The LLM only speaks on a turn that ran no command/query (pure conversation, memory recall).
      */
-    private boolean turnRanNarratable;
-    private boolean turnRanSilentCommand;
+    private boolean turnRanGameAction;
 
     /** Set by {@link #interrupt} from another thread; the run loop honors it at step boundaries (§2.7). */
     private volatile boolean interrupted;
@@ -274,12 +277,14 @@ public final class Thought {
                 terminate = true;
                 continue;
             }
-            // A speak voiced only to acknowledge silent (cosmetic) commands is dropped: the command still
-            // ran, but no TTS fires. A synthetic result keeps the assistant/tool-result pairing intact so a
-            // following round stays valid, and tells the LLM the narration was intentionally withheld.
+            // A speak voiced only alongside a command/query (whose result is voiced deterministically) is
+            // dropped: the action still ran, but the LLM's speak fires no TTS. A synthetic result keeps the
+            // assistant/tool-result pairing intact so a following round stays valid, and tells the LLM the
+            // narration was intentionally withheld.
             JsonObject result = suppressSpeak && SpeakFunction.ID.equals(inv.name())
                     ? narrationSuppressedResult(inv.name())
                     : (preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv));
+            vocalizeDeterministicOutcome(inv, result);
             recordToolResult(result);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
         }
@@ -293,9 +298,10 @@ public final class Thought {
     /**
      * Folds this round's game actions into the turn's narration accounting and decides whether the round's
      * {@code speak} should be withheld. Only COMMANDER turns are gated (EVENT speech has its own policy via
-     * {@link #systemTools()}); a speak is dropped when the turn has run at least one silent command and
-     * nothing narratable (a query or non-silent command), so a turn whose sole effect was a cosmetic UI
-     * command stays quiet while a mixed turn still speaks.
+     * {@link #systemTools()}). A command/query owns its spoken outcome deterministically (vocalized verbatim
+     * or silent), so once any command/query has run this turn the LLM's own {@code speak} is dropped - the
+     * LLM neither re-voices nor rephrases a handler result. A turn that ran no command/query (only system
+     * functions such as memory recall, or pure conversation) still speaks.
      */
     private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
         if (source != ThoughtSource.COMMANDER) {
@@ -305,17 +311,44 @@ public final class Thought {
             if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
                 continue;
             }
-            switch (ctx.narrationPolicy().classify(inv.name())) {
-                case NARRATABLE -> turnRanNarratable = true;
-                case SILENT_COMMAND -> turnRanSilentCommand = true;
-                case NEUTRAL -> { /* no opinion: neither forces nor suppresses speech */ }
+            Narration narration = ctx.narrationPolicy().classify(inv.name());
+            if (narration == Narration.NARRATABLE || narration == Narration.SILENT_COMMAND) {
+                turnRanGameAction = true; // a command/query ran; its outcome is voiced (or silent) deterministically
             }
         }
-        return turnRanSilentCommand && !turnRanNarratable;
+        return turnRanGameAction;
     }
 
     /**
-     * Synthetic tool result standing in for a withheld {@code speak} on a silent-command turn.
+     * Deterministic vocalization of a command/query outcome (COMMANDER only): the handler - not the LLM -
+     * owns whether and what a result says. A {@code handle()} that returned a {@code text_to_speech_response}
+     * (a {@code CommandOutcome} string or a query's analysis sentence) is voiced verbatim through the speech
+     * gateway, on the urgent channel when the outcome is mission-critical; a side-effect outcome (no spoken
+     * text) stays silent. System functions ({@link Narration#NEUTRAL}) own their own speech and are skipped
+     * here, as are EVENT turns (the consciousness narrates events in character from the query data).
+     */
+    private void vocalizeDeterministicOutcome(LlmToolInvocation inv, JsonObject result) {
+        if (source != ThoughtSource.COMMANDER) {
+            return;
+        }
+        if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
+            return;
+        }
+        Narration narration = ctx.narrationPolicy().classify(inv.name());
+        if (narration != Narration.NARRATABLE && narration != Narration.SILENT_COMMAND) {
+            return; // only command/query outcomes are vocalized here
+        }
+        String spoken = CommandOutcome.spokenText(result);
+        if (spoken.isBlank()) {
+            return; // side-effect outcome: silent by design
+        }
+        Urgency speechUrgency = CommandOutcome.isCritical(result) ? Urgency.URGENT : Urgency.NORMAL;
+        ctx.speechGateway().submit(new SpeechRequest(newId(), spoken, speechUrgency));
+    }
+
+    /**
+     * Synthetic tool result standing in for a withheld {@code speak} on a turn whose command/query already
+     * owns the spoken outcome.
      */
     private static JsonObject narrationSuppressedResult(String toolName) {
         JsonObject suppressed = new JsonObject();
