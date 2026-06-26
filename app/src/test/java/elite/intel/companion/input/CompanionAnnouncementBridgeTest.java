@@ -18,9 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The bridge that hands a command/macro's own narration ({@code AiVoxResponseEvent} /
@@ -35,7 +33,7 @@ class CompanionAnnouncementBridgeTest {
     @BeforeAll
     static void initDb() {
         Cypher.initializeKey();
-        Database.init();
+        Database.init().close(); // init() returns an open pooled handle; close it so the pool isn't starved
     }
 
     private record Submission(String text, ConversationTopic topic, Urgency urgency, CompletableFuture<Void> signal) {}
