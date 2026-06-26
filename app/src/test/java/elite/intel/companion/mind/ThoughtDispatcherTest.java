@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,6 +109,39 @@ class ThoughtDispatcherTest {
         MemoryEntry outcome = memory.writes.get(1);
         assertEquals(MemorySource.TOOL_RESULT, outcome.source());
         assertEquals("command open_nav executed", outcome.content());
+    }
+
+    @Test
+    void inputNormalizerCanonicalizesBeforeTheReflexGateButMemoryKeepsRawWords() {
+        // A synonym ("combat mode") is canonicalized to its training phrase ("switch to combat mode") before the
+        // reflex gate, so it reflexes without the LLM; the raw words are still what memory records.
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("a reflex must not engage the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(),
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase("switch_combat", "switch to combat mode", true)),
+                invocation -> false);
+        Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, normalizer);
+        dispatcher.start();
+        dispatcher.submitCommanderInput("combat mode");
+        dispatcher.stop();
+
+        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals("combat mode", memory.writes.get(0).content(), "memory keeps the raw words, not the canonical form");
+        assertEquals("command switch_combat executed", memory.writes.get(1).content());
     }
 
     @Test
