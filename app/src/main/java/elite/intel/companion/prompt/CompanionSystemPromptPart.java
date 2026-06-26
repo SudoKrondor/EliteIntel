@@ -54,6 +54,15 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             that result; just continue with any further action or end with nothing_to_do. Use speak yourself \
             only to converse, to ask for clarification, or to confirm a dangerous action. To answer from your \
             own memory, call search_in_memory and then speak what you recall.
+            When the commander tells you to do something - open a panel, navigate, find or search, target, \
+            deploy or retract, enable or disable, or otherwise change ship state - call the matching action or \
+            macro function; when the commander asks for information, call the matching query function. A bare \
+            name of a panel, mode, or known action ("navigation", "inventory", "contacts") is such a request: \
+            carry it out by calling that function. Changing the global topic does not perform the action - if a \
+            matching function is offered, call it; do not stop at change_global_topic, ask to clarify, or just \
+            talk about it. Always prefer the closest offered query, action or macro function over speak; fall \
+            back to clarify only when the input is genuinely ambiguous and no offered function fits. "inventory" \
+            and "storage" are different panels - never substitute one for the other.
             """;
 
     private static final String NARRATION_RULES = """
