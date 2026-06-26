@@ -35,6 +35,7 @@ import java.util.List;
 public class PlayerBackupService {
 
     private static final Logger log = LogManager.getLogger(PlayerBackupService.class);
+    // yyyy-MM-dd_HH-mm-ss: ISO-ordered so lexicographic sort == chronological sort in listBackups().
     private static final DateTimeFormatter BACKUP_FOLDER_TIMESTAMP =
             DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
@@ -52,6 +53,7 @@ public class PlayerBackupService {
                 Clock.systemDefaultZone(), null);
     }
 
+    /** Test seam: allows overriding the backup root directory and the clock. */
     PlayerBackupService(
             BindingsLoader bindingsLoader,
             BindingsWorkingCopyRepository workingCopyRepo,

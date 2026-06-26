@@ -26,12 +26,15 @@ public class BindingsLoader {
 
         String presetName = findActivePresetName(bindingsDir);
         if (!presetName.isEmpty()) {
-            Optional<Path> matched = Files.list(bindingsDir)
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.startsWith(presetName + ".") && name.endsWith(".binds");
-                    })
-                    .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
+            Optional<Path> matched;
+            try (var stream = Files.list(bindingsDir)) {
+                matched = stream
+                        .filter(p -> {
+                            String name = p.getFileName().toString();
+                            return name.startsWith(presetName + ".") && name.endsWith(".binds");
+                        })
+                        .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
+            }
 
             if (matched.isPresent()) {
                 log.info("Selected bindings file for preset '{}': {}", presetName, matched.get().getFileName());

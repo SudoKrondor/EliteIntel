@@ -9,6 +9,9 @@ import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -33,6 +36,8 @@ import static elite.intel.ui.theme.HudPalette.*;
  * conflict-check and pre-write backup rather than a separate, less-safe direct write.
  */
 public class BindingManagementPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(BindingManagementPanel.class);
 
     private final PlayerBackupService backupService = PlayerBackupService.getInstance();
     private final BindingApplyResultPresenter applyResultPresenter = new BindingApplyResultPresenter(this);
@@ -151,7 +156,7 @@ public class BindingManagementPanel extends JPanel {
                 // No success dialog needed: Binding Profile reflects the new draft reactively
                 // via the BindingsUpdatedEvent that restoreToWorkingCopy() publishes.
             });
-        }, "PlayerBackupRestore-Thread").start();
+        }, "PlayerBackupRestoreSlot-Thread").start();
     }
 
     private void performRestoreToLive() {
@@ -193,7 +198,7 @@ public class BindingManagementPanel extends JPanel {
                     applyResultPresenter.showSuccess(resultBackup);
                 }
             });
-        }, "PlayerBackupRestore-Thread").start();
+        }, "PlayerBackupRestoreLive-Thread").start();
     }
 
     private boolean confirmRestore(String messageKey, String presetFileName) {
@@ -217,6 +222,7 @@ public class BindingManagementPanel extends JPanel {
             // WHY: resolveActiveBindsFile() declares the same broad `throws Exception` as
             // BindingsLoader.getLatestBindsFile() (which BindingProfilePanel also catches
             // broadly for the same reason) - nothing more specific to catch here.
+            log.warn("Could not resolve the active bindings preset for restore: {}", e.getMessage());
             showRestoreError(e.getMessage());
             return null;
         }
@@ -261,7 +267,8 @@ public class BindingManagementPanel extends JPanel {
         try {
             currentBackups = backupService.listBackups();
         } catch (IOException e) {
-            // Could not list playerbackups (e.g. permissions) - leave the table empty.
+            // Leave the table empty; the user can still retry via Backup Now.
+            log.warn("Could not list player backups: {}", e.getMessage());
             currentBackups = List.of();
         }
         for (PlayerBackupService.PlayerBackup backup : currentBackups) {
