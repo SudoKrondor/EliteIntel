@@ -194,7 +194,7 @@ public class BindingManagementPanel extends JPanel {
                     showRestoreError(resultIoFailure.getMessage());
                 } else if (resultApplyFailure != null) {
                     applyResultPresenter.showError(resultApplyFailure);
-                } else {
+                } else if (resultBackup != null) {
                     applyResultPresenter.showSuccess(resultBackup);
                 }
             });

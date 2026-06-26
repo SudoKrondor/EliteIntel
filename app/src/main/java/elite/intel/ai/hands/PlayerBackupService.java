@@ -143,11 +143,14 @@ public class PlayerBackupService {
      * draft to the game directory via the existing safe-apply pipeline - the same
      * conflict-check and pre-write backup any other Apply gets.
      *
-     * @return the path of the apply pipeline's own pre-write backup, or {@code null} if the game file did not exist
+     * @return the path of the apply pipeline's own pre-write backup, {@code null} if the game
+     *         file did not exist, or {@code null} if the restored content is already identical
+     *         to the current game file (no-op)
      */
     public Path restoreToLive(Path backupFolder, String presetFileName, Path gameBindsFile)
             throws IOException, BindingsApplyException {
         restoreToWorkingCopy(backupFolder, presetFileName);
+        workingCopyRepo.recordGameFileBaseline(presetFileName, gameBindsFile);
         return applyService.apply(presetFileName, gameBindsFile);
     }
 

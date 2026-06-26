@@ -178,6 +178,21 @@ public class BindingsWorkingCopyRepository {
     }
 
     /**
+     * Records the current game file's hash as the baseline for the given preset, declaring the
+     * existing working copy as a draft from this game-file state. Call this after writing
+     * restored content via {@link #save} to bypass the mtime heuristic in
+     * {@link #migrateLegacyWorkingCopy}, which cannot distinguish a freshly-restored working
+     * copy from a stale clean one when both writes land within the same filesystem timestamp tick.
+     * Does nothing if the game file does not exist.
+     */
+    public void recordGameFileBaseline(String presetFileName, Path gameFile) throws IOException {
+        if (!Files.exists(gameFile)) {
+            return;
+        }
+        writeBaselineHash(presetFileName, sha256(gameFile));
+    }
+
+    /**
      * Marks the current working copy as applied so later game-only changes are detected against the new baseline.
      */
     public void markApplied(String presetFileName) throws IOException {
