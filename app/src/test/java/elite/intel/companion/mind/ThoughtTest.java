@@ -347,13 +347,14 @@ class ThoughtTest {
 
     @Test
     void dangerousActionWaitsForConfirmationThenExecutesOnConfirm() throws InterruptedException {
+        // The model is unaware of danger: it just calls the action. The thought voices the confirmation itself.
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::confirm);
 
         assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
+        assertFalse(speech.requests.isEmpty(), "the thought voices a confirmation prompt before running it");
         assertTrue(hasContent("dangerous action requires confirmation"));
         assertTrue(hasContent("dangerous action confirmed"));
     }
@@ -361,8 +362,7 @@ class ThoughtTest {
     @Test
     void dangerousActionIsDiscardedOnCancel() throws InterruptedException {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm self destruct?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::cancel);
 
@@ -374,8 +374,7 @@ class ThoughtTest {
     void overlappingConfirmationIsRefused() {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
         coordinator.open(); // occupy the single confirmation slot
-        llm.scripted.add(ok(call("self_destruct", new JsonObject()),
-                call(SpeakFunction.ID, confirmationRequest("Confirm?"))));
+        llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
         Thought.commander(Urgency.NORMAL, "self destruct", ctx()).run(); // open() returns null -> no blocking
 
@@ -411,13 +410,6 @@ class ThoughtTest {
         while (!condition.getAsBoolean() && System.currentTimeMillis() < deadline) {
             Thread.sleep(5);
         }
-    }
-
-    private static JsonObject confirmationRequest(String text) {
-        JsonObject o = new JsonObject();
-        o.addProperty("text", text);
-        o.addProperty("confirmation_request", true);
-        return o;
     }
 
     /** Runs the thought on a worker, nudging the resolver (confirm/cancel) until it finishes. */

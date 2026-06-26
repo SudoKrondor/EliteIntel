@@ -57,6 +57,8 @@ public final class CommanderThought extends Thought {
     private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
     /** Existing llm.properties key for the COMMANDER service phrase spoken on an unrecoverable LLM response. */
     private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
+    /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt (§2.13). */
+    private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
 
     /**
      * Turn-scoped narration accounting. Set once any game command/query runs this turn; from then on the
@@ -248,30 +250,29 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Freezes the validated tool-call set and waits for the commander's confirmation (§2.13/§5.3). The
-     * confirmation_request {@code speak} (if present) is voiced immediately and recorded as the companion's
-     * words; the rest stays frozen. On confirm the whole set runs in LLM order; on cancel/timeout it is
-     * discarded. The outcome is recorded and the turn ends (terminal).
+     * Freezes the validated tool-call set and waits for the commander's confirmation (§2.13/§5.3). The model
+     * is never told an action is dangerous: the thought detects it from the danger policy after the response
+     * and voices a fixed, localized confirmation prompt itself (no LLM), recorded as the companion's own
+     * words. On confirm the whole set runs in LLM order; on cancel/timeout it is discarded. The outcome is
+     * recorded and the turn ends (terminal).
      */
     private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
                                              Map<LlmToolInvocation, JsonObject> preExecuted) {
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action requires confirmation"));
 
-        // The question is voiced now; it is the companion's own words, recorded as a COMPANION entry (not a
-        // tool result).
-        LlmToolInvocation confirmationSpeak = findConfirmationSpeak(invocations);
-        if (confirmationSpeak != null) {
-            execute(confirmationSpeak);
-            recordCompanionSpeech(spokenTextOf(confirmationSpeak));
-        }
+        // Code-voiced confirmation prompt (no LLM), recorded as the companion's own COMPANION line; urgent so
+        // it preempts, mirroring how the confirmation question reaches the commander before anything runs.
+        String prompt = confirmDangerousActionPhrase();
+        voice(prompt, true);
+        recordCompanionSpeech(prompt);
 
         MemoryProcessingState outcome = awaitConfirmationOutcome();
         if (outcome == MemoryProcessingState.CONFIRMED) {
-            // Execute the frozen set in LLM order, skipping the already-voiced confirmation_request. Each
-            // outcome is voiced and remembered by its action type, exactly like a normal turn (§recordOutcome).
+            // Execute the frozen set in LLM order. Each outcome is voiced and remembered by its action type,
+            // exactly like a normal turn (§recordOutcome).
             for (LlmToolInvocation inv : invocations) {
-                if (inv == confirmationSpeak || NothingToDoFunction.ID.equals(inv.name())) {
+                if (NothingToDoFunction.ID.equals(inv.name())) {
                     continue;
                 }
                 JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
@@ -312,21 +313,6 @@ public final class CommanderThought extends Thought {
         }
     }
 
-    /** The {@code speak} carrying the confirmation_request marker, or null if the LLM included none. */
-    private static LlmToolInvocation findConfirmationSpeak(List<LlmToolInvocation> invocations) {
-        for (LlmToolInvocation inv : invocations) {
-            if (SpeakFunction.ID.equals(inv.name())) {
-                JsonObject args = inv.arguments();
-                if (args.has(SpeakFunction.PARAM_CONFIRMATION_REQUEST)
-                        && args.get(SpeakFunction.PARAM_CONFIRMATION_REQUEST).isJsonPrimitive()
-                        && args.get(SpeakFunction.PARAM_CONFIRMATION_REQUEST).getAsBoolean()) {
-                    return inv;
-                }
-            }
-        }
-        return null;
-    }
-
     /**
      * Handles an unrecoverable LLM response (§2.9): records the still-unwritten input as unresolved and speaks
      * a fixed service phrase (no LLM). The turn ends.
@@ -355,5 +341,11 @@ public final class CommanderThought extends Thought {
     private static String cannotExecutePhrase() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         return LlmTextProvider.getText(language, CANNOT_EXECUTE_KEY);
+    }
+
+    /** The fixed, code-generated dangerous-action confirmation prompt in the commander's language (no LLM). */
+    private static String confirmDangerousActionPhrase() {
+        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return LlmTextProvider.getText(language, CONFIRM_DANGEROUS_KEY);
     }
 }

@@ -56,12 +56,6 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             own memory, call search_in_memory and then speak what you recall.
             """;
 
-    private static final String SAFETY = """
-            Dangerous actions are confirmed by the crew, not by you. When you request a dangerous action, \
-            also call speak with a confirmation request that names the exact action. Never assume \
-            confirmation; it is delivered to you separately.
-            """;
-
     private static final String NARRATION_RULES = """
             The ship's systems flagged a reading worth reporting. Reply only by calling functions, never in \
             free text. Voice the reading to the commander in one short, in-character line with the speak \
@@ -80,7 +74,11 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         };
     }
 
-    /** Full consciousness prompt: persona (with memory/query guidance), tool-calling, commander rules, safety. */
+    /**
+     * Full consciousness prompt: persona (with memory/query guidance), tool-calling, commander rules, language.
+     * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous;
+     * the {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13).
+     */
     private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
@@ -89,8 +87,6 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");
         sb.append(COMMANDER_RULES);
-        PromptSections.heading(sb, "Safety");
-        sb.append(SAFETY);
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();
