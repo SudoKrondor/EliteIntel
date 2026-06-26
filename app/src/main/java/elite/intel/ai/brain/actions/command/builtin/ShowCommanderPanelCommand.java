@@ -32,7 +32,7 @@ public final class ShowCommanderPanelCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.COMMANDER);
         } else if (status.isOnFoot()) {
@@ -43,6 +43,5 @@ public final class ShowCommanderPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         }
-        return null;
     }
 }

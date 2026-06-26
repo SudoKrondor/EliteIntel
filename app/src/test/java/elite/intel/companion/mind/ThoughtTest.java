@@ -132,7 +132,7 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderCommandOutcomeIsVoicedAndRecordedSynchronously() {
+    void commanderCommandTextResultIsVoicedAndRecordedSynchronously() {
         // Fire-and-forget reverted: the command runs in-thread; its deterministic outcome is voiced and the
         // real result is recorded (and fed back into the flow for the LLM to chain on).
         execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
@@ -169,14 +169,14 @@ class ThoughtTest {
     }
 
     @Test
-    void reflexSilentCommandAcknowledgesAndRemembersExecution() {
-        // close_panel is a side-effect command with no spoken text: the reflex acks and records the execution.
+    void reflexSilentCommandRemembersExecutionWithoutAck() {
+        // Command handlers are self-narrating after the command-outcome revert: a blank command result is
+        // remembered, but the companion must not add a second affirmative voice.
         Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
 
         assertTrue(llm.requests.isEmpty());
         assertEquals(List.of("close_panel"), execution.toolNames());
-        assertEquals(1, speech.requests.size(), "a side-effect command is acknowledged");
-        assertFalse(speech.requests.get(0).text().isBlank());
+        assertTrue(speech.requests.isEmpty(), "silent self-narrating commands are not acknowledged by companion");
         assertEquals(2, memory.writes.size());
         assertEquals("close the panel", memory.writes.get(0).content());
         assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());

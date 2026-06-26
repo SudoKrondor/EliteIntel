@@ -23,8 +23,7 @@ public final class ExitCloseCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
-        return null;
     }
 }

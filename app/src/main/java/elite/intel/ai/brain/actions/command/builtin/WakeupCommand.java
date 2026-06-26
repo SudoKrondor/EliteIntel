@@ -26,7 +26,7 @@ public final class WakeupCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         SystemSession session = SystemSession.getInstance();
         if (session.isPushToTalkEnabled() && !session.isPushToTalkToggleMode()) {
             session.setPushToTalkToggleMode(true);
@@ -34,6 +34,5 @@ public final class WakeupCommand implements IntelCommand {
         }
         session.stopStartListening(false);
         UiBus.publish(new VoiceInputModeToggleEvent(false));
-        return null;
     }
 }

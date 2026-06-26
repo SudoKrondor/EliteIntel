@@ -1,12 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -28,17 +29,18 @@ public final class RetractLandingGearCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.landingGear.cantDoThat"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.cantDoThat")));
+            return;
         }
 
         if (status.isInMainShip() && status.isLandingGearDown()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
-            return null;
+        } else {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.alreadyRetracted")));
         }
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.landingGear.alreadyRetracted"));
     }
 }

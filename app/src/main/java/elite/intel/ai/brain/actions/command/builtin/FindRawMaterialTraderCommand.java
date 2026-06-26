@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.TraderType;
@@ -31,18 +32,16 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
-        if (!status.isInSrv() && !status.isInMainShip() && !status.isOnFoot()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot"));
+        if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {
+            Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
+            TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
+            RoutePlotter routePlotter = new RoutePlotter();
+            routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
+        } else {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot")));
         }
-        Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
-        RoutePlotter routePlotter = new RoutePlotter();
-        JsonObject plotOutcome = routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
-        if (plotOutcome != null) {
-            return plotOutcome;
-        }
-        return CommandOutcome.critical(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType()));
     }
 }
