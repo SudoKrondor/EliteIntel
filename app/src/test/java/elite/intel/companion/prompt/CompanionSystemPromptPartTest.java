@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Covers the real static narrative owner that {@link PromptComposerTest} stubs out: the source-aware
- * COMMANDER/EVENT branch and the language rule that names the commander's resolved language. The
+ * COMMANDER/NARRATION branch and the language rule that names the commander's resolved language. The
  * expected language name is computed the same way production does, so the test holds in any environment.
  */
 class CompanionSystemPromptPartTest {
@@ -25,12 +25,13 @@ class CompanionSystemPromptPartTest {
     }
 
     @Test
-    void alwaysCarriesPersonaToolCallingAndSafety() {
+    void alwaysCarriesPersonaAndToolCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("## Persona"));
         assertTrue(text.contains("junior crew member"));
         assertTrue(text.contains("## Tool calling"));
-        assertTrue(text.contains("## Safety"));
+        // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
+        assertFalse(text.contains("## Safety"));
     }
 
     @Test
@@ -53,12 +54,16 @@ class CompanionSystemPromptPartTest {
     }
 
     @Test
-    void eventBranchIsReadOnlyAndExcludesCommanderRule() {
-        String text = prompt.staticRules(ThoughtSource.EVENT);
-        assertTrue(text.contains("## Turn source"));
-        assertTrue(text.contains("read-only"));
-        assertTrue(text.contains("started by a game event"));
-        assertFalse(text.contains("started by the commander"));
+    void narrationBranchIsReportOnlyAndExcludesCommanderSections() {
+        String text = prompt.staticRules(ThoughtSource.NARRATION);
+        assertTrue(text.contains("## Persona"));
+        assertTrue(text.contains("## Narration"));
+        assertTrue(text.contains("report what"));
+        // The lean narration prompt drops the commander-only sections and memory/query guidance.
+        assertFalse(text.contains("## Turn source"));
+        assertFalse(text.contains("## Safety"));
+        assertFalse(text.contains("search_in_memory"));
+        assertTrue(text.contains("## Language"));
     }
 
     @Test

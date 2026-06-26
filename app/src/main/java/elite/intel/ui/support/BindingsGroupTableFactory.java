@@ -32,6 +32,7 @@ public class BindingsGroupTableFactory {
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
     private final Consumer<String> autoFixHandler;
     private final Predicate<String> hasConflict;
+    private final Predicate<String> hasRecommendation;
     /**
      * Builds the hover-callout content for a conflicting binding id, or returns {@code null} if it has none.
      */
@@ -46,12 +47,14 @@ public class BindingsGroupTableFactory {
             BiConsumer<String, BindingSlotType> slotClickHandler,
             Consumer<String> autoFixHandler,
             Predicate<String> hasConflict,
+            Predicate<String> hasRecommendation,
             Function<String, JComponent> conflictPopupContent
     ) {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
         this.autoFixHandler = autoFixHandler;
         this.hasConflict = hasConflict;
+        this.hasRecommendation = hasRecommendation;
         this.conflictPopupContent = conflictPopupContent;
     }
 
@@ -247,7 +250,7 @@ public class BindingsGroupTableFactory {
         table.setAutoCreateRowSorter(false);
         table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
-        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict));
+        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict, hasRecommendation));
     }
 
     private void configureColumnWidths(JTable table) {

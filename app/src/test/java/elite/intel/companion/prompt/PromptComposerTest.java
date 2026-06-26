@@ -9,7 +9,6 @@ import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +31,7 @@ class PromptComposerTest {
     private final PromptComposer composer = new PromptComposer(source -> STATIC_MARKER + source.name() + '\n');
 
     private static MemoryEntry entry(MemorySource source, ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, source, content, MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), topic, source, content);
     }
 
     private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes, String summary) {
@@ -61,16 +60,27 @@ class PromptComposerTest {
     }
 
     @Test
-    void eventSourcePicksEventProfileAndSourceRules() {
+    void narrationSourcePicksNarrationProfileAndLeanPrompt() {
+        LlmToolDefinition speak = new LlmToolDefinition("speak", "d", "", List.of());
         ComposedPrompt prompt = composer.compose(
-                ThoughtSource.EVENT, Urgency.URGENT,
+                ThoughtSource.NARRATION, Urgency.URGENT,
                 ConversationTopic.COMBAT,
-                "hostile interdiction",
-                List.of(), List.of(),
-                List.of(), new MemoryAvailabilitySnapshot(0, 15, List.of()), null);
+                "fuel reserve critical",
+                List.of(), List.of(speak),
+                List.of(), new MemoryAvailabilitySnapshot(7, 15, List.of(ConversationTopic.NAVIGATION)), "summary text");
 
-        assertEquals(PromptCacheProfile.EVENT, prompt.profile());
-        assertTrue(prompt.messages().get(0).content().contains("EVENT"));
+        assertEquals(PromptCacheProfile.NARRATION, prompt.profile());
+        // 3 messages: the narration static block, the timeline, the current input.
+        assertEquals(3, prompt.messages().size());
+        String system = prompt.messages().get(0).content();
+        assertTrue(system.startsWith(STATIC_MARKER));
+        assertTrue(system.contains("NARRATION"));
+        // Lean: the commander-only stable-prefix sections are not stacked onto the narration block.
+        assertFalse(system.contains("Topics"));
+        assertFalse(system.contains("Remembered facts"));
+        assertFalse(system.contains("Long-term summary"));
+        // Only the system functions are offered (a narration thought has no game tools).
+        assertEquals(List.of(speak), prompt.tools());
     }
 
     @Test
@@ -119,8 +129,8 @@ class PromptComposerTest {
                 new MemoryAvailabilitySnapshot(0, 15, List.of()), null).messages().get(1).content();
 
         assertTrue(context.startsWith("## Session memory timeline"));
-        assertTrue(context.contains("[COMMANDER][navigation][processed] where are we"));
-        assertTrue(context.contains("[TOOL_RESULT][navigation][processed] in Sol"));
+        assertTrue(context.contains("[COMMANDER][navigation] where are we"));
+        assertTrue(context.contains("[TOOL_RESULT][navigation] in Sol"));
     }
 
     @Test

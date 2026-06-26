@@ -27,6 +27,17 @@ public class LaunchDroneEvent extends BaseEvent {
         return "LaunchDrone";
     }
 
+    /** High-frequency limpet telemetry. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Launched a limpet drone; carries the drone type (collector, prospector, and so on).";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

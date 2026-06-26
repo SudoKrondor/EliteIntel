@@ -2,11 +2,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -48,17 +47,17 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get("key").getAsString());
 
-        if(distanceFromEntry == null){
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));
-            return;
+        if (distanceFromEntry == null) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance"));
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
-        if(manager.setDistanceFromSystemEntry(distanceFromEntry)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry)));
+        if (manager.setDistanceFromSystemEntry(distanceFromEntry)) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry));
         }
+        return null;
     }
 }

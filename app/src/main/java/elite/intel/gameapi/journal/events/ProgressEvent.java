@@ -49,6 +49,17 @@ public class ProgressEvent extends BaseEvent implements PlayerProgressStats {
         return "Progress";
     }
 
+    /** Rank progress snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A snapshot of rank progress percentages (combat, trade, exploration, and so on). Background.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.util.StringUtls;
@@ -21,14 +22,16 @@ public class ConnectionCheckQueryCommand extends BaseQueryAnalyzer implements In
 
     @Override
     public JsonObject handle(String action, JsonObject params, String responseText) {
-
-
-        JsonObject response = process(
+        // A connectivity probe must actually round-trip the LLM, so it calls the analysis endpoint directly
+        // instead of the mode-aware BaseQueryAnalyzer.process(AiData): in companion mode that method skips the
+        // LLM call (returns raw data for the consciousness to narrate), which would make every check report a
+        // false failure. Companion and legacy share the same provider config, so this probes the live endpoint.
+        JsonObject probe = ApiFactory.getInstance().getAnalysisEndpoint().analyzeData(
+                StringUtls.localizedLlm("connection.check"),
                 new AiDataStruct("Confirm connection. Respond in requested language. ",
-                        new ConnectionCheckData("ping")),
-                StringUtls.localizedLlm("connection.check")
-        );
-        String key = isSuccessfulConnectionCheck(response) ? "speech.connectionSuccessful" : "speech.connectionFailed";
+                        new ConnectionCheckData("ping")));
+        String key = isSuccessfulConnectionCheck(probe) ? "speech.connectionSuccessful" : "speech.connectionFailed";
+        JsonObject response = new JsonObject();
         response.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, StringUtls.localizedLlm(key));
         return response;
     }

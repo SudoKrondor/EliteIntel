@@ -33,6 +33,17 @@ public class ResurrectEvent extends BaseEvent {
         return "Resurrect";
     }
 
+    /** Death and respawn; a major moment. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Respawned after death (rebuy, recover, or hand in); carries the option chosen and the cost.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

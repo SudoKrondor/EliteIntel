@@ -27,7 +27,7 @@ public final class ToggleCargoScoopCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -37,5 +37,6 @@ public final class ToggleCargoScoopCommand implements IntelCommand {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TOGGLE_CARGO_SCOOP_BUGGY.getGameBinding())));
         }
+        return null;
     }
 }

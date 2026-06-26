@@ -31,6 +31,17 @@ public class PayFinesEvent extends BaseEvent {
         return "PayFines";
     }
 
+    /** Routine fine payment; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Paid off outstanding fines; carries the amount.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

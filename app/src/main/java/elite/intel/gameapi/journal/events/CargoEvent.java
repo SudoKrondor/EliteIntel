@@ -27,6 +27,17 @@ public class CargoEvent extends BaseEvent {
         return "Cargo";
     }
 
+    /** Frequent cargo snapshot. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A snapshot of the current cargo hold; carries the list of commodities and their counts.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

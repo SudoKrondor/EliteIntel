@@ -2,7 +2,6 @@ package elite.intel.companion.memory;
 
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +34,7 @@ class ShortTermMemoryTest {
     }
 
     private static MemoryEntry entry(String content) {
-        return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, MemorySource.COMMANDER, content,
-                MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, MemorySource.COMMANDER, content);
     }
 
     private static List<String> contents(List<MemoryEntry> entries) {

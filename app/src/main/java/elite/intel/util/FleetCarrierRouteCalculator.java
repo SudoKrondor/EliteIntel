@@ -1,8 +1,8 @@
 package elite.intel.util;
 
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
@@ -18,7 +18,12 @@ import static elite.intel.util.StringUtls.localizedEventPlural;
 
 public class FleetCarrierRouteCalculator {
 
-    public static void calculate() {
+    /**
+     * Calculates the fleet-carrier jump route and returns its outcome (see {@link CommandOutcome}) instead
+     * of narrating itself, so each caller folds it in: the command returns it as its outcome, the
+     * carrier-jump event subscriber speaks it. Returns {@code null} only if there is nothing to say.
+     */
+    public static JsonObject calculate() {
 
         SpanshCarrierRouteClient client = new SpanshCarrierRouteClient();
         PlayerSession playerSession = PlayerSession.getInstance();
@@ -35,18 +40,14 @@ public class FleetCarrierRouteCalculator {
         int cargoSpaceUsed = carrierData.getCargoSpaceUsed();
         String destination = ClipboardUtils.getClipboardText();
 
-        GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.accessing")));
-
-        if(carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.locationUnavailable")));
-            return;
+        if (carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0) {
+            return CommandOutcome.speak(localizedEvent("event.carrier.route.locationUnavailable"));
         }
 
         LocationDto nearestStartingPoint = NearestKnownLocationSearchClient.findNearest(carrierData.getX(), carrierData.getY(), carrierData.getZ());
 
         if (destination == null || nearestStartingPoint == null) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.noDestination")));
-            return;
+            return CommandOutcome.speak(localizedEvent("event.carrier.route.noDestination"));
         }
 
         CarrierRouteCriteria carrierRouteCriteria = new CarrierRouteCriteria(
@@ -64,15 +65,14 @@ public class FleetCarrierRouteCalculator {
         int numJumps = route.size();
 
         if (numJumps == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.navFailed", destination)));
-        } else {
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    localizedEvent("event.carrier.route.calculated",
-                            destination,
-                            localizedEventPlural(numJumps, "event.carrier.jump.count"),
-                            fuelRequired)
-                            + " " + localizedEvent("event.carrier.route.nextStep")
-            ));
+            return CommandOutcome.speak(localizedEvent("event.carrier.route.navFailed", destination));
         }
+        return CommandOutcome.speak(
+                localizedEvent("event.carrier.route.calculated",
+                        destination,
+                        localizedEventPlural(numJumps, "event.carrier.jump.count"),
+                        fuelRequired)
+                        + " " + localizedEvent("event.carrier.route.nextStep")
+        );
     }
 }

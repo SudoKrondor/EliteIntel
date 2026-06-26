@@ -3,12 +3,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
 
@@ -52,11 +50,10 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.didNotCatch")));
-            return;
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.mining.didNotCatch"));
         }
         String target = capitalizeWords(
                 FuzzySearch.fuzzyCommodityMatch(
@@ -65,11 +62,9 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
         );
 
         if (target == null || target.isEmpty()) {
-            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString())));
-            return;
-        } else {
-            playerSession.removeMiningTarget(target);
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString()));
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetRemoved", target)));
+        playerSession.removeMiningTarget(target);
+        return CommandOutcome.critical(StringUtls.localizedLlm("handler.mining.targetRemoved", target));
     }
 }

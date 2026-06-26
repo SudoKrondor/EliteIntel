@@ -52,6 +52,7 @@ public class AnalyzeDistanceFromFleetCarrierQueryCommand extends BaseQueryAnalyz
         double distance = NavigationUtils.calculateGalacticDistance(x, y, z, carrierLocationX, carrierLocationY, carrierDataZ);
 
         int numberOfJumps = (int) (distance / jumpRange) + 1;
-        return process(StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps));
+        return process(
+                StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps));
     }
 }

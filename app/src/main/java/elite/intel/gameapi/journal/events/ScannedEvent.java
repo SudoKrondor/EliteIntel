@@ -21,6 +21,17 @@ public class ScannedEvent extends BaseEvent {
         return "Scanned";
     }
 
+    /** The game COVAS already voices being scanned; record only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Another vessel or authority is scanning you; carries the scan type (cargo, data link, crime, and so on).";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

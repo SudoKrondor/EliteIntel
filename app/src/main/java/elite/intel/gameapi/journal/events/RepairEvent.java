@@ -28,6 +28,17 @@ public class RepairEvent extends BaseEvent {
         return "Repair";
     }
 
+    /** Routine repair spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Paid to repair a specific item or module; carries the item and the cost.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

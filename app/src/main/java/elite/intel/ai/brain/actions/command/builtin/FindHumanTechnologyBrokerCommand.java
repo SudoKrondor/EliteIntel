@@ -1,10 +1,9 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.BrokerType;
@@ -31,16 +30,18 @@ public final class FindHumanTechnologyBrokerCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.broker.searching", BrokerType.HUMAN.getType())));
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
         String location = search.location(null, BrokerType.HUMAN, range);
         if (location == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.broker.noHuman")));
-        } else {
-            routePlotter.plotRoute(location);
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.broker.noHuman"));
         }
+        JsonObject plotOutcome = routePlotter.plotRoute(location);
+        if (plotOutcome != null) {
+            return plotOutcome;
+        }
+        return CommandOutcome.critical(StringUtls.localizedLlm("handler.broker.searching", BrokerType.HUMAN.getType()));
     }
 }

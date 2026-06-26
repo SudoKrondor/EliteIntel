@@ -2,9 +2,13 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
+import java.util.Set;
+
+import static elite.intel.util.StringUtls.capitalizeWords;
 
 public class ProspectedAsteroidEvent extends BaseEvent {
     @SerializedName("Materials")
@@ -31,6 +35,27 @@ public class ProspectedAsteroidEvent extends BaseEvent {
     @Override
     public String getEventType() {
         return "ProspectedAsteroid";
+    }
+
+    /**
+     * Payload-dependent. Mirrors ProspectorSubscriber: an asteroid is only worth a word when it
+     * holds one of the commander's tracked mining targets. We prospect and discard a great many
+     * rocks, so without this filter the companion would comment on every prospector hit.
+     */
+    @Override
+    public Importance importance() {
+        if (materials == null) return Importance.LOW;
+        Set<String> miningTargets = PlayerSession.getInstance().getMiningTargets();
+        for (Material material : materials) {
+            if (material == null || material.getName() == null || material.getName().isEmpty()) continue;
+            if (miningTargets.contains(capitalizeWords(material.getName()))) return Importance.NORMAL;
+        }
+        return Importance.LOW;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A prospector limpet analysed an asteroid; carries the materials present with their proportions and the overall content level.";
     }
 
     @Override

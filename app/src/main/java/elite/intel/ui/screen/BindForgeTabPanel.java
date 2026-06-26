@@ -74,6 +74,12 @@ public class BindForgeTabPanel extends JPanel {
      * each load.
      */
     private Map<String, Set<String>> conflictsByBinding = Map.of();
+    /**
+     * Each binding id mapped to its ship/SRV twin id(s) bound to a different key. Drives the CYAN
+     * row tint and the soft "use the same key" callout - a recommendation, never a conflict.
+     * Recomputed on each load.
+     */
+    private Map<String, Set<String>> recommendationsByBinding = Map.of();
     /** Working copy file currently loaded in the editor - used for stale checks. */
     private File activeBindingsFile;
     private FileTime activeBindingsLastModified;
@@ -92,7 +98,8 @@ public class BindForgeTabPanel extends JPanel {
                 // Lambda (not a bound method ref) so it reads the field live: the map is
                 // reassigned on each load, and a bound method ref would pin the initial empty map.
                 id -> conflictsByBinding.containsKey(id),
-                this::buildConflictPopupContent);
+                id -> recommendationsByBinding.containsKey(id),
+                this::buildRowCalloutContent);
         buildUi();
         saveResultPresenter = new BindingSaveResultPresenter(this);
         UiBus.register(this);
@@ -278,6 +285,7 @@ public class BindForgeTabPanel extends JPanel {
                     parser.parseReadOnlyBindingSlots(workingCopyPath.toFile());
             Map<String, KeyBindingsParser.KeyBinding> parsedBindings = effectiveBindings(slots);
             conflictsByBinding = computeConflicts(parsedBindings);
+            recommendationsByBinding = computeRecommendations(parsedBindings);
 
             currentSlots = slots;
             activeBindingsFile = workingCopyPath.toFile();
@@ -298,6 +306,7 @@ public class BindForgeTabPanel extends JPanel {
         } catch (Exception e) {
             UiBus.publish(new BindingsSummaryChangedEvent(0, 0));
             conflictsByBinding = Map.of();
+            recommendationsByBinding = Map.of();
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
             filePathField.setText(getText("bindings.notAvailable"));
@@ -340,7 +349,7 @@ public class BindForgeTabPanel extends JPanel {
                     : getText("bindings.apply.success.noBackup"))
                     + System.lineSeparator() + System.lineSeparator()
                     + getText("bindings.apply.reloadReminder");
-            // Also speak the reload reminder — users reflexively dismiss dialogs without reading.
+            // Also speak the reload reminder - users reflexively dismiss dialogs without reading.
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.bindingsAppliedReload")));
             JOptionPane.showMessageDialog(
                     this,
@@ -732,6 +741,20 @@ public class BindForgeTabPanel extends JPanel {
     }
 
     /**
+     * Maps every binding that has a ship/SRV twin bound to a different key to that twin id (both
+     * directions). The {@code keySet} drives the CYAN tint; the partner lists feed the soft callout.
+     */
+    private Map<String, Set<String>> computeRecommendations(
+            Map<String, KeyBindingsParser.KeyBinding> bindings) {
+        Map<String, Set<String>> recommendations = new HashMap<>();
+        for (BindingConflictScanner.Recommendation r : BindingConflictScanner.recommendVehicleTwins(bindings)) {
+            recommendations.computeIfAbsent(r.shipAction(), k -> new TreeSet<>()).add(r.buggyAction());
+            recommendations.computeIfAbsent(r.buggyAction(), k -> new TreeSet<>()).add(r.shipAction());
+        }
+        return recommendations;
+    }
+
+    /**
      * Renders both tabs from {@link #currentSlots}, honoring the "show conflicts only" filter. Tab
      * counts and the Fix Missing enabled state always reflect the full (unfiltered) data, so the
      * filter is a pure view toggle. Called on load and whenever the filter checkbox changes.
@@ -773,6 +796,49 @@ public class BindForgeTabPanel extends JPanel {
             return bindingIds;
         }
         return bindingIds.stream().filter(conflictsByBinding::containsKey).toList();
+    }
+
+    /**
+     * Builds the hover-callout for a row: the RED conflict callout if the binding is in a conflict,
+     * else the CYAN ship/SRV-twin recommendation callout, else {@code null}. A conflict outranks a
+     * recommendation so the more urgent message wins when a binding has both.
+     */
+    private JComponent buildRowCalloutContent(String bindingId) {
+        JComponent conflict = buildConflictPopupContent(bindingId);
+        return conflict != null ? conflict : buildRecommendationPopupContent(bindingId);
+    }
+
+    /**
+     * Builds the soft ship/SRV-twin callout: a non-warning (cyan) suggestion to bind this control to
+     * the same key as its counterpart in the other vehicle, or {@code null} if it has no such twin.
+     * It is a recommendation, not a rule - different keys are perfectly valid.
+     */
+    private JComponent buildRecommendationPopupContent(String bindingId) {
+        Set<String> partners = recommendationsByBinding.get(bindingId);
+        if (partners == null || partners.isEmpty()) {
+            return null;
+        }
+
+        HudPanel card = new HudPanel(new BorderLayout(), HUD_COLOR_ROLE_INFORMATION, HudPanel.Variant.FRAMED);
+        JPanel body = transparentPanel(null);
+        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
+        body.setBorder(new EmptyBorder(6, 10, 6, 10));
+
+        JLabel title = new JLabel(getText("bindings.recommendation.popup.title"));
+        title.setForeground(HUD_COLOR_ROLE_INFORMATION);
+        title.setFont(title.getFont().deriveFont(Font.BOLD));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        body.add(title);
+
+        for (String partner : partners) {
+            JLabel item = new JLabel("• " + StringUtls.humanizeBindingName(partner));
+            item.setForeground(HUD_COLOR_ROLE_PRIMARY_TEXT);
+            item.setAlignmentX(Component.LEFT_ALIGNMENT);
+            body.add(item);
+        }
+
+        card.add(body, BorderLayout.CENTER);
+        return card;
     }
 
     /**

@@ -39,6 +39,17 @@ public class BuyDronesEvent extends BaseEvent {
         return "BuyDrones";
     }
 
+    /** Routine limpet purchase; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Bought limpet drones; carries the count and cost.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

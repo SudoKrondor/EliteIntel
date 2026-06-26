@@ -37,6 +37,17 @@ public class ModuleSellEvent extends BaseEvent {
         return "ModuleSell";
     }
 
+    /** Routine outfitting sale; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Sold a module at outfitting; carries the module and the sale value.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

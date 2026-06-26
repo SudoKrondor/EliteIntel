@@ -35,6 +35,17 @@ public class PowerplayEvent extends BaseEvent {
         return "Powerplay";
     }
 
+    /** Powerplay snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Reports your Powerplay pledge: the power, your rank, and merits. Periodic snapshot.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

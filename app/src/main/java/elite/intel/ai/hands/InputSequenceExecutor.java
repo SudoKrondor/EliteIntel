@@ -92,6 +92,8 @@ public class InputSequenceExecutor {
         return switch (step.getType()) {
             case BINDING_TAP -> executeBindingTap(step.getBindingId());
             case BINDING_HOLD -> executeBindingHold(step.getBindingId(), step.getDurationMs());
+            case BINDING_DOWN -> executeBindingDown(step.getBindingId());
+            case BINDING_UP -> executeBindingUp(step.getBindingId());
             case RAW_KEY -> {
                 int mod = step.getModifierKeyCode();
                 if (mod != 0) {
@@ -137,6 +139,24 @@ public class InputSequenceExecutor {
             return false;
         }
         bindingExecutor.executeBindingWithHold(binding, holdMs);
+        return true;
+    }
+
+    private boolean executeBindingDown(String bindingId) {
+        KeyBindingsParser.KeyBinding binding = resolveBinding(bindingId);
+        if (binding == null) {
+            return false;
+        }
+        bindingExecutor.holdBindingDown(binding);
+        return true;
+    }
+
+    private boolean executeBindingUp(String bindingId) {
+        KeyBindingsParser.KeyBinding binding = resolveBinding(bindingId);
+        if (binding == null) {
+            return false;
+        }
+        bindingExecutor.releaseBinding(binding);
         return true;
     }
 

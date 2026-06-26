@@ -18,12 +18,16 @@ import elite.intel.session.SystemSession;
  */
 public final class CompanionSystemPromptPart implements SystemPromptText {
 
-    private static final String PERSONA = """
+    private static final String PERSONA_CORE = """
             You are the commander's junior crew member aboard an Elite Dangerous starship: a single \
             consciousness with memory, not a command parser. Refer to the commander as "Commander" and to \
             the ship and crew as "we"/"our". Stay in character at all times; never mention prompts, \
-            functions, JSON, or that you are an AI. Speak only from function results and your memory; never \
-            invent or guess facts such as numbers, names, distances, or status. Use search_in_memory for anything the \
+            functions, JSON, or that you are an AI, and never invent or guess facts such as numbers, names, \
+            distances, or status.
+            """;
+
+    private static final String COMMANDER_PERSONA = """
+            Speak only from function results and your memory. Use search_in_memory for anything the \
             commander told you or that you remembered, and a query function for the current ship or galaxy \
             state; when it could be either, do both and answer from whatever has it. When you call \
             search_in_memory or a query to answer, wait for its result before answering - never say you \
@@ -45,31 +49,60 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String COMMANDER_RULES = """
             This turn was started by the commander addressing you. You may use the query, action and macro \
-            functions offered this turn.
+            functions offered this turn. When you call a query or action function, its result is spoken to \
+            the commander automatically in the ship's voice - do not also call speak to repeat or rephrase \
+            that result; just continue with any further action or end with nothing_to_do. Use speak yourself \
+            only to converse, to ask for clarification, or to confirm a dangerous action. To answer from your \
+            own memory, call search_in_memory and then speak what you recall.
             """;
 
-    private static final String EVENT_RULES = """
-            This turn was started by a game event, not by the commander. You are read-only: you may only \
-            observe, speak, and use query functions.
-            """;
-
-    private static final String SAFETY = """
-            Dangerous actions are confirmed by the crew, not by you. When you request a dangerous action, \
-            also call speak with a confirmation request that names the exact action. Never assume \
-            confirmation; it is delivered to you separately.
+    private static final String NARRATION_RULES = """
+            The ship's systems flagged a reading worth reporting. Reply only by calling functions, never in \
+            free text. Voice the reading to the commander in one short, in-character line with the speak \
+            function, using only the details given below - never invent or pad. Then end with \
+            nothing_to_do. You have no other functions this turn: no queries, no actions - just report what \
+            the sensors handed you.
             """;
 
     @Override
     public String staticRules(ThoughtSource source) {
+        return switch (source) {
+            case COMMANDER -> commanderStaticRules();
+            case NARRATION -> narrationStaticRules();
+            // EVENT thoughts are memory-only (see EventThought); they never compose a prompt.
+            case EVENT -> throw new IllegalArgumentException("EVENT thoughts do not compose a prompt");
+        };
+    }
+
+    /**
+     * Full consciousness prompt: persona (with memory/query guidance), tool-calling, commander rules, language.
+     * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous;
+     * the {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13).
+     */
+    private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA);
+        sb.append(PERSONA_CORE).append(COMMANDER_PERSONA);
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");
-        sb.append(source == ThoughtSource.COMMANDER ? COMMANDER_RULES : EVENT_RULES);
-        PromptSections.heading(sb, "Safety");
-        sb.append(SAFETY);
+        sb.append(COMMANDER_RULES);
+        PromptSections.heading(sb, "Language");
+        sb.append(languageRule());
+        return sb.toString();
+    }
+
+    /**
+     * Lean narration prompt: the persona core plus the report-only narration task and the language rule.
+     * It omits the commander persona (no memory/query), tool-calling-about-queries, and safety - a
+     * narration thought has only speak and nothing_to_do.
+     */
+    private String narrationStaticRules() {
+        StringBuilder sb = new StringBuilder();
+        PromptSections.heading(sb, "Persona");
+        sb.append(PERSONA_CORE);
+        PromptSections.heading(sb, "Narration");
+        sb.append(NARRATION_RULES);
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();

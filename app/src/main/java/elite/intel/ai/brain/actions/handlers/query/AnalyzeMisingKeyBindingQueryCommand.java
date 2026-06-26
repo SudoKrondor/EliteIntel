@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.dao.KeyBindingDao.KeyBinding;
 import elite.intel.db.managers.KeyBindingManager;
 import elite.intel.util.StringUtls;

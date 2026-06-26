@@ -198,6 +198,55 @@ public class KeyBindingExecutor {
     }
 
     /**
+     * Presses a binding's chord down (modifiers, then trigger) and leaves every key held.
+     * The caller is responsible for a later {@link #releaseBinding} of the same binding,
+     * otherwise the keys stay stuck down. Use for holds whose release moment is decided by an
+     * external signal rather than a fixed duration.
+     */
+    public void holdBindingDown(KeyBindingsParser.KeyBinding binding) {
+        NormalizedChord chord = normalizeChord(binding.key, binding.modifiers);
+        if (!warnAndCheckExecutable(chord, binding)) {
+            return;
+        }
+        ResolvedChord resolved = resolve(chord);
+        if (resolved == null) {
+            return;
+        }
+        try {
+            for (int modCode : resolved.modifierCodes()) {
+                keyProcessor.holdKey(modCode);
+            }
+            keyProcessor.holdKey(resolved.triggerCode());
+            log.debug("[exec] holdBindingDown trigger='{}' modifiers={}", chord.triggerKey(), chord.modifierKeys());
+        } catch (Exception e) {
+            log.error("Error holding binding down: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Releases a binding's chord (trigger, then modifiers in reverse) previously held by
+     * {@link #holdBindingDown}. The chord resolves deterministically from the binding, so no
+     * held-key state needs to be carried between the two calls.
+     */
+    public void releaseBinding(KeyBindingsParser.KeyBinding binding) {
+        NormalizedChord chord = normalizeChord(binding.key, binding.modifiers);
+        if (chord.status() == NormalizedChord.Status.NO_TRIGGER) {
+            return;
+        }
+        ResolvedChord resolved = resolve(chord);
+        if (resolved == null) {
+            return;
+        }
+        try {
+            keyProcessor.releaseKey(resolved.triggerCode());
+            releaseModifiers(resolved.modifierCodes());
+            log.debug("[exec] releaseBinding trigger='{}' modifiers={}", chord.triggerKey(), chord.modifierKeys());
+        } catch (Exception e) {
+            log.error("Error releasing binding: {}", e.getMessage());
+        }
+    }
+
+    /**
      * Re-classifies a binding's keys by their actual identity rather than by their
      * {@code <Primary>}/{@code <Modifier>} XML slot. Frontier's data model is positional:
      * the game evaluates a chord as an unordered <em>set</em> of held keys, and the

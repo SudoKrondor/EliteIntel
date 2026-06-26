@@ -2,7 +2,6 @@ package elite.intel.companion.memory;
 
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +33,7 @@ class SessionMemoryGatewayTest {
     }
 
     private static MemoryEntry entry(ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, MemorySource.COMMANDER, content, MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), topic, MemorySource.COMMANDER, content);
     }
 
     @Test

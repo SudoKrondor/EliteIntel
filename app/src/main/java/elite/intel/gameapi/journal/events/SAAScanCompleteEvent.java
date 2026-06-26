@@ -38,6 +38,17 @@ public class SAAScanCompleteEvent extends BaseEvent {
         return "SAAScanComplete";
     }
 
+    /** Surface mapping done; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Completed mapping a body with the detailed surface scanner; carries the body name and probes used.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -3,11 +3,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -46,16 +45,13 @@ public final class SetReminderCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         ReminderManager reminderManager = ReminderManager.getInstance();
         JsonElement key = params.get("key");
-        if (key != null) {
-            reminderManager.setReminder(
-                    key.getAsString(),
-                    null
-            );
-        } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.noKey")));
+        if (key == null) {
+            return CommandOutcome.speak(StringUtls.localizedLlm("handler.reminder.noKey"));
         }
+        reminderManager.setReminder(key.getAsString(), null);
+        return null;
     }
 }

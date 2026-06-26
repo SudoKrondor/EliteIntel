@@ -13,6 +13,13 @@ import java.time.Instant;
 
 public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable {
 
+    /**
+     * How much this event matters for companion attention. Drives (in a later step) whether the event
+     * wakes the consciousness and how it is surfaced: {@code LOW} = background, do not wake; {@code NORMAL}
+     * = notable, the consciousness may comment per verbosity; {@code HIGH} = urgent, always surfaced.
+     */
+    public enum Importance { LOW, NORMAL, HIGH }
+
     private static final Instant APP_START = Instant.now();
 
     public String timestamp;
@@ -55,6 +62,22 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
 
 
     public abstract String getEventType();
+
+    /**
+     * How much this event matters for companion attention. Defaults to {@link Importance#LOW}; curated
+     * upward per event type as the gameplay taxonomy is filled in.
+     */
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
+    /**
+     * Short, English, provider-facing description of what this event means, for the companion/LLM. Defaults
+     * to the journal event type name; overridden per event type with a human-readable summary as curated.
+     */
+    public String llmDescription() {
+        return getEventType();
+    }
 
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

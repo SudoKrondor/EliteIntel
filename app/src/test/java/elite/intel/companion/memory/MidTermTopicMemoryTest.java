@@ -2,7 +2,6 @@ package elite.intel.companion.memory;
 
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MidTermTopicMemoryTest {
 
     private static MemoryEntry entry(ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content, MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content);
     }
 
     @Test

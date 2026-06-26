@@ -23,9 +23,12 @@ import java.util.concurrent.Executors;
  * {@code Thought} decides what is spoken (via the {@code speak} system function), and the raw result flows
  * back as a tool result.
  * <p>
- * Lanes (see COMPANION_ARCHITECTURE.md §1.9): commands and macros run on a single serialized action lane
- * (game input must be sequential); read-only queries and system functions run on the parallel lane (system
- * functions are not game input; the speech/memory gateways they call own their own ordering/threading).
+ * Threading: every tool runs on a parallel pool so a slow handler (e.g. a multi-minute Spansh search) never
+ * blocks another tool's {@code handle()} - a commander can drop out of supercruise or shift power while a
+ * route calculates. The gateway does not serialize game-input commands itself: the hands layer already does
+ * (a keystroke command only publishes a {@code GameInputSequenceEvent}, and {@code InputSequenceExecutor}
+ * drains those on a single thread), so the actual key presses stay sequential regardless of dispatch order.
+ * System functions are not game input; the speech/memory gateways they call own their own ordering.
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
@@ -44,12 +47,14 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
     private final Executor actionLane;
     private final Executor queryLane;
 
-    /** Production: handler maps + system-function registry; serialized action lane + parallel query lane. */
+    /**
+     * Production: handler maps + system-function registry; parallel pools so no slow handler blocks another.
+     */
     public CompanionExecutionGateway() {
         this(CommandHandlerFactory.getInstance().registerCommandHandlers(),
                 QueryHandlerFactory.getInstance().registerQueryHandlers(),
                 loadedSystemFunctions(),
-                Executors.newSingleThreadExecutor(daemon("companion-action")),
+                Executors.newCachedThreadPool(daemon("companion-action")),
                 Executors.newCachedThreadPool(daemon("companion-query")));
     }
 

@@ -2,11 +2,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -48,11 +47,11 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         boolean isOn = params.get("state").getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         profileManager.setAllowStrongHolds(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.strongholds", state)));
+        return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeProfile.strongholds", state));
     }
 }

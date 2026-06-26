@@ -20,7 +20,8 @@ public final class IgnoreNonsensicalInputCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         // do nothing
+        return null;
     }
 }

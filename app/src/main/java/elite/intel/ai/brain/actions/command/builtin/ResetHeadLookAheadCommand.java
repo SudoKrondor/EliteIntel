@@ -31,11 +31,12 @@ public final class ResetHeadLookAheadCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
 
         if (status.isInMainShip()) {
             UiNavCommon.close();
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_HEAD_LOOK_RESET.getGameBinding())));
         }
+        return null;
     }
 }

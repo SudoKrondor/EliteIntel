@@ -28,6 +28,17 @@ public class ShipyardNewEvent extends BaseEvent {
         return "ShipyardNew";
     }
 
+    /** A new ship joined the fleet. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A newly purchased ship was delivered and made active; carries the ship type and id.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

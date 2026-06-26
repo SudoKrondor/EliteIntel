@@ -24,6 +24,7 @@ import elite.intel.companion.speech.CompanionSpeechGateway;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
@@ -44,6 +45,8 @@ public final class CompanionSubsystemGate implements ManagedService {
     private GameEventFilter gameEventFilter;
     private ConfirmationCoordinator confirmationCoordinator;
     private BargeInController bargeInController;
+    private CompanionSensorDataBridge sensorDataBridge;
+    private CompanionAnnouncementBridge announcementBridge;
 
     private final LlmGateway llmOverride;
     private final ExecutionGateway executionOverride;
@@ -65,6 +68,11 @@ public final class CompanionSubsystemGate implements ManagedService {
             return;
         }
         String input = event.getUserInput();
+        // Mirror the legacy command path (PromptFactory.normalizeInput): surface the commander's spoken
+        // words to the UI ("ВВОД ПОЛЬЗОВАТЕЛЯ" panel / OBS overlay), which listen on NormalizedUserInputEvent.
+        if (input != null && !input.isBlank()) {
+            GameEventBus.publish(new NormalizedUserInputEvent(input));
+        }
         // The code word confirms a pending dangerous action; it is not a new thought (§2.13).
         if (CompanionConfig.isConfirmationCodeWord(input)) {
             confirmationCoordinator.confirm();
@@ -120,10 +128,14 @@ public final class CompanionSubsystemGate implements ManagedService {
         dispatcher.start();
         gameEventFilter = new GameEventFilter(dispatcher);
         bargeInController = new BargeInController(dispatcher);
+        sensorDataBridge = new CompanionSensorDataBridge(dispatcher);
+        announcementBridge = new CompanionAnnouncementBridge(dispatcher);
 
         // Subscribe last, so events only flow once the whole graph is live.
         GameEventBus.register(this);
         GameEventBus.register(bargeInController);
+        GameEventBus.register(sensorDataBridge);
+        GameEventBus.register(announcementBridge);
     }
 
     @Override
@@ -133,10 +145,14 @@ public final class CompanionSubsystemGate implements ManagedService {
         }
         GameEventBus.unregister(this);
         GameEventBus.unregister(bargeInController);
+        GameEventBus.unregister(sensorDataBridge);
+        GameEventBus.unregister(announcementBridge);
         dispatcher.stop();
         dispatcher = null;
         gameEventFilter = null;
         bargeInController = null;
+        sensorDataBridge = null;
+        announcementBridge = null;
         confirmationCoordinator = null;
         CompanionRuntime.clear();
     }

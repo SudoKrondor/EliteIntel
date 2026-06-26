@@ -3,11 +3,10 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.FleetCarrierManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.util.StringUtls;
 
@@ -49,21 +48,19 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         JsonElement key = params.get("key");
         if (key == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
-            return;
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve"));
         }
         Integer reserve = StringUtls.getIntSafely(key.getAsString());
-        if(reserve == null){
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
-            return;
+        if (reserve == null) {
+            return CommandOutcome.critical(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve"));
         }
         FleetCarrierManager fleetCarrierManager = FleetCarrierManager.getInstance();
         CarrierDataDto dto = fleetCarrierManager.get();
         dto.setFuelReserve(reserve);
         fleetCarrierManager.save(dto);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve)));
+        return CommandOutcome.critical(StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve));
     }
 }

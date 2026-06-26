@@ -1,13 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.CommsPanel;
@@ -35,7 +34,7 @@ public final class ShowSocialPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.SOCIAL);
         } else if (status.isOnFoot()) {
@@ -48,7 +47,8 @@ public final class ShowSocialPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_CYCLE_NEXT_PANEL.getGameBinding())
             ));
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
+            return CommandOutcome.speak(StringUtls.localizedLlm("handler.common.cantDoNow"));
         }
+        return null;
     }
 }

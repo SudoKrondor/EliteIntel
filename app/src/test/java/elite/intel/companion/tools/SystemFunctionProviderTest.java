@@ -64,11 +64,11 @@ class SystemFunctionProviderTest {
     }
 
     @Test
-    void speakDeclaresTextAndConfirmationRequest() {
+    void speakDeclaresOnlyText() {
         LlmToolDefinition speak = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
                 .filter(t -> t.name().equals("speak")).findFirst().orElseThrow();
 
         Set<String> params = speak.parameters().stream().map(ActionParameterSpec::getName).collect(Collectors.toSet());
-        assertEquals(Set.of("text", "confirmation_request"), params);
+        assertEquals(Set.of("text"), params);
     }
 }

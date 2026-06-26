@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
@@ -62,7 +62,7 @@ public class TouchdownEventSubscriber {
             if (pointOfInterest != null && !pointOfInterest.isEmpty()) {
                 GameEventBus.publish(new SensorDataEvent(sb.toString(), "Confirm touchdown. State the point of interest we have landed at."));
             } else {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.touchdown")));
+                EventNarrator.critical(localizedEvent("event.touchdown"));
             }
             playerSession.setShipAutoDeparted(false);
         });

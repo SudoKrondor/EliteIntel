@@ -23,8 +23,9 @@ public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public JsonObject execute(JsonObject params, String responseText) {
         boolean isOn = params.get("state").getAsBoolean();
         PlayerSession.getInstance().setRadarContactAnnouncementOn(isOn);
+        return null;
     }
 }
