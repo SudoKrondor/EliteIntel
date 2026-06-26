@@ -1,5 +1,7 @@
 package elite.intel.companion.input;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
@@ -20,6 +22,7 @@ import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.Cypher;
 
@@ -51,6 +54,11 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public final class CompanionEvalHarness {
 
+    private static final Gson TRACE_JSON = new GsonBuilder()
+            .disableHtmlEscaping()
+            .setPrettyPrinting()
+            .create();
+
     private static final long TURN_TIMEOUT_MS = 90_000;
     private static final long POLL_MS = 150;
 
@@ -58,6 +66,7 @@ public final class CompanionEvalHarness {
     public record Executed(String tool, JsonObject args, JsonObject result) {}
 
     private final Path traceFile;
+    private final Language language;
     private final List<Executed> turnCalls = new CopyOnWriteArrayList<>();
     private final List<Long> latenciesMs = new CopyOnWriteArrayList<>();
     private final AtomicLong rounds = new AtomicLong();
@@ -67,16 +76,28 @@ public final class CompanionEvalHarness {
     private MemoryGateway memory;
     private CompanionState state;
     private String model;
+    private Language previousLanguage;
 
     /** @param traceFileName the file name written under {@code build/} for this eval's trace. */
     public CompanionEvalHarness(String traceFileName) {
+        this(traceFileName, Language.EN);
+    }
+
+    /**
+     * Creates an eval harness pinned to the requested UI/AI language. The language is set before the
+     * companion graph boots, so the system prompt and localized tool aliases match the scripted input.
+     */
+    public CompanionEvalHarness(String traceFileName, Language language) {
         this.traceFile = Paths.get("build", traceFileName).toAbsolutePath();
+        this.language = language;
     }
 
     /** Boots the full companion subsystem and starts a fresh trace file. */
     public void boot() throws Exception {
         Cypher.initializeKey();
         Database.init();
+        previousLanguage = SystemSession.getInstance().getLanguage();
+        SystemSession.getInstance().setLanguage(language);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
         SystemFunctionRegistry registry = SystemFunctionRegistry.getInstance();
@@ -87,11 +108,18 @@ public final class CompanionEvalHarness {
 
         model = SystemSession.getInstance().getLmStudioCommandModel().trim();
         LlmTransport tracing = body -> {
+            long round = rounds.incrementAndGet();
+            traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
-            JsonObject response = LMStudioClient.getInstance().sendJsonRequest(body);
-            latenciesMs.add((System.nanoTime() - t0) / 1_000_000);
-            rounds.incrementAndGet();
-            return response;
+            try {
+                JsonObject response = LMStudioClient.getInstance().sendJsonRequest(body);
+                latenciesMs.add((System.nanoTime() - t0) / 1_000_000);
+                traceRaw("\n======== LLM RESPONSE #" + round + " ========\n" + TRACE_JSON.toJson(response) + "\n");
+                return response;
+            } catch (RuntimeException failure) {
+                traceRaw("\n======== LLM RESPONSE #" + round + " FAILED ========\n" + failure + "\n");
+                throw failure;
+            }
         };
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
@@ -131,6 +159,10 @@ public final class CompanionEvalHarness {
     public void shutdown() {
         if (gate != null) {
             gate.stop();
+        }
+        if (previousLanguage != null) {
+            SystemSession.getInstance().setLanguage(previousLanguage);
+            previousLanguage = null;
         }
     }
 
@@ -299,6 +331,16 @@ public final class CompanionEvalHarness {
     public void trace(String block) throws Exception {
         System.out.print(block);
         Files.writeString(traceFile, block, StandardCharsets.UTF_8, StandardOpenOption.APPEND);
+    }
+
+    /** Appends low-level LLM request/response details to the trace file without flooding stdout. */
+    private synchronized void traceRaw(String block) {
+        try {
+            Files.writeString(traceFile, block, StandardCharsets.UTF_8,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (Exception ignored) {
+            // Raw tracing is diagnostic only; never let it change eval behavior.
+        }
     }
 
     public Path traceFile() {
