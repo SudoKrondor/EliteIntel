@@ -150,6 +150,42 @@ class ThoughtTest {
     }
 
     @Test
+    void reflexExecutesCommandVoicesOutcomeAndRemembersWithoutLlm() {
+        // A reflex runs the resolved command directly - no LLM round - and voices/remembers its outcome
+        // through the same per-type handling as the full loop.
+        execution.resultsByTool.put("ship_status", outcomeText("hull at 100 percent"));
+
+        Thought.reflex(Urgency.NORMAL, "how is the ship", "ship_status", ctx(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty(), "a reflex never engages the LLM");
+        assertEquals(List.of("ship_status"), execution.toolNames(), "the resolved command is executed directly");
+        assertEquals(List.of("hull at 100 percent"), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the command's outcome is voiced");
+        assertEquals(2, memory.writes.size());
+        MemoryEntry input = memory.writes.get(0);
+        assertEquals(MemorySource.COMMANDER, input.source());
+        assertEquals("how is the ship", input.content());
+        MemoryEntry outcome = memory.writes.get(1);
+        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
+        assertEquals("command ship_status executed: hull at 100 percent", outcome.content());
+    }
+
+    @Test
+    void reflexSilentCommandAcknowledgesAndRemembersExecution() {
+        // close_panel is a side-effect command with no spoken text: the reflex acks and records the execution.
+        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty());
+        assertEquals(List.of("close_panel"), execution.toolNames());
+        assertEquals(1, speech.requests.size(), "a side-effect command is acknowledged");
+        assertFalse(speech.requests.get(0).text().isBlank());
+        assertEquals(2, memory.writes.size());
+        assertEquals("close the panel", memory.writes.get(0).content());
+        assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());
+        assertEquals("command close_panel executed", memory.writes.get(1).content());
+    }
+
+    @Test
     void commanderQueryAnswerIsVoicedAndRememberedAsCompanionLine() {
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);

@@ -136,7 +136,9 @@ class GameEventFilterTest {
     // --- helpers ---
 
     private static BaseEvent event(String type) {
-        return event(type, BaseEvent.Importance.NORMAL); // default: passes the importance gate
+        // HIGH so a forwarded event is retained by the memory-only EventThought (NORMAL is dropped), keeping
+        // the dispatcher routing observable through memory; the importance gate only rejects LOW.
+        return event(type, BaseEvent.Importance.HIGH);
     }
 
     private static BaseEvent event(String type, BaseEvent.Importance importance) {

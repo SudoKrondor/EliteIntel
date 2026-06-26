@@ -1,7 +1,6 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
@@ -23,7 +22,6 @@ import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
-import elite.intel.util.StringUtls;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -225,60 +223,8 @@ public final class CommanderThought extends Thought {
         return turnRanGameAction;
     }
 
-    /**
-     * Voices and remembers a tool outcome by action type - the handler owns speech, not the LLM:
-     * <ul>
-     *   <li><b>COMMAND</b>: voice the handler's text (mission-critical -&gt; urgent), or an affirmative ack
-     *       when it is a side-effect with no text; remember "command &lt;id&gt; executed" + text/description.</li>
-     *   <li><b>QUERY</b>: voice the answer and remember it verbatim as the companion's own line (COMPANION).</li>
-     *   <li><b>MACRO</b>: voice nothing (a macro narrates its own steps); remember "macro &lt;id&gt; executed"
-     *       + description.</li>
-     *   <li><b>SYSTEM/UNKNOWN</b>: no speech and no timeline entry here (the result still rides the flow).</li>
-     * </ul>
-     */
-    private void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
-        String text = CommandOutcome.spokenText(result);
-        switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> {
-                if (text.isBlank()) {
-                    voice(StringUtls.affirmative(), false);
-                    rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
-                } else {
-                    voice(text, CommandOutcome.isCritical(result));
-                    rememberAction("command " + inv.name() + " executed", text);
-                }
-            }
-            case QUERY -> {
-                if (!text.isBlank()) {
-                    voice(text, CommandOutcome.isCritical(result));
-                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
-                }
-            }
-            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
-            case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
-        }
-    }
-
-    /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
-    private void voice(String text, boolean critical) {
-        if (text == null || text.isBlank()) {
-            return;
-        }
-        ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
-    }
-
-    /** The description shown to the LLM for a tool id (its {@code llmDescription} / fallback), or empty. */
-    private static String description(String id, List<LlmToolDefinition> tools) {
-        return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
-                .map(LlmToolDefinition::description).orElse("");
-    }
-
-    /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */
-    private void rememberAction(String lead, String detail) {
-        String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
-        ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, MemoryProcessingState.PROCESSED));
-    }
+    // recordOutcome / voice / description / rememberAction now live on the base Thought - shared with the
+    // deterministic ReflexThought, which runs the same per-type outcome handling without an LLM round.
 
     /**
      * Synthetic tool result standing in for a withheld {@code speak} on a turn whose command/query already
