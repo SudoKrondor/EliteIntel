@@ -9,7 +9,6 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import org.junit.jupiter.api.AfterEach;

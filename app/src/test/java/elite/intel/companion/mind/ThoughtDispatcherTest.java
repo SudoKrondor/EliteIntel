@@ -15,7 +15,6 @@ import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
@@ -337,10 +336,10 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("slow task");   // runs, blocks on the LLM
         waitUntil(() -> llm.calls.get() >= 1);           // the normal thought is live and blocked
         dispatcher.submitCommanderInput("urgent stop");  // urgent: interrupts the live thought, jumps the head
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "preempted thought safe-flushes as INTERRUPTED");
+        assertTrue(hasUnresolvedInput(), "preempted thought safe-flushes as INTERRUPTED");
         assertTrue(llm.calls.get() >= 2, "the urgent thought ran after preempting the normal one");
     }
 
@@ -353,10 +352,10 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("slow task");   // blocks on the LLM
         waitUntil(() -> llm.calls.get() >= 1);
         dispatcher.interruptLiveThoughts();              // barge-in path
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "barge-in interrupts the live thought");
+        assertTrue(hasUnresolvedInput(), "barge-in interrupts the live thought");
     }
 
     @Test
@@ -367,10 +366,10 @@ class ThoughtDispatcherTest {
         dispatcher.start();
 
         dispatcher.submitCommanderInput("stuck task"); // blocks on the LLM forever
-        waitUntil(() -> hasState(MemoryProcessingState.INTERRUPTED));
+        waitUntil(() -> hasUnresolvedInput());
         dispatcher.stop();
 
-        assertTrue(hasState(MemoryProcessingState.INTERRUPTED), "watchdog force-interrupts a stuck thought");
+        assertTrue(hasUnresolvedInput(), "watchdog force-interrupts a stuck thought");
     }
 
     @Test
@@ -409,13 +408,15 @@ class ThoughtDispatcherTest {
 
         // The lane survived the first failure to process the second, and neither left a memory hole.
         assertEquals(2, memory.writes.size());
-        assertTrue(memory.writes.stream().allMatch(e -> e.processingState() == MemoryProcessingState.UNRESOLVED));
+        assertTrue(memory.writes.stream()
+                .allMatch(e -> e.topic() == ConversationTopic.UNRESOLVED_COMMANDER_INPUT));
     }
 
     // --- helpers ---
 
-    private boolean hasState(MemoryProcessingState state) {
-        return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    /** A safe-flushed/interrupted thought records its input under the unresolved-commander-input topic. */
+    private boolean hasUnresolvedInput() {
+        return memory.writes.stream().anyMatch(e -> e.topic() == ConversationTopic.UNRESOLVED_COMMANDER_INPUT);
     }
 
     private static void waitUntil(BooleanSupplier condition) throws InterruptedException {

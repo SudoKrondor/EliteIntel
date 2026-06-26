@@ -256,7 +256,7 @@ public final class CommanderThought extends Thought {
     private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
                                              Map<LlmToolInvocation, JsonObject> preExecuted) {
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
-                "dangerous action requires confirmation", MemoryProcessingState.AWAITING_CONFIRMATION));
+                "dangerous action requires confirmation"));
 
         // The question is voiced now; it is the companion's own words, recorded as a COMPANION entry (not a
         // tool result).
@@ -279,7 +279,7 @@ public final class CommanderThought extends Thought {
             }
         }
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
-                "dangerous action " + outcome.name().toLowerCase(Locale.ROOT), outcome));
+                "dangerous action " + outcome.name().toLowerCase(Locale.ROOT)));
     }
 
     /** Blocks on the confirmation coordinator; maps confirm/cancel/timeout/overlap to a memory outcome. */
@@ -334,7 +334,7 @@ public final class CommanderThought extends Thought {
     private void onInvalidResponse(boolean inputRecorded) {
         if (!inputRecorded) {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, currentInput, MemoryProcessingState.UNRESOLVED));
+                    MemorySource.COMMANDER, currentInput));
         }
         ctx.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
     }
@@ -347,7 +347,7 @@ public final class CommanderThought extends Thought {
     private void safeFlush(boolean inputRecorded) {
         if (!inputRecorded) {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, currentInput, MemoryProcessingState.INTERRUPTED));
+                    MemorySource.COMMANDER, currentInput));
         }
     }
 

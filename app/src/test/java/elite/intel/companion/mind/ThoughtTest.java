@@ -13,7 +13,6 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
@@ -81,7 +80,6 @@ class ThoughtTest {
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, input.source());
         assertEquals(ConversationTopic.SOCIAL, input.topic());
-        assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
         assertEquals("set speed to 50", input.content());
         MemoryEntry spoken = memory.writes.get(1);
         assertEquals(MemorySource.COMPANION, spoken.source(), "the companion's reply is recorded as COMPANION");
@@ -275,7 +273,6 @@ class ThoughtTest {
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.EVENT, input.source());
         assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
-        assertEquals(MemoryProcessingState.PROCESSED, input.processingState());
         assertEquals("jumped to Sol", input.content());
     }
 
@@ -332,7 +329,6 @@ class ThoughtTest {
         assertEquals(1, memory.writes.size());
         MemoryEntry entry = memory.writes.get(0);
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, entry.topic());
-        assertEquals(MemoryProcessingState.UNRESOLVED, entry.processingState());
         assertEquals(1, speech.requests.size(), "commander hears a service phrase");
         assertNotNull(speech.requests.get(0).text());
         assertFalse(speech.requests.get(0).text().isBlank());
@@ -345,7 +341,7 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "anything", ctx()).run();
 
-        assertEquals(MemoryProcessingState.UNRESOLVED, memory.writes.get(0).processingState());
+        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, memory.writes.get(0).topic());
         assertEquals(1, speech.requests.size());
     }
 
@@ -358,8 +354,8 @@ class ThoughtTest {
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::confirm);
 
         assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
-        assertTrue(hasState(MemoryProcessingState.AWAITING_CONFIRMATION));
-        assertTrue(hasState(MemoryProcessingState.CONFIRMED));
+        assertTrue(hasContent("dangerous action requires confirmation"));
+        assertTrue(hasContent("dangerous action confirmed"));
     }
 
     @Test
@@ -371,7 +367,7 @@ class ThoughtTest {
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::cancel);
 
         assertFalse(execution.toolNames().contains("self_destruct"), "cancelled dangerous action must not run");
-        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+        assertTrue(hasContent("dangerous action cancelled"));
     }
 
     @Test
@@ -384,7 +380,7 @@ class ThoughtTest {
         Thought.commander(Urgency.NORMAL, "self destruct", ctx()).run(); // open() returns null -> no blocking
 
         assertFalse(execution.toolNames().contains("self_destruct"));
-        assertTrue(hasState(MemoryProcessingState.CANCELLED));
+        assertTrue(hasContent("dangerous action cancelled"));
     }
 
     @Test
@@ -402,13 +398,12 @@ class ThoughtTest {
         MemoryEntry flushed = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, flushed.source());
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
-        assertEquals(MemoryProcessingState.INTERRUPTED, flushed.processingState());
     }
 
     // --- helpers ---
 
-    private boolean hasState(MemoryProcessingState state) {
-        return memory.writes.stream().anyMatch(e -> e.processingState() == state);
+    private boolean hasContent(String content) {
+        return memory.writes.stream().anyMatch(e -> content.equals(e.content()));
     }
 
     private static void waitUntil(BooleanSupplier condition) throws InterruptedException {

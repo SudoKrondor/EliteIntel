@@ -66,11 +66,13 @@ class QueryExecutionEvalTest {
             report.add(String.format("%-46s | %-46s | %-5s | %-8s | %s",
                     c.input(), c.expectedTool(), called ? "yes" : "NO", c.targeted() ? "yes" : "-",
                     h.turnCalls().stream().map(Executed::tool).toList()));
+            report.add(h.memoryDeltaBlock()); // what this query wrote to memory, this turn
         }
 
         StringBuilder block = new StringBuilder("\n======== QUERY EXECUTION (theme 2) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("score: %d / %d%n", hits, cases.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

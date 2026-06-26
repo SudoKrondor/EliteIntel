@@ -76,6 +76,7 @@ class LongTermMemoryEvalTest {
         block.append("answered a session-summary question: ").append(answered).append("\n");
         block.append("origin recalled at probe ('").append(EARLY_FACT_TOKEN).append("'): ").append(originRecalled).append("\n");
         block.append("long-term summary:\n").append(consolidated ? summary : "(none - the run was not long enough to consolidate)").append("\n");
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

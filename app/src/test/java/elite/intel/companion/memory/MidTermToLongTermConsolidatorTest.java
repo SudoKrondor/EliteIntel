@@ -5,7 +5,6 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import org.junit.jupiter.api.Test;
@@ -39,8 +38,7 @@ class MidTermToLongTermConsolidatorTest {
             }, SYNC);
 
     private static MemoryEntry entry(String content) {
-        return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content,
-                MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content);
     }
 
     private void feed(int count) {

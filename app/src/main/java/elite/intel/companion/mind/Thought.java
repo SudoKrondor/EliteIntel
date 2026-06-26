@@ -9,7 +9,6 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
@@ -196,7 +195,7 @@ public abstract class Thought {
     /** Records the current input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput, MemoryProcessingState.PROCESSED));
+                Instant.now(), memoryTopic(), memorySource(), currentInput));
     }
 
     /**
@@ -209,7 +208,7 @@ public abstract class Thought {
             return;
         }
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryProcessingState.PROCESSED));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
@@ -274,7 +273,7 @@ public abstract class Thought {
     protected void rememberAction(String lead, String detail) {
         String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, MemoryProcessingState.PROCESSED));
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content));
     }
 
     /**

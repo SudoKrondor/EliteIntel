@@ -36,7 +36,7 @@ public final class ChangeGlobalTopicFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Switch the global conversation topic to a different one, chosen from the listed valid topics. Call this only when this turn actually moves the conversation to a topic different from the current topic shown in the current input; otherwise leave the topic unchanged.";
+        return "Switch the global conversation topic to the one that matches what the commander is talking about this turn, chosen from the listed valid topics. The topic is sticky: it stays where it is until you move it, so whenever the new input's subject differs from the current topic shown in the current input, call this at the start of the turn to move it onto the right topic. Leave it unchanged only when the new input still fits the current topic.";
     }
 
     @Override

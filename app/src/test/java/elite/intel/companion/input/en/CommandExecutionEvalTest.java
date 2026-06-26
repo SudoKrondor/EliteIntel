@@ -8,35 +8,46 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Theme 1 (English): does the companion understand and execute commander COMMANDS, including parameterized
- * ones? For each phrase it scores, from the recorded tool-calls, whether the expected command tool was
- * called and (for parameterized commands) whether the extracted argument carries the requested value.
- * Game commands are recorded, never executed. Opt-in via the local-integration tag; LM Studio must be up.
+ * ones, and does the reflex fast-path fire for verbatim, safe, parameterless phrases WITHOUT reaching the LLM?
+ * For each phrase it scores, from the recorded tool-calls, whether the expected command tool was called and
+ * (for parameterized commands) whether the extracted argument carries the requested value; for reflex cases it
+ * additionally asserts the turn consumed zero LLM rounds (the {@code ReflexResolver} short-circuit) and for
+ * LLM cases at least one. Each turn also dumps what it wrote to memory. Game commands are recorded, never
+ * executed. Opt-in via the local-integration tag; LM Studio must be up.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CommandExecutionEvalTest {
 
-    /** input -> expected command tool; {@code argContains} non-null marks a parameterized command. */
-    private record Case(String input, String expectedTool, String argContains) {}
+    /**
+     * input -> expected command tool; {@code argContains} non-null marks a parameterized command;
+     * {@code reflex} true marks a verbatim, safe, parameterless phrase that must take the reflex fast-path
+     * (executed directly, no LLM round), false marks a phrase that must go through the LLM.
+     */
+    private record Case(String input, String expectedTool, String argContains, boolean reflex) {}
 
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-commands-eval-trace.txt");
 
     private final List<Case> cases = List.of(
-            new Case("set speed to fifty percent", "set_speed_50", null),
-            new Case("all stop", "set_speed_to_zero_0_stop_ship", null),
-            new Case("toggle the cargo scoop", "toggle_cargo_scoop", null),
-            new Case("deploy the landing gear", "deploy_landing_gear", null),
-            new Case("retract the hardpoints", "retract_hardpoints", null),
-            new Case("target wingman two", "target_wingman_2", null),
-            new Case("set the trade budget to ten million credits", "trade_profile_set_budget", "10"),
-            new Case("set the maximum number of trade stops to three", "trade_profile_set_max_stops", "3"));
+            // LLM path: paraphrases / digit-vs-word / parameters need the model to classify or extract.
+            new Case("set speed to fifty percent", "set_speed_50", null, false),
+            new Case("toggle the cargo scoop", "toggle_cargo_scoop", null, false),
+            new Case("deploy the landing gear", "deploy_landing_gear", null, false),
+            new Case("retract the hardpoints", "retract_hardpoints", null, false),
+            new Case("target wingman two", "target_wingman_2", null, false),
+            new Case("set the trade budget to ten million credits", "trade_profile_set_budget", "10", false),
+            new Case("set the maximum number of trade stops to three", "trade_profile_set_max_stops", "3", false),
+            // Reflex fast-path: a training phrase matched verbatim to one safe, parameterless command - no LLM.
+            new Case("all stop", "set_speed_to_zero_0_stop_ship", null, true),
+            new Case("cargo scoop", "toggle_cargo_scoop", null, true),
+            new Case("gear down", "deploy_landing_gear", null, true),
+            new Case("weapons cold", "retract_hardpoints", null, true));
 
     @BeforeAll
     void boot() throws Exception {
@@ -49,39 +60,46 @@ class CommandExecutionEvalTest {
     }
 
     @Test
-    void executesCommandsIncludingParameterized() throws Exception {
-        List<String> report = new ArrayList<>();
-        report.add(String.format("%-46s | %-30s | %-5s | %-5s | %s", "input", "expected tool", "call", "arg", "actually called"));
-        report.add("-".repeat(120));
+    void executesCommandsIncludingParameterizedAndReflex() throws Exception {
+        StringBuilder block = new StringBuilder("\n======== COMMAND EXECUTION (theme 1) ========\n");
 
         int hits = 0;
         for (Case c : cases) {
+            long roundsBefore = h.roundCount();
             h.say(c.input());
+            long llmRounds = h.roundCount() - roundsBefore; // 0 == reflex fast-path, >=1 == LLM path
+
             List<Executed> calls = h.callsNamed(c.expectedTool());
             boolean called = !calls.isEmpty();
             String args = called ? calls.get(0).args().toString() : "";
             boolean argOk = c.argContains() == null || (called && args.contains(c.argContains()));
-            boolean pass = called && argOk;
+            boolean tookReflex = llmRounds == 0;
+            boolean pathOk = tookReflex == c.reflex();
+            boolean pass = called && argOk && pathOk;
             if (pass) {
                 hits++;
             }
-            report.add(String.format("%-46s | %-30s | %-5s | %-5s | %s",
-                    c.input(), c.expectedTool(),
+            String pathCell = String.format("%s%s",
+                    tookReflex ? "reflex" : "llm(" + llmRounds + ")",
+                    pathOk ? "" : (c.reflex() ? " WANT-REFLEX" : " WANT-LLM"));
+            block.append(String.format("%n%-46s | call=%-3s arg=%-4s path=%-12s | %s%n",
+                    c.input(),
                     called ? "yes" : "NO",
                     c.argContains() == null ? "-" : (argOk ? "ok" : "MISS"),
-                    actualTools(c) + (called && !args.isEmpty() ? " args=" + args : "")));
+                    pathCell,
+                    actualTools() + (called && !args.isEmpty() ? " args=" + args : "")));
+            block.append(h.memoryDeltaBlock()); // what this command wrote to memory, this turn
         }
 
-        StringBuilder block = new StringBuilder("\n======== COMMAND EXECUTION (theme 1) ========\n");
-        report.forEach(line -> block.append(line).append("\n"));
-        block.append(String.format("score: %d / %d%n", hits, cases.size()));
+        block.append(String.format("%nscore: %d / %d%n", hits, cases.size()));
+        block.append(h.shortTermDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
     }
 
     /** The tool names the model actually called this turn (for diagnosing a miss). */
-    private List<String> actualTools(Case c) {
+    private List<String> actualTools() {
         return h.turnCalls().stream().map(Executed::tool).toList();
     }
 }

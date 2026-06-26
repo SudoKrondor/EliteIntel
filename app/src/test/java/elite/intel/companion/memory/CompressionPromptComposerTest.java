@@ -6,7 +6,6 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -27,7 +26,7 @@ class CompressionPromptComposerTest {
     private final CompressionPromptComposer composer = new CompressionPromptComposer();
 
     private static MemoryEntry entry(ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content, MemoryProcessingState.PROCESSED);
+        return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content);
     }
 
     /** Commander's language name, resolved exactly as production does, so the test holds in any environment. */
