@@ -19,9 +19,12 @@ public class VocalisationRouter {
     private final SystemSession systemSession = SystemSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
 
-    /// --- always pass through
+    /// --- always pass through (except in companion mode, where the companion owns this narration)
     @Subscribe
     public void onAiVoxResponseEvent(AiVoxResponseEvent event) {
+        // In companion mode the companion voices and remembers this via CompanionAnnouncementBridge (which
+        // also completes any synchronous completion future when playback ends); legacy TTS stays silent.
+        if (companionVoicesNarration()) return;
         boolean canBeInterrupted = event.getCompletionFuture() == null;
         CompletableFuture<Void> completionFuture = event.getCompletionFuture();
         if (canBeInterrupted) {
@@ -36,6 +39,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onMissionCriticalAnnouncementEvent(MissionCriticalAnnouncementEvent event) {
+        if (companionVoicesNarration()) return; // companion owns it via the bridge; avoid double speech
         GameEventBus.publish(new VocalisationRequestEvent(event.getText(), MissionCriticalAnnouncementEvent.class, false));
     }
 
@@ -85,10 +89,9 @@ public class VocalisationRouter {
     }
 
     /**
-     * In companion mode the companion voices (and remembers) these curated announcements via
-     * {@code CompanionAnnouncementBridge}; the legacy TTS path stays silent for them to avoid double speech.
-     * Radio transmission and the always-pass-through events (AI response, mission-critical, voice demo) are
-     * not affected.
+     * In companion mode the companion voices (and remembers) curated announcements and a handler's own
+     * narration (AI response, mission-critical) via {@code CompanionAnnouncementBridge}; the legacy TTS path
+     * stays silent for them to avoid double speech. Radio transmission and the voice demo are not affected.
      */
     private static boolean companionVoicesNarration() {
         return CompanionConfig.companionModeOn();

@@ -33,7 +33,7 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Map<Integer, CarrierJump> fleetCarrierRoute = FleetCarrierRouteManager.getInstance().getFleetCarrierRoute();
 
         if (!fleetCarrierRoute.isEmpty()) {
@@ -48,6 +48,5 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
                 GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
             }
         }
-        return null;
     }
 }

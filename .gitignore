@@ -28,6 +28,7 @@
 /PACKAGES.md
 
 #-- Local dev/build artifacts and secrets
+*.log
 # Ignore all of .idea except the shared IDE settings explicitly re-included below.
 # (Use .idea/* not .idea/ so git descends into the dir and the negations can take effect.)
 .idea/*

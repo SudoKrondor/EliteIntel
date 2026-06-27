@@ -402,6 +402,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("run a scan", "scan the system");
         m.put("perform system scan", "scan the system");
         m.put("discovery scan", "scan the system");
+        m.put("show", "open");
 
         // Carrier balance must be locked in before the bare "balance" → "equalize power" entry below
         m.put("squadron carrier balance", "squadron carrier finances");
@@ -768,6 +769,7 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("career", "carrier");
         m.put("sip", "ship");
         m.put("aligns", "launch");
+        m.put("flip", "fleet");
     }
 
     // ─────────────────────────────────────────────────────────────────────────

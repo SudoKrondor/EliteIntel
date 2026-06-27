@@ -1,5 +1,6 @@
 package elite.intel.companion.mind;
 
+import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.input.EventInputFormatter;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
@@ -20,6 +21,7 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
@@ -40,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * A watchdog periodically force-interrupts a thought that overruns the timeout (§2.3). Barge-in reaches
  * the live thoughts via {@link #interruptLiveThoughts()}.
  */
-public final class ThoughtDispatcher implements ManagedService {
+public final class ThoughtDispatcher implements ManagedService, VerbatimNarrationSink {
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
@@ -57,9 +59,18 @@ public final class ThoughtDispatcher implements ManagedService {
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
+    /** Production input canonicalizer: the legacy synonym map ("combat mode" -> "switch to combat mode"). */
+    private static final Function<String, String> DEFAULT_NORMALIZER = InputNormalizer.getInstance()::normalize;
+
     private final ThoughtContext ctx;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
+    /**
+     * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
+     * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
+     * recognized the same way the legacy router recognizes it.
+     */
+    private final Function<String, String> inputNormalizer;
     private final long watchdogTimeoutMillis;
     private final long watchdogIntervalMillis;
 
@@ -68,58 +79,71 @@ public final class ThoughtDispatcher implements ManagedService {
     private volatile ScheduledExecutorService watchdog;
 
     public ThoughtDispatcher(ThoughtContext ctx) {
-        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(),
+        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Wires the dispatcher with an explicit reflex resolver (production wiring, or a test pinning the gate). */
     public ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
+                WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+    }
+
+    /** Test seam: inject the reflex resolver and the input normalizer to exercise canonicalization routing. */
+    ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
+        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
+                WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy to exercise preemption. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy) {
-        this(ctx, urgencyPolicy, new ReflexResolver(),
+        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver to exercise reflex-vs-commander routing. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
-        this(ctx, urgencyPolicy, reflexResolver, WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
+        this(ctx, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
+                WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy and watchdog timing. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this(ctx, urgencyPolicy, new ReflexResolver(),
+        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 watchdogTimeoutMillis, watchdogIntervalMillis);
     }
 
-    /** Canonical constructor: all collaborators and watchdog timing explicit. */
+    /** Canonical constructor: all collaborators, the input normalizer, and watchdog timing explicit. */
     ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
+                      Function<String, String> inputNormalizer,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
         this.ctx = ctx;
         this.urgencyPolicy = urgencyPolicy;
         this.reflexResolver = reflexResolver;
+        this.inputNormalizer = inputNormalizer;
         this.watchdogTimeoutMillis = watchdogTimeoutMillis;
         this.watchdogIntervalMillis = watchdogIntervalMillis;
     }
 
     /**
-     * Accepts a commander reply and queues it on the commander lane. The reflex gate runs first
-     * ({@link ReflexResolver}): an input that matches a training phrase verbatim and resolves to exactly one
-     * safe, parameterless command becomes a deterministic {@code ReflexThought} (no LLM); everything else
-     * becomes a full {@code CommanderThought}.
+     * Accepts a commander reply and queues it on the commander lane. The input is first canonicalized by the
+     * {@link #inputNormalizer} (synonym map) - this is the form used for command matching only: the reflex
+     * gate and, on the LLM path, the reducer and the prompt's current-input. The raw words are passed through
+     * unchanged for memory. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
+     * matches a training phrase verbatim and resolves to exactly one safe, parameterless command becomes a
+     * deterministic {@code ReflexThought} (no LLM); everything else becomes a full {@code CommanderThought}.
      */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
             return;
         }
         Urgency urgency = urgencyPolicy.forCommander(input);
-        Optional<String> reflexCommand = reflexResolver.resolve(input);
+        String matchInput = inputNormalizer.apply(input);
+        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
-                .orElseGet(() -> Thought.commander(urgency, input, ctx));
+                .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
     }
 
@@ -160,12 +184,26 @@ public final class ThoughtDispatcher implements ManagedService {
      * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane. The line is
      * remembered and voiced verbatim in the companion's voice - no LLM phrasing.
      */
+    @Override
     public void submitVerbatimNarration(String text, ConversationTopic topic) {
+        submitVerbatimNarration(text, topic, Urgency.URGENT, null);
+    }
+
+    /**
+     * Verbatim narration with an explicit urgency and an optional {@code spokenSignal} completed when playback
+     * ends - used to bridge a command/macro's own narration ({@code AiVoxResponseEvent}/
+     * {@code MissionCriticalAnnouncementEvent}) so a synchronous caller waits the same as on the legacy path.
+     */
+    @Override
+    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
+                                        java.util.concurrent.CompletableFuture<Void> spokenSignal) {
         if (text == null || text.isBlank()) {
+            if (spokenSignal != null) {
+                spokenSignal.complete(null); // never strand a caller blocked on an empty line
+            }
             return;
         }
-        Urgency urgency = Urgency.URGENT;
-        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx), urgency);
+        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal), urgency);
     }
 
     @Override

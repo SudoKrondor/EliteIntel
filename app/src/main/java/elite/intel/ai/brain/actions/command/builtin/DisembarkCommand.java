@@ -33,7 +33,7 @@ public final class DisembarkCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
@@ -60,6 +60,5 @@ public final class DisembarkCommand implements IntelCommand {
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
             ));
         }
-        return null;
     }
 }

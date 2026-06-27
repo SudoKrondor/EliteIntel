@@ -2,10 +2,11 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -47,17 +48,17 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         Integer numberOfStops = StringUtls.getIntSafely(params.get("key").getAsString());
 
         if (numberOfStops == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeProfile.invalidStops"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidStops")));
+            return;
         }
 
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
-        if (profileManager.setMaximumStops(numberOfStops)) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops));
+        if(profileManager.setMaximumStops(numberOfStops)) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops)));
         }
-        return null;
     }
 }

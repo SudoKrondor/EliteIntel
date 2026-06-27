@@ -1,7 +1,8 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
+import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -13,6 +14,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
@@ -47,6 +49,13 @@ public abstract class Thought {
     private final ThoughtSource source;
     private final Urgency urgency;
     protected final String currentInput;
+    /**
+     * Canonical form of {@link #currentInput} used only for command matching (the reducer) and as the
+     * LLM-visible current input - this is what lets a normalized synonym ("combat mode" -> "switch to combat
+     * mode") steer tool selection. Memory always records the raw {@link #currentInput}, never this. Defaults
+     * to the raw input when no separate canonical form is supplied.
+     */
+    protected final String matchInput;
     protected final ThoughtContext ctx;
 
     /** Set by {@link #interrupt} from another thread; a run honors it at step boundaries (§2.7). */
@@ -55,9 +64,15 @@ public abstract class Thought {
     protected volatile CompletableFuture<?> inFlight;
 
     protected Thought(ThoughtSource source, Urgency urgency, String currentInput, ThoughtContext ctx) {
+        this(source, urgency, currentInput, currentInput, ctx);
+    }
+
+    /** As above, but with a separate canonical {@link #matchInput} for command matching / the LLM prompt. */
+    protected Thought(ThoughtSource source, Urgency urgency, String currentInput, String matchInput, ThoughtContext ctx) {
         this.source = source;
         this.urgency = urgency;
         this.currentInput = currentInput;
+        this.matchInput = matchInput;
         this.ctx = ctx;
     }
 
@@ -68,7 +83,15 @@ public abstract class Thought {
      * (which a {@code change_global_topic} call may move during the thought).
      */
     public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
-        return new CommanderThought(urgency, input, ctx);
+        return commander(urgency, input, input, ctx);
+    }
+
+    /**
+     * As above, but with a separate canonical {@code matchInput} (e.g. the synonym-normalized form) used for
+     * tool selection and as the LLM-visible current input; memory still records the raw {@code input}.
+     */
+    public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
+        return new CommanderThought(urgency, input, matchInput, ctx);
     }
 
     /**
@@ -95,6 +118,15 @@ public abstract class Thought {
      */
     public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic, ThoughtContext ctx) {
         return new VerbatimNarrationThought(urgency, text, topic, ctx);
+    }
+
+    /**
+     * Verbatim narration whose {@code spokenSignal} is completed when the companion's playback finishes, for a
+     * synchronous caller (e.g. a bridged macro SPEAK step) that blocks until the line is actually spoken.
+     */
+    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
+                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal) {
+        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal);
     }
 
     /**
@@ -158,7 +190,7 @@ public abstract class Thought {
     /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot. */
     protected ComposedPrompt composeInitialPrompt() {
         return ctx.promptComposer().compose(
-                source, urgency, ctx.state().globalTopic(), currentInput,
+                source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
                 ctx.memoryGateway().indexes(),
@@ -167,7 +199,7 @@ public abstract class Thought {
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
     private List<LlmToolDefinition> selectedGameTools() {
-        return ctx.reducer().selectTools(allowedCategories(), currentInput);
+        return ctx.reducer().selectTools(allowedCategories(), matchInput);
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
@@ -217,42 +249,35 @@ public abstract class Thought {
     }
 
     /**
-     * Voices and remembers a tool outcome by action type - the handler owns speech, not the LLM. Shared by
-     * every executor of the commander lane ({@link CommanderThought}'s full loop and the deterministic
-     * {@link ReflexThought}):
-     * <ul>
-     *   <li><b>COMMAND</b>: voice the handler's text (mission-critical -&gt; urgent), or an affirmative ack
-     *       when it is a side-effect with no text; remember "command &lt;id&gt; executed" + text/description.</li>
-     *   <li><b>QUERY</b>: voice the answer and remember it verbatim as the companion's own line (COMPANION).</li>
-     *   <li><b>MACRO</b>: voice nothing (a macro narrates its own steps); remember "macro &lt;id&gt; executed"
-     *       + description.</li>
-     *   <li><b>SYSTEM/UNKNOWN</b>: no speech and no timeline entry here (the result still rides the flow).</li>
-     * </ul>
-     *
-     * @param tools the rendered tool snapshot a description is read from; pass {@link List#of()} when there is
-     *              no prompt (a reflex), in which case the side-effect memory carries no description detail
+     * Records a tool outcome by action type. Commands and macros are self-narrating: the handler voices its
+     * own outcome through the bridge, so we only remember that it ran (an {@code IntelCommand} returns no
+     * {@code text_to_speech_response}, so there is nothing to voice here). A query answer is self-narrating
+     * too: it is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
+     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
-        String text = CommandOutcome.spokenText(result);
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> {
-                if (text.isBlank()) {
-                    voice(StringUtls.affirmative(), false);
-                    rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
-                } else {
-                    voice(text, CommandOutcome.isCritical(result));
-                    rememberAction("command " + inv.name() + " executed", text);
-                }
-            }
+            case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
             case QUERY -> {
-                if (!text.isBlank()) {
-                    voice(text, CommandOutcome.isCritical(result));
-                    recordCompanionSpeech(text); // the answer is the companion's own spoken line
+                // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
+                // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
+                // the single owner of verbatim narration (topic tagging + completion-future handling), so the
+                // answer converges with command/macro narration on one path, mirroring the legacy router.
+                // This relies on an implicit ordering: the bridge must be subscribed and the legacy
+                // VocalisationRouter silenced in companion mode - otherwise the answer is double-voiced or lost.
+                String answer = spokenTextOf(result);
+                if (!answer.isBlank()) {
+                    GameEventBus.publish(new AiVoxResponseEvent(answer));
                 }
             }
             case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
+    }
+
+    /** The handler-provided spoken text in a tool result, or empty when absent. */
+    protected static String spokenTextOf(JsonObject result) {
+        return JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */

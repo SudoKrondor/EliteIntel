@@ -18,10 +18,12 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
+import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
+import elite.intel.util.StringUtls;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -67,8 +69,8 @@ public final class CommanderThought extends Thought {
      */
     private boolean turnRanGameAction;
 
-    CommanderThought(Urgency urgency, String input, ThoughtContext ctx) {
-        super(ThoughtSource.COMMANDER, urgency, input, ctx);
+    CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
+        super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
     }
 
     /**
@@ -195,6 +197,9 @@ public final class CommanderThought extends Thought {
             }
             // Game tool / system function: execute synchronously. The result always feeds the flow; speech
             // and timeline memory depend on the action type.
+            if (!preExecuted.containsKey(inv) && isCommand(inv)) {
+                voice(StringUtls.affirmative(), false);
+            }
             JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
             recordOutcome(inv, result, tools);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
@@ -223,6 +228,11 @@ public final class CommanderThought extends Thought {
             }
         }
         return turnRanGameAction;
+    }
+
+    /** COMMANDER-only immediate acknowledgement before an LLM-selected command starts executing. */
+    private boolean isCommand(LlmToolInvocation inv) {
+        return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.COMMAND;
     }
 
     // recordOutcome / voice / description / rememberAction now live on the base Thought - shared with the

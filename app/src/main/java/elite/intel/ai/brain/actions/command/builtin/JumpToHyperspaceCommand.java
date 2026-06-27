@@ -1,11 +1,11 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
@@ -43,7 +43,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));
         UiNavCommon.close();
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(150)));
@@ -63,18 +63,17 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
 
         Status status = Status.getInstance();
 
-        if (status.isFsdCharging()) return null;
+        if (status.isFsdCharging()) return;
 
         if (status.isFsdMassLocked()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.supercruise.massLocked"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
         } else if (status.isFsdCooldown()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.supercruise.cooldown"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
         } else if (status.isInMainShip()) {
-            JsonObject preFtlOutcome = PreFtlChecks.preJumpCheck(status, StringUtls.localizedLlm("handler.supercruise.preparingFtl"));
+            PreFtlChecks.preJumpCheck(status, StringUtls.localizedLlm("handler.supercruise.preparingFtl"));
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_JUMP_TO_HYPERSPACE.getGameBinding())));
-            return preFtlOutcome;
         } else {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.supercruise.notInShip"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.notInShip")));
         }
     }
 }

@@ -30,7 +30,7 @@ public final class DeployFighterCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip()) {
             List<GameInputStep> steps = new ArrayList<>();
             steps.add(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()));
@@ -63,6 +63,5 @@ public final class DeployFighterCommand implements IntelCommand {
             GameControllerBus.publish(new GameInputSequenceEvent(steps));
             status.setOkToAnnounceLoadout(false);
         }
-        return null;
     }
 }

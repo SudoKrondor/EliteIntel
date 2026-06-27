@@ -1,12 +1,13 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.CommandOutcome;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  */
 @RegisterCommand
 public final class NavigateToTradeStopCommand implements IntelCommand {
-    public static final String ID = "navigate_to_trade_stop";
+    public static final String ID = "navigate_to_next_trade_stop";
 
     @Override public String llmDescription() { return "Plot a route to the next trade-route stop."; }
 
@@ -41,11 +42,12 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
     }
 
     @Override
-    public JsonObject execute(JsonObject params, String responseText) {
+    public void execute(JsonObject params, String responseText) {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.notFound"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
+            return;
         }
 
         GameEvents.CargoEvent shipCargo = playerSession.getShipCargo();
@@ -53,7 +55,8 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            return CommandOutcome.critical(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
+            return;
         }
 
         String sourceSystem = nextStop.getTradeStopDto().getSourceSystem();
@@ -91,7 +94,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         reminderManager.setReminder(message, destinationSystem);
-        return CommandOutcome.critical(message);
     }
 }

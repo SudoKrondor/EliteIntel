@@ -35,16 +35,11 @@ public interface IntelCommand extends IntelAction {
         return CommandKind.ACTION;
     }
 
-    /**
-     * Executes the command and returns its outcome (see {@link elite.intel.ai.brain.actions.CommandOutcome}),
-     * or {@code null} for a silent side-effect. The active conversational owner of the current mode renders
-     * the outcome: the legacy {@code ResponseRouter} speaks it, the companion hands it back as a tool result.
-     * Commands no longer narrate themselves by publishing voice events.
-     */
-    JsonObject execute(JsonObject params, String responseText);
+    void execute(JsonObject params, String responseText);
 
     @Override
     default JsonObject handle(String action, JsonObject params, String responseText) {
-        return execute(params, responseText);
+        execute(params, responseText);
+        return null;
     }
 }
