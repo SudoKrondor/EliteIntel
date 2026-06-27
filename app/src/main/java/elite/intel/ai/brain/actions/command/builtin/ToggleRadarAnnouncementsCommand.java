@@ -20,11 +20,13 @@ public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     @Override public String llmDescription() { return "Toggle radar contact announcements on or off."; }
 
 
+    private static final String PARAM_STATE = "state";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
-                "state", "boolean", true,
+                PARAM_STATE, "boolean", true,
                 "Whether to turn it on (true) or off (false).",
                 List.of("true", "false"),
                 "on/enable/activate → true; off/disable/deactivate → false.");
@@ -44,7 +46,7 @@ public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        boolean isOn = params.get("state").getAsBoolean();
+        boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession.getInstance().setRadarContactAnnouncementOn(isOn);
     }
 }

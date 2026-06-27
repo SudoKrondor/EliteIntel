@@ -22,11 +22,13 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
     @Override public String llmDescription() { return "Toggle whether trade routes may include stronghold systems."; }
 
 
+    private static final String PARAM_STATE = "state";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
-                "state",
+                PARAM_STATE,
                 "boolean",
                 true,
                 "Whether enemy strongholds are allowed in route calculations. true = allow, false = disallow.",
@@ -49,7 +51,7 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        boolean isOn = params.get("state").getAsBoolean();
+        boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         profileManager.setAllowStrongHolds(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");

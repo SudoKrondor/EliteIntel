@@ -36,11 +36,13 @@ public final class FindBrainTreesCommand implements IntelCommand {
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The biological material / genus to look for at a Brain Tree site, e.g. tellurium, ruthenium.",
                 List.of("tellurium", "ruthenium"),
                 "Extract the material name verbatim in lower case; do not translate.");
@@ -64,7 +66,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
             brainTreeManager.retrieveFromSpansh();
         }
 
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
             return;

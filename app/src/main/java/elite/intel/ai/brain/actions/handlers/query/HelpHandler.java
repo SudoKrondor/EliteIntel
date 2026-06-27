@@ -17,11 +17,13 @@ public class HelpHandler extends BaseQueryAnalyzer implements IntelQuery {
 
     @Override public String id() { return "help_handler"; }
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", false,
+                PARAM_KEY, "string", false,
                 "The help topic / feature the commander wants help with, e.g. mining, trade, bindings.",
                 List.of("mining", "trade"),
                 "Extract the topic keyword from the question; otherwise omit it.");
@@ -36,7 +38,7 @@ public class HelpHandler extends BaseQueryAnalyzer implements IntelQuery {
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) {
 
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         String topic = key == null ? null : key.getAsString();
         if (topic == null) {
             return process(StringUtls.localizedLlm("query.help.noTopic"));

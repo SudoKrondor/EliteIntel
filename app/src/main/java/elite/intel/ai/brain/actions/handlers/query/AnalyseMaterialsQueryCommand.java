@@ -30,11 +30,13 @@ public class AnalyseMaterialsQueryCommand extends BaseQueryAnalyzer implements I
     @Override public String id() { return ID; }
 
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", false,
+                PARAM_KEY, "string", false,
                 "The engineering material or cargo commodity to report on, e.g. iron, sulphur, tritium.",
                 List.of("iron", "tritium"),
                 "Extract the material/commodity name verbatim in lower case; do not translate. Omit it for a general request.");
@@ -72,7 +74,7 @@ public class AnalyseMaterialsQueryCommand extends BaseQueryAnalyzer implements I
     }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         String query = (key != null) ? key.getAsString() : null;
 
         if (query == null || query.isBlank()) {

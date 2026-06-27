@@ -28,11 +28,13 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
 
     private final MissionManager missionManager = MissionManager.getInstance();
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", false,
+                PARAM_KEY, "string", false,
                 "Optional keyword to pick a specific mission (e.g. faction, commodity, or target name). "
                         + "If omitted, the first active mission is used.",
                 List.of("massacre", "courier"),
@@ -53,7 +55,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        String keyword = params.get("key") == null ? null : params.get("key").getAsString();
+        String keyword = params.get(PARAM_KEY) == null ? null : params.get(PARAM_KEY).getAsString();
 
         MissionDto mission = missionManager.findByKeyword(keyword).stream().findFirst().orElse(null);
         if (mission == null) {

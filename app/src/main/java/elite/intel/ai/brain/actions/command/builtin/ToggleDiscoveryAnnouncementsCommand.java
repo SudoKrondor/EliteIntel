@@ -21,11 +21,13 @@ public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
     @Override public String llmDescription() { return "Toggle exploration discovery announcements on or off."; }
 
 
+    private static final String PARAM_STATE = "state";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
-                "state", "boolean", true,
+                PARAM_STATE, "boolean", true,
                 "Whether to turn it on (true) or off (false).",
                 List.of("true", "false"),
                 "on/enable/activate → true; off/disable/deactivate → false.");
@@ -45,11 +47,11 @@ public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        if (params.get("state") == null) {
+        if (params.get(PARAM_STATE) == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.llmParamFailed")));
             return;
         }
-        boolean isOn = params.get("state").getAsBoolean();
+        boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setDiscoveryAnnouncementOn(isOn);
         String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");

@@ -28,11 +28,13 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
     @Override public String llmDescription() { return "Find nearby resource extraction / hunting grounds."; }
 
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "number", false,
+                PARAM_KEY, "number", false,
                 "Maximum search range in light years (ly). If omitted, a default range is used.",
                 List.of("50", "100"),
                 "Extract the range limit in light years if the commander states one; otherwise omit it.");
@@ -52,9 +54,9 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        int range = params.get("key") == null
-                || getIntSafely(params.get("key").getAsString()) == null
-                || params.isEmpty() ? 100 : params.get("key").getAsInt();
+        int range = params.get(PARAM_KEY) == null
+                || getIntSafely(params.get(PARAM_KEY).getAsString()) == null
+                || params.isEmpty() ? 100 : params.get(PARAM_KEY).getAsInt();
 
         PirateMassacreMissionSearch missionSearch = PirateMassacreMissionSearch.getInstance();
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = missionSearch.findHuntingSpotsInRange(range);

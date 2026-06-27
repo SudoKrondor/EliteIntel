@@ -37,17 +37,20 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
     private static final int MAX_DEFAULT_RANGE = 1000;
 
+    private static final String PARAM_KEY = "key";
+    private static final String PARAM_MAX_DISTANCE = "max_distance";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The commodity (mineable material) to mine, e.g. painite, platinum, low temperature diamonds.",
                 List.of("painite", "platinum"),
                 "Extract the material name verbatim in lower case; do not translate.");
         key.validate();
         ActionParameterSpec maxDistance = new ActionParameterSpec(
-                "max_distance", "number", false,
+                PARAM_MAX_DISTANCE, "number", false,
                 "Maximum galactic search radius in light years (ly). If omitted, a default range is used.",
                 List.of("100", "500"),
                 "Extract the distance limit in light years if the commander states one.");
@@ -73,8 +76,8 @@ public final class FindMiningSiteCommand implements IntelCommand {
             return;
         }
 
-        JsonElement mat = params.get("key");
-        JsonElement distance = params.get("max_distance");
+        JsonElement mat = params.get(PARAM_KEY);
+        JsonElement distance = params.get(PARAM_MAX_DISTANCE);
         if (mat == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.didNotCatch")));
             return;

@@ -22,11 +22,13 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     @Override public String llmDescription() { return "Set the trade-route maximum distance."; }
 
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key",
+                PARAM_KEY,
                 "number",
                 true,
                 "Maximum distance from the entry/start system arrival star allowed for the trade route, in light seconds (Ls).",
@@ -49,7 +51,7 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Integer distanceFromEntry = StringUtls.getIntSafely(params.get("key").getAsString());
+        Integer distanceFromEntry = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if(distanceFromEntry == null){
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));

@@ -31,11 +31,13 @@ public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements Inte
     private final BiomeAnalyzer biomeAnalyzer = BiomeAnalyzer.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
+    private static final String PARAM_KEY = "key";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", false,
+                PARAM_KEY, "string", false,
                 "Optional planet/body name to analyze. If omitted, all bio-signal planets in the system are analyzed.",
                 List.of("A 1", "B 2 a"),
                 "Extract the planet or body name the commander names, verbatim; otherwise omit it.");
@@ -51,7 +53,7 @@ public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements Inte
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing planetary and biome data. Stand by."));
 
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         String planetName = key == null ? null : key.getAsString().replace(" ", "");
         Collection<LocationDto> allStellarObjectsInStarSystem = locationManager.findAllBySystemAddress(
                 playerSession.getLocationData().getSystemAddress()

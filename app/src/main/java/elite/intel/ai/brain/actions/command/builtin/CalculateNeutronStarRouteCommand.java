@@ -39,11 +39,13 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final ShipLoadoutManager shipLoadoutManager = ShipLoadoutManager.getInstance();
 
+    private static final String PARAM_EFFICIENCY = "efficiency";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec efficiency = new ActionParameterSpec(
-                "efficiency", "number", true,
+                PARAM_EFFICIENCY, "number", true,
                 "Route efficiency percentage from 1 to 100: lower trades extra jumps for shorter total distance.",
                 List.of("60", "100"),
                 "Extract the efficiency percentage the commander states (1-100).");
@@ -63,7 +65,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement key = params.get("efficiency");
+        JsonElement key = params.get(PARAM_EFFICIENCY);
 
         if (key == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
