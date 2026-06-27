@@ -93,4 +93,11 @@ public class GrokAnalysisEndpoint extends AiEndPoint implements AiAnalysisInterf
         }
     }
 
+    @Override
+    public boolean verifyConnection() {
+        GrokClient client = GrokClient.getInstance();
+        return probeChatStyle(client.createPrompt(GrokClient.MODEL_GROK_REASONING, 0.8f), client,
+                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
+    }
+
 }

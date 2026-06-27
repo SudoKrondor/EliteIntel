@@ -6,10 +6,12 @@ import elite.intel.ai.brain.Client;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.ws.WebSocketBroadcaster;
+import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.util.function.Predicate;
 
 public abstract class AiEndPoint {
 
@@ -121,6 +123,39 @@ public abstract class AiEndPoint {
         } catch (JsonSyntaxException ignored) {
             return null;
         }
+    }
+
+    /**
+     * Runs a minimal connectivity round-trip and reports whether the raw provider response carries a
+     * usable completion rather than a {@link elite.intel.ai.brain.BaseAiClient} transport/HTTP-error
+     * sentinel. The provider-specific "this root is a completion" test is supplied by the caller because
+     * each backend uses a different success envelope (OpenAI {@code choices[]}, Ollama {@code message},
+     * Anthropic {@code content[]}, Gemini {@code candidates[]}). Fails closed: any exception or
+     * non-completion response reports unreachable.
+     */
+    protected boolean probeConnection(String promptJson, Client client, Predicate<JsonObject> hasCompletion) {
+        try {
+            JsonObject root = processAiPrompt(promptJson, client);
+            return root != null && hasCompletion.test(root);
+        } catch (Exception e) {
+            log.debug("Connectivity probe failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Builds a single-message ("ping") chat request on top of the given provider request skeleton and
+     * probes it. Shared by every chat-style backend (all OpenAI-compatible endpoints, Ollama, Anthropic);
+     * only the success envelope, supplied via {@code hasCompletion}, differs.
+     */
+    protected boolean probeChatStyle(JsonObject prompt, Client client, Predicate<JsonObject> hasCompletion) {
+        JsonArray messages = new JsonArray();
+        JsonObject user = new JsonObject();
+        user.addProperty("role", AIConstants.ROLE_USER);
+        user.addProperty("content", "ping");
+        messages.add(user);
+        prompt.add("messages", messages);
+        return probeConnection(GsonFactory.getGson().toJson(prompt), client, hasCompletion);
     }
 
 }
