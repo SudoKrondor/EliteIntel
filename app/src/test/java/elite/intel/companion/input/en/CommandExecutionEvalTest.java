@@ -48,6 +48,13 @@ class CommandExecutionEvalTest {
             // companion action-bias prompt rules - observed answering with status/FSD-target offers instead).
             new Case("target drive", "target_subsystem", "drive", false),
             new Case("target power plant", "target_subsystem", "power", false),
+            // "Find" commands: parameterized search (key + optional max_distance/state). Same regression class as
+            // target_subsystem - the companion previously lost the param examples/hints and chattered instead of
+            // executing. Verifies the command fires and carries the searched value.
+            new Case("find where we can buy gold within 80 light years", "find_commodity", "gold", false),
+            new Case("find a mining site for painite", "find_mining_site", "painite", false),
+            new Case("find brain trees", "find_brain_trees", null, false),
+            new Case("find nearest interstellar factor", "find_interstellar_factor", null, true),
             // Bare panel names: no synonym canonicalization, so they go through the LLM, which must execute the
             // matching command rather than chatter (regression for the companion action-bias prompt rules).
             new Case("navigation", "show_navigation_panel", null, false),
