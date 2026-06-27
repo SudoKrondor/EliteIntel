@@ -21,6 +21,8 @@ import java.util.List;
 public class AnalyzeBioScansStarSystemQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_bio_scans_and_samples_in_star_system";
 
+    @Override public String llmDescription() { return "Report the biological scans and samples in the current star system."; }
+
 
     @Override public String id() { return ID; }
 

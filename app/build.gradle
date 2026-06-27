@@ -184,6 +184,7 @@ tasks.register('localIntegrationTest', Test) {
     testLogging {
         events 'passed', 'failed', 'skipped'
         exceptionFormat 'full'
+        showStandardStreams = true // surface the companion eval's printed conversation
     }
 }
 

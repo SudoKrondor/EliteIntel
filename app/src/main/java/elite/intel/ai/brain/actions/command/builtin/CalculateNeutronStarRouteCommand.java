@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -18,6 +19,8 @@ import elite.intel.session.PlayerSession;
 import elite.intel.util.ClipboardUtils;
 import elite.intel.util.StringUtls;
 
+import java.util.List;
+
 import static elite.intel.util.StringUtls.getIntSafely;
 
 /**
@@ -28,11 +31,27 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     public static final String ID = "calculate_neutron_star_route";
 
+    @Override public String llmDescription() { return "Calculate a neutron-boosted economical route to a destination."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final ShipLoadoutManager shipLoadoutManager = ShipLoadoutManager.getInstance();
+
+    private static final String PARAM_EFFICIENCY = "efficiency";
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec efficiency = new ActionParameterSpec(
+                PARAM_EFFICIENCY, "number", true,
+                "Route efficiency percentage from 1 to 100: lower trades extra jumps for shorter total distance.",
+                List.of("60", "100"),
+                "Extract the efficiency percentage the commander states (1-100).");
+        efficiency.validate();
+        return List.of(efficiency);
+    }
 
     @Override
     public String id() {
@@ -40,8 +59,13 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     }
 
     @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement key = params.get("efficiency");
+        JsonElement key = params.get(PARAM_EFFICIENCY);
 
         if (key == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));

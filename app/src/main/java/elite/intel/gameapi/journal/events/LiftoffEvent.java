@@ -70,6 +70,17 @@ public class LiftoffEvent extends BaseEvent {
         return "Liftoff";
     }
 
+    /** Routine surface liftoff; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Lifted off from a planetary surface back into flight; carries latitude and longitude.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -42,6 +42,21 @@ public class BountyEvent extends BaseEvent {
         return "Bounty";
     }
 
+    /**
+     * NORMAL: BountyEventSubscriber already owns the spoken "kill confirmed / mission kill" callout
+     * via EventNarrator, which now narrates in every mode. Kept in memory but off the consciousness's
+     * spoken channel so the kill is not announced twice.
+     */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "You were awarded a bounty for destroying a wanted ship; carries the target ship, the awarding faction(s), and the total reward.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

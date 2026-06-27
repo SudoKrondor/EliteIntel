@@ -97,6 +97,17 @@ public class MissionAcceptedEvent extends BaseEvent {
         return "MissionAccepted";
     }
 
+    /** New objective worth acknowledging. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Accepted a mission; carries the mission name, the giving faction, destination, and reward.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

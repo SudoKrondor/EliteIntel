@@ -30,6 +30,17 @@ public class DockSRVEvent extends BaseEvent {
         return "DockSRV";
     }
 
+    /** Flavor SRV recall; not worth interrupting. Memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Recalled the SRV back aboard the ship.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -30,6 +30,17 @@ public class MissionAbandonedEvent extends BaseEvent {
         return "MissionAbandoned";
     }
 
+    /** The commander chose to abandon; not worth interrupting. Memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Abandoned a mission; carries the mission name and the giving faction.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -83,6 +83,17 @@ public class CodexEntryEvent extends BaseEvent {
         return "CodexEntry";
     }
 
+    /** A new discovery worth a remark. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Logged a codex discovery (astronomical, biological, geological, and so on); carries the entry name and category.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

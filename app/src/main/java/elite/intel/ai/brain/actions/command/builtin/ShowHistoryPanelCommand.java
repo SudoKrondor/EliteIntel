@@ -23,6 +23,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowHistoryPanelCommand implements IntelCommand {
     public static final String ID = "show_history_panel";
 
+    @Override public String llmDescription() { return "Open the history panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

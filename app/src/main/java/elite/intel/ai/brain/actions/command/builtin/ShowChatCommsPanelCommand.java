@@ -23,6 +23,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowChatCommsPanelCommand implements IntelCommand {
     public static final String ID = "show_chat_comms_panel";
 
+    @Override public String llmDescription() { return "Open the chat / comms panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

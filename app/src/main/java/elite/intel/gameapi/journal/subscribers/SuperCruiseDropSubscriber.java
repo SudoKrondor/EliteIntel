@@ -2,7 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
@@ -43,7 +43,7 @@ public class SuperCruiseDropSubscriber {
 
             String carrierName = playerSession.getFleetCarrierData().getCarrierName();
             if (carrierName != null && event.getType().toUpperCase().startsWith(carrierName.toUpperCase())) {
-                GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName))));
+                EventNarrator.say(StringUtls.localizedEvent("event.supercruise.welcomeHomeCarrier", StringUtls.capitalizeWords(carrierName)));
             }
         });
     }

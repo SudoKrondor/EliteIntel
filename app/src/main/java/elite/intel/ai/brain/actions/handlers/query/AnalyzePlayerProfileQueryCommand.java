@@ -13,6 +13,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzePlayerProfileQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_player_profile_rank_progress";
 
+    @Override public String llmDescription() { return "Report the commander's ranks and progress."; }
+
 
     @Override public String id() { return ID; }
 

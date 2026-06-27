@@ -29,6 +29,8 @@ import java.util.Optional;
 public final class FindTritiumMiningSiteCommand implements IntelCommand {
     public static final String ID = "find_tritium_mining_site";
 
+    @Override public String llmDescription() { return "Find a nearby tritium mining site."; }
+
 
     @Override
     public String id() {

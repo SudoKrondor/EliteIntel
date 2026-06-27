@@ -31,6 +31,12 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class FindCommodityCommand implements IntelCommand {
     public static final String ID = "find_commodity";
 
+    @Override public String llmDescription() { return "Find where a commodity can be bought or sold nearby."; }
+
+
+    private static final String PARAM_KEY = "key";
+    private static final String PARAM_MAX_DISTANCE = "max_distance";
+    private static final String PARAM_STATE = "state";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
@@ -39,19 +45,19 @@ public final class FindCommodityCommand implements IntelCommand {
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The commodity (market good) to search for, e.g. gold, tritium, painite.",
                 List.of("gold", "tritium"),
                 "Extract the commodity name verbatim in lower case; do not translate.");
         key.validate();
         ActionParameterSpec maxDistance = new ActionParameterSpec(
-                "max_distance", "number", false,
+                PARAM_MAX_DISTANCE, "number", false,
                 "Maximum galactic search radius in light years (ly). If omitted, a default range is used.",
                 List.of("80", "150"),
                 "Extract the distance limit in light years if the commander states one (e.g. the 80 in 'find gold within 80 ly').");
         maxDistance.validate();
         ActionParameterSpec state = new ActionParameterSpec(
-                "state", "boolean", false,
+                PARAM_STATE, "boolean", false,
                 "Search mode: true = nearest market (by distance); false = best price / where to buy.",
                 List.of("true", "false"),
                 "Set true when the commander says 'nearest' or 'closest'; otherwise false.");
@@ -71,9 +77,9 @@ public final class FindCommodityCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement key = params.get("key");
-        JsonElement maxGalacticDistance = params.get("max_distance");
-        JsonElement stateEl = params.get("state");
+        JsonElement key = params.get(PARAM_KEY);
+        JsonElement maxGalacticDistance = params.get(PARAM_MAX_DISTANCE);
+        JsonElement stateEl = params.get(PARAM_STATE);
         boolean returnClosest = stateEl != null && stateEl.getAsBoolean();
         Integer distance = maxGalacticDistance == null ? null : getIntSafely(maxGalacticDistance.getAsString());
         if (distance == null || distance < 1) distance = (int) playerSession.getShipLoadout().getMaxJumpRange() * 2;
@@ -100,7 +106,15 @@ public final class FindCommodityCommand implements IntelCommand {
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
+        if (cargoCapacity == 0) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noCargoCapacity")));
+            return;
+        }
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
+        if (maxDistanceFromArrival == 0) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.maxDistanceFromArrivalNoSet")));
+            return;
+        }
         List<CommoditySearchResult> results = EdsmCommoditySearch.search(
                 commodity,
                 starName,

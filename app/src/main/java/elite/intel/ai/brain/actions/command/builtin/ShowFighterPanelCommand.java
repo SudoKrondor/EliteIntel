@@ -15,6 +15,8 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowFighterPanelCommand implements IntelCommand {
     public static final String ID = "show_fighter_panel";
 
+    @Override public String llmDescription() { return "Open the ship-launched fighter panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

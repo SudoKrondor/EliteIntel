@@ -57,7 +57,7 @@ public class StartJumpSubscriber {
                                 - IF no traffic data is available, omit mentioning traffic info.
                                 - IF no deaths data is available, omit mentioning fatalities.
                             """;
-                    GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
+                    GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions, SensorDataEvent.TOPIC_NAVIGATION));
                 }
             }); // end virtual thread
         }

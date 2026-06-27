@@ -19,12 +19,16 @@ import java.util.List;
 public final class TradeProfileTogglePermitSystemsCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_permit_systems";
 
+    @Override public String llmDescription() { return "Toggle whether trade routes may include permit-locked systems."; }
+
+
+    private static final String PARAM_STATE = "state";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
-                "state",
+                PARAM_STATE,
                 "boolean",
                 true,
                 "Whether permit-locked systems are allowed in route calculations. true = allow, false = disallow.",
@@ -47,7 +51,7 @@ public final class TradeProfileTogglePermitSystemsCommand implements IntelComman
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        boolean isOn = params.get("state").getAsBoolean();
+        boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setAllowPermit(isOn)) {
             String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");

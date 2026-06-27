@@ -16,6 +16,8 @@ import elite.intel.util.StringUtls;
 public final class ClearNeutronRouteCommand implements IntelCommand {
     public static final String ID = "clear_neutron_route";
 
+    @Override public String llmDescription() { return "Clear the plotted neutron-star route."; }
+
 
     private final NeutronStarRouteManager manager = NeutronStarRouteManager.getInstance();
 

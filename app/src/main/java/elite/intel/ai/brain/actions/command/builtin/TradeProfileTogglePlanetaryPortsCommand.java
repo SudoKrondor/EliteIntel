@@ -19,12 +19,16 @@ import java.util.List;
 public final class TradeProfileTogglePlanetaryPortsCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_planetary_ports";
 
+    @Override public String llmDescription() { return "Toggle whether trade routes may include planetary ports."; }
+
+
+    private static final String PARAM_STATE = "state";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec state = new ActionParameterSpec(
-                "state",
+                PARAM_STATE,
                 "boolean",
                 true,
                 "Whether planetary ports are included in route calculations. true = include, false = exclude.",
@@ -47,7 +51,7 @@ public final class TradeProfileTogglePlanetaryPortsCommand implements IntelComma
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        boolean isOn = params.get("state").getAsBoolean();
+        boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setAllowPlanetaryPorts(isOn)) {
             String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");

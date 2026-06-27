@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
@@ -38,7 +38,7 @@ public class CarrierJumpCompleteSubscriber {
 
             if (starPos.length == 3 && starPos[0] == 0.0 && starPos[1] == 0.0 && starPos[2] == 0 && !"sol".equalsIgnoreCase(starSystem)) {
                 UiBus.publish(new AppLogEvent(localizedEvent("event.carrier.jumpCompleteStarWarning")));
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.carrier.jumpCompleteNoStar")));
+                EventNarrator.critical(localizedEvent("event.carrier.jumpCompleteNoStar"));
             }
 
 

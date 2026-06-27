@@ -57,6 +57,7 @@ public class BindingsMonitor {
     private static final Logger log = LogManager.getLogger(BindingsMonitor.class);
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
+    private final BindingsLoader bindingsLoader = new BindingsLoader();
     private final KeyBindingManager keyBindingManager = KeyBindingManager.getInstance();
     private final BindingConflictManager conflictManager = BindingConflictManager.getInstance();
     private Path bindingsDir;
@@ -64,6 +65,19 @@ public class BindingsMonitor {
     private File currentBindsFile;
     private Thread processingThread;
     private volatile boolean running;
+
+    /**
+     * Action names the app itself can press; used to scope conflict voice alerts.
+     */
+    private static final Set<String> APP_CONTROLLED_ACTIONS = appControlledActions();
+
+    private static Set<String> appControlledActions() {
+        Set<String> actions = new HashSet<>();
+        for (Bindings.GameCommand cmd : Bindings.GameCommand.values()) {
+            actions.add(cmd.getGameBinding());
+        }
+        return actions;
+    }
 
     private BindingsMonitor() {
         this.parser = KeyBindingsParser.getInstance();
@@ -135,7 +149,7 @@ public class BindingsMonitor {
                     if (kind == StandardWatchEventKinds.ENTRY_MODIFY || kind == StandardWatchEventKinds.ENTRY_CREATE) {
                         Path changed = (Path) event.context();
                         if (changed.toString().endsWith(".binds")) {
-                            File activeFile = new BindingsLoader().getLatestBindsFile();
+                            File activeFile = bindingsLoader.getLatestBindsFile();
                             boolean activeFileWasModified = activeFile.getName().equals(changed.toString());
                             boolean activeFileChanged = !activeFile.equals(currentBindsFile);
                             if (activeFileWasModified || activeFileChanged) {
@@ -170,7 +184,7 @@ public class BindingsMonitor {
 
     private void parseAndUpdateBindings() {
         try {
-            currentBindsFile = new BindingsLoader().getLatestBindsFile();
+            currentBindsFile = bindingsLoader.getLatestBindsFile();
             bindings = parser.parseBindings(currentBindsFile);
             GameEventBus.publish(
                     new AppLogEvent("SYSTEM: Key bindings updated from file " + currentBindsFile.getAbsolutePath()));
@@ -193,51 +207,35 @@ public class BindingsMonitor {
     }
 
     /**
+     * Returns the file currently being monitored, falling back to a fresh
+     * {@link BindingsLoader#getLatestBindsFile()} lookup if monitoring hasn't started or hasn't
+     * found one yet. Shared by anything that needs "the active game binds file" outside the
+     * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
+     */
+    public File resolveActiveBindsFile() throws Exception {
+        return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
+    }
+
+    /**
      * Detects binding conflicts among GameCommand bindings and persists them.
      * Returns descriptions of newly detected conflicts only - empty list means
      * nothing changed.
      */
     public List<String> checkForConflictsAndPersist() {
         List<String> newDescriptions = new ArrayList<>();
-        Map<String, KeyBindingsParser.KeyBinding> currentBindings = getBindings();
-        if (currentBindings == null || currentBindings.isEmpty())
-            return newDescriptions;
 
-        // Invert: keyCombo → all action names sharing it
-        Map<String, List<String>> byCombo = new HashMap<>();
-        for (Map.Entry<String, KeyBindingsParser.KeyBinding> e : currentBindings.entrySet()) {
-            String combo = normalizeCombo(e.getValue());
-            if (!combo.isEmpty())
-                byCombo.computeIfAbsent(combo, k -> new ArrayList<>()).add(e.getKey());
-        }
-
-        // Find conflicts: for each distinct GameCommand binding, check what else shares
-        // its key
         Set<String> currentConflictKeys = new HashSet<>();
         Map<String, String> currentConflictDescriptions = new LinkedHashMap<>();
-        Set<String> processedCombos = new HashSet<>();
-
-        for (Bindings.GameCommand cmd : Bindings.GameCommand.values()) {
-            String gameBinding = cmd.getGameBinding();
-            KeyBindingsParser.KeyBinding kb = currentBindings.get(gameBinding);
-            if (kb == null)
+        for (BindingConflictScanner.Conflict c : detectConflicts()) {
+            // Announce only conflicts that touch an app-controlled command, so voice alerts stay
+            // meaningful and do not flood on unrelated vanilla-vs-vanilla overlaps. The UI surfaces
+            // the full set live.
+            if (!APP_CONTROLLED_ACTIONS.contains(c.actionA())
+                    && !APP_CONTROLLED_ACTIONS.contains(c.actionB()))
                 continue;
-
-            String combo = normalizeCombo(kb);
-            if (!processedCombos.add(combo))
-                continue; // same combo already checked via another GameCommand
-
-            List<String> sharingActions = byCombo.getOrDefault(combo, List.of());
-            for (String other : sharingActions) {
-                if (other.equals(gameBinding))
-                    continue;
-                if (BindingConflictRules.isSafeOverlap(gameBinding, other))
-                    continue;
-
-                String conflictKey = BindingConflictRules.makeKey(gameBinding, other);
-                if (currentConflictKeys.add(conflictKey)) {
-                    currentConflictDescriptions.put(conflictKey, BindingConflictRules.describe(gameBinding, other));
-                }
+            String conflictKey = BindingConflictRules.makeKey(c.actionA(), c.actionB());
+            if (currentConflictKeys.add(conflictKey)) {
+                currentConflictDescriptions.put(conflictKey, c.description());
             }
         }
 
@@ -263,14 +261,13 @@ public class BindingsMonitor {
         return newDescriptions;
     }
 
-    private String normalizeCombo(KeyBindingsParser.KeyBinding kb) {
-        if (kb == null || kb.key == null || kb.key.isBlank() || kb.key.equals("Key_"))
-            return "";
-        if (kb.modifiers == null || kb.modifiers.length == 0)
-            return kb.key;
-        String[] sorted = kb.modifiers.clone();
-        Arrays.sort(sorted);
-        return kb.key + "|" + String.join("|", sorted);
+    /**
+     * Detects all keyboard binding conflicts in the current file using ED's exact-chord model
+     * (see {@link BindingConflictScanner}): two bindings conflict only when they share an
+     * identical chord within the same context.
+     */
+    private List<BindingConflictScanner.Conflict> detectConflicts() {
+        return BindingConflictScanner.scan(getBindings());
     }
 
     /**

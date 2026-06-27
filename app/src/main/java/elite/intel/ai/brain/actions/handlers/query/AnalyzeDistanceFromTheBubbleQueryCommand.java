@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.util.NavigationUtils;
@@ -11,6 +11,8 @@ import elite.intel.util.StringUtls;
 @RegisterQuery
 public class AnalyzeDistanceFromTheBubbleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_distance_to_bubble_earth_sol_civilization";
+
+    @Override public String llmDescription() { return "Report the distance from the current location to the populated core systems (the Bubble / Sol / Earth)."; }
 
 
     @Override public String id() { return ID; }

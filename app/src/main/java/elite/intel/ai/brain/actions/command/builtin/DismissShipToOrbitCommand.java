@@ -23,6 +23,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DismissShipToOrbitCommand implements IntelCommand {
     public static final String ID = "dismiss_ship_to_orbit";
 
+    @Override public String llmDescription() { return "Dismiss the ship to orbit."; }
+
 
     private final Status status = Status.getInstance();
 

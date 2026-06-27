@@ -46,6 +46,17 @@ public class SwitchSuitLoadoutEvent extends BaseEvent {
         return "SwitchSuitLoadout";
     }
 
+    /** On-foot loadout swap; not relevant. Ignore. */
+    @Override
+    public Importance importance() {
+        return Importance.LOW;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Switched the on-foot suit loadout; carries the suit and the loadout name.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

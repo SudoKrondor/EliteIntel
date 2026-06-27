@@ -34,6 +34,17 @@ public class ApproachBodyEvent extends BaseEvent {
         return "ApproachBody";
     }
 
+    /** Routine approach; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Entered orbital cruise approaching a planetary body in supercruise; carries the star system and body name.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

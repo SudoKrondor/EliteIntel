@@ -18,6 +18,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TOGGLE_CARGO_SCO
 public final class ToggleCargoScoopCommand implements IntelCommand {
     public static final String ID = "toggle_cargo_scoop";
 
+    @Override public String llmDescription() { return "Toggle the cargo scoop open or closed."; }
+
 
     @Override
     public String id() {

@@ -30,6 +30,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TARGET_NEXT_ROUT
 public final class JumpToHyperspaceCommand implements IntelCommand {
     public static final String ID = "jump_to_hyperspace";
 
+    @Override public String llmDescription() { return "Engage the frame shift drive to jump to the next system."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final UINavigator navigator = new UINavigator();

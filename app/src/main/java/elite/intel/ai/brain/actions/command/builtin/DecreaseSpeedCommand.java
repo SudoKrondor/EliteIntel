@@ -26,12 +26,16 @@ import java.util.List;
 public final class DecreaseSpeedCommand implements IntelCommand {
     public static final String ID = "decrease_speed";
 
+    @Override public String llmDescription() { return "Decrease the throttle."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key",
+                PARAM_KEY,
                 "number",
                 true,
                 "The numeric amount to decrease speed by, as spoken by the commander (e.g. the 25 in 'decrease speed by 25').",
@@ -59,7 +63,7 @@ public final class DecreaseSpeedCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         Integer num = key == null ? null : StringUtls.getIntSafely(key.getAsString());
         if (num == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.speed.invalidAmount")));

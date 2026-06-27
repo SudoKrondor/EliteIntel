@@ -22,6 +22,8 @@ import java.util.Set;
 public final class NavigateToPirateMissionTargetCommand implements IntelCommand {
     public static final String ID = "navigate_to_pirate_mission_target";
 
+    @Override public String llmDescription() { return "Plot a route to the pirate mission target."; }
+
 
     @Override
     public String id() {

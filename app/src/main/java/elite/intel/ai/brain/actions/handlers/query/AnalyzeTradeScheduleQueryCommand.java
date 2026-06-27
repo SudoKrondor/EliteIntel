@@ -16,6 +16,8 @@ import java.util.List;
 public class AnalyzeTradeScheduleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_trade_route";
 
+    @Override public String llmDescription() { return "Report the currently planned trade route."; }
+
 
     @Override public String id() { return ID; }
 

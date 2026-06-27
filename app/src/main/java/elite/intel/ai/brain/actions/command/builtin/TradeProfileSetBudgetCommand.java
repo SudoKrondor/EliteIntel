@@ -19,12 +19,16 @@ import java.util.List;
 public final class TradeProfileSetBudgetCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_budget";
 
+    @Override public String llmDescription() { return "Set the trade-route search budget."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key",
+                PARAM_KEY,
                 "number",
                 true,
                 "Starting budget in credits for the trade route profile.",
@@ -47,7 +51,7 @@ public final class TradeProfileSetBudgetCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Integer budget = StringUtls.getIntSafely(params.get("key").getAsString());
+        Integer budget = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
         if (budget == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidBudget")));
            return;

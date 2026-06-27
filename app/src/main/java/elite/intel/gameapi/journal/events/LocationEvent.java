@@ -174,6 +174,17 @@ public class LocationEvent extends BaseEvent {
         return "Location";
     }
 
+    /** Load or respawn location snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Reports your current location at game load or after respawn; carries the star system, body, and whether you are docked.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

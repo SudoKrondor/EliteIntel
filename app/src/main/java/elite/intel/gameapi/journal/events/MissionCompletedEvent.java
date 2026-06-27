@@ -68,6 +68,17 @@ public class MissionCompletedEvent extends BaseEvent {
         return "MissionCompleted";
     }
 
+    /** Mission outcome worth a remark. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Completed a mission; carries the mission name, the giving faction, and the reward (credits, materials, or commodities).";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -276,6 +276,21 @@ public class FSDJumpEvent extends BaseEvent {
         return "FSDJump";
     }
 
+    /**
+     * NORMAL: JumpCompletedSubscriber owns the spoken arrival/route callouts via EventNarrator (and
+     * the legacy SensorDataEvent path), now narrating in every mode. Kept in memory but off the
+     * consciousness's spoken channel so the arrival is not announced twice.
+     */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Arrived in a new star system via a hyperspace jump; carries the destination system name, jump distance in light years, and fuel used.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

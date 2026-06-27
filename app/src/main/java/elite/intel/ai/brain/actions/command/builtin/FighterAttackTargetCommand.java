@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class FighterAttackTargetCommand extends SimpleTapCommand {
     public static final String ID = "fighter_attack_target";
 
+    @Override public String llmDescription() { return "Order the ship-launched fighter to attack the current target."; }
+
     public FighterAttackTargetCommand() {
         super(ID, Bindings.GameCommand.BINDING_REQUEST_FOCUS_TARGET.getGameBinding());
     }

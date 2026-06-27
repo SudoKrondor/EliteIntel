@@ -3,6 +3,7 @@ package elite.intel.ui.support;
 import elite.intel.ai.hands.BindingSlotType;
 import elite.intel.ui.render.BindingSlotCellRenderer;
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.BindingConflictPopup;
 import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
@@ -16,6 +17,8 @@ import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static elite.intel.ui.theme.AppTheme.HUD_SCROLL_STYLE_LOCKED;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
@@ -28,15 +31,38 @@ public class BindingsGroupTableFactory {
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
     private final Consumer<String> autoFixHandler;
+    private final Predicate<String> hasConflict;
+    private final Predicate<String> hasRecommendation;
+    /**
+     * Builds the hover-callout content for a conflicting binding id, or returns {@code null} if it has none.
+     */
+    private final Function<String, JComponent> conflictPopupContent;
+    /**
+     * Shared across all this factory's tables so only one callout is ever visible.
+     */
+    private final BindingConflictPopup conflictPopup = new BindingConflictPopup();
 
     public BindingsGroupTableFactory(
             BindingsSelectionController selectionController,
             BiConsumer<String, BindingSlotType> slotClickHandler,
-            Consumer<String> autoFixHandler
+            Consumer<String> autoFixHandler,
+            Predicate<String> hasConflict,
+            Predicate<String> hasRecommendation,
+            Function<String, JComponent> conflictPopupContent
     ) {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
         this.autoFixHandler = autoFixHandler;
+        this.hasConflict = hasConflict;
+        this.hasRecommendation = hasRecommendation;
+        this.conflictPopupContent = conflictPopupContent;
+    }
+
+    /**
+     * Dismisses any visible conflict callout - call before the tables are rebuilt.
+     */
+    public void hideConflictPopup() {
+        conflictPopup.hide();
     }
 
     /**
@@ -122,7 +148,9 @@ public class BindingsGroupTableFactory {
             public void mouseMoved(MouseEvent event) {
                 boolean clickable = isClickableCell(table, event.getPoint());
                 table.setCursor(clickable ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
-                setHoveredRow(table, hoveredRowAt(table, event.getPoint()));
+                int row = hoveredRowAt(table, event.getPoint());
+                setHoveredRow(table, row);
+                updateConflictPopup(table, row, event);
             }
         });
         table.addMouseListener(new MouseAdapter() {
@@ -130,8 +158,28 @@ public class BindingsGroupTableFactory {
             public void mouseExited(MouseEvent event) {
                 table.setCursor(Cursor.getDefaultCursor());
                 setHoveredRow(table, -1);
+                conflictPopup.hide();
             }
         });
+    }
+
+    /**
+     * Shows the conflict callout next to the pointer when it rests on a conflicting row, and hides it
+     * otherwise. The callout is offset down-right of the pointer so it never sits under the cursor
+     * (which would stop {@code mouseMoved} from firing and leave it stuck on screen).
+     */
+    private void updateConflictPopup(JTable table, int row, MouseEvent event) {
+        if (conflictPopupContent == null || row < 0 || row >= table.getRowCount()) {
+            conflictPopup.hide();
+            return;
+        }
+        String bindingId = String.valueOf(table.getValueAt(row, 0));
+        JComponent content = conflictPopupContent.apply(bindingId);
+        if (content == null) {
+            conflictPopup.hide();
+            return;
+        }
+        conflictPopup.show(table, event.getXOnScreen() + 16, event.getYOnScreen() + 18, bindingId, content);
     }
 
     private int hoveredRowAt(JTable table, Point point) {
@@ -202,7 +250,7 @@ public class BindingsGroupTableFactory {
         table.setAutoCreateRowSorter(false);
         table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
-        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer());
+        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict, hasRecommendation));
     }
 
     private void configureColumnWidths(JTable table) {

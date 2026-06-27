@@ -37,6 +37,17 @@ public class ModuleSellRemoteEvent extends BaseEvent {
         return "ModuleSellRemote";
     }
 
+    /** Routine remote module sale; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Sold a stored module remotely; carries the module and the sale value.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

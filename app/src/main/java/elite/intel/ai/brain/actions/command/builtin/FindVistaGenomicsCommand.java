@@ -27,6 +27,8 @@ import java.util.Optional;
 public final class FindVistaGenomicsCommand implements IntelCommand {
     public static final String ID = "find_vista_genomics";
 
+    @Override public String llmDescription() { return "Find the nearest Vista Genomics to sell exobiology data."; }
+
 
     @Override
     public String id() {

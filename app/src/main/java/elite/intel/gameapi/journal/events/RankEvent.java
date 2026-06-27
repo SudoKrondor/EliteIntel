@@ -49,6 +49,17 @@ public class RankEvent extends BaseEvent implements PlayerRankStats {
         return "Rank";
     }
 
+    /** Rank snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A snapshot of current ranks across all careers. Background, fires at game load.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

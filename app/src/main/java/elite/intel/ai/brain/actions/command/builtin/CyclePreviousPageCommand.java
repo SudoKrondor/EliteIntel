@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class CyclePreviousPageCommand extends SimpleTapCommand {
     public static final String ID = "cycle_previous_page";
 
+    @Override public String llmDescription() { return "Cycle to the previous page within the current panel."; }
+
     public CyclePreviousPageCommand() {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_PREVIOUS_PAGE.getGameBinding());
     }

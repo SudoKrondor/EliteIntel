@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class SetSpeed25Command extends SimpleTapCommand {
     public static final String ID = "set_speed_25";
 
+    @Override public String llmDescription() { return "Set the throttle to 25 percent."; }
+
     public SetSpeed25Command() {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED25.getGameBinding());
     }

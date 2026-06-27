@@ -19,6 +19,8 @@ import java.util.List;
 public class AnalyzeStationsQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_stations";
 
+    @Override public String llmDescription() { return "Report the stations in the current system."; }
+
 
     @Override public String id() { return ID; }
 

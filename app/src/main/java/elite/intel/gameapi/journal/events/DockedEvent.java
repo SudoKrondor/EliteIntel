@@ -138,6 +138,17 @@ public class DockedEvent extends BaseEvent {
         return "Docked";
     }
 
+    /** Routine arrival; FSDJump carries the system-change beat. Memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Docked at a station, outpost, or surface settlement; carries the station name, its type, and the services it offers.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

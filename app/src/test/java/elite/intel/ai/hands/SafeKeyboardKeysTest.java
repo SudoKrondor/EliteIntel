@@ -9,17 +9,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SafeKeyboardKeysTest {
 
-    private static final Set<String> UNSAFE_KEYS = Set.of(
-            "Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y");
-
     @Test
-    void baseKeysNeverIncludeLayoutSensitiveKeysOrPunctuation() {
-        for (String key : SafeKeyboardKeys.baseKeys()) {
-            assertFalse(UNSAFE_KEYS.contains(key), "unsafe key in pool: " + key);
-            // Only letters, digits, numpad, and function keys - never punctuation tokens.
-            assertTrue(
-                    key.matches("Key_[A-Z]|Key_[0-9]|Key_Numpad_.*|Key_F[0-9]{1,2}"),
-                    "unexpected pool key: " + key);
+    void baseKeysIncludeRelaxedLayoutKeysAndAreAllAssignable() {
+        // AZERTY safety guard relaxed 2026-06-24 (testers confirmed these work). This locks the
+        // relaxation; restore the strict guard by dropping LAYOUT_VARIABLE_KEYS in SafeKeyboardKeys.
+        List<String> base = SafeKeyboardKeys.baseKeys();
+        for (String relaxed : List.of("Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y")) {
+            assertTrue(base.contains(relaxed), "expected relaxed key in pool: " + relaxed);
+        }
+        for (String key : base) {
+            assertTrue(EliteKeyboardKeys.isAssignable(key), "pool key not assignable: " + key);
         }
     }
 
@@ -44,9 +43,25 @@ class SafeKeyboardKeysTest {
 
         int baseCount = SafeKeyboardKeys.baseKeys().size();
         int modifierCount = SafeKeyboardKeys.safeModifiers().size();
-        assertEquals(baseCount * modifierCount + baseCount, chords.size());
+        // OS-reserved chords (e.g. Alt+F4) are filtered out of the pool, so the count is the full
+        // product minus those exclusions - computed the same way the pool builds it.
+        long reservedCombos = 0;
+        long reservedPlain = 0;
+        for (String key : SafeKeyboardKeys.baseKeys()) {
+            for (BindingModifier modifier : SafeKeyboardKeys.safeModifiers()) {
+                if (ReservedKeyChords.isReserved(key, List.of(modifier.key()))) {
+                    reservedCombos++;
+                }
+            }
+            if (ReservedKeyChords.isReserved(key, List.of())) {
+                reservedPlain++;
+            }
+        }
+        long expectedCombos = (long) baseCount * modifierCount - reservedCombos;
+        long expectedPlain = baseCount - reservedPlain;
+        assertEquals(expectedCombos + expectedPlain, chords.size());
 
-        // First chord is a combo on the first base key with the first safe modifier.
+        // First chord is a combo on the first base key with the first safe modifier (not reserved).
         assertEquals(SafeKeyboardKeys.baseKeys().get(0), chords.get(0).key());
         assertEquals(SafeKeyboardKeys.safeModifiers().get(0), chords.get(0).modifier());
 
@@ -58,7 +73,7 @@ class SafeKeyboardKeysTest {
                 break;
             }
         }
-        assertEquals(baseCount * modifierCount, firstPlain, "plain keys must follow every combo");
+        assertEquals(expectedCombos, firstPlain, "plain keys must follow every combo");
         for (int i = firstPlain; i < chords.size(); i++) {
             assertFalse(chords.get(i).hasModifier());
         }

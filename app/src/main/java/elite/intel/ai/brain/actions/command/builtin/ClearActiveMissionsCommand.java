@@ -13,6 +13,8 @@ import elite.intel.db.managers.MissionManager;
 public final class ClearActiveMissionsCommand implements IntelCommand {
     public static final String ID = "clear_active_missions";
 
+    @Override public String llmDescription() { return "Clear the tracked active missions."; }
+
 
     private final MissionManager missionManager = MissionManager.getInstance();
 

@@ -17,6 +17,8 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
 public final class WakeupCommand implements IntelCommand {
     public static final String ID = "wakeup";
 
+    @Override public String llmDescription() { return "Wake the companion from sleep."; }
+
 
     @Override
     public String id() {

@@ -19,12 +19,16 @@ import static elite.intel.gameapi.FireGroups.fireGroupByNato;
 public final class SelectFireGroupByNatoCommand implements IntelCommand {
     public static final String ID = "select_fire_group_by_nato";
 
+    @Override public String llmDescription() { return "Select a fire group by its NATO-letter name."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The fire group identified by its NATO phonetic word (alpha, bravo, charlie, ...).",
                 List.of("alpha", "charlie"),
                 "Extract the NATO phonetic word verbatim in lower case; do NOT convert it to a letter.");
@@ -45,7 +49,7 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
     @Override
     public void execute(JsonObject params, String responseText) {
 
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
             return;
         }

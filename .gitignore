@@ -28,7 +28,13 @@
 /PACKAGES.md
 
 #-- Local dev/build artifacts and secrets
-.idea/
+*.log
+# Ignore all of .idea except the shared IDE settings explicitly re-included below.
+# (Use .idea/* not .idea/ so git descends into the dir and the negations can take effect.)
+.idea/*
+# Shared: inspection entry-point annotations (@Subscribe / @RegisterQuery / @RegisterCommand)
+# so reflection-discovered classes aren't flagged "unused" in every developer's IDE.
+!.idea/misc.xml
 app/logs/
 build/
 distribution/elite_intel.jar
@@ -44,3 +50,5 @@ CLAUDE.md
 .github/setup.js
 .vscode/tasks.json
 #-- SECURITY
+/.classpath
+/.project

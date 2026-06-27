@@ -13,6 +13,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeCargoHoldQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_cargo_hold_contents";
 
+    @Override public String llmDescription() { return "Report the contents of the cargo hold."; }
+
 
     @Override public String id() { return ID; }
 

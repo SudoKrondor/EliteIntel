@@ -51,7 +51,7 @@ public class UpdaterApp {
     private static final Color BUTTON_BG = new Color(0x03529F);
     private static final Color CONSOLE_FG = new Color(0xE0FFEF);
 
-    private static final String GITHUB_API = "https://api.github.com/repos/stone-alex/EliteIntel/releases/latest";
+    private static final String GITHUB_API = "https://api.github.com/repos/SudoKrondor/EliteIntel/releases/latest";
     private static final String MAIN_JAR = "elite_intel.jar";
 
     // -- UI components ---------------------------------------------------------

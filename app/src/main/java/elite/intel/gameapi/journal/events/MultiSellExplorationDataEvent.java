@@ -51,6 +51,17 @@ public class MultiSellExplorationDataEvent extends BaseEvent {
         return "MultiSellExplorationData";
     }
 
+    /** Sold exploration data; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Sold exploration data for multiple systems at once; carries the systems and the total payout.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

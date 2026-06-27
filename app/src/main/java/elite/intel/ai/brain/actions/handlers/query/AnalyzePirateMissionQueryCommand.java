@@ -18,6 +18,8 @@ import java.util.*;
 public class AnalyzePirateMissionQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_pirate_mission";
 
+    @Override public String llmDescription() { return "Report details of the active pirate massacre mission."; }
+
 
     @Override public String id() { return ID; }
 

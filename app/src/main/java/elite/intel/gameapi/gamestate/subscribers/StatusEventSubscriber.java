@@ -1,7 +1,7 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.gamestate.status_events.BeingInterdictedEvent;
@@ -44,7 +44,7 @@ public class StatusEventSubscriber {
                 && !"Speeding".equalsIgnoreCase(legalState)
                 && !"Clean".equalsIgnoreCase(legalState)
                 && !legalState.equalsIgnoreCase(lastAnnouncedLegalState)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.legalStatus", legalState)));
+            EventNarrator.critical(localizedEvent("event.status.legalStatus", legalState));
             lastAnnouncedLegalState = legalState;
         }
 
@@ -63,22 +63,22 @@ public class StatusEventSubscriber {
         // --------------------------------------------------------------------------------------
         // Mission-critical alerts
         if (status.isLowFuel() && !lowFuelAnnounced) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowFuel")));
+            EventNarrator.critical(localizedEvent("event.status.lowFuel"));
             lowFuelAnnounced = true;
         }
 
         if (status.isLowOxygen() && !lowOxygenAnnounced) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowOxygen")));
+            EventNarrator.critical(localizedEvent("event.status.lowOxygen"));
             lowOxygenAnnounced = true;
         }
 
         if (status.isLowHealth() && !lowHealthAnnounced) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.lowHealth")));
+            EventNarrator.critical(localizedEvent("event.status.lowHealth"));
             lowHealthAnnounced = true;
         }
 
         if (status.isGlideMode() && !glideAnnounced) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.status.glideEngaged")));
+            EventNarrator.critical(localizedEvent("event.status.glideEngaged"));
             glideAnnounced = true;
         } else if (!status.isGlideMode() && glideAnnounced) {
             glideAnnounced = false;

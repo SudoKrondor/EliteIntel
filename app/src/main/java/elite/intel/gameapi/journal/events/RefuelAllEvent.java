@@ -28,6 +28,17 @@ public class RefuelAllEvent extends BaseEvent {
         return "RefuelAll";
     }
 
+    /** Routine refuel spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Refueled the ship completely at a station; carries the cost and amount.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

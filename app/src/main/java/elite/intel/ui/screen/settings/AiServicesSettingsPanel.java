@@ -145,7 +145,7 @@ public class AiServicesSettingsPanel extends JPanel {
         nextRow(rgc);
         HudBanner supported = HudBanner.multiline(
                 getText("settings.cloud.supportedLlms") + " "
-                        + getText("settings.cloud.supportedLlms.names") + " "
+                        + getText("settings.cloud.supportedLlms.names") + "\n"
                         + getText("settings.cloud.modelAutoSelected"),
                 StatusBadge.State.INFO);
         addSpanComponent(rightCol, supported, rgc);

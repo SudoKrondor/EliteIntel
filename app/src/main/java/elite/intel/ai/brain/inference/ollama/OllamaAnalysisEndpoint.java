@@ -91,6 +91,13 @@ public class OllamaAnalysisEndpoint extends AiEndPoint implements AiAnalysisInte
         }
     }
 
+    @Override
+    public boolean verifyConnection() {
+        OllamaClient client = OllamaClient.getInstance();
+        return probeChatStyle(client.createPrompt(OllamaClient.MODEL_QUERIES, 0.70f), client,
+                root -> root.has("message"));
+    }
+
     public JsonObject processSensor(SensorDataEvent event) {
         try {
             OllamaClient client = OllamaClient.getInstance();

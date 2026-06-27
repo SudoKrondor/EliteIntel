@@ -22,6 +22,8 @@ import java.util.TreeMap;
 public class AnalyzeSquadronCarrierRouteQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_squadron_carrier_route";
 
+    @Override public String llmDescription() { return "Report the squadron carrier's planned route."; }
+
 
     @Override public String id() { return ID; }
 

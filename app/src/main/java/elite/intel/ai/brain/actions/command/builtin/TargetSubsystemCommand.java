@@ -20,14 +20,18 @@ import java.util.Locale;
 public final class TargetSubsystemCommand implements IntelCommand {
     public static final String ID = "target_subsystem";
 
+    @Override public String llmDescription() { return "Target a subsystem on the current target."; }
+
 
     private static final Logger log = LogManager.getLogger(TargetSubsystemCommand.class);
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The ship subsystem to target, e.g. fsd, drive, power distributor, powerplant, life support.",
                 List.of("fsd", "power distributor"),
                 "Extract the subsystem name verbatim in lower case (e.g. 'target drive' -> drive).");
@@ -48,7 +52,7 @@ public final class TargetSubsystemCommand implements IntelCommand {
     @Override
     public void execute(JsonObject params, String responseText) {
         log.debug("TargetSubSystemHandler received params: {}", params);
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
 
         String subSystem;
         if (key == null) {

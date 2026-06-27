@@ -19,12 +19,16 @@ import java.util.List;
 public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_max_stops";
 
+    @Override public String llmDescription() { return "Set the trade-route maximum number of stops."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key",
+                PARAM_KEY,
                 "number",
                 true,
                 "Maximum number of stops (hops) allowed in the trade route.",
@@ -47,7 +51,7 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Integer numberOfStops = StringUtls.getIntSafely(params.get("key").getAsString());
+        Integer numberOfStops = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if (numberOfStops == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidStops")));

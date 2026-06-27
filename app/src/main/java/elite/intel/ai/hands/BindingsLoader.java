@@ -26,12 +26,15 @@ public class BindingsLoader {
 
         String presetName = findActivePresetName(bindingsDir);
         if (!presetName.isEmpty()) {
-            Optional<Path> matched = Files.list(bindingsDir)
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.startsWith(presetName + ".") && name.endsWith(".binds");
-                    })
-                    .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
+            Optional<Path> matched;
+            try (var stream = Files.list(bindingsDir)) {
+                matched = stream
+                        .filter(p -> {
+                            String name = p.getFileName().toString();
+                            return name.startsWith(presetName + ".") && name.endsWith(".binds");
+                        })
+                        .max(Comparator.comparingLong(p -> p.toFile().lastModified()));
+            }
 
             if (matched.isPresent()) {
                 log.info("Selected bindings file for preset '{}': {}", presetName, matched.get().getFileName());
@@ -41,13 +44,35 @@ public class BindingsLoader {
         }
 
         // Fallback: most recently modified .binds file
-        Path latestFilePath = Files.list(bindingsDir)
-                .filter(p -> p.toString().endsWith(".binds"))
+        Path latestFilePath = listAllBindsFiles(bindingsDir).stream()
                 .max(Comparator.comparingLong(p -> p.toFile().lastModified()))
                 .orElseThrow(() -> new Exception("No .binds file found in " + bindingsDir));
 
         log.info("Selected latest bindings file (fallback): {}", latestFilePath.getFileName());
         return latestFilePath.toFile();
+    }
+
+    /**
+     * Lists every {@code .binds} file in {@code bindingsDir}, not just the active preset's.
+     * Shared by the active-preset fallback above and by anything else (e.g. player backups)
+     * that needs the full set rather than just the currently-selected file.
+     */
+    public List<Path> listAllBindsFiles(Path bindingsDir) throws IOException {
+        try (var stream = Files.list(bindingsDir)) {
+            return stream.filter(p -> p.toString().endsWith(".binds")).toList();
+        }
+    }
+
+    /** Locates the {@code StartPreset.*.start} file (e.g. {@code StartPreset.4.start}) in {@code bindingsDir}, if present. */
+    public Optional<Path> findStartPresetFile(Path bindingsDir) throws IOException {
+        try (var stream = Files.list(bindingsDir)) {
+            return stream
+                    .filter(p -> {
+                        String name = p.getFileName().toString();
+                        return name.startsWith("StartPreset.") && name.endsWith(".start");
+                    })
+                    .findFirst();
+        }
     }
 
     public String getActivePresetName() {
@@ -58,12 +83,7 @@ public class BindingsLoader {
     // The file repeats the preset name on multiple lines; we take the first non-empty one.
     private String findActivePresetName(Path bindingsDir) {
         try {
-            Optional<Path> startPresetFile = Files.list(bindingsDir)
-                    .filter(p -> {
-                        String name = p.getFileName().toString();
-                        return name.startsWith("StartPreset.") && name.endsWith(".start");
-                    })
-                    .findFirst();
+            Optional<Path> startPresetFile = findStartPresetFile(bindingsDir);
 
             if (startPresetFile.isEmpty()) {
                 log.warn("No StartPreset.*.start file found in {}", bindingsDir);

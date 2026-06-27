@@ -19,6 +19,8 @@ import elite.intel.util.StringUtls;
 public final class SetHomeSystemCommand implements IntelCommand {
     public static final String ID = "set_home_system";
 
+    @Override public String llmDescription() { return "Set the commander's home system."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();

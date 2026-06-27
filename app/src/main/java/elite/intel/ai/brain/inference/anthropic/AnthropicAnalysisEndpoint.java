@@ -135,6 +135,14 @@ public class AnthropicAnalysisEndpoint extends AiEndPoint implements AiAnalysisI
         }
     }
 
+    @Override
+    public boolean verifyConnection() {
+        AnthropicClient client = AnthropicClient.getInstance();
+        return probeChatStyle(client.createPrompt(AnthropicClient.MODEL_ANALYSIS_MODEL, 0.65f), client,
+                root -> root.has("content")
+                        && !(root.has("type") && "error".equals(root.get("type").getAsString())));
+    }
+
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------

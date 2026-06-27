@@ -25,6 +25,17 @@ public class BuyAmmoEvent extends BaseEvent {
         return "BuyAmmo";
     }
 
+    /** Routine restock spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Restocked weapon ammunition; carries the cost.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

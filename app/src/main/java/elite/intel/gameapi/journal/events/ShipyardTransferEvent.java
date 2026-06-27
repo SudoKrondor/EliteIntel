@@ -40,6 +40,17 @@ public class ShipyardTransferEvent extends BaseEvent {
         return "ShipyardTransfer";
     }
 
+    /** Ship transfer ordered; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Requested transfer of a stored ship to the current station; carries the ship, distance, transfer time, and cost.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

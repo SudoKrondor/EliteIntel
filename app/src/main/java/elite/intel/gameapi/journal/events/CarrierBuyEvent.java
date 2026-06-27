@@ -37,6 +37,17 @@ public class CarrierBuyEvent extends BaseEvent {
         return "CarrierBuy";
     }
 
+    /** Bought a fleet carrier; major purchase. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Purchased a fleet carrier; carries the deployment location and the price.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);

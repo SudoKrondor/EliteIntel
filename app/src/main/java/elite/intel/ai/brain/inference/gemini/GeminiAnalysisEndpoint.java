@@ -103,6 +103,24 @@ public class GeminiAnalysisEndpoint extends AiEndPoint implements AiAnalysisInte
         }
     }
 
+    @Override
+    public boolean verifyConnection() {
+        GeminiClient client = GeminiClient.getInstance();
+        JsonObject prompt = client.createPrompt(GeminiClient.MODEL_FLASH, 0.8f);
+        JsonObject userPart = new JsonObject();
+        userPart.addProperty("text", "ping");
+        JsonArray parts = new JsonArray();
+        parts.add(userPart);
+        JsonObject userContent = new JsonObject();
+        userContent.addProperty("role", "user");
+        userContent.add("parts", parts);
+        JsonArray contents = new JsonArray();
+        contents.add(userContent);
+        prompt.add("contents", contents);
+        return probeConnection(prompt.toString(), client,
+                root -> root.has("candidates") && !root.getAsJsonArray("candidates").isEmpty());
+    }
+
     private String extractJson(String text) {
         if (text == null) return "{}";
         text = text.trim();

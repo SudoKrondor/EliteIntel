@@ -31,6 +31,17 @@ public class SupercruiseDestinationDropEvent extends BaseEvent {
         return "SupercruiseDestinationDrop";
     }
 
+    /** Routine supercruise drop; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Auto-dropped from supercruise at the selected destination; carries the destination name and the local threat level.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

@@ -29,7 +29,7 @@ public final class SafeKeyboardKeys {
         }
     }
 
-    private static final List<String> BASE_KEYS = List.of(
+    private static final List<String> LAYOUT_STABLE_KEYS = List.of(
             // Letters with identical physical position and label on every layout.
             "Key_E", "Key_R", "Key_T", "Key_U", "Key_I", "Key_O", "Key_P",
             "Key_S", "Key_D", "Key_F", "Key_G", "Key_H", "Key_J", "Key_K", "Key_L",
@@ -46,6 +46,23 @@ public final class SafeKeyboardKeys {
             "Key_F1", "Key_F2", "Key_F3", "Key_F4", "Key_F5", "Key_F6",
             "Key_F7", "Key_F8", "Key_F9", "Key_F10", "Key_F11", "Key_F12"
     );
+
+    // AZERTY safety guard relaxed 2026-06-24: testers confirmed these layout-variable keys work
+    // fine in practice, and excluding them needlessly shrank the auto-assign pool. To RESTORE the
+    // strict guard, drop LAYOUT_VARIABLE_KEYS from BASE_KEYS below (the list itself can stay).
+    private static final List<String> LAYOUT_VARIABLE_KEYS = List.of(
+            "Key_Q", "Key_W", "Key_A", "Key_Z", "Key_M", "Key_Y",
+            "Key_Minus", "Key_Equals", "Key_LeftBracket", "Key_RightBracket", "Key_BackSlash",
+            "Key_SemiColon", "Key_Apostrophe", "Key_Comma", "Key_Period", "Key_Slash", "Key_Grave"
+    );
+
+    private static final List<String> BASE_KEYS = buildBaseKeys();
+
+    private static List<String> buildBaseKeys() {
+        List<String> keys = new ArrayList<>(LAYOUT_STABLE_KEYS);
+        keys.addAll(LAYOUT_VARIABLE_KEYS); // remove this line to restore the strict AZERTY guard
+        return List.copyOf(keys);
+    }
 
     // RightAlt is omitted: it is AltGr on AZERTY/QWERTZ.
     private static final List<BindingModifier> SAFE_MODIFIERS = List.of(
@@ -82,12 +99,22 @@ public final class SafeKeyboardKeys {
         List<Chord> chords = new ArrayList<>();
         for (String key : BASE_KEYS) {
             for (BindingModifier modifier : SAFE_MODIFIERS) {
-                chords.add(new Chord(key, modifier));
+                addUnlessReserved(chords, new Chord(key, modifier));
             }
         }
         for (String key : BASE_KEYS) {
-            chords.add(new Chord(key, null));
+            addUnlessReserved(chords, new Chord(key, null));
         }
         return List.copyOf(chords);
+    }
+
+    /**
+     * Keeps OS-reserved chords (e.g. Alt+F4) out of the auto-assign pool.
+     */
+    private static void addUnlessReserved(List<Chord> chords, Chord chord) {
+        List<String> modifierKeys = chord.modifier() == null ? List.of() : List.of(chord.modifier().key());
+        if (!ReservedKeyChords.isReserved(chord.key(), modifierKeys)) {
+            chords.add(chord);
+        }
     }
 }

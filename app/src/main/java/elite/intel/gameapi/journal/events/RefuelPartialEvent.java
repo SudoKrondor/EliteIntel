@@ -28,6 +28,17 @@ public class RefuelPartialEvent extends BaseEvent {
         return "RefuelPartial";
     }
 
+    /** Routine refuel spend; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Partially refueled the ship (for example via an auto-refuel service); carries the cost and amount.";
+    }
+
     @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
