@@ -686,6 +686,17 @@ public class NaturalSpeechIntegrationTestEN {
         return Stream.of("find nearest fleet carrier", "nearest carrier");
     }
 
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(83)
+    @MethodSource
+    void openFleetCarrierPanel(String input) throws InterruptedException {
+        assertRouted(input, DisplayFleetCarrierManagementPanelCommand.ID);
+    }
+
+    static Stream<String> openFleetCarrierPanel() {
+        return Stream.of("display fleet carrier panel", "open fleet carrier panel", "fleet carrier panel");
+    }
     // =========================================================================
     // Squadron carrier
     // =========================================================================

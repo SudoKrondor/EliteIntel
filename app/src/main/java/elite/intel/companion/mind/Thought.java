@@ -49,6 +49,13 @@ public abstract class Thought {
     private final ThoughtSource source;
     private final Urgency urgency;
     protected final String currentInput;
+    /**
+     * Canonical form of {@link #currentInput} used only for command matching (the reducer) and as the
+     * LLM-visible current input - this is what lets a normalized synonym ("combat mode" -> "switch to combat
+     * mode") steer tool selection. Memory always records the raw {@link #currentInput}, never this. Defaults
+     * to the raw input when no separate canonical form is supplied.
+     */
+    protected final String matchInput;
     protected final ThoughtContext ctx;
 
     /** Set by {@link #interrupt} from another thread; a run honors it at step boundaries (§2.7). */
@@ -57,9 +64,15 @@ public abstract class Thought {
     protected volatile CompletableFuture<?> inFlight;
 
     protected Thought(ThoughtSource source, Urgency urgency, String currentInput, ThoughtContext ctx) {
+        this(source, urgency, currentInput, currentInput, ctx);
+    }
+
+    /** As above, but with a separate canonical {@link #matchInput} for command matching / the LLM prompt. */
+    protected Thought(ThoughtSource source, Urgency urgency, String currentInput, String matchInput, ThoughtContext ctx) {
         this.source = source;
         this.urgency = urgency;
         this.currentInput = currentInput;
+        this.matchInput = matchInput;
         this.ctx = ctx;
     }
 
@@ -70,7 +83,15 @@ public abstract class Thought {
      * (which a {@code change_global_topic} call may move during the thought).
      */
     public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
-        return new CommanderThought(urgency, input, ctx);
+        return commander(urgency, input, input, ctx);
+    }
+
+    /**
+     * As above, but with a separate canonical {@code matchInput} (e.g. the synonym-normalized form) used for
+     * tool selection and as the LLM-visible current input; memory still records the raw {@code input}.
+     */
+    public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
+        return new CommanderThought(urgency, input, matchInput, ctx);
     }
 
     /**
@@ -169,7 +190,7 @@ public abstract class Thought {
     /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot. */
     protected ComposedPrompt composeInitialPrompt() {
         return ctx.promptComposer().compose(
-                source, urgency, ctx.state().globalTopic(), currentInput,
+                source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
                 ctx.memoryGateway().indexes(),
@@ -178,7 +199,7 @@ public abstract class Thought {
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
     private List<LlmToolDefinition> selectedGameTools() {
-        return ctx.reducer().selectTools(allowedCategories(), currentInput);
+        return ctx.reducer().selectTools(allowedCategories(), matchInput);
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */

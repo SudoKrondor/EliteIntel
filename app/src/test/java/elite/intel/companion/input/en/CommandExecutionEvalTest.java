@@ -43,6 +43,15 @@ class CommandExecutionEvalTest {
             new Case("target wingman two", "target_wingman_2", null, false),
             new Case("set the trade budget to ten million credits", "trade_profile_set_budget", "10", false),
             new Case("set the maximum number of trade stops to three", "trade_profile_set_max_stops", "3", false),
+            // Bare panel names: no synonym canonicalization, so they go through the LLM, which must execute the
+            // matching command rather than chatter (regression for the companion action-bias prompt rules).
+            new Case("navigation", "show_navigation_panel", null, false),
+            new Case("contacts", "show_contacts_panel", null, false),
+            new Case("inventory", "show_inventory_panel", null, false),
+            // HUD-mode words: the input normalizer canonicalizes them to "switch to <x> mode", so they match a
+            // training phrase verbatim and take the reflex fast-path (no LLM) - the legacy synonym map reused.
+            new Case("combat mode", "switch_to_combat_mode", null, true),
+            new Case("analysis mode", "switch_to_analysis_mode", null, true),
             // Reflex fast-path: a training phrase matched verbatim to one safe, parameterless command - no LLM.
             new Case("all stop", "set_speed_to_zero_0_stop_ship", null, true),
             new Case("cargo scoop", "toggle_cargo_scoop", null, true),
