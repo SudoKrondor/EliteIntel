@@ -46,6 +46,15 @@ class CompanionSystemPromptPartTest {
     }
 
     @Test
+    void addressesTheCommanderFromSharedFormsNotAHardcodedCommander() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+        // Reuses the legacy "choose one at random" address instruction (PromptFactory.appendContext)...
+        assertTrue(text.contains("When addressing the commander, choose one at random each time from:"));
+        // ...and the old hardcoded persona address is gone.
+        assertFalse(text.contains("Refer to the commander as \"Commander\""));
+    }
+
+    @Test
     void commanderBranchAllowsActionsAndExcludesEventRule() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("## Turn source"));
