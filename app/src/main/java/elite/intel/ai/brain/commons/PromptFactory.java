@@ -312,8 +312,9 @@ public class PromptFactory implements AiPromptFactory {
         if (carrierName != null && !carrierName.isEmpty()) {
             sb.append("Our home base ").append(carrierName);
         }
-        sb.append("Address me as: ");
+        sb.append(" Address me as: ");
         sb.append(playerSession.getVariablePlayerName());
+        sb.append(".");
         sb.append("\n");
     }
 
