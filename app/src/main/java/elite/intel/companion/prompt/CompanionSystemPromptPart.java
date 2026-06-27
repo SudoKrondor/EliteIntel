@@ -62,7 +62,10 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             matching function is offered, call it; do not stop at change_global_topic, ask to clarify, or just \
             talk about it. Always prefer the closest offered query, action or macro function over speak; fall \
             back to clarify only when the input is genuinely ambiguous and no offered function fits. "inventory" \
-            and "storage" are different panels - never substitute one for the other.
+            and "storage" are different panels - never substitute one for the other. A single-word or very \
+            short input is almost always a command, not conversation: if it matches an offered query, action or \
+            macro function, call that function rather than treating it as small talk. Only the explicit \
+            confirmation words for a pending dangerous action are an exception.
             """;
 
     private static final String NARRATION_RULES = """

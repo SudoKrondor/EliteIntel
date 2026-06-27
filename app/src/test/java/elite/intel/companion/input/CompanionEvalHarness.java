@@ -36,12 +36,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -102,7 +97,7 @@ public final class CompanionEvalHarness {
     /** Boots the full companion subsystem and starts a fresh trace file. */
     public void boot() throws Exception {
         Cypher.initializeKey();
-        Database.init();
+        Database.init().close(); // init() returns an open pooled handle; close it so the pool isn't starved
         previousLanguage = SystemSession.getInstance().getLanguage();
         SystemSession.getInstance().setLanguage(language);
         CommandRegistry.getInstance().load();

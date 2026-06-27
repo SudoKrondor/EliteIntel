@@ -69,8 +69,8 @@ public final class CommanderThought extends Thought {
      */
     private boolean turnRanGameAction;
 
-    CommanderThought(Urgency urgency, String input, ThoughtContext ctx) {
-        super(ThoughtSource.COMMANDER, urgency, input, ctx);
+    CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
+        super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
     }
 
     /**

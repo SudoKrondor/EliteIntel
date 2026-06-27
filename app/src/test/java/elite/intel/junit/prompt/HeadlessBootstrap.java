@@ -25,7 +25,7 @@ public class HeadlessBootstrap {
         if (initialized) return;
 
         Cypher.initializeKey();
-        Database.init();
+        Database.init().close(); // init() returns an open pooled handle; close it so the pool isn't starved
         elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().load();
         elite.intel.ai.brain.actions.query.QueryRegistry.getInstance().load();
 
