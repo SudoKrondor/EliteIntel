@@ -101,7 +101,6 @@ class PromptComposerTest {
                 7, 15, List.of(ConversationTopic.NAVIGATION, ConversationTopic.TRADE));
         String prefix = composeCommander(List.of(), indexes, "we left Sol heading rimward").messages().get(0).content();
 
-        assertTrue(prefix.contains("search_in_memory(query)"));
         assertTrue(prefix.contains("### Remembered facts"));
         assertTrue(prefix.contains("7 / 15 items."));
         assertTrue(prefix.contains("### Topics with stored memory"));

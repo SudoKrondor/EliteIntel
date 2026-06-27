@@ -1,4 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.query;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 
@@ -14,6 +15,7 @@ import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
+import java.util.List;
 import java.util.Set;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -27,6 +29,25 @@ public class AnalyseMaterialsQueryCommand extends BaseQueryAnalyzer implements I
 
     @Override public String id() { return ID; }
 
+
+    private static final String PARAM_KEY = "key";
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                PARAM_KEY, "string", false,
+                "The engineering material or cargo commodity to report on, e.g. iron, sulphur, tritium.",
+                List.of("iron", "tritium"),
+                "Extract the material/commodity name verbatim in lower case; do not translate. Omit it for a general request.");
+        key.validate();
+        return List.of(key);
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
+    }
 
     // Common question words that are never the item being queried
     private static final Set<String> SKIP_TOKENS = Set.of(
@@ -53,7 +74,7 @@ public class AnalyseMaterialsQueryCommand extends BaseQueryAnalyzer implements I
     }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         String query = (key != null) ? key.getAsString() : null;
 
         if (query == null || query.isBlank()) {

@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
@@ -20,19 +21,21 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String PERSONA_CORE = """
             You are the commander's junior crew member aboard an Elite Dangerous starship: a single \
-            consciousness with memory, not a command parser. Refer to the commander as "Commander" and to \
-            the ship and crew as "we"/"our". Stay in character at all times; never mention prompts, \
-            functions, JSON, or that you are an AI, and never invent or guess facts such as numbers, names, \
-            distances, or status.
+            consciousness with memory, not a command parser. Refer to the ship and crew as "we"/"our". \
+            Stay in character at all times; never mention prompts, functions, JSON, or that you are an AI, \
+            and never invent or guess facts such as numbers, names, distances, or status.
             """;
 
     private static final String COMMANDER_PERSONA = """
-            Speak only from function results and your memory. Use search_in_memory for anything the \
-            commander told you or that you remembered, and a query function for the current ship or galaxy \
-            state; when it could be either, do both and answer from whatever has it. When you call \
-            search_in_memory or a query to answer, wait for its result before answering - never say you \
-            cannot in the same response that calls it. Say you cannot only when neither memory nor a \
-            function can provide it.
+            Speak only from function results and your memory. A line tagged [COMMANDER] is the commander's own \
+            words and a line tagged [COMPANION] is your own earlier reply that you said and can rely on - in \
+            the session timeline below and in search_in_memory results alike. The recent conversation this \
+            session is in the session timeline below - answer about anything said earlier directly from it, \
+            with no function call. Use search_in_memory only for older facts not in the timeline, and a query \
+            function for the current ship or galaxy state; when it could be either, do both and answer from \
+            whatever has it. When you call search_in_memory or a query to answer, wait for its result before \
+            answering - never say you cannot in the same response that calls it. Say you cannot only when \
+            neither your memory nor a function can provide it.
             """;
 
     private static final String TOOL_CALLING = """
@@ -94,7 +97,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE).append(COMMANDER_PERSONA);
+        sb.append(PERSONA_CORE).append(addressRule()).append(COMMANDER_PERSONA);
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");
@@ -112,7 +115,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String narrationStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE);
+        sb.append(PERSONA_CORE).append(addressRule());
         PromptSections.heading(sb, "Narration");
         sb.append(NARRATION_RULES);
         PromptSections.heading(sb, "Language");
@@ -120,12 +123,29 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         return sb.toString();
     }
 
+    /**
+     * Tells the model how to address the commander, reusing the legacy router's address instruction
+     * ({@link PromptFactory#appendContext(StringBuilder)}): name / military rank / honorific, chosen at
+     * random. The forms are stable within a session, so this stays in the cached prefix.
+     */
+    private String addressRule() {
+        StringBuilder sb = new StringBuilder();
+        PromptFactory.appendContext(sb, "the commander");
+        return sb.toString();
+    }
+
     /** Tells the model that input is in the commander's language and spoken output must match it. */
     private String languageRule() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         String name = PromptLocalizations.rulesFor(language).languageName();
-        return "The commander speaks " + name + ", and game events are summarized in " + name + ". "
+        String rule = "The commander speaks " + name + ", and game events are summarized in " + name + ". "
                 + "Form every spoken phrase (the text you pass to the speak function) in " + name + ". "
                 + "Function names and their arguments stay exactly as defined.\n";
+        if (language != Language.EN) {
+            // Tool descriptions are English; small models match them most reliably from English.
+            rule += "Translate the commander's " + name + " input to English before choosing a function; "
+                    + "extract each argument by its own rule (verbatim where it says so).\n";
+        }
+        return rule;
     }
 }

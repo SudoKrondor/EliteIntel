@@ -28,11 +28,14 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
     private static final Logger log = LogManager.getLogger(NavigateToCoordinatesCommand.class);
 
+    private static final String PARAM_LAT = "lat";
+    private static final String PARAM_LON = "lon";
+
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec lat = new ActionParameterSpec(
-                "lat",
+                PARAM_LAT,
                 "number",
                 true,
                 "Target latitude on the body surface, in degrees. Valid range -90 to 90.",
@@ -40,7 +43,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
                 "Planetary latitude the commander wants to navigate to."
         );
         ActionParameterSpec lon = new ActionParameterSpec(
-                "lon",
+                PARAM_LON,
                 "number",
                 true,
                 "Target longitude on the body surface, in degrees. Valid range -180 to 180.",
@@ -66,13 +69,13 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
     public void execute(JsonObject params, String responseText) {
         PlayerSession playerSession = PlayerSession.getInstance();
 
-        if(params.get("lat") == null || params.get("lon") == null) {
+        if(params.get(PARAM_LAT) == null || params.get(PARAM_LON) == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.common.sayAgain")));
             return;
         }
 
-        double latitude = params.get("lat").getAsDouble();
-        double longitude = params.get("lon").getAsDouble();
+        double latitude = params.get(PARAM_LAT).getAsDouble();
+        double longitude = params.get(PARAM_LON).getAsDouble();
 
         if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
             log.error("Invalid coordinates: " + latitude + ", " + longitude);

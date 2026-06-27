@@ -129,7 +129,7 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         for (ActionParameterSpec p : parameters) {
             JsonObject prop = new JsonObject();
             prop.addProperty("type", p.getType());
-            prop.addProperty("description", p.getDescription());
+            prop.addProperty("description", describeParameter(p));
             properties.add(p.getName(), prop);
             if (p.isRequired()) {
                 required.add(p.getName());
@@ -140,6 +140,25 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             schema.add("required", required);
         }
         return schema;
+    }
+
+    /**
+     * Folds a parameter's examples and extraction hint into its schema {@code description}.
+     * OpenAI-style function-calling schemas have no dedicated fields for these, so - mirroring the
+     * legacy {@link elite.intel.ai.brain.actions.command.CommandParamRules} format - they are appended
+     * to the description; otherwise the companion model never sees them (e.g. the "'target drive' -> drive"
+     * hint that the legacy action-extraction prompt relies on).
+     */
+    private static String describeParameter(ActionParameterSpec p) {
+        StringBuilder description = new StringBuilder(p.getDescription());
+        List<String> examples = p.getExamples();
+        if (!examples.isEmpty()) {
+            description.append(" E.g.: ").append(String.join(", ", examples));
+        }
+        if (p.getExtractionHint() != null && !p.getExtractionHint().isBlank()) {
+            description.append(" Hint: ").append(p.getExtractionHint());
+        }
+        return description.toString().strip();
     }
 
     @Override

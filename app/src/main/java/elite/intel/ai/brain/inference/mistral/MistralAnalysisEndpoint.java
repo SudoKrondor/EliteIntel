@@ -89,4 +89,11 @@ public class MistralAnalysisEndpoint extends AiEndPoint implements AiAnalysisInt
             return MistralClient.getInstance().createErrorResponse("Analysis error. Check logs.");
         }
     }
+
+    @Override
+    public boolean verifyConnection() {
+        MistralClient client = MistralClient.getInstance();
+        return probeChatStyle(client.createPrompt(MistralClient.MODEL, 0.8f), client,
+                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
+    }
 }

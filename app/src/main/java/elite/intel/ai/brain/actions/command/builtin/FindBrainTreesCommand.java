@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -15,6 +16,8 @@ import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.util.NavigationUtils;
 import elite.intel.util.StringUtls;
+
+import java.util.List;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
 
@@ -33,9 +36,28 @@ public final class FindBrainTreesCommand implements IntelCommand {
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
 
+    private static final String PARAM_KEY = "key";
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                PARAM_KEY, "string", true,
+                "The biological material / genus to look for at a Brain Tree site, e.g. tellurium, ruthenium.",
+                List.of("tellurium", "ruthenium"),
+                "Extract the material name verbatim in lower case; do not translate.");
+        key.validate();
+        return List.of(key);
+    }
+
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
     }
 
     @Override
@@ -44,7 +66,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
             brainTreeManager.retrieveFromSpansh();
         }
 
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.brainTrees.didNotCatch")));
             return;

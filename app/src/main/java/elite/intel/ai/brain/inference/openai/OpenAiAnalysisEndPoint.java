@@ -108,4 +108,11 @@ public class OpenAiAnalysisEndPoint extends AiEndPoint implements AiAnalysisInte
             return OpenAiClient.getInstance().createErrorResponse("Analysis error. Check logs.");
         }
     }
+
+    @Override
+    public boolean verifyConnection() {
+        OpenAiClient client = OpenAiClient.getInstance();
+        return probeChatStyle(client.createPrompt(OpenAiClient.MODEL_GPT, 1), client,
+                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
+    }
 }

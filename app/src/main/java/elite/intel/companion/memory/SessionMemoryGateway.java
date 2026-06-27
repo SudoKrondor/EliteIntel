@@ -46,9 +46,12 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized void write(MemoryEntry entry) {
-        // New entries land in short-term first; whatever overflows the count/token bounds is moved
-        // into mid-term topic memory by topic (never duplicated across both levels).
-        shortTerm.add(entry);
+        // Stored lower-cased: case carries no recall signal (search lower-cases anyway) and it keeps the
+        // inlined timeline uniform. New entries land in short-term first; whatever overflows the count/token
+        // bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
+        MemoryEntry stored = entry.content() == null ? entry : new MemoryEntry(
+                entry.timestamp(), entry.topic(), entry.source(), entry.content().toLowerCase(Locale.ROOT));
+        shortTerm.add(stored);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
             midTerm.add(evicted);
         }
@@ -77,7 +80,9 @@ public final class SessionMemoryGateway implements MemoryGateway {
         List<TimedHit> hits = new ArrayList<>();
         for (MemoryEntry entry : midTerm.allEntries()) {
             if (matches(queryTokens, entry.content())) {
-                hits.add(new TimedHit(entry.timestamp(), entry.content()));
+                // Carry the speaker tag so the model knows whose words it recalled (same [COMMANDER]/[COMPANION]
+                // convention as the timeline), matching its prompt legend.
+                hits.add(new TimedHit(entry.timestamp(), "[" + entry.source().name() + "] " + entry.content()));
             }
         }
         for (LlmMemory.Item item : llmMemory.allItems()) {
@@ -139,7 +144,7 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized void writeLlmMemory(String content) {
-        llmMemory.add(content);
+        llmMemory.add(content == null ? null : content.toLowerCase(Locale.ROOT));
     }
 
     @Override

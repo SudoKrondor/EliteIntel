@@ -12,14 +12,16 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.util.Ranks;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class PromptFactory implements AiPromptFactory {
 
     private static final PromptFactory INSTANCE = new PromptFactory();
     protected final SystemSession systemSession = SystemSession.getInstance();
+    protected final PlayerSession playerSession = PlayerSession.getInstance();
     protected final AiActionsMap actionsMap = AiActionsMap.getInstance();
     protected final InputNormalizer normalizer = InputNormalizer.getInstance();
     protected boolean isDryRun = false;
@@ -302,34 +304,38 @@ public class PromptFactory implements AiPromptFactory {
 
     private String getSessionValues() {
         StringBuilder sb = new StringBuilder();
+        youAre(sb);
+        String carrierName = playerSession.getFleetCarrierData() != null ? playerSession.getFleetCarrierData().getCarrierName() : null;
+        if (carrierName != null && !carrierName.isEmpty()) {
+            sb.append("Our home base ").append(carrierName);
+        }
+        appendContext(sb, "me");
+        return sb.toString();
+    }
+
+    /**
+     * Appends the shared "how to address" instruction: the addressee's name / highest military rank /
+     * honorific, deduped (falling back to "Commander" when none are known), chosen at random each time.
+     * Reused by the companion prompt - only the addressee term differs ("me" for the ship's first-person
+     * legacy prompt, "the commander" for the companion).
+     */
+    public static void appendContext(StringBuilder sb, String addressee) {
         PlayerSession playerSession = PlayerSession.getInstance();
         String alternativeName = playerSession.getAlternativeName();
         String playerName = alternativeName != null ? alternativeName : playerSession.getPlayerName();
         String playerMilitaryRank = playerSession.getPlayerHighestMilitaryRank();
         String playerHonorific = Ranks.getPlayerHonorific(
                 playerSession.getRankAndProgressDto().getCombatRankEmpire(),
-                playerSession.getRankAndProgressDto().getCombatRankFederation()
-        );
-        String carrierName = playerSession.getFleetCarrierData() != null ? playerSession.getFleetCarrierData().getCarrierName() : null;
-
-        appendContext(sb,
-                Objects.requireNonNullElse(playerName, "Commander"),
-                Objects.requireNonNullElse(playerMilitaryRank, "Commander"),
-                Objects.requireNonNullElse(playerHonorific, "Commander"),
-                carrierName
-        );
-        return sb.toString();
-    }
-
-    private void appendContext(StringBuilder sb, String playerName, String playerMilitaryRank, String playerHonorific, String carrierName) {
-        youAre(sb);
-        if (carrierName != null && !carrierName.isEmpty()) {
-            sb.append("Our home base ").append(carrierName);
-        }
-        sb.append("When addressing me, choose one at random each time from: ")
-                .append(playerName).append(", ").append(playerMilitaryRank)
-                .append(", ").append(", ").append(playerHonorific).append(". ");
-        sb.append("\n");
+                playerSession.getRankAndProgressDto().getCombatRankFederation());
+        // Only the known forms, deduped; fall back to a single "Commander" when nothing is known (so the
+        // instruction never degenerates into "Commander, Commander, Commander").
+        List<String> forms = Stream.of(playerName, playerMilitaryRank, playerHonorific)
+                .filter(form -> form != null && !form.isBlank())
+                .distinct()
+                .toList();
+        String choices = forms.isEmpty() ? "Commander" : String.join(", ", forms);
+        sb.append("When addressing ").append(addressee).append(", choose one at random each time from: ")
+                .append(choices).append(".\n");
     }
 
     private String aiName() {
