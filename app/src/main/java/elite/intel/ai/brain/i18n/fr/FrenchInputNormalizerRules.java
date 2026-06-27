@@ -14,6 +14,15 @@ import java.util.LinkedHashMap;
 public class FrenchInputNormalizerRules implements InputNormalizerProvider {
 
     @Override
+    public java.util.Set<String> stopWords() {
+        return java.util.Set.of(
+                "le", "la", "les", "un", "une", "des", "du", "de", "et", "ou", "mais", "avec", "pour",
+                "sur", "dans", "par", "vers", "sous", "chez", "est", "sont", "mon", "ma", "mes",
+                "notre", "nos", "votre", "vos", "son", "sa", "ses", "ce", "cet", "cette", "ces",
+                "que", "qui", "quoi", "je", "tu", "il", "elle", "nous", "vous");
+    }
+
+    @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
         // Add French synonym rules here as they are identified during testing.

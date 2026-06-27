@@ -21,6 +21,16 @@ import java.util.LinkedHashMap;
 public class UkrainianInputNormalizerRules implements InputNormalizerProvider {
 
     @Override
+    public java.util.Set<String> stopWords() {
+        return java.util.Set.of(
+                "на", "із", "від", "об",
+                "для", "або", "при", "над", "під", "про", "без", "біля", "через", "між", "після", "перед",
+                "що", "як", "це", "цей", "ця", "ці", "щоб", "теж", "також", "якщо", "тому",
+                "його", "її", "їх", "мені", "нам", "вам", "нас", "вас", "мене", "тебе", "свій", "наш",
+                "вже", "ось", "навіть", "лише");
+    }
+
+    @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
         loadScanning(m);

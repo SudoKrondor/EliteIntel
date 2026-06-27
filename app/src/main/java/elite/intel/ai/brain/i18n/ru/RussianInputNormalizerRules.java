@@ -22,6 +22,16 @@ import java.util.LinkedHashMap;
 public class RussianInputNormalizerRules implements InputNormalizerProvider {
 
     @Override
+    public java.util.Set<String> stopWords() {
+        return java.util.Set.of(
+                "на", "во", "со", "ко", "за", "по", "от", "до", "из", "об",
+                "для", "или", "при", "над", "под", "про", "без", "около", "через", "между", "после", "перед",
+                "что", "как", "это", "этот", "эта", "эти", "чтобы", "тоже", "также", "если", "либо", "потому",
+                "его", "ее", "её", "их", "мне", "нам", "вам", "нас", "вас", "меня", "тебя", "свой", "наш",
+                "уже", "ещё", "еще", "вот", "даже", "лишь");
+    }
+
+    @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
         loadHudModes(m);

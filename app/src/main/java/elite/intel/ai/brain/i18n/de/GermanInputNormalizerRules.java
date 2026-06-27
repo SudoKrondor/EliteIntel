@@ -16,6 +16,15 @@ import java.util.LinkedHashMap;
 public class GermanInputNormalizerRules implements InputNormalizerProvider {
 
     @Override
+    public java.util.Set<String> stopWords() {
+        return java.util.Set.of(
+                "der", "die", "das", "den", "dem", "des", "ein", "eine", "einen", "einem", "einer",
+                "und", "oder", "aber", "mit", "von", "zum", "zur", "für", "aus", "bei", "nach",
+                "über", "unter", "vor", "ist", "sind", "wird", "werden", "mir", "mich", "uns", "dich", "dir",
+                "sein", "ihre", "doch", "noch", "mal", "bitte", "ich", "wir");
+    }
+
+    @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
         loadScanning(m);
