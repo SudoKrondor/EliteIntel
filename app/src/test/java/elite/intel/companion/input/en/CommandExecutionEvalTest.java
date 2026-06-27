@@ -43,6 +43,11 @@ class CommandExecutionEvalTest {
             new Case("target wingman two", "target_wingman_2", null, false),
             new Case("set the trade budget to ten million credits", "trade_profile_set_budget", "10", false),
             new Case("set the maximum number of trade stops to three", "trade_profile_set_max_stops", "3", false),
+            // Subsystem targeting: parameterized, no synonym canonicalization, so it goes through the LLM, which
+            // must execute target_subsystem with the verbatim subsystem rather than chatter (regression for the
+            // companion action-bias prompt rules - observed answering with status/FSD-target offers instead).
+            new Case("target drive", "target_subsystem", "drive", false),
+            new Case("target power plant", "target_subsystem", "power", false),
             // Bare panel names: no synonym canonicalization, so they go through the LLM, which must execute the
             // matching command rather than chatter (regression for the companion action-bias prompt rules).
             new Case("navigation", "show_navigation_panel", null, false),
