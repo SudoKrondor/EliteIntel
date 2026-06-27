@@ -27,12 +27,15 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String COMMANDER_PERSONA = """
-            Speak only from function results and your memory. Use search_in_memory for anything the \
-            commander told you or that you remembered, and a query function for the current ship or galaxy \
-            state; when it could be either, do both and answer from whatever has it. When you call \
-            search_in_memory or a query to answer, wait for its result before answering - never say you \
-            cannot in the same response that calls it. Say you cannot only when neither memory nor a \
-            function can provide it.
+            Speak only from function results and your memory. A line tagged [COMMANDER] is the commander's own \
+            words and a line tagged [COMPANION] is your own earlier reply that you said and can rely on - in \
+            the session timeline below and in search_in_memory results alike. The recent conversation this \
+            session is in the session timeline below - answer about anything said earlier directly from it, \
+            with no function call. Use search_in_memory only for older facts not in the timeline, and a query \
+            function for the current ship or galaxy state; when it could be either, do both and answer from \
+            whatever has it. When you call search_in_memory or a query to answer, wait for its result before \
+            answering - never say you cannot in the same response that calls it. Say you cannot only when \
+            neither your memory nor a function can provide it.
             """;
 
     private static final String TOOL_CALLING = """

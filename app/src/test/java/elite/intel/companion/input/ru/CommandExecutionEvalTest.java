@@ -69,6 +69,10 @@ class CommandExecutionEvalTest {
             // command rather than chatter.
             new Case("контакты", "show_contacts_panel", null, false),
             new Case("инвентарь", "show_inventory_panel", null, false),
+            // Bare noun vs full imperative for the same command: the bare word goes through the LLM (may
+            // chatter), the verbatim alias phrase takes the deterministic reflex fast-path.
+            new Case("навигация", "show_navigation_panel", null, false),
+            new Case("открой навигацию", "show_navigation_panel", null, true),
             // Reflex fast-path: a training phrase matched verbatim to one safe, parameterless command - no LLM.
             new Case("цель ведомый два", "target_wingman_2", null, true),
             new Case("открой управление авианосцем", "display_fleet_carrier_management_panel", null, true),
