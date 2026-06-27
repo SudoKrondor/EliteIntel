@@ -164,6 +164,33 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void recallMatchingFindsShortTermEntriesAndMergesWithMidTermNewestFirst() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // Fill past the short-term cap so the oldest "borann" fact is evicted into mid-term while a fresh
+        // "borann" fact stays in short-term; recall must see both, newest first.
+        gateway.write(entry(ConversationTopic.MINING, "mining hotspot is borann"));
+        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES; i++) {
+            gateway.write(entry(ConversationTopic.TRADE, "filler-" + i));
+        }
+        gateway.write(entry(ConversationTopic.MINING, "returning to borann now"));
+
+        List<String> recalled = gateway.recallMatching("borann", 10);
+        // Both the short-term hit and the evicted mid-term hit are returned, freshest first.
+        assertEquals(
+                List.of("[COMMANDER] returning to borann now", "[COMMANDER] mining hotspot is borann"),
+                recalled);
+    }
+
+    @Test
+    void recallMatchingIsInflectionTolerantAcrossWordForms() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "идём к звезде sol"));
+        // Query uses a different inflected form ("звезду" vs stored "звезде"); the shared tolerant matcher still
+        // recalls it, where the old prefix-only rule would have missed the changed ending.
+        assertEquals(List.of("[COMMANDER] идём к звезде sol"), gateway.recallMatching("звезду", 10));
+    }
+
+    @Test
     void heuristicEstimatorIsConservativeAndNonNegative() {
         TokenEstimator estimator = new HeuristicTokenEstimator();
         assertEquals(0, estimator.estimate(null));

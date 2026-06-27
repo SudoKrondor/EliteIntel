@@ -3,6 +3,7 @@ package elite.intel.companion.memory;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.prompt.CompanionWordMatch;
 
 import java.util.*;
 
@@ -73,11 +74,19 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized List<String> recallMatching(String query, int limit) {
-        // Unified search across mid-term (all topics) + conscious llm_memory, returned newest-first. Matching
-        // is word-overlap (does the entry share a meaningful word with the query), NOT a contiguous substring,
-        // so the model's paraphrased or whole-question query still finds the stored fact.
+        // Unified search across short-term timeline + mid-term (all topics) + conscious llm_memory, returned
+        // newest-first. Matching is word-overlap (does the entry share a meaningful word with the query), NOT a
+        // contiguous substring, so the model's paraphrased or whole-question query still finds the stored fact.
         Set<String> queryTokens = tokens(query);
         List<TimedHit> hits = new ArrayList<>();
+        // Short-term is already inlined into the prompt, but search it too: if the model does decide to recall,
+        // it then gets the whole picture instead of missing the most recent facts. A given entry lives in exactly
+        // one of short-term / mid-term (mid-term only receives short-term overflow), so the two never double-count.
+        for (MemoryEntry entry : shortTerm.timeline()) {
+            if (matches(queryTokens, entry.content())) {
+                hits.add(new TimedHit(entry.timestamp(), "[" + entry.source().name() + "] " + entry.content()));
+            }
+        }
         for (MemoryEntry entry : midTerm.allEntries()) {
             if (matches(queryTokens, entry.content())) {
                 // Carry the speaker tag so the model knows whose words it recalled (same [COMMANDER]/[COMPANION]
@@ -98,7 +107,11 @@ public final class SessionMemoryGateway implements MemoryGateway {
     private record TimedHit(java.time.Instant at, String content) {}
 
     /** An entry matches when it shares at least one meaningful word with the query; a query with no meaningful
-     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. */
+     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. Two words
+     *  are compared with the companion's shared inflection-tolerant rule ({@link CompanionWordMatch}): the same
+     *  word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
+     *  ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Recall favours catching a match, so the
+     *  tolerant rule is used for every language (over-recall is cheap here). */
     private static boolean matches(Set<String> queryTokens, String content) {
         if (queryTokens.isEmpty()) {
             return true;
@@ -106,21 +119,12 @@ public final class SessionMemoryGateway implements MemoryGateway {
         Set<String> contentTokens = tokens(content);
         for (String q : queryTokens) {
             for (String c : contentTokens) {
-                if (tokenMatch(q, c)) {
+                if (CompanionWordMatch.similar(q, c)) {
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    /** Two word tokens match when equal, or - a light stemming approximation - one is a prefix of the other and
-     *  both are at least 4 characters, so "prefer"/"preferred", "jump"/"jumps", "rack"/"racks" still match. */
-    private static boolean tokenMatch(String a, String b) {
-        if (a.equals(b)) {
-            return true;
-        }
-        return a.length() >= 4 && b.length() >= 4 && (a.startsWith(b) || b.startsWith(a));
     }
 
     /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */

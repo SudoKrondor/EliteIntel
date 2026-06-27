@@ -31,9 +31,9 @@ public interface MemoryGateway {
     List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit);
 
     /**
-     * Unified recall (the {@code recall(query)} system function): searches all stored memory - mid-term
-     * topic memory across every topic plus the conscious llm_memory facts - for entries whose content
-     * matches the query, and returns the most recent matches (newest first), at most {@code limit}.
+     * Unified recall (the {@code recall(query)} system function): searches all stored memory - the short-term
+     * timeline plus mid-term topic memory across every topic plus the conscious llm_memory facts - for entries
+     * whose content matches the query, and returns the most recent matches (newest first), at most {@code limit}.
      *
      * @param query plain-text filter; blank returns the most recent entries regardless of content
      * @param limit maximum entries to return
