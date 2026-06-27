@@ -117,8 +117,11 @@ public final class CommanderThought extends Thought {
                     return; // a dangerous turn is terminal
                 }
 
-                if (executeRound(flow, tools, invocations, preExecuted)) {
-                    return; // nothing_to_do terminated the turn
+                if (executeRound(flow, tools, invocations, preExecuted) != RoundResult.CONTINUE) {
+                    // nothing_to_do ended the turn, or the round made no progress (only a suppressed speak
+                    // after a game action already owns the spoken outcome): end instead of re-prompting in a
+                    // loop that would burn full-prompt rounds up to MAX_TOOL_ROUNDS.
+                    return;
                 }
             }
             // Round cap reached without nothing_to_do: end defensively (the watchdog is the wall-clock backstop).
@@ -158,6 +161,20 @@ public final class CommanderThought extends Thought {
         return preExecuted;
     }
 
+    /** Outcome of one executed round, driving whether {@link #run} keeps looping. */
+    private enum RoundResult {
+        /** The round did real work (ran a tool or voiced a speak); the LLM may chain another round. */
+        CONTINUE,
+        /** {@code nothing_to_do} ended the turn. */
+        TERMINATED,
+        /**
+         * The round made no progress: it ran no tool and only emitted speak(s) that were suppressed (a game
+         * action already owns the spoken outcome). Re-prompting cannot advance the turn, so it ends here -
+         * this is the guard against the suppressed-speak loop that otherwise burns rounds to MAX_TOOL_ROUNDS.
+         */
+        NO_PROGRESS
+    }
+
     /**
      * Executes the round's tool-calls in LLM order, synchronously, and voices/remembers each outcome by its
      * action type via {@link #recordOutcome} (the handler owns speech, not the LLM). The result always feeds
@@ -167,13 +184,15 @@ public final class CommanderThought extends Thought {
      * Synchronous on purpose (the fire-and-forget dispatch was reverted): a long command holds the lane until
      * it finishes. Decoupling a slow command's outcome from the thought is a separate, cause-level change.
      *
-     * @return {@code true} if {@code nothing_to_do} ended the turn
+     * @return {@link RoundResult#TERMINATED} on {@code nothing_to_do}, {@link RoundResult#NO_PROGRESS} when the
+     *         round only produced suppressed speak, otherwise {@link RoundResult#CONTINUE}
      */
-    private boolean executeRound(List<LlmMessage> flow, List<LlmToolDefinition> tools,
+    private RoundResult executeRound(List<LlmMessage> flow, List<LlmToolDefinition> tools,
                                  List<LlmToolInvocation> invocations,
                                  Map<LlmToolInvocation, JsonObject> preExecuted) {
         boolean suppressSpeak = shouldSuppressSpeak(invocations);
         boolean terminate = false;
+        boolean producedProgress = false; // any tool ran, or a speak was actually voiced
         List<LlmMessage> toolResults = new ArrayList<>();
         for (LlmToolInvocation inv : invocations) {
             if (NothingToDoFunction.ID.equals(inv.name())) {
@@ -192,6 +211,7 @@ public final class CommanderThought extends Thought {
                     JsonObject result = execute(inv);
                     recordCompanionSpeech(spokenTextOf(inv));
                     toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
+                    producedProgress = true; // the companion actually spoke this round
                 }
                 continue;
             }
@@ -203,12 +223,16 @@ public final class CommanderThought extends Thought {
             JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
             recordOutcome(inv, result, tools);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
+            producedProgress = true; // a tool ran and fed a result into the flow
         }
         if (!terminate) {
             flow.add(LlmMessage.assistantToolCalls(invocations));
             flow.addAll(toolResults);
         }
-        return terminate;
+        if (terminate) {
+            return RoundResult.TERMINATED;
+        }
+        return producedProgress ? RoundResult.CONTINUE : RoundResult.NO_PROGRESS;
     }
 
     /**
