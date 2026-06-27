@@ -10,16 +10,15 @@ import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.util.Ranks;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 public class PromptFactory implements AiPromptFactory {
 
     private static final PromptFactory INSTANCE = new PromptFactory();
     protected final SystemSession systemSession = SystemSession.getInstance();
+    protected final PlayerSession playerSession = PlayerSession.getInstance();
     protected final AiActionsMap actionsMap = AiActionsMap.getInstance();
     protected final InputNormalizer normalizer = InputNormalizer.getInstance();
     protected boolean isDryRun = false;
@@ -302,33 +301,19 @@ public class PromptFactory implements AiPromptFactory {
 
     private String getSessionValues() {
         StringBuilder sb = new StringBuilder();
-        PlayerSession playerSession = PlayerSession.getInstance();
-        String alternativeName = playerSession.getAlternativeName();
-        String playerName = alternativeName != null ? alternativeName : playerSession.getPlayerName();
-        String playerMilitaryRank = playerSession.getPlayerHighestMilitaryRank();
-        String playerHonorific = Ranks.getPlayerHonorific(
-                playerSession.getRankAndProgressDto().getCombatRankEmpire(),
-                playerSession.getRankAndProgressDto().getCombatRankFederation()
-        );
         String carrierName = playerSession.getFleetCarrierData() != null ? playerSession.getFleetCarrierData().getCarrierName() : null;
 
-        appendContext(sb,
-                Objects.requireNonNullElse(playerName, "Commander"),
-                Objects.requireNonNullElse(playerMilitaryRank, "Commander"),
-                Objects.requireNonNullElse(playerHonorific, "Commander"),
-                carrierName
-        );
+        appendContext(sb, carrierName);
         return sb.toString();
     }
 
-    private void appendContext(StringBuilder sb, String playerName, String playerMilitaryRank, String playerHonorific, String carrierName) {
+    private void appendContext(StringBuilder sb, String carrierName) {
         youAre(sb);
         if (carrierName != null && !carrierName.isEmpty()) {
             sb.append("Our home base ").append(carrierName);
         }
-        sb.append("When addressing me, choose one at random each time from: ")
-                .append(playerName).append(", ").append(playerMilitaryRank)
-                .append(", ").append(", ").append(playerHonorific).append(". ");
+        sb.append("Address me as: ");
+        sb.append(playerSession.getVariablePlayerName());
         sb.append("\n");
     }
 
