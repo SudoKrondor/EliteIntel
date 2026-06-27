@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.query;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.ai.brain.commons.BiomeAnalyzer;
@@ -29,6 +30,23 @@ public class BiomeAnalyzerQueryCommand extends BaseQueryAnalyzer implements Inte
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final BiomeAnalyzer biomeAnalyzer = BiomeAnalyzer.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                "key", "string", false,
+                "Optional planet/body name to analyze. If omitted, all bio-signal planets in the system are analyzed.",
+                List.of("A 1", "B 2 a"),
+                "Extract the planet or body name the commander names, verbatim; otherwise omit it.");
+        key.validate();
+        return List.of(key);
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
+    }
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing planetary and biome data. Stand by."));
