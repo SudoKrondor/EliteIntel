@@ -69,7 +69,7 @@ public class TradeProfileManager {
             }
 
             if (criteria.getStation() == null || criteria.getSystem() == null) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent("Unable to find a suitable initial trade station withing " + MAX_DISTANCE_TO_INITIAL_STATION + " light years."));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent("Unable to find a suitable initial trade station within " + MAX_DISTANCE_TO_INITIAL_STATION + " light years."));
                 return null;
             }
         }
