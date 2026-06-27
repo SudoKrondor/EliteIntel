@@ -108,11 +108,14 @@ final class GameToolCandidates {
             }
             boolean hasPhrases = AiActionAliasTextProvider.hasKey(language, id);
             String phraseGroup = hasPhrases ? AiActionAliasTextProvider.getText(language, id) : "";
-            // The action's own English purpose (llmDescription) is the tool description; until an action has
-            // one, fall back to its example phrases. The tool name already identifies the action, so an
-            // unauthored, phrase-less action gets no description rather than a synthetic name restatement.
+            // The localized phrase group stays the reducer/reflex matching surface (it must match the
+            // commander's own language). The tool DESCRIPTION the model reads carries the action's English
+            // purpose plus its English trigger phrases - concrete targets to match, since the model selects
+            // from the English schema and translates non-English input to English first. English phrases keep
+            // the description identical across languages (one cache prefix), unlike localized phrases.
             String authored = action.llmDescription();
-            String description = authored == null || authored.isBlank() ? examplePhrases(phraseGroup) : authored;
+            String base = authored == null ? "" : authored.strip();
+            String description = appendEnglishPhrases(base, id);
             out.add(new Candidate(id, hasPhrases ? phraseGroup : id,
                     new LlmToolDefinition(id, description, phraseGroup, action.parameters())));
         }
@@ -142,5 +145,33 @@ final class GameToolCandidates {
     /** The localized example-phrases sentence embedded into a tool description (§10.3), or empty when none. */
     private String examplePhrases(String phraseGroup) {
         return phraseGroup.isBlank() ? "" : "Example phrases in " + languageName + ": " + phraseGroup + ".";
+    }
+
+    /**
+     * Appends the action's English trigger phrases to its tool description, giving the model concrete phrasings
+     * to match against. The companion path otherwise shows it only the abstract English purpose, never the
+     * phrases (unlike the legacy "action &lt;- phrases" prompt). English on purpose: the schema is English, the
+     * model translates non-English input to English before selecting, and an English description stays
+     * identical across languages (one cache prefix). Parameter annotations ({@code {key:X}}) are stripped - the
+     * JSON schema already carries the parameters.
+     */
+    private String appendEnglishPhrases(String base, String id) {
+        if (!AiActionAliasTextProvider.hasKey(Language.EN, id)) {
+            return base;
+        }
+        String english = stripParamAnnotations(AiActionAliasTextProvider.getText(Language.EN, id));
+        if (english.isEmpty()) {
+            return base;
+        }
+        String phrases = "Example phrases: " + english + ".";
+        return base.isEmpty() ? phrases : base + " " + phrases;
+    }
+
+    /** Strips {@code {key:X}} parameter annotations and tidies the leftover separators/whitespace. */
+    private static String stripParamAnnotations(String phrases) {
+        return phrases.replaceAll("\\{[^}]*}", "")
+                .replaceAll("\\s+,", ",")
+                .replaceAll("\\s{2,}", " ")
+                .strip();
     }
 }

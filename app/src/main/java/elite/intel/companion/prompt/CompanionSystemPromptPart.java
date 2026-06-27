@@ -135,8 +135,14 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String languageRule() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         String name = PromptLocalizations.rulesFor(language).languageName();
-        return "The commander speaks " + name + ", and game events are summarized in " + name + ". "
+        String rule = "The commander speaks " + name + ", and game events are summarized in " + name + ". "
                 + "Form every spoken phrase (the text you pass to the speak function) in " + name + ". "
                 + "Function names and their arguments stay exactly as defined.\n";
+        if (language != Language.EN) {
+            // Tool descriptions are English; small models match them most reliably from English.
+            rule += "Translate the commander's " + name + " input to English before choosing a function; "
+                    + "extract each argument by its own rule (verbatim where it says so).\n";
+        }
+        return rule;
     }
 }
