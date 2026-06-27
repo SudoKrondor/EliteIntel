@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -17,6 +18,8 @@ import elite.intel.search.spansh.neutronroute.NeutronStarRouteClient;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.ClipboardUtils;
 import elite.intel.util.StringUtls;
+
+import java.util.List;
 
 import static elite.intel.util.StringUtls.getIntSafely;
 
@@ -36,9 +39,26 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     private final NeutronStarRouteManager neutronStarRouteManager = NeutronStarRouteManager.getInstance();
     private final ShipLoadoutManager shipLoadoutManager = ShipLoadoutManager.getInstance();
 
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec efficiency = new ActionParameterSpec(
+                "efficiency", "number", true,
+                "Route efficiency percentage from 1 to 100: lower trades extra jumps for shorter total distance.",
+                List.of("60", "100"),
+                "Extract the efficiency percentage the commander states (1-100).");
+        efficiency.validate();
+        return List.of(efficiency);
+    }
+
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
     }
 
     @Override

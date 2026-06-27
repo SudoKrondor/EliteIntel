@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -10,6 +11,8 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.StringUtls;
+
+import java.util.List;
 
 /**
  * Self-describing "navigate to mission target" command.
@@ -25,9 +28,27 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
 
     private final MissionManager missionManager = MissionManager.getInstance();
 
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                "key", "string", false,
+                "Optional keyword to pick a specific mission (e.g. faction, commodity, or target name). "
+                        + "If omitted, the first active mission is used.",
+                List.of("massacre", "courier"),
+                "Extract a distinguishing keyword from the mission the commander names; otherwise omit it.");
+        key.validate();
+        return List.of(key);
+    }
+
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -27,9 +28,26 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
     @Override public String llmDescription() { return "Find nearby resource extraction / hunting grounds."; }
 
 
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                "key", "number", false,
+                "Maximum search range in light years (ly). If omitted, a default range is used.",
+                List.of("50", "100"),
+                "Extract the range limit in light years if the commander states one; otherwise omit it.");
+        key.validate();
+        return List.of(key);
+    }
+
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
     }
 
     @Override

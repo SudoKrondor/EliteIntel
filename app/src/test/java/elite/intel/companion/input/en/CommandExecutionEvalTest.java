@@ -55,6 +55,19 @@ class CommandExecutionEvalTest {
             new Case("find a mining site for painite", "find_mining_site", "painite", false),
             new Case("find brain trees", "find_brain_trees", null, false),
             new Case("find nearest interstellar factor", "find_interstellar_factor", null, true),
+            new Case("find hunting grounds within 50 light years", "find_hunting_grounds", "50", false),
+            new Case("navigate to active mission", "navigate_to_mission_target", null, false),
+            new Case("calculate neutron star route at 60 efficiency", "calculate_neutron_star_route", "60", false),
+            // Regression: companion refused "display carrier management" on first request ("Sorry, I can't do
+            // that right now.") and only opened the panel on a follow-up. Must execute on the first request.
+            new Case("display carrier management", "display_fleet_carrier_management_panel", null, false),
+            // Toggle commands: state:boolean param (group 6-11). Must execute with the correct on/off state.
+            new Case("turn off mining announcements", "toggle_mining_announcements", "false", false),
+            new Case("turn on route announcements", "toggle_route_announcements", "true", false),
+            new Case("turn off all announcements", "toggle_all_announcements", "false", false),
+            new Case("turn on discovery announcements", "toggle_discovery_announcements", "true", false),
+            new Case("disable radar announcements", "toggle_radar_announcements", "false", false),
+            new Case("turn off the radio", "toggle_radio", "false", false),
             // Bare panel names: no synonym canonicalization, so they go through the LLM, which must execute the
             // matching command rather than chatter (regression for the companion action-bias prompt rules).
             new Case("navigation", "show_navigation_panel", null, false),

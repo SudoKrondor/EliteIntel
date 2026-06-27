@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
@@ -17,6 +18,7 @@ import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
+import java.util.List;
 import java.util.Optional;
 
 import static elite.intel.util.StringUtls.capitalizeWords;
@@ -35,9 +37,32 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
     private static final int MAX_DEFAULT_RANGE = 1000;
 
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                "key", "string", true,
+                "The commodity (mineable material) to mine, e.g. painite, platinum, low temperature diamonds.",
+                List.of("painite", "platinum"),
+                "Extract the material name verbatim in lower case; do not translate.");
+        key.validate();
+        ActionParameterSpec maxDistance = new ActionParameterSpec(
+                "max_distance", "number", false,
+                "Maximum galactic search radius in light years (ly). If omitted, a default range is used.",
+                List.of("100", "500"),
+                "Extract the distance limit in light years if the commander states one.");
+        maxDistance.validate();
+        return List.of(key, maxDistance);
+    }
+
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
     }
 
     @Override
