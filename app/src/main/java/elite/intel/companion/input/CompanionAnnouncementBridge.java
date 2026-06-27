@@ -9,7 +9,7 @@ import elite.intel.ai.mouth.subscribers.events.NavigationVocalisationEvent;
 import elite.intel.ai.mouth.subscribers.events.RadarContactAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.mind.ThoughtDispatcher;
+import elite.intel.companion.mind.VerbatimNarrationSink;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.session.PlayerSession;
@@ -33,10 +33,10 @@ import elite.intel.session.PlayerSession;
  */
 public final class CompanionAnnouncementBridge {
 
-    private final ThoughtDispatcher dispatcher;
+    private final VerbatimNarrationSink dispatcher;
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
-    public CompanionAnnouncementBridge(ThoughtDispatcher dispatcher) {
+    public CompanionAnnouncementBridge(VerbatimNarrationSink dispatcher) {
         this.dispatcher = dispatcher;
     }
 

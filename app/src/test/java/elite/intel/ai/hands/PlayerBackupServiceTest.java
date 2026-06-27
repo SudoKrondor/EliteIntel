@@ -13,7 +13,9 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,6 +113,42 @@ class PlayerBackupServiceTest {
 
         Path workingCopy = workingCopyRepo.getWorkingCopyPath("Custom.3.0.binds");
         assertEquals(originalContent, Files.readString(workingCopy, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void restoreToLiveResultsInSyncedStateNotDraft() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
+
+        BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
+        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
+        Path backupFolder = service.createBackup(bindingsDir);
+
+        Path gameFile = bindingsDir.resolve("Custom.3.0.binds");
+        write(gameFile, binds("Z"));
+
+        service.restoreToLive(backupFolder, "Custom.3.0.binds", gameFile);
+
+        assertFalse(workingCopyRepo.hasUnappliedDraft("Custom.3.0.binds", gameFile),
+                "Working copy should be in synced state after restore-to-live, not still showing as a draft");
+    }
+
+    @Test
+    void restoreToLiveReturnsNullWithoutThrowingWhenGameFileDoesNotExist() throws Exception {
+        Path bindingsDir = tempDir.resolve("bindings");
+        Files.createDirectories(bindingsDir);
+        write(bindingsDir.resolve("Custom.3.0.binds"), binds("A"));
+
+        BindingsWorkingCopyRepository workingCopyRepo = workingCopyRepo();
+        PlayerBackupService service = service(tempDir.resolve("playerbackups"), fixedClock("2026-06-24T18:30:00Z"), workingCopyRepo);
+        Path backupFolder = service.createBackup(bindingsDir);
+
+        Path nonExistentGameFile = tempDir.resolve("nonexistent").resolve("Custom.3.0.binds");
+
+        Path result = service.restoreToLive(backupFolder, "Custom.3.0.binds", nonExistentGameFile);
+
+        assertNull(result, "restoreToLive should return null (not throw) when the game file does not exist");
     }
 
     @Test

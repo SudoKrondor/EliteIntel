@@ -195,6 +195,7 @@ public class BindingManagementPanel extends JPanel {
                 } else if (resultApplyFailure != null) {
                     applyResultPresenter.showError(resultApplyFailure);
                 } else if (resultBackup != null) {
+                    table.clearSelection();
                     applyResultPresenter.showSuccess(resultBackup);
                 }
             });

@@ -151,7 +151,13 @@ public class PlayerBackupService {
             throws IOException, BindingsApplyException {
         restoreToWorkingCopy(backupFolder, presetFileName);
         workingCopyRepo.recordGameFileBaseline(presetFileName, gameBindsFile);
-        return applyService.apply(presetFileName, gameBindsFile);
+        Path appliedBackup = applyService.apply(presetFileName, gameBindsFile);
+        // WHY: restoreToWorkingCopy() published BindingsUpdatedEvent while the content was still
+        // a draft. Publish again after apply() completes so BindingProfilePanel recomputes the
+        // sync badge (DRAFT -> SYNCED). Published unconditionally because both the applied and
+        // no-op paths leave hasUnappliedDraft() returning false. Mirrors parseAndUpdateBindings().
+        UiBus.publish(new BindingsUpdatedEvent());
+        return appliedBackup;
     }
 
     private PlayerBackup toPlayerBackup(Path folder) {

@@ -228,27 +228,25 @@ public abstract class Thought {
     }
 
     /**
-     * Records a tool outcome by action type. Commands are self-narrating after the command-outcome revert, so
-     * blank command results are remembered but not acknowledged here. A query answer is self-narrating too: it
-     * is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
-     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration - it is not voiced
-     * or recorded here.
+     * Records a tool outcome by action type. Commands and macros are self-narrating: the handler voices its
+     * own outcome through the bridge, so we only remember that it ran (an {@code IntelCommand} returns no
+     * {@code text_to_speech_response}, so there is nothing to voice here). A query answer is self-narrating
+     * too: it is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
+     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
-        String text = spokenTextOf(result);
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> {
-                if (text.isBlank()) {
-                    rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
-                } else {
-                    voice(text, isMissionCritical(result));
-                    rememberAction("command " + inv.name() + " executed", text);
-                }
-            }
+            case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
             case QUERY -> {
                 // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
-                if (!text.isBlank()) {
-                    GameEventBus.publish(new AiVoxResponseEvent(text));
+                // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
+                // the single owner of verbatim narration (topic tagging + completion-future handling), so the
+                // answer converges with command/macro narration on one path, mirroring the legacy router.
+                // This relies on an implicit ordering: the bridge must be subscribed and the legacy
+                // VocalisationRouter silenced in companion mode - otherwise the answer is double-voiced or lost.
+                String answer = spokenTextOf(result);
+                if (!answer.isBlank()) {
+                    GameEventBus.publish(new AiVoxResponseEvent(answer));
                 }
             }
             case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
@@ -259,14 +257,6 @@ public abstract class Thought {
     /** The handler-provided spoken text in a tool result, or empty when absent. */
     protected static String spokenTextOf(JsonObject result) {
         return JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
-    }
-
-    /** Backward-compatible mission-critical marker for any remaining structured tool result. */
-    private static boolean isMissionCritical(JsonObject result) {
-        return result != null
-                && result.has("mission_critical")
-                && result.get("mission_critical").isJsonPrimitive()
-                && result.get("mission_critical").getAsBoolean();
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
