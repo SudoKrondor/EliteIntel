@@ -121,7 +121,8 @@ class SessionMemoryGatewayTest {
         gateway.writeLlmMemory("commander prefers Sidewinder");
         gateway.writeLlmMemory("avoid Thargoids");
 
-        assertEquals(List.of("commander prefers Sidewinder", "avoid Thargoids"), gateway.readLlmMemory());
+        // Memory is stored lower-cased (case carries no recall signal).
+        assertEquals(List.of("commander prefers sidewinder", "avoid thargoids"), gateway.readLlmMemory());
         assertEquals(2, gateway.indexes().llmMemoryUsed());
     }
 

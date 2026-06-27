@@ -138,8 +138,7 @@ public final class PromptComposer {
     /** Cheap memory indexes (llm_memory, topic memory) plus the long-term summary, grouped under one header. */
     private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
         PromptSections.heading(sb, "Memory");
-        sb.append("You carry memory from earlier this session. To answer about something the commander told ")
-                .append("you or that you remembered, call search_in_memory(query) to find it.\n");
+        sb.append("You carry memory from earlier this session.\n");
 
         PromptSections.subheading(sb, "Remembered facts");
         sb.append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity()).append(" items.\n");
