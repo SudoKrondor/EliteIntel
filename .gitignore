@@ -50,3 +50,5 @@ CLAUDE.md
 .github/setup.js
 .vscode/tasks.json
 #-- SECURITY
+/.classpath
+/.project
