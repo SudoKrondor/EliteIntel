@@ -49,6 +49,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestFR {
 
+    /**
+     * Pause between each test phrase. Increase if your LLM is slow.
+     * 3000 simulates a typical interaction.
+     * 1500 go faster.
+     * 250 you are pushing it.
+     * 150 bro I want your hardware.
+     */
+
     private static final int LLM_WAIT_MS = 8000;
     private static final int LLM_POLL_MS = 100;
 
@@ -61,7 +69,10 @@ public class NaturalSpeechIntegrationTestFR {
         systemSession.setLanguage(Language.FR);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();
+        // Let any startup noise (connection check etc.) settle
         capture = new HandlerCapture();
+        /// this allows LLM to cache the prompt header / same request runs on app
+        /// startup.
         Thread.sleep(2000);
         GameEventBus.publish(new SensorDataEvent("command_verify_connection", "Acknowledge connection"));
         Thread.sleep(4000);
@@ -1529,7 +1540,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> queryCarrierRoute() {
         return Stream.of(
                 "quel est l'itinéraire de mon porte-vaisseaux",
-                "combien de sauts pour le carrier",
+                "combien de sauts pour le porte-vaisseaux",
                 "rapport de l'itinéraire du porte-vaisseaux"
         );
     }
@@ -1617,9 +1628,10 @@ public class NaturalSpeechIntegrationTestFR {
 
     static Stream<String> fighterOpenOrders() {
         return Stream.of(
-                "ordonne feu à volonté",
                 "chasseur feu à volonté",
-                "active le tire à volonté"
+                "chasseur feu à volonté",
+                "active le tire à volonté",
+                "chasseur mode agressif"
         );
     }
 

@@ -125,7 +125,15 @@ public class FrenchPromptRules implements PromptLanguageRules {
     @Override
     public String localeSpecificFormattingRules() {
         return """
-                Describe your rule here
+                FRENCH OUTPUT FORMATTING:
+                - Write all numbers using digits 0-9, never words. Exemple : one million two hundred and fifty > 1 200 050
+                - Group long integers into blocks of 3 separated by spaces: 32338 → 32 338.
+                - Use a comma as the decimal separator.
+                - Write proper names and domain-specific identifiers in UPPERCASE.
+                - This includes people, ships, stations, star systems, planets, commodities, objects, modules, variables, callsigns and registration codes.
+                - Preserve the original english spelling of names and identifiers; only change their letter case.
+                - This includes people, ships, stations, star systems and planets.
+                - 
                 """;
     }
 }

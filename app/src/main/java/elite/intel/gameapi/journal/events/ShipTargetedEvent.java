@@ -161,7 +161,6 @@ public class ShipTargetedEvent extends BaseEvent {
         return bounty;
     }
 
-
     public String getSubsystem() {
         return subsystem;
     }
