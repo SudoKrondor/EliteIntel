@@ -242,6 +242,17 @@ public class ScanEvent extends BaseEvent {
         return "Scan";
     }
 
+    /** Body scan recorded for exploration; ambient announces discoveries, so memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A detailed scan of a stellar body; carries the body name, its type or star class, and key traits such as landable, terraformable, and atmosphere.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

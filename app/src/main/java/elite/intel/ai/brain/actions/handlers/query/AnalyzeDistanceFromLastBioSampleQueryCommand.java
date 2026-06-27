@@ -18,6 +18,8 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeDistanceFromLastBioSampleQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_distance_to_bio_sample";
 
+    @Override public String llmDescription() { return "Report the distance to the last biological sample taken."; }
+
 
     @Override public String id() { return ID; }
 

@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -50,11 +51,16 @@ public class OllamaUserInputProcessor extends CommandEndPoint implements AiComma
 
     @Subscribe @Override public void onUserInput(UserInputEvent event) {
         if (!running.get()) return;
+        long entryNanos = System.nanoTime();
         if (executor == null) {
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
-        executor.submit(() -> processVoiceCommand(event.getUserInput()));
+        executor.submit(() -> {
+            BrainTimer.start(entryNanos);
+            processVoiceCommand(event.getUserInput());
+        });
     }
 
     private void processVoiceCommand(String userInput) {

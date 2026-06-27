@@ -2,13 +2,13 @@ package elite.intel.tools;
 
 import elite.intel.ai.hands.BindingsLoader;
 import elite.intel.ai.hands.KeyBindingsParser;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager; 
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class ToolGenerateBindings {
@@ -78,6 +78,6 @@ public class ToolGenerateBindings {
     }
 
     private static String toEnumName(String userCommand) {
-        return userCommand.toUpperCase().replace("_", "_");
+        return "BINDING_" + userCommand.toUpperCase().replace("_", "_");
     }
 }

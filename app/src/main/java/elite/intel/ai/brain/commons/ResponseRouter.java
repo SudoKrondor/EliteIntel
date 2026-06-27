@@ -68,9 +68,15 @@ public class ResponseRouter implements AIRouterInterface {
         webSocketBroadcaster.broadcast(jsonResponse);
         try {
             String responseText = getAsStringOrEmpty(jsonResponse, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
-            String action = getAsStringOrEmpty(jsonResponse, AIConstants.TYPE_ACTION);
+            String action = resolveActionId(getAsStringOrEmpty(jsonResponse, AIConstants.TYPE_ACTION));
 
             JsonObject params = getAsObjectOrEmpty(jsonResponse);
+
+            // Only user-originated commands carry a started timer; sensor-driven
+            // calls pass a null userInput and are not timed.
+            if (userInput != null) {
+                BrainTimer.stopAndLog(log, action);
+            }
 
             if (!responseText.isEmpty() && action.isEmpty()) {
                 GameEventBus.publish(new AiVoxResponseEvent(responseText));
@@ -135,6 +141,57 @@ public class ResponseRouter implements AIRouterInterface {
         }
     }
 
+
+    /**
+     * Resolves the LLM-returned action id to a registered handler id, tolerating benign echo
+     * differences. Custom command keys may be non-ASCII (e.g. Cyrillic), and a small local model can
+     * echo them in a different Unicode normalization form or letter case than the registry stored.
+     * <p>
+     * An exact match wins immediately. Otherwise the raw id is matched against the command and query
+     * keys after Unicode (NFC) + case normalization; a single normalized match is adopted as the
+     * canonical id. Ambiguous or absent matches return the raw id unchanged so genuinely invented
+     * actions still fall through to the "unknown action" path. This deliberately does not do fuzzy /
+     * edit-distance matching, which could silently route to the wrong command.
+     */
+    private String resolveActionId(String rawAction) {
+        if (rawAction == null || rawAction.isEmpty()) {
+            return rawAction;
+        }
+        if (getCommandHandlers().containsKey(rawAction) || getQueryHandlers().containsKey(rawAction)) {
+            return rawAction;
+        }
+        String normalized = normalizeId(rawAction);
+        String match = matchNormalized(normalized, getCommandHandlers().keySet());
+        if (match == null) {
+            match = matchNormalized(normalized, getQueryHandlers().keySet());
+        }
+        if (match != null && !match.equals(rawAction)) {
+            log.debug("Resolved LLM action '{}' to registered id '{}' via normalization", rawAction, match);
+        }
+        return match != null ? match : rawAction;
+    }
+
+    /**
+     * Returns the single key whose normalized form equals {@code normalized}, or null if none/ambiguous.
+     */
+    static String matchNormalized(String normalized, java.util.Set<String> keys) {
+        String found = null;
+        for (String key : keys) {
+            if (normalizeId(key).equals(normalized)) {
+                if (found != null) {
+                    return null; // ambiguous - refuse to guess
+                }
+                found = key;
+            }
+        }
+        return found;
+    }
+
+    static String normalizeId(String value) {
+        return java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFC)
+                .trim()
+                .toLowerCase(java.util.Locale.ROOT);
+    }
 
     protected Map<String, IntelAction> getCommandHandlers() {
         return commandHandlers;

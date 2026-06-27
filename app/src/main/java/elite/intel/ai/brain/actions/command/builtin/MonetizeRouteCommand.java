@@ -19,6 +19,8 @@ import elite.intel.util.StringUtls;
 public final class MonetizeRouteCommand implements IntelCommand {
     public static final String ID = "monetize_route";
 
+    @Override public String llmDescription() { return "Optimize the current route for trade profit."; }
+
 
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();
     private final ReminderManager reminderManager = ReminderManager.getInstance();

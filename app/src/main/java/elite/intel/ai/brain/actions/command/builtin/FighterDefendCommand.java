@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class FighterDefendCommand extends SimpleTapCommand {
     public static final String ID = "fighter_defend";
 
+    @Override public String llmDescription() { return "Order the ship-launched fighter to defend."; }
+
     public FighterDefendCommand() {
         super(ID, Bindings.GameCommand.BINDING_REQUEST_DEFENSIVE_BEHAVIOUR.getGameBinding());
     }

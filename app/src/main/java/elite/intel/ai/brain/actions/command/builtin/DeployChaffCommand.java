@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class DeployChaffCommand extends SimpleTapCommand {
     public static final String ID = "deploy_chaff";
 
+    @Override public String llmDescription() { return "Deploy chaff."; }
+
     public DeployChaffCommand() {
         super(ID, Bindings.GameCommand.BINDING_FIRE_CHAFF_LAUNCHER.getGameBinding());
     }

@@ -212,7 +212,8 @@ Parses the `.binds` XML file. Two distinct models:
 **`ReadOnlyBindingSlot`** - diagnostic. Preserves the raw `Device` attribute (e.g. `044F0422`
 for a HOTAS axis) so the UI can display HOTAS/mouse/gamepad assignments without making them executable.
 `keyboardUsable` = true only when `Device="Keyboard"` and all modifiers are also keyboard.
-`editable` = true only for the subset the V1 GUI can safely rewrite (keyboard + at most one modifier).
+`editable` = true for the subset the chord editor can safely rewrite (a keyboard main key whose modifiers, if any, are all
+*supported keyboard* modifiers - L/R Ctrl/Shift/Alt - in any number).
 
 `parseBindings()` → keyboard-executable map only (primary slot wins over secondary).
 `parseReadOnlyBindingSlots()` → full diagnostic map for the Bindings tab UI.
@@ -267,15 +268,17 @@ Write sequence for a single slot assignment:
 1. Stale-file guard (mtime + size must match `KeyboardBindingEdit.expectedLastModified/expectedFileSize`).
 2. Locate the action element by tag name in raw XML text.
 3. Locate the slot (`Primary` or `Secondary`) inside the action body.
-4. Inspect the slot: reject if it has unexpected attributes, unexpected child elements, or more than one modifier (
-   `UNSUPPORTED_XML`).
-5. Key availability check: reject if the chosen key+modifier combo is already used by another slot in the same file (
-   `KEY_OCCUPIED`).
+4. Inspect the slot: reject if it has unexpected attributes, unexpected child elements, or any non-keyboard / unsupported modifier (
+   `UNSUPPORTED_XML`). Any number of supported keyboard modifiers is accepted.
+5. Key availability check: reject if the chosen key + full modifier set is already used by another slot in the same file (
+   `KEY_OCCUPIED`). Modifier order is not significant - the set is compared.
 6. Second stale-file guard (between read and write).
 7. Atomic write: `tmp` file → `Files.move(ATOMIC_MOVE)` with non-atomic fallback.
 
 `assignKeyboardKey()` - plain key, no modifier.
-`assignKeyboardKeyWithModifier()` - key + exactly one supported keyboard modifier. Clearing a slot writes
+`assignKeyboardKeyWithModifier()` - key + one supported keyboard modifier (thin wrapper).
+`assignKeyboardKeyWithModifiers()` - key + a chord of one or more supported keyboard modifiers
+(e.g. Left Ctrl + Left Shift), written as repeated `<Modifier>` nodes. Clearing a slot writes
 `Device="{NoDevice}" Key=""`.
 
 `BindingSaveResult` values: `SAVED`, `NO_CHANGE`, `STALE_FILE`, `UNKNOWN_KEY`,

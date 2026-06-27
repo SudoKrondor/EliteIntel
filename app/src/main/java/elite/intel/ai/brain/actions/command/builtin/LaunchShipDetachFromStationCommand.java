@@ -18,6 +18,8 @@ import elite.intel.gameapi.inputs.UiNavCommon;
 public final class LaunchShipDetachFromStationCommand implements IntelCommand {
     public static final String ID = "launch_ship_detach_from_station";
 
+    @Override public String llmDescription() { return "Launch the ship and detach from the station."; }
+
 
     @Override
     public String id() {

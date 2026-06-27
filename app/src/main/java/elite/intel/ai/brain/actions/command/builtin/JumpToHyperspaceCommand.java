@@ -7,6 +7,7 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
+import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.data.FsdTarget;
@@ -29,6 +30,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_TARGET_NEXT_ROUT
 public final class JumpToHyperspaceCommand implements IntelCommand {
     public static final String ID = "jump_to_hyperspace";
 
+    @Override public String llmDescription() { return "Engage the frame shift drive to jump to the next system."; }
+
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final UINavigator navigator = new UINavigator();
@@ -47,9 +50,15 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget != null) {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
-            String fuelStatus = fsdTarget.getFuelStarStatus() == null ? "unknown" : fsdTarget.getFuelStarStatus();
             String starClass = fsdTarget.getStarClass() == null ? "unknown" : fsdTarget.getStarClass();
-            GameEventBus.publish(new RouteAnnouncementEvent(StringUtls.localizedLlm("handler.fsd.jumping", starName, starClass, fuelStatus)));
+            String message;
+            if (GlobalSettingsManager.getInstance().getAnnounceFuelAvailable()) {
+                String fuelStatus = fsdTarget.getFuelStarStatus() == null ? "unknown" : fsdTarget.getFuelStarStatus();
+                message = StringUtls.localizedLlm("handler.fsd.jumping", starName, starClass, fuelStatus);
+            } else {
+                message = StringUtls.localizedLlm("handler.fsd.jumpingNoFuel", starName, starClass);
+            }
+            GameEventBus.publish(new RouteAnnouncementEvent(message));
         }
 
         Status status = Status.getInstance();

@@ -24,6 +24,8 @@ import java.util.List;
 public final class ReconHuntingGroundCommand implements IntelCommand {
     public static final String ID = "recon_hunting_ground";
 
+    @Override public String llmDescription() { return "Scout the current location as a hunting ground."; }
+
 
     @Override
     public String id() {

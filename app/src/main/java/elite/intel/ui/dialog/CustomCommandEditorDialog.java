@@ -1,20 +1,16 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandKeyDeriver;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
+import elite.intel.ai.brain.actions.customcommand.CustomCommandValidator;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
-import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.theme.HudGlyphs;
-import elite.intel.ui.widget.HudButton;
-import elite.intel.ui.widget.HudModalSpec;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudTable;
-import elite.intel.ui.widget.HudTwoColumns;
-
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandValidator;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -32,11 +28,9 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -54,10 +48,16 @@ public final class CustomCommandEditorDialog extends JDialog {
     private final String originalActionKey;
     /** Read-only diagnostic field showing the internal UUID. */
     private final JTextField idField = new JTextField(36);
-    private final JTextField actionKeyField = AppTheme.makeTextField();
     private final JTextField nameField = AppTheme.makeTextField();
-    private final JTextArea descriptionArea = textArea(3);
-    private final JTextArea phrasesArea = textArea(4);
+    private final JTextArea phrasesArea = textArea(7);
+    /**
+     * Read-only live preview of the key derived from the phrases ("Triggers as: ...").
+     */
+    private final JLabel keyPreviewLabel = new JLabel();
+    /**
+     * Description is no longer surfaced; retained empty for backward-compatible persistence.
+     */
+    private String description = "";
     private final ParamsTableModel paramsModel = new ParamsTableModel();
     private final JTable paramsTable = new JTable(paramsModel);
     private final StepsTableModel stepsModel = new StepsTableModel();
@@ -77,7 +77,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         this.originalId = customCommand == null ? null : customCommand.getId();
         this.originalActionKey = customCommand == null ? null : customCommand.getActionKey();
         populate(customCommand);
-        buildUi(customCommand != null);
+        buildUi();
     }
 
     public CustomCommandDefinition showDialog() {
@@ -88,22 +88,20 @@ public final class CustomCommandEditorDialog extends JDialog {
     private void populate(CustomCommandDefinition customCommand) {
         if (customCommand == null) {
             idField.setText("");
-            actionKeyField.setText("custom_command_new");
             return;
         }
         idField.setText(customCommand.getId());
-        actionKeyField.setText(customCommand.getActionKey());
         nameField.setText(customCommand.getName());
-        descriptionArea.setText(customCommand.getDescription());
+        description = customCommand.getDescription();
         phrasesArea.setText(customCommand.getPhrases());
         paramsModel.setParameters(customCommand.getParameters());
         stepsModel.setSteps(customCommand.getSteps());
     }
 
-    private void buildUi(boolean existing) {
+    private void buildUi() {
         HudSection identitySection = HudSection.flat(
                 getText("actions.customCommands.editor.section.identity"), new BorderLayout());
-        identitySection.body().add(form(existing), BorderLayout.CENTER);
+        identitySection.body().add(form(), BorderLayout.CENTER);
 
         // Two columns: left = identity (top) + parameters (fills); right = steps (fills).
         JPanel leftColumn = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
@@ -149,18 +147,80 @@ public final class CustomCommandEditorDialog extends JDialog {
         setLocationRelativeTo(owner);
     }
 
-    private JPanel form(boolean existing) {
+    private JPanel form() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setOpaque(false);
         GridBagConstraints gbc = HudForms.baseGbc();
-        idField.setEditable(false);
-        idField.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
 
-        addField(panel, gbc, getText("actions.customCommands.editor.actionKey"), actionKeyField);
+        addExplainer(panel, gbc, getText("actions.customCommands.editor.explainer"));
         addField(panel, gbc, getText("actions.customCommands.editor.name"), nameField);
-        addArea(panel, gbc, getText("actions.customCommands.editor.description"), descriptionArea);
         addArea(panel, gbc, getText("actions.customCommands.editor.phrases"), phrasesArea);
+        addKeyPreview(panel, gbc);
+
+        // The action key is derived from the phrases (never hand-typed) so its tokens echo what the
+        // commander says; keep the preview live as they type.
+        SimpleDocumentListener listener = this::refreshKeyPreview;
+        phrasesArea.getDocument().addDocumentListener(listener);
+        refreshKeyPreview();
         return panel;
+    }
+
+    /**
+     * Adds a non-editable, wrapped explanation spanning both form columns.
+     */
+    private void addExplainer(JPanel panel, GridBagConstraints gbc, String text) {
+        JTextArea area = new JTextArea(text);
+        area.setEditable(false);
+        area.setFocusable(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setOpaque(false);
+        area.setFont(new JLabel().getFont());
+        area.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        area.setBorder(new EmptyBorder(0, 0, HudPalette.HUD_GAP, 0));
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(area, gbc);
+        gbc.gridwidth = 1;
+        gbc.gridx = 0;
+        gbc.gridy++;
+    }
+
+    /**
+     * Adds the read-only "Triggers as: &lt;key&gt;" preview row beneath the phrases.
+     */
+    private void addKeyPreview(JPanel panel, GridBagConstraints gbc) {
+        addLabel(panel, gbc, getText("actions.customCommands.editor.triggersAs"));
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        keyPreviewLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        panel.add(keyPreviewLabel, gbc);
+        gbc.gridy++;
+    }
+
+    /**
+     * Recomputes the derived action key from the current phrases and updates the preview label.
+     */
+    private void refreshKeyPreview() {
+        String phrases = normalizePhrases(phrasesArea.getText());
+        if (phrases.isBlank()) {
+            keyPreviewLabel.setText(getText("actions.customCommands.editor.triggersAs.empty"));
+            return;
+        }
+        keyPreviewLabel.setText(CustomCommandKeyDeriver.deriveUniqueKey(phrases, takenActionKeys()));
+    }
+
+    /**
+     * Action keys already in use by other commands (excludes this command's own key when editing).
+     */
+    private List<String> takenActionKeys() {
+        return existingCustomCommands.stream()
+                .map(CustomCommandDefinition::getActionKey)
+                .filter(key -> originalActionKey == null || !key.equalsIgnoreCase(originalActionKey))
+                .collect(Collectors.toList());
     }
 
     private JPanel paramsPanel() {
@@ -279,13 +339,22 @@ public final class CustomCommandEditorDialog extends JDialog {
         addLabel(panel, gbc, labelText);
         gbc.gridx = 1;
         gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weighty = 1;
+        gbc.fill = GridBagConstraints.BOTH;
         JScrollPane sp = AppTheme.hudScrollPane(area);
         sp.setBorder(AppTheme.hudFieldBorder());
         sp.getViewport().setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
         area.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND);
+        // Pin a sensible height so the row can't be squashed by GridBag under layout pressure from the
+        // other rows: at least 4 lines visible, with a roomier preferred height.
+        int lineHeight = area.getFontMetrics(area.getFont()).getHeight();
+        sp.setMinimumSize(new Dimension(10, lineHeight * 4 + 16));
+        sp.setPreferredSize(new Dimension(10, lineHeight * Math.max(4, area.getRows()) + 16));
         panel.add(sp, gbc);
         gbc.gridy++;
+        // Reset so later rows (e.g. the key preview) lay out normally.
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
     }
 
     private void addLabel(JPanel panel, GridBagConstraints gbc, String labelText) {
@@ -392,38 +461,19 @@ public final class CustomCommandEditorDialog extends JDialog {
         // Preserve the existing UUID on edit; generate a new one for new customCommands.
         String id = (originalId != null && !originalId.isBlank()) ? originalId : UUID.randomUUID().toString();
         idField.setText(id);
-        String actionKey = actionKeyField.getText().trim();
-        if (actionKey.isBlank()) {
-            actionKey = uniqueGeneratedActionKey(name);
-            actionKeyField.setText(actionKey);
-        }
+        // The action key is always re-derived from the phrases (even on edit) so it keeps echoing
+        // what the commander says; the immutable UUID carries stable identity instead.
+        String phrases = normalizePhrases(phrasesArea.getText());
+        String actionKey = CustomCommandKeyDeriver.deriveUniqueKey(phrases, takenActionKeys());
         return new CustomCommandDefinition(
                 id,
                 actionKey,
                 name,
-                descriptionArea.getText().trim(),
-                normalizePhrases(phrasesArea.getText()),
+                description,
+                phrases,
                 paramsModel.parameters(),
                 stepsModel.steps()
         );
-    }
-
-    private String uniqueGeneratedActionKey(String name) {
-        String base = sanitizeId(name);
-        if (base.isBlank()) {
-            base = "new_custom_command";
-        }
-        List<String> existingKeys = existingCustomCommands.stream()
-                .filter(customCommand -> !sameId(customCommand.getActionKey(), originalActionKey))
-                .map(CustomCommandDefinition::getActionKey)
-                .map(value -> value.toLowerCase(Locale.ROOT))
-                .toList();
-        String candidate = base;
-        int suffix = 2;
-        while (existingKeys.contains(candidate.toLowerCase(Locale.ROOT))) {
-            candidate = base + "_" + suffix++;
-        }
-        return candidate;
     }
 
     /**
@@ -441,21 +491,25 @@ public final class CustomCommandEditorDialog extends JDialog {
                 .collect(Collectors.joining(", "));
     }
 
-    private static String sanitizeId(String value) {
-        String normalized = Normalizer.normalize(value == null ? "" : value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "_")
-                .replaceAll("_+", "_")
-                .replaceAll("^_|_$", "");
-        return normalized;
-    }
+    /**
+     * Fires the same callback on any document change (insert/remove/attribute).
+     */
+    @FunctionalInterface
+    private interface SimpleDocumentListener extends javax.swing.event.DocumentListener {
+        void update();
 
-    private static boolean sameId(String left, String right) {
-        if (left == null || right == null) {
-            return false;
+        @Override
+        default void insertUpdate(javax.swing.event.DocumentEvent e) {
+            update();
         }
-        return left.equalsIgnoreCase(right);
+
+        @Override
+        default void removeUpdate(javax.swing.event.DocumentEvent e) {
+            update();
+        }
+
+        @Override
+        default void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
     }
 
     private void showErrors(List<String> errors) {

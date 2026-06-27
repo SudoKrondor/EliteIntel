@@ -160,6 +160,32 @@ public class CommanderTabPanel extends JPanel {
         cb10.addActionListener(e -> mgr.setAutoFighterOutFighterDocking(cb10.isSelected()));
         shipOptions.add(cb10, sc);
 
+        sc.gridx = 2;
+        sc.gridy = 0;
+        JCheckBox cb11 = makeCheckBox(getText("automation.announceJumpRoute"), mgr.getAnnounceJumpRoute());
+        cb11.addActionListener(e -> mgr.setAnnounceJumpRoute(cb11.isSelected()));
+        shipOptions.add(cb11, sc);
+
+        sc.gridy = 1;
+        JCheckBox cb12 = makeCheckBox(getText("automation.announceJumpTraffic"), mgr.getAnnounceJumpTraffic());
+        cb12.addActionListener(e -> mgr.setAnnounceJumpTraffic(cb12.isSelected()));
+        shipOptions.add(cb12, sc);
+
+        sc.gridy = 2;
+        JCheckBox cb13 = makeCheckBox(getText("automation.announceJumpDeaths"), mgr.getAnnounceJumpDeaths());
+        cb13.addActionListener(e -> mgr.setAnnounceJumpDeaths(cb13.isSelected()));
+        shipOptions.add(cb13, sc);
+
+        sc.gridy = 3;
+        JCheckBox cb14 = makeCheckBox(getText("automation.announceRemainingJumps"), mgr.getAnnounceRemainingJumps());
+        cb14.addActionListener(e -> mgr.setAnnounceRemainingJumps(cb14.isSelected()));
+        shipOptions.add(cb14, sc);
+
+        sc.gridy = 4;
+        JCheckBox cb15 = makeCheckBox(getText("automation.announceFuelAvailable"), mgr.getAnnounceFuelAvailable());
+        cb15.addActionListener(e -> mgr.setAnnounceFuelAvailable(cb15.isSelected()));
+        shipOptions.add(cb15, sc);
+
         content.add(shipOptionsSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
 

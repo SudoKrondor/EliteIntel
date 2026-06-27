@@ -18,6 +18,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DisplayOpenSystemMapCommand implements IntelCommand {
     public static final String ID = "display_open_system_map";
 
+    @Override public String llmDescription() { return "Open the system map."; }
+
 
     private final UINavigator navigator = new UINavigator();
 

@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class CycleNextPanelCommand extends SimpleTapCommand {
     public static final String ID = "cycle_next_panel";
 
+    @Override public String llmDescription() { return "Cycle to the next UI panel."; }
+
     public CycleNextPanelCommand() {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_NEXT_PANEL.getGameBinding());
     }

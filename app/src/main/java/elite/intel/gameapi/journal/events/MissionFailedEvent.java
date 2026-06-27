@@ -30,6 +30,17 @@ public class MissionFailedEvent extends BaseEvent {
         return "MissionFailed";
     }
 
+    /** Mission setback worth a remark. */
+    @Override
+    public Importance importance() {
+        return Importance.HIGH;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A mission failed; carries the mission name and the giving faction.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

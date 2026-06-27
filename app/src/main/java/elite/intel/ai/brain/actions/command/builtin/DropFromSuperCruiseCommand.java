@@ -17,6 +17,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXIT_SUPERCRUISE
 public final class DropFromSuperCruiseCommand implements IntelCommand {
     public static final String ID = "drop_from_super_cruise";
 
+    @Override public String llmDescription() { return "Drop out of supercruise."; }
+
 
     @Override
     public String id() {

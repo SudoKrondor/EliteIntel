@@ -254,7 +254,7 @@ public class NavigationUtils {
         if (meters >= 10000) {
             return localizedEvent("event.nav.km", (int) km);
         } else if (meters >= 1000) {
-            return localizedEvent("event.nav.km", String.format("%.1f", km));
+            return localizedEvent("event.nav.km", (int) km);
         } else {
             return localizedEvent("event.nav.meters", (int) meters);
         }

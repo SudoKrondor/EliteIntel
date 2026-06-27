@@ -92,6 +92,13 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
         }
     }
 
+    @Override
+    public boolean verifyConnection() {
+        LMStudioClient client = LMStudioClient.getInstance();
+        return probeChatStyle(client.createPrompt(LMStudioClient.MODEL_QUERIES, 0.70f), client,
+                root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
+    }
+
     public JsonObject processSensor(SensorDataEvent event) {
         try {
             LMStudioClient client = LMStudioClient.getInstance();

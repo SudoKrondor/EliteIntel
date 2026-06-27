@@ -1,9 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.HistoricalMissionScanner;
 import elite.intel.gameapi.journal.events.MissionsEvent;
@@ -14,7 +12,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static elite.intel.util.StringUtls.localizedEvent;
-import static elite.intel.util.StringUtls.localizedEventPlural;
 
 @SuppressWarnings("unused")
 public class MissionsEventSubscriber {
@@ -26,9 +23,7 @@ public class MissionsEventSubscriber {
     /// NOTE: handled by MissingMissionMonitor
     public void onMissionsEventSubscriber(MissionsEvent event) {
         Thread.ofVirtual().start(() -> {
-            if (!event.getActive().isEmpty()) {
-                GameEventBus.register(new MissionCriticalAnnouncementEvent(localizedEventPlural(event.getActive().size(), "event.missions.outstanding")));
-            }
+            // Outstanding-missions announcement is owned by MissingMissionMonitor; nothing spoken here.
             if (!event.getComplete().isEmpty() || !event.getFailed().isEmpty()) {
                 // Removes old and completed missions from the database.
                 Set<Long> existingMissionIds = missionManager.getMissions().keySet();

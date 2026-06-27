@@ -18,6 +18,8 @@ import elite.intel.session.ui.UINavigator;
 public final class DeployVehicleSrvCommand implements IntelCommand {
     public static final String ID = "deploy_vehicle_srv";
 
+    @Override public String llmDescription() { return "Deploy the SRV from the ship."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

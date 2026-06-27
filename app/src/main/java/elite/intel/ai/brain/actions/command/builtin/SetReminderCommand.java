@@ -20,12 +20,16 @@ import java.util.List;
 public final class SetReminderCommand implements IntelCommand {
     public static final String ID = "set_reminder";
 
+    @Override public String llmDescription() { return "Set a reminder."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The reminder text to store.",
                 List.of("check fuel", "restock limpets"),
                 "Extract the reminder text the commander dictates, verbatim.");
@@ -46,7 +50,7 @@ public final class SetReminderCommand implements IntelCommand {
     @Override
     public void execute(JsonObject params, String responseText) {
         ReminderManager reminderManager = ReminderManager.getInstance();
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         if (key != null) {
             reminderManager.setReminder(
                     key.getAsString(),

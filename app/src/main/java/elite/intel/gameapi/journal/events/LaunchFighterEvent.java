@@ -32,6 +32,17 @@ public class LaunchFighterEvent extends BaseEvent {
         return "LaunchFighter";
     }
 
+    /** Routine fighter launch; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Launched a ship-launched fighter; carries the loadout and whether it is crewed by an NPC.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

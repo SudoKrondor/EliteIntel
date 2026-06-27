@@ -15,6 +15,8 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowInternalPanelCommand implements IntelCommand {
     public static final String ID = "show_internal_panel";
 
+    @Override public String llmDescription() { return "Open the internal / modules panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

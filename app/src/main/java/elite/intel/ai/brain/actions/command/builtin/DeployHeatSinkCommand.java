@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class DeployHeatSinkCommand extends SimpleTapCommand {
     public static final String ID = "deploy_heat_sink";
 
+    @Override public String llmDescription() { return "Deploy a heat sink."; }
+
     public DeployHeatSinkCommand() {
         super(ID, Bindings.GameCommand.BINDING_DEPLOY_HEAT_SINK.getGameBinding());
     }

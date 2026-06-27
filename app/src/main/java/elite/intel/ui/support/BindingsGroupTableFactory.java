@@ -1,16 +1,14 @@
 package elite.intel.ui.support;
 
-import elite.intel.ui.render.BindingSlotCellRenderer;
-import elite.intel.ui.theme.AppTheme;
-import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudTable;
-
 import elite.intel.ai.hands.BindingSlotType;
+import elite.intel.ui.render.BindingSlotCellRenderer;
+import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.widget.BindingConflictPopup;
+import elite.intel.ui.widget.HudTable;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -18,9 +16,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.AppTheme.HUD_SCROLL_STYLE_LOCKED;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
@@ -29,13 +30,47 @@ public class BindingsGroupTableFactory {
 
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
+    private final Consumer<String> autoFixHandler;
+    private final Predicate<String> hasConflict;
+    private final Predicate<String> hasRecommendation;
+    /**
+     * Builds the hover-callout content for a conflicting binding id, or returns {@code null} if it has none.
+     */
+    private final Function<String, JComponent> conflictPopupContent;
+    /**
+     * Shared across all this factory's tables so only one callout is ever visible.
+     */
+    private final BindingConflictPopup conflictPopup = new BindingConflictPopup();
 
     public BindingsGroupTableFactory(
             BindingsSelectionController selectionController,
-            BiConsumer<String, BindingSlotType> slotClickHandler
+            BiConsumer<String, BindingSlotType> slotClickHandler,
+            Consumer<String> autoFixHandler,
+            Predicate<String> hasConflict,
+            Predicate<String> hasRecommendation,
+            Function<String, JComponent> conflictPopupContent
     ) {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
+        this.autoFixHandler = autoFixHandler;
+        this.hasConflict = hasConflict;
+        this.hasRecommendation = hasRecommendation;
+        this.conflictPopupContent = conflictPopupContent;
+    }
+
+    /**
+     * Dismisses any visible conflict callout - call before the tables are rebuilt.
+     */
+    public void hideConflictPopup() {
+        conflictPopup.hide();
+    }
+
+    /**
+     * Tables with a fourth column expose a per-row "auto fix" action in that
+     * column; three-column tables (the Used view) have none.
+     */
+    private int autoFixColumn(JTable table) {
+        return autoFixHandler != null && table.getColumnCount() == 4 ? 3 : -1;
     }
 
     public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, String... columnNames) {
@@ -84,13 +119,24 @@ public class BindingsGroupTableFactory {
                     return;
                 }
 
-                CellTarget target = clickableCellAt(table, event.getPoint());
-                if (target == null) {
+                int row = table.rowAtPoint(event.getPoint());
+                if (row < 0) {
+                    return;
+                }
+                int column = table.columnAtPoint(event.getPoint());
+
+                if (column == autoFixColumn(table)) {
+                    String bindingId = selectionController.selectRow(table, row);
+                    autoFixHandler.accept(bindingId);
                     return;
                 }
 
-                String bindingId = selectionController.selectRow(table, target.row());
-                slotClickHandler.accept(bindingId, target.slotType());
+                BindingSlotType slotType = slotTypeForColumn(column);
+                if (slotType == null) {
+                    return;
+                }
+                String bindingId = selectionController.selectRow(table, row);
+                slotClickHandler.accept(bindingId, slotType);
             }
         });
     }
@@ -100,10 +146,11 @@ public class BindingsGroupTableFactory {
         table.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent event) {
-                CellTarget target = clickableCellAt(table, event.getPoint());
-                boolean clickable = target != null;
+                boolean clickable = isClickableCell(table, event.getPoint());
                 table.setCursor(clickable ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR) : Cursor.getDefaultCursor());
-                setHoveredRow(table, hoveredRowAt(table, event.getPoint()));
+                int row = hoveredRowAt(table, event.getPoint());
+                setHoveredRow(table, row);
+                updateConflictPopup(table, row, event);
             }
         });
         table.addMouseListener(new MouseAdapter() {
@@ -111,8 +158,28 @@ public class BindingsGroupTableFactory {
             public void mouseExited(MouseEvent event) {
                 table.setCursor(Cursor.getDefaultCursor());
                 setHoveredRow(table, -1);
+                conflictPopup.hide();
             }
         });
+    }
+
+    /**
+     * Shows the conflict callout next to the pointer when it rests on a conflicting row, and hides it
+     * otherwise. The callout is offset down-right of the pointer so it never sits under the cursor
+     * (which would stop {@code mouseMoved} from firing and leave it stuck on screen).
+     */
+    private void updateConflictPopup(JTable table, int row, MouseEvent event) {
+        if (conflictPopupContent == null || row < 0 || row >= table.getRowCount()) {
+            conflictPopup.hide();
+            return;
+        }
+        String bindingId = String.valueOf(table.getValueAt(row, 0));
+        JComponent content = conflictPopupContent.apply(bindingId);
+        if (content == null) {
+            conflictPopup.hide();
+            return;
+        }
+        conflictPopup.show(table, event.getXOnScreen() + 16, event.getYOnScreen() + 18, bindingId, content);
     }
 
     private int hoveredRowAt(JTable table, Point point) {
@@ -135,11 +202,13 @@ public class BindingsGroupTableFactory {
         return -1;
     }
 
-    private CellTarget clickableCellAt(JTable table, Point point) {
+    private boolean isClickableCell(JTable table, Point point) {
         int row = table.rowAtPoint(point);
+        if (row < 0) {
+            return false;
+        }
         int column = table.columnAtPoint(point);
-        BindingSlotType slotType = slotTypeForColumn(column);
-        return row >= 0 && slotType != null ? new CellTarget(row, slotType) : null;
+        return slotTypeForColumn(column) != null || column == autoFixColumn(table);
     }
 
     private BindingSlotType slotTypeForColumn(int column) {
@@ -148,9 +217,6 @@ public class BindingsGroupTableFactory {
             case 2 -> BindingSlotType.SECONDARY;
             default -> null;
         };
-    }
-
-    private record CellTarget(int row, BindingSlotType slotType) {
     }
 
     private void setHoveredRow(JTable table, int row) {
@@ -184,7 +250,7 @@ public class BindingsGroupTableFactory {
         table.setAutoCreateRowSorter(false);
         table.getTableHeader().setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         table.getTableHeader().setDefaultRenderer(new GroupTableHeaderRenderer());
-        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer());
+        table.setDefaultRenderer(Object.class, new BindingSlotCellRenderer(hasConflict, hasRecommendation));
     }
 
     private void configureColumnWidths(JTable table) {

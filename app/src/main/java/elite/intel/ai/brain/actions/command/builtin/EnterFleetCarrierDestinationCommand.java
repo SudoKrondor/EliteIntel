@@ -8,8 +8,10 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 
 import java.util.Collections;
 import java.util.Map;
@@ -21,6 +23,8 @@ import java.util.Map;
 @RegisterCommand
 public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     public static final String ID = "enter_fleet_carrier_destination";
+
+    @Override public String llmDescription() { return "Set the fleet carrier's destination system."; }
 
 
     @Override
@@ -41,7 +45,7 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
                         GameInputStep.delay(250),
                         GameInputStep.rawKey(KeyProcessor.KEY_ENTER)
                 ));
-                AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+                GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
             }
         }
     }

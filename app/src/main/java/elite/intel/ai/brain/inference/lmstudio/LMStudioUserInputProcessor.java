@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiCommandInterface;
+import elite.intel.ai.brain.commons.BrainTimer;
 import elite.intel.ai.brain.commons.CommandEndPoint;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -63,12 +64,15 @@ public class LMStudioUserInputProcessor extends CommandEndPoint implements AiCom
     @Override
     public void onUserInput(UserInputEvent event) {
         if (!running.get()) return;
+        long entryNanos = System.nanoTime();
         if (executor == null) {
+            BrainTimer.start(entryNanos);
             processVoiceCommand(event.getUserInput());
             return;
         }
         executor.submit(() -> {
             {
+                BrainTimer.start(entryNanos);
                 try {
                     processVoiceCommand(event.getUserInput());
                 } catch (Exception e) {

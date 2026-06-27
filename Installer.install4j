@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="12.0.3" transformSequenceNumber="12">
   <directoryPresets config="./distribution/models" />
-  <application name="Elite Intel" applicationId="8421-9013-2300-6747" mediaDir="./installers" lzmaCompression="true" commonExternalFiles="true" shortName="elite-intel" publisher="Alex Stone" publisherWeb="https://github.com/stone-alex/EliteIntel" version="installer" allPathsRelative="true" macVolumeId="8da79e0e0cf3964f" javaMinVersion="21" javaMaxVersion="25">
+  <application name="Elite Intel" applicationId="8421-9013-2300-6747" mediaDir="./installers" lzmaCompression="true" commonExternalFiles="true" shortName="elite-intel" publisher="Elite Intel Open Source" publisherWeb="https://www.elite-intel.org/" version="installer" allPathsRelative="true" macVolumeId="8da79e0e0cf3964f" javaMinVersion="21" javaMaxVersion="25">
     <jreBundles jdkProviderId="Corretto" release="25/25.0.2.10.1" />
   </application>
   <files>
@@ -33,6 +33,89 @@
         </vmOptions>
       </java>
       <vmOptionsFile mode="none" />
+      <desktopFile>Name=Elite Intel
+Comment=Elite Dangerous AI companion</desktopFile>
+      <customScript>echo "FRAGMENT RAN: $(date)" &gt;&gt; "$HOME/ei_fragment_debug.log"
+##############################################################################
+# Install4j Unix LAUNCHER "Custom Script Fragment"
+#
+# Runs every time the user launches the app, immediately before the java
+# invocation. Detects the Steam installation folder for Elite Dangerous and
+# (re)creates ed-bindings / ed-journal symlinks inside the app's install
+# directory.
+#
+# Because this runs on EVERY launch, not once at install time, it:
+#   - resolves INSTALL_DIR from the launcher script's own location, not cwd
+#   - skips the expensive `find` calls entirely if both symlinks already
+#     point to valid, existing targets
+#   - never exits non-zero / aborts - a failure here must not block the
+#     app from starting
+##############################################################################
+
+INSTALL_DIR="$(cd "$(dirname "$0")" &amp;&amp; pwd)"
+
+# ---------------------------------------------------------------------------
+# Fast path: if both symlinks already exist and resolve to real directories,
+# skip Steam detection and the find calls entirely.
+# ---------------------------------------------------------------------------
+if [ -d "$INSTALL_DIR/ed-bindings" ] &amp;&amp; [ -d "$INSTALL_DIR/ed-journal" ]; then
+    :
+else
+    STEAM_FOLDER=""
+
+    # -----------------------------------------------------------------
+    # Detect Steam installation folder
+    # -----------------------------------------------------------------
+    if command -v steam &gt;/dev/null 2&gt;&amp;1; then
+        if [ -d "$HOME/.steam/steam" ]; then
+            STEAM_FOLDER="$HOME/.steam/steam"
+        elif [ -d "$HOME/snap/steam/common/.local/share/Steam" ]; then
+            STEAM_FOLDER="$HOME/snap/steam/common/.local/share/Steam"
+        elif [ -d "$HOME/.local/share/Steam" ]; then
+            STEAM_FOLDER="$HOME/.local/share/Steam"
+        elif [ -d "$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam" ]; then
+            STEAM_FOLDER="$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam"
+        fi
+    fi
+
+    if [ -z "$STEAM_FOLDER" ] &amp;&amp; command -v flatpak &gt;/dev/null 2&gt;&amp;1; then
+        if flatpak list --app 2&gt;/dev/null | grep -q 'com.valvesoftware.Steam'; then
+            STEAM_FOLDER="$HOME/.var/app/com.valvesoftware.Steam/.local/share/Steam"
+        fi
+    fi
+
+    if [ -z "$STEAM_FOLDER" ] &amp;&amp; command -v snap &gt;/dev/null 2&gt;&amp;1; then
+        if snap list 2&gt;/dev/null | awk '{print $1}' | grep -qx 'steam'; then
+            STEAM_FOLDER="$HOME/snap/steam/common/.local/share/Steam"
+        fi
+    fi
+
+    # -----------------------------------------------------------------
+    # Create ed-bindings / ed-journal symlinks
+    # -----------------------------------------------------------------
+    if [ -n "$STEAM_FOLDER" ]; then
+        PREFIX="$STEAM_FOLDER/steamapps/compatdata/359320/pfx/drive_c/users/steamuser"
+
+        BINDINGS_FOLDER=$(find "$PREFIX/AppData/Local" -type d -path "*/Frontier Developments/Elite Dangerous/Options/Bindings" 2&gt;/dev/null | head -n1)
+        JOURNAL_FOLDER=$(find "$PREFIX/Saved Games" -type d -path "*/Frontier Developments/Elite Dangerous" 2&gt;/dev/null | head -n1)
+
+        if [ -n "$BINDINGS_FOLDER" ] &amp;&amp; [ -n "$JOURNAL_FOLDER" ]; then
+            # Remove any nested symlinks that previous runs may have created
+            # inside the real game directories (e.g. Bindings/Bindings/...)
+            find "$BINDINGS_FOLDER" -maxdepth 6 -type l -name "$(basename "$BINDINGS_FOLDER")" -delete 2&gt;/dev/null
+            find "$JOURNAL_FOLDER"  -maxdepth 6 -type l -name "$(basename "$JOURNAL_FOLDER")"  -delete 2&gt;/dev/null
+
+            rm -f "$INSTALL_DIR/ed-bindings"
+            ln -s "$BINDINGS_FOLDER" "$INSTALL_DIR/ed-bindings"
+            rm -f "$INSTALL_DIR/ed-journal"
+            ln -s "$JOURNAL_FOLDER" "$INSTALL_DIR/ed-journal"
+        fi
+        # else: ED hasn't been launched via Steam yet (no Proton prefix data).
+        # Silently skip - this isn't an error, just means symlinks can't be
+        # created yet. Don't spam stdout/stderr on every app launch.
+    fi
+    # else: Steam not detected. Same - skip silently on every launch.
+fi</customScript>
       <iconImageFiles>
         <file path="./app/src/main/resources/images/elite-icon.png" />
       </iconImageFiles>
@@ -634,5 +717,13 @@ return console.askYesNo(message, true);
   </installerGui>
   <mediaSets>
     <windows name="Windows" id="36" overrideLaf="true" architecture="64" />
+    <unixInstaller name="Unix Installer" id="37" installDir="elite.intel.app" overrideLaf="true" customInstallBaseDir="~/.var/app/" require64BitVm="true">
+      <jreBundle jdkProviderId="JBR" release="25/25.0.3-b508.4" overrideJdkRelease="true" />
+      <laf darkModeStrategy="dark" />
+    </unixInstaller>
   </mediaSets>
+  <buildIds>
+    <mediaSet refId="36" />
+    <mediaSet refId="37" />
+  </buildIds>
 </install4j>

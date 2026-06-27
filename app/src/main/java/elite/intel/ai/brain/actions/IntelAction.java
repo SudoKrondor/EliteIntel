@@ -24,6 +24,16 @@ public interface IntelAction {
     }
 
     /**
+     * Short English, provider-facing purpose of this action for tool-calling: what it does and what it
+     * returns or affects. Authored in English on purpose (single cache prefix, English companion prompt);
+     * distinct from the localized, UI-facing description behind {@code descriptionKey()}. Empty by default:
+     * an unauthored action then falls back to its example phrases in the rendered tool description.
+     */
+    default String llmDescription() {
+        return "";
+    }
+
+    /**
      * Executes this action. For commands the returned value is ignored
      * (side-effect only); for queries it carries the response payload as JSON.
      *

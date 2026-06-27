@@ -40,6 +40,17 @@ public class SquadronStartupEvent extends BaseEvent {
         return "SquadronStartup";
     }
 
+    /** Squadron snapshot; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Reports your squadron membership at game load; carries the squadron name and your rank. Background.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

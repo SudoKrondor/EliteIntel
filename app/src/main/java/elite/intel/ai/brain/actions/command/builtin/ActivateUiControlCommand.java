@@ -12,6 +12,8 @@ import elite.intel.ai.hands.Bindings;
 public final class ActivateUiControlCommand extends SimpleTapCommand {
     public static final String ID = "activate_ui_control";
 
+    @Override public String llmDescription() { return "Activate the currently focused UI control."; }
+
 
     public ActivateUiControlCommand() {
         super(ID, Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding());

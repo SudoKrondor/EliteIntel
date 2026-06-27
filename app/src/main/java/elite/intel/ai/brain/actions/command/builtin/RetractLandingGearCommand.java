@@ -20,6 +20,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
 public final class RetractLandingGearCommand implements IntelCommand {
     public static final String ID = "retract_landing_gear";
 
+    @Override public String llmDescription() { return "Retract the landing gear."; }
+
 
     @Override
     public String id() {

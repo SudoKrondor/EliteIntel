@@ -26,7 +26,7 @@ public class LoadGameEventSubscriber {
             playerSession.setInGameName(event.getCommander());
             playerSession.setCurrentShip(event.getShip());
             playerSession.setCurrentShipName(event.getShipName());
-            playerSession.setPersonalCreditsAvailable(event.getCredits());
+            // Credits are owned by FinanceSubscriber (single home for money events).
             playerSession.setGameVersion(event.getGameversion());
             playerSession.setGameBuild(event.getBuild());
             cleanUpRoute(playerSession);

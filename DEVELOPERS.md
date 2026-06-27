@@ -79,7 +79,8 @@ java -Djava.library.path=distribution/native/sherpa-onnx -jar distribution/elite
    -Djava.library.path=distribution/native/sherpa-onnx
    ```
    This is required for the local Sherpa-ONNX STT/TTS native libraries to load. Without it the app will fail to run the local STT or TTS backend.
-4. **Unused-declaration false positives**: see the *IntelliJ IDEA Note* section at the bottom of this file.
+4. **Unused-declaration false positives**: see the *IDE Note: unused-declaration false
+   positives* section at the bottom of this file.
 
 ---
 
@@ -197,16 +198,33 @@ The prompt size is capped at 8K tokens. Caching mechanisms are used where suppor
 
 If open-sourced, code falls under Creative Commons (e.g., CC BY-NC-SA 4.0). Attribute third-party work.
 
+## IDE Note: unused-declaration false positives
 
-## Intelli J IDEA Note:
-There are classes instantiated via reflection. Intelli J IDEA will flag these as unused. To fix this, add @Subscribe to the list of annotations that are considered as usage.
+Several classes are never referenced statically — they are discovered at runtime via reflection:
+event subscribers (`@Subscribe`), auto-registered queries (`@RegisterQuery`), and auto-registered commands (
+`@RegisterCommand`). IDEs that flag unused code will mark these as dead. **This is a cosmetic warning only — the classes
+are used, and the build/tests are unaffected.** The fix is to tell your IDE that those annotations mark an entry point.
 
-1. Go to File > Settings (or IntelliJ IDEA > Preferences on macOS).
-2. Navigate to Editor > Inspections.
-3. In the search bar, type "Unused declaration" to find the inspection related to unused code.
-4. Click on Unused declaration to expand it.
-5. You'll see an option called Annotations. Click on the ellipsis (...) next to it.
-6. In the dialog that appears, you can add @Subscribe to the list of annotations that are considered as usage.
+### IntelliJ IDEA
+
+1. `File > Settings` (or `IntelliJ IDEA > Settings` on macOS).
+2. `Editor > Inspections`.
+3. Search for **"Unused declaration"** and select it.
+4. Open the **Entry points** tab, find **Annotations**, and click the ellipsis (`...`).
+5. Add the fully-qualified annotations:
+    - `com.google.common.eventbus.Subscribe`
+    - `elite.intel.ai.brain.actions.query.RegisterQuery`
+    - `elite.intel.ai.brain.actions.command.RegisterCommand`
+
+IntelliJ stores these in `.idea/misc.xml` under `EntryPointsManager`. That file is checked in
+(`.gitignore` ignores `.idea/*` but re-includes
+`!.idea/misc.xml`), so once one developer adds them everyone inherits them on pull. If you introduce a new reflection-marker annotation, add it to that list and commit
+`misc.xml`.
+
+### Other IDEs
+
+The same principle applies: mark `@Subscribe`, `@RegisterQuery`, and
+`@RegisterCommand` as usage/entry-point annotations in your IDE's unused-code inspection. If your IDE has no such option, ignore the warnings — they have no effect on compilation or runtime.
 
 ## Contact
 

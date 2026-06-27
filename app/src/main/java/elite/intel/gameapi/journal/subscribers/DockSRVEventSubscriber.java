@@ -1,8 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.gameapi.journal.events.DockSRVEvent;
 import elite.intel.session.PlayerSession;
 
@@ -12,6 +11,6 @@ public class DockSRVEventSubscriber {
 
     @Subscribe
     public void onDockSRVEvent(DockSRVEvent event) {
-        GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.srv.welcomeBack", PlayerSession.getInstance().getVariablePlayerName())));
+        EventNarrator.say(localizedEvent("event.srv.welcomeBack", PlayerSession.getInstance().getVariablePlayerName()));
     }
 }

@@ -15,6 +15,8 @@ import elite.intel.util.StringUtls;
 public final class ListTradeParametersCommand implements IntelCommand {
     public static final String ID = "list_trade_parameters";
 
+    @Override public String llmDescription() { return "List the current trade-route search parameters."; }
+
 
     @Override
     public String id() {

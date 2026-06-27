@@ -18,6 +18,8 @@ import elite.intel.util.StringUtls;
 public final class DeleteCodexEntryCommand implements IntelCommand {
     public static final String ID = "delete_codex_entry";
 
+    @Override public String llmDescription() { return "Delete a saved codex/navigation entry."; }
+
 
     private final CodexEntryManager codexEntryManager = CodexEntryManager.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();

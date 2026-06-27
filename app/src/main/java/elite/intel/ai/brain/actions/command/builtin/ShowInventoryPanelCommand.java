@@ -17,6 +17,8 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowInventoryPanelCommand implements IntelCommand {
     public static final String ID = "show_inventory_panel";
 
+    @Override public String llmDescription() { return "Open the inventory panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

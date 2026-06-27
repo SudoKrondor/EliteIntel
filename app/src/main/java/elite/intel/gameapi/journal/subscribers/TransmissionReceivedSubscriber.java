@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.subscribers.events.RadioTransmissionEvent;
 import elite.intel.db.managers.CargoHoldManager;
 import elite.intel.eventbus.GameEventBus;
@@ -39,8 +39,8 @@ public class TransmissionReceivedSubscriber {
             CargoHoldManager cargoHoldManager = CargoHoldManager.getInstance();
             boolean haveCargo = cargoHoldManager.get() != null && cargoHoldManager.get().getCount() > 0;
 
-            if (isPirateMessage(event.getMessageLocalised()) && haveCargo && !isRadioOn) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(localizedEvent("event.pirate.alert")));
+            if (event.isPirateMessage() && haveCargo && !isRadioOn) {
+                EventNarrator.critical(localizedEvent("event.pirate.alert"));
                 return;
             }
 
@@ -62,28 +62,5 @@ public class TransmissionReceivedSubscriber {
                 }
             }
         });
-    }
-
-    private boolean isPirateMessage(String message) {
-        if (message == null) return false;
-        Set<String> pirateTransmissions = new HashSet<>();
-        pirateTransmissions.add("Big haul like that, surprised you made it this far".toLowerCase());
-        pirateTransmissions.add("Carrying anything nice?".toLowerCase());
-        pirateTransmissions.add("Do you have anything of value?".toLowerCase());
-        pirateTransmissions.add("I hope you have something good in your hold.".toLowerCase());
-        pirateTransmissions.add("I'll pick your bones clean, greenhorn.".toLowerCase());
-        pirateTransmissions.add("I see all!".toLowerCase());
-        pirateTransmissions.add("I've found my next target and it's you, Commander.".toLowerCase());
-        pirateTransmissions.add("Let's see what you are carrying.".toLowerCase());
-        pirateTransmissions.add("Let me see what you have.".toLowerCase());
-        pirateTransmissions.add("The scan will soon be over.".toLowerCase());
-        pirateTransmissions.add("What are you hauling?".toLowerCase());
-        pirateTransmissions.add("What do you carry, I wonder?".toLowerCase());
-        pirateTransmissions.add("What treats do you carry?".toLowerCase());
-        pirateTransmissions.add("What do you have in your cargo hold?".toLowerCase());
-        pirateTransmissions.add("Next time you should fill your hold with gold.".toLowerCase());
-        pirateTransmissions.add("I'm gonna boil you up!".toLowerCase());
-
-        return pirateTransmissions.contains(message.toLowerCase());
     }
 }

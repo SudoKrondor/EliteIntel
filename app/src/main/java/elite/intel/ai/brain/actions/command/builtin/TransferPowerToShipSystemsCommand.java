@@ -21,6 +21,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToShipSystemsCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_ship_systems";
 
+    @Override public String llmDescription() { return "Divert power to ship systems."; }
+
 
     private static final Logger log = LogManager.getLogger(TransferPowerToShipSystemsCommand.class);
 

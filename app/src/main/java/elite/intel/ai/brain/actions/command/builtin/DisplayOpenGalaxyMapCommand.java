@@ -18,6 +18,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     public static final String ID = "display_open_galaxy_map";
 
+    @Override public String llmDescription() { return "Open the galaxy map."; }
+
 
     private final UINavigator navigator = new UINavigator();
 

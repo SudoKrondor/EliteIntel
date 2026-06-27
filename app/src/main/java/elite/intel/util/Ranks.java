@@ -1,7 +1,5 @@
 package elite.intel.util;
 
-import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
-import elite.intel.session.PlayerSession;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
@@ -50,6 +48,27 @@ public class Ranks {
             Map.entry("Vice Admiral",         "ranks.federation.viceAdmiral"),
             Map.entry("Admiral",              "ranks.federation.admiral")
     );
+
+    private static final Map<String, String> LEGAL_STATUS_I18N_KEY_MAP = Map.ofEntries(
+            Map.entry("Clean", "event.target.legal.clean"),
+            Map.entry("Wanted", "event.target.legal.wanted"),
+            Map.entry("Hostile", "event.target.legal.hostile"),
+            Map.entry("Lawless", "event.target.legal.lawless")
+    );
+
+    /**
+     * Returns the localized display name for the given English legal status sourced from the game journal
+     * (e.g. {@code Clean}, {@code Wanted}, {@code Hostile}, {@code Lawless}).
+     * Falls back to the original value (with underscores replaced by spaces) if no translation key is registered.
+     * Returns {@code null} for {@code null} or blank input so callers can filter it out.
+     */
+    public static String getLocalizedLegalStatus(String englishLegalStatus) {
+        if (englishLegalStatus == null || englishLegalStatus.isBlank()) {
+            return null;
+        }
+        String key = LEGAL_STATUS_I18N_KEY_MAP.get(englishLegalStatus);
+        return key != null ? getText(key) : englishLegalStatus.replace("_", " ");
+    }
 
     /**
      * Returns the localized display name for the given English rank name sourced from the game journal.
@@ -326,7 +345,7 @@ public class Ranks {
             return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
 
         } else if (federation > imperial) {
-            return getImperialHonorificMap().get(getFederationRankMap().get(federation));
+            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
         } else {
             return chooseAtRandom(imperial, federation);
         }
@@ -354,10 +373,12 @@ public class Ranks {
         }
     }
 
-    public static String getPlayerHonorific() {
-        RankAndProgressDto rankDto = PlayerSession.getInstance().getRankAndProgressDto();
-        String honorific = getImperialHonorificMap().get(rankDto.getHighestMilitaryRank());
-        return honorific != null ? honorific : getText("ranks.honorific.commander");
+    public static String getPlayerHonorific(Integer imperial, Integer federation) {
+        if (imperial >= federation) {
+            return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
+        } else {
+            return getFederationHonorificMap().get(getFederationRankMap().get(federation));
+        }
     }
 
 }

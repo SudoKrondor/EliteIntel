@@ -3,6 +3,7 @@ package elite.intel.ui.screen.settings;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -34,7 +35,12 @@ public class CommonSettingsPanel extends JPanel {
 
     private HudComboBox<LanguageOption> languageCombo;
     private JCheckBox conversationModeCheckBox;
+    private JCheckBox companionModeCheckBox;
     private JTextField journalDirField;
+    /**
+     * Conversation-mode state captured before companion mode forced it on, so it can be restored.
+     */
+    private boolean conversationModeBeforeCompanion;
 
     public CommonSettingsPanel() {
         buildUi();
@@ -83,6 +89,21 @@ public class CommonSettingsPanel extends JPanel {
         cg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
         body.add(conversationModeCheckBox, cg);
 
+        // Companion mode toggle, right column under conversation mode (row 1, col 3).
+        companionModeCheckBox = makeCheckBox(getText("player.companionMode"), false);
+        companionModeCheckBox.addActionListener(e -> {
+            systemSession.setCompanionMode(companionModeCheckBox.isSelected());
+            applyCompanionModeToConversation(companionModeCheckBox.isSelected());
+        });
+        GridBagConstraints mg = baseGbc();
+        mg.gridx = 3;
+        mg.gridy = 1;
+        mg.weightx = 0;
+        mg.fill = GridBagConstraints.NONE;
+        mg.anchor = GridBagConstraints.WEST;
+        mg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
+        body.add(companionModeCheckBox, mg);
+
         // Row 1 - journal directory under language (label + field + compact picker).
         GridBagConstraints jg = baseGbc();
         jg.gridy = 1;
@@ -105,6 +126,28 @@ public class CommonSettingsPanel extends JPanel {
         add(section, BorderLayout.CENTER);
     }
 
+    /**
+     * Companion mode forces conversation mode on and locks the toggle. Turning companion mode off
+     * re-enables the toggle and restores the conversation-mode state the user had before companion
+     * forced it on, so toggling companion never changes the user's conversation-mode preference.
+     */
+    private void applyCompanionModeToConversation(boolean companionOn) {
+        if (companionOn) {
+            conversationModeBeforeCompanion = conversationModeCheckBox.isSelected();
+            if (!conversationModeCheckBox.isSelected()) {
+                conversationModeCheckBox.setSelected(true);
+                systemSession.setConversationalMode(true);
+            }
+            conversationModeCheckBox.setEnabled(false);
+        } else {
+            conversationModeCheckBox.setEnabled(true);
+            if (conversationModeCheckBox.isSelected() != conversationModeBeforeCompanion) {
+                conversationModeCheckBox.setSelected(conversationModeBeforeCompanion);
+                systemSession.setConversationalMode(conversationModeBeforeCompanion);
+            }
+        }
+    }
+
     private void chooseJournalDir() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -116,12 +159,16 @@ public class CommonSettingsPanel extends JPanel {
             playerSession.setJournalPath(path);
             journalDirField.setText(path);
             UiBus.publish(new AppLogEvent("Journal directory updated"));
+            DataDirectoryValidator.validateAndWarn(playerSession.getJournalPath(), DataDirectoryValidator.DirectoryKind.JOURNAL);
         }
     }
 
     public void initData() {
         selectLanguage(systemSession.getLanguage());
         conversationModeCheckBox.setSelected(systemSession.conversationalModeOn());
+        companionModeCheckBox.setSelected(systemSession.companionModeOn());
+        conversationModeBeforeCompanion = conversationModeCheckBox.isSelected();
+        applyCompanionModeToConversation(systemSession.companionModeOn());
         journalDirField.setText(playerSession.getJournalPath().toString());
     }
 

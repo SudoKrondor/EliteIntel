@@ -1,5 +1,4 @@
 package elite.intel.ui.widget;
-import static elite.intel.ui.theme.HudPalette.*;
 
 import elite.intel.ui.theme.HudPalette;
 
@@ -20,18 +19,28 @@ import java.util.List;
  */
 public class HudLogArea extends JPanel {
 
-    /** Visual style variant controlling the marker glyph, its color, and the body text color. */
+    /**
+     * Visual style variant controlling the marker glyph, its color, and the body text color.
+     */
     public enum Style {
-        /** Pilot command input: {@code "} marker in muted orange; amber body text. */
+        /**
+         * Pilot command input: {@code "} marker in muted orange; amber body text.
+         */
         USER_INPUT("»", HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT),
-        /** Ship-computer response stream: {@code "} marker in cyan; soft blue-grey body text. */
+        /**
+         * Ship-computer response stream: {@code "} marker in cyan; soft blue-grey body text.
+         */
         AI_RESPONSE("»", HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, HudPalette.HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT),
-        /** System diagnostics readout: {@code -} marker in subdued gray; dim neutral-grey body text. */
+        /**
+         * System diagnostics readout: {@code -} marker in subdued gray; dim neutral-grey body text.
+         */
         SYSTEM_LOG("·", HudPalette.HUD_COLOR_ROLE_DISABLED, HudPalette.HUD_COLOR_ROLE_SYSTEM_LOG_TEXT);
 
         final String marker;
         final Color markerColor;
-        /** Body text color for this role; SYSTEM_LOG timestamps use their own semantic alias. */
+        /**
+         * Body text color for this role; SYSTEM_LOG timestamps use their own semantic alias.
+         */
         final Color textColor;
 
         Style(String marker, Color markerColor, Color textColor) {
@@ -53,7 +62,9 @@ public class HudLogArea extends JPanel {
     private final List<Message> messages = new ArrayList<>();
     private BufferedImage offscreen;
     private final Timer typewriterTimer;
-    /** Non-null only for USER_INPUT; toggles {@link #caretVisible} to produce the blinking cursor. */
+    /**
+     * Non-null only for USER_INPUT; toggles {@link #caretVisible} to produce the blinking cursor.
+     */
     private final Timer blinkTimer;
     private boolean caretVisible = false;
     private int scrollOffset = 0;
@@ -61,12 +72,17 @@ public class HudLogArea extends JPanel {
 
     private static final class Message {
         final String fullText;
-        /** Number of leading characters drawn in timestamp color (0 = no prefix). */
+        /**
+         * Number of leading characters drawn in timestamp color (0 = no prefix).
+         */
         final int prefixLen;
         String visibleText = "";
         boolean complete = false;
 
-        Message(String t) { this(t, 0); }
+        Message(String t) {
+            this(t, 0);
+        }
+
         Message(String t, int prefixLen) {
             this.fullText = t;
             this.prefixLen = prefixLen;
@@ -90,7 +106,10 @@ public class HudLogArea extends JPanel {
         setBackground(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
         typewriterTimer = new Timer(typewriterDelayMs, null);
         if (style == Style.USER_INPUT) {
-            blinkTimer = new Timer(530, e -> { caretVisible = !caretVisible; repaint(); });
+            blinkTimer = new Timer(530, e -> {
+                caretVisible = !caretVisible;
+                repaint();
+            });
             blinkTimer.setRepeats(true);
         } else {
             blinkTimer = null;
@@ -116,7 +135,9 @@ public class HudLogArea extends JPanel {
         super.removeNotify();
     }
 
-    /** Appends a new message, fast-forwarding any in-progress animation. */
+    /**
+     * Appends a new message, fast-forwarding any in-progress animation.
+     */
     public void addMessage(String text) {
         addMessageInternal(text, 0);
     }
@@ -146,7 +167,9 @@ public class HudLogArea extends JPanel {
         repaint();
     }
 
-    /** Clears all messages. */
+    /**
+     * Clears all messages.
+     */
     public void clear() {
         typewriterTimer.stop();
         removeAllTimerListeners();
@@ -156,7 +179,7 @@ public class HudLogArea extends JPanel {
     }
 
     private Font hudFont() {
-        return getFont().deriveFont(HudPalette.HUD_FONT_SM);
+        return getFont().deriveFont(HudPalette.HUD_FONT_LOG_PANEL);
     }
 
     private void clampScroll() {
@@ -191,7 +214,9 @@ public class HudLogArea extends JPanel {
         typewriterTimer.start();
     }
 
-    /** Returns true while the newest message is still being typewritten. */
+    /**
+     * Returns true while the newest message is still being typewritten.
+     */
     private boolean isAnimating() {
         return !messages.isEmpty() && !messages.get(messages.size() - 1).complete;
     }

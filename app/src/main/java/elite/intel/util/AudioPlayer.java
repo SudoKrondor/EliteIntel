@@ -1,6 +1,8 @@
 package elite.intel.util;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.eventbus.AudioBeepCueBus;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.NotificationVolumeChangedEvent;
@@ -20,10 +22,13 @@ public final class AudioPlayer {
 
     private static final Logger log = LogManager.getLogger(AudioPlayer.class);
     private static AudioPlayer instance;
-    private static float volume = SystemSession.getInstance().getBeepVolume();
+    private static float volume = 0.8f;
 
     private AudioPlayer() {
         UiBus.register(this);
+        GameEventBus.register(this);
+        AudioBeepCueBus.register(this);
+        volume = SystemSession.getInstance().getBeepVolume();
     }
 
     public static AudioPlayer getInstance() {
@@ -43,6 +48,10 @@ public final class AudioPlayer {
         AudioPlayer.volume = value;
     }
 
+    @Subscribe
+    public void onPlayBeepEvent(PlayBeepEvent event) {
+        playBeep(event.getSoundFile());
+    }
 
     public void playBeep(String soundFile) {
         try {

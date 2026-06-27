@@ -15,6 +15,8 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowCrewPanelCommand implements IntelCommand {
     public static final String ID = "show_crew_panel";
 
+    @Override public String llmDescription() { return "Open the crew panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

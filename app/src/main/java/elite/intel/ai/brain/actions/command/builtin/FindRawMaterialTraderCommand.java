@@ -21,6 +21,8 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindRawMaterialTraderCommand implements IntelCommand {
     public static final String ID = "find_raw_material_trader";
 
+    @Override public String llmDescription() { return "Find the nearest raw material trader."; }
+
 
     private static final int DEFAULT_RANGE = 250;
 

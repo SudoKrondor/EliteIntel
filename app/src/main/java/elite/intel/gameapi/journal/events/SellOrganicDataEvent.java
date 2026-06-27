@@ -84,6 +84,17 @@ public class SellOrganicDataEvent extends BaseEvent {
         return "SellOrganicData";
     }
 
+    /** Sold exobiology data; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Sold exobiology (organic) scan data at Vista Genomics; carries the species sold and the total value.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

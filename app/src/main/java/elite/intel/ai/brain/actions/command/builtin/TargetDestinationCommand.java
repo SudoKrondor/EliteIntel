@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class TargetDestinationCommand extends SimpleTapCommand {
     public static final String ID = "target_destination";
 
+    @Override public String llmDescription() { return "Target the current navigation destination."; }
+
     public TargetDestinationCommand() {
         super(ID, Bindings.GameCommand.BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding());
     }

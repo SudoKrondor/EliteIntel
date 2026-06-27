@@ -63,10 +63,12 @@
         <Logger name="elite.intel.search.spansh.client" level="debug"/>
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
         <Logger name="elite.intel.ai.hands.KeyBindingsParser" level="error"/>
+        <Logger name="elite.intel.ai.brain.inference" level="error"/>
         <Logger name="elite.intel.ai.ears" level="error"/>
         <Logger name="elite.intel.ai.mouth" level="error"/>
         <Logger name="elite.intel.ai.brain" level="info"/>
         <Logger name="elite.intel.search.spansh" level="error"/>
+        <Logger name="elite.intel.ai.brain.commons.BrainTimer" level="info"/>
         <Logger name="elite.intel.db" level="error"/>
         <Logger name="elite.intel.db.managers.SubSystemsManager" level="error"/>
         <Logger name="elite.intel.search.spansh.market" level="error"/>

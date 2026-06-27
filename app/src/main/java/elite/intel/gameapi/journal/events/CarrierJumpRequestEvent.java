@@ -45,6 +45,17 @@ public class CarrierJumpRequestEvent extends BaseEvent {
         return "CarrierJumpRequest";
     }
 
+    /** Carrier jump scheduled; memory context. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "A fleet carrier jump was scheduled; carries the destination system, body, and departure time.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

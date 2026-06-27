@@ -1,23 +1,30 @@
 package elite.intel.db.managers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.util.AudioPlayer;
+import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.SleepNoThrow;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
+import java.util.Set;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_CYCLE_NEXT_SUBSYSTEM;
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_CYCLE_PREVIOUS_SUBSYSTEM;
 
 public class SubSystemsManager {
 
@@ -26,11 +33,41 @@ public class SubSystemsManager {
 
     private static final int PAUSE_TIMEOUT_MS = 1500;
 
-    private String target;
+    /**
+     * Hard backstop on key presses. Full-loop detection (returning to the first subsystem we
+     * saw) is the authoritative "module not installed" signal and fires well before this; the
+     * cap only guards against a pathological state where the anchor is never re-observed.
+     */
+    private static final int MAX_PRESSES = 40;
+
+    /**
+     * Machine-key prefixes for modules that cluster at the bottom of the subsystem cycle
+     * (core internals plus the drive). Targeting these is fastest by cycling <em>previous</em>
+     * (approaching from the bottom) instead of forward through the whole list.
+     */
+    private static final Set<String> BOTTOM_CLUSTER_PREFIXES = Set.of(
+            "int_powerplant",
+            "int_hyperdrive",
+            "int_lifesupport",
+            "int_powerdistributor",
+            "int_shieldgenerator",
+            "int_shieldcellbank",
+            "int_refinery",
+            "ext_drive"
+    );
+
+    private volatile String target;               // canonical name, used for spoken announcements
+    private volatile String targetMachineKey;     // reliable journal key, used for matching
+    private volatile Bindings.GameCommand cycleBinding = BINDING_CYCLE_NEXT_SUBSYSTEM;
     private volatile boolean continueTargeting = false;
     private volatile boolean pause = false;
     private volatile int consecutiveTimeouts = 0;
     private volatile Instant lastKeyPressInstant = Instant.EPOCH;
+
+    // Full-loop ("module not installed") detection state. The cycle wraps with no wall, so a
+    // module that isn't fitted is only knowable by returning to the first subsystem we observed.
+    private volatile String anchorRaw;
+    private volatile boolean leftAnchor;
 
     private SubSystemsManager() {
         GameEventBus.register(this);
@@ -57,8 +94,10 @@ public class SubSystemsManager {
 
     /**
      * Initiates the targeting process for a specified subsystem within a game. The method
-     * uses fuzzy search to resolve the subsystem name and attempts to cycle through subsystems
-     * using game inputs until the target is confirmed or cycling conditions are exhausted.
+     * uses fuzzy search to resolve the subsystem name, looks up its reliable journal machine
+     * key, chooses a cycle direction from where that module type sits in the cycle, and presses
+     * the cycle key repeatedly until the target is matched, the cycle has gone fully around
+     * (module not installed), or the routine times out.
      *
      * @param subsystem the name of the subsystem to target. This can be a partial or full
      *                  name which is resolved using a fuzzy search algorithm. If a match
@@ -69,41 +108,49 @@ public class SubSystemsManager {
         pause = false;
         String resolved = FuzzySearch.fuzzySubSystemSearch(subsystem, 4);
         log.debug("[2] fuzzy resolved: [{}]", resolved);
-        setTarget(resolved);
-        continueTargeting = getTarget() != null && !getTarget().isEmpty();
-
-        if (!continueTargeting) {
+        if (resolved == null || resolved.isEmpty()) {
             log.debug("[3] no fuzzy match - cycling will NOT start");
+            continueTargeting = false;
             return;
         }
-        log.debug("[3] target set to [{}] - cycling starting", getTarget());
 
+        String machineKey = Database.withDao(SubSystemDao.class, dao -> dao.getMachineKeyBySubsystem(resolved));
+        if (machineKey == null || machineKey.isBlank()) {
+            // Without a machine key we cannot match reliably against the journal (the localised
+            // name is missing on some ships), so we do not start a cycle we can't terminate.
+            log.debug("[3] no machine_key for [{}] - cycling will NOT start", resolved);
+            continueTargeting = false;
+            return;
+        }
+
+        setTarget(resolved);
+        targetMachineKey = machineKey.toLowerCase(Locale.ROOT);
+        cycleBinding = directionFor(targetMachineKey);
+        anchorRaw = null;
+        leftAnchor = false;
         consecutiveTimeouts = 0;
+        continueTargeting = true;
+        log.debug("[3] target=[{}] machineKey=[{}] direction=[{}] - cycling starting",
+                resolved, targetMachineKey, cycleBinding);
+
         new Thread(() -> {
-            int cycleCount = 0;
-            boolean usingFallback = false;
+            int pressCount = 0;
             while (continueTargeting) {
                 if (!pause) {
                     if (!continueTargeting) break;
-                    if (cycleCount >= 25) {
-                        if (usingFallback) {
-                            log.debug("[cycle] exhausted fallback - giving up");
-                            continueTargeting = false;
-                            break;
-                        }
-                        log.debug("[cycle] limit reached - falling back to Power Plant");
-                        setTarget("Power Plant");
-                        usingFallback = true;
-                        cycleCount = 0;
+                    if (pressCount >= MAX_PRESSES) {
+                        log.debug("[cycle] safety cap ({}) reached - stopping", MAX_PRESSES);
+                        continueTargeting = false;
+                        break;
                     }
                     lastKeyPressInstant = Instant.now();
-                    log.debug("[cycle] count={} pressing key, target=[{}]", cycleCount, getTarget());
+                    log.debug("[cycle] press #{} target=[{}] key=[{}]", pressCount, getTarget(), cycleBinding);
                     GameControllerBus.publish(GameInputSequenceEvent.of(
-                            GameInputStep.bindingHold(BINDING_CYCLE_NEXT_SUBSYSTEM.getGameBinding(), 50),
+                            GameInputStep.bindingHold(cycleBinding.getGameBinding(), 50),
                             GameInputStep.delay(250)
                     ));
                     pause = true;
-                    cycleCount++;
+                    pressCount++;
                 } else if (Instant.now().isAfter(lastKeyPressInstant.plusMillis(PAUSE_TIMEOUT_MS))) {
                     consecutiveTimeouts++;
                     log.debug("[cycle] journal timeout #{} after {}ms - no ShipTargeted event received", consecutiveTimeouts, PAUSE_TIMEOUT_MS);
@@ -120,20 +167,16 @@ public class SubSystemsManager {
     }
 
     /**
-     * Handles the event triggered when a ship is targeted. This method processes
-     * the event to determine if the targeted ship's subsystem matches a specific
-     * target, and acts accordingly by updating targeting state and playing audio cues.
+     * Handles the event triggered when a ship is targeted. Matching is done purely on the
+     * journal's raw {@code Subsystem} machine key, because {@code Subsystem_Localised} is
+     * missing on some ships (a known journal defect). The same machine key also drives
+     * full-loop detection so an un-fitted module can be reported to the commander.
      *
      * @param event the ShipTargetedEvent containing details about the targeting action.
-     *              If the event is null, the method returns immediately.
-     *              Key data from the event includes:
-     *              - Target lock status (targetLocked)
-     *              - Localized and raw subsystem names (subsystemLocalised, subsystem)
-     *              - Event timestamp for filtering stale events
-     *              - Scan stage indicating the progression of targeting
      */
     @Subscribe public void onShipTargetedEvent(ShipTargetedEvent event) {
         if (event == null) return;
+        if (!continueTargeting) return;
 
         if (!event.isTargetLocked()) {
             log.debug("[journal] target lock lost - stopping");
@@ -141,10 +184,12 @@ public class SubSystemsManager {
             return;
         }
 
-        String effectiveName = resolveSubsystemName(event.getSubsystemLocalised(), event.getSubsystem());
-        if (effectiveName == null) {
-            log.debug("[journal] ShipTargeted: no resolvable subsystem (scanStage={}, raw=[{}])",
+        String stripped = stripRawKey(event.getSubsystem());
+        if (stripped == null) {
+            log.debug("[journal] ShipTargeted: no machine key (scanStage={}, raw=[{}]) - cycling on",
                     event.getScanStage(), event.getSubsystem());
+            consecutiveTimeouts = 0;
+            pause = false;
             return;
         }
 
@@ -155,37 +200,62 @@ public class SubSystemsManager {
             return;
         }
 
-        String trimmed = effectiveName.trim();
-        log.debug("[journal] resolved=[{}] target=[{}]", trimmed, getTarget());
+        log.debug("[journal] stripped=[{}] targetKey=[{}]", stripped, targetMachineKey);
 
-        if (trimmed.equalsIgnoreCase(getTarget())) {
+        if (targetMachineKey != null && stripped.contains(targetMachineKey)) {
             log.debug("[journal] MATCH - stopping");
             continueTargeting = false;
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_1);
-        } else {
-            log.debug("[journal] no match - continuing");
-            AudioPlayer.getInstance().playBeep(AudioPlayer.BEEP_2);
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_1));
+            consecutiveTimeouts = 0;
+            pause = false;
+            return;
         }
+
+        // Not the target. Track the cycle to detect a full revolution (module not installed).
+        if (anchorRaw == null) {
+            anchorRaw = stripped;
+        } else if (!stripped.equals(anchorRaw)) {
+            leftAnchor = true;
+        } else if (leftAnchor) {
+            log.debug("[journal] returned to anchor [{}] - full loop, [{}] not installed", anchorRaw, getTarget());
+            continueTargeting = false;
+            announceNotInstalled();
+            consecutiveTimeouts = 0;
+            pause = false;
+            return;
+        }
+
+        log.debug("[journal] no match - continuing");
+        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         consecutiveTimeouts = 0;
         pause = false;
     }
 
+    private void announceNotInstalled() {
+        String text = EventsTextProvider.getText("subsystem.not_installed", getTarget());
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(text));
+        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+    }
 
     /**
-     * Resolves the name of a subsystem by prioritizing a localized name if provided,
-     * or falling back to querying a database using a processed version of the raw key.
-     *
-     * @param localised the localized subsystem name, which may be null or blank
-     * @param rawKey the raw identifier for the subsystem, which may be null or blank
-     * @return the resolved subsystem name as a String, or null if the resolution fails
+     * Picks the cycle direction for a target. Core internals and the drive cluster at the bottom
+     * of the subsystem cycle, so they are reached fastest by cycling previous; everything else
+     * (hardpoints, utilities, cargo hatch) keeps the default forward cycle.
      */
-    private static String resolveSubsystemName(String localised, String rawKey) {
-        if (localised != null && !localised.isBlank()) return localised;
-        if (rawKey == null || rawKey.isBlank()) return null;
+    private static Bindings.GameCommand directionFor(String machineKey) {
+        boolean bottomCluster = BOTTOM_CLUSTER_PREFIXES.stream().anyMatch(machineKey::startsWith);
+        return bottomCluster ? BINDING_CYCLE_PREVIOUS_SUBSYSTEM : BINDING_CYCLE_NEXT_SUBSYSTEM;
+    }
 
-        String stripped = rawKey.replaceAll("^\\$", "")
+    /**
+     * Normalises the journal's raw {@code Subsystem} field (e.g. {@code $int_powerplant_size5_class5_name;})
+     * to a lower-case machine key fragment ({@code int_powerplant_size5_class5}) for substring matching.
+     */
+    private static String stripRawKey(String rawKey) {
+        if (rawKey == null || rawKey.isBlank()) return null;
+        return rawKey.replaceAll("^\\$", "")
                 .replaceAll("_name;?$", "")
-                .replaceAll(";$", "");
-        return Database.withDao(SubSystemDao.class, dao -> dao.findSubsystemByRawKey(stripped));
+                .replaceAll(";$", "")
+                .toLowerCase(Locale.ROOT);
     }
 }

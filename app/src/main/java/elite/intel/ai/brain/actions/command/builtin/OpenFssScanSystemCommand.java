@@ -21,6 +21,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED_ZERO;
 public final class OpenFssScanSystemCommand implements IntelCommand {
     public static final String ID = "open_fss_scan_system";
 
+    @Override public String llmDescription() { return "Open the full-spectrum system scanner."; }
+
 
     private final Status status = Status.getInstance();
 

@@ -22,6 +22,8 @@ import java.util.regex.Pattern;
 public class AnalyzeStellarObjectsQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_stellar_objects";
 
+    @Override public String llmDescription() { return "Report the stellar bodies in the current system."; }
+
 
     @Override public String id() { return ID; }
 

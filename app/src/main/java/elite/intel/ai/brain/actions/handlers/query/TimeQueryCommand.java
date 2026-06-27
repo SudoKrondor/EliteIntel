@@ -19,6 +19,8 @@ import java.time.format.DateTimeFormatter;
 public class TimeQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_time";
 
+    @Override public String llmDescription() { return "Report the current real-world and in-game time."; }
+
 
     @Override public String id() { return ID; }
 

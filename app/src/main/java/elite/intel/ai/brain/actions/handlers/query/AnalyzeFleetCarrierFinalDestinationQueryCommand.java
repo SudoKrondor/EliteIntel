@@ -17,6 +17,8 @@ import java.util.Map;
 public class AnalyzeFleetCarrierFinalDestinationQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_fleet_carrier_final_destination";
 
+    @Override public String llmDescription() { return "Report the fleet carrier's final destination."; }
+
 
     @Override public String id() { return ID; }
 

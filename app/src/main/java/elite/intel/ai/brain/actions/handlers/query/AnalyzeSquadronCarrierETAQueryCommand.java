@@ -17,6 +17,8 @@ import java.time.temporal.ChronoUnit;
 public class AnalyzeSquadronCarrierETAQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_squadron_carrier_eta";
 
+    @Override public String llmDescription() { return "Report the squadron carrier's estimated time of arrival."; }
+
 
     @Override public String id() { return ID; }
 

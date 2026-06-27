@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class TargetHostileHighestThreatCommand extends SimpleTapCommand {
     public static final String ID = "target_hostile_highest_threat";
 
+    @Override public String llmDescription() { return "Target the highest-threat hostile."; }
+
     public TargetHostileHighestThreatCommand() {
         super(ID, Bindings.GameCommand.BINDING_SELECT_HIGHEST_THREAT.getGameBinding());
     }

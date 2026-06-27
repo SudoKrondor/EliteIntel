@@ -32,6 +32,17 @@ public class RedeemVoucherEvent extends BaseEvent {
         return "RedeemVoucher";
     }
 
+    /** Routine payout; memory only. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Redeemed a voucher (bounty, combat bond, trade dividend, and so on) for credits; carries the type and amount.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

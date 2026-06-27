@@ -20,6 +20,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowNavigationPanelCommand implements IntelCommand {
     public static final String ID = "show_navigation_panel";
 
+    @Override public String llmDescription() { return "Open the navigation panel."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

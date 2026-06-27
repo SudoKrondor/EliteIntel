@@ -32,7 +32,7 @@ class RankEventSubscriberTest {
 
         assertEquals("Knight", session.getPlayerHighestMilitaryRank());
         RankAndProgressDto rp = session.getRankAndProgressDto();
-        assertEquals("Knight", rp.getMilitaryRankEmpire());
+        assertEquals(5, rp.getCombatRankEmpire());
     }
 
     @Test

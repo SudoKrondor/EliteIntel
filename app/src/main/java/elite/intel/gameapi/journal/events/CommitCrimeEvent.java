@@ -40,6 +40,21 @@ public class CommitCrimeEvent extends BaseEvent {
         return "CommitCrime";
     }
 
+    /**
+     * NORMAL: CommitCrimeEventSubscriber already owns the spoken crime/bounty alert via EventNarrator,
+     * which now narrates in every mode. Kept in memory but off the consciousness's spoken channel so
+     * the crime is not announced twice.
+     */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "You committed a crime (assault, murder, fine, and so on); carries the crime type, the victim faction, and any bounty or fine incurred.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

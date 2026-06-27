@@ -21,6 +21,8 @@ import elite.intel.session.ui.UINavigator;
 public final class DisembarkCommand implements IntelCommand {
     public static final String ID = "disembark";
 
+    @Override public String llmDescription() { return "Disembark from the ship on foot."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();

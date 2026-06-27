@@ -19,6 +19,8 @@ import elite.intel.session.ui.UINavigator;
 public final class RequestDockingCommand implements IntelCommand {
     public static final String ID = "request_docking";
 
+    @Override public String llmDescription() { return "Request docking permission at the current station."; }
+
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
@@ -37,7 +39,7 @@ public final class RequestDockingCommand implements IntelCommand {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     // Navigate within contacts to the station entry.
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
-                    GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_UP.getGameBinding(), 2000), // scroll up to the top (and hope our station is there)
+                    GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_UP.getGameBinding(), 500), // scroll up to the top (and hope our station is there)
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.delay(500),
                     // Request docking.

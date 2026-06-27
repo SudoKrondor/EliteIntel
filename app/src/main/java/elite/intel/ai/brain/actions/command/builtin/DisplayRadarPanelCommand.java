@@ -18,6 +18,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL
 public final class DisplayRadarPanelCommand implements IntelCommand {
     public static final String ID = "display_radar_panel";
 
+    @Override public String llmDescription() { return "Open the radar / sensors panel."; }
+
 
     @Override
     public String id() {

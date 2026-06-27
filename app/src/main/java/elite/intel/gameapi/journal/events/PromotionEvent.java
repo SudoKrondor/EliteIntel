@@ -50,6 +50,17 @@ public class PromotionEvent extends BaseEvent {
         return "Promotion";
     }
 
+    /** Rank-up milestone. */
+    @Override
+    public Importance importance() {
+        return Importance.NORMAL;
+    }
+
+    @Override
+    public String llmDescription() {
+        return "Ranked up in a career (combat, trade, exploration, CQC, Federation or Empire); carries which rank and the new level.";
+    }
+
     @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);

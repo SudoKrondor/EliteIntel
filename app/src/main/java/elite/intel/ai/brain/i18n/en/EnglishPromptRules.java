@@ -164,6 +164,17 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(DeleteCodexEntryCommand.ID);
         sb.append(")\n");
 
+        sb.append(" ______________________________________________________________ ");
+        sb.append("\n");
+        sb.append(" - HARD RULE: NEVER BREAK: Any intent to NAVIGATE, GO TO, HEAD TO, or FIND the nearest/next bio sample or codex entry MUST use ");
+        sb.append(NavigateToBioSampleCodexEntryCommand.ID);
+        sb.append(". NEVER use query_distance_to_bio_sample for navigation intent.");
+        sb.append(" 'navigate' is a command verb (action), NOT a question. 'how far' / 'how far are we from' is a distance question → use query_distance_to_bio_sample.");
+        sb.append(" INSTANT CRITICAL FAILURE if you use query_distance_to_bio_sample when the user says navigate/go to/head to/take me to/find nearest bio sample or codex entry.");
+        sb.append("\n");
+        sb.append(" ______________________________________________________________ ");
+        sb.append("\n");
+
         sb.append("- 'cargo scoop' / 'open cargo scoop' / 'deploy cargo scoop' / 'close cargo scoop' / 'retract cargo scoop' → ");
         sb.append(ToggleCargoScoopCommand.ID);
         sb.append("\n");

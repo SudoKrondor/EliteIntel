@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
@@ -11,6 +12,8 @@ import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.StringUtls;
 
+import java.util.List;
+
 /**
  * Self-describing "navigate to mission target" command.
  * Owns its own execution: body migrated 1:1 from the legacy NavigateToMissionDestination,
@@ -20,8 +23,25 @@ import elite.intel.util.StringUtls;
 public final class NavigateToMissionTargetCommand implements IntelCommand {
     public static final String ID = "navigate_to_mission_target";
 
+    @Override public String llmDescription() { return "Plot a route to the active mission target."; }
+
 
     private final MissionManager missionManager = MissionManager.getInstance();
+
+    private static final String PARAM_KEY = "key";
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                PARAM_KEY, "string", false,
+                "Optional keyword to pick a specific mission (e.g. faction, commodity, or target name). "
+                        + "If omitted, the first active mission is used.",
+                List.of("massacre", "courier"),
+                "Extract a distinguishing keyword from the mission the commander names; otherwise omit it.");
+        key.validate();
+        return List.of(key);
+    }
 
     @Override
     public String id() {
@@ -29,8 +49,13 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
     }
 
     @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
-        String keyword = params.get("key") == null ? null : params.get("key").getAsString();
+        String keyword = params.get(PARAM_KEY) == null ? null : params.get(PARAM_KEY).getAsString();
 
         MissionDto mission = missionManager.findByKeyword(keyword).stream().findFirst().orElse(null);
         if (mission == null) {

@@ -269,7 +269,8 @@ public final class KeyCaptureMapper {
         // For ASCII punctuation where Java kept the ASCII value: default case.
         // Explicit entries only for keys where Java renamed the VK constant away from the keysym value.
         private static long vkToKeysym(int vk) {
-            if (vk >= KeyEvent.VK_A && vk <= KeyEvent.VK_Z) return vk + 32L;
+            if (vk >= KeyEvent.VK_A && vk <= KeyEvent.VK_Z) return vk + 32L;   // letters → XK_a..z
+            if (vk >= KeyEvent.VK_0 && vk <= KeyEvent.VK_9) return vk;         // digits → XK_0..9 (== VK)
             return switch (vk) {
                 case KeyEvent.VK_QUOTE -> 0x27L;  // XK_apostrophe
                 case KeyEvent.VK_BACK_QUOTE -> 0x60L;  // XK_grave
@@ -278,7 +279,15 @@ public final class KeyCaptureMapper {
                 case KeyEvent.VK_LEFT_PARENTHESIS -> 0x28L;  // XK_parenleft        (AZERTY 5)
                 case KeyEvent.VK_RIGHT_PARENTHESIS -> 0x29L;  // XK_parenright       (AZERTY ))
                 case KeyEvent.VK_UNDERSCORE -> 0x5FL;  // XK_underscore       (AZERTY 8)
-                default -> vk;
+                // ASCII punctuation Java keeps at its ASCII value (VK == X keysym): scan-resolve these.
+                case KeyEvent.VK_MINUS, KeyEvent.VK_EQUALS, KeyEvent.VK_COMMA, KeyEvent.VK_PERIOD,
+                     KeyEvent.VK_SLASH, KeyEvent.VK_SEMICOLON, KeyEvent.VK_OPEN_BRACKET,
+                     KeyEvent.VK_CLOSE_BRACKET, KeyEvent.VK_BACK_SLASH -> vk;
+                // Latin-1 accented keys (é è à ç ñ …) report VK == Unicode == X keysym.
+                // Everything else — F-keys, arrows, navigation, numpad — is layout-independent and
+                // MUST NOT be scan-resolved: its VK collides with an ASCII keysym (VK_F5 == XK_t),
+                // which mis-mapped function keys to letters. Returning 0 falls through to VK_TO_TOKEN.
+                default -> (vk >= 0x00A1 && vk <= 0x00FF) ? (long) vk : 0L;
             };
         }
     }

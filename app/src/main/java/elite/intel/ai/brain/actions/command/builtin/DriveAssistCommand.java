@@ -8,6 +8,8 @@ import elite.intel.ai.hands.Bindings;
 public final class DriveAssistCommand extends SimpleTapCommand {
     public static final String ID = "drive_assist";
 
+    @Override public String llmDescription() { return "Toggle SRV drive assist on or off."; }
+
     public DriveAssistCommand() {
         super(ID, Bindings.GameCommand.BINDING_DRIVE_ASSIST.getGameBinding());
     }

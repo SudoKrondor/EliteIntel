@@ -36,6 +36,16 @@ public final class AppPaths {
         return dir.resolve(CUSTOM_COMMANDS_FILE_NAME);
     }
 
+    /**
+     * Returns the directory for durable, timestamped custom-command backups written before a
+     * destructive import replaces the current set, creating it if needed.
+     */
+    public static Path getCustomCommandsBackupDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/custom-commands/backups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
     /** Returns the directory for per-preset working copies, creating it if needed. */
     public static Path getBindingsWorkingDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/bindings");
@@ -46,6 +56,18 @@ public final class AppPaths {
     /** Returns the directory for timestamped game-file backups, creating it if needed. */
     public static Path getBindingsBackupDir() throws IOException {
         Path dir = getAppDataBase().resolve("elite-intel/bindings/backups");
+        Files.createDirectories(dir);
+        return dir;
+    }
+
+    /**
+     * Returns the directory for user-facing, on-demand player backups (bindings/preset
+     * snapshots, and later other profile data), creating it if needed. Deliberately separate
+     * from {@link #getBindingsBackupDir()}, which is an internal safety net tied to the
+     * apply-pipeline rather than a user-triggered feature.
+     */
+    public static Path getPlayerBackupsDir() throws IOException {
+        Path dir = getAppDataBase().resolve("elite-intel/playerbackups");
         Files.createDirectories(dir);
         return dir;
     }

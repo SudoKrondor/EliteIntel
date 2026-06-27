@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.ai.mouth.subscribers.events.RadarContactAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.eventbus.GameEventBus;
@@ -50,7 +50,7 @@ public class ShipTargetedEventSubscriber {
             info.append(pilotRankLocalized == null ? localizedEvent("event.target.rankUnknown") : pilotRankLocalized);
             info.append(", ");
 
-            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : legalStatus.replace("_", " "));
+            info.append(legalStatus == null ? localizedEvent("event.target.legalStatusUnknown") : Ranks.getLocalizedLegalStatus(event.getLegalStatus()));
             info.append(", ");
 
             info.append(bounty == 0 ? localizedEvent("event.target.noBounty") : localizedEvent("event.target.bounty", TTSFriendlyNumberConverter.formatBountyForSpeech(bounty)));
@@ -75,7 +75,7 @@ public class ShipTargetedEventSubscriber {
             if (playerSession.getShipScan(key) == null || playerSession.getShipScan(key).isEmpty()) {
                 //new scan
                 playerSession.putShipScan(key, data);
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(info.toString()));
+                EventNarrator.critical(info.toString());
             }
         }
     }

@@ -5,12 +5,15 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.ears.AudioCalibrator;
+import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.input.CompanionSubsystemGate;
 import elite.intel.devices.DeviceService;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -27,6 +30,7 @@ import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.Timer;
 import java.util.*;
@@ -116,23 +120,24 @@ public class AppController implements Runnable {
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
-            appendToLog("Starting audio calibration...");
+            appendToLog(StringUtls.localizedLlm("log.audioCalibrationStarting"));
             EarsInterface ears = services.get(ServiceType.EARS).get();
             if (ears == null) return;
             ears.stop();
             new Thread(() -> {
                 try {
-                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat();
-                    AudioCalibrator.calibrateRMS(format);
+                    Mixer.Info inputMixerInfo = AudioDeviceEnumerator.resolveInputDevice(systemSession.getAudioInputDevice());
+                    AudioFormatDetector.Format format = AudioFormatDetector.detectSupportedFormat(inputMixerInfo);
+                    AudioCalibrator.calibrateRMS(format, inputMixerInfo);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationComplete")));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        appendToLog("Calibration failed: " + ex.getMessage());
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedSpeech("speech.audioCalibrationFailed")));
+                        appendToLog(StringUtls.localizedLlm("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();
@@ -197,8 +202,13 @@ public class AppController implements Runnable {
         if (ears == null) return;
         appendToLog("Restarting STT service...");
         ears.stop();
-        ears.start();
-        appendToLog("STT service restarted");
+        try {
+            ears.start();
+            appendToLog("STT service restarted");
+        } catch (Exception e) {
+            log.error("Failed to restart STT service", e);
+            appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+        }
     }
 
     private void restartMouthService() {
@@ -276,6 +286,19 @@ public class AppController implements Runnable {
     private void initServices() {
         stopServices();
         this.services.clear();
+        this.services.putAll(buildServices(CompanionConfig.companionModeOn()));
+    }
+
+    /**
+     * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
+     * nothing is started here) so the registration can be verified in tests without standing up the
+     * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
+     * is registered per {@code companionModeOn} (§0).
+     */
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn) {
+        LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+        services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
+        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
@@ -288,15 +311,19 @@ public class AppController implements Runnable {
                 DeviceService.getInstance().stop();
             }
         }));
-        services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
-        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
-        services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
+        if (companionModeOn) {
+            services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
+        } else {
+            services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
+        }
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
+        return services;
     }
 
-    private static class ServiceHolder {
+    static class ServiceHolder {
         private final Supplier<? extends ManagedService> creator;
         private ManagedService instance;
 
@@ -322,8 +349,8 @@ public class AppController implements Runnable {
         }
     }
 
-    private enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN,
+    enum ServiceType {
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

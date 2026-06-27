@@ -19,6 +19,8 @@ import java.util.List;
 public class AnalyzeMarketsQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_markets";
 
+    @Override public String llmDescription() { return "Report commodity markets and prices."; }
+
 
     @Override public String id() { return ID; }
 

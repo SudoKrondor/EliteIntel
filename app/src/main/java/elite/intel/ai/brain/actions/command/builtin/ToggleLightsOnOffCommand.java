@@ -16,6 +16,8 @@ import elite.intel.session.Status;
 public final class ToggleLightsOnOffCommand implements IntelCommand {
     public static final String ID = "toggle_lights_on_off";
 
+    @Override public String llmDescription() { return "Toggle the ship or SRV exterior lights on or off."; }
+
 
     @Override
     public String id() {

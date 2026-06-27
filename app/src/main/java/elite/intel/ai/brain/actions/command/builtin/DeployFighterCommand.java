@@ -19,6 +19,8 @@ import java.util.List;
 public final class DeployFighterCommand implements IntelCommand {
     public static final String ID = "deploy_fighter";
 
+    @Override public String llmDescription() { return "Launch a ship-launched fighter."; }
+
 
     private final Status status = Status.getInstance();
 

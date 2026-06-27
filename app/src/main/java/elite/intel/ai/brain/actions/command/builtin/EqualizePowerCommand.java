@@ -18,6 +18,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_RESET_POWER_DIST
 public final class EqualizePowerCommand implements IntelCommand {
     public static final String ID = "equalize_power";
 
+    @Override public String llmDescription() { return "Balance power equally across engines, weapons, and systems."; }
+
 
     @Override
     public String id() {

@@ -49,8 +49,12 @@ public class ApproachBodySubscriber {
 
             location.setOrbitalCruiseEntryAltitude(orbitalCruiseEntryAltitude);
 
-            playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
             playerSession.setCurrentPrimaryStarName(event.getStarSystem());
+
+            if (event.getBodyID() == null) return;
+
+            playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
+            locationManager.save(location); // record body before early-return so it is in DB even when tracking is on
 
             if (playerSession.getTracking().isEnabled()) return;
 

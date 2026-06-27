@@ -20,6 +20,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
 public final class DeployLandingGearCommand implements IntelCommand {
     public static final String ID = "deploy_landing_gear";
 
+    @Override public String llmDescription() { return "Deploy the landing gear."; }
+
 
     @Override
     public String id() {

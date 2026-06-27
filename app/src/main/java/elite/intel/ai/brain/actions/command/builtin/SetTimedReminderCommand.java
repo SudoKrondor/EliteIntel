@@ -22,18 +22,23 @@ import java.util.Objects;
 public final class SetTimedReminderCommand implements IntelCommand {
     public static final String ID = "set_timed_reminder";
 
+    @Override public String llmDescription() { return "Set a reminder that triggers after a specified time."; }
+
+
+    private static final String PARAM_KEY = "key";
+    private static final String PARAM_MINUTES = "minutes";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "string", true,
+                PARAM_KEY, "string", true,
                 "The reminder text to store and announce when the timer elapses.",
                 List.of("check fuel", "scoop fuel"),
                 "Extract the reminder text the commander dictates, verbatim.");
         key.validate();
         ActionParameterSpec minutes = new ActionParameterSpec(
-                "minutes", "number", true,
+                PARAM_MINUTES, "number", true,
                 "Number of minutes until the reminder fires.",
                 List.of("5", "30"),
                 "Extract the number of minutes from phrasing like 'remind me in 5 minutes' (the 5).");
@@ -53,8 +58,8 @@ public final class SetTimedReminderCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement keyEl = params.get("key");
-        JsonElement minutesEl = params.get("minutes");
+        JsonElement keyEl = params.get(PARAM_KEY);
+        JsonElement minutesEl = params.get(PARAM_MINUTES);
 
         if (isValidReminder(keyEl, minutesEl)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));

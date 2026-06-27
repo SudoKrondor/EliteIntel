@@ -68,6 +68,7 @@ public class EventRegistry {
         registerEvent("FSDJump", FSDJumpEvent.class);
         registerEvent("FSDTarget", FSDTargetEvent.class);
         registerEvent("FSSSignalDiscovered", FSSSignalDiscoveredEvent.class);
+        registerEvent("FSSDiscoveryScan", FSSDiscoveryScanEvent.class);
         registerEvent("LaunchDrone", LaunchDroneEvent.class);
         registerEvent("LaunchFighter", LaunchFighterEvent.class);
         registerEvent("DockFighter", DockFighterEvent.class);
@@ -105,6 +106,26 @@ public class EventRegistry {
         registerEvent("Touchdown", TouchdownEvent.class);
         registerEvent("Shutdown", ShutdownEvent.class);
         registerEvent("SquadronStartup", SquadronStartupEvent.class);
+
+        // Finance: realized credit movements (see FinanceSubscriber)
+        registerEvent("Resurrect", ResurrectEvent.class);
+        registerEvent("ModuleBuy", ModuleBuyEvent.class);
+        registerEvent("ModuleSell", ModuleSellEvent.class);
+        registerEvent("ModuleSellRemote", ModuleSellRemoteEvent.class);
+        registerEvent("RepairAll", RepairAllEvent.class);
+        registerEvent("Repair", RepairEvent.class);
+        registerEvent("RefuelAll", RefuelAllEvent.class);
+        registerEvent("RefuelPartial", RefuelPartialEvent.class);
+        registerEvent("BuyAmmo", BuyAmmoEvent.class);
+        registerEvent("RestockVehicle", RestockVehicleEvent.class);
+        registerEvent("BuyDrones", BuyDronesEvent.class);
+        registerEvent("SellDrones", SellDronesEvent.class);
+        registerEvent("PayFines", PayFinesEvent.class);
+        registerEvent("PayBounties", PayBountiesEvent.class);
+        registerEvent("ShipyardSell", ShipyardSellEvent.class);
+        registerEvent("ShipyardTransfer", ShipyardTransferEvent.class);
+        registerEvent("CarrierBuy", CarrierBuyEvent.class);
+        registerEvent("CarrierBankTransfer", CarrierBankTransferEvent.class);
     }
 
     private static void registerEvent(String eventName, Class<? extends BaseEvent> eventClass) {

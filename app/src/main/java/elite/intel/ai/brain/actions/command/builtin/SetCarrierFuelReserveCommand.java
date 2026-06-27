@@ -21,6 +21,10 @@ import java.util.List;
 public final class SetCarrierFuelReserveCommand implements IntelCommand {
     public static final String ID = "set_carrier_fuel_reserve";
 
+    @Override public String llmDescription() { return "Set the fleet carrier's tritium fuel reserve level."; }
+
+
+    private static final String PARAM_KEY = "key";
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
@@ -28,7 +32,7 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
         // Handler reads this value under the key "key" (getAsString -> getIntSafely);
         // type=number is safe because the read is string-based.
         ActionParameterSpec key = new ActionParameterSpec(
-                "key", "number", true,
+                PARAM_KEY, "number", true,
                 "Fleet carrier tritium fuel reserve amount to set.",
                 List.of("500", "1000"),
                 "Extract the numeric tritium reserve amount the commander specifies.");
@@ -48,7 +52,7 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        JsonElement key = params.get("key");
+        JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve")));
             return;

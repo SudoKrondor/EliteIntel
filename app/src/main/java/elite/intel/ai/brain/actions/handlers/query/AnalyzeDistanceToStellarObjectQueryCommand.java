@@ -18,6 +18,8 @@ import java.util.List;
 public class AnalyzeDistanceToStellarObjectQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_distance_to_body";
 
+    @Override public String llmDescription() { return "Report the distance to a named stellar body or station in the current star system."; }
+
 
     @Override public String id() { return ID; }
 

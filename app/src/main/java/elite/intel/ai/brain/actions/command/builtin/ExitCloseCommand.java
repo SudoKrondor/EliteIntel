@@ -14,6 +14,8 @@ import elite.intel.gameapi.inputs.UiNavCommon;
 public final class ExitCloseCommand implements IntelCommand {
     public static final String ID = "exit_close";
 
+    @Override public String llmDescription() { return "Back out of or close the current menu or panel."; }
+
 
     @Override
     public String id() {

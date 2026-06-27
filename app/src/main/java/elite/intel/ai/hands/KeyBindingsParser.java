@@ -238,8 +238,10 @@ public class KeyBindingsParser {
         if (!hasKeyboardMainKey(device, key)) {
             return false;
         }
-        return modifiers.isEmpty()
-                || (modifiers.size() == 1 && modifiers.get(0).isSupportedKeyboardModifier());
+        // The chord editor can rewrite any number of supported keyboard modifiers
+        // (e.g. Left Ctrl + Left Shift), so a slot is editable as long as every
+        // modifier is a supported keyboard modifier.
+        return modifiers.stream().allMatch(BindingModifier::isSupportedKeyboardModifier);
     }
 
     private List<BindingModifier> getBindingModifiers(Element binding) {
