@@ -48,6 +48,15 @@ class CommandExecutionEvalTest {
             // companion action-bias prompt rules - observed answering with status/FSD-target offers instead).
             new Case("target drive", "target_subsystem", "drive", false),
             new Case("target power plant", "target_subsystem", "power", false),
+            // Repeated-command regression (screen repro): the same direct command issued five times in a row.
+            // Memory accumulates across turns, so from turn 2 on the companion sees it "already targeted" earlier
+            // and must STILL re-execute target_subsystem every time - never chatter "we've already targeted it,
+            // shall we focus on another system?" and never refuse a repeated order.
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
             // "Find" commands: parameterized search (key + optional max_distance/state). Same regression class as
             // target_subsystem - the companion previously lost the param examples/hints and chattered instead of
             // executing. Verifies the command fires and carries the searched value.
