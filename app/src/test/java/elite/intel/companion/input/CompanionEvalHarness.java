@@ -8,6 +8,7 @@ import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.CompanionLlmGateway;
@@ -359,7 +360,8 @@ public final class CompanionEvalHarness {
     /** Renders a memory entry exactly as the prompt shows it: {@code [SOURCE][topic] content}. */
     private static String renderEntry(MemoryEntry e) {
         return String.format("[%s][%s] %s",
-                e.source().name(), e.topic().name().toLowerCase(Locale.ROOT), e.content());
+                e.source().displayLabel(CompanionConfig.companionName()),
+                e.topic().name().toLowerCase(Locale.ROOT), e.content());
     }
 
     private static String memoryKey(MemoryEntry e) {

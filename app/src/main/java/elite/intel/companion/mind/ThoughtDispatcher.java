@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
@@ -155,19 +156,24 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Removes a single leading vocative use of the companion's own name (e.g. "Vega, ..." or "Vega ...") from
-     * the input, used for reflex matching only. The name must be a whole leading word so it is an address, not
-     * part of a longer word; any following separators/spaces are consumed. If only the name remains (a bare
+     * Removes a single leading vocative use of the companion's name (e.g. "Vega, ..." or, as Russian STT
+     * returns it, "Вега, ...") from the input, used for reflex matching only. Any recognized name form
+     * ({@link CompanionConfig#companionNameForms()}: the canonical name plus transliterations) is matched as a
+     * whole leading word - a Unicode-aware {@code \b}, so a Cyrillic form matches too - so it is an address,
+     * not part of a longer word; any following separators/spaces are consumed. If only the name remains (a bare
      * address), the original input is returned unchanged so it falls through to the LLM path.
      */
     private static String stripLeadingCompanionName(String input) {
-        String name = CompanionConfig.companionName();
-        if (name == null || name.isBlank()) {
+        String alternation = CompanionConfig.companionNameForms().stream()
+                .filter(form -> form != null && !form.isBlank())
+                .map(form -> Pattern.quote(form.trim()))
+                .collect(Collectors.joining("|"));
+        if (alternation.isEmpty()) {
             return input;
         }
         Pattern leadingName = Pattern.compile(
-                "^\\s*" + Pattern.quote(name.trim()) + "\\b[\\s,.:;!?-]*",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+                "^\\s*(?:" + alternation + ")\\b[\\s,.:;!?-]*",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS);
         String stripped = leadingName.matcher(input).replaceFirst("");
         return stripped.isBlank() ? input : stripped;
     }

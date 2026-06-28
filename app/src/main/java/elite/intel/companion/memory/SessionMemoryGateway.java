@@ -1,6 +1,7 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.prompt.CompanionWordMatch;
@@ -84,14 +85,16 @@ public final class SessionMemoryGateway implements MemoryGateway {
         // one of short-term / mid-term (mid-term only receives short-term overflow), so the two never double-count.
         for (MemoryEntry entry : shortTerm.timeline()) {
             if (matches(queryTokens, entry.content())) {
-                hits.add(new TimedHit(entry.timestamp(), "[" + entry.source().name() + "] " + entry.content()));
+                hits.add(new TimedHit(entry.timestamp(),
+                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
             }
         }
         for (MemoryEntry entry : midTerm.allEntries()) {
             if (matches(queryTokens, entry.content())) {
-                // Carry the speaker tag so the model knows whose words it recalled (same [COMMANDER]/[COMPANION]
-                // convention as the timeline), matching its prompt legend.
-                hits.add(new TimedHit(entry.timestamp(), "[" + entry.source().name() + "] " + entry.content()));
+                // Carry the speaker tag so the model knows whose words it recalled (same speaker-tag
+                // convention as the timeline via MemorySource.displayLabel), matching its prompt legend.
+                hits.add(new TimedHit(entry.timestamp(),
+                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
             }
         }
         for (LlmMemory.Item item : llmMemory.allItems()) {

@@ -29,7 +29,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String COMMANDER_PERSONA = """
             Speak only from function results and your memory. A line tagged [COMMANDER] is the commander's own \
-            words and a line tagged [COMPANION] is your own earlier reply that you said and can rely on - in \
+            words and a line tagged [%s] is your own earlier reply that you said and can rely on - in \
             the session timeline below and in search_in_memory results alike. The recent conversation this \
             session is in the session timeline below - answer about anything said earlier directly from it, \
             with no function call. When the question is about something established earlier in the run - a \
@@ -102,7 +102,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(personaCore()).append(addressRule()).append(COMMANDER_PERSONA);
+        sb.append(personaCore()).append(addressRule())
+                .append(COMMANDER_PERSONA.formatted(CompanionConfig.companionName()));
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");

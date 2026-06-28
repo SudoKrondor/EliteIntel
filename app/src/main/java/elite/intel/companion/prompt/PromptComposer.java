@@ -1,5 +1,6 @@
 package elite.intel.companion.prompt;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ThoughtSource;
@@ -168,7 +169,7 @@ public final class PromptComposer {
             return sb.toString();
         }
         for (MemoryEntry entry : shortTerm) {
-            sb.append('[').append(entry.source().name()).append(']')
+            sb.append('[').append(entry.source().displayLabel(CompanionConfig.companionName())).append(']')
                     .append('[').append(id(entry.topic())).append("] ")
                     .append(entry.content()).append('\n');
         }

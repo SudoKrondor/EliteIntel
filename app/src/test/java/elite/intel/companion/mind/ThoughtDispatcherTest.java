@@ -28,6 +28,8 @@ import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -176,6 +178,44 @@ class ThoughtDispatcherTest {
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals(input, memory.writes.get(0).content(), "memory keeps the raw words, including the name");
         assertEquals("command stop_ship executed", memory.writes.get(1).content());
+    }
+
+    @Test
+    void aLeadingTransliteratedCompanionNameIsAlsoStrippedForTheReflexGate() {
+        // Russian STT returns the name in Cyrillic ("Вега"), not the canonical Latin "Vega". The Cyrillic form
+        // is the localized spoken form for the RU session language, so it is recognized as a leading vocative
+        // and a name-addressed short command still reflexes (no LLM).
+        Language previousLanguage = SystemSession.getInstance().getLanguage();
+        SystemSession.getInstance().setLanguage(Language.RU);
+        try {
+            LlmGateway failIfCalled = new LlmGateway() {
+                @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                    throw new AssertionError("a reflex must not engage the LLM");
+                }
+                @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                    return CompletableFuture.completedFuture(null);
+                }
+            };
+            ThoughtContext ctx = new ThoughtContext(
+                    failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                    new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                    (categories, currentInput) -> List.of(), new CompanionState(),
+                    invocation -> false, new ConfirmationCoordinator(),
+                    new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+            ReflexResolver reflex = new ReflexResolver(
+                    () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
+                    invocation -> false);
+            ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, s -> s); // identity normalizer
+            dispatcher.start();
+            dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
+            dispatcher.stop();
+
+            assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
+            assertEquals("Вега, all stop", memory.writes.get(0).content(), "memory keeps the raw words, including the name");
+            assertEquals("command stop_ship executed", memory.writes.get(1).content());
+        } finally {
+            SystemSession.getInstance().setLanguage(previousLanguage);
+        }
     }
 
     @Test
