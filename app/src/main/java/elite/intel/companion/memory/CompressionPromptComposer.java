@@ -54,6 +54,6 @@ final class CompressionPromptComposer {
     }
 
     private static String topicId(MemoryEntry entry) {
-        return entry.topic().name().toLowerCase(Locale.ROOT);
+        return entry.topic().id();
     }
 }

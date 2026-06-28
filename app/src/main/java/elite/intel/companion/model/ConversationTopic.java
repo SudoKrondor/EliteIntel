@@ -1,5 +1,7 @@
 package elite.intel.companion.model;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -50,6 +52,16 @@ public enum ConversationTopic {
     /** Whether this topic may be chosen by the LLM (change_global_topic / recall). */
     public boolean selectable() {
         return selectable;
+    }
+
+    /** This topic's lowercase id - the form used in prompts, tool args, and {@link #fromSelectableId} parsing. */
+    public String id() {
+        return name().toLowerCase(Locale.ROOT);
+    }
+
+    /** The ids of every LLM-selectable topic, in declaration order - the change_global_topic enum. */
+    public static List<String> selectableIds() {
+        return Arrays.stream(values()).filter(ConversationTopic::selectable).map(ConversationTopic::id).toList();
     }
 
     /**

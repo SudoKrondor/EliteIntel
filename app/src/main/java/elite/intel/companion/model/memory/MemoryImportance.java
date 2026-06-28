@@ -1,5 +1,7 @@
 package elite.intel.companion.model.memory;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -19,6 +21,11 @@ public enum MemoryImportance {
     NORMAL,
     HIGH,
     MAX;
+
+    /** The level ids (lowercase, in importance order) accepted by {@link #fromId} - the set_importance enum. */
+    public static List<String> ids() {
+        return Arrays.stream(values()).map(v -> v.name().toLowerCase(Locale.ROOT)).toList();
+    }
 
     /** Parses a level id (case-insensitive, e.g. from {@code set_importance}); null when blank or unknown. */
     public static MemoryImportance fromId(String id) {

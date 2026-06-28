@@ -50,7 +50,7 @@ public final class SetImportanceFunction implements SystemFunction {
                                 + "'high' = a durable fact worth keeping (plan, name, callsign, target, codeword, "
                                 + "agreement, rendezvous point); 'max' = an explicit order to remember, note, write "
                                 + "down, save, log, or not forget, kept word-for-word. Pick the highest that fits.",
-                        List.of("low", "normal", "high", "max"), null)
+                        List.of(), null, MemoryImportance.ids())
         );
     }
 

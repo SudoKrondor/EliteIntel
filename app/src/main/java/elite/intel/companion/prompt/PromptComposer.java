@@ -127,7 +127,7 @@ public final class PromptComposer {
         sb.append("Valid values for change_global_topic:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
-                sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
+                sb.append("- ").append(topic.id()).append(": ").append(topic.description()).append('\n');
             }
         }
         // The topic is sticky and never moves on its own; tell the model to keep it current so an earlier
@@ -151,7 +151,7 @@ public final class PromptComposer {
             sb.append("- none\n");
         } else {
             for (ConversationTopic topic : topics) {
-                sb.append("- ").append(id(topic)).append('\n');
+                sb.append("- ").append(topic.id()).append('\n');
             }
         }
 
@@ -188,7 +188,7 @@ public final class PromptComposer {
     /** Renders one entry as a prompt timeline line: {@code [speaker][topic] content}. */
     private void appendEntry(StringBuilder sb, MemoryEntry entry) {
         sb.append('[').append(entry.source().displayLabel(CompanionConfig.companionName())).append(']')
-                .append('[').append(id(entry.topic())).append("] ")
+                .append('[').append(entry.topic().id()).append("] ")
                 .append(entry.content()).append('\n');
     }
 
@@ -198,12 +198,8 @@ public final class PromptComposer {
         PromptSections.heading(sb, "Current input");
         sb.append("source: ").append(source.name()).append('\n')
                 .append("urgency: ").append(urgency.name().toLowerCase(Locale.ROOT)).append('\n')
-                .append("current topic: ").append(id(currentTopic)).append('\n')
+                .append("current topic: ").append(currentTopic.id()).append('\n')
                 .append("content: ").append(currentInput == null ? "" : currentInput).append('\n');
         return sb.toString();
-    }
-
-    private static String id(ConversationTopic topic) {
-        return topic.name().toLowerCase(Locale.ROOT);
     }
 }
