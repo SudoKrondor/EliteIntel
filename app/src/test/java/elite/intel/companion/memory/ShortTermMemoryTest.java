@@ -38,6 +38,10 @@ class ShortTermMemoryTest {
         return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, MemorySource.COMMANDER, content);
     }
 
+    private static MemoryEntry entry(MemorySource source, String content) {
+        return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, source, content);
+    }
+
     private static List<String> contents(List<MemoryEntry> entries) {
         return entries.stream().map(MemoryEntry::content).collect(Collectors.toList());
     }
@@ -102,6 +106,46 @@ class ShortTermMemoryTest {
         List<MemoryEntry> evicted = memory.evictOverflow();
         assertEquals(List.of("old"), contents(evicted));
         assertEquals(List.of("new"), contents(memory.timeline()));
+    }
+
+    @Test
+    void repeatedCommandsCollapseKeepingTheLatestOccurrence() {
+        // A subsystem-targeting cycle during combat: the same command recurs, interleaved with another.
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        for (String c : List.of("target drive", "target drive", "target power plant",
+                "target drive", "target power plant", "target power plant")) {
+            memory.add(entry(c));
+        }
+
+        // Each distinct command survives once, in order of its most recent use - so the current target is last.
+        assertEquals(List.of("target drive", "target power plant"), contents(memory.timeline()));
+    }
+
+    @Test
+    void dedupSubtractsTokensSoCollapsedDuplicatesDoNotMisfireEviction() {
+        // Per-entry cost is half the budget, so two distinct entries sit exactly at the budget and nothing
+        // evicts - but only if each collapsed duplicate's tokens were subtracted on removal. A broken
+        // subtraction would inflate the estimate past the budget and wrongly evict the older "alpha".
+        int perEntryEstimate = CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET / 2
+                - CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(perEntryEstimate));
+        memory.add(entry("alpha"));
+        memory.add(entry("repeat"));
+        memory.add(entry("repeat"));
+        memory.add(entry("repeat"));
+
+        assertTrue(memory.evictOverflow().isEmpty());
+        assertEquals(List.of("alpha", "repeat"), contents(memory.timeline()));
+    }
+
+    @Test
+    void sameContentFromDifferentSpeakersIsNotDeduped() {
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        memory.add(entry(MemorySource.COMMANDER, "shields"));
+        memory.add(entry(MemorySource.COMPANION, "shields"));
+
+        // Dedup only collapses one author's own repeat; the commander's word and the reply both stay.
+        assertEquals(2, memory.timeline().size());
     }
 
     @Test
