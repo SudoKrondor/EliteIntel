@@ -6,6 +6,7 @@ import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.LoadGameEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
 
 import java.util.List;
@@ -25,6 +26,9 @@ public class LoadGameEventSubscriber {
             playerSession.setPlayerName(alternativeName != null ? alternativeName : event.getCommander());
             playerSession.setInGameName(event.getCommander());
             playerSession.setCurrentShip(event.getShip());
+            if (event.getShipLocalised() != null) {
+                LoadoutConverter.upsertDisplayName(event.getShip(), event.getShipLocalised());
+            }
             playerSession.setCurrentShipName(event.getShipName());
             // Credits are owned by FinanceSubscriber (single home for money events).
             playerSession.setGameVersion(event.getGameversion());

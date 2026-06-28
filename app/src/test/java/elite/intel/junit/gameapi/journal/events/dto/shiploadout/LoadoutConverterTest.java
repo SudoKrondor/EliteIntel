@@ -42,6 +42,12 @@ class LoadoutConverterTest {
     }
 
     @Test
+    void upsertedDisplayNameIsVisibleWithinSameSession() {
+        LoadoutConverter.upsertDisplayName("futureShip_TrX", "Future Ship TrX");
+        assertEquals("Future Ship TrX", LoadoutConverter.toDisplayShipName(null, "futureship_trx"));
+    }
+
+    @Test
     void returnsNullWhenBothNamesAreMissing() {
         assertNull(
                 LoadoutConverter.toDisplayShipName(null, null),

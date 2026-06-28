@@ -3,20 +3,41 @@ package elite.intel.gameapi.journal.events.dto.shiploadout;
 import elite.intel.db.dao.ShipTypeDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static elite.intel.util.StringUtls.toReadableModuleName;
 
 public class LoadoutConverter {
 
-    private static final Map<String, String> SHIP_DISPLAY_NAMES = loadShipDisplayNames();
+    private static final ConcurrentHashMap<String, String> SHIP_DISPLAY_NAMES =
+            new ConcurrentHashMap<>(loadShipDisplayNames());
 
     private static Map<String, String> loadShipDisplayNames() {
-        return Database.withDao(ShipTypeDao.class, dao -> Map.copyOf(dao.findAll()));
+        return Database.withDao(ShipTypeDao.class, dao -> dao.findAll());
+    }
+
+    private static final Logger log = LogManager.getLogger(LoadoutConverter.class);
+
+    public static void upsertDisplayName(String internalName, String displayName) {
+        if (internalName == null) return;
+        String key = internalName.toLowerCase(Locale.ROOT);
+        try {
+            Database.withDao(ShipTypeDao.class, dao -> {
+                dao.upsert(key, displayName);
+                return null;
+            });
+        } catch (Exception e) {
+            log.warn("Could not persist ship display name {} -> {}: {}", key, displayName, e.getMessage());
+            return; // WHY: DB write failure is non-fatal; skip in-memory update to avoid divergence on restart
+        }
+        SHIP_DISPLAY_NAMES.put(key, displayName);
     }
 
     public static ShipLoadOutDto toShipLoadOutDto(LoadoutEvent event) {
