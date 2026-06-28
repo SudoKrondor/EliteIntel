@@ -47,9 +47,10 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 public class CommanderTabPanel extends JPanel {
 
     private static final int COL_SHIP = 0;
-    private static final int COL_VOICE = 1;
-    private static final int COL_PERSONALITY = 2;
-    private static final int COL_GEAR = 3;
+    private static final int COL_SHIP_TYPE = 1;
+    private static final int COL_VOICE = 2;
+    private static final int COL_PERSONALITY = 3;
+    private static final int COL_GEAR = 4;
 
     /** i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor. */
     private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
@@ -197,12 +198,14 @@ public class CommanderTabPanel extends JPanel {
         fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
+        fleetTable.getColumnModel().getColumn(COL_SHIP_TYPE).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(null));
         fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(200);
+        fleetTable.getColumnModel().getColumn(COL_SHIP_TYPE).setPreferredWidth(150);
         fleetTable.getColumnModel().getColumn(COL_VOICE).setPreferredWidth(160);
         fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setPreferredWidth(160);
         TableColumn gearCol = fleetTable.getColumnModel().getColumn(COL_GEAR);
@@ -250,6 +253,11 @@ public class CommanderTabPanel extends JPanel {
         return displayName == null ? getText("player.fleet.unknown") : displayName;
     }
 
+    static String shipTypeName(ShipDao.Ship ship) {
+        String resolved = LoadoutConverter.toDisplayShipName(null, ship.getShipIdentifier());
+        return resolved != null ? resolved : getText("player.fleet.unknown");
+    }
+
     private void saveCommanderName() {
         String current = playerAltNameField.getText();
         String stored = playerSession.getAlternativeName();
@@ -272,6 +280,7 @@ public class CommanderTabPanel extends JPanel {
             this.playerSession = playerSession;
             columnNames = new String[]{
                     getText("player.fleet.ship"),
+                    getText("player.fleet.shipType"),
                     getText("player.fleet.voice"),
                     getText("player.fleet.personality"),
                     ""
@@ -286,7 +295,7 @@ public class CommanderTabPanel extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 5;
         }
         @Override public String getColumnName(int col) { return columnNames[col]; }
 
@@ -305,6 +314,7 @@ public class CommanderTabPanel extends JPanel {
             ShipDao.Ship ship = ships.get(row);
             return switch (col) {
                 case COL_SHIP -> displayShipName(ship);
+                case COL_SHIP_TYPE -> shipTypeName(ship);
                 case COL_VOICE -> ship.getVoice();
                 case COL_PERSONALITY -> ship.getPersonality();
                 case COL_GEAR -> ship;
