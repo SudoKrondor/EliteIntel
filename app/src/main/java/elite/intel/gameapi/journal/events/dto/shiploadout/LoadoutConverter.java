@@ -1,14 +1,23 @@
 package elite.intel.gameapi.journal.events.dto.shiploadout;
 
+import elite.intel.db.dao.ShipTypeDao;
+import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static elite.intel.util.StringUtls.toReadableModuleName;
 
 public class LoadoutConverter {
+
+    private static final Map<String, String> SHIP_DISPLAY_NAMES = loadShipDisplayNames();
+
+    private static Map<String, String> loadShipDisplayNames() {
+        return Database.withDao(ShipTypeDao.class, dao -> Map.copyOf(dao.findAll()));
+    }
 
     public static ShipLoadOutDto toShipLoadOutDto(LoadoutEvent event) {
         ShipLoadOutDto dto = new ShipLoadOutDto();
@@ -32,8 +41,8 @@ public class LoadoutConverter {
     }
 
     /**
-     * Returns the player-defined ship name when present, otherwise falls back to
-     * the journal ship type with a capitalized first letter. Returns null when
+     * Returns the player-defined ship name when present, otherwise resolves the
+     * journal ship type to a human-readable display name. Returns null when
      * neither value is usable so existing Unknown fallback text can still apply.
      */
     public static String toDisplayShipName(LoadoutEvent event) {
@@ -42,6 +51,10 @@ public class LoadoutConverter {
 
     /**
      * Normalizes a stored or journal ship name into the display name used by the UI.
+     * Prefers the player-assigned name when non-blank. Otherwise looks up the internal
+     * ship type in the in-memory ship_type map (loaded once at startup); if not found,
+     * title-cases the raw value (correct for ship types the game itself considers
+     * self-explanatory, e.g. "vulture" → "Vulture").
      */
     public static String toDisplayShipName(String shipName, String ship) {
         String normalizedShipName = normalizeBlank(shipName);
@@ -53,6 +66,12 @@ public class LoadoutConverter {
         if (normalizedShip == null) {
             return null;
         }
+
+        String displayName = SHIP_DISPLAY_NAMES.get(normalizedShip.toLowerCase(Locale.ROOT));
+        if (displayName != null) {
+            return displayName;
+        }
+
         return normalizedShip.substring(0, 1).toUpperCase(Locale.ROOT) + normalizedShip.substring(1);
     }
 
