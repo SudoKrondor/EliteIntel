@@ -4,6 +4,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmResult;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.prompt.ComposedPrompt;
@@ -53,6 +54,12 @@ public final class NarrationThought extends Thought {
     @Override
     protected ConversationTopic memoryTopic() {
         return eventTopic;
+    }
+
+    /** Narration carries ordinary importance; only the commander rates a turn (set_importance). */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return MemoryImportance.NORMAL;
     }
 
     // Game-tool categories come from IntelActionAccessPolicy for NARRATION (none); inherited from the base,

@@ -1,5 +1,6 @@
 package elite.intel.companion.input.en;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.CompanionEvalHarness;
 import elite.intel.companion.input.CompanionEvalHarness.Executed;
 import org.junit.jupiter.api.AfterAll;
@@ -32,6 +33,9 @@ class CommandExecutionEvalTest {
      */
     private record Case(String input, String expectedTool, String argContains, boolean reflex) {}
 
+    /** The configured companion name, used to build name-addressed ("Vega, ...") command cases. */
+    private static final String NAME = CompanionConfig.companionName();
+
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-commands-eval-trace.txt");
 
     private final List<Case> cases = List.of(
@@ -48,6 +52,15 @@ class CommandExecutionEvalTest {
             // companion action-bias prompt rules - observed answering with status/FSD-target offers instead).
             new Case("target drive", "target_subsystem", "drive", false),
             new Case("target power plant", "target_subsystem", "power", false),
+            // Repeated-command regression (screen repro): the same direct command issued five times in a row.
+            // Memory accumulates across turns, so from turn 2 on the companion sees it "already targeted" earlier
+            // and must STILL re-execute target_subsystem every time - never chatter "we've already targeted it,
+            // shall we focus on another system?" and never refuse a repeated order.
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
+            new Case("target shield generator", "target_subsystem", "shield", false),
             // "Find" commands: parameterized search (key + optional max_distance/state). Same regression class as
             // target_subsystem - the companion previously lost the param examples/hints and chattered instead of
             // executing. Verifies the command fires and carries the searched value.
@@ -81,7 +94,15 @@ class CommandExecutionEvalTest {
             new Case("all stop", "set_speed_to_zero_0_stop_ship", null, true),
             new Case("cargo scoop", "toggle_cargo_scoop", null, true),
             new Case("gear down", "deploy_landing_gear", null, true),
-            new Case("weapons cold", "retract_hardpoints", null, true));
+            new Case("weapons cold", "retract_hardpoints", null, true),
+            // Name-addressed commands ("Vega, ..."): the leading vocative must not derail routing. On the LLM
+            // path the name is just an extra token (no command trains on it), so the right tool still fires.
+            // A reflex phrase keeps its fast-path because the dispatcher strips the leading name before reflex
+            // matching ("Vega, all stop" -> "all stop"), so "all stop" still reflexes (reflex=true).
+            new Case(NAME + ", target shield generator", "target_subsystem", "shield", false),
+            new Case(NAME + ", set speed to fifty percent", "set_speed_50", null, false),
+            new Case(NAME + ", navigation", "show_navigation_panel", null, false),
+            new Case(NAME + ", all stop", "set_speed_to_zero_0_stop_ship", null, true));
 
     @BeforeAll
     void boot() throws Exception {

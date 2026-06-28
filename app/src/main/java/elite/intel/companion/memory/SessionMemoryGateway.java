@@ -1,14 +1,17 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
+import elite.intel.companion.prompt.CompanionWordMatch;
 
 import java.util.*;
 
 /**
- * Default {@link MemoryGateway} implementation. Composes the four session memory areas
- * (short-term, mid-term topic, long-term summary, llm_memory) and owns the eviction transitions
+ * Default {@link MemoryGateway} implementation. Composes the session memory areas
+ * (short-term, mid-term topic, long-term summary) and owns the eviction transitions
  * between them. The internal stores are package-private; nothing outside this package touches them.
  * <p>
  * Session-only: nothing is persisted to disk.
@@ -20,10 +23,10 @@ import java.util.*;
  */
 public final class SessionMemoryGateway implements MemoryGateway {
 
+    private final TokenEstimator tokenEstimator;
     private final ShortTermMemory shortTerm;
     private final MidTermTopicMemory midTerm = new MidTermTopicMemory();
     private final LongTermMemory longTerm = new LongTermMemory();
-    private final LlmMemory llmMemory = new LlmMemory();
 
     // Hands mid-term overflow to the consolidator; no-op until wired at subsystem start. The gateway stays
     // mechanical (it never calls the LLM) - it only forwards evicted entries.
@@ -36,6 +39,7 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     /** Injectable constructor for tests and a future provider-accurate tokenizer swap. */
     SessionMemoryGateway(TokenEstimator tokenEstimator) {
+        this.tokenEstimator = tokenEstimator;
         this.shortTerm = new ShortTermMemory(tokenEstimator);
     }
 
@@ -50,7 +54,8 @@ public final class SessionMemoryGateway implements MemoryGateway {
         // inlined timeline uniform. New entries land in short-term first; whatever overflows the count/token
         // bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
         MemoryEntry stored = entry.content() == null ? entry : new MemoryEntry(
-                entry.timestamp(), entry.topic(), entry.source(), entry.content().toLowerCase(Locale.ROOT));
+                entry.timestamp(), entry.topic(), entry.source(), entry.content().toLowerCase(Locale.ROOT),
+                entry.importance());
         shortTerm.add(stored);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
             midTerm.add(evicted);
@@ -73,32 +78,45 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized List<String> recallMatching(String query, int limit) {
-        // Unified search across mid-term (all topics) + conscious llm_memory, returned newest-first. Matching
-        // is word-overlap (does the entry share a meaningful word with the query), NOT a contiguous substring,
-        // so the model's paraphrased or whole-question query still finds the stored fact.
+        // Unified search across short-term timeline + mid-term (all topics), ranked by importance then recency.
+        // Matching is word-overlap (does the entry share a meaningful word with the query), NOT a
+        // contiguous substring, so the model's paraphrased or whole-question query still finds the stored fact.
         Set<String> queryTokens = tokens(query);
         List<TimedHit> hits = new ArrayList<>();
+        // Short-term is already inlined into the prompt, but search it too: if the model does decide to recall,
+        // it then gets the whole picture instead of missing the most recent facts. A given entry lives in exactly
+        // one of short-term / mid-term (mid-term only receives short-term overflow), so the two never double-count.
+        for (MemoryEntry entry : shortTerm.timeline()) {
+            if (matches(queryTokens, entry.content())) {
+                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
+                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
+            }
+        }
         for (MemoryEntry entry : midTerm.allEntries()) {
             if (matches(queryTokens, entry.content())) {
-                // Carry the speaker tag so the model knows whose words it recalled (same [COMMANDER]/[COMPANION]
-                // convention as the timeline), matching its prompt legend.
-                hits.add(new TimedHit(entry.timestamp(), "[" + entry.source().name() + "] " + entry.content()));
+                // Carry the speaker tag so the model knows whose words it recalled (same speaker-tag
+                // convention as the timeline via MemorySource.displayLabel), matching its prompt legend.
+                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
+                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
             }
         }
-        for (LlmMemory.Item item : llmMemory.allItems()) {
-            if (matches(queryTokens, item.content())) {
-                hits.add(new TimedHit(item.at(), item.content()));
-            }
-        }
-        hits.sort(Comparator.comparing(TimedHit::at).reversed());
+        // Importance first so a MAX/HIGH match outranks routine chatter that merely shares a word; recency
+        // breaks ties. This keeps the most important matching fact inside the result limit instead of letting
+        // newer trivia evict it.
+        hits.sort(Comparator.comparing(TimedHit::importance, Comparator.reverseOrder())
+                .thenComparing(TimedHit::at, Comparator.reverseOrder()));
         return hits.stream().limit(Math.max(0, limit)).map(TimedHit::content).distinct().toList();
     }
 
-    /** A matched memory entry with its write time, for merging the two memory areas by recency. */
-    private record TimedHit(java.time.Instant at, String content) {}
+    /** A matched memory entry with its importance and write time, for ranking the two memory areas. */
+    private record TimedHit(MemoryImportance importance, java.time.Instant at, String content) {}
 
     /** An entry matches when it shares at least one meaningful word with the query; a query with no meaningful
-     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. */
+     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. Two words
+     *  are compared with the companion's shared inflection-tolerant rule ({@link CompanionWordMatch}): the same
+     *  word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
+     *  ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Recall favours catching a match, so the
+     *  tolerant rule is used for every language (over-recall is cheap here). */
     private static boolean matches(Set<String> queryTokens, String content) {
         if (queryTokens.isEmpty()) {
             return true;
@@ -106,21 +124,12 @@ public final class SessionMemoryGateway implements MemoryGateway {
         Set<String> contentTokens = tokens(content);
         for (String q : queryTokens) {
             for (String c : contentTokens) {
-                if (tokenMatch(q, c)) {
+                if (CompanionWordMatch.similar(q, c)) {
                     return true;
                 }
             }
         }
         return false;
-    }
-
-    /** Two word tokens match when equal, or - a light stemming approximation - one is a prefix of the other and
-     *  both are at least 4 characters, so "prefer"/"preferred", "jump"/"jumps", "rack"/"racks" still match. */
-    private static boolean tokenMatch(String a, String b) {
-        if (a.equals(b)) {
-            return true;
-        }
-        return a.length() >= 4 && b.length() >= 4 && (a.startsWith(b) || b.startsWith(a));
     }
 
     /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */
@@ -138,18 +147,37 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public synchronized List<String> readLlmMemory() {
-        return llmMemory.all();
-    }
-
-    @Override
-    public synchronized void writeLlmMemory(String content) {
-        llmMemory.add(content == null ? null : content.toLowerCase(Locale.ROOT));
+    public synchronized List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) {
+        // Important mid-term entries only: short-term is already inlined whole (and searched), so re-including it
+        // would duplicate the prompt. Take the most recent HIGH/MAX, capped by count and token budget, then
+        // return oldest-to-newest for a stable, timeline-like ordering.
+        List<MemoryEntry> important = new ArrayList<>();
+        for (MemoryEntry entry : midTerm.allEntries()) {
+            if (entry.importance().compareTo(MemoryImportance.HIGH) >= 0) {
+                important.add(entry);
+            }
+        }
+        important.sort(Comparator.comparing(MemoryEntry::timestamp).reversed());
+        List<MemoryEntry> selected = new ArrayList<>();
+        int tokens = 0;
+        for (MemoryEntry entry : important) {
+            if (selected.size() >= maxEntries) {
+                break;
+            }
+            int cost = tokenEstimator.estimate(entry.content()) + CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
+            if (!selected.isEmpty() && tokens + cost > tokenBudget) {
+                break; // keep at least the newest, then stop once the budget would overflow
+            }
+            tokens += cost;
+            selected.add(entry);
+        }
+        Collections.reverse(selected); // oldest-to-newest, matching the timeline block
+        return selected;
     }
 
     @Override
     public synchronized MemoryAvailabilitySnapshot indexes() {
-        return new MemoryAvailabilitySnapshot(llmMemory.size(), CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, midTerm.topicsWithMemory());
+        return new MemoryAvailabilitySnapshot(midTerm.topicsWithMemory());
     }
 
     @Override
@@ -160,5 +188,15 @@ public final class SessionMemoryGateway implements MemoryGateway {
     @Override
     public synchronized void replaceLongTermSummary(String summary) {
         longTerm.replace(summary);
+    }
+
+    @Override
+    public synchronized List<MemoryEntry> longTermPinnedFacts() {
+        return longTerm.pinnedFacts();
+    }
+
+    @Override
+    public synchronized void addLongTermPinned(MemoryEntry fact) {
+        longTerm.pin(fact);
     }
 }

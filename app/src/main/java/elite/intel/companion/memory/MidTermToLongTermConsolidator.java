@@ -5,6 +5,7 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.speech.SpeechGateway;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +64,18 @@ public final class MidTermToLongTermConsolidator implements MidTermEvictionListe
 
     @Override
     public void onEvicted(MemoryEntry entry) {
+        // Importance routes the entry: MAX is pinned verbatim into long-term right away (never compressed and
+        // never invisible in the buffering window), LOW is dropped, and HIGH/NORMAL buffer for summarization.
+        switch (entry.importance()) {
+            case MAX -> {
+                memoryGateway.addLongTermPinned(entry);
+                return;
+            }
+            case LOW -> {
+                return;
+            }
+            default -> { /* HIGH, NORMAL: fall through to buffering */ }
+        }
         List<MemoryEntry> batch = null;
         synchronized (lock) {
             buffer.add(entry);
@@ -92,7 +105,7 @@ public final class MidTermToLongTermConsolidator implements MidTermEvictionListe
     }
 
     private void fail(String reason) {
-        // Existing summary, short-term, remaining mid-term and llm_memory are untouched; only this batch is lost.
+        // Existing summary, short-term and remaining mid-term are untouched; only this batch is lost.
         log.warn("Mid-term consolidation failed, batch discarded: {}", reason);
         speechGateway.submit(new SpeechRequest(UUID.randomUUID().toString(), FAILURE_NOTICE, Urgency.NORMAL));
     }

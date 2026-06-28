@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.gameapi.journal.events.BaseEvent;
 
 /**
@@ -42,5 +43,11 @@ public final class EventThought extends Thought {
     @Override
     protected ConversationTopic memoryTopic() {
         return eventTopic;
+    }
+
+    /** Events carry ordinary importance; only the commander rates a turn (set_importance). */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return MemoryImportance.NORMAL;
     }
 }

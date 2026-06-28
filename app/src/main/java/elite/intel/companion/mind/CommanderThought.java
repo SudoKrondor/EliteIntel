@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
@@ -13,6 +14,7 @@ import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -20,7 +22,9 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SetImportanceFunction;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.util.json.JsonUtils;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
@@ -53,8 +57,6 @@ import java.util.concurrent.TimeoutException;
  */
 public final class CommanderThought extends Thought {
 
-    /** Defensive per-turn round cap, complementing the dispatcher watchdog's wall-clock timeout. */
-    private static final int MAX_TOOL_ROUNDS = 8;
     /** How long a frozen dangerous set waits for the commander's confirmation before discard (§7.2 setting). */
     private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
     /** Existing llm.properties key for the COMMANDER service phrase spoken on an unrecoverable LLM response. */
@@ -68,6 +70,9 @@ public final class CommanderThought extends Thought {
      * spoken outcome).
      */
     private boolean turnRanGameAction;
+
+    /** Importance the consciousness set for this turn via set_importance (default NORMAL); stamps the turn's entries. */
+    private MemoryImportance turnImportance = MemoryImportance.NORMAL;
 
     CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
         super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
@@ -86,7 +91,9 @@ public final class CommanderThought extends Thought {
             List<LlmToolDefinition> tools = prompt.tools(); // immutable snapshot, reused every round
             PromptCacheProfile profile = prompt.profile();
 
-            for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
+            // Defensive per-turn round cap (CompanionConfig.maxLlmChainSteps()), complementing the dispatcher
+            // watchdog's wall-clock timeout.
+            for (int round = 0; round < CompanionConfig.maxLlmChainSteps(); round++) {
                 if (interrupted) {
                     safeFlush(inputRecorded);
                     return;
@@ -107,6 +114,7 @@ public final class CommanderThought extends Thought {
                 Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
                 if (!inputRecorded) {
                     preExecuted = applyTopicChange(invocations);
+                    applyImportance(invocations, preExecuted);
                     recordCurrentInput();
                     inputRecorded = true;
                 }
@@ -120,7 +128,7 @@ public final class CommanderThought extends Thought {
                 if (executeRound(flow, tools, invocations, preExecuted) != RoundResult.CONTINUE) {
                     // nothing_to_do ended the turn, or the round made no progress (only a suppressed speak
                     // after a game action already owns the spoken outcome): end instead of re-prompting in a
-                    // loop that would burn full-prompt rounds up to MAX_TOOL_ROUNDS.
+                    // loop that would burn full-prompt rounds up to the max LLM chain steps.
                     return;
                 }
             }
@@ -136,6 +144,12 @@ public final class CommanderThought extends Thought {
     @Override
     protected ConversationTopic memoryTopic() {
         return ctx.state().globalTopic();
+    }
+
+    /** The importance the consciousness set for this turn via {@code set_importance} (default NORMAL). */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return turnImportance;
     }
 
     // Game-tool categories are the access policy's default for COMMANDER (QUERY/ACTION/MACRO); inherited.
@@ -161,6 +175,25 @@ public final class CommanderThought extends Thought {
         return preExecuted;
     }
 
+    /**
+     * COMMANDER pre-execution step: if the response calls {@code set_importance}, read its level into the
+     * turn's importance now (so the recorded input and outcome are stamped with it) and pre-execute the call
+     * so the main loop does not run it twice. An absent or unknown level leaves the turn at {@code NORMAL}.
+     */
+    private void applyImportance(List<LlmToolInvocation> invocations, Map<LlmToolInvocation, JsonObject> preExecuted) {
+        for (LlmToolInvocation inv : invocations) {
+            if (SetImportanceFunction.ID.equals(inv.name())) {
+                MemoryImportance level = MemoryImportance.fromId(
+                        JsonUtils.getAsStringOrEmpty(inv.arguments(), SetImportanceFunction.PARAM_LEVEL));
+                if (level != null) {
+                    turnImportance = level;
+                }
+                preExecuted.put(inv, execute(inv));
+                break;
+            }
+        }
+    }
+
     /** Outcome of one executed round, driving whether {@link #run} keeps looping. */
     private enum RoundResult {
         /** The round did real work (ran a tool or voiced a speak); the LLM may chain another round. */
@@ -170,7 +203,7 @@ public final class CommanderThought extends Thought {
         /**
          * The round made no progress: it ran no tool and only emitted speak(s) that were suppressed (a game
          * action already owns the spoken outcome). Re-prompting cannot advance the turn, so it ends here -
-         * this is the guard against the suppressed-speak loop that otherwise burns rounds to MAX_TOOL_ROUNDS.
+         * this is the guard against the suppressed-speak loop that otherwise burns rounds to the cap.
          */
         NO_PROGRESS
     }

@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.InputNormalizer;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.EventInputFormatter;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
@@ -22,6 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
@@ -46,12 +49,6 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
-    /**
-     * Max commander thoughts live at once: a long synchronous command/query occupies a worker, so several
-     * lets new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
-     * stay single-worker (no slow handlers there).
-     */
-    private static final int MAX_LIVE_COMMANDER_THOUGHTS = 5;
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
@@ -140,11 +137,39 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         }
         Urgency urgency = urgencyPolicy.forCommander(input);
         String matchInput = inputNormalizer.apply(input);
-        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
+        // Reflex path only: ignore a leading vocative address by the companion's own name ("Vega, all stop" ->
+        // "all stop") before canonicalizing, so a name-addressed short command still takes the deterministic
+        // fast-path. Stripped before normalization so a synonym phrase ("Vega, combat mode") still canonicalizes.
+        // The LLM path keeps the name (it routes fine with it), and memory keeps the raw words either way.
+        String reflexInput = inputNormalizer.apply(stripLeadingCompanionName(input));
+        Optional<String> reflexCommand = reflexResolver.resolve(reflexInput);
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
+    }
+
+    /**
+     * Removes a single leading vocative use of the companion's name (e.g. "Vega, ..." or, as Russian STT
+     * returns it, "Вега, ...") from the input, used for reflex matching only. Any recognized name form
+     * ({@link CompanionConfig#companionNameForms()}: the canonical name plus transliterations) is matched as a
+     * whole leading word - a Unicode-aware {@code \b}, so a Cyrillic form matches too - so it is an address,
+     * not part of a longer word; any following separators/spaces are consumed. If only the name remains (a bare
+     * address), the original input is returned unchanged so it falls through to the LLM path.
+     */
+    private static String stripLeadingCompanionName(String input) {
+        String alternation = CompanionConfig.companionNameForms().stream()
+                .filter(form -> form != null && !form.isBlank())
+                .map(form -> Pattern.quote(form.trim()))
+                .collect(Collectors.joining("|"));
+        if (alternation.isEmpty()) {
+            return input;
+        }
+        Pattern leadingName = Pattern.compile(
+                "^\\s*(?:" + alternation + ")\\b[\\s,.:;!?-]*",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS);
+        String stripped = leadingName.matcher(input).replaceFirst("");
+        return stripped.isBlank() ? input : stripped;
     }
 
     /**
@@ -210,7 +235,11 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     public void start() {
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", MAX_LIVE_COMMANDER_THOUGHTS));
+            // Commander lane is a bounded pool: a long synchronous command/query occupies a worker, so several
+            // let new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
+            // stay single-worker (no slow handlers there).
+            built.put(ThoughtSource.COMMANDER,
+                    new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
             built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
             built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration", 1));
             lanes = built; // single volatile publish of the fully-built lane set

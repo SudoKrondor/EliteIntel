@@ -28,7 +28,7 @@ class CompanionSystemPromptPartTest {
     void alwaysCarriesPersonaAndToolCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("## Persona"));
-        assertTrue(text.contains("junior crew member"));
+        assertTrue(text.contains("the commander's right hand"));
         assertTrue(text.contains("## Tool calling"));
         // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
         assertFalse(text.contains("## Safety"));

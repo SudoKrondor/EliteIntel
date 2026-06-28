@@ -89,7 +89,7 @@ public class ShipTargetedEvent extends BaseEvent {
      */
     @Override
     public Importance importance() {
-        if (scanStage == 0) return Importance.LOW; // scan not finished: status/health not yet reliable
+        if (scanStage < 3) return Importance.LOW; // scan not finished: legal status/bounty not yet reliable
         if (legalStatus == null || !"wanted".equalsIgnoreCase(legalStatus)) return Importance.LOW;
         return Importance.NORMAL;
     }

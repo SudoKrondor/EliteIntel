@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ class ShortTermMemory {
         // entry remains, so the hot timeline always keeps at least the latest entry even if that one
         // entry alone exceeds the budget.
         while (!entries.isEmpty()
-                && (entries.size() > CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES
+                && (entries.size() > CompanionConfig.shortTermMemorySize()
                 || (estimatedTokens > CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET && entries.size() > 1))) {
             MemoryEntry oldest = entries.remove(0);
             estimatedTokens -= cost(oldest);

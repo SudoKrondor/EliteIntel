@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -10,6 +11,7 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
@@ -23,6 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -146,6 +149,13 @@ public abstract class Thought {
     protected abstract ConversationTopic memoryTopic();
 
     /**
+     * Importance stamped on this thought's memory entries, resolved per source exactly like
+     * {@link #memoryTopic()}: {@code CommanderThought} reflects the level the consciousness set for the turn
+     * via {@code set_importance}; the others are {@link MemoryImportance#NORMAL}.
+     */
+    protected abstract MemoryImportance memoryImportance();
+
+    /**
      * IntelAction categories this thought may use - the single input to game-tool selection. Default: the
      * access policy's categories for this thought's source (COMMANDER -> QUERY/ACTION/MACRO, EVENT -> QUERY).
      * A subclass narrows it: {@link NarrationThought} returns none, so the one reducer call offers no game
@@ -193,8 +203,26 @@ public abstract class Thought {
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
+                importantContext(),
                 ctx.memoryGateway().indexes(),
                 ctx.memoryGateway().longTermSummary());
+    }
+
+    /**
+     * The always-on "important to remember" context inlined ahead of the timeline: pinned {@code MAX} facts
+     * (verbatim, from long-term) followed by the {@code HIGH} mid-term working-set. Short-term is excluded - it
+     * is already inlined whole and searched - so nothing is duplicated. COMMANDER-only; empty for other sources.
+     */
+    private List<MemoryEntry> importantContext() {
+        // WHY: only the COMMANDER prompt inlines this block (composeNarration discards it), so skip the lookup
+        // entirely for other sources rather than building a list that will be thrown away.
+        if (source != ThoughtSource.COMMANDER) {
+            return List.of();
+        }
+        List<MemoryEntry> important = new ArrayList<>(ctx.memoryGateway().longTermPinnedFacts());
+        important.addAll(ctx.memoryGateway().importantWorkingSet(
+                CompanionConfig.workingSetSize(), CompanionConfig.workingSetTokenBudget()));
+        return important;
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
@@ -227,7 +255,7 @@ public abstract class Thought {
     /** Records the current input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput));
+                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance()));
     }
 
     /**
@@ -240,7 +268,7 @@ public abstract class Thought {
             return;
         }
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, memoryImportance()));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
@@ -298,7 +326,7 @@ public abstract class Thought {
     protected void rememberAction(String lead, String detail) {
         String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content));
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, memoryImportance()));
     }
 
     /**

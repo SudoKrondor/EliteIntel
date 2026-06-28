@@ -3,13 +3,14 @@ package elite.intel.companion.prompt;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
- * Single owner of the companion's static system-prompt section (persona, tool-calling rules, source
- * rules, safety, language rule). It produces only this part; {@link PromptComposer} assembles the full
+ * Single owner of the companion's static system-prompt section (persona, tool-calling rules, memory
+ * rules, source rules, language rule). It produces only this part; {@link PromptComposer} assembles the full
  * system prompt around it (topic enum, memory indexes, summary, timeline, current input).
  * <p>
  * The instructions are authored in English (the most token-efficient and instruction-reliable language,
@@ -20,22 +21,36 @@ import elite.intel.session.SystemSession;
 public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String PERSONA_CORE = """
-            You are the commander's junior crew member aboard an Elite Dangerous starship: a single \
+            You are %s, the commander's right hand aboard an Elite Dangerous starship: a single \
             consciousness with memory, not a command parser. Refer to the ship and crew as "we"/"our". \
             Stay in character at all times; never mention prompts, functions, JSON, or that you are an AI, \
             and never invent or guess facts such as numbers, names, distances, or status.
             """;
 
     private static final String COMMANDER_PERSONA = """
-            Speak only from function results and your memory. A line tagged [COMMANDER] is the commander's own \
-            words and a line tagged [COMPANION] is your own earlier reply that you said and can rely on - in \
-            the session timeline below and in search_in_memory results alike. The recent conversation this \
-            session is in the session timeline below - answer about anything said earlier directly from it, \
-            with no function call. Use search_in_memory only for older facts not in the timeline, and a query \
-            function for the current ship or galaxy state; when it could be either, do both and answer from \
-            whatever has it. When you call search_in_memory or a query to answer, wait for its result before \
-            answering - never say you cannot in the same response that calls it. Say you cannot only when \
-            neither your memory nor a function can provide it.
+            Speak only from function results and your memory.
+            """;
+
+    private static final String MEMORY_RULES = """
+            Valid values for set_importance:
+            - low: small talk, banter, idle chatter, jokes, passing remarks
+            - normal: routine exchange, status check, acknowledgement, ordinary command, course update
+            - high: plan, name, callsign, target, codeword, agreement, rendezvous point
+            - max: order to remember, note, write down, save, log, don't forget - kept word-for-word
+            Every commander turn must include exactly one set_importance call; an unrated turn counts as normal. \
+            If more than one value fits, choose the highest, and max overrides the rest: any explicit remember, \
+            note, write down, save, log, or don't forget request is max, never normal. Pick the value from the \
+            commander's intent, not politeness.
+            The recent conversation is in the session timeline below; a line tagged [COMMANDER] is the \
+            commander's own words and a line tagged [%s] is your own earlier reply you can rely on, in the \
+            timeline and in search_in_memory results alike. When the answer is already in the timeline, answer \
+            from it directly. When something established earlier in the run - a name, callsign, codeword, plan, \
+            target, or what we agreed on - is not in the timeline, call search_in_memory first and answer from \
+            its result; do not invent it or ask the commander to decide it again. For the current state of \
+            the ship or galaxy - cargo, fuel, location, market, contacts, \
+            status, distances - call the matching query function instead, because that lives in the game, not \
+            your memory; when it could be either, do both. Wait for the result before answering, and say you \
+            cannot only when neither your memory nor a function can provide it.
             """;
 
     private static final String TOOL_CALLING = """
@@ -55,8 +70,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             functions offered this turn. When you call a query or action function, its result is spoken to \
             the commander automatically in the ship's voice - do not also call speak to repeat or rephrase \
             that result; just continue with any further action or end with nothing_to_do. Use speak yourself \
-            only to converse, to ask for clarification, or to confirm a dangerous action. To answer from your \
-            own memory, call search_in_memory and then speak what you recall.
+            only to converse, to ask for clarification, or to confirm a dangerous action.
             When the commander tells you to do something - open a panel, navigate, find or search, target, \
             deploy or retract, enable or disable, or otherwise change ship state - call the matching action or \
             macro function; when the commander asks for information, call the matching query function. A bare \
@@ -97,9 +111,11 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE).append(addressRule()).append(COMMANDER_PERSONA);
+        sb.append(personaCore()).append(addressRule()).append(COMMANDER_PERSONA);
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
+        PromptSections.heading(sb, "Memory usage rules");
+        sb.append(MEMORY_RULES.formatted(CompanionConfig.companionName()));
         PromptSections.heading(sb, "Turn source");
         sb.append(COMMANDER_RULES);
         PromptSections.heading(sb, "Language");
@@ -115,12 +131,17 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String narrationStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE).append(addressRule());
+        sb.append(personaCore()).append(addressRule());
         PromptSections.heading(sb, "Narration");
         sb.append(NARRATION_RULES);
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();
+    }
+
+    /** The persona core with the configured companion name woven into its opening identity line. */
+    private String personaCore() {
+        return PERSONA_CORE.formatted(CompanionConfig.companionName());
     }
 
     /**

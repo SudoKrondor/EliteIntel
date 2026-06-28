@@ -5,6 +5,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,10 @@ class MidTermToLongTermConsolidatorTest {
         return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content);
     }
 
+    private static MemoryEntry entry(String content, MemoryImportance importance) {
+        return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content, importance);
+    }
+
     private void feed(int count) {
         for (int i = 0; i < count; i++) {
             consolidator.onEvicted(entry("rock-" + i));
@@ -56,6 +61,25 @@ class MidTermToLongTermConsolidatorTest {
         assertEquals(1, llm.calls);
         assertEquals("compact mining summary", memory.summary);
         assertTrue(notices.isEmpty());
+    }
+
+    @Test
+    void maxIsPinnedVerbatimImmediatelyAndLowIsDroppedWithoutBuffering() {
+        llm.scripted = "summary";
+        consolidator.onEvicted(entry("abort word granite", MemoryImportance.MAX));
+        consolidator.onEvicted(entry("idle chatter", MemoryImportance.LOW));
+
+        // MAX is pinned right away (verbatim); LOW is dropped; neither buffers, so no compression yet.
+        assertEquals(List.of("abort word granite"), memory.pinned.stream().map(MemoryEntry::content).toList());
+        assertEquals(0, llm.calls);
+
+        // HIGH/NORMAL still buffer and summarize at the threshold - MAX/LOW did not count toward it.
+        for (int i = 0; i < CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD; i++) {
+            consolidator.onEvicted(entry("rock-" + i, MemoryImportance.NORMAL));
+        }
+        assertEquals(1, llm.calls);
+        assertEquals("summary", memory.summary);
+        assertEquals(1, memory.pinned.size());
     }
 
     @Test
@@ -114,18 +138,20 @@ class MidTermToLongTermConsolidatorTest {
         }
     }
 
-    /** MemoryGateway fake recording only the long-term summary. */
+    /** MemoryGateway fake recording the long-term summary and the pinned MAX facts. */
     private static final class RecordingMemory implements MemoryGateway {
         String summary = "";
+        final List<MemoryEntry> pinned = new ArrayList<>();
 
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public List<String> readLlmMemory() { throw new UnsupportedOperationException(); }
-        @Override public void writeLlmMemory(String content) { throw new UnsupportedOperationException(); }
+        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { throw new UnsupportedOperationException(); }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { return summary; }
         @Override public void replaceLongTermSummary(String summary) { this.summary = summary; }
+        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.copyOf(pinned); }
+        @Override public void addLongTermPinned(MemoryEntry fact) { pinned.add(fact); }
     }
 }
