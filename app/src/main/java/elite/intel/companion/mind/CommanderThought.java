@@ -14,6 +14,7 @@ import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -21,7 +22,9 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.ChangeGlobalTopicFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SetImportanceFunction;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.util.json.JsonUtils;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.StringUtls;
@@ -68,6 +71,9 @@ public final class CommanderThought extends Thought {
      */
     private boolean turnRanGameAction;
 
+    /** Importance the consciousness set for this turn via set_importance (default NORMAL); stamps the turn's entries. */
+    private MemoryImportance turnImportance = MemoryImportance.NORMAL;
+
     CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
         super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
     }
@@ -108,6 +114,7 @@ public final class CommanderThought extends Thought {
                 Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
                 if (!inputRecorded) {
                     preExecuted = applyTopicChange(invocations);
+                    applyImportance(invocations, preExecuted);
                     recordCurrentInput();
                     inputRecorded = true;
                 }
@@ -139,6 +146,12 @@ public final class CommanderThought extends Thought {
         return ctx.state().globalTopic();
     }
 
+    /** The importance the consciousness set for this turn via {@code set_importance} (default NORMAL). */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return turnImportance;
+    }
+
     // Game-tool categories are the access policy's default for COMMANDER (QUERY/ACTION/MACRO); inherited.
 
     @Override
@@ -160,6 +173,25 @@ public final class CommanderThought extends Thought {
             }
         }
         return preExecuted;
+    }
+
+    /**
+     * COMMANDER pre-execution step: if the response calls {@code set_importance}, read its level into the
+     * turn's importance now (so the recorded input and outcome are stamped with it) and pre-execute the call
+     * so the main loop does not run it twice. An absent or unknown level leaves the turn at {@code NORMAL}.
+     */
+    private void applyImportance(List<LlmToolInvocation> invocations, Map<LlmToolInvocation, JsonObject> preExecuted) {
+        for (LlmToolInvocation inv : invocations) {
+            if (SetImportanceFunction.ID.equals(inv.name())) {
+                MemoryImportance level = MemoryImportance.fromId(
+                        JsonUtils.getAsStringOrEmpty(inv.arguments(), SetImportanceFunction.PARAM_LEVEL));
+                if (level != null) {
+                    turnImportance = level;
+                }
+                preExecuted.put(inv, execute(inv));
+                break;
+            }
+        }
     }
 
     /** Outcome of one executed round, driving whether {@link #run} keeps looping. */

@@ -69,14 +69,29 @@ class MidTermTopicMemory {
         return topics;
     }
 
-    /** Evicts per-topic overflow (oldest beyond the per-topic cap) and returns it for consolidation. */
+    /**
+     * Evicts per-topic overflow and returns it for consolidation. Importance-aware: the least important entry
+     * leaves first (oldest among equal importance), so HIGH/MAX facts outlast routine ones - MAX leaves last
+     * and is carried verbatim into long-term by the consolidator.
+     */
     List<MemoryEntry> evictOverflow() {
         List<MemoryEntry> evicted = new ArrayList<>();
         for (List<MemoryEntry> entries : byTopic.values()) {
             while (entries.size() > CompanionConfig.midTermMemorySizePerTopic()) {
-                evicted.add(entries.remove(0)); // oldest of the topic first
+                evicted.add(entries.remove(lowestImportanceOldestIndex(entries)));
             }
         }
         return evicted;
+    }
+
+    /** Index of the least-important entry, earliest among equal importance (the list is oldest-first). */
+    private static int lowestImportanceOldestIndex(List<MemoryEntry> entries) {
+        int victim = 0;
+        for (int i = 1; i < entries.size(); i++) {
+            if (entries.get(i).importance().compareTo(entries.get(victim).importance()) < 0) {
+                victim = i;
+            }
+        }
+        return victim;
     }
 }

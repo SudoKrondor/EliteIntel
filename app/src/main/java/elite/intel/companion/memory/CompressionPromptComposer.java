@@ -26,7 +26,8 @@ final class CompressionPromptComposer {
     private static final String INSTRUCTION =
             "You compress old crew memory into a single compact running summary. "
                     + "Merge the new entries into the existing summary, keep what stays relevant, drop trivia, "
-                    + "and reply with only the updated summary as plain text, at most "
+                    + "and preserve entries marked [high] importance faithfully while condensing the rest. "
+                    + "Reply with only the updated summary as plain text, at most "
                     + CompanionMemoryLimits.SUMMARY_MAX_CHARS + " characters.";
 
     /** Returns [system instruction, user(existing summary + new entries)] for the compression request. */
@@ -36,7 +37,8 @@ final class CompressionPromptComposer {
                 .append(currentSummary == null || currentSummary.isBlank() ? "(none)" : currentSummary.strip());
         user.append("\n\nNew entries to merge:\n");
         for (MemoryEntry entry : batch) {
-            user.append('[').append(entry.source().name()).append("][").append(topicId(entry)).append("] ")
+            user.append('[').append(entry.source().name()).append("][").append(topicId(entry)).append("][")
+                    .append(entry.importance().name().toLowerCase(Locale.ROOT)).append("] ")
                     .append(entry.content()).append('\n');
         }
         return List.of(

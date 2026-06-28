@@ -34,6 +34,10 @@ public final class CompanionConfig {
     private static final int MAX_LLM_CHAIN_STEPS = 8;
     /** Max commander thoughts that may run concurrently on the commander lane. */
     private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
+    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
+    private static final int WORKING_SET_SIZE = 8;
+    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
+    private static final int WORKING_SET_TOKEN_BUDGET = 400;
 
     private CompanionConfig() {
     }
@@ -96,5 +100,15 @@ public final class CompanionConfig {
     /** Max commander thoughts that may run concurrently on the commander lane. */
     public static int maxParallelCommanderThoughts() {
         return MAX_PARALLEL_COMMANDER_THOUGHTS;
+    }
+
+    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
+    public static int workingSetSize() {
+        return WORKING_SET_SIZE;
+    }
+
+    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
+    public static int workingSetTokenBudget() {
+        return WORKING_SET_TOKEN_BUDGET;
     }
 }

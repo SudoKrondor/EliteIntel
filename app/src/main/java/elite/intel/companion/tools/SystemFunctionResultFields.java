@@ -26,6 +26,8 @@ public final class SystemFunctionResultFields {
     public static final String VERBOSITY = "verbosity";
     /** Topic echoed back (change_global_topic). */
     public static final String TOPIC = "topic";
+    /** Importance level echoed back (set_importance). */
+    public static final String IMPORTANCE = "importance";
 
     private SystemFunctionResultFields() {
     }

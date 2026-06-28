@@ -3,6 +3,7 @@ package elite.intel.companion.memory;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +36,10 @@ class SessionMemoryGatewayTest {
 
     private static MemoryEntry entry(ConversationTopic topic, String content) {
         return new MemoryEntry(Instant.now(), topic, MemorySource.COMMANDER, content);
+    }
+
+    private static MemoryEntry entry(ConversationTopic topic, String content, MemoryImportance importance) {
+        return new MemoryEntry(Instant.now(), topic, MemorySource.COMMANDER, content, importance);
     }
 
     @Test
@@ -110,24 +115,6 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
-    void indexesReportLlmMemoryCapacity() {
-        SessionMemoryGateway gateway = new SessionMemoryGateway();
-        assertEquals(0, gateway.indexes().llmMemoryUsed());
-        assertEquals(CompanionMemoryLimits.LLM_MEMORY_MAX_ENTRIES, gateway.indexes().llmMemoryCapacity());
-    }
-
-    @Test
-    void llmMemoryWriteIsReadableAndCounted() {
-        SessionMemoryGateway gateway = new SessionMemoryGateway();
-        gateway.writeLlmMemory("commander prefers Sidewinder");
-        gateway.writeLlmMemory("avoid Thargoids");
-
-        // Memory is stored lower-cased (case carries no recall signal).
-        assertEquals(List.of("commander prefers sidewinder", "avoid thargoids"), gateway.readLlmMemory());
-        assertEquals(2, gateway.indexes().llmMemoryUsed());
-    }
-
-    @Test
     void longTermSummaryDefaultsEmptyAndIsReplaceable() {
         SessionMemoryGateway gateway = new SessionMemoryGateway();
         assertEquals("", gateway.longTermSummary());
@@ -165,6 +152,28 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void importantWorkingSetReturnsHighAndMaxFromMidTermOnly() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // Important facts first (the oldest), so the short-term overflow pushes them down into mid-term.
+        gateway.write(entry(ConversationTopic.COMBAT, "abort word is granite", MemoryImportance.MAX));
+        gateway.write(entry(ConversationTopic.COMBAT, "focus the shield generator", MemoryImportance.HIGH));
+        gateway.write(entry(ConversationTopic.SOCIAL, "nice weather today", MemoryImportance.NORMAL));
+        // Enough newer NORMAL entries to evict the three above out of short-term into mid-term.
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
+            gateway.write(entry(ConversationTopic.NAVIGATION, "telemetry-" + i, MemoryImportance.NORMAL));
+        }
+
+        List<String> working = gateway.importantWorkingSet(8, 1000).stream()
+                .map(MemoryEntry::content).toList();
+
+        // Only HIGH/MAX mid-term entries surface; NORMAL (and the still-inlined short-term) do not.
+        assertTrue(working.contains("abort word is granite"));
+        assertTrue(working.contains("focus the shield generator"));
+        assertFalse(working.contains("nice weather today"));
+        assertEquals(2, working.size());
+    }
+
+    @Test
     void recallMatchingFindsShortTermEntriesAndMergesWithMidTermNewestFirst() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
         // Fill past the short-term cap so the oldest "borann" fact is evicted into mid-term while a fresh
@@ -179,6 +188,23 @@ class SessionMemoryGatewayTest {
         // Both the short-term hit and the evicted mid-term hit are returned, freshest first.
         assertEquals(
                 List.of("[COMMANDER] returning to borann now", "[COMMANDER] mining hotspot is borann"),
+                recalled);
+    }
+
+    @Test
+    void recallMatchingRanksImportantMatchesAboveNewerRoutineOnes() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // Same shared word ("granite") in three entries: an older MAX/HIGH fact and a newer NORMAL mention.
+        // Recency alone would float the newest NORMAL to the top; importance-first must surface MAX then HIGH.
+        gateway.write(entry(ConversationTopic.COMBAT, "abort word granite", MemoryImportance.MAX));
+        gateway.write(entry(ConversationTopic.MINING, "granite deposits ahead", MemoryImportance.HIGH));
+        gateway.write(entry(ConversationTopic.SOCIAL, "the floor is granite", MemoryImportance.NORMAL));
+
+        List<String> recalled = gateway.recallMatching("granite", 10);
+
+        assertEquals(
+                List.of("[COMMANDER] abort word granite", "[COMMANDER] granite deposits ahead",
+                        "[COMMANDER] the floor is granite"),
                 recalled);
     }
 
