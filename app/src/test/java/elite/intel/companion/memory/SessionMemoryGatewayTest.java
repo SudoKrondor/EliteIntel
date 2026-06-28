@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
@@ -56,15 +57,15 @@ class SessionMemoryGatewayTest {
         // Cost 1 per entry keeps the token budget irrelevant; only the count cap can bite.
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
 
-        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 3; i++) {
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize() + 3; i++) {
             ConversationTopic topic = i < 3 ? ConversationTopic.MINING : ConversationTopic.TRADE;
             gateway.write(entry(topic, "entry-" + i));
         }
 
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
-        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, timeline.size());
+        assertEquals(CompanionConfig.shortTermMemorySize(), timeline.size());
         // The three oldest (MINING) were evicted; the newest entry is still the last one written.
-        assertEquals("entry-" + (CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 2), timeline.get(timeline.size() - 1).content());
+        assertEquals("entry-" + (CompanionConfig.shortTermMemorySize() + 2), timeline.get(timeline.size() - 1).content());
 
         List<ConversationTopic> topics = gateway.indexes().topicsWithMemory();
         assertTrue(topics.contains(ConversationTopic.MINING));
@@ -76,7 +77,7 @@ class SessionMemoryGatewayTest {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
 
         // Two full timelines' worth, alternating topics, so both topics accumulate in mid-term.
-        int total = CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES * 2;
+        int total = CompanionConfig.shortTermMemorySize() * 2;
         for (int i = 0; i < total; i++) {
             ConversationTopic topic = (i % 2 == 0) ? ConversationTopic.NAVIGATION : ConversationTopic.COMBAT;
             gateway.write(entry(topic, "e" + i));
@@ -84,7 +85,7 @@ class SessionMemoryGatewayTest {
 
         // Hot timeline stays capped at the newest MAX_ENTRIES.
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
-        assertEquals(CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES, timeline.size());
+        assertEquals(CompanionConfig.shortTermMemorySize(), timeline.size());
         assertEquals("e" + (total - 1), timeline.get(timeline.size() - 1).content());
 
         // Both topics filled mid-term, reported once each in enum order.
@@ -142,7 +143,7 @@ class SessionMemoryGatewayTest {
         gateway.setMidTermEvictionListener(evicted::add);
 
         // Fill short-term (kept) + mid-term to its per-topic cap + 2 more, all one topic, so 2 overflow mid-term.
-        int writes = CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC + 2;
+        int writes = CompanionConfig.shortTermMemorySize() + CompanionConfig.midTermMemorySizePerTopic() + 2;
         for (int i = 0; i < writes; i++) {
             gateway.write(entry(ConversationTopic.MINING, "m-" + i));
         }
@@ -155,7 +156,7 @@ class SessionMemoryGatewayTest {
     @Test
     void recallTopicMemoryReadsEvictedMidTermEntries() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
-        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES + 2; i++) {
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize() + 2; i++) {
             gateway.write(entry(ConversationTopic.NAVIGATION, "nav-" + i));
         }
         // The two oldest were evicted into mid-term; short-term recall does not see them, topic recall does.
@@ -169,7 +170,7 @@ class SessionMemoryGatewayTest {
         // Fill past the short-term cap so the oldest "borann" fact is evicted into mid-term while a fresh
         // "borann" fact stays in short-term; recall must see both, newest first.
         gateway.write(entry(ConversationTopic.MINING, "mining hotspot is borann"));
-        for (int i = 0; i < CompanionMemoryLimits.SHORT_TERM_MAX_ENTRIES; i++) {
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
             gateway.write(entry(ConversationTopic.TRADE, "filler-" + i));
         }
         gateway.write(entry(ConversationTopic.MINING, "returning to borann now"));

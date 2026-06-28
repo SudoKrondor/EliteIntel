@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
@@ -72,7 +73,7 @@ class MidTermTopicMemory {
     List<MemoryEntry> evictOverflow() {
         List<MemoryEntry> evicted = new ArrayList<>();
         for (List<MemoryEntry> entries : byTopic.values()) {
-            while (entries.size() > CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC) {
+            while (entries.size() > CompanionConfig.midTermMemorySizePerTopic()) {
                 evicted.add(entries.remove(0)); // oldest of the topic first
             }
         }

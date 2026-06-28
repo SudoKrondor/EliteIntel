@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
@@ -84,7 +85,7 @@ class MidTermTopicMemoryTest {
     void evictOverflowReturnsOldestBeyondPerTopicCap() {
         MidTermTopicMemory memory = new MidTermTopicMemory();
         int over = 3;
-        for (int i = 0; i < CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC + over; i++) {
+        for (int i = 0; i < CompanionConfig.midTermMemorySizePerTopic() + over; i++) {
             memory.add(entry(ConversationTopic.MINING, "rock-" + i));
         }
 
@@ -92,7 +93,7 @@ class MidTermTopicMemoryTest {
 
         // The three oldest overflow, in chronological order; the topic is left at the cap.
         assertEquals(List.of("rock-0", "rock-1", "rock-2"), evicted.stream().map(MemoryEntry::content).toList());
-        assertEquals(CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC,
+        assertEquals(CompanionConfig.midTermMemorySizePerTopic(),
                 memory.recall(ConversationTopic.MINING, null, Integer.MAX_VALUE).size());
         assertTrue(memory.evictOverflow().isEmpty()); // nothing left to evict
     }

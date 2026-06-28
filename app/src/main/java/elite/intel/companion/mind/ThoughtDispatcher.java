@@ -49,12 +49,6 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
-    /**
-     * Max commander thoughts live at once: a long synchronous command/query occupies a worker, so several
-     * lets new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
-     * stay single-worker (no slow handlers there).
-     */
-    private static final int MAX_LIVE_COMMANDER_THOUGHTS = 5;
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
@@ -241,7 +235,11 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     public void start() {
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", MAX_LIVE_COMMANDER_THOUGHTS));
+            // Commander lane is a bounded pool: a long synchronous command/query occupies a worker, so several
+            // let new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
+            // stay single-worker (no slow handlers there).
+            built.put(ThoughtSource.COMMANDER,
+                    new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
             built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
             built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration", 1));
             lanes = built; // single volatile publish of the fully-built lane set

@@ -25,6 +25,16 @@ public final class CompanionConfig {
     // Latin-script languages, "Вега" for Cyrillic (ru/uk). Input matching only - never used in the prompt.
     private static final String NAME_SPOKEN_KEY = "companion.name.spoken";
 
+    // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
+    /** Max entries kept in the hot short-term timeline (the primary eviction control). */
+    private static final int SHORT_TERM_MEMORY_SIZE = 20;
+    /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
+    private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
+    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
+    private static final int MAX_LLM_CHAIN_STEPS = 8;
+    /** Max commander thoughts that may run concurrently on the commander lane. */
+    private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
+
     private CompanionConfig() {
     }
 
@@ -66,5 +76,25 @@ public final class CompanionConfig {
     /** Whether the commander input is exactly the confirmation code word (trimmed, case-insensitive). */
     public static boolean isConfirmationCodeWord(String input) {
         return input != null && input.strip().equalsIgnoreCase(CONFIRMATION_CODE_WORD);
+    }
+
+    /** Max entries kept in the hot short-term timeline (the primary eviction control). */
+    public static int shortTermMemorySize() {
+        return SHORT_TERM_MEMORY_SIZE;
+    }
+
+    /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
+    public static int midTermMemorySizePerTopic() {
+        return MID_TERM_MEMORY_SIZE_PER_TOPIC;
+    }
+
+    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
+    public static int maxLlmChainSteps() {
+        return MAX_LLM_CHAIN_STEPS;
+    }
+
+    /** Max commander thoughts that may run concurrently on the commander lane. */
+    public static int maxParallelCommanderThoughts() {
+        return MAX_PARALLEL_COMMANDER_THOUGHTS;
     }
 }
