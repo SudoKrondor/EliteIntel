@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.InputNormalizer;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.EventInputFormatter;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
@@ -22,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
@@ -140,11 +142,34 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         }
         Urgency urgency = urgencyPolicy.forCommander(input);
         String matchInput = inputNormalizer.apply(input);
-        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
+        // Reflex path only: ignore a leading vocative address by the companion's own name ("Vega, all stop" ->
+        // "all stop") before canonicalizing, so a name-addressed short command still takes the deterministic
+        // fast-path. Stripped before normalization so a synonym phrase ("Vega, combat mode") still canonicalizes.
+        // The LLM path keeps the name (it routes fine with it), and memory keeps the raw words either way.
+        String reflexInput = inputNormalizer.apply(stripLeadingCompanionName(input));
+        Optional<String> reflexCommand = reflexResolver.resolve(reflexInput);
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
+    }
+
+    /**
+     * Removes a single leading vocative use of the companion's own name (e.g. "Vega, ..." or "Vega ...") from
+     * the input, used for reflex matching only. The name must be a whole leading word so it is an address, not
+     * part of a longer word; any following separators/spaces are consumed. If only the name remains (a bare
+     * address), the original input is returned unchanged so it falls through to the LLM path.
+     */
+    private static String stripLeadingCompanionName(String input) {
+        String name = CompanionConfig.companionName();
+        if (name == null || name.isBlank()) {
+            return input;
+        }
+        Pattern leadingName = Pattern.compile(
+                "^\\s*" + Pattern.quote(name.trim()) + "\\b[\\s,.:;!?-]*",
+                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+        String stripped = leadingName.matcher(input).replaceFirst("");
+        return stripped.isBlank() ? input : stripped;
     }
 
     /**

@@ -1,5 +1,6 @@
 package elite.intel.companion.input.en;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.CompanionEvalHarness;
 import elite.intel.companion.input.CompanionEvalHarness.Executed;
 import org.junit.jupiter.api.AfterAll;
@@ -31,6 +32,9 @@ class CommandExecutionEvalTest {
      * (executed directly, no LLM round), false marks a phrase that must go through the LLM.
      */
     private record Case(String input, String expectedTool, String argContains, boolean reflex) {}
+
+    /** The configured companion name, used to build name-addressed ("Vega, ...") command cases. */
+    private static final String NAME = CompanionConfig.companionName();
 
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-commands-eval-trace.txt");
 
@@ -90,7 +94,15 @@ class CommandExecutionEvalTest {
             new Case("all stop", "set_speed_to_zero_0_stop_ship", null, true),
             new Case("cargo scoop", "toggle_cargo_scoop", null, true),
             new Case("gear down", "deploy_landing_gear", null, true),
-            new Case("weapons cold", "retract_hardpoints", null, true));
+            new Case("weapons cold", "retract_hardpoints", null, true),
+            // Name-addressed commands ("Vega, ..."): the leading vocative must not derail routing. On the LLM
+            // path the name is just an extra token (no command trains on it), so the right tool still fires.
+            // A reflex phrase keeps its fast-path because the dispatcher strips the leading name before reflex
+            // matching ("Vega, all stop" -> "all stop"), so "all stop" still reflexes (reflex=true).
+            new Case(NAME + ", target shield generator", "target_subsystem", "shield", false),
+            new Case(NAME + ", set speed to fifty percent", "set_speed_50", null, false),
+            new Case(NAME + ", navigation", "show_navigation_panel", null, false),
+            new Case(NAME + ", all stop", "set_speed_to_zero_0_stop_ship", null, true));
 
     @BeforeAll
     void boot() throws Exception {

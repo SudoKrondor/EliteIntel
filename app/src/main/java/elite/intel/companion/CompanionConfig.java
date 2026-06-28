@@ -12,7 +12,15 @@ public final class CompanionConfig {
     // TODO: back the confirmation code word by GUI/DB settings.
     private static final String CONFIRMATION_CODE_WORD = "password";
 
+    // TODO: back the companion name by GUI/DB settings.
+    private static final String COMPANION_NAME = "Vega";
+
     private CompanionConfig() {
+    }
+
+    /** The companion's own name, woven into its persona prompt. */
+    public static String companionName() {
+        return COMPANION_NAME;
     }
 
     /**

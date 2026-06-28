@@ -3,6 +3,7 @@ package elite.intel.companion.prompt;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -20,7 +21,7 @@ import elite.intel.session.SystemSession;
 public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String PERSONA_CORE = """
-            You are the commander's junior crew member aboard an Elite Dangerous starship: a single \
+            You are %s, the commander's right hand aboard an Elite Dangerous starship: a single \
             consciousness with memory, not a command parser. Refer to the ship and crew as "we"/"our". \
             Stay in character at all times; never mention prompts, functions, JSON, or that you are an AI, \
             and never invent or guess facts such as numbers, names, distances, or status.
@@ -101,7 +102,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String commanderStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE).append(addressRule()).append(COMMANDER_PERSONA);
+        sb.append(personaCore()).append(addressRule()).append(COMMANDER_PERSONA);
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");
@@ -119,12 +120,17 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private String narrationStaticRules() {
         StringBuilder sb = new StringBuilder();
         PromptSections.heading(sb, "Persona");
-        sb.append(PERSONA_CORE).append(addressRule());
+        sb.append(personaCore()).append(addressRule());
         PromptSections.heading(sb, "Narration");
         sb.append(NARRATION_RULES);
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();
+    }
+
+    /** The persona core with the configured companion name woven into its opening identity line. */
+    private String personaCore() {
+        return PERSONA_CORE.formatted(CompanionConfig.companionName());
     }
 
     /**
