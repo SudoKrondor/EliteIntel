@@ -34,3 +34,4 @@
 .github/setup.js
 .vscode/tasks.json
 #-- SECURITY
+.idea/
