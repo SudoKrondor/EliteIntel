@@ -6,6 +6,7 @@ import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.edsm.monetize.MonetizeRoute;
+import elite.intel.util.StringUtls;
 
 public class MonetizeRouteManager {
 
@@ -30,7 +31,7 @@ public class MonetizeRouteManager {
         ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
         MonetizeRoute.TradeTransaction tradeTuple = MonetizeRoute.findTrade(shipRouteManager.getOrderedRoute());
         if (tradeTuple == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent("No trade found"));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.trade.noTradeFound")));
             return null;
         }
 
