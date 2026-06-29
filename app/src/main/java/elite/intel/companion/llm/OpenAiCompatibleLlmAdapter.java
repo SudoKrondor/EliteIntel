@@ -28,9 +28,6 @@ import java.util.List;
  */
 abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
 
-    /** Low temperature for stable tool selection. */
-    private static final double TEMPERATURE = 0.3;
-
     private final String model;
     private final String toolChoice;
     private final boolean sendCacheKey;
@@ -50,7 +47,8 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
     public final String buildRequestBody(LlmRequest request) {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
-        body.addProperty("temperature", TEMPERATURE);
+        // Per-profile sampling temperature (COMMANDER runs cooler for stable tool selection).
+        body.addProperty("temperature", request.profile().temperature());
         body.add("messages", renderMessages(request.messages()));
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));

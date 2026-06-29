@@ -236,7 +236,7 @@ class MemoryEvalTest {
             if ("low".equalsIgnoreCase(imp)) {
                 lowHits++;
             }
-            block.append(String.format("'%s' | importance=%s%n", line, imp.isEmpty() ? "(none)" : imp));
+            block.append(String.format("'%s' | importance=%s | %s%n", line, imp.isEmpty() ? "(none)" : imp, h.spokenTexts()));
         }
 
         // Did the explicit "запиши/запомни" facts get MAX importance from the AI?
