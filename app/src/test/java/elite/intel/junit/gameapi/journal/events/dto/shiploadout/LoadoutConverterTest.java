@@ -1,5 +1,6 @@
 package elite.intel.junit.gameapi.journal.events.dto.shiploadout;
 
+import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ class LoadoutConverterTest {
 
     @Test
     void upsertedDisplayNameIsVisibleWithinSameSession() {
-        LoadoutConverter.upsertDisplayName("futureShip_TrX", "Future Ship TrX");
+        ShipMakeManager.getInstance().upsert("futureShip_TrX", "Future Ship TrX");
         assertEquals("Future Ship TrX", LoadoutConverter.toDisplayShipName(null, "futureship_trx"));
     }
 

@@ -1,7 +1,10 @@
 package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
@@ -31,8 +34,10 @@ public class App {
         Cypher.initializeKey();
         Database.init();
         CustomCommandRegistry.getInstance().load();
-        elite.intel.ai.brain.actions.command.CommandRegistry.getInstance().load();
-        elite.intel.ai.brain.actions.query.QueryRegistry.getInstance().load();
+        CommandRegistry.getInstance().load();
+        QueryRegistry.getInstance().load();
+        // Warm the ship-make cache off the EDT so the fleet table never triggers the first DB read while painting.
+        ShipMakeManager.getInstance();
 
         // change the debug log level when we have version 1.0
         Configurator.setRootLevel(Level.ALL);

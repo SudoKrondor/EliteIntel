@@ -1,44 +1,15 @@
 package elite.intel.gameapi.journal.events.dto.shiploadout;
 
-import elite.intel.db.dao.ShipTypeDao;
-import elite.intel.db.util.Database;
+import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static elite.intel.util.StringUtls.toReadableModuleName;
 
 public class LoadoutConverter {
-
-    private static final Logger log = LogManager.getLogger(LoadoutConverter.class);
-
-    private static final ConcurrentHashMap<String, String> SHIP_DISPLAY_NAMES =
-            new ConcurrentHashMap<>(loadShipDisplayNames());
-
-    private static Map<String, String> loadShipDisplayNames() {
-        return Database.withDao(ShipTypeDao.class, dao -> dao.findAll());
-    }
-
-    public static void upsertDisplayName(String internalName, String displayName) {
-        if (internalName == null) return;
-        String key = internalName.toLowerCase(Locale.ROOT);
-        try {
-            Database.withDao(ShipTypeDao.class, dao -> {
-                dao.upsert(key, displayName);
-                return null;
-            });
-        } catch (RuntimeException e) {
-            log.warn("Could not persist ship display name {} -> {}: {}", key, displayName, e.getMessage());
-            return; // WHY: DB write failure is non-fatal; skip in-memory update to avoid divergence on restart
-        }
-        SHIP_DISPLAY_NAMES.put(key, displayName);
-    }
 
     public static ShipLoadOutDto toShipLoadOutDto(LoadoutEvent event) {
         ShipLoadOutDto dto = new ShipLoadOutDto();
@@ -72,10 +43,10 @@ public class LoadoutConverter {
 
     /**
      * Normalizes a stored or journal ship name into the display name used by the UI.
-     * Prefers the player-assigned name when non-blank. Otherwise looks up the internal
-     * ship type in the in-memory ship_type map (loaded once at startup); if not found,
-     * title-cases the raw value (correct for ship types the game itself considers
-     * self-explanatory, e.g. "vulture" → "Vulture").
+     * Prefers the player-assigned name when non-blank. Otherwise resolves the internal
+     * ship identifier to a display name via {@link ShipMakeManager}; if the make is not
+     * known, title-cases the raw value (correct for identifiers the game itself considers
+     * self-explanatory, e.g. "vulture" -> "Vulture").
      */
     public static String toDisplayShipName(String shipName, String ship) {
         String normalizedShipName = normalizeBlank(shipName);
@@ -88,7 +59,7 @@ public class LoadoutConverter {
             return null;
         }
 
-        String displayName = SHIP_DISPLAY_NAMES.get(normalizedShip.toLowerCase(Locale.ROOT));
+        String displayName = ShipMakeManager.getInstance().getDisplayName(normalizedShip);
         if (displayName != null) {
             return displayName;
         }

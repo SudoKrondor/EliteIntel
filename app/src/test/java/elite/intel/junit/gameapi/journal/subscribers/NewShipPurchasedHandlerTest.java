@@ -40,6 +40,25 @@ class NewShipPurchasedHandlerTest {
         return new ShipyardBuyEvent(json);
     }
 
+    private ShipyardBuyEvent buyEvent(String shipType, String shipTypeLocalised) {
+        JsonObject json = new JsonObject();
+        json.addProperty("timestamp", "2025-01-01T12:00:00Z");
+        json.addProperty("ShipType", shipType);
+        json.addProperty("ShipType_Localised", shipTypeLocalised);
+        json.addProperty("ShipPrice", 100000);
+        return new ShipyardBuyEvent(json);
+    }
+
+    @Test
+    void usesLocalisedNameDirectlyWhenPresent() {
+        // Codename absent from the seed table: only the journal's localised value can supply the name.
+        handler.onNewShipPurchased(buyEvent("brandnewmake_nx", "Brand New Make"));
+        assertNotNull(capturedEvent);
+        assertTrue(capturedEvent.getSensorData().contains("Brand New Make"),
+                "Expected localised name in message but got: " + capturedEvent.getSensorData());
+        assertFalse(capturedEvent.getSensorData().contains("brandnewmake_nx"));
+    }
+
     @Test
     void resolvesSeededShipTypeToDisplayName() {
         handler.onNewShipPurchased(buyEvent("type9_military"));

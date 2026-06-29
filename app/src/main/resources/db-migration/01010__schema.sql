@@ -1,9 +1,14 @@
-create table if not exists ship_type (
-    internal_name text primary key,
-    display_name  text not null
+create table if not exists ship_make
+(
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    shipIdentifier TEXT not null unique,
+    displayName    TEXT not null
 );
 
-insert or ignore into ship_type (internal_name, display_name) values
+create index if not exists idx_ship_make_identifier on ship_make (shipIdentifier);
+
+insert or ignore into ship_make (shipIdentifier, displayName)
+values
 ('sidewinder',              'Sidewinder'),
 ('eagle',                   'Eagle'),
 ('hauler',                  'Hauler'),
