@@ -16,14 +16,14 @@ import static elite.intel.util.StringUtls.toReadableModuleName;
 
 public class LoadoutConverter {
 
+    private static final Logger log = LogManager.getLogger(LoadoutConverter.class);
+
     private static final ConcurrentHashMap<String, String> SHIP_DISPLAY_NAMES =
             new ConcurrentHashMap<>(loadShipDisplayNames());
 
     private static Map<String, String> loadShipDisplayNames() {
         return Database.withDao(ShipTypeDao.class, dao -> dao.findAll());
     }
-
-    private static final Logger log = LogManager.getLogger(LoadoutConverter.class);
 
     public static void upsertDisplayName(String internalName, String displayName) {
         if (internalName == null) return;
@@ -33,7 +33,7 @@ public class LoadoutConverter {
                 dao.upsert(key, displayName);
                 return null;
             });
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             log.warn("Could not persist ship display name {} -> {}: {}", key, displayName, e.getMessage());
             return; // WHY: DB write failure is non-fatal; skip in-memory update to avoid divergence on restart
         }

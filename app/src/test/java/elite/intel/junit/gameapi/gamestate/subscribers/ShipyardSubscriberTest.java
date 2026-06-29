@@ -51,7 +51,7 @@ class ShipyardSubscriberTest {
         withLocalised.setShipTypeLocalised("Mixed Test Ship");
 
         GameEvents.ShipyardEvent.ShipPrice withoutLocalised = new GameEvents.ShipyardEvent.ShipPrice();
-        withoutLocalised.setShipType("cobra");
+        withoutLocalised.setShipType("rawtest_control_ship");
         withoutLocalised.setShipTypeLocalised(null);
 
         GameEvents.ShipyardEvent event = new GameEvents.ShipyardEvent();
@@ -61,7 +61,7 @@ class ShipyardSubscriberTest {
         Thread.sleep(100);
 
         assertEquals("Mixed Test Ship", LoadoutConverter.toDisplayShipName(null, "mixedtest_ship"));
-        // "cobra" has no localised — title-case fallback, not overwritten
-        assertEquals("Cobra", LoadoutConverter.toDisplayShipName(null, "cobra"));
+        // Synthetic key not in seed table — title-case fallback confirms no upsert occurred
+        assertEquals("Rawtest_control_ship", LoadoutConverter.toDisplayShipName(null, "rawtest_control_ship"));
     }
 }
