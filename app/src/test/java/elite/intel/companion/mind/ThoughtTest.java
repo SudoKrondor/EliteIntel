@@ -15,6 +15,7 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
@@ -23,7 +24,7 @@ import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
-import elite.intel.companion.tools.ChangeGlobalTopicFunction;
+import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The consciousness loop: the happy path (single round, multi-round tool round-trip), the
- * change_global_topic pre-execution step before the input is recorded, the EVENT memory tag with
+ * classify_turn pre-execution step before the input is recorded, the EVENT memory tag with
  * query-only access and verbosity-gated speak, dangerous-action confirmation, interrupt/safe-flush, and
  * the INVALID/provider-failure handling per source (§2.5/§2.6/§2.8/§2.9/§2.13/§5.1). Real
  * {@link PromptComposer}/{@link IntelActionAccessPolicy}/{@link SystemFunctionProvider}; the gateways are
@@ -215,18 +216,20 @@ class ThoughtTest {
     }
 
     @Test
-    void changeGlobalTopicAppliedBeforeInputIsRecorded() {
-        execution.stateToMutate = state; // the fake mirrors the change_global_topic handle effect
-        llm.scripted.add(ok(call(ChangeGlobalTopicFunction.ID, topicArgs("navigation")),
+    void classifyTurnAppliedBeforeInputIsRecorded() {
+        execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high")),
                 call(NothingToDoFunction.ID, new JsonObject())));
 
         Thought.commander(Urgency.NORMAL, "let's talk routes", ctx()).run();
 
         assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
-        // The recorded commander input is tagged with the NEW topic, not the default SOCIAL.
+        // The recorded commander input is tagged with the NEW topic (not the default SOCIAL) and stamped with
+        // the chosen importance.
         assertEquals(ConversationTopic.NAVIGATION, memory.writes.get(0).topic());
-        assertEquals(1, execution.toolNames().stream().filter(ChangeGlobalTopicFunction.ID::equals).count(),
-                "change_global_topic runs once (pre-execution result reused, not run twice)");
+        assertEquals(MemoryImportance.HIGH, memory.writes.get(0).importance());
+        assertEquals(1, execution.toolNames().stream().filter(ClassifyTurnFunction.ID::equals).count(),
+                "classify_turn runs once (pre-execution result reused, not run twice)");
     }
 
     @Test
@@ -449,9 +452,10 @@ class ThoughtTest {
         return o;
     }
 
-    private static JsonObject topicArgs(String topic) {
+    private static JsonObject classifyArgs(String topic, String importance) {
         JsonObject o = new JsonObject();
         o.addProperty("topic", topic);
+        o.addProperty("importance", importance);
         return o;
     }
 
@@ -486,7 +490,7 @@ class ThoughtTest {
 
         @Override public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
             requests.add(request);
-            if (stateToMutate != null && ChangeGlobalTopicFunction.ID.equals(request.toolName())) {
+            if (stateToMutate != null && ClassifyTurnFunction.ID.equals(request.toolName())) {
                 ConversationTopic topic = ConversationTopic.fromSelectableId(
                         request.arguments().get("topic").getAsString());
                 if (topic != null) {

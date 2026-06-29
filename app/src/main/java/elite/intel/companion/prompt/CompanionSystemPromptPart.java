@@ -32,15 +32,9 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String MEMORY_RULES = """
-            Valid values for set_importance:
-            - low: small talk, banter, idle chatter, jokes, passing remarks
-            - normal: routine exchange, status check, acknowledgement, ordinary command, course update
-            - high: plan, name, callsign, target, codeword, agreement, rendezvous point
-            - max: order to remember, note, write down, save, log, don't forget - kept word-for-word
-            Every commander turn must include exactly one set_importance call; an unrated turn counts as normal. \
-            If more than one value fits, choose the highest, and max overrides the rest: any explicit remember, \
-            note, write down, save, log, or don't forget request is max, never normal. Pick the value from the \
-            commander's intent, not politeness.
+            Every commander turn must include exactly one classify_turn call; it only organizes memory and never \
+            resolves the turn. After classify_turn, still answer or act with speak, a query, action or macro \
+            function, clarify, or nothing_to_do.
             The recent conversation is in the session timeline below; a line tagged [COMMANDER] is the \
             commander's own words and a line tagged [%s] is your own earlier reply you can rely on, in the \
             timeline and in search_in_memory results alike. When the answer is already in the timeline, answer \
@@ -75,8 +69,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             deploy or retract, enable or disable, or otherwise change ship state - call the matching action or \
             macro function; when the commander asks for information, call the matching query function. A bare \
             name of a panel, mode, or known action ("navigation", "inventory", "contacts") is such a request: \
-            carry it out by calling that function. Changing the global topic does not perform the action - if a \
-            matching function is offered, call it; do not stop at change_global_topic, ask to clarify, or just \
+            carry it out by calling that function. Classifying the turn does not perform the action - if a \
+            matching function is offered, call it; do not stop at classify_turn, ask to clarify, or just \
             talk about it. Always prefer the closest offered query, action or macro function over speak; fall \
             back to clarify only when the input is genuinely ambiguous and no offered function fits. "inventory" \
             and "storage" are different panels - never substitute one for the other. A single-word or very \

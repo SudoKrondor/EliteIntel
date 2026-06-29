@@ -56,7 +56,7 @@ public final class NarrationThought extends Thought {
         return eventTopic;
     }
 
-    /** Narration carries ordinary importance; only the commander rates a turn (set_importance). */
+    /** Narration carries ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;

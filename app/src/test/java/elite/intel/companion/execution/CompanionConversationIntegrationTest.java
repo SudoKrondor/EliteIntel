@@ -65,12 +65,12 @@ class CompanionConversationIntegrationTest {
 
         // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
         transport.scripted.add(response(
-                call("c1", "change_global_topic", "{\"topic\":\"navigation\"}"),
+                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\"}"),
                 call("c2", "speak", "{\"text\":\"Course plotted.\"}"),
                 call("c3", "nothing_to_do", "{}")));
         // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
-                call("c4", "change_global_topic", "{\"topic\":\"ship_status\"}"),
+                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}"),
                 call("c7", "nothing_to_do", "{}")));
         // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
@@ -87,7 +87,7 @@ class CompanionConversationIntegrationTest {
         playTurn(dispatcher, "what did I tell you about the hull");
         dispatcher.stop();
 
-        // The global topic moved across turns (real change_global_topic handle on the real state).
+        // The global topic moved across turns (real classify_turn handle on the real state).
         assertEquals(ConversationTopic.SHIP_STATUS, state.globalTopic());
         // The stated fact survived in short-term memory.
         assertTrue(memory.readShortTermTimeline().stream()

@@ -83,7 +83,7 @@ public abstract class Thought {
 
     /**
      * Creates a thought from a commander reply. Its memory tag is the live global conversation topic
-     * (which a {@code change_global_topic} call may move during the thought).
+     * (which a {@code classify_turn} call may move during the thought).
      */
     public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
         return commander(urgency, input, input, ctx);
@@ -151,7 +151,7 @@ public abstract class Thought {
     /**
      * Importance stamped on this thought's memory entries, resolved per source exactly like
      * {@link #memoryTopic()}: {@code CommanderThought} reflects the level the consciousness set for the turn
-     * via {@code set_importance}; the others are {@link MemoryImportance#NORMAL}.
+     * via {@code classify_turn}; the others are {@link MemoryImportance#NORMAL}.
      */
     protected abstract MemoryImportance memoryImportance();
 

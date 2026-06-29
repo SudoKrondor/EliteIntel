@@ -6,7 +6,7 @@ import java.util.Locale;
 
 /**
  * How important a {@link MemoryEntry} is to the companion's own memory. The consciousness assigns it: the LLM
- * rates a turn through the {@code set_importance} system function, and an entry defaults to {@link #NORMAL}
+ * rates a turn through the {@code classify_turn} system function, and an entry defaults to {@link #NORMAL}
  * when no level is assigned.
  * <p>
  * It drives mid-term retention (the lowest level is evicted first) and long-term consolidation: {@link #LOW}
@@ -22,12 +22,12 @@ public enum MemoryImportance {
     HIGH,
     MAX;
 
-    /** The level ids (lowercase, in importance order) accepted by {@link #fromId} - the set_importance enum. */
+    /** The level ids (lowercase, in importance order) accepted by {@link #fromId} - the classify_turn importance enum. */
     public static List<String> ids() {
         return Arrays.stream(values()).map(v -> v.name().toLowerCase(Locale.ROOT)).toList();
     }
 
-    /** Parses a level id (case-insensitive, e.g. from {@code set_importance}); null when blank or unknown. */
+    /** Parses a level id (case-insensitive, e.g. from {@code classify_turn}); null when blank or unknown. */
     public static MemoryImportance fromId(String id) {
         if (id == null || id.isBlank()) {
             return null;

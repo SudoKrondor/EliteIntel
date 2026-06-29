@@ -131,8 +131,8 @@ public final class CompanionEvalHarness {
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, recall, remember,
-        // change_global_topic, ...) run for real, so the LLM and memory get the actual query result and the
+        // executed (they would press keys); QUERIES and system functions (speak, search_in_memory,
+        // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
         // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
             String toolName = request.toolName();
@@ -320,6 +320,12 @@ public final class CompanionEvalHarness {
     public String recalledQuery() {
         List<Executed> recalls = callsNamed("search_in_memory");
         return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+    }
+
+    /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
+    public String assignedImportance() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "importance");
     }
 
     /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */

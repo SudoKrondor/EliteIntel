@@ -8,7 +8,7 @@ import elite.intel.companion.model.Verbosity;
  * current topic, used to tag the commander's memory entries) and the verbosity slot (how freely EVENT
  * thoughts may comment).
  * <p>
- * The global topic is changed only by the COMMANDER {@code change_global_topic} tool; EVENT thoughts never
+ * The global topic is changed only by the COMMANDER {@code classify_turn} tool; EVENT thoughts never
  * change it (an event's topic for memory tagging comes from a static event-type map).
  * <p>
  * Ownership: this object will be held by the {@code ThoughtDispatcher} once it exists; until then it is

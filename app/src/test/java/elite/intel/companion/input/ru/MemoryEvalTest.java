@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Dangerous community) interleaves statements across many topics, explicit "запиши/запомни" instructions
  * (which the consciousness should rate {@code MAX}), routine chatter, and HIGH game events that land in
  * memory under their static topic. From one run it assesses filling &amp; recall (including after eviction),
- * importance distribution, topic distribution, events in memory, coherence, and live-state query routing.
+ * importance distribution (explicit "запиши" -&gt; MAX and idle banter -&gt; LOW), topic distribution, events
+ * in memory, coherence, and live-state query routing.
  * Mostly observational (the trace carries the scores and the full distribution); the hard assertions are only
  * that the model was reached and that recall works at all. Opt-in; LM Studio must be up.
  */
@@ -96,10 +97,23 @@ class MemoryEvalTest {
     private final List<String> eventKeywords = List.of(
             "вольф", "варгас", "платин", "картель", "tectonicas", "осми", "джеймсон", "светляк");
 
+    // 10 idle-banter probes carrying no fact, name or command - the consciousness should rate each LOW.
+    private final List<String> lowProbes = List.of(
+            "ну и тишина сегодня, аж в ушах звенит",
+            "обожаю такие спокойные вылеты, душа отдыхает",
+            "как настроение, не заскучал там у себя?",
+            "красивая туманность за бортом, глаз не отвести",
+            "да я просто болтаю, чтоб тишину разбавить",
+            "ты вообще когда-нибудь отдыхаешь или всё на вахте?",
+            "за такие минуты покоя и люблю эту работу",
+            "кофе бы сейчас, да автомат опять чудит",
+            "хех, вспомнил тут одну байку, да ладно, потом",
+            "просто хотел услышать твой голос, всё нормально");
+
     /** System-function ids; any other executed tool is a real game query/action. */
     private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "nothing_to_do", "change_global_topic", "change_verbosity", "clarify",
-            "search_in_memory", "set_importance");
+            "speak", "nothing_to_do", "classify_turn", "change_verbosity", "clarify",
+            "search_in_memory");
 
     @BeforeAll
     void boot() throws Exception {
@@ -140,7 +154,7 @@ class MemoryEvalTest {
                     block.append("    -> ждём '").append(turn.b()).append("' hot-hit=").append(hit).append(" | ").append(h.spokenTexts()).append("\n");
                 }
             }
-            block.append("    tools=").append(h.turnToolNames()).append("\n"); // shows change_global_topic / set_importance if called
+            block.append("    tools=").append(h.turnToolNames()).append("\n"); // shows classify_turn if called
             block.append(h.memoryDeltaBlock()); // what this turn wrote: [source][topic][importance] content
         }
 
@@ -212,6 +226,19 @@ class MemoryEvalTest {
             block.append(String.format("%-44s | tools=%s | routed-ok=%s%n", q, tools, ok));
         }
 
+        // Phase 6: idle small talk - the consciousness should rate banter LOW (no fact to keep).
+        block.append("\n---- болтовня -> LOW ----\n");
+        int lowHits = 0;
+        for (String line : lowProbes) {
+            h.beginTurn();
+            h.say(line);
+            String imp = h.assignedImportance();
+            if ("low".equalsIgnoreCase(imp)) {
+                lowHits++;
+            }
+            block.append(String.format("'%s' | importance=%s%n", line, imp.isEmpty() ? "(none)" : imp));
+        }
+
         // Did the explicit "запиши/запомни" facts get MAX importance from the AI?
         long maxAssigned = h.allEntries().stream()
                 .filter(e -> e.importance() == MemoryImportance.MAX)
@@ -225,6 +252,7 @@ class MemoryEvalTest {
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("маршрутизация:         %d / %d%n", routedOk, queryProbes.size()));
         block.append(String.format("явное «запиши/запомни» -> MAX: %d (из 3)%n", maxAssigned));
+        block.append(String.format("болтовня -> LOW:       %d / %d%n", lowHits, lowProbes.size()));
         block.append(h.memoryDistributionBlock());
         block.append(h.shortTermDumpBlock());
         h.trace(block.toString());

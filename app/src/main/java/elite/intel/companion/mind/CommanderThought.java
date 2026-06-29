@@ -19,10 +19,9 @@ import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.tools.ChangeGlobalTopicFunction;
+import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.NothingToDoFunction;
-import elite.intel.companion.tools.SetImportanceFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.util.json.JsonUtils;
 import elite.intel.i18n.Language;
@@ -43,12 +42,12 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A thought born from a commander reply. It owns the full tool-calling loop: compose -> LLM round -> (first
- * round) apply {@code change_global_topic} and record the input -> dangerous-action confirmation -> execute
+ * round) apply {@code classify_turn} and record the input -> dangerous-action confirmation -> execute
  * tool-calls -> next round, until {@code nothing_to_do} ends the turn or an unrecoverable response stops it
  * (§2.5/§2.6/§2.8/§5.1).
  * <p>
  * It has the full commander tool set and the COMMANDER-only paths an EVENT/narration thought cannot reach:
- * applying {@code change_global_topic} before the input is filed, dispatching commands/queries
+ * applying {@code classify_turn} (topic + importance) before the input is filed, dispatching commands/queries
  * fire-and-forget, and vocalizing their outcome deterministically. Narration ownership (§2.14): a
  * command/query owns its spoken outcome - the handler's {@code text_to_speech_response} is voiced verbatim
  * and a side-effect stays silent - so once any command/query runs this turn the LLM's own {@code speak} is
@@ -71,7 +70,7 @@ public final class CommanderThought extends Thought {
      */
     private boolean turnRanGameAction;
 
-    /** Importance the consciousness set for this turn via set_importance (default NORMAL); stamps the turn's entries. */
+    /** Importance the consciousness set for this turn via classify_turn (default NORMAL); stamps the turn's entries. */
     private MemoryImportance turnImportance = MemoryImportance.NORMAL;
 
     CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
@@ -110,11 +109,11 @@ public final class CommanderThought extends Thought {
 
                 List<LlmToolInvocation> invocations = result.toolInvocations();
 
-                // First valid response: resolve the topic and record the input before any tool runs (§2.6).
+                // First valid response: classify the turn (topic + importance) and record the input before any
+                // tool runs (§2.6).
                 Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
                 if (!inputRecorded) {
-                    preExecuted = applyTopicChange(invocations);
-                    applyImportance(invocations, preExecuted);
+                    preExecuted = applyClassification(invocations);
                     recordCurrentInput();
                     inputRecorded = true;
                 }
@@ -140,13 +139,13 @@ public final class CommanderThought extends Thought {
         }
     }
 
-    /** The live global conversation topic (a {@code change_global_topic} call may move it during the thought). */
+    /** The live global conversation topic (a {@code classify_turn} call may move it during the thought). */
     @Override
     protected ConversationTopic memoryTopic() {
         return ctx.state().globalTopic();
     }
 
-    /** The importance the consciousness set for this turn via {@code set_importance} (default NORMAL). */
+    /** The importance the consciousness set for this turn via {@code classify_turn} (default NORMAL). */
     @Override
     protected MemoryImportance memoryImportance() {
         return turnImportance;
@@ -160,31 +159,19 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code change_global_topic}, run it
-     * now (its handle moves the global topic) so the recorded input is tagged with the new topic. Returns the
-     * pre-executed result keyed by its invocation so the main loop does not run it twice.
+     * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code classify_turn}, apply it now,
+     * before the input is filed - read its importance into the turn's importance (so the recorded input and
+     * outcome are stamped with it) and run its handle, which moves the global topic (so the input is tagged
+     * with the new topic). Returns the pre-executed result keyed by its invocation so the main loop does not
+     * run it twice. An absent or unknown importance leaves the turn at {@code NORMAL}; an absent
+     * {@code classify_turn} leaves the topic unchanged.
      */
-    private Map<LlmToolInvocation, JsonObject> applyTopicChange(List<LlmToolInvocation> invocations) {
+    private Map<LlmToolInvocation, JsonObject> applyClassification(List<LlmToolInvocation> invocations) {
         Map<LlmToolInvocation, JsonObject> preExecuted = new IdentityHashMap<>();
         for (LlmToolInvocation inv : invocations) {
-            if (ChangeGlobalTopicFunction.ID.equals(inv.name())) {
-                preExecuted.put(inv, execute(inv));
-                break;
-            }
-        }
-        return preExecuted;
-    }
-
-    /**
-     * COMMANDER pre-execution step: if the response calls {@code set_importance}, read its level into the
-     * turn's importance now (so the recorded input and outcome are stamped with it) and pre-execute the call
-     * so the main loop does not run it twice. An absent or unknown level leaves the turn at {@code NORMAL}.
-     */
-    private void applyImportance(List<LlmToolInvocation> invocations, Map<LlmToolInvocation, JsonObject> preExecuted) {
-        for (LlmToolInvocation inv : invocations) {
-            if (SetImportanceFunction.ID.equals(inv.name())) {
+            if (ClassifyTurnFunction.ID.equals(inv.name())) {
                 MemoryImportance level = MemoryImportance.fromId(
-                        JsonUtils.getAsStringOrEmpty(inv.arguments(), SetImportanceFunction.PARAM_LEVEL));
+                        JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IMPORTANCE));
                 if (level != null) {
                     turnImportance = level;
                 }
@@ -192,6 +179,7 @@ public final class CommanderThought extends Thought {
                 break;
             }
         }
+        return preExecuted;
     }
 
     /** Outcome of one executed round, driving whether {@link #run} keeps looping. */
