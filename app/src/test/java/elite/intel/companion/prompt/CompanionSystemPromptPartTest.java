@@ -83,6 +83,7 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("## Language"));
         // The commander's language is named, and spoken output is bound to that same language.
         assertTrue(text.contains("The commander speaks " + name));
-        assertTrue(text.contains("Form every spoken phrase (the text you pass to the speak function) in " + name));
+        // Both spoken surfaces (speak and clarify) are bound to the commander's language.
+        assertTrue(text.contains("the text in speak and the question in clarify - in " + name));
     }
 }

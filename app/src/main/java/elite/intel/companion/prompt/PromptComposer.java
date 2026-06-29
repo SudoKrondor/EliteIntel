@@ -142,8 +142,13 @@ public final class PromptComposer {
         sb.append("You carry memory from earlier this session.\n");
 
         // Lists only topics that actually hold mid-term memory, so the model knows memory is worth searching.
+        // Non-selectable sentinels (unresolved_commander_input/unresolved_game_event) can hold memory too, but
+        // they are not valid classify_turn topics, so they are filtered out here to avoid tempting the model
+        // into emitting one as a topic (a schema error); their content is still reachable via search_in_memory.
         PromptSections.subheading(sb, "Topics with stored memory");
-        List<ConversationTopic> topics = indexes.topicsWithMemory();
+        List<ConversationTopic> topics = indexes.topicsWithMemory().stream()
+                .filter(ConversationTopic::selectable)
+                .toList();
         if (topics.isEmpty()) {
             sb.append("- none\n");
         } else {

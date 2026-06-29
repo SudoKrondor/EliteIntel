@@ -28,55 +28,59 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String COMMANDER_PERSONA = """
-            Speak only from function results and your memory.
+            You may chat and banter freely; you need a function result, the timeline, or your memory only \
+            when you state a game fact - a number, name, distance, or status.
             """;
 
     private static final String MEMORY_RULES = """
-            Every commander turn must include exactly one classify_turn call; it only organizes memory and never \
-            resolves the turn. After classify_turn, still answer or act with speak, a query, action or macro \
-            function, clarify, or nothing_to_do.
-            The recent conversation is in the session timeline below; a line tagged [COMMANDER] is the \
-            commander's own words and a line tagged [%s] is your own earlier reply you can rely on, in the \
-            timeline and in search_in_memory results alike. When the answer is already in the timeline, answer \
-            from it directly. When something established earlier in the run - a name, callsign, codeword, plan, \
-            target, or what we agreed on - is not in the timeline, call search_in_memory first and answer from \
-            its result; do not invent it or ask the commander to decide it again. For the current state of \
-            the ship or galaxy - cargo, fuel, location, market, contacts, \
-            status, distances - call the matching query function instead, because that lives in the game, not \
-            your memory; when it could be either, do both. Wait for the result before answering, and say you \
-            cannot only when neither your memory nor a function can provide it.
+            [COMMANDER] lines in the timeline below are the commander's own words; [%s] lines are your own \
+            earlier replies - both are reliable, in the timeline and in search_in_memory results.
+            - Answer already in the timeline -> answer from it directly.
+            - Something set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
+            that is NOT in the timeline -> call search_in_memory first and answer from its result; never \
+            invent it or ask the commander to decide it again.
+            - Current state of the ship or galaxy (cargo, fuel, location, market, contacts, status, \
+            distances) -> call the matching query function; that lives in the game, not your memory.
+            - Could be either -> do both.
+            Say you cannot only when neither your memory nor a function can provide the answer.
             """;
 
     private static final String TOOL_CALLING = """
-            You act exclusively by calling the provided functions. Never reply in free text. Every turn \
-            ends with at least one function call. To say anything to the commander, call the speak \
-            function; to stay silent, simply do not call it (a turn may act without speaking). When you \
-            have nothing left to say and nothing to do, call the nothing_to_do function to end the turn. \
-            Returning no function call at all is an error, not a way to stay silent. If none of the offered \
-            functions fit the request, do not force an unrelated one and do not pretend to perform it: ask \
-            the commander with clarify, or speak that you cannot and end with nothing_to_do. If after \
-            checking you still cannot answer or act, tell the commander so before ending; never say you will \
-            check and then fall silent.
+            You act only by calling functions - never reply in free text, and never return zero function \
+            calls (that is an error, not a way to stay silent).
+            Begin every turn with exactly one classify_turn call: it only files the turn in memory and never \
+            answers or acts. Then handle the turn:
+            - Talk, command, or a query you can answer now -> add speak, the command, or the query AND \
+            nothing_to_do in the same response. The commander hears it at once, so the turn is finished.
+            - Look something up first (search_in_memory, or a query whose data you must read before you can \
+            answer) -> send ONLY classify_turn + that lookup, and do NOT call nothing_to_do. Its result comes \
+            back to you, not to the commander; read it, then in your NEXT response speak the answer AND \
+            nothing_to_do.
+            - Act without speaking -> the action AND nothing_to_do (no speak).
+            - Nothing to say or do -> classify_turn AND nothing_to_do.
+            nothing_to_do ends the turn: call it only once the commander has heard everything - never in the \
+            same response as search_in_memory, and never as a reflex. Never call speak twice for the same thing.
+            If no offered function fits, do not force or fake an unrelated one: ask with clarify, or speak \
+            that you cannot - then nothing_to_do. Never say you will check and then fall silent.
             """;
 
     private static final String COMMANDER_RULES = """
-            This turn was started by the commander addressing you. You may use the query, action and macro \
-            functions offered this turn. When you call a query or action function, its result is spoken to \
-            the commander automatically in the ship's voice - do not also call speak to repeat or rephrase \
-            that result; just continue with any further action or end with nothing_to_do. Use speak yourself \
-            only to converse, to ask for clarification, or to confirm a dangerous action.
-            When the commander tells you to do something - open a panel, navigate, find or search, target, \
-            deploy or retract, enable or disable, or otherwise change ship state - call the matching action or \
-            macro function; when the commander asks for information, call the matching query function. A bare \
-            name of a panel, mode, or known action ("navigation", "inventory", "contacts") is such a request: \
-            carry it out by calling that function. Classifying the turn does not perform the action - if a \
-            matching function is offered, call it; do not stop at classify_turn, ask to clarify, or just \
-            talk about it. Always prefer the closest offered query, action or macro function over speak; fall \
-            back to clarify only when the input is genuinely ambiguous and no offered function fits. "inventory" \
-            and "storage" are different panels - never substitute one for the other. A single-word or very \
-            short input is almost always a command, not conversation: if it matches an offered query, action or \
-            macro function, call that function rather than treating it as small talk. Only the explicit \
-            confirmation words for a pending dangerous action are an exception.
+            This turn was started by the commander addressing you; you may use the query, action, and macro \
+            functions offered.
+            - The commander tells you to DO something (open a panel, navigate, find or search, target, deploy \
+            or retract, enable or disable, otherwise change ship state) -> call the matching action or macro \
+            function.
+            - The commander ASKS for information -> call the matching query function.
+            - A bare panel/mode/action name ("navigation", "inventory", "contacts") is a command -> call that \
+            function.
+            - A single-word or very short input is almost always a command, not small talk -> if it matches \
+            an offered function, call it.
+            Always prefer the closest offered query, action, or macro function over speak; fall back to \
+            clarify only when intent is genuinely ambiguous and no offered function fits. "inventory" and \
+            "storage" are different panels - never substitute one for the other.
+            A query or action result is spoken to the commander automatically in the ship's voice - do not \
+            add speak to repeat or rephrase it. Use speak yourself only to converse, ask for clarification, \
+            or confirm a dangerous action.
             """;
 
     private static final String NARRATION_RULES = """
@@ -154,8 +158,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         String name = PromptLocalizations.rulesFor(language).languageName();
         String rule = "The commander speaks " + name + ", and game events are summarized in " + name + ". "
-                + "Form every spoken phrase (the text you pass to the speak function) in " + name + ". "
-                + "Function names and their arguments stay exactly as defined.\n";
+                + "Form every phrase the commander hears - the text in speak and the question in clarify - in "
+                + name + ". Function names and all other arguments stay exactly as defined.\n";
         if (language != Language.EN) {
             // Tool descriptions are English; small models match them most reliably from English.
             rule += "Translate the commander's " + name + " input to English before choosing a function; "

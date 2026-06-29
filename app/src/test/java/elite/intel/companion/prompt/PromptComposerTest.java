@@ -108,6 +108,18 @@ class PromptComposerTest {
     }
 
     @Test
+    void memoryIndexHidesNonSelectableSentinelTopics() {
+        // A sentinel topic can hold memory (interrupted/invalid turns), but it is not a valid classify_turn
+        // value, so it must not surface in the "Topics with stored memory" index either.
+        MemoryAvailabilitySnapshot indexes = new MemoryAvailabilitySnapshot(
+                List.of(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, ConversationTopic.NAVIGATION));
+        String prefix = composeCommander(List.of(), indexes, null).messages().get(0).content();
+
+        assertTrue(prefix.contains("- navigation"));
+        assertFalse(prefix.contains("unresolved_commander_input"));
+    }
+
+    @Test
     void emptyTopicMemoryAndSummaryRenderPlaceholders() {
         String prefix = composeCommander(List.of(),
                 new MemoryAvailabilitySnapshot(List.of()), "  ").messages().get(0).content();
