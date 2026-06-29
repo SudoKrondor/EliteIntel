@@ -31,16 +31,20 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
     private final String model;
     private final String toolChoice;
     private final boolean sendCacheKey;
+    private final boolean sendsTemperature;
 
     /**
-     * @param model         the served model name
-     * @param toolChoice    the "must call a function" value (Mistral {@code any}, OpenAI/LM Studio {@code required})
-     * @param sendCacheKey  whether to send Mistral's {@code prompt_cache_key} (omit for other endpoints)
+     * @param model            the served model name
+     * @param toolChoice       the "must call a function" value (Mistral {@code any}, OpenAI/LM Studio {@code required})
+     * @param sendCacheKey     whether to send Mistral's {@code prompt_cache_key} (omit for other endpoints)
+     * @param sendsTemperature whether the model accepts a custom {@code temperature}; false for OpenAI GPT-5
+     *                         reasoning models, which reject any non-default value (the request is sent without it)
      */
-    protected OpenAiCompatibleLlmAdapter(String model, String toolChoice, boolean sendCacheKey) {
+    protected OpenAiCompatibleLlmAdapter(String model, String toolChoice, boolean sendCacheKey, boolean sendsTemperature) {
         this.model = model;
         this.toolChoice = toolChoice;
         this.sendCacheKey = sendCacheKey;
+        this.sendsTemperature = sendsTemperature;
     }
 
     @Override
@@ -48,8 +52,11 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         // Per-profile sampling temperature (COMMANDER runs warmer for livelier conversation; narration and
-        // compression stay cooler for fidelity).
-        body.addProperty("temperature", request.profile().temperature());
+        // compression stay cooler for fidelity). Omitted for models that reject a custom temperature (OpenAI
+        // GPT-5 reasoning models): the request then uses the API default.
+        if (sendsTemperature) {
+            body.addProperty("temperature", request.profile().temperature());
+        }
         body.add("messages", renderMessages(request.messages()));
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));

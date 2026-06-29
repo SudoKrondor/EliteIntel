@@ -8,6 +8,6 @@ package elite.intel.companion.llm;
 public final class LmStudioLlmAdapter extends OpenAiCompatibleLlmAdapter {
 
     public LmStudioLlmAdapter(String model) {
-        super(model, "required", false);
+        super(model, "required", false, true); // local models accept a custom temperature
     }
 }

@@ -5,6 +5,7 @@ import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.ai.brain.inference.mistral.MistralClient;
+import elite.intel.ai.brain.inference.openai.OpenAiClient;
 import elite.intel.session.SystemSession;
 
 import java.util.Collection;
@@ -30,7 +31,9 @@ public final class CompanionLlmGatewayFactory {
     /** Cloud providers with a wired companion adapter. Add an entry to wire one; its label joins the message. */
     private static final Map<ProviderEnum, WiredProvider> CLOUD_GATEWAYS = Map.of(
             ProviderEnum.MISTRAL, new WiredProvider("Mistral", session -> new CompanionLlmGateway(
-                    new MistralLlmAdapter(), body -> MistralClient.getInstance().sendJsonRequest(body))));
+                    new MistralLlmAdapter(), body -> MistralClient.getInstance().sendJsonRequest(body))),
+            ProviderEnum.OPENAI, new WiredProvider("OpenAI", session -> new CompanionLlmGateway(
+                    new OpenAiLlmAdapter(), body -> OpenAiClient.getInstance().sendJsonRequest(body))));
 
     /**
      * Local providers with a wired companion adapter. Only LM Studio (OpenAI-compatible,

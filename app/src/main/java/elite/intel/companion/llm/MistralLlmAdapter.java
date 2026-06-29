@@ -9,6 +9,6 @@ import elite.intel.ai.brain.inference.mistral.MistralClient;
 public final class MistralLlmAdapter extends OpenAiCompatibleLlmAdapter {
 
     public MistralLlmAdapter() {
-        super(MistralClient.MODEL, "any", true);
+        super(MistralClient.MODEL, "any", true, true); // Mistral accepts a custom temperature
     }
 }
