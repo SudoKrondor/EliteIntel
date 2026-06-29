@@ -28,13 +28,13 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String COMMANDER_PERSONA = """
-            You may chat and banter freely; you need a function result, the timeline, or your memory only \
-            when you state a game fact - a number, name, distance, or status.
+            You may chat and banter freely, but state any game fact only from a function result, the \
+            timeline, or your memory.
             """;
 
     private static final String MEMORY_RULES = """
             [COMMANDER] lines in the timeline below are the commander's own words; [%s] lines are your own \
-            earlier replies - both are reliable, in the timeline and in search_in_memory results.
+            earlier replies - both are reliable.
             - Answer already in the timeline -> answer from it directly.
             - Something set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
             that is NOT in the timeline -> call search_in_memory first and answer from its result; never \
@@ -46,8 +46,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String TOOL_CALLING = """
-            You act only by calling functions - never reply in free text, and never return zero function \
-            calls (that is an error, not a way to stay silent).
+            You act only by calling functions; never reply in free text, and an empty response with no \
+            function call is an error, not a way to stay silent.
             Begin every turn with exactly one classify_turn call: it only files the turn in memory and never \
             answers or acts. Then handle the turn:
             - Talk, command, or a query you can answer now -> add speak, the command, or the query AND \
