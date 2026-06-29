@@ -517,11 +517,12 @@ class ThoughtTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<String> readLlmMemory() { return List.of(); }
-        @Override public void writeLlmMemory(String content) { }
-        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(0, 15, List.of()); }
+        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { return List.of(); }
+        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
+        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
+        @Override public void addLongTermPinned(MemoryEntry fact) { }
     }
 
     private static final class RecordingReducer implements CompanionActionReducer {

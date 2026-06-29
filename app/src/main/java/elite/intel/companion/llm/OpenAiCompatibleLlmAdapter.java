@@ -130,6 +130,13 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             JsonObject prop = new JsonObject();
             prop.addProperty("type", p.getType());
             prop.addProperty("description", describeParameter(p));
+            // A closed value set becomes a JSON-Schema enum so the model is constrained to a valid value.
+            List<String> enumValues = p.getEnumValues();
+            if (!enumValues.isEmpty()) {
+                JsonArray enumArray = new JsonArray();
+                enumValues.forEach(enumArray::add);
+                prop.add("enum", enumArray);
+            }
             properties.add(p.getName(), prop);
             if (p.isRequired()) {
                 required.add(p.getName());

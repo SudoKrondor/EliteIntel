@@ -77,11 +77,11 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void rememberWritesToLlmMemory() {
-        JsonObject result = new RememberFunction().handle("remember", params("content", "owes me 5cr"), "");
+    void setImportanceValidatesAndEchoesTheLevel() {
+        JsonObject result = new SetImportanceFunction().handle("set_importance", params("level", "high"), "");
 
-        assertEquals("owes me 5cr", memory.remembered);
-        assertEquals("remembered", result.get("status").getAsString());
+        assertEquals("importance_set", result.get("status").getAsString());
+        assertEquals("high", result.get("importance").getAsString());
     }
 
     @Test
@@ -144,7 +144,6 @@ class SystemFunctionHandleTest {
 
     /** Minimal MemoryGateway fake recording the calls the system functions make. */
     private static final class RecordingMemory implements MemoryGateway {
-        String remembered;
         String recalledQuery;
         List<String> matchingItems = List.of();
 
@@ -157,10 +156,11 @@ class SystemFunctionHandleTest {
             recalledQuery = query;
             return matchingItems;
         }
-        @Override public List<String> readLlmMemory() { throw new UnsupportedOperationException(); }
-        @Override public void writeLlmMemory(String content) { remembered = content; }
+        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { throw new UnsupportedOperationException(); }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
+        @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }
+        @Override public void addLongTermPinned(MemoryEntry fact) { throw new UnsupportedOperationException(); }
     }
 }

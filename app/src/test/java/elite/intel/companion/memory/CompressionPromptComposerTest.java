@@ -54,8 +54,8 @@ class CompressionPromptComposerTest {
         LlmMessage user = messages.get(1);
         assertEquals(LlmMessageRole.USER, user.role());
         assertTrue(user.content().contains("known so far"));
-        assertTrue(user.content().contains("[EVENT][mining] found platinum"));
-        assertTrue(user.content().contains("[EVENT][navigation] jumped to Sol"));
+        assertTrue(user.content().contains("[EVENT][mining][normal] found platinum"));
+        assertTrue(user.content().contains("[EVENT][navigation][normal] jumped to Sol"));
     }
 
     @Test

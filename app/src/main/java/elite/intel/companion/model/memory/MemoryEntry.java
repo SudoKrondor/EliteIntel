@@ -12,10 +12,17 @@ import java.time.Instant;
  * @param topic      topic this entry belongs to
  * @param source     where the information came from
  * @param content    the recorded text
+ * @param importance how important this entry is to the companion's memory (drives retention and consolidation)
  */
 public record MemoryEntry(
         Instant timestamp,
         ConversationTopic topic,
         MemorySource source,
-        String content
-) {}
+        String content,
+        MemoryImportance importance
+) {
+    /** Convenience constructor defaulting to {@link MemoryImportance#NORMAL} - the level when none is assigned. */
+    public MemoryEntry(Instant timestamp, ConversationTopic topic, MemorySource source, String content) {
+        this(timestamp, topic, source, content, MemoryImportance.NORMAL);
+    }
+}

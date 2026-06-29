@@ -2,6 +2,7 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
@@ -27,6 +28,8 @@ import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -142,6 +145,77 @@ class ThoughtDispatcherTest {
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("combat mode", memory.writes.get(0).content(), "memory keeps the raw words, not the canonical form");
         assertEquals("command switch_combat executed", memory.writes.get(1).content());
+    }
+
+    @Test
+    void aLeadingCompanionNameIsStrippedForTheReflexGateButMemoryKeepsIt() {
+        // Addressing the companion by name ("Vega, all stop") still takes the reflex fast-path: the leading
+        // vocative name is stripped before reflex matching, yet memory keeps the raw words (with the name).
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("a reflex must not engage the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(),
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
+                invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, s -> s); // identity normalizer
+        dispatcher.start();
+        String input = CompanionConfig.companionName() + ", all stop";
+        dispatcher.submitCommanderInput(input);
+        dispatcher.stop();
+
+        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals(input, memory.writes.get(0).content(), "memory keeps the raw words, including the name");
+        assertEquals("command stop_ship executed", memory.writes.get(1).content());
+    }
+
+    @Test
+    void aLeadingTransliteratedCompanionNameIsAlsoStrippedForTheReflexGate() {
+        // Russian STT returns the name in Cyrillic ("Вега"), not the canonical Latin "Vega". The Cyrillic form
+        // is the localized spoken form for the RU session language, so it is recognized as a leading vocative
+        // and a name-addressed short command still reflexes (no LLM).
+        Language previousLanguage = SystemSession.getInstance().getLanguage();
+        SystemSession.getInstance().setLanguage(Language.RU);
+        try {
+            LlmGateway failIfCalled = new LlmGateway() {
+                @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                    throw new AssertionError("a reflex must not engage the LLM");
+                }
+                @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                    return CompletableFuture.completedFuture(null);
+                }
+            };
+            ThoughtContext ctx = new ThoughtContext(
+                    failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                    new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                    (categories, currentInput) -> List.of(), new CompanionState(),
+                    invocation -> false, new ConfirmationCoordinator(),
+                    new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+            ReflexResolver reflex = new ReflexResolver(
+                    () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
+                    invocation -> false);
+            ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, s -> s); // identity normalizer
+            dispatcher.start();
+            dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
+            dispatcher.stop();
+
+            assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
+            assertEquals("Вега, all stop", memory.writes.get(0).content(), "memory keeps the raw words, including the name");
+            assertEquals("command stop_ship executed", memory.writes.get(1).content());
+        } finally {
+            SystemSession.getInstance().setLanguage(previousLanguage);
+        }
     }
 
     @Test
@@ -515,11 +589,12 @@ class ThoughtDispatcherTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<String> readLlmMemory() { return List.of(); }
-        @Override public void writeLlmMemory(String content) { }
-        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(0, 15, List.of()); }
+        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { return List.of(); }
+        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
+        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
+        @Override public void addLongTermPinned(MemoryEntry fact) { }
     }
 
     private static final class FakeSpeech implements SpeechGateway {

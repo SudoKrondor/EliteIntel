@@ -79,7 +79,16 @@ class CommandExecutionEvalTest {
             new Case("полный стоп", "set_speed_to_zero_0_stop_ship", null, true),
             new Case("грузозаборник", "toggle_cargo_scoop", null, true),
             new Case("выпусти шасси", "deploy_landing_gear", null, true),
-            new Case("убери оружие", "retract_hardpoints", null, true));
+            new Case("убери оружие", "retract_hardpoints", null, true),
+            // Name-addressed commands: a Russian commander addresses the companion as "Вега" (Cyrillic) - what
+            // Russian STT returns, NOT the canonical Latin "Vega". On the LLM path the name is just an extra
+            // token (no command trains on it), so the right tool still fires (reflex=false). The reflex
+            // fast-path is preserved too: the dispatcher's name strip recognizes the Cyrillic form, so
+            // "Вега, полный стоп" is stripped to "полный стоп" and still reflexes (reflex=true).
+            new Case("Вега, цель силовая установка", "target_subsystem", "powerplant", false),
+            new Case("Вега, установи скорость пятьдесят процентов", "set_speed_50", null, false),
+            new Case("Вега, контакты", "show_contacts_panel", null, false),
+            new Case("Вега, полный стоп", "set_speed_to_zero_0_stop_ship", null, true));
 
     @BeforeAll
     void boot() throws Exception {

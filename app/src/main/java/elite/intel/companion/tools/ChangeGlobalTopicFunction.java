@@ -9,7 +9,6 @@ import elite.intel.util.json.JsonUtils;
 
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -44,7 +43,7 @@ public final class ChangeGlobalTopicFunction implements SystemFunction {
         return List.of(
                 new ActionParameterSpec(PARAM_TOPIC, "string", true,
                         "One of the valid topic ids listed in the TOPICS section.",
-                        List.of(), null)
+                        List.of(), null, ConversationTopic.selectableIds())
         );
     }
 
@@ -64,7 +63,7 @@ public final class ChangeGlobalTopicFunction implements SystemFunction {
         }
         CompanionRuntime.state().setGlobalTopic(topic);
         result.addProperty(SystemFunctionResultFields.STATUS, STATUS_CHANGED);
-        result.addProperty(SystemFunctionResultFields.TOPIC, topic.name().toLowerCase(Locale.ROOT));
+        result.addProperty(SystemFunctionResultFields.TOPIC, topic.id());
         return result;
     }
 }

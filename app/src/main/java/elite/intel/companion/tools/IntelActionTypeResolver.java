@@ -26,7 +26,7 @@ public final class IntelActionTypeResolver {
         QUERY,
         /** User-defined macro (custom command). */
         MACRO,
-        /** Companion system function (speak, nothing_to_do, remember, search_in_memory, change_*). */
+        /** Companion system function (speak, nothing_to_do, set_importance, search_in_memory, change_*). */
         SYSTEM,
         /** Id not found in any registry. */
         UNKNOWN

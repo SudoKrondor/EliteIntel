@@ -43,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link SessionMemoryGateway}/{@link PromptComposer}/{@link SystemFunctionProvider}/{@link CompanionState},
  * real {@link CompanionLlmGateway} + {@link MistralLlmAdapter} - driven by a scripted LLM transport (canned
  * Mistral responses) instead of a live model. It plays a short multi-topic conversation and asserts the
- * cross-cutting behaviour the unit tests cannot: the global topic moves across turns, a fact survives
- * remember -> recall, and a multi-round turn replays the assistant tool-call and round-trips the recalled
- * fact into the next prompt. No network, no real game input - the LLM transport and game tools are stubbed.
+ * cross-cutting behaviour the unit tests cannot: the global topic moves across turns, a stated fact survives
+ * in memory and is recalled, and a multi-round turn replays the assistant tool-call and round-trips the
+ * recalled fact into the next prompt. No network, no real game input - the LLM transport and game tools are stubbed.
  */
 class CompanionConversationIntegrationTest {
 
@@ -68,10 +68,9 @@ class CompanionConversationIntegrationTest {
                 call("c1", "change_global_topic", "{\"topic\":\"navigation\"}"),
                 call("c2", "speak", "{\"text\":\"Course plotted.\"}"),
                 call("c3", "nothing_to_do", "{}")));
-        // Turn 2: topic moves to SHIP_STATUS and a fact is remembered.
+        // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
                 call("c4", "change_global_topic", "{\"topic\":\"ship_status\"}"),
-                call("c5", "remember", "{\"content\":\"hull is solid\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}"),
                 call("c7", "nothing_to_do", "{}")));
         // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
@@ -81,17 +80,18 @@ class CompanionConversationIntegrationTest {
                 call("c10", "nothing_to_do", "{}")));
 
         // A conversation is sequential: each turn is submitted and drained before the next, so the
-        // remember -> recall dependency holds (the bounded commander pool would otherwise race the turns).
+        // memory -> recall dependency holds (the bounded commander pool would otherwise race the turns).
         dispatcher.start();
         playTurn(dispatcher, "take us to the next system");
-        playTurn(dispatcher, "how is the ship");
-        playTurn(dispatcher, "what did I tell you to remember");
+        playTurn(dispatcher, "note that the hull is solid");
+        playTurn(dispatcher, "what did I tell you about the hull");
         dispatcher.stop();
 
         // The global topic moved across turns (real change_global_topic handle on the real state).
         assertEquals(ConversationTopic.SHIP_STATUS, state.globalTopic());
-        // The fact survived remember -> llm_memory.
-        assertTrue(memory.readLlmMemory().contains("hull is solid"));
+        // The stated fact survived in short-term memory.
+        assertTrue(memory.readShortTermTimeline().stream()
+                .anyMatch(e -> e.content().contains("hull is solid")));
         // The companion actually spoke the scripted phrases (real SpeakFunction -> SpeechGateway).
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("Course plotted")));
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));

@@ -5,6 +5,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.memory.MemoryImportance;
 
 import java.util.List;
 
@@ -39,5 +40,11 @@ final class ReflexThought extends Thought {
     @Override
     protected ConversationTopic memoryTopic() {
         return ctx.state().globalTopic();
+    }
+
+    /** A reflex runs no LLM, so it cannot rate the turn: its memory is ordinary importance. */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return MemoryImportance.NORMAL;
     }
 }
