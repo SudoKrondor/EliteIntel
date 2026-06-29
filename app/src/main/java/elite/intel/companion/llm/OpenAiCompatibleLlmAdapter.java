@@ -47,7 +47,8 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
     public final String buildRequestBody(LlmRequest request) {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
-        // Per-profile sampling temperature (COMMANDER runs cooler for stable tool selection).
+        // Per-profile sampling temperature (COMMANDER runs warmer for livelier conversation; narration and
+        // compression stay cooler for fidelity).
         body.addProperty("temperature", request.profile().temperature());
         body.add("messages", renderMessages(request.messages()));
         if (!request.tools().isEmpty()) {

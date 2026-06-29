@@ -25,7 +25,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -209,9 +208,11 @@ public abstract class Thought {
     }
 
     /**
-     * The always-on "important to remember" context inlined ahead of the timeline: pinned {@code MAX} facts
-     * (verbatim, from long-term) followed by the {@code HIGH} mid-term working-set. Short-term is excluded - it
-     * is already inlined whole and searched - so nothing is duplicated. COMMANDER-only; empty for other sources.
+     * The always-on "important to remember" context inlined ahead of the timeline: the bounded {@code HIGH}/
+     * {@code MAX} mid-term working-set. Short-term is excluded - it is already inlined whole and searched - so
+     * nothing is duplicated. Pinned {@code MAX} facts are deliberately NOT inlined here: the archive is
+     * unbounded, so it is surfaced through {@code search_in_memory} (importance-ranked, capped) instead of
+     * bloating every prompt. COMMANDER-only; empty for other sources.
      */
     private List<MemoryEntry> importantContext() {
         // WHY: only the COMMANDER prompt inlines this block (composeNarration discards it), so skip the lookup
@@ -219,10 +220,8 @@ public abstract class Thought {
         if (source != ThoughtSource.COMMANDER) {
             return List.of();
         }
-        List<MemoryEntry> important = new ArrayList<>(ctx.memoryGateway().longTermPinnedFacts());
-        important.addAll(ctx.memoryGateway().importantWorkingSet(
-                CompanionConfig.workingSetSize(), CompanionConfig.workingSetTokenBudget()));
-        return important;
+        return ctx.memoryGateway().importantWorkingSet(
+                CompanionConfig.workingSetSize(), CompanionConfig.workingSetTokenBudget());
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */

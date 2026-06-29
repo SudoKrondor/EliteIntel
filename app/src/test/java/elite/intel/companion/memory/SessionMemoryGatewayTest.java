@@ -218,6 +218,51 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void recallMatchingSurfacesPinnedArchiveFacts() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // A pinned MAX fact lives only in the archive (not short/mid-term); search must still find it.
+        gateway.addLongTermPinned(entry(ConversationTopic.NAVIGATION, "docking code is sierra nine four", MemoryImportance.MAX));
+        assertEquals(List.of("[COMMANDER] docking code is sierra nine four"),
+                gateway.recallMatching("docking code", 10));
+    }
+
+    @Test
+    void recallMatchingRanksStrongerOverlapAboveAWeaklyMatchingMax() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // Pinned MAX shares one query word; a NORMAL short-term fact shares three. Relevance-first must put the
+        // stronger (but lower-importance) match on top, so an accumulating archive cannot bury the relevant fact.
+        gateway.addLongTermPinned(entry(ConversationTopic.COMBAT, "granite is the abort word", MemoryImportance.MAX));
+        gateway.write(entry(ConversationTopic.MINING, "granite mining hotspot location", MemoryImportance.NORMAL));
+
+        List<String> recalled = gateway.recallMatching("granite mining hotspot", 10);
+        assertEquals("[COMMANDER] granite mining hotspot location", recalled.get(0));
+    }
+
+    @Test
+    void recallMatchingCapsHowManyArchiveFactsEnterTheResult() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // More equally-matching pinned MAX facts than the archive cap, plus one short-term match. The archive
+        // must not flood the result: at most ARCHIVE_RECALL_LIMIT archive facts appear, room left for the rest.
+        for (int i = 0; i < CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT + 3; i++) {
+            gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "rendezvous point alpha " + i, MemoryImportance.MAX));
+        }
+        gateway.write(entry(ConversationTopic.NAVIGATION, "rendezvous point updated to beta", MemoryImportance.NORMAL));
+
+        List<String> recalled = gateway.recallMatching("rendezvous point", 10);
+        long archiveHits = recalled.stream().filter(s -> s.contains("alpha")).count();
+        assertEquals(CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT, archiveHits);
+        assertTrue(recalled.stream().anyMatch(s -> s.contains("beta")), "the short-term match must still surface");
+    }
+
+    @Test
+    void pinningTheSameFactTwiceArchivesItOnce() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "operation name is ebb", MemoryImportance.MAX));
+        gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "operation name is ebb", MemoryImportance.MAX));
+        assertEquals(1, gateway.longTermPinnedFacts().size());
+    }
+
+    @Test
     void heuristicEstimatorIsConservativeAndNonNegative() {
         TokenEstimator estimator = new HeuristicTokenEstimator();
         assertEquals(0, estimator.estimate(null));

@@ -22,6 +22,8 @@ class LongTermMemoryEvalTest {
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-longterm-eval-trace.txt", Language.RU);
 
     private static final String EARLY_FACT_TOKEN = "deciat";
+    /** The Russian companion transliterates the Latin system name when speaking, so accept either form. */
+    private static final String EARLY_FACT_CYRILLIC = "дециат";
 
     private static final List<String> NAVIGATION = List.of(
             "проложи маршрут к Sol", "как далеко следующая звездная система", "какой у нас текущий уровень топлива",
@@ -53,28 +55,46 @@ class LongTermMemoryEvalTest {
     void consolidatesAndUsesTheRussianLongTermSummary() throws Exception {
         h.say("давай поговорим о навигации");
         h.say("запомни для сессии: наше путешествие началось в системе Deciat");
-        for (String turn : NAVIGATION) {
-            h.say(turn);
+        // Two passes of the single-topic navigation script: enough volume to overflow mid-term into the
+        // long-term consolidation buffer and fire consolidation. The lone early MAX fact does NOT reach the
+        // archive (mid-term eviction keeps MAX longest, so it stays searchable in mid-term); the archive-fill
+        // path is covered deterministically by the unit tests, not this run.
+        for (int pass = 0; pass < 2; pass++) {
+            for (String turn : NAVIGATION) {
+                h.say(turn);
+            }
         }
         Thread.sleep(6000);
 
         String summary = h.memory().longTermSummary();
         boolean consolidated = summary != null && !summary.isBlank();
-        boolean earlyFactSurvived = consolidated && summary.toLowerCase(java.util.Locale.ROOT).contains(EARLY_FACT_TOKEN);
+        // A lone MAX fact stays protected in mid-term (importance-aware eviction keeps MAX longest), so the
+        // archive - the overflow path that only fills when MAX facts exceed a topic's mid-term cap - is normally
+        // empty here. Report its size as an observation, not a pass/fail.
+        int archiveSize = h.memory().longTermPinnedFacts().size();
 
         h.say("над чем мы работали в этой сессии");
         boolean answered = !h.spokenTexts().isEmpty();
 
         h.say("где началось наше путешествие");
-        boolean originRecalled = h.spokenContains(EARLY_FACT_TOKEN);
+        // Robust recall signal: the search RESULT carries the fact verbatim (the stored commander input keeps the
+        // Latin "deciat"), independent of how the companion transliterates it aloud. The spoken form varies
+        // (deciat / дициат / декиат), so the spoken check is softer and accepts any of them.
+        boolean recallReturnedFact = h.recallResult().stream()
+                .anyMatch(s -> s.toLowerCase(java.util.Locale.ROOT).contains(EARLY_FACT_TOKEN));
+        boolean originSpoken = h.spokenContains(EARLY_FACT_TOKEN)
+                || h.spokenContains(EARLY_FACT_CYRILLIC) || h.spokenContains("декиат");
 
         StringBuilder block = new StringBuilder("\n======== RU LONG-TERM MEMORY (theme 6) ========\n");
         block.append("consolidation fired (long-term summary present): ").append(consolidated).append("\n");
-        block.append("early fact '").append(EARLY_FACT_TOKEN).append("' survived into summary: ")
-                .append(earlyFactSurvived).append("\n");
+        block.append("MAX archive size (overflow path; a lone MAX stays protected in mid-term): ").append(archiveSize).append("\n");
         block.append("answered a session-summary question: ").append(answered).append("\n");
-        block.append("origin recalled at probe ('").append(EARLY_FACT_TOKEN).append("'): ")
-                .append(originRecalled).append("\n");
+        block.append("recall returned the early fact (search result): ").append(recallReturnedFact).append("\n");
+        block.append("origin spoken aloud (deciat/дициат/декиат): ").append(originSpoken).append("\n");
+        if (archiveSize > 0) {
+            block.append("pinned MAX archive:\n");
+            h.memory().longTermPinnedFacts().forEach(e -> block.append("  ").append(e.content()).append("\n"));
+        }
         block.append("long-term summary:\n")
                 .append(consolidated ? summary : "(none - the run was not long enough to consolidate)").append("\n");
         block.append(h.shortTermDumpBlock());

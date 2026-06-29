@@ -78,58 +78,73 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized List<String> recallMatching(String query, int limit) {
-        // Unified search across short-term timeline + mid-term (all topics), ranked by importance then recency.
-        // Matching is word-overlap (does the entry share a meaningful word with the query), NOT a
-        // contiguous substring, so the model's paraphrased or whole-question query still finds the stored fact.
+        // Unified search across short-term timeline + mid-term (all topics) + the MAX archive, ranked by
+        // relevance first. Matching is word-overlap (does the entry share a meaningful word with the query),
+        // NOT a contiguous substring, so the model's paraphrased or whole-question query still finds the fact.
         Set<String> queryTokens = tokens(query);
-        List<TimedHit> hits = new ArrayList<>();
+        List<Hit> hits = new ArrayList<>();
         // Short-term is already inlined into the prompt, but search it too: if the model does decide to recall,
         // it then gets the whole picture instead of missing the most recent facts. A given entry lives in exactly
         // one of short-term / mid-term (mid-term only receives short-term overflow), so the two never double-count.
-        for (MemoryEntry entry : shortTerm.timeline()) {
-            if (matches(queryTokens, entry.content())) {
-                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
-                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
-            }
-        }
-        for (MemoryEntry entry : midTerm.allEntries()) {
-            if (matches(queryTokens, entry.content())) {
-                // Carry the speaker tag so the model knows whose words it recalled (same speaker-tag
-                // convention as the timeline via MemorySource.displayLabel), matching its prompt legend.
-                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
-                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
-            }
-        }
-        // Importance first so a MAX/HIGH match outranks routine chatter that merely shares a word; recency
-        // breaks ties. This keeps the most important matching fact inside the result limit instead of letting
-        // newer trivia evict it.
-        hits.sort(Comparator.comparing(TimedHit::importance, Comparator.reverseOrder())
-                .thenComparing(TimedHit::at, Comparator.reverseOrder()));
-        return hits.stream().limit(Math.max(0, limit)).map(TimedHit::content).distinct().toList();
+        addHits(hits, queryTokens, shortTerm.timeline());
+        addHits(hits, queryTokens, midTerm.allEntries());
+        // The MAX archive (pinned facts) is searchable but no longer force-fed into every prompt. Cap how many
+        // archive matches are eligible so an accumulating archive of old MAX facts cannot crowd the more
+        // relevant short/mid-term matches out of the result limit: only the best ARCHIVE_RECALL_LIMIT enter.
+        List<Hit> archive = new ArrayList<>();
+        addHits(archive, queryTokens, longTerm.pinnedFacts());
+        archive.sort(BY_RANK);
+        archive.stream().limit(CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT).forEach(hits::add);
+        // Relevance first (a strongly-matching routine fact beats a weakly-matching MAX), then importance (a
+        // real MAX/HIGH fact beats trivia that shares as many words), then recency.
+        hits.sort(BY_RANK);
+        return hits.stream().limit(Math.max(0, limit)).map(Hit::content).distinct().toList();
     }
 
-    /** A matched memory entry with its importance and write time, for ranking the two memory areas. */
-    private record TimedHit(MemoryImportance importance, java.time.Instant at, String content) {}
-
-    /** An entry matches when it shares at least one meaningful word with the query; a query with no meaningful
-     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. Two words
-     *  are compared with the companion's shared inflection-tolerant rule ({@link CompanionWordMatch}): the same
-     *  word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
-     *  ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Recall favours catching a match, so the
-     *  tolerant rule is used for every language (over-recall is cheap here). */
-    private static boolean matches(Set<String> queryTokens, String content) {
-        if (queryTokens.isEmpty()) {
-            return true;
+    /**
+     * Adds every entry that shares at least one meaningful word with the query (all entries, relevance 0, for a
+     * blank query - which then degenerates to importance-then-recency). The speaker tag is carried so the model
+     * knows whose words it recalled (same {@link MemorySource#displayLabel} convention as the timeline legend).
+     */
+    private void addHits(List<Hit> out, Set<String> queryTokens, List<MemoryEntry> entries) {
+        boolean blank = queryTokens.isEmpty();
+        for (MemoryEntry entry : entries) {
+            int relevance = blank ? 0 : overlap(queryTokens, entry.content());
+            if (blank || relevance > 0) {
+                out.add(new Hit(relevance, entry.importance(), entry.timestamp(),
+                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
+            }
         }
+    }
+
+    /** A matched memory entry: its relevance score, importance and write time, for ranking the memory areas. */
+    private record Hit(int relevance, MemoryImportance importance, java.time.Instant at, String content) {}
+
+    /** Relevance first, then importance, then recency - the single recall ranking shared by every source. */
+    private static final Comparator<Hit> BY_RANK = Comparator
+            .comparingInt(Hit::relevance).reversed()
+            .thenComparing(Hit::importance, Comparator.reverseOrder())
+            .thenComparing(Hit::at, Comparator.reverseOrder());
+
+    /**
+     * The relevance score of an entry: how many distinct query tokens have an inflection-tolerant match in the
+     * content. Two words are compared with the companion's shared rule ({@link CompanionWordMatch}): the same
+     * word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
+     * ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Over-recall is cheap here, so the
+     * tolerant rule is used for every language.
+     */
+    private static int overlap(Set<String> queryTokens, String content) {
         Set<String> contentTokens = tokens(content);
+        int score = 0;
         for (String q : queryTokens) {
             for (String c : contentTokens) {
                 if (CompanionWordMatch.similar(q, c)) {
-                    return true;
+                    score++;
+                    break; // count each query token at most once
                 }
             }
         }
-        return false;
+        return score;
     }
 
     /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */

@@ -7,7 +7,8 @@ package elite.intel.companion.model.llm;
  * <p>
  * The two prompt-composing thoughts have different stable prefixes: COMMANDER (full consciousness) and
  * NARRATION (lean subscriber-narration prompt). Compression is its own profile. COMMANDER runs slightly
- * cooler than the others for more deterministic tool selection on the commander loop.
+ * warmer (0.5) for livelier conversation; narration and compression stay cooler (0.3) for fidelity. Command
+ * and query selection held accurate at 0.5 in the evals, so the warmer setting costs no routing precision.
  */
 public enum PromptCacheProfile {
 
