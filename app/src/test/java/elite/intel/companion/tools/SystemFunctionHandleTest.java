@@ -25,8 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
  * via {@link CompanionRuntime}: speak/clarify submit speech, remember/recall go through the memory gateway,
- * change_verbosity sets shared state, find_action queries the reducer, nothing_to_do is a no-op, and the
- * still-deferred set_topic fails loudly. Fakes back the services so everything is unit-testable.
+ * change_verbosity sets shared state, find_action queries the reducer, nothing_to_do is a no-op, and
+ * classify_turn moves the global topic and stamps the turn's importance. Fakes back the services so
+ * everything is unit-testable.
  */
 class SystemFunctionHandleTest {
 
@@ -77,11 +78,24 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void setImportanceValidatesAndEchoesTheLevel() {
-        JsonObject result = new SetImportanceFunction().handle("set_importance", params("level", "high"), "");
+    void classifyTurnSetsTopicAndStampsImportance() {
+        JsonObject p = params("topic", "navigation");
+        p.addProperty("importance", "high");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
 
-        assertEquals("importance_set", result.get("status").getAsString());
+        assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
+        assertEquals("turn_classified", result.get("status").getAsString());
+        assertEquals("navigation", result.get("topic").getAsString());
         assertEquals("high", result.get("importance").getAsString());
+    }
+
+    @Test
+    void classifyTurnDefaultsUnknownImportanceToNormal() {
+        JsonObject p = params("topic", "navigation");
+        p.addProperty("importance", "bogus");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
+
+        assertEquals("normal", result.get("importance").getAsString());
     }
 
     @Test
@@ -127,16 +141,10 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void changeGlobalTopicSetsSharedState() {
-        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "navigation"), "");
-
-        assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
-        assertEquals("navigation", result.get("topic").getAsString());
-    }
-
-    @Test
-    void changeGlobalTopicRejectsUnknownTopic() {
-        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "nonsense"), "");
+    void classifyTurnRejectsUnknownTopic() {
+        JsonObject p = params("topic", "nonsense");
+        p.addProperty("importance", "high");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
 
         assertEquals("unknown topic", result.get("error").getAsString());
         assertEquals(ConversationTopic.SOCIAL, state.globalTopic()); // default, unchanged

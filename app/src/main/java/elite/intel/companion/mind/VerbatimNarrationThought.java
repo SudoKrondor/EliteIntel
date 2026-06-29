@@ -73,7 +73,7 @@ public final class VerbatimNarrationThought extends Thought {
         return eventTopic;
     }
 
-    /** Verbatim narration carries ordinary importance; only the commander rates a turn (set_importance). */
+    /** Verbatim narration carries ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;

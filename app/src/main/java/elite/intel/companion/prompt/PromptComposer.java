@@ -121,22 +121,19 @@ public final class PromptComposer {
         return sb.toString();
     }
 
-    /** Full selectable topic enum; the model needs the valid values for change_global_topic. */
+    /** Full selectable topic enum; the model needs the valid values for the classify_turn topic parameter. */
     private void appendTopics(StringBuilder sb) {
         PromptSections.heading(sb, "Topics");
-        sb.append("Valid values for change_global_topic:\n");
+        sb.append("Valid values for the classify_turn topic parameter:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
                 sb.append("- ").append(topic.id()).append(": ").append(topic.description()).append('\n');
             }
         }
-        // The topic is sticky and never moves on its own; tell the model to keep it current so an earlier
-        // subject does not keep tagging unrelated turns (the cause of topic "stickiness").
-        sb.append("The current topic is shown with each input. It stays until you move it, so it does not "
-                + "follow the conversation by itself. At the start of a turn, compare the new input's subject "
-                + "to the current topic: if it belongs to a different topic above, call change_global_topic "
-                + "for that topic before any other function. Move it only on a real subject change - keep it "
-                + "when the input still fits the current topic.\n");
+        // The topic is sticky and never moves on its own; tell the model to carry the current topic forward so
+        // an earlier subject does not keep tagging unrelated turns (the cause of topic "stickiness").
+        sb.append("The current topic is shown with each input and stays until you move it. Keep it when the new "
+                + "input still fits; move it to the matching topic above only on a real subject change.\n");
     }
 
     /** Cheap memory index (topics with mid-term memory) plus the long-term summary, grouped under one header. */

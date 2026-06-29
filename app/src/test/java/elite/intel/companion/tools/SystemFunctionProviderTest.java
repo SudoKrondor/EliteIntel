@@ -31,9 +31,9 @@ class SystemFunctionProviderTest {
     void commanderToolsCoverEveryFunctionWithDescriptionsAndNoPhrases() {
         List<LlmToolDefinition> tools = provider.systemFunctions(ThoughtSource.COMMANDER);
 
-        assertEquals(7, tools.size());
+        assertEquals(6, tools.size());
         assertEquals(
-                Set.of("speak", "nothing_to_do", "change_global_topic", "clarify", "set_importance", "search_in_memory", "change_verbosity"),
+                Set.of("speak", "nothing_to_do", "classify_turn", "clarify", "search_in_memory", "change_verbosity"),
                 names(tools));
         for (LlmToolDefinition tool : tools) {
             assertFalse(tool.description() == null || tool.description().isBlank(), tool.name() + " description");
@@ -49,7 +49,7 @@ class SystemFunctionProviderTest {
         List<String> commander = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
                 .map(LlmToolDefinition::name).toList();
         assertEquals(
-                List.of("speak", "nothing_to_do", "change_global_topic", "change_verbosity", "clarify", "search_in_memory", "set_importance"),
+                List.of("speak", "nothing_to_do", "change_verbosity", "clarify", "classify_turn", "search_in_memory"),
                 commander);
 
         List<String> event = provider.systemFunctions(ThoughtSource.EVENT).stream()

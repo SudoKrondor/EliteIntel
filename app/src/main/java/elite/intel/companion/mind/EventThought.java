@@ -45,7 +45,7 @@ public final class EventThought extends Thought {
         return eventTopic;
     }
 
-    /** Events carry ordinary importance; only the commander rates a turn (set_importance). */
+    /** Events carry ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;

@@ -24,9 +24,9 @@ public final class SystemFunctionResultFields {
     public static final String SCOPE = "scope";
     /** Verbosity mode echoed back (change_verbosity). */
     public static final String VERBOSITY = "verbosity";
-    /** Topic echoed back (change_global_topic). */
+    /** Topic echoed back (classify_turn). */
     public static final String TOPIC = "topic";
-    /** Importance level echoed back (set_importance). */
+    /** Importance level echoed back (classify_turn). */
     public static final String IMPORTANCE = "importance";
 
     private SystemFunctionResultFields() {

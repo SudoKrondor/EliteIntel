@@ -43,9 +43,9 @@ class LmStudioLlmAdapterTest {
     void closedValueParamRendersJsonSchemaEnumWhileFreeFormDoesNot() {
         LlmRequest request = new LlmRequest("req-2",
                 List.of(LlmMessage.of(LlmMessageRole.USER, "rate it")),
-                List.of(new LlmToolDefinition("set_importance", "Rate", "",
+                List.of(new LlmToolDefinition("classify_turn", "Rate", "",
                         List.of(
-                                new ActionParameterSpec("level", "string", true, "how important",
+                                new ActionParameterSpec("importance", "string", true, "how important",
                                         List.of(), null, List.of("low", "normal", "high", "max")),
                                 new ActionParameterSpec("note", "string", false, "free text", List.of(), null)))),
                 PromptCacheProfile.COMMANDER);
@@ -55,10 +55,10 @@ class LmStudioLlmAdapterTest {
                 .getAsJsonObject("function").getAsJsonObject("parameters").getAsJsonObject("properties");
 
         // The closed-value param carries a JSON-Schema enum constraining the model to those values.
-        JsonObject level = properties.getAsJsonObject("level");
-        assertTrue(level.has("enum"), "closed-value param must render an enum");
+        JsonObject importance = properties.getAsJsonObject("importance");
+        assertTrue(importance.has("enum"), "closed-value param must render an enum");
         assertEquals(List.of("low", "normal", "high", "max"),
-                level.getAsJsonArray("enum").asList().stream().map(e -> e.getAsString()).toList());
+                importance.getAsJsonArray("enum").asList().stream().map(e -> e.getAsString()).toList());
         // The free-form param has no enum so the model is not constrained.
         assertFalse(properties.getAsJsonObject("note").has("enum"), "free-form param must not render an enum");
     }
