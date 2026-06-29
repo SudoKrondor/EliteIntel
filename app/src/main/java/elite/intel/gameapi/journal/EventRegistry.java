@@ -98,6 +98,7 @@ public class EventRegistry {
         registerEvent("ShipTargeted", ShipTargetedEvent.class);
         registerEvent("ShipyardBuy", ShipyardBuyEvent.class);
         registerEvent("ShipyardNew", ShipyardNewEvent.class);
+        registerEvent("ShipyardSwap", ShipyardSwapEvent.class);
         registerEvent("StartJump", StartJumpEvent.class);
         registerEvent("Statistics", StatisticsEvent.class);
         registerEvent("SupercruiseDestinationDrop", SupercruiseDestinationDropEvent.class);

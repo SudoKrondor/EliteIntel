@@ -24,6 +24,9 @@ public class LoadGameEvent extends BaseEvent {
     @SerializedName("Ship")
     private String Ship;
 
+    @SerializedName("Ship_Localised")
+    private String shipLocalised;
+
     @SerializedName("ShipID")
     private int ShipID;
 
@@ -65,6 +68,7 @@ public class LoadGameEvent extends BaseEvent {
         this.Horizons = event.Horizons;
         this.Odyssey = event.Odyssey;
         this.Ship = event.Ship;
+        this.shipLocalised = event.shipLocalised;
         this.ShipID = event.ShipID;
         this.ShipName = event.ShipName;
         this.ShipIdent = event.ShipIdent;
@@ -142,6 +146,14 @@ public class LoadGameEvent extends BaseEvent {
 
     public void setShip(String ship) {
         Ship = ship;
+    }
+
+    public String getShipLocalised() {
+        return shipLocalised;
+    }
+
+    public void setShipLocalised(String shipLocalised) {
+        this.shipLocalised = shipLocalised;
     }
 
     public int getShipID() {
@@ -247,6 +259,7 @@ public class LoadGameEvent extends BaseEvent {
                 Objects.equals(FID, that.FID) &&
                 Objects.equals(Commander, that.Commander) &&
                 Objects.equals(Ship, that.Ship) &&
+                Objects.equals(shipLocalised, that.shipLocalised) &&
                 Objects.equals(ShipName, that.ShipName) &&
                 Objects.equals(ShipIdent, that.ShipIdent) &&
                 Objects.equals(GameMode, that.GameMode) &&
@@ -257,7 +270,7 @@ public class LoadGameEvent extends BaseEvent {
 
     @Override
     public int hashCode() {
-        return Objects.hash(FID, Commander, Horizons, Odyssey, Ship, ShipID, ShipName, ShipIdent,
+        return Objects.hash(FID, Commander, Horizons, Odyssey, Ship, shipLocalised, ShipID, ShipName, ShipIdent,
                 FuelLevel, FuelCapacity, GameMode, Credits, Loan, language, gameversion, build);
     }
 
@@ -269,6 +282,7 @@ public class LoadGameEvent extends BaseEvent {
                 .add("Horizons=" + Horizons)
                 .add("Odyssey=" + Odyssey)
                 .add("Ship='" + Ship + "'")
+                .add("shipLocalised='" + shipLocalised + "'")
                 .add("ShipID=" + ShipID)
                 .add("ShipName='" + ShipName + "'")
                 .add("ShipIdent='" + ShipIdent + "'")
