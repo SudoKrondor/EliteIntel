@@ -44,7 +44,7 @@ class AiActionMapGeneratorTest {
     }
 
     /**
-     * Frozen snapshot of the built-in action ids the generator must produce on EN (182 ids).
+     * Frozen snapshot of the built-in action ids the generator must produce on EN (181 ids).
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
      * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
      * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
@@ -58,7 +58,6 @@ class AiActionMapGeneratorTest {
             "calculate_trade_route",
             "cancel_navigation",
             "cancel_trade_route",
-            "check_missing_key_bindings",
             "clear_active_missions",
             "clear_mining_targets",
             "clear_neutron_route",
