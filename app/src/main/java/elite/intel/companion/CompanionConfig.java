@@ -42,6 +42,8 @@ public final class CompanionConfig {
     private static final double SEMANTIC_SEARCH_IN_MEMORY_FLOOR = 0.80;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
     private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
+    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
+    private static final int MEMORY_ENTRY_MAX_CHARS = 200;
 
     private CompanionConfig() {
     }
@@ -124,5 +126,10 @@ public final class CompanionConfig {
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
     public static double semanticDedupFloor() {
         return SEMANTIC_DEDUP_FLOOR;
+    }
+
+    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
+    public static int memoryEntryMaxChars() {
+        return MEMORY_ENTRY_MAX_CHARS;
     }
 }

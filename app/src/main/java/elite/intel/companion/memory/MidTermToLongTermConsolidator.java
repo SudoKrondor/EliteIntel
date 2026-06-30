@@ -64,8 +64,11 @@ public final class MidTermToLongTermConsolidator implements MidTermEvictionListe
 
     @Override
     public void onEvicted(MemoryEntry entry) {
-        // Importance routes the entry: MAX is pinned verbatim into long-term right away (never compressed and
-        // never invisible in the buffering window), LOW is dropped, and HIGH/NORMAL buffer for summarization.
+        // Importance routes the entry: MAX is pinned verbatim into long-term right away (never summarized here
+        // and never invisible in the buffering window), LOW is dropped, and HIGH/NORMAL buffer for
+        // summarization. "Verbatim" is within the entry size cap: an over-long line (MAX included) was already
+        // gist-compressed at write time by the gateway (CompanionConfig.memoryEntryMaxChars), so it never
+        // reaches here at full length.
         switch (entry.importance()) {
             case MAX -> {
                 memoryGateway.addLongTermPinned(entry);

@@ -334,6 +334,30 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void oversizedWriteIsHandedToTheListenerAndNotStored() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        java.util.List<MemoryEntry> handed = new java.util.ArrayList<>();
+        gateway.setOversizedMemoryListener(handed::add);
+        String longText = "x".repeat(CompanionConfig.memoryEntryMaxChars() + 1);
+
+        gateway.write(entry(ConversationTopic.SOCIAL, longText));
+
+        assertEquals(1, handed.size());
+        assertEquals(longText, handed.get(0).content(), "the original (uncompressed) entry is handed off");
+        assertTrue(gateway.readShortTermTimeline().isEmpty(), "the over-long entry is not stored as-is");
+    }
+
+    @Test
+    void writeAtTheSizeLimitIsStoredNormally() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        String atLimit = "y".repeat(CompanionConfig.memoryEntryMaxChars());
+
+        gateway.write(entry(ConversationTopic.SOCIAL, atLimit));
+
+        assertEquals(1, gateway.readShortTermTimeline().size(), "an entry at the limit is stored");
+    }
+
+    @Test
     void heuristicEstimatorIsConservativeAndNonNegative() {
         TokenEstimator estimator = new HeuristicTokenEstimator();
         assertEquals(0, estimator.estimate(null));

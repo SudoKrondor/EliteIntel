@@ -39,6 +39,9 @@ public final class SessionMemoryGateway implements MemoryGateway {
     // Hands mid-term overflow to the consolidator; no-op until wired at subsystem start. The gateway stays
     // mechanical (it never calls the LLM) - it only forwards evicted entries.
     private volatile MidTermEvictionListener evictionListener = entry -> {};
+    // Hands an over-long write off for silent compression; no-op until wired at subsystem start (then the
+    // entry is simply dropped). The gateway never calls the LLM itself - the listener owns that.
+    private volatile OversizedMemoryListener oversizedListener = entry -> {};
 
     /** Production constructor: heuristic token estimator and the process-wide shared semantic matcher. */
     public SessionMemoryGateway() {
@@ -71,8 +74,19 @@ public final class SessionMemoryGateway implements MemoryGateway {
         this.evictionListener = listener == null ? entry -> {} : listener;
     }
 
+    /** Registers the handler that compresses an over-long write; defaults to a no-op (the entry is dropped). */
+    public void setOversizedMemoryListener(OversizedMemoryListener listener) {
+        this.oversizedListener = listener == null ? entry -> {} : listener;
+    }
+
     @Override
     public synchronized void write(MemoryEntry entry) {
+        // Too long to store as-is (it would bloat the prompt timeline): hand it off for silent LLM compression,
+        // which re-writes a short gist here. Checked before embedding/dedup so a doomed long entry costs nothing.
+        if (entry.content() != null && entry.content().length() > CompanionConfig.memoryEntryMaxChars()) {
+            oversizedListener.onOversized(entry);
+            return;
+        }
         // Stored lower-cased: case carries no recall signal (search lower-cases anyway) and it keeps the
         // inlined timeline uniform. The meaning-vector is computed here, once, on the lower-cased text so
         // semantic recall reads it for free. New entries land in short-term first; whatever overflows the
