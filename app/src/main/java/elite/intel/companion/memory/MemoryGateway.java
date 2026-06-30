@@ -39,16 +39,6 @@ public interface MemoryGateway {
      */
     List<String> recallMatching(String query, int limit);
 
-    /**
-     * The always-on working set: the most recent important (HIGH/MAX) mid-term entries, for inlining into the
-     * prompt so durable facts that aged out of short-term stay visible without a recall. Short-term is not
-     * included - it is already inlined whole and searched by {@link #recallMatching}. Returned oldest-to-newest.
-     *
-     * @param maxEntries  cap on entries returned
-     * @param tokenBudget soft token ceiling for the slice (at least the newest entry is always kept)
-     */
-    List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget);
-
     /** Cheap index metadata for the prompt (no content loaded). */
     MemoryAvailabilitySnapshot indexes();
 

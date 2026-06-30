@@ -127,6 +127,16 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void recallMatchingSearchesTheLongTermSummary() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway();
+        gateway.replaceLongTermSummary("commander has been mining in Borann for hours");
+
+        // The summary is no longer inlined into every prompt; search_in_memory must reach it, labelled [SYSTEM].
+        assertEquals(List.of("[SYSTEM] commander has been mining in Borann for hours"),
+                gateway.recallMatching("Borann", 10));
+    }
+
+    @Test
     void midTermOverflowIsHandedToTheEvictionListener() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
         List<MemoryEntry> evicted = new java.util.ArrayList<>();
@@ -152,28 +162,6 @@ class SessionMemoryGatewayTest {
         // The two oldest were evicted into mid-term; short-term recall does not see them, topic recall does.
         List<MemoryEntry> recalled = gateway.recallTopicMemory(ConversationTopic.NAVIGATION, null, 10);
         assertEquals(List.of("nav-0", "nav-1"), recalled.stream().map(MemoryEntry::content).toList());
-    }
-
-    @Test
-    void importantWorkingSetReturnsHighAndMaxFromMidTermOnly() {
-        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
-        // Important facts first (the oldest), so the short-term overflow pushes them down into mid-term.
-        gateway.write(entry(ConversationTopic.COMBAT, "abort word is granite", MemoryImportance.MAX));
-        gateway.write(entry(ConversationTopic.COMBAT, "focus the shield generator", MemoryImportance.HIGH));
-        gateway.write(entry(ConversationTopic.SOCIAL, "nice weather today", MemoryImportance.NORMAL));
-        // Enough newer NORMAL entries to evict the three above out of short-term into mid-term.
-        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
-            gateway.write(entry(ConversationTopic.NAVIGATION, "telemetry-" + i, MemoryImportance.NORMAL));
-        }
-
-        List<String> working = gateway.importantWorkingSet(8, 1000).stream()
-                .map(MemoryEntry::content).toList();
-
-        // Only HIGH/MAX mid-term entries surface; NORMAL (and the still-inlined short-term) do not.
-        assertTrue(working.contains("abort word is granite"));
-        assertTrue(working.contains("focus the shield generator"));
-        assertFalse(working.contains("nice weather today"));
-        assertEquals(2, working.size());
     }
 
     @Test
@@ -212,12 +200,16 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
-    void recallMatchingIsInflectionTolerantAcrossWordForms() {
+    void recallMatchingMatchesWholeWordsNotSharedStems() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
-        gateway.write(entry(ConversationTopic.NAVIGATION, "идём к звезде sol"));
-        // Query uses a different inflected form ("звезду" vs stored "звезде"); the shared tolerant matcher still
-        // recalls it, where the old prefix-only rule would have missed the changed ending.
-        assertEquals(List.of("[COMMANDER] идём к звезде sol"), gateway.recallMatching("звезду", 10));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "код стыковки сьерра девять четыре"));
+        gateway.write(entry(ConversationTopic.COMBAT, "кодовое слово отход гранит"));
+
+        // Word recall is exact now that meaning lives in the vector: the query token "код" must not fuzzily
+        // match "кодовое", so the unrelated codeword fact is not dragged in by a shared stem. (Inflected and
+        // paraphrased recall is the semantic vector's job, which is off in this word-only unit test.)
+        assertEquals(List.of("[COMMANDER] код стыковки сьерра девять четыре"),
+                gateway.recallMatching("код стыковки", 10));
     }
 
     @Test
@@ -300,6 +292,27 @@ class SessionMemoryGatewayTest {
 
         assertEquals(List.of("[COMMANDER] granite deposits ahead"),
                 gateway.recallMatching("granite", 10));
+    }
+
+    @Test
+    void recallMatchingKeepsEverySemanticMatchAboveTheFloorNotJustTheClosest() {
+        // Two facts both clear the meaning floor at different closeness (10 degrees ~0.985 and 29 degrees
+        // ~0.875); recall must return BOTH, because a compound question needs the weaker one too. Only the
+        // sub-floor distractor (55 degrees ~0.573) drops out. This guards against a relative "within a margin
+        // of the best match" cut, which would discard the 29-degree fact sitting behind the 10-degree one.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "alpha", 0.0,
+                "bravo", 10.0,
+                "delta", 29.0,
+                "charlie", 55.0));
+        gateway.write(entry(ConversationTopic.COMBAT, "bravo"));
+        gateway.write(entry(ConversationTopic.MINING, "delta"));
+        gateway.write(entry(ConversationTopic.TRADE, "charlie"));
+
+        List<String> recalled = gateway.recallMatching("alpha", 10);
+        assertTrue(recalled.contains("[COMMANDER] bravo"));
+        assertTrue(recalled.contains("[COMMANDER] delta"));
+        assertFalse(recalled.contains("[COMMANDER] charlie"));
     }
 
     @Test

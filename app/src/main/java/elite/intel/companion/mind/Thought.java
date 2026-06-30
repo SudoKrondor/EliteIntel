@@ -3,7 +3,6 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -203,26 +202,7 @@ public abstract class Thought {
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
-                importantContext(),
-                ctx.memoryGateway().indexes(),
-                ctx.memoryGateway().longTermSummary());
-    }
-
-    /**
-     * The always-on "important to remember" context inlined ahead of the timeline: the bounded {@code HIGH}/
-     * {@code MAX} mid-term working-set. Short-term is excluded - it is already inlined whole and searched - so
-     * nothing is duplicated. Pinned {@code MAX} facts are deliberately NOT inlined here: the archive is
-     * unbounded, so it is surfaced through {@code search_in_memory} (importance-ranked, capped) instead of
-     * bloating every prompt. COMMANDER-only; empty for other sources.
-     */
-    private List<MemoryEntry> importantContext() {
-        // WHY: only the COMMANDER prompt inlines this block (composeNarration discards it), so skip the lookup
-        // entirely for other sources rather than building a list that will be thrown away.
-        if (source != ThoughtSource.COMMANDER) {
-            return List.of();
-        }
-        return ctx.memoryGateway().importantWorkingSet(
-                CompanionConfig.workingSetSize(), CompanionConfig.workingSetTokenBudget());
+                ctx.memoryGateway().indexes());
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */

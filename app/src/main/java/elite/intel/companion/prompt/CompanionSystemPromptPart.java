@@ -11,7 +11,7 @@ import elite.intel.session.SystemSession;
 /**
  * Single owner of the companion's static system-prompt section (persona, tool-calling rules, memory
  * rules, source rules, language rule). It produces only this part; {@link PromptComposer} assembles the full
- * system prompt around it (topic enum, memory indexes, summary, timeline, current input).
+ * system prompt around it (topic enum, memory indexes, Visible context, current input).
  * <p>
  * The instructions are authored in English (the most token-efficient and instruction-reliable language,
  * and a single cache prefix across all commander languages); only the language rule injects the
@@ -29,16 +29,19 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String COMMANDER_PERSONA = """
             You may chat and banter freely, but state any game fact only from a function result, the \
-            timeline, or your memory.
+            Visible context, or your memory.
             """;
 
     private static final String MEMORY_RULES = """
-            [COMMANDER] lines in the timeline below are the commander's own words; [%s] lines are your own \
-            earlier replies - both are reliable.
-            - Answer already in the timeline -> answer from it directly.
-            - Something set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
-            that is NOT in the timeline -> call search_in_memory first and answer from its result; never \
-            invent it or ask the commander to decide it again.
+            The Visible context below is only the most recent conversation: [COMMANDER] lines are the \
+            commander's own words, [%s] lines are your own earlier replies - both reliable, but it holds \
+            only the last few turns.
+            - Answer already in the Visible context -> answer from it directly.
+            - Anything set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
+            that is NOT in the Visible context -> call search_in_memory first and answer from its result. \
+            What it returns is your own memory and is reliable: if the answer is there, give it; never reply \
+            that it is not in memory, and never ask the commander to decide it again, once a search has \
+            returned it.
             - Current state of the ship or galaxy (cargo, fuel, location, market, contacts, status, \
             distances) -> call the matching query function; that lives in the game, not your memory.
             - Could be either -> do both.

@@ -59,6 +59,7 @@ class MemoryEvalTest {
             say("тихо тут, красота, как я люблю"),
             say("если зажмут пираты, кодовое слово на отход — Гранит, заруби на носу"),
             event("ShipTargeted", "просканирован разыскиваемый пират по имени Варгас"),
+            event("Bounty", "получена награда за уничтожение пирата по кличке Шакал"),
             ask("повтори, какое кодовое слово на отход?", "гранит"),  // ещё горячо
             say("пока мы тут, наша цель по добыче — низкотемпературные алмазы, остальное мимо"),
             ask("напомни нашу цель по добыче", "алмазы"),  // ещё горячо
@@ -85,6 +86,7 @@ class MemoryEvalTest {
             event("Docked", "пристыковались к станции Джеймсон Мемориал"),
             say("идём не главными трассами, а тихой дорогой, зовём её Объезд"),
             event("SAASignalsFound", "обнаружены биосигналы рода Светляк на планете"),
+            event("FSSSignalDiscovered", "засечён сигнал бедствия с маяка Циклоп"),
             say("и наконец окрестили корабль — Странствующий Альбатрос"),
             say("связь держим тихо до самой станции"));
 
@@ -120,16 +122,25 @@ class MemoryEvalTest {
     private final List<String> queryProbes = List.of(
             "сколько у нас топлива", "что сейчас в трюме", "где мы находимся", "какой уровень безопасности в системе");
 
-    // 8 keywords planted only by events, to check each event landed in memory as a readable line (memorySummary).
+    // 10 keywords planted only by events, to check each event landed in memory as a readable line (memorySummary).
     private final List<String> eventKeywords = List.of(
-            "вольф", "варгас", "платин", "картель", "tectonicas", "осми", "джеймсон", "светляк");
+            "вольф", "варгас", "шакал", "платин", "картель", "tectonicas", "осми", "джеймсон", "светляк", "циклоп");
 
-    // Event recall: facts that reached memory ONLY through a game event (no commander statement). The arrival
-    // (FSDJump) is an A-category event - voiced and remembered via narration in production; the docking (Docked)
-    // is a C-category event - now remembered as a readable EventThought line. Vega should recall both unprompted.
+    // 10 event-recall probes: facts that reached memory ONLY through a game event (no commander statement), one
+    // per scripted event. The arrival (FSDJump) is an A-category event - voiced and remembered via narration in
+    // production; the rest are C-category events - remembered as readable EventThought lines. Vega should recall
+    // each unprompted from memory.
     private final List<Turn> eventRecallProbes = List.of(
-            ask("в какую систему мы недавно прибыли?", "вольф"),     // A: FSDJump
-            ask("к какой станции мы пристыковались?", "джеймсон"));  // C: Docked
+            ask("в какую систему мы недавно прибыли?", "вольф"),            // A: FSDJump
+            ask("как звали просканированного пирата?", "варгас"),           // ShipTargeted
+            ask("за уничтожение какого пирата мы получили награду?", "шакал"), // Bounty
+            ask("чем богат найденный астероид?", "платин"),                // ProspectedAsteroid
+            ask("против какой фракции у нас боевая миссия?", "картель"),    // MissionAccepted
+            ask("какой образец организма мы взяли?", "tectonicas"),         // ScanOrganic
+            ask("что мы продали на рынке?", "осми"),                       // MarketSell
+            ask("к какой станции мы пристыковались?", "джеймсон"),          // Docked
+            ask("биосигналы какого рода мы обнаружили?", "светляк"),        // SAASignalsFound
+            ask("сигнал бедствия с какого маяка мы засекли?", "циклоп"));   // FSSSignalDiscovered
 
     // 10 idle-banter probes carrying no fact, name or command - the consciousness should rate each LOW.
     private final List<String> lowProbes = List.of(
@@ -239,8 +250,8 @@ class MemoryEvalTest {
             block.append(String.format("ключ события '%s' | tier=%s%n", kw, tier));
         }
 
-        // Phase 4b: recall of facts that arrived only via an event (A: the FSDJump arrival, C: the Docked station).
-        block.append("\n---- recall событий (A: прыжок, C: стыковка) ----\n");
+        // Phase 4b: recall of facts that arrived only via an event (one probe per scripted event).
+        block.append("\n---- recall событий (по одному на событие) ----\n");
         int eventRecallHits = 0;
         for (Turn probe : eventRecallProbes) {
             h.beginTurn();
@@ -292,7 +303,7 @@ class MemoryEvalTest {
         block.append(String.format("recall после вытеснения: %d / %d (search_in_memory вызван %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("связность (пары фактов): %d / %d%n", coherenceHits, coherenceProbes.size()));
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
-        block.append(String.format("recall событий (A/C):  %d / %d%n", eventRecallHits, eventRecallProbes.size()));
+        block.append(String.format("recall событий:         %d / %d%n", eventRecallHits, eventRecallProbes.size()));
         block.append(String.format("маршрутизация:         %d / %d%n", routedOk, queryProbes.size()));
         block.append(String.format("явное «запиши/запомни» -> MAX: %d (из 3)%n", maxAssigned));
         block.append(String.format("болтовня -> LOW:       %d / %d%n", lowHits, lowProbes.size()));

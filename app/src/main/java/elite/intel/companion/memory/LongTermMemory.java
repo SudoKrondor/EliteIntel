@@ -7,10 +7,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Long-term memory area in two parts: a single session-wide compact summary of old, evicted mid-term memory
- * (always added to the prompt; replaced atomically by {@code MidTermToLongTermConsolidator}), and an archive
- * of pinned {@code MAX}-importance facts carried verbatim - never summarized, never dropped (the commander
- * explicitly asked to remember them). The archive is surfaced through {@code search_in_memory}
- * (importance-ranked, capped), NOT force-fed into every prompt, so it can grow without bloating the context.
+ * (replaced atomically by {@code MidTermToLongTermConsolidator}), and an archive of pinned {@code MAX}-importance
+ * facts carried verbatim - never summarized, never dropped (the commander explicitly asked to remember them).
+ * Neither is force-fed into every prompt: both the summary and the archive are surfaced through
+ * {@code search_in_memory} on demand, so they can grow without bloating the context.
  * Package-private internal of {@link SessionMemoryGateway}.
  */
 class LongTermMemory {

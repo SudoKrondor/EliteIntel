@@ -164,7 +164,6 @@ class SystemFunctionHandleTest {
             recalledQuery = query;
             return matchingItems;
         }
-        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { throw new UnsupportedOperationException(); }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }

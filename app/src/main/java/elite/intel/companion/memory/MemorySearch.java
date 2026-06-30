@@ -5,7 +5,6 @@ import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.VectorMath;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.prompt.CompanionWordMatch;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -39,17 +38,19 @@ final class MemorySearch {
     }
 
     /**
-     * Ranks the three memory areas against {@code query} and returns at most {@code limit} matches as labelled
+     * Ranks the memory areas against {@code query} and returns at most {@code limit} matches as labelled
      * text. A given entry lives in exactly one of short-term / mid-term, so the two never double-count.
      *
      * @param shortTerm     the hot timeline entries
      * @param midTerm       mid-term entries across all topics
+     * @param summary       the session long-term summary as searchable entries (empty when none consolidated)
      * @param archive       pinned MAX facts (capped by {@link CompanionMemoryLimits#ARCHIVE_RECALL_LIMIT})
      * @param matcherSource supplies the shared semantic matcher, or null when semantic search is unavailable;
      *                      consulted only for a non-blank query, so a blank query never loads the model
      */
     static List<String> recall(String query, int limit, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
-                               List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource) {
+                               List<MemoryEntry> summary, List<MemoryEntry> archive,
+                               Supplier<SemanticPhraseMatcher> matcherSource) {
         if (limit <= 0) {
             return List.of();
         }
@@ -65,6 +66,7 @@ final class MemorySearch {
         List<Scored> scored = new ArrayList<>();
         collectScored(scored, false, shortTerm, queryTokens, blank, queryVector);
         collectScored(scored, false, midTerm, queryTokens, blank, queryVector);
+        collectScored(scored, false, summary, queryTokens, blank, queryVector);
         collectScored(scored, true, archive, queryTokens, blank, queryVector);
 
         List<Scored> eligible = dedupByMeaning(filterEligible(scored, blank, semantic));
@@ -80,12 +82,19 @@ final class MemorySearch {
                 && VectorMath.cosine(a.embedding(), b.embedding()) >= floor;
     }
 
-    /** Keeps an entry if it matches by words, or (when semantic search is on) is close enough in meaning. */
+    /**
+     * Keeps an entry if it matches by words (exact lexical hit - always reliable, e.g. a name or code), or
+     * (when semantic search is on) is at or above the absolute meaning floor. The floor is the only semantic
+     * gate: recall must be free to return several distinct facts (a compound question needs both), so a
+     * relative "within a margin of the best match" cut is deliberately avoided - it would drop the weaker but
+     * still-relevant second fact and leave the model to guess it.
+     */
     private static List<Scored> filterEligible(List<Scored> scored, boolean blank, boolean semantic) {
         double floor = CompanionConfig.semanticSearchInMemoryFloor();
         List<Scored> eligible = new ArrayList<>();
         for (Scored s : scored) {
-            if (blank || s.wordScore() > 0 || (semantic && s.semScore() >= floor)) {
+            boolean semanticHit = semantic && !Double.isNaN(s.semScore()) && s.semScore() >= floor;
+            if (blank || s.wordScore() > 0 || semanticHit) {
                 eligible.add(s);
             }
         }
@@ -257,21 +266,19 @@ final class MemorySearch {
     }
 
     /**
-     * The relevance score of an entry: how many distinct query tokens have an inflection-tolerant match in the
-     * content. Two words are compared with the companion's shared rule ({@link CompanionWordMatch}): the same
-     * word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
-     * ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Over-recall is cheap here, so the
-     * tolerant rule is used for every language.
+     * The lexical relevance score of an entry: how many distinct query tokens appear verbatim in the content.
+     * Matching is exact (token equality), not inflection-tolerant: word forms, paraphrases and cross-lingual
+     * meaning are recalled by the semantic vector instead (see {@link #recall}), while exact word-overlap keeps
+     * the proper nouns and codes (names, callsigns, docking codes) that embeddings can rank weakly. The earlier
+     * fuzzy rule made short stems spuriously match unrelated words ("код" matched "кодовое"), surfacing the
+     * wrong facts; recall no longer fuzzes letters now that meaning is carried by a vector.
      */
     private static int overlap(Set<String> queryTokens, String content) {
         Set<String> contentTokens = tokens(content);
         int score = 0;
         for (String q : queryTokens) {
-            for (String c : contentTokens) {
-                if (CompanionWordMatch.similar(q, c)) {
-                    score++;
-                    break; // count each query token at most once
-                }
+            if (contentTokens.contains(q)) {
+                score++;
             }
         }
         return score;

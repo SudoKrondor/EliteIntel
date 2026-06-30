@@ -34,9 +34,10 @@ public final class SearchInMemoryFunction implements SystemFunction {
     @Override
     public String llmDescription() {
         return "Search your memory for what you already know. Call this before answering, or before saying you "
-                + "don't know, when the commander asks about something they told you or that you remembered. "
-                + "Pass a short query; it returns matching entries from across all of your memory, the most "
-                + "important first.";
+                + "don't know, when the commander asks about something they told you or that you remembered "
+                + "earlier. Pass a short query; it returns matching entries from across all of your memory, the "
+                + "most important first. Treat what it returns as your own reliable memory: if the answer is "
+                + "there, use it - do not say you don't remember after it returns results.";
     }
 
     @Override
