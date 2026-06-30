@@ -3,9 +3,13 @@ package elite.intel.companion.llm;
 import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.ProviderEnum;
 import elite.intel.ai.brain.LocalLlmProvider;
+import elite.intel.ai.brain.inference.anthropic.AnthropicClient;
+import elite.intel.ai.brain.inference.deepseek.DeepSeekClient;
+import elite.intel.ai.brain.inference.gemini.GeminiClient;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.ai.brain.inference.openai.OpenAiClient;
+import elite.intel.ai.brain.inference.xai.GrokClient;
 import elite.intel.session.SystemSession;
 
 import java.util.Collection;
@@ -14,9 +18,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Builds the {@link LlmGateway} for the active provider. Companion mode is built on the OpenAI-compatible
- * tool-calling protocol ({@link OpenAiCompatibleLlmAdapter}), but providers are wired one at a time. The two
- * maps below are the single source of truth for <em>both</em> gateway construction and the user-facing
+ * Builds the {@link LlmGateway} for the active provider. Most providers ride the OpenAI-compatible
+ * tool-calling protocol ({@link OpenAiCompatibleLlmAdapter}); Anthropic ({@link AnthropicLlmAdapter}) and
+ * Gemini ({@link GeminiLlmAdapter}) have native adapters. Providers are wired one at a time: the two maps
+ * below are the single source of truth for <em>both</em> gateway construction and the user-facing
  * "unsupported provider" message (each entry carries its display label), so adding a provider in one place
  * keeps the supported-list message accurate.
  * <p>
@@ -33,7 +38,15 @@ public final class CompanionLlmGatewayFactory {
             ProviderEnum.MISTRAL, new WiredProvider("Mistral", session -> new CompanionLlmGateway(
                     new MistralLlmAdapter(), body -> MistralClient.getInstance().sendJsonRequest(body))),
             ProviderEnum.OPENAI, new WiredProvider("OpenAI", session -> new CompanionLlmGateway(
-                    new OpenAiLlmAdapter(), body -> OpenAiClient.getInstance().sendJsonRequest(body))));
+                    new OpenAiLlmAdapter(), body -> OpenAiClient.getInstance().sendJsonRequest(body))),
+            ProviderEnum.GROK, new WiredProvider("Grok", session -> new CompanionLlmGateway(
+                    new GrokLlmAdapter(), body -> GrokClient.getInstance().sendJsonRequest(body))),
+            ProviderEnum.DEEPSEEK, new WiredProvider("DeepSeek", session -> new CompanionLlmGateway(
+                    new DeepSeekLlmAdapter(), body -> DeepSeekClient.getInstance().sendJsonRequest(body))),
+            ProviderEnum.ANTHROPIC, new WiredProvider("Claude", session -> new CompanionLlmGateway(
+                    new AnthropicLlmAdapter(), body -> AnthropicClient.getInstance().sendJsonRequest(body))),
+            ProviderEnum.GEMINI, new WiredProvider("Gemini", session -> new CompanionLlmGateway(
+                    new GeminiLlmAdapter(), body -> GeminiClient.getInstance().sendJsonRequest(body, GeminiClient.MODEL_FLASH))));
 
     /**
      * Local providers with a wired companion adapter. Only LM Studio (OpenAI-compatible,

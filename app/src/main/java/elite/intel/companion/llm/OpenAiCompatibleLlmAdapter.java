@@ -4,13 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.llm.*;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.ArrayList;
@@ -116,7 +110,8 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             if (tool.description() != null && !tool.description().isBlank()) {
                 function.addProperty("description", tool.description()); // optional field: omit when empty
             }
-            function.add("parameters", renderParameterSchema(tool.parameters()));
+            // Standard JSON-Schema object, shared with the Anthropic adapter (see ToolParameterSchema).
+            function.add("parameters", ToolParameterSchema.jsonSchemaObject(tool.parameters()));
 
             JsonObject entry = new JsonObject();
             entry.addProperty("type", "function");
@@ -124,54 +119,6 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             array.add(entry);
         }
         return array;
-    }
-
-    /** JSON-Schema object for a tool's parameters; {@code ActionParameterSpec} types are already JSON types. */
-    private JsonObject renderParameterSchema(List<ActionParameterSpec> parameters) {
-        JsonObject schema = new JsonObject();
-        schema.addProperty("type", "object");
-        JsonObject properties = new JsonObject();
-        JsonArray required = new JsonArray();
-        for (ActionParameterSpec p : parameters) {
-            JsonObject prop = new JsonObject();
-            prop.addProperty("type", p.getType());
-            prop.addProperty("description", describeParameter(p));
-            // A closed value set becomes a JSON-Schema enum so the model is constrained to a valid value.
-            List<String> enumValues = p.getEnumValues();
-            if (!enumValues.isEmpty()) {
-                JsonArray enumArray = new JsonArray();
-                enumValues.forEach(enumArray::add);
-                prop.add("enum", enumArray);
-            }
-            properties.add(p.getName(), prop);
-            if (p.isRequired()) {
-                required.add(p.getName());
-            }
-        }
-        schema.add("properties", properties);
-        if (!required.isEmpty()) {
-            schema.add("required", required);
-        }
-        return schema;
-    }
-
-    /**
-     * Folds a parameter's examples and extraction hint into its schema {@code description}.
-     * OpenAI-style function-calling schemas have no dedicated fields for these, so - mirroring the
-     * legacy {@link elite.intel.ai.brain.actions.command.CommandParamRules} format - they are appended
-     * to the description; otherwise the companion model never sees them (e.g. the "'target drive' -> drive"
-     * hint that the legacy action-extraction prompt relies on).
-     */
-    private static String describeParameter(ActionParameterSpec p) {
-        StringBuilder description = new StringBuilder(p.getDescription());
-        List<String> examples = p.getExamples();
-        if (!examples.isEmpty()) {
-            description.append(" E.g.: ").append(String.join(", ", examples));
-        }
-        if (p.getExtractionHint() != null && !p.getExtractionHint().isBlank()) {
-            description.append(" Hint: ").append(p.getExtractionHint());
-        }
-        return description.toString().strip();
     }
 
     @Override

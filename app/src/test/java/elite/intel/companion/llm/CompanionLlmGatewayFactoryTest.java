@@ -13,14 +13,18 @@ class CompanionLlmGatewayFactoryTest {
 
     @Test
     void unsupportedMessageNamesConfiguredProviderAndTheSupportedOnes() {
-        // ANTHROPIC is a known provider that is not wired yet, so it stands in for any unsupported one.
-        String message = CompanionLlmGatewayFactory.unsupportedMessage("ANTHROPIC");
+        // OLLAMA is a known LLM provider with no wired companion adapter, so it stands in for any unsupported one.
+        String message = CompanionLlmGatewayFactory.unsupportedMessage("OLLAMA");
 
         // The provider the user actually configured is named, so they know what was rejected.
-        assertTrue(message.contains("ANTHROPIC"), message);
+        assertTrue(message.contains("OLLAMA"), message);
         // The currently-wired providers are listed dynamically by their friendly labels (cloud + local).
         assertTrue(message.contains("Mistral"), message);
         assertTrue(message.contains("OpenAI"), message);
+        assertTrue(message.contains("Grok"), message);
+        assertTrue(message.contains("DeepSeek"), message);
+        assertTrue(message.contains("Claude"), message);
+        assertTrue(message.contains("Gemini"), message);
         assertTrue(message.contains("LM Studio (Gemma 4)"), message);
     }
 }
