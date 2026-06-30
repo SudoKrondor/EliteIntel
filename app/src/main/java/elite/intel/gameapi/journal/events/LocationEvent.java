@@ -186,6 +186,17 @@ public class LocationEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        if (starSystem == null || starSystem.isBlank()) {
+            return "";
+        }
+        if (docked && stationName != null && !stationName.isBlank()) {
+            return "in " + starSystem + ", docked at " + stationName;
+        }
+        return body == null || body.isBlank() ? "in " + starSystem : "in " + starSystem + ", near " + body;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -454,6 +454,9 @@ public final class CompanionEvalHarness {
             @Override public BaseEvent.Importance importance() {
                 return importance;
             }
+            @Override public String memorySummary() {
+                return summary; // the readable line EventThought records (mirrors a real event's memorySummary)
+            }
             @Override public String toJson() {
                 JsonObject o = new JsonObject();
                 o.addProperty("event", type);

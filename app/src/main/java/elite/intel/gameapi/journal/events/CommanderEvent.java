@@ -39,6 +39,11 @@ public class CommanderEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return Name == null || Name.isBlank() ? "" : "our commander is " + Name;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

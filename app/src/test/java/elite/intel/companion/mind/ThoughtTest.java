@@ -29,7 +29,6 @@ import elite.intel.companion.tools.NothingToDoFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -233,15 +232,14 @@ class ThoughtTest {
     }
 
     @Test
-    void highEventThoughtRecordsMemoryWithoutEngagingLlm() {
-        // HIGH importance: recorded to memory under its static topic and ends - no LLM, no speech, no tools
-        // (spontaneous event speech belongs to NarrationThought now).
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION,
-                BaseEvent.Importance.HIGH, ctx()).run();
+    void eventThoughtWithSummaryRecordsMemoryWithoutEngagingLlm() {
+        // An event that provides a readable summary is recorded under its static topic and ends - no LLM, no
+        // speech, no tools (spontaneous event speech belongs to NarrationThought now).
+        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
 
         assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
         assertTrue(speech.requests.isEmpty(), "EVENT thought never speaks");
-        assertEquals(1, memory.writes.size(), "the HIGH event is recorded once");
+        assertEquals(1, memory.writes.size(), "the event summary is recorded once");
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.EVENT, input.source());
         assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
@@ -249,14 +247,13 @@ class ThoughtTest {
     }
 
     @Test
-    void normalEventThoughtIsDroppedAndNotRecorded() {
-        // NORMAL importance: dropped entirely - not recorded (would clutter the timeline), no LLM, no speech.
-        Thought.event(Urgency.NORMAL, "docked at station", ConversationTopic.NAVIGATION,
-                BaseEvent.Importance.NORMAL, ctx()).run();
+    void eventThoughtWithBlankSummaryRecordsNothing() {
+        // No summary (the event opted out of being remembered): nothing is recorded, no LLM, no speech.
+        Thought.event(Urgency.NORMAL, "", ConversationTopic.NAVIGATION, ctx()).run();
 
-        assertTrue(llm.requests.isEmpty(), "NORMAL event must not engage the LLM");
-        assertTrue(speech.requests.isEmpty(), "NORMAL event is never spoken");
-        assertTrue(memory.writes.isEmpty(), "NORMAL event is not retained in memory");
+        assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
+        assertTrue(speech.requests.isEmpty(), "EVENT thought is never spoken");
+        assertTrue(memory.writes.isEmpty(), "an event with no summary is not retained in memory");
     }
 
     @Test

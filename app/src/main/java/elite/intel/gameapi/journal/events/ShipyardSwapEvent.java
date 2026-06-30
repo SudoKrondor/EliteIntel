@@ -53,6 +53,12 @@ public class ShipyardSwapEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String ship = shipTypeLocalised != null && !shipTypeLocalised.isBlank() ? shipTypeLocalised : shipType;
+        return ship == null || ship.isBlank() ? "" : "switched to the " + ship;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -47,6 +47,11 @@ public class PowerplayEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return power == null || power.isBlank() ? "" : "pledged to " + power + ", rank " + rank + ", " + merits + " merits";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -4,7 +4,6 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.memory.MemoryImportance;
-import elite.intel.gameapi.journal.events.BaseEvent;
 
 /**
  * A thought born from a filtered game event. It is purely a knowledge channel: it records the event to
@@ -13,29 +12,27 @@ import elite.intel.gameapi.journal.events.BaseEvent;
  * COMPANION_CURATED_NARRATION_PROPOSAL.md §2.1/§2.2). Its memory tag is fixed at birth from the static
  * event-type map; it never moves the global conversation topic.
  * <p>
- * Only {@code HIGH}-importance events are retained: they are few and worth remembering. {@code NORMAL} events
- * are dropped (not recorded) so high-frequency telemetry does not clutter the timeline; {@code LOW} never
- * reaches here - the {@code GameEventFilter} drops it upstream.
+ * An event is remembered only when it provides a readable {@code memorySummary()} (carried here as the
+ * {@code currentInput}): that line is the event's lived-experience record. An event with no summary writes
+ * nothing - this is the opt-in that keeps high-frequency telemetry out of the timeline, in place of the older
+ * importance gate. {@code LOW} events never reach here - the {@code GameEventFilter} drops them upstream.
  */
 public final class EventThought extends Thought {
 
     private final ConversationTopic eventTopic;
-    private final BaseEvent.Importance importance;
 
-    EventThought(Urgency urgency, String summary, ConversationTopic eventTopic,
-                 BaseEvent.Importance importance, ThoughtContext ctx) {
+    EventThought(Urgency urgency, String summary, ConversationTopic eventTopic, ThoughtContext ctx) {
         super(ThoughtSource.EVENT, urgency, summary, ctx);
         this.eventTopic = eventTopic;
-        this.importance = importance;
     }
 
     /**
-     * Memory-only: a {@code HIGH} event is recorded under its static topic; a {@code NORMAL} event is dropped.
-     * The LLM is never engaged and nothing is spoken.
+     * Memory-only: records the event's readable summary under its static topic, or does nothing when the event
+     * provides no summary. The LLM is never engaged and nothing is spoken.
      */
     @Override
     public void run() {
-        if (importance == BaseEvent.Importance.HIGH) {
+        if (currentInput != null && !currentInput.isBlank()) {
             recordCurrentInput();
         }
     }

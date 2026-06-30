@@ -2,7 +2,6 @@ package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
-import elite.intel.companion.input.EventInputFormatter;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
@@ -173,10 +172,9 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. The event's
-     * {@link BaseEvent#importance()} is forwarded to the thought (a forwarded property, not an interpretation
-     * of meaning): the EVENT thought is memory-only - a {@code HIGH} event is recorded, a {@code NORMAL} one
-     * is dropped, and the LLM is never engaged (see {@code EventThought}).
+     * Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. The EVENT
+     * thought is memory-only: it records the event's readable {@link BaseEvent#memorySummary()} when non-blank
+     * (an event with no summary writes nothing), and the LLM is never engaged (see {@code EventThought}).
      */
     public void submitEvent(BaseEvent event) {
         if (event == null) {
@@ -184,7 +182,7 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         }
         Urgency urgency = urgencyPolicy.forEvent(event);
         enqueue(ThoughtSource.EVENT,
-                Thought.event(urgency, summarize(event), EventTopicMap.topicFor(event), event.importance(), ctx),
+                Thought.event(urgency, event.memorySummary(), EventTopicMap.topicFor(event), ctx),
                 urgency);
     }
 
@@ -318,11 +316,6 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     private void interruptIfStuck(ThoughtLane lane) {
         lane.interruptStuck(watchdogTimeoutMillis);
-    }
-
-    /** The current input text for an EVENT thought is the shared prompt/memory event envelope. */
-    private static String summarize(BaseEvent event) {
-        return EventInputFormatter.format(event);
     }
 
     private static ConversationTopic sensorTopic(SensorDataEvent event) {

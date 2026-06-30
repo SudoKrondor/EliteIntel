@@ -1,7 +1,6 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -246,7 +245,7 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void highEventCurrentInputUsesLlmDescriptionInMemory() {
+    void eventRecordsItsReadableSummaryInMemory() {
         CapturingLlm llm = new CapturingLlm();
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
         dispatcher.start();
@@ -254,21 +253,19 @@ class ThoughtDispatcherTest {
                 "The ship completed a hyperspace jump.", "arrived in Sol"));
         dispatcher.stop();
 
-        assertTrue(llm.requests.isEmpty(), "a HIGH event is memory-only and never engages the LLM");
+        assertTrue(llm.requests.isEmpty(), "an event is memory-only and never engages the LLM");
         assertEquals(1, memory.writes.size());
-
-        JsonObject input = JsonParser.parseString(memory.writes.get(0).content()).getAsJsonObject();
-        assertEquals("FSDJump", input.get("event_type").getAsString());
-        assertEquals("The ship completed a hyperspace jump.", input.get("description").getAsString());
-        assertEquals("arrived in Sol", input.getAsJsonObject("payload").get("detail").getAsString());
+        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
+        // The event's readable memorySummary (here the FakeEvent's detail) is recorded, not a raw JSON envelope.
+        assertEquals("arrived in Sol", memory.writes.get(0).content());
     }
 
     @Test
-    void normalEventIsDroppedWithoutEngagingLlm() {
-        // A NORMAL event is dropped inside the thought: nothing is recorded and the LLM is never called.
+    void eventWithoutSummaryIsDroppedWithoutEngagingLlm() {
+        // An event that provides no memory summary is dropped inside the thought: nothing recorded, no LLM call.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
-                throw new AssertionError("NORMAL event must not engage the LLM");
+                throw new AssertionError("an unremembered event must not engage the LLM");
             }
             @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
@@ -276,10 +273,10 @@ class ThoughtDispatcherTest {
         };
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(failIfCalled));
         dispatcher.start();
-        dispatcher.submitEvent(new FakeEvent("MarketSell", BaseEvent.Importance.NORMAL));
+        dispatcher.submitEvent(new FakeEvent("MarketSell", BaseEvent.Importance.NORMAL, "desc", ""));
         dispatcher.stop();
 
-        assertTrue(memory.writes.isEmpty(), "a NORMAL event is not retained in memory");
+        assertTrue(memory.writes.isEmpty(), "an event with no summary is not retained in memory");
     }
 
     @Test
@@ -637,6 +634,7 @@ class ThoughtDispatcherTest {
         @Override public String getEventType() { return type; }
         @Override public Importance importance() { return importance; }
         @Override public String llmDescription() { return description; }
+        @Override public String memorySummary() { return detail; }
         @Override public String toJson() { return toJsonObject().toString(); }
         @Override public JsonObject toJsonObject() {
             JsonObject object = new JsonObject();

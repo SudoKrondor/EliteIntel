@@ -136,8 +136,8 @@ class GameEventFilterTest {
     // --- helpers ---
 
     private static BaseEvent event(String type) {
-        // HIGH so a forwarded event is retained by the memory-only EventThought (NORMAL is dropped), keeping
-        // the dispatcher routing observable through memory; the importance gate only rejects LOW.
+        // Non-LOW so the importance gate forwards it; a non-blank memorySummary makes the memory-only
+        // EventThought record it, keeping the dispatcher routing observable through memory.
         return event(type, BaseEvent.Importance.HIGH);
     }
 
@@ -145,6 +145,7 @@ class GameEventFilterTest {
         return new BaseEvent(Instant.now().toString(), Duration.ofMinutes(1), type) {
             @Override public String getEventType() { return type; }
             @Override public Importance importance() { return importance; }
+            @Override public String memorySummary() { return type + " happened"; }
             @Override public JsonObject toJsonObject() { return new JsonObject(); }
         };
     }

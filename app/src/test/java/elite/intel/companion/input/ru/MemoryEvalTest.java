@@ -120,9 +120,16 @@ class MemoryEvalTest {
     private final List<String> queryProbes = List.of(
             "сколько у нас топлива", "что сейчас в трюме", "где мы находимся", "какой уровень безопасности в системе");
 
-    // 8 keywords planted only by events, to check each HIGH event landed in some memory tier.
+    // 8 keywords planted only by events, to check each event landed in memory as a readable line (memorySummary).
     private final List<String> eventKeywords = List.of(
             "вольф", "варгас", "платин", "картель", "tectonicas", "осми", "джеймсон", "светляк");
+
+    // Event recall: facts that reached memory ONLY through a game event (no commander statement). The arrival
+    // (FSDJump) is an A-category event - voiced and remembered via narration in production; the docking (Docked)
+    // is a C-category event - now remembered as a readable EventThought line. Vega should recall both unprompted.
+    private final List<Turn> eventRecallProbes = List.of(
+            ask("в какую систему мы недавно прибыли?", "вольф"),     // A: FSDJump
+            ask("к какой станции мы пристыковались?", "джеймсон"));  // C: Docked
 
     // 10 idle-banter probes carrying no fact, name or command - the consciousness should rate each LOW.
     private final List<String> lowProbes = List.of(
@@ -232,6 +239,20 @@ class MemoryEvalTest {
             block.append(String.format("ключ события '%s' | tier=%s%n", kw, tier));
         }
 
+        // Phase 4b: recall of facts that arrived only via an event (A: the FSDJump arrival, C: the Docked station).
+        block.append("\n---- recall событий (A: прыжок, C: стыковка) ----\n");
+        int eventRecallHits = 0;
+        for (Turn probe : eventRecallProbes) {
+            h.beginTurn();
+            h.say(probe.a());
+            boolean hit = h.spokenContains(probe.b());
+            if (hit) {
+                eventRecallHits++;
+            }
+            block.append(String.format("ждём '%s' | hit=%s | запрос='%s' | вернулось=%s | %s%n",
+                    probe.b(), hit, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
+        }
+
         // Phase 5: live-state routing - must use a query, not memory.
         block.append("\n---- маршрутизация live-state (не из памяти) ----\n");
         int routedOk = 0;
@@ -271,6 +292,7 @@ class MemoryEvalTest {
         block.append(String.format("recall после вытеснения: %d / %d (search_in_memory вызван %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("связность (пары фактов): %d / %d%n", coherenceHits, coherenceProbes.size()));
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
+        block.append(String.format("recall событий (A/C):  %d / %d%n", eventRecallHits, eventRecallProbes.size()));
         block.append(String.format("маршрутизация:         %d / %d%n", routedOk, queryProbes.size()));
         block.append(String.format("явное «запиши/запомни» -> MAX: %d (из 3)%n", maxAssigned));
         block.append(String.format("болтовня -> LOW:       %d / %d%n", lowHits, lowProbes.size()));

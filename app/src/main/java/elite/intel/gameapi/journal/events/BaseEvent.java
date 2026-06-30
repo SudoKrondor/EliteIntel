@@ -79,6 +79,22 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
         return getEventType();
     }
 
+    /**
+     * Short, readable line recording this event as a lived experience for the companion's memory (the
+     * "knowing" channel, {@code EventThought}), e.g. {@code "docked at Jameson Memorial in Shinrarta Dezhra"}.
+     * Built from this event's own fields, and empty when the key fields are missing. The default is empty: an
+     * event is remembered only when it overrides this with a non-blank line.
+     * <p>
+     * To avoid a duplicate entry, an event whose <em>fact</em> is already voiced and remembered as the
+     * companion's own words via the curated narration layer (a {@code [COMPANION]} entry) leaves this empty.
+     * Narration of a mere <em>side effect</em> does not count: a credit-balance callout (e.g. from
+     * {@code FinanceSubscriber} for a module/ship sale) is not the act, so such events still provide a summary
+     * so the act itself is remembered.
+     */
+    public String memorySummary() {
+        return "";
+    }
+
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

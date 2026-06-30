@@ -96,6 +96,18 @@ public class SellOrganicDataEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        if (bioData == null || bioData.isEmpty()) {
+            return "";
+        }
+        long total = 0;
+        for (BioData data : bioData) {
+            total += data.getValue() + data.getBonus();
+        }
+        return "sold exobiology data from " + bioData.size() + " species for " + total + " credits";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

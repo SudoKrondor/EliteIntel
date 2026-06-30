@@ -49,6 +49,12 @@ public class ModuleSellRemoteEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String item = sellItemLocalised != null && !sellItemLocalised.isBlank() ? sellItemLocalised : sellItem;
+        return item == null || item.isBlank() ? "" : "sold the stored " + item + " for " + sellPrice + " credits";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

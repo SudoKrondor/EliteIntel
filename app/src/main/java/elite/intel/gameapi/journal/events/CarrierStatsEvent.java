@@ -92,6 +92,15 @@ public class CarrierStatsEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        if (name == null || name.isBlank()) {
+            return callsign == null || callsign.isBlank() ? "" : "fleet carrier " + callsign + ", fuel " + fuelLevel;
+        }
+        return "fleet carrier " + name
+                + (callsign == null || callsign.isBlank() ? "" : " (" + callsign + ")") + ", fuel " + fuelLevel;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

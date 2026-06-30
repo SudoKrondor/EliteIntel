@@ -46,6 +46,11 @@ public class ShipyardSellEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return shipType == null || shipType.isBlank() ? "" : "sold the stored " + shipType + " for " + shipPrice + " credits";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

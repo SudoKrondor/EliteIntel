@@ -43,6 +43,17 @@ public class MaterialsEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        int rawCount = raw == null ? 0 : raw.size();
+        int manufacturedCount = manufactured == null ? 0 : manufactured.size();
+        int encodedCount = encoded == null ? 0 : encoded.size();
+        if (rawCount == 0 && manufacturedCount == 0 && encodedCount == 0) {
+            return ""; // nothing held: no materials snapshot worth remembering
+        }
+        return "materials on hand: " + rawCount + " raw, " + manufacturedCount + " manufactured, " + encodedCount + " encoded";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

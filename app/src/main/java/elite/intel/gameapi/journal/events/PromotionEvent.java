@@ -62,6 +62,13 @@ public class PromotionEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return getPromotedRank()
+                .map(rank -> "promoted: " + rank.type() + " rank " + rank.rank())
+                .orElse("");
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -69,7 +69,8 @@ public final class EventTopicMap {
                 "MissionAbandoned", "MissionAccepted", "MissionCompleted", "MissionFailed", "MissionRedirected",
                 "Missions", "Powerplay", "RedeemVoucher", "Reputation");
         put(m, ConversationTopic.SHIP_STATUS,
-                "CarrierDepositFuel", "CarrierStats", "Loadout", "ShipyardBuy", "ShipyardNew", "SwitchSuitLoadout");
+                "CarrierDepositFuel", "CarrierStats", "Loadout", "ModuleBuy", "ModuleSell", "ModuleSellRemote",
+                "ShipyardBuy", "ShipyardNew", "ShipyardSell", "ShipyardSwap", "ShipyardTransfer", "SwitchSuitLoadout");
         put(m, ConversationTopic.ENGINEERING,
                 "EngineerCraft", "EngineerProgress", "MaterialCollected", "Materials");
         put(m, ConversationTopic.CREW,

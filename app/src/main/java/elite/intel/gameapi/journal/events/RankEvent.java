@@ -61,6 +61,11 @@ public class RankEvent extends BaseEvent implements PlayerRankStats {
     }
 
     @Override
+    public String memorySummary() {
+        return "career ranks - combat " + combat + ", trade " + trade + ", exploration " + explore;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

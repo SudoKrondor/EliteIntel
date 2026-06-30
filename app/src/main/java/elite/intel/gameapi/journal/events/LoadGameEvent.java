@@ -99,6 +99,12 @@ public class LoadGameEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String ship = shipLocalised != null && !shipLocalised.isBlank() ? shipLocalised : Ship;
+        return ship == null || ship.isBlank() ? "" : "started the session flying the " + ship;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

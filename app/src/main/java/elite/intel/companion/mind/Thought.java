@@ -98,12 +98,13 @@ public abstract class Thought {
 
     /**
      * Creates a thought from a filtered game event. Its memory tag is fixed at birth from the static
-     * event-type map; an EVENT thought never moves the global conversation topic. It is memory-only: a
-     * {@code HIGH} event is recorded, a {@code NORMAL} event is dropped, and the LLM is never engaged.
+     * event-type map; an EVENT thought never moves the global conversation topic. It is memory-only: the
+     * event's readable {@code summary} ({@code memorySummary()}) is recorded if non-blank, otherwise nothing,
+     * and the LLM is never engaged.
      */
     public static Thought event(Urgency urgency, String summary, ConversationTopic eventTopic,
-                                BaseEvent.Importance importance, ThoughtContext ctx) {
-        return new EventThought(urgency, summary, eventTopic, importance, ctx);
+                                ThoughtContext ctx) {
+        return new EventThought(urgency, summary, eventTopic, ctx);
     }
 
     /**
