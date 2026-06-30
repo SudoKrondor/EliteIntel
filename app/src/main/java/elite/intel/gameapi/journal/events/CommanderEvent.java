@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -40,8 +41,14 @@ public class CommanderEvent extends BaseEvent {
 
     @Override
     public String memorySummary() {
-        ///NOTE: This will be problematic
-        return name == null || name.isBlank() ? "" : "our commander is " + name;
+        // Feed the LLM the operator-configured name, not the raw in-game name: in-game
+        // commander names can carry numbers/random characters that TTS mangles, so the
+        // UI override (alternative/player name) takes precedence. getConfiguredPlayerName()
+        // falls back to the in-game name when no override is set, and to "Commander" when
+        // nothing is known -- which we treat as "nothing useful to remember".
+        String preferredName = PlayerSession.getInstance().getConfiguredPlayerName();
+        return preferredName == null || preferredName.isBlank() || "Commander".equals(preferredName)
+                ? "" : "our commander is " + preferredName;
     }
 
     @Override
