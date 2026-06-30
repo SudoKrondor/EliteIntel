@@ -47,13 +47,13 @@ public class CarrierStatsEvent extends BaseEvent {
     private Finance finance;
 
     @SerializedName("Crew")
-    private List<Crew> Crew;
+    private List<Crew> crew;
 
     @SerializedName("ShipPacks")
-    private List<Object> ShipPacks;
+    private List<Object> shipPacks;
 
     @SerializedName("ModulePacks")
-    private List<Object> ModulePacks;
+    private List<Object> modulePacks;
 
     public CarrierStatsEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(60), "CarrierStats");
@@ -70,9 +70,9 @@ public class CarrierStatsEvent extends BaseEvent {
         this.pendingDecommission = event.pendingDecommission;
         this.spaceUsage = event.spaceUsage;
         this.finance = event.finance;
-        this.Crew = event.Crew;
-        this.ShipPacks = event.ShipPacks;
-        this.ModulePacks = event.ModulePacks;
+        this.crew = event.crew;
+        this.shipPacks = event.shipPacks;
+        this.modulePacks = event.modulePacks;
     }
 
     @Override
@@ -112,136 +112,136 @@ public class CarrierStatsEvent extends BaseEvent {
 
     public static class SpaceUsage {
         @SerializedName("TotalCapacity")
-        private int TotalCapacity;
+        private int totalCapacity;
 
         @SerializedName("Crew")
-        private int Crew;
+        private int crew;
 
         @SerializedName("Cargo")
-        private int Cargo;
+        private int cargo;
 
         @SerializedName("CargoSpaceReserved")
-        private int CargoSpaceReserved;
+        private int cargoSpaceReserved;
 
         @SerializedName("ShipPacks")
-        private int ShipPacks;
+        private int shipPacks;
 
         @SerializedName("ModulePacks")
-        private int ModulePacks;
+        private int modulePacks;
 
         @SerializedName("FreeSpace")
-        private int FreeSpace;
+        private int freeSpace;
 
         public int getTotalCapacity() {
-            return TotalCapacity;
+            return totalCapacity;
         }
 
         public void setTotalCapacity(int totalCapacity) {
-            this.TotalCapacity = totalCapacity;
+            this.totalCapacity = totalCapacity;
         }
 
         public int getCrew() {
-            return Crew;
+            return crew;
         }
 
         public void setCrew(int crew) {
-            this.Crew = crew;
+            this.crew = crew;
         }
 
         public int getCargo() {
-            return Cargo;
+            return cargo;
         }
 
         public void setCargo(int cargo) {
-            this.Cargo = cargo;
+            this.cargo = cargo;
         }
 
         public int getCargoSpaceReserved() {
-            return CargoSpaceReserved;
+            return cargoSpaceReserved;
         }
 
         public void setCargoSpaceReserved(int cargoSpaceReserved) {
-            this.CargoSpaceReserved = cargoSpaceReserved;
+            this.cargoSpaceReserved = cargoSpaceReserved;
         }
 
         public int getShipPacks() {
-            return ShipPacks;
+            return shipPacks;
         }
 
         public void setShipPacks(int shipPacks) {
-            this.ShipPacks = shipPacks;
+            this.shipPacks = shipPacks;
         }
 
         public int getModulePacks() {
-            return ModulePacks;
+            return modulePacks;
         }
 
         public void setModulePacks(int modulePacks) {
-            this.ModulePacks = modulePacks;
+            this.modulePacks = modulePacks;
         }
 
         public int getFreeSpace() {
-            return FreeSpace;
+            return freeSpace;
         }
 
         public void setFreeSpace(int freeSpace) {
-            this.FreeSpace = freeSpace;
+            this.freeSpace = freeSpace;
         }
     }
 
     public static class Finance {
         @SerializedName("CarrierBalance")
-        private long CarrierBalance;
+        private long carrierBalance;
 
         @SerializedName("ReserveBalance")
-        private long ReserveBalance;
+        private long reserveBalance;
 
         @SerializedName("AvailableBalance")
-        private long AvailableBalance;
+        private long availableBalance;
 
         @SerializedName("TaxRate_pioneersupplies")
         private int taxRatePioneerSupplies;
 
         @SerializedName("TaxRate_shipyard")
-        private int TaxRateShipyard;
+        private int taxRateShipyard;
 
         @SerializedName("TaxRate_rearm")
-        private int TaxRateRearm;
+        private int taxRateRearm;
 
         @SerializedName("TaxRate_refuel")
-        private int TaxRateRefuel;
+        private int taxRateRefuel;
 
         @SerializedName("TaxRate_outfitting")
-        private int TaxRateOutfitting;
+        private int taxRateOutfitting;
 
         @SerializedName("TaxRate_repair")
-        private int TaxRateRepair;
+        private int taxRateRepair;
 
         @SerializedName("ReservePercent")
-        private int ReservePercent;
+        private int reservePercent;
 
         public long getCarrierBalance() {
-            return CarrierBalance;
+            return carrierBalance;
         }
 
         public void setCarrierBalance(long carrierBalance) {
-            this.CarrierBalance = carrierBalance;
+            this.carrierBalance = carrierBalance;
         }
 
         public long getReserveBalance() {
-            return ReserveBalance;
+            return reserveBalance;
         }
 
         public void setReserveBalance(long reserveBalance) {
-            this.ReserveBalance = reserveBalance;
+            this.reserveBalance = reserveBalance;
         }
 
         public long getAvailableBalance() {
-            return AvailableBalance;
+            return availableBalance;
         }
 
         public void setAvailableBalance(long availableBalance) {
-            this.AvailableBalance = availableBalance;
+            this.availableBalance = availableBalance;
         }
 
         public int getTaxRatePioneerSupplies() {
@@ -253,97 +253,97 @@ public class CarrierStatsEvent extends BaseEvent {
         }
 
         public int getTaxRateShipyard() {
-            return TaxRateShipyard;
+            return taxRateShipyard;
         }
 
         public void setTaxRateShipyard(int taxRate) {
-            this.TaxRateShipyard = taxRate;
+            this.taxRateShipyard = taxRate;
         }
 
         public int getTaxRateRearm() {
-            return TaxRateRearm;
+            return taxRateRearm;
         }
 
         public void setTaxRateRearm(int taxRate) {
-            this.TaxRateRearm = taxRate;
+            this.taxRateRearm = taxRate;
         }
 
         public int getTaxRateRefuel() {
-            return TaxRateRefuel;
+            return taxRateRefuel;
         }
 
         public void setTaxRateRefuel(int taxRate) {
-            this.TaxRateRefuel = taxRate;
+            this.taxRateRefuel = taxRate;
         }
 
         public int getTaxRateOutfitting() {
-            return TaxRateOutfitting;
+            return taxRateOutfitting;
         }
 
         public void setTaxRateOutfitting(int taxRate) {
-            this.TaxRateOutfitting = taxRate;
+            this.taxRateOutfitting = taxRate;
         }
 
         public int getTaxRateRepair() {
-            return TaxRateRepair;
+            return taxRateRepair;
         }
 
         public void setTaxRateRepair(int taxRate) {
-            this.TaxRateRepair = taxRate;
+            this.taxRateRepair = taxRate;
         }
 
         public int getReservePercent() {
-            return ReservePercent;
+            return reservePercent;
         }
 
         public void setReservePercent(int reservePercent) {
-            this.ReservePercent = reservePercent;
+            this.reservePercent = reservePercent;
         }
     }
 
     public static class Crew {
         @SerializedName("CrewRole")
-        private String CrewRole;
+        private String crewRole;
 
         @SerializedName("Activated")
-        private boolean Activated;
+        private boolean activated;
 
         @SerializedName("Enabled")
-        private boolean Enabled;
+        private boolean enabled;
 
         @SerializedName("CrewName")
-        private String CrewName;
+        private String crewName;
 
         public String getCrewRole() {
-            return CrewRole;
+            return crewRole;
         }
 
         public void setCrewRole(String crewRole) {
-            this.CrewRole = crewRole;
+            this.crewRole = crewRole;
         }
 
         public boolean isActivated() {
-            return Activated;
+            return activated;
         }
 
         public void setActivated(boolean activated) {
-            this.Activated = activated;
+            this.activated = activated;
         }
 
         public boolean isEnabled() {
-            return Enabled;
+            return enabled;
         }
 
         public void setEnabled(boolean enabled) {
-            this.Enabled = enabled;
+            this.enabled = enabled;
         }
 
         public String getCrewName() {
-            return CrewName;
+            return crewName;
         }
 
         public void setCrewName(String crewName) {
-            this.CrewName = crewName;
+            this.crewName = crewName;
         }
     }
 
@@ -444,27 +444,27 @@ public class CarrierStatsEvent extends BaseEvent {
     }
 
     public List<Crew> getCrew() {
-        return Crew;
+        return crew;
     }
 
     public void setCrew(List<Crew> crew) {
-        this.Crew = crew;
+        this.crew = crew;
     }
 
     public List<Object> getShipPacks() {
-        return ShipPacks;
+        return shipPacks;
     }
 
     public void setShipPacks(List<Object> shipPacks) {
-        this.ShipPacks = shipPacks;
+        this.shipPacks = shipPacks;
     }
 
     public List<Object> getModulePacks() {
-        return ModulePacks;
+        return modulePacks;
     }
 
     public void setModulePacks(List<Object> modulePacks) {
-        this.ModulePacks = modulePacks;
+        this.modulePacks = modulePacks;
     }
 
     @Override
