@@ -28,6 +28,8 @@ public final class SystemFunctionResultFields {
     public static final String TOPIC = "topic";
     /** Importance level echoed back (classify_turn). */
     public static final String IMPORTANCE = "importance";
+    /** Whether the commander's current phrase is a question, echoed back (classify_turn). */
+    public static final String IS_QUESTION = "is_question";
 
     private SystemFunctionResultFields() {
     }
