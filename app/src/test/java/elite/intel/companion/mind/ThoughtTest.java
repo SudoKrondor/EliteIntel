@@ -232,6 +232,23 @@ class ThoughtTest {
     }
 
     @Test
+    void questionTurnInputIsNotFiledButTheAnswerIs() {
+        execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
+                call(SpeakFunction.ID, text("forty percent")),
+                call(NothingToDoFunction.ID, new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "how much fuel is left", ctx()).run();
+
+        // A question carries no new fact, so the commander's input is not filed; only the answer (which carries
+        // the fact) is recorded, as the companion's own words.
+        assertEquals(1, memory.writes.size(), "the question input is not filed, only the answer is");
+        MemoryEntry spoken = memory.writes.get(0);
+        assertEquals(MemorySource.COMPANION, spoken.source());
+        assertEquals("forty percent", spoken.content());
+    }
+
+    @Test
     void eventThoughtWithSummaryRecordsMemoryWithoutEngagingLlm() {
         // An event that provides a readable summary is recorded under its static topic and ends - no LLM, no
         // speech, no tools (spontaneous event speech belongs to NarrationThought now).
@@ -450,9 +467,14 @@ class ThoughtTest {
     }
 
     private static JsonObject classifyArgs(String topic, String importance) {
+        return classifyArgs(topic, importance, false);
+    }
+
+    private static JsonObject classifyArgs(String topic, String importance, boolean isQuestion) {
         JsonObject o = new JsonObject();
         o.addProperty("topic", topic);
         o.addProperty("importance", importance);
+        o.addProperty("is_question", isQuestion);
         return o;
     }
 

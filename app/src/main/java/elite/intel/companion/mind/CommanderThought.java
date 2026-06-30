@@ -47,7 +47,7 @@ import java.util.concurrent.TimeoutException;
  * (§2.5/§2.6/§2.8/§5.1).
  * <p>
  * It has the full commander tool set and the COMMANDER-only paths an EVENT/narration thought cannot reach:
- * applying {@code classify_turn} (topic + importance) before the input is filed, dispatching commands/queries
+ * applying {@code classify_turn} (topic + importance + is_question) before the input is filed, dispatching commands/queries
  * fire-and-forget, and vocalizing their outcome deterministically. Narration ownership (§2.14): a
  * command/query owns its spoken outcome - the handler's {@code text_to_speech_response} is voiced verbatim
  * and a side-effect stays silent - so once any command/query runs this turn the LLM's own {@code speak} is
@@ -72,6 +72,9 @@ public final class CommanderThought extends Thought {
 
     /** Importance the consciousness set for this turn via classify_turn (default NORMAL); stamps the turn's entries. */
     private MemoryImportance turnImportance = MemoryImportance.NORMAL;
+
+    /** Whether classify_turn flagged this turn as a question; a question carries no new fact, so its input is not filed. */
+    private boolean turnIsQuestion;
 
     CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
         super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
@@ -109,12 +112,15 @@ public final class CommanderThought extends Thought {
 
                 List<LlmToolInvocation> invocations = result.toolInvocations();
 
-                // First valid response: classify the turn (topic + importance) and record the input before any
-                // tool runs (§2.6).
+                // First valid response: classify the turn (topic + importance + is_question) and record the
+                // input before any tool runs (§2.6). A question carries no new fact - the answer does - so a
+                // question turn's input is not filed; the turn is still marked recorded so it is not re-filed.
                 Map<LlmToolInvocation, JsonObject> preExecuted = Map.of();
                 if (!inputRecorded) {
                     preExecuted = applyClassification(invocations);
-                    recordCurrentInput();
+                    if (!turnIsQuestion) {
+                        recordCurrentInput();
+                    }
                     inputRecorded = true;
                 }
 
@@ -161,10 +167,11 @@ public final class CommanderThought extends Thought {
     /**
      * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code classify_turn}, apply it now,
      * before the input is filed - read its importance into the turn's importance (so the recorded input and
-     * outcome are stamped with it) and run its handle, which moves the global topic (so the input is tagged
-     * with the new topic). Returns the pre-executed result keyed by its invocation so the main loop does not
-     * run it twice. An absent or unknown importance leaves the turn at {@code NORMAL}; an absent
-     * {@code classify_turn} leaves the topic unchanged.
+     * outcome are stamped with it), read its {@code is_question} flag (which decides whether the input is filed
+     * at all), and run its handle, which moves the global topic (so the input is tagged with the new topic).
+     * Returns the pre-executed result keyed by its invocation so the main loop does not run it twice. An absent
+     * or unknown importance leaves the turn at {@code NORMAL}; an absent flag leaves it a non-question; an
+     * absent {@code classify_turn} leaves the topic unchanged.
      */
     private Map<LlmToolInvocation, JsonObject> applyClassification(List<LlmToolInvocation> invocations) {
         Map<LlmToolInvocation, JsonObject> preExecuted = new IdentityHashMap<>();
@@ -175,6 +182,8 @@ public final class CommanderThought extends Thought {
                 if (level != null) {
                     turnImportance = level;
                 }
+                turnIsQuestion = Boolean.parseBoolean(
+                        JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
                 preExecuted.put(inv, execute(inv));
                 break;
             }
