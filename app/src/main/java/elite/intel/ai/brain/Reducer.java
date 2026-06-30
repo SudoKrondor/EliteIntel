@@ -4,10 +4,8 @@ import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputComman
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
-import elite.intel.ai.embed.OnnxTextEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import elite.intel.ai.embed.SemanticSearchProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,8 +30,6 @@ import java.util.stream.Collectors;
  */
 public class Reducer {
 
-    private static final Logger log = LogManager.getLogger(Reducer.class);
-
     /**
      * Selection strategy, fixed at class load from {@code -Delite.intel.reducer=semantic|wordoverlap}.
      */
@@ -57,48 +53,6 @@ public class Reducer {
     private static final int SEM_MAX = parseInt("elite.intel.reducer.semantic.max", 25);
 
     /**
-     * Lazily built only when semantic mode actually runs, so word-overlap mode never loads the model.
-     */
-    private static volatile SemanticPhraseMatcher matcher;
-    /**
-     * Set once if the embedding model cannot be loaded; the session then degrades to word-overlap.
-     */
-    private static volatile boolean semanticUnavailable;
-
-    /**
-     * The semantic matcher, lazily loaded on first use, or {@code null} when semantic mode is off or the model
-     * could not be loaded. A load failure is not fatal: it is logged once and the session falls back to
-     * word-overlap, matching how the project degrades other optional backends (STT/TTS/LLM).
-     */
-    private static SemanticPhraseMatcher semanticMatcherOrNull() {
-        if (semanticUnavailable) {
-            return null;
-        }
-        SemanticPhraseMatcher m = matcher;
-        if (m != null) {
-            return m;
-        }
-        synchronized (Reducer.class) {
-            if (semanticUnavailable) {
-                return null;
-            }
-            if (matcher == null) {
-                try {
-                    log.info("Semantic reducer active — loading embedding model");
-                    matcher = new SemanticPhraseMatcher(new OnnxTextEmbedder());
-                } catch (RuntimeException e) {
-                    // WHY: an absent or broken embedding model is a degraded optional backend, not a reason to
-                    // break all routing; degrade to word-overlap for the rest of the session.
-                    semanticUnavailable = true;
-                    log.warn("Embedding model unavailable; falling back to word-overlap reduction for this session", e);
-                    return null;
-                }
-            }
-            return matcher;
-        }
-    }
-
-    /**
      * Reduces the action map to entries relevant to {@code normalizedInput}. Dispatches to the configured
      * strategy; both preserve an exact-alias match and apply the same empty-result fallback.
      *
@@ -115,7 +69,7 @@ public class Reducer {
         if (normalizedInput == null || normalizedInput.isBlank()) {
             return full;
         }
-        SemanticPhraseMatcher activeMatcher = SEMANTIC ? semanticMatcherOrNull() : null;
+        SemanticPhraseMatcher activeMatcher = SEMANTIC ? SemanticSearchProvider.matcher() : null;
         return reduceWith(activeMatcher, normalizedInput, full, isConversationMode);
     }
 

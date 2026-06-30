@@ -1,5 +1,7 @@
 package elite.intel.companion.memory;
 
+import elite.intel.ai.embed.AngleEmbedder;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -260,6 +263,74 @@ class SessionMemoryGatewayTest {
         gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "operation name is ebb", MemoryImportance.MAX));
         gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "operation name is ebb", MemoryImportance.MAX));
         assertEquals(1, gateway.longTermPinnedFacts().size());
+    }
+
+    private static SessionMemoryGateway semanticGateway(Map<String, Double> anglesDeg) {
+        SemanticPhraseMatcher matcher = new SemanticPhraseMatcher(new AngleEmbedder(anglesDeg));
+        return new SessionMemoryGateway(new FixedTokenEstimator(1), () -> matcher);
+    }
+
+    @Test
+    void recallMatchingFindsAMeaningMatchWithNoSharedWords() {
+        // The query shares no word with the stored fact, but points the same way in meaning-space (8 degrees
+        // apart, cosine ~0.99). Word-only recall would miss it; semantic recall surfaces it. The far-meaning,
+        // no-shared-word distractor (90 degrees, cosine 0) stays out.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "the beacon is lit", 0.0,
+                "mining yield report", 90.0,
+                "navigation light active", 8.0));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "the beacon is lit"));
+        gateway.write(entry(ConversationTopic.MINING, "mining yield report"));
+
+        assertEquals(List.of("[COMMANDER] the beacon is lit"),
+                gateway.recallMatching("navigation light active", 10));
+    }
+
+    @Test
+    void recallMatchingKeepsPureWordMatchesWhenSemanticSearchIsOn() {
+        // A shared word still recalls a fact even when its meaning-vector is far (90 degrees from the query,
+        // cosine 0): the word signal alone makes it eligible. An entry that matches neither by word nor by
+        // meaning stays out. The two stored entries sit 50 degrees apart so de-duplication never merges them.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "granite deposits ahead", 90.0,
+                "trade route data", 40.0,
+                "granite", 0.0));
+        gateway.write(entry(ConversationTopic.MINING, "granite deposits ahead"));
+        gateway.write(entry(ConversationTopic.TRADE, "trade route data"));
+
+        assertEquals(List.of("[COMMANDER] granite deposits ahead"),
+                gateway.recallMatching("granite", 10));
+    }
+
+    @Test
+    void writeCollapsesANearIdenticalFactKeepingTheMostImportantWording() {
+        // The same fact restated more strongly (near-identical meaning, 2 degrees apart) must not pile up two
+        // entries: write de-duplication keeps one - the MAX wording - so the routine copy does not survive.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "docking code is sierra", 10.0,
+                "remember docking code sierra nine four", 12.0));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "docking code is sierra"));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "remember docking code sierra nine four", MemoryImportance.MAX));
+
+        List<MemoryEntry> timeline = gateway.readShortTermTimeline();
+        assertEquals(1, timeline.size());
+        assertEquals("remember docking code sierra nine four", timeline.get(0).content());
+        assertEquals(MemoryImportance.MAX, timeline.get(0).importance());
+    }
+
+    @Test
+    void recallCollapsesADuplicateAcrossArchiveAndTimelineIntoTheImportantOne() {
+        // A pinned MAX fact (archive) and a near-identical routine question (short-term) both match the query;
+        // search de-duplication returns them as one - the important fact, not its paraphrased re-ask.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "docking code is sierra nine four", 10.0,
+                "what is the docking code", 12.0,
+                "docking code", 11.0));
+        gateway.addLongTermPinned(entry(ConversationTopic.NAVIGATION, "docking code is sierra nine four", MemoryImportance.MAX));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "what is the docking code"));
+
+        assertEquals(List.of("[COMMANDER] docking code is sierra nine four"),
+                gateway.recallMatching("docking code", 10));
     }
 
     @Test

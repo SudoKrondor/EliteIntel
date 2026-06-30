@@ -41,27 +41,41 @@ class MemoryEvalTest {
     private static Turn event(String type, String summary) { return new Turn(Kind.EVENT, type, summary); }
     private static Turn ask(String question, String expect) { return new Turn(Kind.ASK, question, expect); }
 
+    /** A coherence probe: one question that must be answered by weaving two separately-stated facts ({@code kw1}+{@code kw2}). */
+    private record Coherence(String question, String kw1, String kw2) {}
+    private static Coherence pair(String question, String kw1, String kw2) { return new Coherence(question, kw1, kw2); }
+
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-memory-eval-trace.txt", Language.RU);
 
+    // 10 ASK turns are interleaved right after their fact, so the fact is still in the inlined short-term
+    // timeline when asked - scored as hot (in-conversation) recall that needs no search_in_memory.
     private final List<Turn> script = List.of(
             say("значит так, в этот рейс у нас тихая работа по утилю за Дециатом, держим всё мимо журналов"),
             say("запиши: код стыковки на станции — Сьерра Девять Четыре, понадобится на подходе"),
+            ask("повтори код стыковки на станции", "сьерра"),  // ещё горячо
             event("FSDJump", "прибыли в систему Вольф 359"),
             say("покупатель утиля — Халлоран, он наш контакт на местном рынке"),
+            ask("кто у нас покупатель утиля?", "халлоран"),  // ещё горячо
             say("тихо тут, красота, как я люблю"),
             say("если зажмут пираты, кодовое слово на отход — Гранит, заруби на носу"),
             event("ShipTargeted", "просканирован разыскиваемый пират по имени Варгас"),
             ask("повтори, какое кодовое слово на отход?", "гранит"),  // ещё горячо
             say("пока мы тут, наша цель по добыче — низкотемпературные алмазы, остальное мимо"),
+            ask("напомни нашу цель по добыче", "алмазы"),  // ещё горячо
             say("поле астероидов, что отрабатываем, на картах зовётся Бедлам"),
+            ask("как на картах зовётся поле астероидов?", "бедлам"),  // ещё горячо
             event("ProspectedAsteroid", "найден астероид, богатый платиной"),
             say("прикрывает нас старина Сорока, держись поближе к его крылу"),
+            ask("кто нас прикрывает?", "сорока"),  // ещё горячо
             say("запомни: аварийная точка встречи — Хаттон Орбитал, если вдруг разделимся"),
+            ask("где у нас аварийная точка встречи?", "хаттон"),  // ещё горячо
             event("MissionAccepted", "принята боевая миссия против фракции Алый Картель"),
             say("работаем на синдикат Мокошь, это они платят за рейс"),
+            ask("на какой синдикат мы работаем?", "мокошь"),  // ещё горячо
             say("и запиши: операция проходит как Отлив, в отчётах только так"),
-            ask("напомни нашу цель по добыче", "алмазы"),  // ещё горячо
+            ask("как называется наша операция?", "отлив"),  // ещё горячо
             say("засекли аммиачный мир, окрестили его Фонарь"),
+            ask("как мы назвали аммиачный мир?", "фонарь"),  // ещё горячо
             event("ScanOrganic", "взят образец организма Stratum Tectonicas"),
             say("как сам, держишься там?"),
             say("дозаправку делаем у нейтронной звезды, её зовут Веретено, на обратном пути"),
@@ -88,6 +102,19 @@ class MemoryEvalTest {
             ask("как называется поле астероидов?", "бедлам"),
             ask("как мы окрестили корабль?", "альбатрос"),
             ask("на какой синдикат мы работаем?", "мокошь"));
+
+    // 10 coherence probes: each asks one question whose answer must weave two separately-stated facts.
+    private final List<Coherence> coherenceProbes = List.of(
+            pair("напомни кодовое слово на отход и где встречаемся при разделении", "гранит", "хаттон"),
+            pair("кто платит за работу и кто покупатель утиля", "мокошь", "халлоран"),
+            pair("повтори код стыковки и как называется наша операция", "сьерра", "отлив"),
+            pair("какая у нас цель по добыче и как зовётся поле астероидов", "алмазы", "бедлам"),
+            pair("кто нас прикрывает и как зовут пилота истребителя", "сорока", "оконкво"),
+            pair("как мы назвали аммиачный мир и как окрестили корабль", "фонарь", "альбатрос"),
+            pair("у какого инженера настраиваем FSD и у какой звезды дозаправка", "фарсир", "веретено"),
+            pair("как зовётся наш тихий маршрут и какой код стыковки на станции", "объезд", "сьерра"),
+            pair("как называется операция и на какой синдикат мы работаем", "отлив", "мокошь"),
+            pair("кто покупатель утиля и какой у нас код стыковки", "халлоран", "сьерра"));
 
     // 4 live-state probes: must route to a query function, not a memory recall.
     private final List<String> queryProbes = List.of(
@@ -174,30 +201,24 @@ class MemoryEvalTest {
             if (recalled) {
                 recalledCount++;
             }
-            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | %s%n",
-                    probe.b(), tier, recalled, hit, h.spokenTexts()));
+            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | запрос='%s' | вернулось=%s | %s%n",
+                    probe.b(), tier, recalled, hit, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
         }
 
-        // Phase 3: two coherence probes, each weaving together two separately-stated facts.
+        // Phase 3: coherence probes, each weaving together two separately-stated facts.
         block.append("\n---- связность ----\n");
         int coherenceHits = 0;
-        h.beginTurn();
-        h.say("напомни кодовое слово на отход и где встречаемся при разделении");
-        String c1 = String.join(" ", h.spokenTexts()).toLowerCase(Locale.ROOT);
-        boolean c1ok = c1.contains("гранит") && c1.contains("хаттон");
-        if (c1ok) {
-            coherenceHits++;
+        for (Coherence probe : coherenceProbes) {
+            h.beginTurn();
+            h.say(probe.question());
+            String said = String.join(" ", h.spokenTexts()).toLowerCase(Locale.ROOT);
+            boolean ok = said.contains(probe.kw1()) && said.contains(probe.kw2());
+            if (ok) {
+                coherenceHits++;
+            }
+            block.append(String.format("ждём '%s'+'%s' | ok=%s | запрос='%s' | вернулось=%s | %s%n",
+                    probe.kw1(), probe.kw2(), ok, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
         }
-        block.append("ждём 'гранит'+'хаттон' | ok=").append(c1ok).append(" | ").append(h.spokenTexts()).append("\n");
-
-        h.beginTurn();
-        h.say("кто платит за работу и кто покупатель утиля");
-        String c2 = String.join(" ", h.spokenTexts()).toLowerCase(Locale.ROOT);
-        boolean c2ok = c2.contains("мокошь") && c2.contains("халлоран");
-        if (c2ok) {
-            coherenceHits++;
-        }
-        block.append("ждём 'мокошь'+'халлоран' | ok=").append(c2ok).append(" | ").append(h.spokenTexts()).append("\n");
 
         // Phase 4: events landed in memory.
         block.append("\n---- события в памяти ----\n");
@@ -248,7 +269,7 @@ class MemoryEvalTest {
         block.append("\n---- итоги ----\n");
         block.append(String.format("горячий recall:        %d / %d%n", hotHits, hotAsks));
         block.append(String.format("recall после вытеснения: %d / %d (search_in_memory вызван %d)%n", recallHits, recallProbes.size(), recalledCount));
-        block.append(String.format("связность (2 факта):   %d / 2%n", coherenceHits));
+        block.append(String.format("связность (пары фактов): %d / %d%n", coherenceHits, coherenceProbes.size()));
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("маршрутизация:         %d / %d%n", routedOk, queryProbes.size()));
         block.append(String.format("явное «запиши/запомни» -> MAX: %d (из 3)%n", maxAssigned));

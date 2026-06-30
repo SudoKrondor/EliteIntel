@@ -2,6 +2,7 @@ package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.TextEmbedder;
 import org.junit.jupiter.api.Test;
@@ -20,28 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class SemanticReducerLogicTest {
 
     private static final String QUERY = "запрос"; // arbitrary token; not equal to any trigger key
-
-    /**
-     * Deterministic embedder: a phrase's vector points at its configured angle (query points at 0 degrees).
-     */
-    private static final class AngleEmbedder implements TextEmbedder {
-        private final Map<String, Double> degrees;
-
-        AngleEmbedder(Map<String, Double> degrees) {
-            this.degrees = degrees;
-        }
-
-        @Override
-        public float[] embed(String text) {
-            double radians = Math.toRadians(degrees.getOrDefault(text, 90.0));
-            return new float[]{(float) Math.cos(radians), (float) Math.sin(radians)};
-        }
-
-        @Override
-        public int dimensions() {
-            return 2;
-        }
-    }
 
     private static SemanticPhraseMatcher matcher(Map<String, Double> phraseAngles) {
         Map<String, Double> angles = new HashMap<>(phraseAngles);

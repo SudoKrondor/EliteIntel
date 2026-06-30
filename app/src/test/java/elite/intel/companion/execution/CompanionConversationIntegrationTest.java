@@ -50,7 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CompanionConversationIntegrationTest {
 
     private final ScriptedTransport transport = new ScriptedTransport();
-    private final SessionMemoryGateway memory = new SessionMemoryGateway();
+    // Word-only memory (no embedding model) keeps this default-suite test off the heavy ONNX load; semantic
+    // recall has its own coverage in SessionMemoryGatewayTest with a deterministic stand-in embedder.
+    private final SessionMemoryGateway memory = new SessionMemoryGateway(() -> null);
     private final CompanionState state = new CompanionState();
     private final RecordingSpeech speech = new RecordingSpeech();
 

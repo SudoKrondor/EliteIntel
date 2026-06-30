@@ -49,6 +49,23 @@ class MidTermTopicMemory {
         return matched;
     }
 
+    /**
+     * Removes the given entry (by identity) from its topic if present. Used by the gateway's semantic
+     * de-duplication when a re-stated fact supersedes this copy. Returns whether it removed.
+     */
+    boolean remove(MemoryEntry entry) {
+        List<MemoryEntry> entries = byTopic.get(entry.topic());
+        if (entries != null) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i) == entry) {
+                    entries.remove(i);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Every entry across all topics; the gateway's unified search does the query matching. */
     List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>();

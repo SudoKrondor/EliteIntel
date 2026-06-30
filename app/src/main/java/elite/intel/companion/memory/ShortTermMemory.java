@@ -58,6 +58,21 @@ class ShortTermMemory {
         return List.copyOf(entries);
     }
 
+    /**
+     * Removes the given entry (by identity) if present, keeping the token estimate in sync. Used by the
+     * gateway's semantic de-duplication when a re-stated fact supersedes this copy. Returns whether it removed.
+     */
+    boolean remove(MemoryEntry entry) {
+        for (int i = 0; i < entries.size(); i++) {
+            if (entries.get(i) == entry) {
+                estimatedTokens -= cost(entries.get(i));
+                entries.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Evicts entries that exceed the count/token limits and returns them for mid-term storage. */
     List<MemoryEntry> evictOverflow() {
         List<MemoryEntry> evicted = new ArrayList<>();
