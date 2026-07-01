@@ -33,12 +33,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Deterministic (no LLM) training-phrase quality probe. Reads authored Russian probe phrases from
- * {@code src/test/resources/trainingphrases/probe-phrases-ru.json} ({id: [phrases]}), runs each through the
+ * Deterministic (no LLM) training-phrase quality probe. Reads authored probe phrases from
+ * {@code src/test/resources/trainingphrases/probe-phrases-<lang>.json} ({id: [phrases]}), runs each through the
  * alias-only semantic matcher (via {@link AliasMatchSurface}), and produces a per-command diagnosis: the probes
  * with their outcome, the existing training phrases and their gap to each probe, the competing phrases that
  * outrank the tool, the dominant conflict, and a concrete suggestion of which training phrases to add. Written
- * as CSV (weak-first) to {@code build/training-phrase-quality-ru.csv} for the Excel summary
+ * as CSV (weak-first) to {@code build/training-phrase-quality-<lang>.csv} for the Excel summary
  * ({@code scripts/build_training_xlsx.py}). Opt-in ({@code embedding-manual}); requires the embedding model.
  */
 @Tag("embedding-manual")
@@ -59,10 +59,8 @@ class TrainingPhraseQualityProbe {
     void boot() throws Exception {
         Cypher.initializeKey();
         Database.init().close();
-        SystemSession.getInstance().setLanguage(Language.RU);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
-        candidates = new GameToolCandidates().collect(ALL);
         matcher = SemanticSearchProvider.matcher();
         commandIds = CommandRegistry.getInstance().byId().keySet();
         queryIds = QueryRegistry.getInstance().byId().keySet();
@@ -77,14 +75,29 @@ class TrainingPhraseQualityProbe {
                        String existing, String suggestions) {}
 
     @Test
-    void scoresTrainingPhraseQualityToCsv() throws Exception {
-        Path input = Paths.get("src", "test", "resources", "trainingphrases", "probe-phrases-ru.json").toAbsolutePath();
-        if (matcher == null || !Files.exists(input)) {
-            System.out.println("skipped: matcher=" + (matcher != null) + " phrasesFile=" + Files.exists(input));
+    void scoresRussianTrainingPhraseQualityToCsv() throws Exception {
+        scoreLanguage(Language.RU, "ru", false);
+    }
+
+    @Test
+    void scoresEnglishTrainingPhraseQualityToCsv() throws Exception {
+        scoreLanguage(Language.EN, "en", true);
+    }
+
+    private void scoreLanguage(Language language, String suffix, boolean allowAliasSeed) throws Exception {
+        SystemSession.getInstance().setLanguage(language);
+        candidates = new GameToolCandidates().collect(ALL);
+        Path input = Paths.get("src", "test", "resources", "trainingphrases",
+                "probe-phrases-" + suffix + ".json").toAbsolutePath();
+        if (matcher == null) {
+            System.out.println("skipped " + suffix + ": matcher=false");
             return;
         }
-        Map<String, List<String>> probes = new Gson().fromJson(Files.readString(input),
-                new TypeToken<LinkedHashMap<String, List<String>>>() {}.getType());
+        Map<String, List<String>> probes = loadProbes(input, allowAliasSeed);
+        if (probes.isEmpty()) {
+            System.out.println("skipped " + suffix + ": phrasesFile=" + Files.exists(input));
+            return;
+        }
 
         List<Row> rows = new ArrayList<>();
         for (Map.Entry<String, List<String>> entry : probes.entrySet()) {
@@ -102,9 +115,33 @@ class TrainingPhraseQualityProbe {
                     csv(r.conflictGroup()), csv(r.probe()), csv(r.rank()), csv(r.own()), csv(r.competitor()),
                     csv(r.existing()), csv(r.suggestions())))).append('\n');
         }
-        Path out = Paths.get("build", "training-phrase-quality-ru.csv").toAbsolutePath();
+        Path out = Paths.get("build", "training-phrase-quality-" + suffix + ".csv").toAbsolutePath();
         Files.writeString(out, csv.toString(), StandardCharsets.UTF_8);
-        System.out.printf("scored %d tools -> %s%n", rows.size(), out);
+        System.out.printf("scored %s %d tools -> %s%n", suffix, rows.size(), out);
+    }
+
+    private Map<String, List<String>> loadProbes(Path input, boolean allowAliasSeed) throws Exception {
+        if (Files.exists(input)) {
+            return new Gson().fromJson(Files.readString(input),
+                    new TypeToken<LinkedHashMap<String, List<String>>>() {}.getType());
+        }
+        if (!allowAliasSeed) {
+            return Map.of();
+        }
+        System.out.println("probe seed: " + input + " missing; using localized aliases as EN probe seed");
+        Map<String, List<String>> probes = new LinkedHashMap<>();
+        for (GameToolCandidates.Candidate candidate : candidates) {
+            List<String> phrases = AliasMatchSurface.phrases(candidate.phraseKey(), candidate.tool().parameters())
+                    .stream()
+                    .map(TrainingPhraseQualityProbe::clean)
+                    .distinct()
+                    .limit(10)
+                    .toList();
+            if (!phrases.isEmpty()) {
+                probes.put(candidate.id(), phrases);
+            }
+        }
+        return probes;
     }
 
     private Row scoreTool(String id, int index, List<String> phrases) {
