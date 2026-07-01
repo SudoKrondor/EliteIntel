@@ -144,10 +144,12 @@ public class ResponseRouter implements AIRouterInterface {
             String responseTextToUse = dataJson.has(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE) ? dataJson.get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE).getAsString() : "";
             if (responseTextToUse != null && !responseTextToUse.isEmpty()) {
                 // Suppress spoken failure message during silent retries
-                if (!(action.equals(CONNECTION_CHECK_COMMAND) && suppressConnectionFailSpeech)) {
+                if (action.equals(CONNECTION_CHECK_COMMAND) && suppressConnectionFailSpeech) {
+                    log.info("Suppressed final query response during silent retry (action: {}): {}", action, responseTextToUse);
+                } else {
                     GameEventBus.publish(new AiVoxResponseEvent(responseTextToUse));
+                    log.info("Spoke final query response (action: {}): {}", action, responseTextToUse);
                 }
-                log.info("Spoke final query response (action: {}, suppressConnectionFailSpeech: {}): {}", action, suppressConnectionFailSpeech, responseTextToUse);
             }
         } catch (Exception e) {
             log.error("Query handling failed for action {}: {}", action, e.getMessage(), e);

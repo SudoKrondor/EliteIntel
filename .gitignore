@@ -53,3 +53,5 @@ CLAUDE.md
 #-- SECURITY
 /.classpath
 /.project
+/code-integrity-review.md
+/code-integrity-review-fr.md

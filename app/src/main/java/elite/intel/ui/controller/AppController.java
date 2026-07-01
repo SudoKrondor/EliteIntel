@@ -1,29 +1,7 @@
 package elite.intel.ui.controller;
 
-import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
-import javax.sound.sampled.Mixer;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
-
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.commons.ResponseRouter;
@@ -46,31 +24,32 @@ import elite.intel.gameapi.JournalParser;
 import elite.intel.gameapi.journal.MissingMissionMonitor;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.AppLogEvent;
-import elite.intel.ui.event.ClearConsoleEvent;
-import elite.intel.ui.event.LanguageChangedEvent;
-import elite.intel.ui.event.LlmConnectionStatusEvent;
-import elite.intel.ui.event.NotificationVolumeChangedEvent;
-import elite.intel.ui.event.RecalibrateAudioEvent;
-import elite.intel.ui.event.RestartBrainEvent;
-import elite.intel.ui.event.RestartMouthEvent;
-import elite.intel.ui.event.ServicesStateEvent;
-import elite.intel.ui.event.SleepWakeStateChangedEvent;
-import elite.intel.ui.event.SpeechSpeedChangeEvent;
-import elite.intel.ui.event.SttThreadsChangedEvent;
-import elite.intel.ui.event.SttVolumeChangedEvent;
-import elite.intel.ui.event.ToggleServicesEvent;
-import elite.intel.ui.event.ToggleWakeWordEvent;
-import elite.intel.ui.event.UpdateAvailableEvent;
-import elite.intel.ui.event.VoiceInputModeToggleEvent;
+import elite.intel.ui.event.*;
 import elite.intel.util.StringUtls;
 import elite.intel.util.Updater;
 import elite.intel.ws.WebSocketBroadcaster;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import javax.sound.sampled.Mixer;
+import javax.swing.*;
+import javax.swing.Timer;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+
+import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 public class AppController implements Runnable {
 
     private static final Logger log = LogManager.getLogger(AppController.class);
 
+    // WHY: intentionally process-lifetime and never shut down. Connection checks run on every service
+    // start (and on brain restart), so the executor must outlive stopServices()/restart cycles. Its single
+    // worker is a daemon thread, so it never blocks JVM exit and needs no explicit teardown.
     private final ExecutorService bgExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "ConnectionCheck-Worker");
         t.setDaemon(true);
@@ -84,7 +63,9 @@ public class AppController implements Runnable {
     /// NOTE Order of services is important
     private final Map<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
     private Timer retryConnectionTimer;
-    private int retryAttemptNumber = 0;
+    // Written on the EDT (retry Timer callback, stopRetryTimer), read on the ConnectionCheck-Worker
+    // thread in onLlmConnectionStatus; volatile to make that cross-thread read safe.
+    private volatile int retryAttemptNumber = 0;
 
     public AppController() {
         UiBus.register(this);
