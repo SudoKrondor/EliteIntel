@@ -166,6 +166,7 @@ class AiActionMapGeneratorTest {
             "query_trade_route",
             "recon_hunting_ground",
             "recover_srv_vehicle_get_on_board_ship",
+            "lauch_deploy_nomad",
             "remove_mining_target",
             "request_docking",
             "reset_head_look_ahead",
