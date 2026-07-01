@@ -107,7 +107,6 @@ class AiActionMapGeneratorTest {
             "interrupt",
             "jump_to_hyperspace",
             "launch_ship_detach_from_station",
-            "list_trade_parameters",
             "monetize_route",
             "navigate_from_memory",
             "navigate_to_bio_sample_codex_entry",
