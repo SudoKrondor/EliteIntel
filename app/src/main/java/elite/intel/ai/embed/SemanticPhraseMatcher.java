@@ -36,18 +36,36 @@ public final class SemanticPhraseMatcher {
         }
     }
 
+    /** The best-matching phrase: its index in the queried list and its cosine. {@code index == -1} when none. */
+    public record Match(int index, double score) {}
+
     /**
      * Best similarity of a query to any of a candidate's phrases (e.g. comma-grouped aliases of one action).
      * Returns -1 if the candidate has no usable phrases.
      */
     public double bestSimilarity(float[] queryVector, List<String> phrases) {
+        return bestMatch(queryVector, phrases).score();
+    }
+
+    /**
+     * Like {@link #bestSimilarity}, but also reports <em>which</em> phrase won, by its index in {@code phrases}.
+     * Lets a caller attribute a candidate's score to a specific source phrase (e.g. an alias vs a description).
+     * Returns {@code index == -1, score == -1} when the candidate has no usable phrase.
+     */
+    public Match bestMatch(float[] queryVector, List<String> phrases) {
+        int bestIndex = -1;
         double best = -1.0;
-        for (String phrase : phrases) {
+        for (int i = 0; i < phrases.size(); i++) {
+            String phrase = phrases.get(i);
             if (phrase != null && !phrase.isBlank()) {
-                best = Math.max(best, VectorMath.cosine(queryVector, vectorFor(phrase)));
+                double score = VectorMath.cosine(queryVector, vectorFor(phrase));
+                if (score > best) {
+                    best = score;
+                    bestIndex = i;
+                }
             }
         }
-        return best;
+        return new Match(bestIndex, best);
     }
 
     /**

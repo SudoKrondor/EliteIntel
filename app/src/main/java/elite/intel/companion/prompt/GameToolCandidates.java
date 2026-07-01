@@ -37,7 +37,7 @@ import java.util.Set;
  * a non-English commander utterance to the right tool; they are also kept in the neutral
  * {@code localizedTrainingPhrases} field for future dialects.
  */
-final class GameToolCandidates {
+public final class GameToolCandidates {
 
     /** Legacy-path fallback ids the companion never offers; it has its own speak/nothing_to_do. */
     private static final Set<String> EXCLUDED_IDS = Set.of(
@@ -49,10 +49,10 @@ final class GameToolCandidates {
      * One selectable game tool.
      *
      * @param id        the action id (matched against the reducer's survivors)
-     * @param phraseKey text the word-overlap reducer matches on (localized phrase group, or id when none)
-     * @param tool      the rendered, provider-neutral definition
+     * @param phraseKey the localized alias group (or id when none) - the reducer/reflex matching surface
+     * @param tool      the rendered, provider-neutral definition (carries the parameter schema)
      */
-    record Candidate(String id, String phraseKey, LlmToolDefinition tool) {}
+    public record Candidate(String id, String phraseKey, LlmToolDefinition tool) {}
 
     private final Map<String, ? extends IntelAction> commands;
     private final Map<String, ? extends IntelAction> queries;
@@ -63,7 +63,7 @@ final class GameToolCandidates {
     private final String languageName;
 
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */
-    GameToolCandidates() {
+    public GameToolCandidates() {
         this(CommandRegistry.getInstance().byId(),
                 QueryRegistry.getInstance().byId(),
                 CustomCommandRegistry.getInstance().getCustomCommands(),
@@ -86,7 +86,7 @@ final class GameToolCandidates {
     }
 
     /** Visible game tools in the allowed categories, ordered commands, then queries, then macros. */
-    List<Candidate> collect(Set<IntelActionCategory> allowed) {
+    public List<Candidate> collect(Set<IntelActionCategory> allowed) {
         List<Candidate> result = new ArrayList<>();
         if (allowed.contains(IntelActionCategory.ACTION)) {
             addActions(result, commands);
