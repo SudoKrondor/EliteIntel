@@ -21,7 +21,7 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
-import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SearchInMemoryFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.util.json.JsonUtils;
 import elite.intel.i18n.Language;
@@ -43,7 +43,8 @@ import java.util.concurrent.TimeoutException;
 /**
  * A thought born from a commander reply. It owns the full tool-calling loop: compose -> LLM round -> (first
  * round) apply {@code classify_turn} and record the input -> dangerous-action confirmation -> execute
- * tool-calls -> next round, until {@code nothing_to_do} ends the turn or an unrecoverable response stops it
+ * tool-calls -> (search_in_memory only) one more round, until the turn ends - it is single-round by design,
+ * a command/query/macro or speak/clarify settles it - or an unrecoverable response stops it
  * (§2.5/§2.6/§2.8/§5.1).
  * <p>
  * It has the full commander tool set and the COMMANDER-only paths an EVENT/narration thought cannot reach:
@@ -131,13 +132,14 @@ public final class CommanderThought extends Thought {
                 }
 
                 if (executeRound(flow, tools, invocations, preExecuted) != RoundResult.CONTINUE) {
-                    // nothing_to_do ended the turn, or the round made no progress (only a suppressed speak
-                    // after a game action already owns the spoken outcome): end instead of re-prompting in a
-                    // loop that would burn full-prompt rounds up to the max LLM chain steps.
+                    // The turn is complete. The companion turn is single-round by design: only a
+                    // search_in_memory lookup returns CONTINUE (to read its result next round); anything else
+                    // - a command/query/macro, a speak/clarify, or a bare classify_turn - ends here.
                     return;
                 }
             }
-            // Round cap reached without nothing_to_do: end defensively (the watchdog is the wall-clock backstop).
+            // Round cap reached without terminating (only repeated lookups): end defensively (the watchdog is
+            // the wall-clock backstop).
         } catch (RuntimeException unexpected) {
             // An unexpected failure (e.g. during prompt assembly) must leave no memory hole; the lane logs and survives.
             onInvalidResponse(inputRecorded);
@@ -193,42 +195,33 @@ public final class CommanderThought extends Thought {
 
     /** Outcome of one executed round, driving whether {@link #run} keeps looping. */
     private enum RoundResult {
-        /** The round did real work (ran a tool or voiced a speak); the LLM may chain another round. */
+        /** The round issued a {@code search_in_memory} lookup; the LLM reads its result in one more round. */
         CONTINUE,
-        /** {@code nothing_to_do} ended the turn. */
-        TERMINATED,
-        /**
-         * The round made no progress: it ran no tool and only emitted speak(s) that were suppressed (a game
-         * action already owns the spoken outcome). Re-prompting cannot advance the turn, so it ends here -
-         * this is the guard against the suppressed-speak loop that otherwise burns rounds to the cap.
-         */
-        NO_PROGRESS
+        /** The turn is complete (single-round default: any command/query/macro/speak/clarify, or nothing). */
+        TERMINATED
     }
 
     /**
      * Executes the round's tool-calls in LLM order, synchronously, and voices/remembers each outcome by its
-     * action type via {@link #recordOutcome} (the handler owns speech, not the LLM). The result always feeds
-     * the flow so the LLM can chain on it next round; {@code speak} is voiced or withheld here, and
-     * {@code nothing_to_do} is the lifecycle terminator.
+     * action type via {@link #recordOutcome} (the handler owns speech, not the LLM). The companion turn is
+     * single-round by design: a command, query, macro, {@code speak}, {@code clarify} - or a bare
+     * {@code classify_turn} - completes the turn. The one continuation is {@code search_in_memory}, whose
+     * result the model must read before it can answer: that round feeds its result into the flow and the loop
+     * runs one more round to speak the recalled answer. {@code speak} is voiced or withheld here.
      * <p>
      * Synchronous on purpose (the fire-and-forget dispatch was reverted): a long command holds the lane until
      * it finishes. Decoupling a slow command's outcome from the thought is a separate, cause-level change.
      *
-     * @return {@link RoundResult#TERMINATED} on {@code nothing_to_do}, {@link RoundResult#NO_PROGRESS} when the
-     *         round only produced suppressed speak, otherwise {@link RoundResult#CONTINUE}
+     * @return {@link RoundResult#CONTINUE} only when the round issued a {@code search_in_memory} lookup whose
+     *         result must be read next round; otherwise {@link RoundResult#TERMINATED} (the turn is complete)
      */
     private RoundResult executeRound(List<LlmMessage> flow, List<LlmToolDefinition> tools,
                                  List<LlmToolInvocation> invocations,
                                  Map<LlmToolInvocation, JsonObject> preExecuted) {
         boolean suppressSpeak = shouldSuppressSpeak(invocations);
-        boolean terminate = false;
-        boolean producedProgress = false; // any tool ran, or a speak was actually voiced
+        boolean pendingLookup = false; // a search_in_memory whose result must be read in the next round
         List<LlmMessage> toolResults = new ArrayList<>();
         for (LlmToolInvocation inv : invocations) {
-            if (NothingToDoFunction.ID.equals(inv.name())) {
-                terminate = true;
-                continue;
-            }
             if (SpeakFunction.ID.equals(inv.name())) {
                 if (suppressSpeak) {
                     // A game action already owns the spoken outcome this turn, so the LLM's speak fires no
@@ -241,28 +234,31 @@ public final class CommanderThought extends Thought {
                     JsonObject result = execute(inv);
                     recordCompanionSpeech(spokenTextOf(inv));
                     toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
-                    producedProgress = true; // the companion actually spoke this round
                 }
                 continue;
             }
-            // Game tool / system function: execute synchronously. The result always feeds the flow; speech
-            // and timeline memory depend on the action type.
+            // Game tool / system function: execute synchronously. Speech and timeline memory depend on the
+            // action type; the result feeds the flow only when the round continues (a pending lookup).
             if (!preExecuted.containsKey(inv) && isCommand(inv)) {
                 voice(StringUtls.affirmative(), false);
             }
             JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
             recordOutcome(inv, result, tools);
             toolResults.add(LlmMessage.toolResult(inv.id(), stringify(result)));
-            producedProgress = true; // a tool ran and fed a result into the flow
+            // search_in_memory is the only continuation: its recalled entries return to the model, not the
+            // commander, so the loop runs one more round to speak the answer. Every other tool completes the turn.
+            if (SearchInMemoryFunction.ID.equals(inv.name())) {
+                pendingLookup = true;
+            }
         }
-        if (!terminate) {
+        if (pendingLookup) {
+            // Replay the assistant tool-calls + results so the next round reads the recalled entries, then
+            // speaks the answer (which terminates).
             flow.add(LlmMessage.assistantToolCalls(invocations));
             flow.addAll(toolResults);
+            return RoundResult.CONTINUE;
         }
-        if (terminate) {
-            return RoundResult.TERMINATED;
-        }
-        return producedProgress ? RoundResult.CONTINUE : RoundResult.NO_PROGRESS;
+        return RoundResult.TERMINATED; // single-round by default: the turn is complete
     }
 
     /**
@@ -273,7 +269,7 @@ public final class CommanderThought extends Thought {
      */
     private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
         for (LlmToolInvocation inv : invocations) {
-            if (SpeakFunction.ID.equals(inv.name()) || NothingToDoFunction.ID.equals(inv.name())) {
+            if (SpeakFunction.ID.equals(inv.name())) {
                 continue;
             }
             switch (ctx.actionTypeResolver().resolve(inv.name())) {
@@ -336,9 +332,6 @@ public final class CommanderThought extends Thought {
             // Execute the frozen set in LLM order. Each outcome is voiced and remembered by its action type,
             // exactly like a normal turn (§recordOutcome).
             for (LlmToolInvocation inv : invocations) {
-                if (NothingToDoFunction.ID.equals(inv.name())) {
-                    continue;
-                }
                 JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
                 recordOutcome(inv, result, tools);
             }

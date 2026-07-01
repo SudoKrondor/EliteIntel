@@ -25,7 +25,7 @@ import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.ClassifyTurnFunction;
-import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.SearchInMemoryFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
@@ -72,12 +72,12 @@ class ThoughtTest {
 
     @Test
     void commanderSpeaksThenEndsInOneRound() {
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("on it")), call(NothingToDoFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("on it"))));
 
         Thought.commander(Urgency.NORMAL, "set speed to 50", ctx()).run();
 
-        assertEquals(1, llm.requests.size(), "nothing_to_do ends the turn; no extra LLM round");
-        assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only speak is executed; nothing_to_do is not");
+        assertEquals(1, llm.requests.size(), "speak settles the turn; no extra LLM round");
+        assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only speak is executed");
         // memory: commander input under the global topic, then the companion's own spoken words (not an ack).
         assertEquals(2, memory.writes.size());
         MemoryEntry input = memory.writes.get(0);
@@ -104,8 +104,7 @@ class ThoughtTest {
     @Test
     void commanderSilentCommandTurnDropsSpeak() {
         llm.scripted.add(ok(call("close_panel", new JsonObject()),
-                call(SpeakFunction.ID, text("closing the panel")),
-                call(NothingToDoFunction.ID, new JsonObject())));
+                call(SpeakFunction.ID, text("closing the panel"))));
 
         Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
 
@@ -127,8 +126,7 @@ class ThoughtTest {
         // inline for the outcome.
         execution.resultsByTool.put("ship_status", new JsonObject());
         llm.scripted.add(ok(call("ship_status", new JsonObject()),
-                call(SpeakFunction.ID, text("let me check the ship")),
-                call(NothingToDoFunction.ID, new JsonObject())));
+                call(SpeakFunction.ID, text("let me check the ship"))));
 
         Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
 
@@ -140,6 +138,22 @@ class ThoughtTest {
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
                         && e.content().contains("command ship_status executed")),
                 "the command execution is recorded");
+    }
+
+    @Test
+    void commandMemoryDropsExamplePhrasesFromToolDescription() {
+        reducer.tools = List.of(new LlmToolDefinition("ship_status",
+                "Read ship status. Example phrases: ship status, status report.", "", List.of()));
+        execution.resultsByTool.put("ship_status", new JsonObject());
+        llm.scripted.add(ok(call("ship_status", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
+
+        MemoryEntry outcome = memory.writes.stream()
+                .filter(e -> e.source() == MemorySource.TOOL_RESULT)
+                .findFirst()
+                .orElseThrow();
+        assertEquals("command ship_status executed: Read ship status.", outcome.content());
     }
 
     @Test
@@ -164,7 +178,7 @@ class ThoughtTest {
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
         execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
-        llm.scripted.add(ok(call("scan_system", new JsonObject()), call(NothingToDoFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call("scan_system", new JsonObject())));
 
         List<String> voxTexts = new ArrayList<>();
         Object collector = new Object() {
@@ -185,40 +199,42 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderTrailingSpeakRoundIsSuppressedForSilentTurn() {
-        // The silent command runs in round 0; the LLM speaks only in round 1. Turn-level accounting must
-        // still suppress that trailing speak.
+    void commanderCommandSettlesTurnInOneRound() {
+        // A command is self-narrating and terminal: it settles the turn in its own round, so the scripted
+        // second round is never reached (the companion turn is single-round by design).
         llm.scripted.add(ok(call("close_panel", new JsonObject())));
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("done")), call(NothingToDoFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("done"))));
 
         Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
 
+        assertEquals(1, llm.requests.size(),
+                "the command settles the turn; the scripted second round is never requested");
         assertEquals(List.of("close_panel"), execution.toolNames(),
-                "speak emitted in a later round of a silent-only turn is still withheld");
+                "only the command runs; the later speak is never executed");
     }
 
     @Test
-    void multiRoundReplaysAssistantCallAndToolResult() {
-        llm.scripted.add(ok(call("ship_status", new JsonObject())));
-        llm.scripted.add(ok(call(NothingToDoFunction.ID, new JsonObject())));
+    void memoryLookupReplaysAssistantCallAndToolResultForOneMoreRound() {
+        // search_in_memory is the one continuation: round 0 runs the lookup, round 1 speaks the recalled answer.
+        llm.scripted.add(ok(call(SearchInMemoryFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("the hull is solid"))));
 
-        Thought.commander(Urgency.NORMAL, "how is the ship", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "what did I say about the hull", ctx()).run();
 
-        assertEquals(2, llm.requests.size(), "a non-terminating round triggers another LLM round");
+        assertEquals(2, llm.requests.size(), "a memory lookup triggers one more LLM round to speak the answer");
         // The second request's flow must carry the protocol-valid assistant(tool_calls) -> tool(result) pair.
         List<LlmMessage> secondFlow = llm.requests.get(1).messages();
         assertTrue(secondFlow.stream().anyMatch(m -> m.role() == LlmMessageRole.ASSISTANT && !m.toolCalls().isEmpty()),
                 "assistant tool-call turn must be replayed");
         assertTrue(secondFlow.stream().anyMatch(m -> m.role() == LlmMessageRole.TOOL && m.toolCallId() != null),
                 "tool result must reference its tool_call_id");
-        assertEquals(List.of("ship_status"), execution.toolNames());
+        assertEquals(List.of(SearchInMemoryFunction.ID, SpeakFunction.ID), execution.toolNames());
     }
 
     @Test
     void classifyTurnAppliedBeforeInputIsRecorded() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high")),
-                call(NothingToDoFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high"))));
 
         Thought.commander(Urgency.NORMAL, "let's talk routes", ctx()).run();
 
@@ -235,8 +251,7 @@ class ThoughtTest {
     void questionTurnInputIsNotFiledButTheAnswerIs() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
         llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
-                call(SpeakFunction.ID, text("forty percent")),
-                call(NothingToDoFunction.ID, new JsonObject())));
+                call(SpeakFunction.ID, text("forty percent"))));
 
         Thought.commander(Urgency.NORMAL, "how much fuel is left", ctx()).run();
 
@@ -276,8 +291,7 @@ class ThoughtTest {
     @Test
     void narrationThoughtSpeaksAndRecordsOnlyTheSpokenLine() {
         // One short round: phrase the sensor data, voice it, remember only the spoken line (no raw data).
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("Fuel is running low, Commander.")),
-                call(NothingToDoFunction.ID, new JsonObject())));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("Fuel is running low, Commander."))));
 
         Thought.sensorNarration(Urgency.URGENT, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
 
@@ -549,10 +563,11 @@ class ThoughtTest {
 
     private static final class RecordingReducer implements CompanionActionReducer {
         Set<IntelActionCategory> lastCategories;
+        List<LlmToolDefinition> tools = List.of();
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
             lastCategories = allowedCategories;
-            return List.of();
+            return tools;
         }
     }
 }

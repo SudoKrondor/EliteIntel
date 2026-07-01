@@ -52,19 +52,19 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             You act only by calling functions; never reply in free text, and an empty response with no \
             function call is an error, not a way to stay silent.
             Begin every turn with exactly one classify_turn call: it only files the turn in memory and never \
-            answers or acts. Then handle the turn:
-            - Talk, command, or a query you can answer now -> add speak, the command, or the query AND \
-            nothing_to_do in the same response. The commander hears it at once, so the turn is finished.
-            - Look something up first (search_in_memory, or a query whose data you must read before you can \
-            answer) -> send ONLY classify_turn + that lookup, and do NOT call nothing_to_do. Its result comes \
-            back to you, not to the commander; read it, then in your NEXT response speak the answer AND \
-            nothing_to_do.
-            - Act without speaking -> the action AND nothing_to_do (no speak).
-            - Nothing to say or do -> classify_turn AND nothing_to_do.
-            nothing_to_do ends the turn: call it only once the commander has heard everything - never in the \
-            same response as search_in_memory, and never as a reflex. Never call speak twice for the same thing.
-            If no offered function fits, do not force or fake an unrelated one: ask with clarify, or speak \
-            that you cannot - then nothing_to_do. Never say you will check and then fall silent.
+            answers or acts. Then settle the turn in that same response:
+            - Run a command, query, or macro -> call that function. Its outcome is spoken to the commander \
+            automatically, so do not add speak to repeat it.
+            - Only talk (chat, answer from what you already know, or tell the commander you cannot act) -> \
+            call speak.
+            - Nothing to say or do -> just classify_turn, nothing else.
+            One exception takes a second response: a memory lookup. If the answer is something the commander \
+            told you or you noted earlier and it is not already in view, send ONLY classify_turn + \
+            search_in_memory now and do NOT answer yet. Its result returns to you, not the commander; read it, \
+            then speak the answer in your next response.
+            If no offered function fits, do not force or fake an unrelated one: ask with clarify, or say with \
+            speak that you cannot. Never say you will check and then fall silent. Never call speak twice for \
+            the same thing.
             """;
 
     private static final String COMMANDER_RULES = """
@@ -89,9 +89,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     private static final String NARRATION_RULES = """
             The ship's systems flagged a reading worth reporting. Reply only by calling functions, never in \
             free text. Voice the reading to the commander in one short, in-character line with the speak \
-            function, using only the details given below - never invent or pad. Then end with \
-            nothing_to_do. You have no other functions this turn: no queries, no actions - just report what \
-            the sensors handed you.
+            function, using only the details given below - never invent or pad. You have no other functions \
+            this turn: no queries, no actions - just report what the sensors handed you.
             """;
 
     @Override
@@ -127,7 +126,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     /**
      * Lean narration prompt: the persona core plus the report-only narration task and the language rule.
      * It omits the commander persona (no memory/query), tool-calling-about-queries, and safety - a
-     * narration thought has only speak and nothing_to_do.
+     * narration thought has only speak.
      */
     private String narrationStaticRules() {
         StringBuilder sb = new StringBuilder();

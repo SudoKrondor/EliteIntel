@@ -16,7 +16,7 @@ public abstract class BaseEvent implements ToJsonConvertible, ToYamlConvertable 
     /**
      * How much this event matters for companion attention. Drives (in a later step) whether the event
      * wakes the consciousness and how it is surfaced: {@code LOW} = background, do not wake; {@code NORMAL}
-     * = notable, the consciousness may comment per verbosity; {@code HIGH} = urgent, always surfaced.
+     * = notable, the consciousness may comment; {@code HIGH} = urgent, always surfaced.
      */
     public enum Importance { LOW, NORMAL, HIGH }
 

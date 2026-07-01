@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -265,7 +266,7 @@ public abstract class Thought {
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
+            case COMMAND -> rememberAction("command " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case QUERY -> {
                 // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
@@ -278,7 +279,7 @@ public abstract class Thought {
                     GameEventBus.publish(new AiVoxResponseEvent(answer));
                 }
             }
-            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
+            case MACRO -> rememberAction("macro " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }
@@ -300,6 +301,17 @@ public abstract class Thought {
     protected static String description(String id, List<LlmToolDefinition> tools) {
         return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
                 .map(LlmToolDefinition::description).orElse("");
+    }
+
+    /** The compact action description stored in memory; examples stay LLM-facing only. */
+    protected static String memoryDescription(String id, List<LlmToolDefinition> tools) {
+        String raw = description(id, tools);
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String detail = raw.strip();
+        int exampleStart = detail.toLowerCase(Locale.ROOT).indexOf("example phrases");
+        return exampleStart < 0 ? detail : detail.substring(0, exampleStart).strip();
     }
 
     /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */

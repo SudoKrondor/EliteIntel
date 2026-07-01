@@ -6,7 +6,6 @@ import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
@@ -20,14 +19,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
  * via {@link CompanionRuntime}: speak/clarify submit speech, remember/recall go through the memory gateway,
- * change_verbosity sets shared state, find_action queries the reducer, nothing_to_do is a no-op, and
- * classify_turn moves the global topic and stamps the turn's importance. Fakes back the services so
- * everything is unit-testable.
+ * find_action queries the reducer, and classify_turn moves the global topic and stamps the turn's
+ * importance. Fakes back the services so everything is unit-testable.
  */
 class SystemFunctionHandleTest {
 
@@ -110,22 +107,6 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void changeVerbositySetsSharedState() {
-        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "chatty"), "");
-
-        assertEquals(Verbosity.CHATTY, state.verbosity());
-        assertEquals("chatty", result.get("verbosity").getAsString());
-    }
-
-    @Test
-    void changeVerbosityRejectsUnknownMode() {
-        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "loud"), "");
-
-        assertEquals("unknown verbosity", result.get("error").getAsString());
-        assertEquals(Verbosity.NORMAL, state.verbosity()); // unchanged
-    }
-
-    @Test
     void findActionReturnsReducerMatches() {
         JsonObject result = new FindActionFunction().handle("find_action", params("query", "gear"), "");
 
@@ -133,11 +114,6 @@ class SystemFunctionHandleTest {
         JsonObject item = result.getAsJsonArray("items").get(0).getAsJsonObject();
         assertEquals("lower_landing_gear", item.get("name").getAsString());
         assertEquals("Lower the landing gear", item.get("description").getAsString());
-    }
-
-    @Test
-    void nothingToDoIsNoOp() {
-        assertNull(new NothingToDoFunction().handle("nothing_to_do", new JsonObject(), ""));
     }
 
     @Test

@@ -39,7 +39,7 @@ import java.util.Set;
  */
 public final class GameToolCandidates {
 
-    /** Legacy-path fallback ids the companion never offers; it has its own speak/nothing_to_do. */
+    /** Legacy-path fallback ids the companion never offers; it has its own speak. */
     private static final Set<String> EXCLUDED_IDS = Set.of(
             GeneralConversationQueryCommand.ID,
             ConnectionCheckQueryCommand.ID,

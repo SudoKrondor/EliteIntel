@@ -93,7 +93,7 @@ public final class PromptComposer {
 
     /**
      * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
-     * a narration thought has only speak/nothing_to_do), the Visible context for continuity, the sensor data as the
+     * a narration thought has only speak), the Visible context for continuity, the sensor data as the
      * current input, the system tools, and its own NARRATION cache profile so it never shares the commander
      * prefix. {@code selectedTools}/{@code indexes} do not apply here.
      */

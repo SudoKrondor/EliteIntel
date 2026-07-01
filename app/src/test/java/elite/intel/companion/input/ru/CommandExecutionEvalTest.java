@@ -107,7 +107,14 @@ class CommandExecutionEvalTest {
         int hits = 0;
         for (Case c : cases) {
             long roundsBefore = h.roundCount();
+            int latencyCountBefore = h.latencies().size();
+            long startNanos = System.nanoTime();
             h.say(c.input());
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+            List<Long> latenciesAfter = h.latencies();
+            long llmMs = latenciesAfter.subList(latencyCountBefore, latenciesAfter.size()).stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
             long llmRounds = h.roundCount() - roundsBefore; // 0 == reflex fast-path, >=1 == LLM path
 
             List<Executed> calls = h.callsNamed(c.expectedTool());
@@ -123,11 +130,13 @@ class CommandExecutionEvalTest {
             String pathCell = String.format("%s%s",
                     tookReflex ? "reflex" : "llm(" + llmRounds + ")",
                     pathOk ? "" : (c.reflex() ? " WANT-REFLEX" : " WANT-LLM"));
-            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s | %s%n",
+            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s time=%5dms llm=%5dms | %s%n",
                     c.input(),
                     called ? "yes" : "NO",
                     c.argContains() == null ? "-" : (argOk ? "ok" : "MISS"),
                     pathCell,
+                    elapsedMs,
+                    llmMs,
                     actualTools() + (called && !args.isEmpty() ? " args=" + args : "")));
             block.append(h.memoryDeltaBlock()); // what this command wrote to memory, this turn
         }
