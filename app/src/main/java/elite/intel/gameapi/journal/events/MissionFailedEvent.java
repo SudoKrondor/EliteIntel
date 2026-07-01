@@ -42,6 +42,12 @@ public class MissionFailedEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String missionName = localisedName != null && !localisedName.isBlank() ? localisedName : name;
+        return missionName == null || missionName.isBlank() ? "" : "mission failed: " + missionName;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

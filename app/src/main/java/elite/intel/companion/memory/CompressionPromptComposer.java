@@ -2,6 +2,7 @@ package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -26,8 +27,23 @@ final class CompressionPromptComposer {
     private static final String INSTRUCTION =
             "You compress old crew memory into a single compact running summary. "
                     + "Merge the new entries into the existing summary, keep what stays relevant, drop trivia, "
-                    + "and reply with only the updated summary as plain text, at most "
+                    + "and preserve entries marked [high] importance faithfully while condensing the rest. "
+                    + "Reply with only the updated summary as plain text, at most "
                     + CompanionMemoryLimits.SUMMARY_MAX_CHARS + " characters.";
+
+    /**
+     * Returns [system instruction, user(content)] for shrinking a single over-long memory entry to a short
+     * gist (the prompt-bloat guard, {@code MemoryCompressionThought}). Plain-text turn, capped at the entry
+     * size limit; the gist stays in the commander's language.
+     */
+    List<LlmMessage> composeLineCompression(String content) {
+        String instruction = "Shorten the crew memory line below to a compact gist of at most "
+                + CompanionConfig.memoryEntryMaxChars() + " characters, preserving the key facts and dropping "
+                + "filler. Reply with only the shortened line as plain text. " + languageRule();
+        return List.of(
+                LlmMessage.of(LlmMessageRole.SYSTEM, instruction),
+                LlmMessage.of(LlmMessageRole.USER, content == null ? "" : content.strip()));
+    }
 
     /** Returns [system instruction, user(existing summary + new entries)] for the compression request. */
     List<LlmMessage> compose(String currentSummary, List<MemoryEntry> batch) {
@@ -36,7 +52,8 @@ final class CompressionPromptComposer {
                 .append(currentSummary == null || currentSummary.isBlank() ? "(none)" : currentSummary.strip());
         user.append("\n\nNew entries to merge:\n");
         for (MemoryEntry entry : batch) {
-            user.append('[').append(entry.source().name()).append("][").append(topicId(entry)).append("] ")
+            user.append('[').append(entry.source().name()).append("][").append(topicId(entry)).append("][")
+                    .append(entry.importance().name().toLowerCase(Locale.ROOT)).append("] ")
                     .append(entry.content()).append('\n');
         }
         return List.of(
@@ -52,6 +69,6 @@ final class CompressionPromptComposer {
     }
 
     private static String topicId(MemoryEntry entry) {
-        return entry.topic().name().toLowerCase(Locale.ROOT);
+        return entry.topic().id();
     }
 }

@@ -56,6 +56,12 @@ public class ModuleBuyEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String item = buyItemLocalised != null && !buyItemLocalised.isBlank() ? buyItemLocalised : buyItem;
+        return item == null || item.isBlank() ? "" : "bought the " + item + " for " + buyPrice + " credits";
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

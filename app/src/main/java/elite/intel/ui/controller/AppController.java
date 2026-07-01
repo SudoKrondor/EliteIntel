@@ -152,6 +152,8 @@ public class AppController implements Runnable {
                     startServices();
                 } catch (Exception e) {
                     log.error("Failed to start services, stopping", e);
+                    // Surface the reason to the user (e.g. an unsupported LLM provider), not just the log file.
+                    appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
                     stopServices();
                     UiBus.publish(new ServicesStateEvent(false));
                 }

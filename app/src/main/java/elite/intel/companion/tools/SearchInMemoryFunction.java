@@ -13,10 +13,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * System function: search stored memory with a single plain-text query. The gateway looks across all
- * topics' mid-term memory and the conscious llm_memory facts at once and returns the most recent matches
- * (newest first), so the model never has to pick a scope or a topic. Short-term timeline and long-term
- * summary are not searched here - they are already inlined into the prompt. COMMANDER-only.
+ * System function: search stored memory with a single plain-text query. The gateway looks across the
+ * short-term timeline and all topics' mid-term memory at once and returns the matches ranked by importance,
+ * then recency, so the model never has to pick a scope or a topic. Short-term is also inlined into the prompt, but
+ * searching it too gives a recall a complete picture. The long-term summary is not searched here - it is
+ * always inlined whole. COMMANDER-only.
  */
 @RegisterSystemFunction
 public final class SearchInMemoryFunction implements SystemFunction {
@@ -33,9 +34,10 @@ public final class SearchInMemoryFunction implements SystemFunction {
     @Override
     public String llmDescription() {
         return "Search your memory for what you already know. Call this before answering, or before saying you "
-                + "don't know, when the commander asks about something they told you or that you remembered. "
-                + "Pass a short query; it returns the most recent matching entries from across all topics and your "
-                + "remembered facts.";
+                + "don't know, when the commander asks about something they told you or that you remembered "
+                + "earlier. Pass a short query; it returns matching entries from across all of your memory, the "
+                + "most important first. Treat what it returns as your own reliable memory: if the answer is "
+                + "there, use it - do not say you don't remember after it returns results.";
     }
 
     @Override

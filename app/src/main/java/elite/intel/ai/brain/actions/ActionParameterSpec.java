@@ -22,6 +22,7 @@ public final class ActionParameterSpec {
     private final String description;
     private final List<String> examples;
     private final String extractionHint;
+    private final List<String> enumValues;
 
     /**
      * @param name            identifier used in {@code ${name}} templates within step params and SPEAK text
@@ -34,12 +35,22 @@ public final class ActionParameterSpec {
      */
     public ActionParameterSpec(String name, String type, boolean required,
                                String description, List<String> examples, String extractionHint) {
+        this(name, type, required, description, examples, extractionHint, List.of());
+    }
+
+    /**
+     * @param enumValues closed set of allowed values; rendered as a JSON-Schema {@code enum} so the model is
+     *                   constrained to exactly one of them. Empty for free-form parameters (the common case).
+     */
+    public ActionParameterSpec(String name, String type, boolean required, String description,
+                               List<String> examples, String extractionHint, List<String> enumValues) {
         this.name = name;
         this.type = type;
         this.required = required;
         this.description = description;
         this.examples = examples == null ? List.of() : List.copyOf(examples);
         this.extractionHint = extractionHint;
+        this.enumValues = enumValues == null ? List.of() : List.copyOf(enumValues);
     }
 
     @SuppressWarnings("unused")
@@ -50,6 +61,7 @@ public final class ActionParameterSpec {
         description = null;
         examples = null;
         extractionHint = null;
+        enumValues = null;
     }
 
     /** Validates this spec. Throws {@link IllegalArgumentException} if invalid. */
@@ -74,4 +86,6 @@ public final class ActionParameterSpec {
     public List<String> getExamples() { return examples != null ? List.copyOf(examples) : List.of(); }
     /** Returns an optional extra rule appended to the LLM prompt for this parameter, or {@code null} if absent. */
     public String getExtractionHint() { return extractionHint; }
+    /** The closed set of allowed values (JSON-Schema {@code enum}), or empty for a free-form parameter. */
+    public List<String> getEnumValues() { return enumValues != null ? List.copyOf(enumValues) : List.of(); }
 }

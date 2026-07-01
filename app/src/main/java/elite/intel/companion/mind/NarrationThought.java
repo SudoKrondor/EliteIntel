@@ -4,6 +4,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmResult;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.prompt.ComposedPrompt;
@@ -55,12 +56,18 @@ public final class NarrationThought extends Thought {
         return eventTopic;
     }
 
+    /** Narration carries ordinary importance; only the commander rates a turn (classify_turn). */
+    @Override
+    protected MemoryImportance memoryImportance() {
+        return MemoryImportance.NORMAL;
+    }
+
     // Game-tool categories come from IntelActionAccessPolicy for NARRATION (none); inherited from the base,
     // so the prompt offers no commands and no queries.
 
     /**
-     * System tools for the NARRATION source ({@code speak} + {@code nothing_to_do}), with {@code speak}
-     * ungated: the subscriber layer already decided this should be narrated, so verbosity does not suppress it.
+     * System tools for the NARRATION source ({@code speak} only): the subscriber layer already decided this
+     * should be narrated, so it is voiced unconditionally.
      */
     @Override
     protected List<LlmToolDefinition> systemTools() {

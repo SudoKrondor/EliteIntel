@@ -12,8 +12,12 @@ import java.util.Locale;
  * wrong extra command is cheap (the model still picks the right one), a missed command is invisible to it.
  * Deliberately a companion-local helper (not the DB-backed {@code FuzzySearch}): it compares two plain words,
  * with no database, no candidate list, and a length-scaled budget tuned for short command words.
+ * <p>
+ * Shared owner of word-level similarity for the companion: besides command word-overlap
+ * ({@link WordOverlapActionReducer}) it also backs the unified memory search ({@code SessionMemoryGateway}),
+ * so both decide "the same word" the same inflection-tolerant way.
  */
-final class CompanionWordMatch {
+public final class CompanionWordMatch {
 
     private CompanionWordMatch() {
     }
@@ -25,7 +29,7 @@ final class CompanionWordMatch {
     private static final int STEM_MIN_PREFIX = 4;
 
     /** Whether the two words are the same word up to an inflected ending or a small typo. */
-    static boolean similar(String a, String b) {
+    public static boolean similar(String a, String b) {
         if (a == null || b == null) {
             return false;
         }

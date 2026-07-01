@@ -48,10 +48,16 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
         } else if (status.isFsdCooldown()) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
-        } else if (status.isFighterOut()) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
-        } else if (status.isInMainShip()) {
+        }
+
+        ///NOTE. this is commented out until FDev fixes the Status.json.
+        /// Game has a bug status.isFighterOut() == true when nomad is equipped and returned to base.
+//        else if (status.isFighterOut()) {
+//            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
+//            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
+//        }
+
+        else if (status.isInMainShip()) {
             if (status.isInSupercruise()) {
                 navigator.closeOpenPanel();
                 if (settingsManager.getAutoSpeedUpForFtl()) {

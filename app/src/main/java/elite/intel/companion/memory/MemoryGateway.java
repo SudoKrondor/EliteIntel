@@ -6,9 +6,8 @@ import elite.intel.companion.model.ConversationTopic;
 import java.util.List;
 
 /**
- * The single door to the companion's session memory. Owns the four memory areas (short-term,
- * mid-term topic, long_term_summary, llm_memory) and the transitions between them; no one accesses
- * the internal memory levels directly.
+ * The single door to the companion's session memory. Owns the memory areas (short-term, mid-term topic,
+ * long_term_summary) and the transitions between them; no one accesses the internal memory levels directly.
  * <p>
  * The gateway is mechanical: it stores/retrieves but never interprets meaning, decides importance,
  * calls the LLM, summarizes, or changes topic.
@@ -31,20 +30,14 @@ public interface MemoryGateway {
     List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit);
 
     /**
-     * Unified recall (the {@code recall(query)} system function): searches all stored memory - mid-term
-     * topic memory across every topic plus the conscious llm_memory facts - for entries whose content
-     * matches the query, and returns the most recent matches (newest first), at most {@code limit}.
+     * Unified recall (the {@code search_in_memory} system function): searches all stored memory - the
+     * short-term timeline plus mid-term topic memory across every topic - for entries whose content matches the
+     * query, and returns the matches ranked by importance, then recency, at most {@code limit}.
      *
      * @param query plain-text filter; blank returns the most recent entries regardless of content
      * @param limit maximum entries to return
      */
     List<String> recallMatching(String query, int limit);
-
-    /** Returns the entire llm_memory list (small enough to return whole). */
-    List<String> readLlmMemory();
-
-    /** Writes a short fact to the cyclic llm_memory (code enforces length/dedup limits). */
-    void writeLlmMemory(String content);
 
     /** Cheap index metadata for the prompt (no content loaded). */
     MemoryAvailabilitySnapshot indexes();
@@ -54,4 +47,13 @@ public interface MemoryGateway {
 
     /** Atomically replaces the long-term summary (called by {@code MidTermToLongTermConsolidator}). */
     void replaceLongTermSummary(String summary);
+
+    /**
+     * The pinned MAX-importance facts in long-term memory (verbatim, never compressed), always surfaced in the
+     * prompt. Oldest-to-newest.
+     */
+    List<MemoryEntry> longTermPinnedFacts();
+
+    /** Pins a MAX-importance fact verbatim into long-term memory (called by {@code MidTermToLongTermConsolidator}). */
+    void addLongTermPinned(MemoryEntry fact);
 }

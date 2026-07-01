@@ -12,6 +12,7 @@ import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.CompanionLlmGatewayFactory;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MidTermToLongTermConsolidator;
+import elite.intel.companion.memory.OversizedMemoryCompressor;
 import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtContext;
@@ -19,7 +20,7 @@ import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
-import elite.intel.companion.prompt.WordOverlapActionReducer;
+import elite.intel.companion.prompt.SemanticActionReducer;
 import elite.intel.companion.speech.CompanionSpeechGateway;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -110,13 +111,16 @@ public final class CompanionSubsystemGate implements ManagedService {
         // Assemble the companion graph (all no-arg / factory) and publish it so self-describing tools
         // (system functions reaching CompanionRuntime statically) can reach the gateways and state.
         CompanionState state = new CompanionState();
-        CompanionActionReducer reducer = new WordOverlapActionReducer();
+        CompanionActionReducer reducer = new SemanticActionReducer();
         LlmGateway llm = llmOverride != null ? llmOverride : CompanionLlmGatewayFactory.create();
         SpeechGateway speech = new CompanionSpeechGateway();
         ExecutionGateway execution = executionOverride != null ? executionOverride : new CompanionExecutionGateway();
         SessionMemoryGateway memory = new SessionMemoryGateway();
         // Long-term consolidation: hand mid-term overflow to the LLM-backed consolidator (§3.7/§10.3).
         memory.setMidTermEvictionListener(new MidTermToLongTermConsolidator(memory, llm, speech));
+        // Over-long writes are gist-compressed off the write path on a dedicated executor (§1.10.52b), so they
+        // never bloat the prompt and never block a write or a narration lane.
+        memory.setOversizedMemoryListener(new OversizedMemoryCompressor(memory, llm));
         CompanionRuntime.install(llm, speech, execution, memory, reducer, state);
 
         DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();

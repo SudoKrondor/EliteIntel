@@ -10,6 +10,7 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
@@ -24,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +82,7 @@ public abstract class Thought {
 
     /**
      * Creates a thought from a commander reply. Its memory tag is the live global conversation topic
-     * (which a {@code change_global_topic} call may move during the thought).
+     * (which a {@code classify_turn} call may move during the thought).
      */
     public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
         return commander(urgency, input, input, ctx);
@@ -96,12 +98,13 @@ public abstract class Thought {
 
     /**
      * Creates a thought from a filtered game event. Its memory tag is fixed at birth from the static
-     * event-type map; an EVENT thought never moves the global conversation topic. It is memory-only: a
-     * {@code HIGH} event is recorded, a {@code NORMAL} event is dropped, and the LLM is never engaged.
+     * event-type map; an EVENT thought never moves the global conversation topic. It is memory-only: the
+     * event's readable {@code summary} ({@code memorySummary()}) is recorded if non-blank, otherwise nothing,
+     * and the LLM is never engaged.
      */
     public static Thought event(Urgency urgency, String summary, ConversationTopic eventTopic,
-                                BaseEvent.Importance importance, ThoughtContext ctx) {
-        return new EventThought(urgency, summary, eventTopic, importance, ctx);
+                                ThoughtContext ctx) {
+        return new EventThought(urgency, summary, eventTopic, ctx);
     }
 
     /**
@@ -144,6 +147,13 @@ public abstract class Thought {
 
     /** COMMANDER: the live global conversation topic; EVENT/narration: the event's fixed topic. */
     protected abstract ConversationTopic memoryTopic();
+
+    /**
+     * Importance stamped on this thought's memory entries, resolved per source exactly like
+     * {@link #memoryTopic()}: {@code CommanderThought} reflects the level the consciousness set for the turn
+     * via {@code classify_turn}; the others are {@link MemoryImportance#NORMAL}.
+     */
+    protected abstract MemoryImportance memoryImportance();
 
     /**
      * IntelAction categories this thought may use - the single input to game-tool selection. Default: the
@@ -193,8 +203,7 @@ public abstract class Thought {
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
-                ctx.memoryGateway().indexes(),
-                ctx.memoryGateway().longTermSummary());
+                ctx.memoryGateway().indexes());
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
@@ -227,7 +236,7 @@ public abstract class Thought {
     /** Records the current input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput));
+                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance()));
     }
 
     /**
@@ -240,7 +249,7 @@ public abstract class Thought {
             return;
         }
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, memoryImportance()));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
@@ -257,7 +266,7 @@ public abstract class Thought {
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
+            case COMMAND -> rememberAction("command " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case QUERY -> {
                 // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
@@ -270,7 +279,7 @@ public abstract class Thought {
                     GameEventBus.publish(new AiVoxResponseEvent(answer));
                 }
             }
-            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
+            case MACRO -> rememberAction("macro " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }
@@ -294,11 +303,22 @@ public abstract class Thought {
                 .map(LlmToolDefinition::description).orElse("");
     }
 
+    /** The compact action description stored in memory; examples stay LLM-facing only. */
+    protected static String memoryDescription(String id, List<LlmToolDefinition> tools) {
+        String raw = description(id, tools);
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String detail = raw.strip();
+        int exampleStart = detail.toLowerCase(Locale.ROOT).indexOf("example phrases");
+        return exampleStart < 0 ? detail : detail.substring(0, exampleStart).strip();
+    }
+
     /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */
     protected void rememberAction(String lead, String detail) {
         String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content));
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, memoryImportance()));
     }
 
     /**

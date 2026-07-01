@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
@@ -48,6 +49,23 @@ class MidTermTopicMemory {
         return matched;
     }
 
+    /**
+     * Removes the given entry (by identity) from its topic if present. Used by the gateway's semantic
+     * de-duplication when a re-stated fact supersedes this copy. Returns whether it removed.
+     */
+    boolean remove(MemoryEntry entry) {
+        List<MemoryEntry> entries = byTopic.get(entry.topic());
+        if (entries != null) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i) == entry) {
+                    entries.remove(i);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Every entry across all topics; the gateway's unified search does the query matching. */
     List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>();
@@ -68,14 +86,29 @@ class MidTermTopicMemory {
         return topics;
     }
 
-    /** Evicts per-topic overflow (oldest beyond the per-topic cap) and returns it for consolidation. */
+    /**
+     * Evicts per-topic overflow and returns it for consolidation. Importance-aware: the least important entry
+     * leaves first (oldest among equal importance), so HIGH/MAX facts outlast routine ones - MAX leaves last
+     * and is carried verbatim into long-term by the consolidator.
+     */
     List<MemoryEntry> evictOverflow() {
         List<MemoryEntry> evicted = new ArrayList<>();
         for (List<MemoryEntry> entries : byTopic.values()) {
-            while (entries.size() > CompanionMemoryLimits.MID_TERM_MAX_ENTRIES_PER_TOPIC) {
-                evicted.add(entries.remove(0)); // oldest of the topic first
+            while (entries.size() > CompanionConfig.midTermMemorySizePerTopic()) {
+                evicted.add(entries.remove(lowestImportanceOldestIndex(entries)));
             }
         }
         return evicted;
+    }
+
+    /** Index of the least-important entry, earliest among equal importance (the list is oldest-first). */
+    private static int lowestImportanceOldestIndex(List<MemoryEntry> entries) {
+        int victim = 0;
+        for (int i = 1; i < entries.size(); i++) {
+            if (entries.get(i).importance().compareTo(entries.get(victim).importance()) < 0) {
+                victim = i;
+            }
+        }
+        return victim;
     }
 }

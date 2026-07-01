@@ -52,6 +52,16 @@ public class ShipyardTransferEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        if (shipType == null || shipType.isBlank()) {
+            return "";
+        }
+        return system == null || system.isBlank()
+                ? "ordered transfer of the " + shipType
+                : "ordered transfer of the " + shipType + " from " + system;
+    }
+
+    @Override
     public JsonObject toJsonObject() {
         return GsonFactory.toJsonObject(this);
     }

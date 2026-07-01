@@ -1,5 +1,6 @@
 package elite.intel.companion.prompt;
 
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ThoughtSource;
@@ -20,7 +21,7 @@ import java.util.Locale;
  * the OpenAI/Mistral-compatible prompt (see COMPANION_ARCHITECTURE.md §2.10).
  * <p>
  * Cache-friendly ordering: the stable narrative + topic enum head the system message, the
- * slowly-changing memory indexes/summary follow, and the per-turn timeline and current input are
+ * slowly-changing memory index follows, and the per-turn Visible context and current input are
  * separate later messages so the cached prefix survives across turns.
  */
 public final class PromptComposer {
@@ -47,8 +48,7 @@ public final class PromptComposer {
      * @param selectedTools    Reducer-selected game/query tools
      * @param systemTools      system function tools for this source
      * @param shortTerm        short-term memory timeline for the context block
-     * @param indexes          cheap memory index metadata (llm_memory / topic memory availability)
-     * @param longTermSummary  the session-wide long-term summary
+     * @param indexes          cheap memory index metadata (topics with mid-term memory)
      */
     public ComposedPrompt compose(
             ThoughtSource source,
@@ -58,12 +58,11 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            MemoryAvailabilitySnapshot indexes,
-            String longTermSummary
+            MemoryAvailabilitySnapshot indexes
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, urgency, currentTopic, currentInput,
-                    selectedTools, systemTools, shortTerm, indexes, longTermSummary);
+                    selectedTools, systemTools, shortTerm, indexes);
             case NARRATION -> composeNarration(source, urgency, currentTopic, currentInput, systemTools, shortTerm);
             // EVENT thoughts are memory-only (see EventThought); they never reach here.
             case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
@@ -71,16 +70,17 @@ public final class PromptComposer {
     }
 
     /**
-     * Full consciousness prompt: stable prefix (rules + topic enum + memory indexes), the timeline context
+     * Full consciousness prompt: stable prefix (rules + topic enum + memory indexes), the Visible context
      * block, the current-input block, the reduced game tools plus system functions, and the COMMANDER cache
      * profile.
      */
     private ComposedPrompt composeCommander(
             ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
-            List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
+            List<MemoryEntry> shortTerm,
+            MemoryAvailabilitySnapshot indexes) {
         List<LlmMessage> messages = new ArrayList<>();
-        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes, longTermSummary)));
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes)));
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
         messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(source, urgency, currentTopic, currentInput)));
 
@@ -93,9 +93,9 @@ public final class PromptComposer {
 
     /**
      * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
-     * a narration thought has only speak/nothing_to_do), the timeline for continuity, the sensor data as the
+     * a narration thought has only speak), the Visible context for continuity, the sensor data as the
      * current input, the system tools, and its own NARRATION cache profile so it never shares the commander
-     * prefix. {@code selectedTools}/{@code indexes}/{@code longTermSummary} do not apply here.
+     * prefix. {@code selectedTools}/{@code indexes} do not apply here.
      */
     private ComposedPrompt composeNarration(
             ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
@@ -108,71 +108,75 @@ public final class PromptComposer {
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
 
-    /** Stable narrative + topic enum (truly stable) followed by the slowly-changing memory indexes. */
-    private String buildStablePrefix(ThoughtSource source, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
+    /** Stable narrative + topic enum (truly stable) followed by the slowly-changing memory index. */
+    private String buildStablePrefix(ThoughtSource source, MemoryAvailabilitySnapshot indexes) {
         StringBuilder sb = new StringBuilder();
         sb.append(systemPrompt.staticRules(source));
         appendTopics(sb);
-        appendMemory(sb, indexes, longTermSummary);
+        appendMemory(sb, indexes);
         return sb.toString();
     }
 
-    /** Full selectable topic enum; the model needs the valid values for change_global_topic. */
+    /** Full selectable topic enum; the model needs the valid values for the classify_turn topic parameter. */
     private void appendTopics(StringBuilder sb) {
         PromptSections.heading(sb, "Topics");
-        sb.append("Valid values for change_global_topic:\n");
+        sb.append("Valid values for the classify_turn topic parameter:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
-                sb.append("- ").append(id(topic)).append(": ").append(topic.description()).append('\n');
+                sb.append("- ").append(topic.id()).append(": ").append(topic.description()).append('\n');
             }
         }
-        // The topic is sticky and never moves on its own; tell the model to keep it current so an earlier
-        // subject does not keep tagging unrelated turns (the cause of topic "stickiness").
-        sb.append("The current topic is shown with each input. It stays until you move it, so it does not "
-                + "follow the conversation by itself. At the start of a turn, compare the new input's subject "
-                + "to the current topic: if it belongs to a different topic above, call change_global_topic "
-                + "for that topic before any other function. Move it only on a real subject change - keep it "
-                + "when the input still fits the current topic.\n");
+        // The topic is sticky and never moves on its own; tell the model to carry the current topic forward so
+        // an earlier subject does not keep tagging unrelated turns (the cause of topic "stickiness").
+        sb.append("The current topic is shown with each input and stays until you move it. Keep it when the new "
+                + "input still fits; move it to the matching topic above only on a real subject change.\n");
     }
 
-    /** Cheap memory indexes (llm_memory, topic memory) plus the long-term summary, grouped under one header. */
-    private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes, String longTermSummary) {
-        PromptSections.heading(sb, "Memory");
+    /** Cheap memory index (topics with mid-term memory), so the model knows memory is worth searching. */
+    private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes) {
+        PromptSections.heading(sb, "Memory data");
         sb.append("You carry memory from earlier this session.\n");
 
-        PromptSections.subheading(sb, "Remembered facts");
-        sb.append(indexes.llmMemoryUsed()).append(" / ").append(indexes.llmMemoryCapacity()).append(" items.\n");
-
         // Lists only topics that actually hold mid-term memory, so the model knows memory is worth searching.
+        // Non-selectable sentinels (unresolved_commander_input/unresolved_game_event) can hold memory too, but
+        // they are not valid classify_turn topics, so they are filtered out here to avoid tempting the model
+        // into emitting one as a topic (a schema error); their content is still reachable via search_in_memory.
         PromptSections.subheading(sb, "Topics with stored memory");
-        List<ConversationTopic> topics = indexes.topicsWithMemory();
+        List<ConversationTopic> topics = indexes.topicsWithMemory().stream()
+                .filter(ConversationTopic::selectable)
+                .toList();
         if (topics.isEmpty()) {
             sb.append("- none\n");
         } else {
             for (ConversationTopic topic : topics) {
-                sb.append("- ").append(id(topic)).append('\n');
+                sb.append("- ").append(topic.id()).append('\n');
             }
         }
-
-        PromptSections.subheading(sb, "Long-term summary");
-        sb.append(longTermSummary == null || longTermSummary.isBlank() ? "none yet." : longTermSummary.strip())
-                .append('\n');
     }
 
-    /** Per-turn short-term timeline as a context block; dynamic, kept out of the cached prefix. */
+    /**
+     * Per-turn dynamic context block (kept out of the cached prefix): the short-term timeline, inlined whole as
+     * the "Visible context". Durable facts that aged out of short-term are not inlined - they are reached through
+     * {@code search_in_memory}.
+     */
     private String buildContextBlock(List<MemoryEntry> shortTerm) {
         StringBuilder sb = new StringBuilder();
-        PromptSections.heading(sb, "Session memory timeline");
+        PromptSections.heading(sb, "Visible context");
         if (shortTerm == null || shortTerm.isEmpty()) {
             sb.append("(empty)\n");
             return sb.toString();
         }
         for (MemoryEntry entry : shortTerm) {
-            sb.append('[').append(entry.source().name()).append(']')
-                    .append('[').append(id(entry.topic())).append("] ")
-                    .append(entry.content()).append('\n');
+            appendEntry(sb, entry);
         }
         return sb.toString();
+    }
+
+    /** Renders one entry as a Visible context line: {@code [speaker][topic] content}. */
+    private void appendEntry(StringBuilder sb, MemoryEntry entry) {
+        sb.append('[').append(entry.source().displayLabel(CompanionConfig.companionName())).append(']')
+                .append('[').append(entry.topic().id()).append("] ")
+                .append(entry.content()).append('\n');
     }
 
     private String buildCurrentInput(ThoughtSource source, Urgency urgency, ConversationTopic currentTopic,
@@ -181,12 +185,8 @@ public final class PromptComposer {
         PromptSections.heading(sb, "Current input");
         sb.append("source: ").append(source.name()).append('\n')
                 .append("urgency: ").append(urgency.name().toLowerCase(Locale.ROOT)).append('\n')
-                .append("current topic: ").append(id(currentTopic)).append('\n')
+                .append("current topic: ").append(currentTopic.id()).append('\n')
                 .append("content: ").append(currentInput == null ? "" : currentInput).append('\n');
         return sb.toString();
-    }
-
-    private static String id(ConversationTopic topic) {
-        return topic.name().toLowerCase(Locale.ROOT);
     }
 }

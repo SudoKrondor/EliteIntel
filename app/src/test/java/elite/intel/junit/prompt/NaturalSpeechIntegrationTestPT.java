@@ -1222,17 +1222,6 @@ public class NaturalSpeechIntegrationTestPT {
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(230)
-    @MethodSource
-    void queryKeyBindings(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeMisingKeyBindingQueryCommand.ID);
-    }
-
-    static Stream<String> queryKeyBindings() {
-        return Stream.of("check key bindings", "missing key bindings", "unbound keys");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(231)
     @MethodSource
     void queryBiomeAnalysis(String input) throws InterruptedException {

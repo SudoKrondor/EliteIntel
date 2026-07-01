@@ -8,6 +8,7 @@ import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.CompanionLlmGateway;
@@ -19,10 +20,12 @@ import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.i18n.Language;
@@ -128,8 +131,8 @@ public final class CompanionEvalHarness {
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, recall, remember,
-        // change_global_topic, ...) run for real, so the LLM and memory get the actual query result and the
+        // executed (they would press keys); QUERIES and system functions (speak, search_in_memory,
+        // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
         // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
             String toolName = request.toolName();
@@ -191,6 +194,30 @@ public final class CompanionEvalHarness {
     public void gameEvent(String type, String summary) throws Exception {
         beginTurn();
         GameEventBus.publish(gameEventOf(type, summary));
+        awaitIdle();
+    }
+
+    /**
+     * Publishes a game event with an explicit importance the production way and waits for the turn to settle.
+     * A {@code HIGH} event of a mapped type is recorded into memory under its static topic (an EVENT thought).
+     */
+    public void gameEvent(String type, String summary, BaseEvent.Importance importance) throws Exception {
+        beginTurn();
+        GameEventBus.publish(gameEventOf(type, summary, importance));
+        awaitIdle();
+    }
+
+    /**
+     * Publishes subscriber-prepared sensor narration the production way (through the sensor-data bridge into a
+     * {@code NarrationThought}) and waits for the turn to settle.
+     *
+     * @param sensorData   the already-filtered data the subscriber layer prepared
+     * @param instructions the subscriber's narration instruction
+     * @param topic        a neutral topic id, e.g. {@link SensorDataEvent#TOPIC_NAVIGATION}
+     */
+    public void narrate(String sensorData, String instructions, String topic) throws Exception {
+        beginTurn();
+        GameEventBus.publish(new SensorDataEvent(sensorData, instructions, topic));
         awaitIdle();
     }
 
@@ -266,9 +293,6 @@ public final class CompanionEvalHarness {
         if (midTopic != null) {
             tiers.add("mid-term[" + midTopic + "]");
         }
-        if (memory.readLlmMemory().stream().anyMatch(s -> contains(s, tok))) {
-            tiers.add("llm_memory");
-        }
         String summary = memory.longTermSummary();
         if (summary != null && contains(summary, tok)) {
             tiers.add("long-term");
@@ -296,6 +320,18 @@ public final class CompanionEvalHarness {
     public String recalledQuery() {
         List<Executed> recalls = callsNamed("search_in_memory");
         return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+    }
+
+    /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
+    public String assignedImportance() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "importance");
+    }
+
+    /** The is_question flag the model set this turn via classify_turn ("true"/"false"), or empty when not called. */
+    public String assignedIsQuestion() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
     }
 
     /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
@@ -356,10 +392,12 @@ public final class CompanionEvalHarness {
         return added;
     }
 
-    /** Renders a memory entry exactly as the prompt shows it: {@code [SOURCE][topic] content}. */
+    /** Renders a memory entry for the trace as {@code [SOURCE][topic][importance] content}. */
     private static String renderEntry(MemoryEntry e) {
-        return String.format("[%s][%s] %s",
-                e.source().name(), e.topic().name().toLowerCase(Locale.ROOT), e.content());
+        return String.format("[%s][%s][%s] %s",
+                e.source().displayLabel(CompanionConfig.companionName()),
+                e.topic().name().toLowerCase(Locale.ROOT),
+                e.importance().name().toLowerCase(Locale.ROOT), e.content());
     }
 
     private static String memoryKey(MemoryEntry e) {
@@ -408,11 +446,22 @@ public final class CompanionEvalHarness {
         return traceFile;
     }
 
-    /** A minimal game event carrying a type and a one-line English summary (journal-style {@code BaseEvent}). */
+    /** A minimal game event carrying a type and a one-line English summary, at LOW importance (filtered out). */
     private static BaseEvent gameEventOf(String type, String summary) {
+        return gameEventOf(type, summary, BaseEvent.Importance.LOW);
+    }
+
+    /** A minimal game event with an explicit importance, so a HIGH event of a mapped type lands in memory. */
+    private static BaseEvent gameEventOf(String type, String summary, BaseEvent.Importance importance) {
         return new BaseEvent(Instant.now().toString(), Duration.ofMinutes(1), type) {
             @Override public String getEventType() {
                 return type;
+            }
+            @Override public BaseEvent.Importance importance() {
+                return importance;
+            }
+            @Override public String memorySummary() {
+                return summary; // the readable line EventThought records (mirrors a real event's memorySummary)
             }
             @Override public String toJson() {
                 JsonObject o = new JsonObject();
@@ -427,5 +476,43 @@ public final class CompanionEvalHarness {
                 return o;
             }
         };
+    }
+
+    /** Every stored entry across short-term, mid-term (all topics) and pinned long-term facts. */
+    public List<MemoryEntry> allEntries() {
+        List<MemoryEntry> all = new ArrayList<>(memory.readShortTermTimeline());
+        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+            all.addAll(memory.recallTopicMemory(topic, null, 1000));
+        }
+        all.addAll(memory.longTermPinnedFacts());
+        return all;
+    }
+
+    /**
+     * Distribution of stored memory across short-term, mid-term (all topics) and pinned long-term facts,
+     * grouped by topic and by importance, plus the verbatim pinned MAX facts - for assessing topic and
+     * importance spread at the end of a run.
+     */
+    public String memoryDistributionBlock() {
+        List<MemoryEntry> all = allEntries();
+
+        Map<ConversationTopic, Integer> byTopic = new EnumMap<>(ConversationTopic.class);
+        Map<MemoryImportance, Integer> byImportance = new EnumMap<>(MemoryImportance.class);
+        for (MemoryEntry entry : all) {
+            byTopic.merge(entry.topic(), 1, Integer::sum);
+            byImportance.merge(entry.importance(), 1, Integer::sum);
+        }
+
+        StringBuilder b = new StringBuilder("\n---- memory distribution (short-term + mid-term + pinned) ----\n");
+        b.append("by topic:\n");
+        byTopic.forEach((topic, n) -> b.append("  ").append(topic.name().toLowerCase(Locale.ROOT)).append(": ").append(n).append("\n"));
+        b.append("by importance:\n");
+        byImportance.forEach((importance, n) -> b.append("  ").append(importance.name().toLowerCase(Locale.ROOT)).append(": ").append(n).append("\n"));
+        List<MemoryEntry> pinned = memory.longTermPinnedFacts();
+        b.append("pinned MAX facts (").append(pinned.size()).append("):\n");
+        for (MemoryEntry entry : pinned) {
+            b.append("  ").append(entry.content()).append("\n");
+        }
+        return b.toString();
     }
 }

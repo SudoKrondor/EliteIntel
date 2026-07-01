@@ -7,9 +7,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Self-check for the @RegisterQuery scan: proves QueryRegistry discovers a stable,
@@ -20,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class QueryRegistryTest {
 
     /** Number of @RegisterQuery built-in query handlers. Update deliberately when adding/removing one. */
-    private static final int EXPECTED_QUERY_COUNT = 45;
+    private static final int EXPECTED_QUERY_COUNT = 44;
 
     @BeforeAll
     static void loadRegistry() {

@@ -1,9 +1,7 @@
 package elite.intel.ai.hands;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.db.dao.KeyBindingDao.KeyBinding;
 import elite.intel.db.managers.BindingConflictManager;
-import elite.intel.db.managers.KeyBindingManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
@@ -58,7 +56,6 @@ public class BindingsMonitor {
     private static volatile BindingsMonitor instance;
     private final KeyBindingsParser parser;
     private final BindingsLoader bindingsLoader = new BindingsLoader();
-    private final KeyBindingManager keyBindingManager = KeyBindingManager.getInstance();
     private final BindingConflictManager conflictManager = BindingConflictManager.getInstance();
     private Path bindingsDir;
     private Map<String, KeyBindingsParser.KeyBinding> bindings;
@@ -161,7 +158,6 @@ public class BindingsMonitor {
                         }
                     }
                 }
-                checkForMissingBindingsAndPersist();
                 checkForConflictsAndPersist();
                 boolean valid = key.reset();
                 if (!valid) {
@@ -271,39 +267,23 @@ public class BindingsMonitor {
     }
 
     /**
-     * Checks for missing bindings by iterating over all game commands and
-     * determines if a corresponding
-     * key binding exists. If a binding is missing, it adds a new binding through
-     * the key binding manager
-     * and records the newly added binding names.
+     * Computes the humanized names of all required game bindings that are currently
+     * missing from the active binds file. Pure read over the freshly parsed bindings -
+     * no persistence (the legacy DB-backed missing-binding store was removed; the binds
+     * editor UI and startup notification both work off the live parse).
      *
-     * @return a list of names of key bindings that were missing and subsequently
-     *         added.
+     * @return a list of humanized names of required key bindings that are missing.
      */
-    public List<String> checkForMissingBindingsAndPersist() {
-        List<String> result = new ArrayList<>();
+    public List<String> checkForMissingBindings() {
         Map<String, KeyBindingsParser.KeyBinding> currentBindings = getBindings();
         if (currentBindings == null) {
             log.warn("Bindings not yet loaded, skipping missing binding check");
-            return result;
+            return List.of();
         }
 
-        List<String> oldMissingBindings = keyBindingManager
-                .getMissingBindings()
-                .stream()
-                .map(KeyBinding::getKeyBinding)
-                .toList();
-
+        List<String> result = new ArrayList<>();
         for (String gameBinding : findMissingGameBindings(currentBindings)) {
-            String bindingName = humanizeBindingName(gameBinding);
-            keyBindingManager.addBinding(bindingName);
-            result.add(bindingName);
-        }
-
-        for (String gameBinding : findFoundGameBindings(currentBindings)) {
-            String bindingName = humanizeBindingName(gameBinding);
-            if (oldMissingBindings.contains(bindingName))
-                keyBindingManager.removeBinding(bindingName);
+            result.add(humanizeBindingName(gameBinding));
         }
         return result;
     }

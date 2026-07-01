@@ -79,7 +79,16 @@ class CommandExecutionEvalTest {
             new Case("полный стоп", "set_speed_to_zero_0_stop_ship", null, true),
             new Case("грузозаборник", "toggle_cargo_scoop", null, true),
             new Case("выпусти шасси", "deploy_landing_gear", null, true),
-            new Case("убери оружие", "retract_hardpoints", null, true));
+            new Case("убери оружие", "retract_hardpoints", null, true),
+            // Name-addressed commands: a Russian commander addresses the companion as "Вега" (Cyrillic) - what
+            // Russian STT returns, NOT the canonical Latin "Vega". On the LLM path the name is just an extra
+            // token (no command trains on it), so the right tool still fires (reflex=false). The reflex
+            // fast-path is preserved too: the dispatcher's name strip recognizes the Cyrillic form, so
+            // "Вега, полный стоп" is stripped to "полный стоп" and still reflexes (reflex=true).
+            new Case("Вега, цель силовая установка", "target_subsystem", "powerplant", false),
+            new Case("Вега, установи скорость пятьдесят процентов", "set_speed_50", null, false),
+            new Case("Вега, контакты", "show_contacts_panel", null, false),
+            new Case("Вега, полный стоп", "set_speed_to_zero_0_stop_ship", null, true));
 
     @BeforeAll
     void boot() throws Exception {
@@ -98,7 +107,14 @@ class CommandExecutionEvalTest {
         int hits = 0;
         for (Case c : cases) {
             long roundsBefore = h.roundCount();
+            int latencyCountBefore = h.latencies().size();
+            long startNanos = System.nanoTime();
             h.say(c.input());
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+            List<Long> latenciesAfter = h.latencies();
+            long llmMs = latenciesAfter.subList(latencyCountBefore, latenciesAfter.size()).stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
             long llmRounds = h.roundCount() - roundsBefore; // 0 == reflex fast-path, >=1 == LLM path
 
             List<Executed> calls = h.callsNamed(c.expectedTool());
@@ -114,11 +130,13 @@ class CommandExecutionEvalTest {
             String pathCell = String.format("%s%s",
                     tookReflex ? "reflex" : "llm(" + llmRounds + ")",
                     pathOk ? "" : (c.reflex() ? " WANT-REFLEX" : " WANT-LLM"));
-            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s | %s%n",
+            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s time=%5dms llm=%5dms | %s%n",
                     c.input(),
                     called ? "yes" : "NO",
                     c.argContains() == null ? "-" : (argOk ? "ok" : "MISS"),
                     pathCell,
+                    elapsedMs,
+                    llmMs,
                     actualTools() + (called && !args.isEmpty() ? " args=" + args : "")));
             block.append(h.memoryDeltaBlock()); // what this command wrote to memory, this turn
         }

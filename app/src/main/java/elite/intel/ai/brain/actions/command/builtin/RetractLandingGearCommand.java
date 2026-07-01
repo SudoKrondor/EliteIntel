@@ -37,7 +37,7 @@ public final class RetractLandingGearCommand implements IntelCommand {
             return;
         }
 
-        if (status.isInMainShip() && status.isLandingGearDown()) {
+        if (status.isLandingGearDown()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         } else {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.alreadyRetracted")));

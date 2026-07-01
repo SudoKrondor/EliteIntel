@@ -1150,17 +1150,6 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(230)
-    @MethodSource
-    void queryKeyBindings(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeMisingKeyBindingQueryCommand.ID);
-    }
-
-    static Stream<String> queryKeyBindings() {
-        return Stream.of("проверить привязки клавиш", "отсутствующие привязки клавиш", "непривязанные клавиши");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(231)
     @MethodSource
     void queryBiomeAnalysis(String input) throws InterruptedException {

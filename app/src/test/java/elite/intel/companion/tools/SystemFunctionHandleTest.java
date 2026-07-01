@@ -6,7 +6,6 @@ import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
@@ -20,13 +19,12 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
  * via {@link CompanionRuntime}: speak/clarify submit speech, remember/recall go through the memory gateway,
- * change_verbosity sets shared state, find_action queries the reducer, nothing_to_do is a no-op, and the
- * still-deferred set_topic fails loudly. Fakes back the services so everything is unit-testable.
+ * find_action queries the reducer, and classify_turn moves the global topic and stamps the turn's
+ * importance. Fakes back the services so everything is unit-testable.
  */
 class SystemFunctionHandleTest {
 
@@ -77,11 +75,24 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void rememberWritesToLlmMemory() {
-        JsonObject result = new RememberFunction().handle("remember", params("content", "owes me 5cr"), "");
+    void classifyTurnSetsTopicAndStampsImportance() {
+        JsonObject p = params("topic", "navigation");
+        p.addProperty("importance", "high");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
 
-        assertEquals("owes me 5cr", memory.remembered);
-        assertEquals("remembered", result.get("status").getAsString());
+        assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
+        assertEquals("turn_classified", result.get("status").getAsString());
+        assertEquals("navigation", result.get("topic").getAsString());
+        assertEquals("high", result.get("importance").getAsString());
+    }
+
+    @Test
+    void classifyTurnDefaultsUnknownImportanceToNormal() {
+        JsonObject p = params("topic", "navigation");
+        p.addProperty("importance", "bogus");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
+
+        assertEquals("normal", result.get("importance").getAsString());
     }
 
     @Test
@@ -96,22 +107,6 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void changeVerbositySetsSharedState() {
-        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "chatty"), "");
-
-        assertEquals(Verbosity.CHATTY, state.verbosity());
-        assertEquals("chatty", result.get("verbosity").getAsString());
-    }
-
-    @Test
-    void changeVerbosityRejectsUnknownMode() {
-        JsonObject result = new ChangeVerbosityFunction().handle("change_verbosity", params("verbosity", "loud"), "");
-
-        assertEquals("unknown verbosity", result.get("error").getAsString());
-        assertEquals(Verbosity.NORMAL, state.verbosity()); // unchanged
-    }
-
-    @Test
     void findActionReturnsReducerMatches() {
         JsonObject result = new FindActionFunction().handle("find_action", params("query", "gear"), "");
 
@@ -122,21 +117,10 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void nothingToDoIsNoOp() {
-        assertNull(new NothingToDoFunction().handle("nothing_to_do", new JsonObject(), ""));
-    }
-
-    @Test
-    void changeGlobalTopicSetsSharedState() {
-        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "navigation"), "");
-
-        assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
-        assertEquals("navigation", result.get("topic").getAsString());
-    }
-
-    @Test
-    void changeGlobalTopicRejectsUnknownTopic() {
-        JsonObject result = new ChangeGlobalTopicFunction().handle("change_global_topic", params("topic", "nonsense"), "");
+    void classifyTurnRejectsUnknownTopic() {
+        JsonObject p = params("topic", "nonsense");
+        p.addProperty("importance", "high");
+        JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
 
         assertEquals("unknown topic", result.get("error").getAsString());
         assertEquals(ConversationTopic.SOCIAL, state.globalTopic()); // default, unchanged
@@ -144,7 +128,6 @@ class SystemFunctionHandleTest {
 
     /** Minimal MemoryGateway fake recording the calls the system functions make. */
     private static final class RecordingMemory implements MemoryGateway {
-        String remembered;
         String recalledQuery;
         List<String> matchingItems = List.of();
 
@@ -157,10 +140,10 @@ class SystemFunctionHandleTest {
             recalledQuery = query;
             return matchingItems;
         }
-        @Override public List<String> readLlmMemory() { throw new UnsupportedOperationException(); }
-        @Override public void writeLlmMemory(String content) { remembered = content; }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
+        @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }
+        @Override public void addLongTermPinned(MemoryEntry fact) { throw new UnsupportedOperationException(); }
     }
 }

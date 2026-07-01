@@ -4,13 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.llm.*;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.ArrayList;
@@ -28,29 +22,35 @@ import java.util.List;
  */
 abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
 
-    /** Low temperature for stable tool selection. */
-    private static final double TEMPERATURE = 0.3;
-
     private final String model;
     private final String toolChoice;
     private final boolean sendCacheKey;
+    private final boolean sendsTemperature;
 
     /**
-     * @param model         the served model name
-     * @param toolChoice    the "must call a function" value (Mistral {@code any}, OpenAI/LM Studio {@code required})
-     * @param sendCacheKey  whether to send Mistral's {@code prompt_cache_key} (omit for other endpoints)
+     * @param model            the served model name
+     * @param toolChoice       the "must call a function" value (Mistral {@code any}, OpenAI/LM Studio {@code required})
+     * @param sendCacheKey     whether to send Mistral's {@code prompt_cache_key} (omit for other endpoints)
+     * @param sendsTemperature whether the model accepts a custom {@code temperature}; false for OpenAI GPT-5
+     *                         reasoning models, which reject any non-default value (the request is sent without it)
      */
-    protected OpenAiCompatibleLlmAdapter(String model, String toolChoice, boolean sendCacheKey) {
+    protected OpenAiCompatibleLlmAdapter(String model, String toolChoice, boolean sendCacheKey, boolean sendsTemperature) {
         this.model = model;
         this.toolChoice = toolChoice;
         this.sendCacheKey = sendCacheKey;
+        this.sendsTemperature = sendsTemperature;
     }
 
     @Override
     public final String buildRequestBody(LlmRequest request) {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
-        body.addProperty("temperature", TEMPERATURE);
+        // Per-profile sampling temperature (COMMANDER runs warmer for livelier conversation; narration and
+        // compression stay cooler for fidelity). Omitted for models that reject a custom temperature (OpenAI
+        // GPT-5 reasoning models): the request then uses the API default.
+        if (sendsTemperature) {
+            body.addProperty("temperature", request.profile().temperature());
+        }
         body.add("messages", renderMessages(request.messages()));
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));
@@ -110,7 +110,8 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             if (tool.description() != null && !tool.description().isBlank()) {
                 function.addProperty("description", tool.description()); // optional field: omit when empty
             }
-            function.add("parameters", renderParameterSchema(tool.parameters()));
+            // Standard JSON-Schema object, shared with the Anthropic adapter (see ToolParameterSchema).
+            function.add("parameters", ToolParameterSchema.jsonSchemaObject(tool.parameters()));
 
             JsonObject entry = new JsonObject();
             entry.addProperty("type", "function");
@@ -118,47 +119,6 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
             array.add(entry);
         }
         return array;
-    }
-
-    /** JSON-Schema object for a tool's parameters; {@code ActionParameterSpec} types are already JSON types. */
-    private JsonObject renderParameterSchema(List<ActionParameterSpec> parameters) {
-        JsonObject schema = new JsonObject();
-        schema.addProperty("type", "object");
-        JsonObject properties = new JsonObject();
-        JsonArray required = new JsonArray();
-        for (ActionParameterSpec p : parameters) {
-            JsonObject prop = new JsonObject();
-            prop.addProperty("type", p.getType());
-            prop.addProperty("description", describeParameter(p));
-            properties.add(p.getName(), prop);
-            if (p.isRequired()) {
-                required.add(p.getName());
-            }
-        }
-        schema.add("properties", properties);
-        if (!required.isEmpty()) {
-            schema.add("required", required);
-        }
-        return schema;
-    }
-
-    /**
-     * Folds a parameter's examples and extraction hint into its schema {@code description}.
-     * OpenAI-style function-calling schemas have no dedicated fields for these, so - mirroring the
-     * legacy {@link elite.intel.ai.brain.actions.command.CommandParamRules} format - they are appended
-     * to the description; otherwise the companion model never sees them (e.g. the "'target drive' -> drive"
-     * hint that the legacy action-extraction prompt relies on).
-     */
-    private static String describeParameter(ActionParameterSpec p) {
-        StringBuilder description = new StringBuilder(p.getDescription());
-        List<String> examples = p.getExamples();
-        if (!examples.isEmpty()) {
-            description.append(" E.g.: ").append(String.join(", ", examples));
-        }
-        if (p.getExtractionHint() != null && !p.getExtractionHint().isBlank()) {
-            description.append(" Hint: ").append(p.getExtractionHint());
-        }
-        return description.toString().strip();
     }
 
     @Override

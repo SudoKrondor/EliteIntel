@@ -52,6 +52,16 @@ public class GeminiClient extends BaseAiClient implements Client {
         return error;
     }
 
+    /**
+     * Companion-mode transport entry: pins {@code model} into the request URL for this call, then sends.
+     * Companion builds the request body itself (native tool-calling) and never runs the legacy
+     * {@link #createPrompt} path that sets {@link #currentModel}, so it must select the model here.
+     */
+    public JsonObject sendJsonRequest(String request, String model) {
+        this.currentModel = model;
+        return sendJsonRequest(request);
+    }
+
     @Override
     public JsonObject sendJsonRequest(String request) {
         long t0 = System.nanoTime();

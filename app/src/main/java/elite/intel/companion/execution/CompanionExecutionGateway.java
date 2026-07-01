@@ -32,8 +32,7 @@ import java.util.concurrent.Executors;
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
- * {@code completed_by_executor} status. The gateway never writes to memory. The lifecycle-only terminator
- * {@code nothing_to_do} is intercepted by the {@code Thought} and normally never reaches the gateway.
+ * {@code completed_by_executor} status. The gateway never writes to memory.
  */
 public final class CompanionExecutionGateway implements ExecutionGateway {
 

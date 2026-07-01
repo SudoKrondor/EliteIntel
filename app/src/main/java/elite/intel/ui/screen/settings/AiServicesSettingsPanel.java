@@ -37,7 +37,7 @@ import static elite.intel.ui.theme.HudPalette.*;
  */
 public class AiServicesSettingsPanel extends JPanel {
 
-    private static final String DEFAULT_MODEL = "matrixportalx/tulu-3.1-8b-supernova";
+    private static final String DEFAULT_MODEL = "google/gemma-4-e4b";
 
     private static final int SRC_LOCAL = 0;
     private static final int SRC_CLOUD = 1;

@@ -13,6 +13,9 @@ public class ShipyardBuyEvent extends BaseEvent {
     @SerializedName("ShipType")
     private String shipType;
 
+    @SerializedName("ShipType_Localised")
+    private String shipTypeLocalised;
+
     @SerializedName("ShipPrice")
     private long shipPrice;
 
@@ -41,6 +44,7 @@ public class ShipyardBuyEvent extends BaseEvent {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "ShipyardBuy");
         ShipyardBuyEvent event = GsonFactory.getGson().fromJson(json, ShipyardBuyEvent.class);
         this.shipType = event.shipType;
+        this.shipTypeLocalised = event.shipTypeLocalised;
         this.shipPrice = event.shipPrice;
         this.storeOldShip = event.storeOldShip;
         this.storeShipID = event.storeShipID;
@@ -77,6 +81,13 @@ public class ShipyardBuyEvent extends BaseEvent {
 
     public String getShipType() {
         return shipType;
+    }
+
+    /**
+     * Localised display name for the ship type; null on older or non-localised journals.
+     */
+    public String getShipTypeLocalised() {
+        return shipTypeLocalised;
     }
 
     public long getShipPrice() {

@@ -9,6 +9,7 @@ import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.starsystems.StarSystemResult;
+import elite.intel.util.StringUtls;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -159,7 +160,7 @@ public class HuntingGroundManager {
                 dao.upsert(provider);
             }
             dao.updateFaction(provider.getId(), providerFaction);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent("Mission provider faction updated. " + providerFaction));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.pirate.providerFactionUpdated", providerFaction)));
             return Void.class;
         });
     }
@@ -180,7 +181,7 @@ public class HuntingGroundManager {
             HuntingGround system = dao.findByStarSystem(primaryStarName);
             if (system != null && !system.isHasResSite()) {
                 dao.confirm(primaryStarName);
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent("Recon confirmed for " + primaryStarName + ". Resource Sites Found"));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.pirate.reconConfirmed", primaryStarName)));
             }
             return Void.class;
         });

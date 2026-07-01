@@ -100,6 +100,15 @@ public final class AppPaths {
         return getDistributionFile("parakeet");
     }
 
+    /**
+     * Directory holding the in-process text-embedding model (multilingual-e5-small int8 ONNX +
+     * tokenizer), shipped in distribution/embed/ exactly like the Parakeet and Kokoro models so the
+     * installer/updater bundle it and users never hunt one down.
+     */
+    public static Path getEmbedModelDir() {
+        return getDistributionFile("embed/multilingual-e5-small");
+    }
+
     private static Path getDistributionFile(String subPath) {
         if (isRunningFromJar()) {
             return APP_DIR.resolve(subPath);

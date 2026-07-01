@@ -113,7 +113,9 @@ public class ShipTargetedEventSubscriber {
         if (event == null) return false;
         if (legalStatus.isBlank()) return false;
         if ("clean".equalsIgnoreCase(legalStatus)) return false;
-        if (event.getScanStage() == 0) return false;
+        // Bounty is only populated at the final scan stage (3); announcing earlier reports a real
+        // bounty as "no bounty" and the dedup then suppresses the corrected stage-3 announcement.
+        if (event.getScanStage() < 3) return false;
         return "wanted".equalsIgnoreCase(legalStatus);
     }
 }
