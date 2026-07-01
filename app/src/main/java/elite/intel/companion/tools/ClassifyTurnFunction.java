@@ -15,16 +15,17 @@ import java.util.Set;
 
 /**
  * System function: classify the current commander turn for memory organization, in a single call carrying
- * both the turn's {@code topic} and its {@code importance}. It replaces the separate change-topic and
- * rate-importance tools - the two pieces of metadata that tag every commander turn now travel together.
- * COMMANDER-only: only the commander's conversation classifies a turn; an EVENT thought never calls it (an
- * event's topic comes from a static event-type map and its importance is fixed).
+ * the turn's {@code topic}, its {@code importance}, and whether it {@code is_question}. It replaces the
+ * separate change-topic and rate-importance tools - the metadata that tags every commander turn now travels
+ * together. COMMANDER-only: only the commander's conversation classifies a turn; an EVENT thought never calls
+ * it (an event's topic comes from a static event-type map and its importance is fixed).
  * <p>
  * The {@code topic} has a side effect: it moves the sticky global topic on the shared
  * {@link elite.intel.companion.mind.CompanionState}, the single topic used to tag the commander's memory
  * entries. The {@code importance} is turn-local - {@link elite.intel.companion.mind.CommanderThought} reads
  * it pre-execution and stamps it onto the entries written this turn (it is not stored as state). This
- * {@code handle} sets the topic and echoes both back; the importance stamping is the thought's job.
+ * {@code handle} sets the topic and echoes the topic, importance, and is_question back; the importance
+ * stamping is the thought's job.
  */
 @RegisterSystemFunction
 public final class ClassifyTurnFunction implements SystemFunction {
@@ -32,6 +33,7 @@ public final class ClassifyTurnFunction implements SystemFunction {
     public static final String ID = "classify_turn";
     public static final String PARAM_TOPIC = "topic";
     public static final String PARAM_IMPORTANCE = "importance";
+    public static final String PARAM_IS_QUESTION = "is_question";
 
     private static final String STATUS_CLASSIFIED = "turn_classified";
     private static final String ERROR_UNKNOWN_TOPIC = "unknown topic";
@@ -62,7 +64,12 @@ public final class ClassifyTurnFunction implements SystemFunction {
                         // restated here to avoid duplicating the rule in two places.
                         "The topic this turn belongs to; the valid ids and how to keep or move the topic are "
                                 + "in the Topics section.",
-                        List.of(), null, ConversationTopic.selectableIds())
+                        List.of(), null, ConversationTopic.selectableIds()),
+                new ActionParameterSpec(PARAM_IS_QUESTION, "boolean", true,
+                        "Required. True if the commander expects an answer, explanation, decision, or memory recall. "
+                                + "This includes questions and requests like 'tell me', 'remind me', or 'repeat'. "
+                                + "False for new facts, action commands, remember/write-down orders, acknowledgements, or banter.",
+                        List.of(), null)
         );
     }
 
@@ -72,9 +79,10 @@ public final class ClassifyTurnFunction implements SystemFunction {
     }
 
     /**
-     * Moves the global topic on the shared {@link elite.intel.companion.mind.CompanionState} and echoes both
-     * the topic and the importance back. An unknown topic is an error; a missing or unknown importance defaults
-     * to {@link MemoryImportance#NORMAL}, mirroring the thought's own fallback for an unrated turn.
+     * Moves the global topic on the shared {@link elite.intel.companion.mind.CompanionState} and echoes the
+     * topic, the importance, and the is_question flag back. An unknown topic is an error; a missing or unknown
+     * importance defaults to {@link MemoryImportance#NORMAL}, mirroring the thought's own fallback for an
+     * unrated turn.
      */
     @Override
     public JsonObject handle(String action, JsonObject params, String text) {
@@ -92,9 +100,11 @@ public final class ClassifyTurnFunction implements SystemFunction {
         if (importance == null) {
             importance = MemoryImportance.NORMAL;
         }
+        boolean isQuestion = Boolean.parseBoolean(JsonUtils.getAsStringOrEmpty(params, PARAM_IS_QUESTION));
         result.addProperty(SystemFunctionResultFields.STATUS, STATUS_CLASSIFIED);
         result.addProperty(SystemFunctionResultFields.TOPIC, topic.id());
         result.addProperty(SystemFunctionResultFields.IMPORTANCE, importance.name().toLowerCase(Locale.ROOT));
+        result.addProperty(SystemFunctionResultFields.IS_QUESTION, isQuestion);
         return result;
     }
 }

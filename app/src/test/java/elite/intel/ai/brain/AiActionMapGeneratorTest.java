@@ -44,7 +44,7 @@ class AiActionMapGeneratorTest {
     }
 
     /**
-     * Frozen snapshot of the built-in action ids the generator must produce on EN (181 ids).
+     * Frozen snapshot of the built-in action ids the generator must produce on EN (187 ids).
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
      * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
      * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
@@ -63,6 +63,10 @@ class AiActionMapGeneratorTest {
             "clear_neutron_route",
             "clear_reminders",
             "confirm_hunting_ground",
+            "cycle_next_page",
+            "cycle_next_panel",
+            "cycle_previous_page",
+            "cycle_previous_panel",
             "decrease_speed",
             "delete_codex_entry",
             "deploy_chaff",
@@ -78,6 +82,7 @@ class AiActionMapGeneratorTest {
             "display_fleet_carrier_management_panel",
             "display_open_galaxy_map",
             "display_open_system_map",
+            "display_radar_panel",
             "drive_assist",
             "drop_from_super_cruise",
             "enter_fleet_carrier_destination",
@@ -107,7 +112,6 @@ class AiActionMapGeneratorTest {
             "interrupt",
             "jump_to_hyperspace",
             "launch_ship_detach_from_station",
-            "list_trade_parameters",
             "monetize_route",
             "navigate_from_memory",
             "navigate_to_bio_sample_codex_entry",
@@ -119,6 +123,7 @@ class AiActionMapGeneratorTest {
             "navigate_to_mission_target",
             "navigate_to_next_trade_stop",
             "navigate_to_pirate_mission_provider",
+            "navigate_to_pirate_mission_target",
             "navigate_to_squadron_carrier",
             "open_fss_scan_system",
             "plot_route_next_neutron_star_waypoint",
@@ -166,6 +171,7 @@ class AiActionMapGeneratorTest {
             "query_trade_route",
             "recon_hunting_ground",
             "recover_srv_vehicle_get_on_board_ship",
+            "lauch_deploy_nomad",
             "remove_mining_target",
             "request_docking",
             "reset_head_look_ahead",

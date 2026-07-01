@@ -34,12 +34,8 @@ public final class CompanionConfig {
     private static final int MAX_LLM_CHAIN_STEPS = 8;
     /** Max commander thoughts that may run concurrently on the commander lane. */
     private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
-    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
-    private static final int WORKING_SET_SIZE = 8;
-    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
-    private static final int WORKING_SET_TOKEN_BUDGET = 400;
-    /** Below this meaning-closeness (cosine 0..1) a memory entry is treated as unrelated and dropped from the semantic part of {@code search_in_memory}. */
-    private static final double SEMANTIC_SEARCH_IN_MEMORY_FLOOR = 0.80;
+    /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of {@code search_in_memory}. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
+    private static final double SEMANTIC_SEARCH_IN_MEMORY_FLOOR = 0.85;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
     private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
     /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
@@ -108,17 +104,7 @@ public final class CompanionConfig {
         return MAX_PARALLEL_COMMANDER_THOUGHTS;
     }
 
-    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
-    public static int workingSetSize() {
-        return WORKING_SET_SIZE;
-    }
-
-    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
-    public static int workingSetTokenBudget() {
-        return WORKING_SET_TOKEN_BUDGET;
-    }
-
-    /** Below this meaning-closeness (cosine 0..1) a memory entry is treated as unrelated and dropped from the semantic part of {@code search_in_memory}. */
+    /** Absolute floor (cosine 0..1) below which a semantic match is dropped from {@code search_in_memory}. */
     public static double semanticSearchInMemoryFloor() {
         return SEMANTIC_SEARCH_IN_MEMORY_FLOOR;
     }

@@ -68,18 +68,15 @@ class CompanionConversationIntegrationTest {
         // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
         transport.scripted.add(response(
                 call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\"}"),
-                call("c2", "speak", "{\"text\":\"Course plotted.\"}"),
-                call("c3", "nothing_to_do", "{}")));
+                call("c2", "speak", "{\"text\":\"Course plotted.\"}")));
         // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
                 call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
-                call("c6", "speak", "{\"text\":\"Noted.\"}"),
-                call("c7", "nothing_to_do", "{}")));
+                call("c6", "speak", "{\"text\":\"Noted.\"}")));
         // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
         transport.scripted.add(response(call("c8", "search_in_memory", "{\"query\":\"hull\"}")));
         transport.scripted.add(response(
-                call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}"),
-                call("c10", "nothing_to_do", "{}")));
+                call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
         // A conversation is sequential: each turn is submitted and drained before the next, so the
         // memory -> recall dependency holds (the bounded commander pool would otherwise race the turns).

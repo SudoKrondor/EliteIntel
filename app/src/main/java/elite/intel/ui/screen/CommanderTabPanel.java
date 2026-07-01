@@ -158,6 +158,8 @@ public class CommanderTabPanel extends JPanel {
 
         sc.gridy = 4;
         JCheckBox cb10 = makeCheckBox(getText("automation.requestFighterDockOnFtl"), mgr.getAutoFighterOutFighterDocking());
+        cb10.setToolTipText("Disabled until FDev fixes Nomad related bug");
+        cb10.setEnabled(false);///NOTE disabled until FDev fixes their bug
         cb10.addActionListener(e -> mgr.setAutoFighterOutFighterDocking(cb10.isSelected()));
         shipOptions.add(cb10, sc);
 

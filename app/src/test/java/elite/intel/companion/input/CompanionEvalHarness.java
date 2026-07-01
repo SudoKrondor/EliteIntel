@@ -328,6 +328,12 @@ public final class CompanionEvalHarness {
         return calls.isEmpty() ? "" : str(calls.get(0).args(), "importance");
     }
 
+    /** The is_question flag the model set this turn via classify_turn ("true"/"false"), or empty when not called. */
+    public String assignedIsQuestion() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
+    }
+
     /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
     public List<String> recallResult() {
         List<Executed> recalls = callsNamed("search_in_memory");

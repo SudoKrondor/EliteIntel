@@ -193,9 +193,7 @@
 * вызывать `classify_turn` (тема + важность хода);
 * менять global `TopicModel`;
 * вызывать `search_in_memory`;
-* менять болтливость;
-* уточнять;
-* искать действие.
+* уточнять.
 
 ---
 
@@ -203,7 +201,7 @@
 
 **`EventThought` — чистый «knowing»-канал.** Он не строит промпт, не зовёт ЛЛМ, не говорит и не вызывает никаких tools. Его единственное действие: при `importance() == HIGH` записать событие в память под статической темой (`NORMAL`/`LOW` — не пишет; см. §2.2.1). Спонтанную речь по событиям он не производит вовсе.
 
-**`NarrationThought` (ЛЛМ-фразировка).** Источник — курируемые сенсорные данные (`SensorDataEvent`). Получает **нулевой** набор game-tools (ни команд, ни query) и системные функции только `speak` + `nothing_to_do` (без verbosity-гейта — решение «озвучить» уже принято subscriber-слоем). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`. Не вызывает `search_in_memory`/`clarify`/`change_verbosity`/`classify_turn` и не двигает глобальную тему.
+**`NarrationThought` (ЛЛМ-фразировка).** Источник — курируемые сенсорные данные (`SensorDataEvent`). Получает **нулевой** набор game-tools (ни команд, ни query) и системную функцию только `speak` (решение «озвучить» уже принято subscriber-слоем). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`. Не вызывает `search_in_memory`/`clarify`/`classify_turn` и не двигает глобальную тему.
 
 **`VerbatimNarrationThought` (дословно).** Источник — готовый announcement-текст. Не зовёт ЛЛМ и не получает tools вообще: пишет фразу как `[COMPANION]` и озвучивает её дословно.
 
@@ -951,21 +949,18 @@ COMMANDER system tools:
 
 ```text
 speak
-nothing_to_do
 clarify
 search_in_memory
 classify_turn
-change_verbosity
 ```
 
 NARRATION system tools (`EVENT` промпт не строит и системных функций не получает):
 
 ```text
 speak
-nothing_to_do
 ```
 
-`NARRATION speak` **не гейтится** verbosity (прежний `EventSpeechPolicy` удалён): курируемый subscriber-слой уже решил, что фразу нужно озвучить. `availableFor(NARRATION)` у `SpeakFunction`/`NothingToDoFunction` возвращает true; остальные системные функции — COMMANDER-only.
+`NARRATION speak` уже решено озвучить курируемым subscriber-слоем (прежний `EventSpeechPolicy` удалён). `availableFor(NARRATION)` у `SpeakFunction` возвращает true; остальные системные функции — COMMANDER-only.
 
 Системные функции присутствуют в prompt только если разрешены для источника.
 `SYSTEM_FUNCTION` — trusted internal category: она не должна публиковать `GameInputSequenceEvent`, выполнять macro/action behavior или менять game state.
@@ -1538,11 +1533,9 @@ COMMANDER thought получает:
 
 ```text
 speak
-nothing_to_do
 clarify
 search_in_memory
 classify_turn
-change_verbosity
 ```
 
 #### `speak`
@@ -1556,10 +1549,6 @@ confirmation_request
 ```
 
 Только такой speak проходит сразу при frozen dangerous set.
-
-#### `nothing_to_do`
-
-Завершить ход: делать (больше) нечего. Явный терминатор tool-calling-only цикла, отличающий намеренно пустой ход от пустого/битого ответа LLM. Это не «тишина»: не озвучивать — это просто отсутствие вызова `speak`, ход может действовать и молча.
 
 #### `clarify`
 
@@ -1582,24 +1571,19 @@ global TopicModel = validTopic   # тема (липкая): тег для зап
 turn importance   = importance   # важность хода: штампует записи этого хода (NORMAL при unknown)
 ```
 
-#### `change_verbosity`
-
-Меняет режим болтливости.
-
 ---
 
 ### §4.2. System tools для событийной стороны
 
 `EventThought` системных функций **не получает вовсе** — он memory-only, промпт не строит, ЛЛМ не зовёт.
 
-`NarrationThought` (`source = NARRATION`) получает ровно две:
+`NarrationThought` (`source = NARRATION`) получает ровно одну:
 
 ```text
-speak            # без verbosity-гейта: решение «озвучить» принял subscriber-слой
-nothing_to_do
+speak            # без гейта: решение «озвучить» принял subscriber-слой
 ```
 
-Verbosity narration не глушит (прежний `EventSpeechPolicy` удалён): курируемый слой уже решил, что фраза достойна озвучки. ЛЛМ за один раунд формулирует фразу → `speak`; `nothing_to_do` завершает ход. `search_in_memory`/`clarify`/`change_verbosity`/`classify_turn` ему недоступны.
+Курируемый слой уже решил, что фраза достойна озвучки (прежний `EventSpeechPolicy` удалён). ЛЛМ за один раунд формулирует фразу → `speak`, и ход завершается. `search_in_memory`/`clarify`/`classify_turn` ему недоступны.
 
 `VerbatimNarrationThought` ЛЛМ и tools не получает вовсе — он детерминированно пишет `[COMPANION]` и озвучивает готовый текст.
 
@@ -1611,7 +1595,7 @@ Verbosity narration не глушит (прежний `EventSpeechPolicy` уда
 
 ### §5.1. Normal COMMANDER flow
 
-Command/query/macro исполняются **синхронно**; результат всегда идёт во flow (ЛЛМ может цепочить), а озвучка и timeline-память — **по типу действия** (`recordOutcome`). `speak` за ход с `COMMAND|QUERY|MACRO` подавляется; свободный `speak` выживает только на разговорном ходу (без игрового действия) и пишется как `[COMPANION]`.
+Command/query/macro исполняются **синхронно**, само-озвучиваются (`recordOutcome` по типу действия) и **завершают ход** — ход одношаговый по умолчанию. Единственное продолжение — `search_in_memory`: его результат идёт во flow, и цикл делает ещё один раунд, чтобы озвучить найденное (`speak`), который и завершает ход. `speak` за ход с `COMMAND|QUERY|MACRO` подавляется; свободный `speak` выживает только на разговорном ходу (без игрового действия) и пишется как `[COMPANION]`.
 
 ```text
 UserInputEvent
@@ -1619,17 +1603,17 @@ UserInputEvent
 → PromptComposer initial messages → LlmGateway → tool-calls
 → turn classified (classify_turn applied if called: global topic + turn importance)
 → currentInput written to memory   ([COMMANDER])
-→ execute tool-calls in order (sync), result → flow; then recordOutcome by IntelActionType:
+→ execute tool-calls in order (sync); then recordOutcome by IntelActionType:
      COMMAND  → voice text (crit→urgent) | ack affirmative() if side-effect;  mem [TOOL_RESULT] "command id executed"+text/desc
      QUERY    → voice answer;                                                  mem [COMPANION] = answer
      MACRO    → no voice (own steps);                                          mem [TOOL_RESULT] "macro id executed"+desc
-     SYSTEM   → no speech, no timeline (result only in flow)
+     SYSTEM   → no speech, no timeline (result only feeds the flow)
      speak    → suppressed if game action this turn; else voice + [COMPANION]
-→ next LLM round (если не nothing_to_do)
-→ nothing_to_do / end
+→ search_in_memory issued? -> replay assistant tool_calls + result into flow, one more LLM round to speak the answer
+→ else turn ends (single-round: command/query/macro, speak/clarify, or bare classify_turn)
 ```
 
-Раунд завершает ход не только по `nothing_to_do`: если за ход уже прошло игровое действие (`COMMAND|QUERY|MACRO`) и очередной раунд **не сделал прогресса** — не запустил инструмент и лишь выдал подавленный `speak` — ход завершается немедленно (как `nothing_to_do`). Подавленный `speak` ничего не озвучивает, поэтому раннее завершение ничего не теряет; это страховка от петли подавленного `speak`, которая иначе крутила бы полноразмерные раунды до `MAX_TOOL_ROUNDS`. Раунд, исполнивший инструмент (включая `search_in_memory`/`remember`) или озвучивший `speak` на разговорном ходу, считается прогрессом и не завершает цикл.
+Ход **одношаговый по умолчанию**: команда/запрос/макрос, `speak`/`clarify` — или голый `classify_turn` — завершают его в своём раунде. Единственное продолжение — `search_in_memory`: его найденные записи возвращаются модели (не командиру), поэтому цикл делает ещё один раунд, чтобы озвучить ответ (`speak`), который и завершает ход. Явного терминатора (`end_turn`) больше нет — маркер завершения не нужен, отсутствие продолжения и есть завершение; пустой ответ без вызовов по-прежнему = ошибка. Потолок `MAX_TOOL_ROUNDS` + watchdog — страховка от зацикленного lookup.
 (Тот же `recordOutcome` исполняет и подтверждённый dangerous-набор, §5.3.)
 
 ---
@@ -1800,7 +1784,6 @@ In-flight cancelled requests:
 * `MemoryGateway`.
 * `MemoryConsolidator`.
 * Topic enum + descriptions.
-* Verbosity slot.
 * Component-level diagnostics for orphaned/cancelled requests.
 
 ---
@@ -1826,7 +1809,6 @@ In-flight cancelled requests:
 * confirmation timeout.
 * confirmation cancel phrases.
 * system notification severity/defer policy.
-* event speech / commentary verbosity policy.
 * global thought watchdog timeout.
 * invalid-response retry token threshold.
 * short-term memory max entries.
@@ -1984,7 +1966,6 @@ v0.13 основана на прогоне правдоподобных сцен
 * Не добавлять callback continuation из `LlmGateway`, который может пережить owning thought.
 * Не классифицировать UI-reading tools как `QUERY`, если они нажимают кнопки.
 * Не добавлять gameplay action в system-function registry.
-* Не писать обычный `nothing_to_do()` в memory timeline как отдельный successful event.
 * Не давать compression requests равный приоритет с urgent consciousness requests.
 
 ---
@@ -2027,7 +2008,7 @@ v0.13 основана на прогоне правдоподобных сцен
 ```text
 elite.intel.companion
 ├─ CompanionRuntime     static access point to the running subsystem (gateways + reducer + state)
-├─ model                ThoughtSource, Urgency, ConversationTopic, IntelActionCategory, Verbosity
+├─ model                ThoughtSource, Urgency, ConversationTopic, IntelActionCategory
 │  ├─ llm               LlmMessage, LlmMessageRole, LlmToolDefinition, LlmToolInvocation,
 │  │                    LlmRequest, LlmResult, PromptCacheProfile
 │  ├─ speech            SpeechRequest
@@ -2041,8 +2022,8 @@ elite.intel.companion
 │                       CompanionActionReducer, WordOverlapActionReducer, GameToolCandidates, ReflexResolver
 ├─ tools                SystemFunction, RegisterSystemFunction, SystemFunctionRegistry, SystemFunctionProvider,
 │                       IntelActionTypeResolver (id → COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN),
-│                       + the 6 system functions (speak, nothing_to_do, classify_turn, clarify,
-│                         search_in_memory, change_verbosity), each an IntelAction (FindActionFunction retired, unregistered)
+│                       + the 4 system functions (speak, classify_turn, clarify,
+│                         search_in_memory), each an IntelAction (FindActionFunction retired, unregistered)
 ├─ llm                  LlmGateway, CompanionLlmGateway, ...
 ├─ speech               SpeechGateway, CompanionSpeechGateway
 ├─ execution            ExecutionGateway, CompanionExecutionGateway
@@ -2051,7 +2032,7 @@ elite.intel.companion
 └─ confirm              DangerousActionConfirmedEvent
 ```
 
-> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel` + `Verbosity`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `classify_turn` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic` (its `topic` param) and echoes the turn's `importance`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `change_verbosity` likewise executes and writes `CompanionState` (`find_action` is retired and no longer registered). The only lifecycle-only signal left is `nothing_to_do` (turn terminator, intercepted by the `Thought`). `LlmMemory` and `MidTermTopicMemory` search are implemented, so `search_in_memory` is functional.
+> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `classify_turn` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic` (its `topic` param) and echoes the turn's `importance`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `find_action` is retired and no longer registered. `LlmMemory` and `MidTermTopicMemory` search are implemented, so `search_in_memory` is functional.
 
 ### §10.3. Уточнения механизмов (отличия от ранних разделов)
 
@@ -2064,7 +2045,7 @@ elite.intel.companion
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. В набор tools попадает любой action с `isVisibleForLLM(status) == true` — это автоматически отсекает неуместный в текущем контексте набор (например, on-foot команды, когда командир в корабле). Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
   * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английские нарочно: схема английская, не-английский ввод модель сперва переводит на английский (см. language rule), и английское описание одинаково для всех языков → единый кэш-префикс. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в `clarify`). Синтетический префикс «Game action `<id>`» убран.
-* **System-prompt steering (`CompanionSystemPromptPart`).** Помимо контракта tool-calling, статический промпт несёт поведенческие правила (steering, не hard-enforcement): (1) **граундинг** — говорить только из результатов функций и памяти, не выдумывать факты (числа/имена/дистанции/статус); для того, что командир сообщил или что ты запомнил, — `search_in_memory`, для текущего состояния корабля/галактики — `query`-функция, при неоднозначности можно дёрнуть оба; (2) **no-fit** — если ни один offered-tool не подходит, не форсировать неуместный и **не делать вид, что выполнил** несуществующее действие, а `clarify` или честно сказать «не могу» и завершить `nothing_to_do`; (3) **вежливое закрытие** — если после проверки ответа/действия всё-таки нет, сказать об этом до конца хода, не «обещать проверить и замолчать»; (4) **язык** (`languageRule`) — если командир говорит не по-английски, понять запрос по-английски перед выбором функции (схема инструментов и фразы английские), извлекая аргументы по правилу каждого параметра (verbatim, где указано). Замер на отдельном пробнике подтвердил выигрыш на терсовых фразах (`цель двигатели`). Покрыто `CompanionSystemPromptPartTest`.
+* **System-prompt steering (`CompanionSystemPromptPart`).** Помимо контракта tool-calling, статический промпт несёт поведенческие правила (steering, не hard-enforcement): (1) **граундинг** — говорить только из результатов функций и памяти, не выдумывать факты (числа/имена/дистанции/статус); для того, что командир сообщил или что ты запомнил, — `search_in_memory`, для текущего состояния корабля/галактики — `query`-функция, при неоднозначности можно дёрнуть оба; (2) **no-fit** — если ни один offered-tool не подходит, не форсировать неуместный и **не делать вид, что выполнил** несуществующее действие, а `clarify` или честно сказать «не могу»; (3) **вежливое закрытие** — если после проверки ответа/действия всё-таки нет, сказать об этом до конца хода, не «обещать проверить и замолчать»; (4) **язык** (`languageRule`) — если командир говорит не по-английски, понять запрос по-английски перед выбором функции (схема инструментов и фразы английские), извлекая аргументы по правилу каждого параметра (verbatim, где указано). Замер на отдельном пробнике подтвердил выигрыш на терсовых фразах (`цель двигатели`). Покрыто `CompanionSystemPromptPartTest`.
 * **`CompanionActionReducer` → `WordOverlapActionReducer` (собственный отбор, не легаси `Reducer`).** Берёт actions из реестров через `GameToolCandidates`, получает `allowedToolCategories` (из `IntelActionAccessPolicy` по origin: `COMMANDER` → `QUERY/ACTION/MACRO`, `EVENT` → `QUERY` (memory-only, промпт не строит), `NARRATION` → пусто) и `currentInput`, отбирает по совпадению значимых слов реплики с локализованными тренировочными фразами кандидата (`phraseKey`) и возвращает `List<LlmToolDefinition>`. Алгоритм отбора:
   * **Сопоставление слов** — `CompanionWordMatch`: для флективных языков терпит окончания (одно слово — начало другого / общая основа / 1–2 правки Левенштейна, бюджет растёт с длиной), для аналитических (английский) — точное равенство; выбор по языку сессии (`ANALYTIC = {EN}`, всё прочее — fuzzy). Это чинит русские склонения (`навігація`/`навигации`, `ведомого`/`ведомый`), которые точное совпадение прячет.
   * **Стоп-слова** — служебные слова языка (`InputNormalizerLocalizations.stopWords()`, теперь заполнены для всех языков) и слова короче 3 букв отбрасываются.

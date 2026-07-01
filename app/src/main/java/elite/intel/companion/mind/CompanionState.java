@@ -1,12 +1,10 @@
 package elite.intel.companion.mind;
 
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.Verbosity;
 
 /**
  * Consciousness-level runtime state shared across a companion session: the global topic (the conversation's
- * current topic, used to tag the commander's memory entries) and the verbosity slot (how freely EVENT
- * thoughts may comment).
+ * current topic, used to tag the commander's memory entries).
  * <p>
  * The global topic is changed only by the COMMANDER {@code classify_turn} tool; EVENT thoughts never
  * change it (an event's topic for memory tagging comes from a static event-type map).
@@ -17,7 +15,6 @@ import elite.intel.companion.model.Verbosity;
 public final class CompanionState {
 
     private volatile ConversationTopic globalTopic = ConversationTopic.SOCIAL;
-    private volatile Verbosity verbosity = Verbosity.NORMAL;
 
     /** The conversation's current global topic; defaults to small talk at session start. */
     public ConversationTopic globalTopic() {
@@ -26,14 +23,5 @@ public final class CompanionState {
 
     public void setGlobalTopic(ConversationTopic topic) {
         this.globalTopic = topic;
-    }
-
-    /** The current talkativeness mode; defaults to NORMAL. */
-    public Verbosity verbosity() {
-        return verbosity;
-    }
-
-    public void setVerbosity(Verbosity verbosity) {
-        this.verbosity = verbosity;
     }
 }

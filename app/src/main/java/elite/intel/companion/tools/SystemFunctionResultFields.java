@@ -18,16 +18,16 @@ public final class SystemFunctionResultFields {
     public static final String NAME = "name";
     /** A returned item's description (find_action). */
     public static final String DESCRIPTION = "description";
-    /** Error marker when a call could not be honored (recall, change_verbosity). */
+    /** Error marker when a call could not be honored (recall). */
     public static final String ERROR = "error";
     /** Memory scope echoed back (recall). */
     public static final String SCOPE = "scope";
-    /** Verbosity mode echoed back (change_verbosity). */
-    public static final String VERBOSITY = "verbosity";
     /** Topic echoed back (classify_turn). */
     public static final String TOPIC = "topic";
     /** Importance level echoed back (classify_turn). */
     public static final String IMPORTANCE = "importance";
+    /** Whether the commander's current phrase is a question, echoed back (classify_turn). */
+    public static final String IS_QUESTION = "is_question";
 
     private SystemFunctionResultFields() {
     }

@@ -3,7 +3,6 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -26,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -203,26 +203,7 @@ public abstract class Thought {
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
-                importantContext(),
-                ctx.memoryGateway().indexes(),
-                ctx.memoryGateway().longTermSummary());
-    }
-
-    /**
-     * The always-on "important to remember" context inlined ahead of the timeline: the bounded {@code HIGH}/
-     * {@code MAX} mid-term working-set. Short-term is excluded - it is already inlined whole and searched - so
-     * nothing is duplicated. Pinned {@code MAX} facts are deliberately NOT inlined here: the archive is
-     * unbounded, so it is surfaced through {@code search_in_memory} (importance-ranked, capped) instead of
-     * bloating every prompt. COMMANDER-only; empty for other sources.
-     */
-    private List<MemoryEntry> importantContext() {
-        // WHY: only the COMMANDER prompt inlines this block (composeNarration discards it), so skip the lookup
-        // entirely for other sources rather than building a list that will be thrown away.
-        if (source != ThoughtSource.COMMANDER) {
-            return List.of();
-        }
-        return ctx.memoryGateway().importantWorkingSet(
-                CompanionConfig.workingSetSize(), CompanionConfig.workingSetTokenBudget());
+                ctx.memoryGateway().indexes());
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
@@ -285,7 +266,7 @@ public abstract class Thought {
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> rememberAction("command " + inv.name() + " executed", description(inv.name(), tools));
+            case COMMAND -> rememberAction("command " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case QUERY -> {
                 // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
@@ -298,7 +279,7 @@ public abstract class Thought {
                     GameEventBus.publish(new AiVoxResponseEvent(answer));
                 }
             }
-            case MACRO -> rememberAction("macro " + inv.name() + " executed", description(inv.name(), tools));
+            case MACRO -> rememberAction("macro " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }
@@ -320,6 +301,17 @@ public abstract class Thought {
     protected static String description(String id, List<LlmToolDefinition> tools) {
         return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
                 .map(LlmToolDefinition::description).orElse("");
+    }
+
+    /** The compact action description stored in memory; examples stay LLM-facing only. */
+    protected static String memoryDescription(String id, List<LlmToolDefinition> tools) {
+        String raw = description(id, tools);
+        if (raw == null || raw.isBlank()) {
+            return "";
+        }
+        String detail = raw.strip();
+        int exampleStart = detail.toLowerCase(Locale.ROOT).indexOf("example phrases");
+        return exampleStart < 0 ? detail : detail.substring(0, exampleStart).strip();
     }
 
     /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */

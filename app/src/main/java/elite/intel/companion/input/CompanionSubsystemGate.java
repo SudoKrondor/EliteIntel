@@ -20,7 +20,7 @@ import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
-import elite.intel.companion.prompt.WordOverlapActionReducer;
+import elite.intel.companion.prompt.SemanticActionReducer;
 import elite.intel.companion.speech.CompanionSpeechGateway;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -111,7 +111,7 @@ public final class CompanionSubsystemGate implements ManagedService {
         // Assemble the companion graph (all no-arg / factory) and publish it so self-describing tools
         // (system functions reaching CompanionRuntime statically) can reach the gateways and state.
         CompanionState state = new CompanionState();
-        CompanionActionReducer reducer = new WordOverlapActionReducer();
+        CompanionActionReducer reducer = new SemanticActionReducer();
         LlmGateway llm = llmOverride != null ? llmOverride : CompanionLlmGatewayFactory.create();
         SpeechGateway speech = new CompanionSpeechGateway();
         ExecutionGateway execution = executionOverride != null ? executionOverride : new CompanionExecutionGateway();

@@ -46,7 +46,7 @@ In `Thought.run()`:
 |---|---|
 | `LOW`    | dropped by `GameEventFilter` (never reaches a thought) |
 | `NORMAL` | **recorded to memory, LLM never engaged, never speaks** — i.e. *knowing* |
-| `HIGH`   | **full LLM thinking loop; the LLM freely chooses `speak` vs `nothing_to_do`** — i.e. *barking at a whim* |
+| `HIGH`   | **full LLM thinking loop; the LLM freely chooses to `speak` or stay silent** — i.e. *barking at a whim* |
 
 The `HIGH` branch is the root cause: an automatic heuristic (`BaseEvent.importance()`)
 hands the LLM an open mic.
@@ -171,8 +171,8 @@ No changes to the event bus, the journal parser, or the subscriber filtering log
 1. **Should any raw event ever speak unprompted?
    ** This proposal says no — all spontaneous speech goes through a subscriber. If a rare exception is wanted (e.g. "under attack"), the clean way is a dedicated subscriber that publishes curated narration, not a revived
    `HIGH`-importance LLM path.
-2. **Verbosity vs curated speech.** Curated narration currently bypasses the verbosity gate
-   (`EventSpeechPolicy`). Confirm that is still desired once
-   *all* spontaneous speech is curated — or decide which curated channels honour `QUIET`.
+2. **Verbosity vs curated speech.** *Resolved (2026-07-02):* the verbosity mechanism was removed entirely
+   (`EventSpeechPolicy` earlier, then the `Verbosity` slot and `change_verbosity` function). Curated narration
+   is voiced unconditionally; there is no `QUIET` mode to honour.
 3. **Double-recording.
    ** A curated narration and its underlying raw event will both land in memory (the spoken line + the data). Believed desirable; confirm.

@@ -5,7 +5,7 @@ import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryImportance;
+import elite.intel.companion.model.memory.MemorySource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -30,7 +30,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     private static final Logger log = LogManager.getLogger(SessionMemoryGateway.class);
 
-    private final TokenEstimator tokenEstimator;
     private final Supplier<SemanticPhraseMatcher> matcherSource;
     private final ShortTermMemory shortTerm;
     private final MidTermTopicMemory midTerm = new MidTermTopicMemory();
@@ -64,7 +63,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     /** Canonical constructor: injectable token estimator and semantic-matcher source. */
     SessionMemoryGateway(TokenEstimator tokenEstimator, Supplier<SemanticPhraseMatcher> matcherSource) {
-        this.tokenEstimator = tokenEstimator;
         this.matcherSource = matcherSource;
         this.shortTerm = new ShortTermMemory(tokenEstimator);
     }
@@ -125,37 +123,22 @@ public final class SessionMemoryGateway implements MemoryGateway {
     public synchronized List<String> recallMatching(String query, int limit) {
         // Ranking and de-duplication live in MemorySearch; the gateway only supplies the current memory areas
         // and the shared matcher. A given entry lives in exactly one of short-term / mid-term, so no double-count.
+        // The long-term summary is no longer inlined into every prompt - it is reached here, as a searchable entry.
         return MemorySearch.recall(query, limit, shortTerm.timeline(), midTerm.allEntries(),
-                longTerm.pinnedFacts(), matcherSource);
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
     }
 
-    @Override
-    public synchronized List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) {
-        // Important mid-term entries only: short-term is already inlined whole (and searched), so re-including it
-        // would duplicate the prompt. Take the most recent HIGH/MAX, capped by count and token budget, then
-        // return oldest-to-newest for a stable, timeline-like ordering.
-        List<MemoryEntry> important = new ArrayList<>();
-        for (MemoryEntry entry : midTerm.allEntries()) {
-            if (entry.importance().compareTo(MemoryImportance.HIGH) >= 0) {
-                important.add(entry);
-            }
+    /**
+     * The session long-term summary wrapped as a single searchable entry, or empty when nothing has been
+     * consolidated yet. It carries no meaning-vector (it is replaced as a plain string), so it recalls by
+     * word-overlap; an old timestamp keeps it from winning recency ties against specific recent facts.
+     */
+    private List<MemoryEntry> longTermSummaryAsSearchable() {
+        String summary = longTerm.get();
+        if (summary == null || summary.isBlank()) {
+            return List.of();
         }
-        important.sort(Comparator.comparing(MemoryEntry::timestamp).reversed());
-        List<MemoryEntry> selected = new ArrayList<>();
-        int tokens = 0;
-        for (MemoryEntry entry : important) {
-            if (selected.size() >= maxEntries) {
-                break;
-            }
-            int cost = tokenEstimator.estimate(entry.content()) + CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
-            if (!selected.isEmpty() && tokens + cost > tokenBudget) {
-                break; // keep at least the newest, then stop once the budget would overflow
-            }
-            tokens += cost;
-            selected.add(entry);
-        }
-        Collections.reverse(selected); // oldest-to-newest, matching the timeline block
-        return selected;
+        return List.of(new MemoryEntry(Instant.EPOCH, ConversationTopic.SYSTEM, MemorySource.SYSTEM, summary.strip()));
     }
 
     @Override

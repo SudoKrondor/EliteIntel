@@ -9,7 +9,6 @@ import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
-import elite.intel.companion.model.Verbosity;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
@@ -22,7 +21,7 @@ import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.IntelActionTypeResolver;
-import elite.intel.companion.tools.NothingToDoFunction;
+import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.SensorDataEvent;
@@ -49,15 +48,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Lane scheduling: a submitted input runs a thought to a memory write, the two sources use separate lanes,
  * blank input and input racing lifecycle (before start / after stop) are ignored, an urgent thought
  * preempts a live one, barge-in ({@code interruptLiveThoughts}) interrupts it, and the watchdog
- * force-interrupts a stuck thought. The fake LLM ends a turn with {@code nothing_to_do} (or blocks, to be
- * preempted); {@code stop()} drains the lanes, making the assertions deterministic.
+ * force-interrupts a stuck thought. The fake LLM settles a turn with a bare {@code classify_turn} - which
+ * records the input and, being single-round by design, ends the turn (or blocks, to be preempted);
+ * {@code stop()} drains the lanes, making the assertions deterministic.
  */
 class ThoughtDispatcherTest {
 
     private final FakeMemory memory = new FakeMemory();
 
     private ThoughtDispatcher dispatcher() {
-        return new ThoughtDispatcher(ctxWith(new NothingToDoLlm()));
+        return new ThoughtDispatcher(ctxWith(new TerminatingLlm()));
     }
 
     private ThoughtContext ctxWith(LlmGateway llm) {
@@ -280,7 +280,7 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void sensorNarrationOffersOnlyNarrationToolsEvenWhenQuietAndRecordsTheSpokenLine() {
+    void sensorNarrationOffersOnlyNarrationToolsAndRecordsTheSpokenLine() {
         List<LlmRequest> requests = new CopyOnWriteArrayList<>();
         LlmGateway llm = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
@@ -288,16 +288,13 @@ class ThoughtDispatcherTest {
                 JsonObject speakArgs = new JsonObject();
                 speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "Plotting a route to Sol, Commander.");
                 LlmToolInvocation speak = new LlmToolInvocation(UUID.randomUUID().toString(), SpeakFunction.ID, speakArgs);
-                LlmToolInvocation done = new LlmToolInvocation(UUID.randomUUID().toString(),
-                        NothingToDoFunction.ID, new JsonObject());
-                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(speak, done)));
+                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(speak)));
             }
             @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
                 return CompletableFuture.completedFuture(null);
             }
         };
         CompanionState state = new CompanionState();
-        state.setVerbosity(Verbosity.QUIET);
         ThoughtContext ctx = new ThoughtContext(
                 llm, new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
@@ -316,9 +313,9 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         assertEquals(1, requests.size(), "narration is a single short round");
-        assertEquals(Set.of(SpeakFunction.ID, NothingToDoFunction.ID),
+        assertEquals(Set.of(SpeakFunction.ID),
                 requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()),
-                "narration offers only speak + nothing_to_do, even when QUIET");
+                "narration offers only speak");
 
         // Only the spoken line is recorded, under the provided topic - the raw sensor data is not persisted.
         assertEquals(1, memory.writes.size());
@@ -500,7 +497,7 @@ class ThoughtDispatcherTest {
     void aFailingThoughtDoesNotKillTheLane() {
         // A reducer that always throws makes every thought fail during prompt assembly.
         ThoughtContext ctx = new ThoughtContext(
-                new NothingToDoLlm(), new FakeSpeech(), new FakeExecution(), memory,
+                new TerminatingLlm(), new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> { throw new RuntimeException("boom"); }, new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator());
@@ -533,11 +530,11 @@ class ThoughtDispatcherTest {
 
     // --- fakes ---
 
-    /** Ends every turn immediately with nothing_to_do, so a thought records its input and stops. */
-    private static final class NothingToDoLlm implements LlmGateway {
+    /** Settles every turn immediately with a bare classify_turn, so a thought records its input and stops. */
+    private static final class TerminatingLlm implements LlmGateway {
         @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
             LlmToolInvocation terminator = new LlmToolInvocation(UUID.randomUUID().toString(),
-                    NothingToDoFunction.ID, new JsonObject());
+                    ClassifyTurnFunction.ID, new JsonObject());
             return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(terminator)));
         }
 
@@ -546,7 +543,7 @@ class ThoughtDispatcherTest {
         }
     }
 
-    /** Blocks the first turn forever (the preempted thought) and ends later turns with nothing_to_do. */
+    /** Blocks the first turn forever (the preempted thought) and settles later turns with classify_turn. */
     private static final class BlockFirstLlm implements LlmGateway {
         final AtomicInteger calls = new AtomicInteger();
 
@@ -555,7 +552,7 @@ class ThoughtDispatcherTest {
                 return new CompletableFuture<>(); // never completes; interrupt (cancel) unblocks it
             }
             LlmToolInvocation terminator = new LlmToolInvocation(UUID.randomUUID().toString(),
-                    NothingToDoFunction.ID, new JsonObject());
+                    ClassifyTurnFunction.ID, new JsonObject());
             return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(terminator)));
         }
 
@@ -570,7 +567,7 @@ class ThoughtDispatcherTest {
         @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
             requests.add(request);
             LlmToolInvocation terminator = new LlmToolInvocation(UUID.randomUUID().toString(),
-                    NothingToDoFunction.ID, new JsonObject());
+                    ClassifyTurnFunction.ID, new JsonObject());
             return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(terminator)));
         }
 
@@ -586,7 +583,6 @@ class ThoughtDispatcherTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { return List.of(); }
         @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
