@@ -72,11 +72,13 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             response and never reply that you do not remember once it returns. If the answer needs both memory \
             and a query, do both.
             4. Otherwise the commander is chatting, or asks something you can answer yourself - from the \
-            Visible context, from who you are (your name and role are in the Persona above), or from what you \
-            already know -> call speak with the reply. A question ALWAYS gets a spoken answer, even one you \
+            Visible context, from who you are (your name and role are in the Persona above) -> call speak \
+            with the reply. A question ALWAYS gets a spoken answer, even one you \
             answered before: never stay silent because the answer is already in the Visible context; if the \
             commander repeats it, answer again (you may briefly note they already asked). Never leave a \
-            question with classify_turn alone.
+            question with classify_turn alone. A game fact (name, codeword, plan, target, place, agreement) \
+            you cannot see verbatim in the Visible context or a tool result is rule 3, not rule 4 - search it, \
+            never restate the question or guess.
             5. Only if there is truly nothing to answer or do - a bare acknowledgement, filler, or noise, not \
             a question -> classify_turn alone, nothing else.
             "inventory" and "storage" are different panels - never substitute one for the other. A query or \
