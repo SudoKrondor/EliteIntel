@@ -184,9 +184,39 @@ public class AppController implements Runnable {
         new Thread(this::restartBrainService, "BrainRestart-Thread").start();
     }
 
+    @Subscribe
+    void onRestartServicesEvent(RestartServicesEvent event) {
+        new Thread(this::restartAllServices, "ServicesRestart-Thread").start();
+    }
+
+    /**
+     * Full stop/start of every service. Used when a setting change alters the service registry
+     * itself rather than the config of an existing service - e.g. toggling companion mode, which
+     * swaps {@code BRAIN} for {@code COMPANION} in {@link #buildServices(boolean)}. A granular
+     * {@link RestartBrainEvent} cannot do that swap, so the whole set is rebuilt. No-op when
+     * services are stopped (the toggle takes effect on the next Start).
+     */
+    private void restartAllServices() {
+        if (!isRunning.get()) return;
+        stopServices();
+        try {
+            startServices();
+        } catch (Exception e) {
+            // WHY: broad catch at the worker-thread boundary - a startup failure must be surfaced to the
+            // user (console log) and leave services cleanly stopped, not kill the thread half-running.
+            log.error("Failed to restart services", e);
+            appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+            stopServices();
+            UiBus.publish(new ServicesStateEvent(false));
+        }
+    }
+
     private void restartBrainService() {
         if (!isRunning.get()) return;
+        // In companion mode the running LLM service is COMPANION, not BRAIN; restart whichever is active
+        // so an LLM source (local/cloud) change is picked up regardless of mode.
         ServiceHolder brain = services.get(ServiceType.BRAIN);
+        if (brain == null) brain = services.get(ServiceType.COMPANION);
         if (brain == null) return;
         appendToLog("Restarting LLM service...");
         brain.stop();
@@ -215,6 +245,11 @@ public class AppController implements Runnable {
     @Subscribe
     void onRestartMouthEvent(RestartMouthEvent event) {
         new Thread(this::restartMouthService, "MouthRestart-Thread").start();
+    }
+
+    @Subscribe
+    void onRestartEarsEvent(RestartEarsEvent event) {
+        new Thread(this::restartEarsService, "EarsRestart-Thread").start();
     }
 
     private void restartEarsService() {

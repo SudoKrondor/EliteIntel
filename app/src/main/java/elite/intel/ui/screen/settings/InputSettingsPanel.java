@@ -11,10 +11,7 @@ import elite.intel.eventbus.DeviceBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.PttButtonStateEvent;
-import elite.intel.ui.event.PttModeChangedEvent;
-import elite.intel.ui.event.SleepWakeStateChangedEvent;
-import elite.intel.ui.event.VoiceInputModeToggleEvent;
+import elite.intel.ui.event.*;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudSegmentedControl;
@@ -187,6 +184,9 @@ public class InputSettingsPanel extends JPanel {
             UiBus.publish(new PttModeChangedEvent(false));
         }
         SystemSession.getInstance().setPushToTalkEnabled(enabled);
+        // PTT on/off only affects the STT pipeline; it previously took effect only after an app
+        // restart. Restart just the EARS service so the change applies now (no full rebuild needed).
+        UiBus.publish(new RestartEarsEvent());
     }
 
     private void setControlsEnabled(boolean enabled) {

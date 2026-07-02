@@ -9,6 +9,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LanguageChangedEvent;
+import elite.intel.ui.event.RestartServicesEvent;
 import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.util.StringUtls;
@@ -94,6 +95,9 @@ public class CommonSettingsPanel extends JPanel {
         companionModeCheckBox.addActionListener(e -> {
             systemSession.setCompanionMode(companionModeCheckBox.isSelected());
             applyCompanionModeToConversation(companionModeCheckBox.isSelected());
+            // Companion vs command mode is decided when the service registry is built, so the whole
+            // set must be rebuilt for the toggle to take effect at runtime (no-op if not running).
+            UiBus.publish(new RestartServicesEvent());
         });
         GridBagConstraints mg = baseGbc();
         mg.gridx = 3;

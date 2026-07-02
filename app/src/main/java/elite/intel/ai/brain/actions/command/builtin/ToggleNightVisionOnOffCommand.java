@@ -7,6 +7,7 @@ import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.session.Status;
 
 /**
  * Stage-4b self-describing command for "toggle night vision".
@@ -20,6 +21,7 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
 
     @Override public String llmDescription() { return "Toggle night vision on or off."; }
 
+    private final Status status = Status.getInstance();
 
     @Override
     public String id() {
@@ -33,6 +35,10 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding())));
+        if (status.isOnFoot()) {
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_HUMANOID_NIGHT_VISION_BUTTON.getGameBinding())));
+        } else {
+            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding())));
+        }
     }
 }
