@@ -270,12 +270,25 @@ public final class CompanionEvalHarness {
         return !callsNamed(tool).isEmpty();
     }
 
-    /** The text passed to every speak call this turn. */
+    /**
+     * Everything the commander actually hears this turn: the LLM's own {@code speak} calls plus the spoken
+     * answer of any self-narrating query/command (a query voices its {@code text_to_speech_response} through the
+     * announcement path, not a speak call), so scoring reflects what was said regardless of which tool said it.
+     */
     public List<String> spokenTexts() {
-        return callsNamed("speak").stream()
-                .filter(c -> c.args().has("text") && !c.args().get("text").isJsonNull())
-                .map(c -> c.args().get("text").getAsString())
-                .toList();
+        List<String> spoken = new ArrayList<>();
+        for (Executed c : callsNamed("speak")) {
+            if (c.args().has("text") && !c.args().get("text").isJsonNull()) {
+                spoken.add(c.args().get("text").getAsString());
+            }
+        }
+        for (Executed c : turnCalls) {
+            String tts = str(c.result(), "text_to_speech_response");
+            if (!tts.isBlank()) {
+                spoken.add(tts);
+            }
+        }
+        return spoken;
     }
 
     /** Whether any spoken phrase this turn contains the token (case-insensitive). */
@@ -313,6 +326,11 @@ public final class CompanionEvalHarness {
             }
         }
         return null;
+    }
+
+    /** The raw body of the last LLM request this turn (for inspecting what the prompt carried: context + candidates). */
+    public String lastRequestBody() {
+        return lastRequestBody == null ? "" : lastRequestBody;
     }
 
     /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
