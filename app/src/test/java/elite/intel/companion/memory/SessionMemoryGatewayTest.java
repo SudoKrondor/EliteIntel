@@ -183,6 +183,22 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void lowEntriesAreDroppedOnEvictionNotPromotedToMidTerm() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // A LOW entry (idle banter / companion speech) and a NORMAL fact, both the oldest so both leave short-term.
+        gateway.write(entry(ConversationTopic.SOCIAL, "болтовня которую не храним", MemoryImportance.LOW));
+        gateway.write(entry(ConversationTopic.MINING, "цель по добыче низкотемпературные алмазы", MemoryImportance.NORMAL));
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
+            gateway.write(entry(ConversationTopic.TRADE, "filler-" + i));
+        }
+
+        // The NORMAL fact was promoted to mid-term; the LOW entry was dropped on eviction, not promoted.
+        assertEquals(List.of("[COMMANDER] цель по добыче низкотемпературные алмазы"),
+                gateway.recallMatching("алмазы", 10));
+        assertTrue(gateway.recallMatching("болтовня", 10).isEmpty(), "a LOW entry must not reach mid-term");
+    }
+
+    @Test
     void recallMatchingRanksImportantMatchesAboveNewerRoutineOnes() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
         // Same shared word ("granite") in three entries: an older MAX/HIGH fact and a newer NORMAL mention.

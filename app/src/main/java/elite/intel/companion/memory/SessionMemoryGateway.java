@@ -5,6 +5,7 @@ import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -105,7 +106,11 @@ public final class SessionMemoryGateway implements MemoryGateway {
         stored = mergeDuplicate(stored);
         shortTerm.add(stored);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
-            midTerm.add(evicted);
+            // LOW entries (idle banter and the companion's own speech) exist only for hot-timeline continuity;
+            // they are dropped when they age out of short-term, never promoted to mid-term.
+            if (evicted.importance() != MemoryImportance.LOW) {
+                midTerm.add(evicted);
+            }
         }
         // Per-topic mid-term overflow is handed to the consolidator (long-term summary lives behind the LLM).
         for (MemoryEntry overflow : midTerm.evictOverflow()) {
