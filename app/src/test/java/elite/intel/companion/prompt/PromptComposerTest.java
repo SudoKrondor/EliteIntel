@@ -1,6 +1,5 @@
 package elite.intel.companion.prompt;
 
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
@@ -21,8 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Phase 2 prompt assembly: message segmentation, cache profile by source, the static-prefix blocks
- * (topic enum, memory indexes), the Visible context block, and the current-input block. A stub
- * {@link SystemPromptText} keeps the test off the session/localization singletons.
+ * (topic enum), the Visible context block, and the current-input block. A stub {@link SystemPromptText}
+ * keeps the test off the session/localization singletons.
  */
 class PromptComposerTest {
 
@@ -34,19 +33,18 @@ class PromptComposerTest {
         return new MemoryEntry(Instant.now(), topic, source, content);
     }
 
-    private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm, MemoryAvailabilitySnapshot indexes) {
+    private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm) {
         return composer.compose(
                 ThoughtSource.COMMANDER, Urgency.NORMAL,
                 ConversationTopic.NAVIGATION,
                 "set course to Sol",
                 List.of(), List.of(),
-                shortTerm, indexes, List.of());
+                shortTerm, List.of());
     }
 
     @Test
     void segmentsIntoSystemSystemUserAndPicksCommanderProfile() {
-        ComposedPrompt prompt = composeCommander(List.of(),
-                new MemoryAvailabilitySnapshot(List.of()));
+        ComposedPrompt prompt = composeCommander(List.of());
 
         List<LlmMessage> messages = prompt.messages();
         assertEquals(3, messages.size());
@@ -67,7 +65,7 @@ class PromptComposerTest {
                 ConversationTopic.COMBAT,
                 "fuel reserve critical",
                 List.of(), List.of(speak),
-                List.of(), new MemoryAvailabilitySnapshot(List.of(ConversationTopic.NAVIGATION)), List.of());
+                List.of(), List.of());
 
         assertEquals(PromptCacheProfile.NARRATION, prompt.profile());
         // 3 messages: the narration static block, the Visible context, the current input.
@@ -77,15 +75,13 @@ class PromptComposerTest {
         assertTrue(system.contains("NARRATION"));
         // Lean: the commander-only stable-prefix sections are not stacked onto the narration block.
         assertFalse(system.contains("Topics"));
-        assertFalse(system.contains("Memory data"));
         // Only the system functions are offered (a narration thought has no game tools).
         assertEquals(List.of(speak), prompt.tools());
     }
 
     @Test
     void topicEnumListsSelectableTopicsAndHidesSentinels() {
-        String prefix = composeCommander(List.of(),
-                new MemoryAvailabilitySnapshot(List.of())).messages().get(0).content();
+        String prefix = composeCommander(List.of()).messages().get(0).content();
 
         assertTrue(prefix.contains("- navigation: " + ConversationTopic.NAVIGATION.description()));
         assertTrue(prefix.contains("- combat: " + ConversationTopic.COMBAT.description()));
@@ -95,43 +91,11 @@ class PromptComposerTest {
     }
 
     @Test
-    void memoryIndexesReflectSnapshot() {
-        MemoryAvailabilitySnapshot indexes = new MemoryAvailabilitySnapshot(
-                List.of(ConversationTopic.NAVIGATION, ConversationTopic.TRADE));
-        String prefix = composeCommander(List.of(), indexes).messages().get(0).content();
-
-        assertTrue(prefix.contains("### Topics with stored memory"));
-        assertTrue(prefix.contains("- navigation"));
-        assertTrue(prefix.contains("- trade"));
-    }
-
-    @Test
-    void memoryIndexHidesNonSelectableSentinelTopics() {
-        // A sentinel topic can hold memory (interrupted/invalid turns), but it is not a valid classify_turn
-        // value, so it must not surface in the "Topics with stored memory" index either.
-        MemoryAvailabilitySnapshot indexes = new MemoryAvailabilitySnapshot(
-                List.of(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, ConversationTopic.NAVIGATION));
-        String prefix = composeCommander(List.of(), indexes).messages().get(0).content();
-
-        assertTrue(prefix.contains("- navigation"));
-        assertFalse(prefix.contains("unresolved_commander_input"));
-    }
-
-    @Test
-    void emptyTopicMemoryRendersPlaceholder() {
-        String prefix = composeCommander(List.of(),
-                new MemoryAvailabilitySnapshot(List.of())).messages().get(0).content();
-
-        assertTrue(prefix.contains("### Topics with stored memory\n- none"));
-    }
-
-    @Test
     void contextBlockRendersTimelineLines() {
         List<MemoryEntry> shortTerm = List.of(
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "where are we"),
                 entry(MemorySource.TOOL_RESULT, ConversationTopic.NAVIGATION, "in Sol"));
-        String context = composeCommander(shortTerm,
-                new MemoryAvailabilitySnapshot(List.of())).messages().get(1).content();
+        String context = composeCommander(shortTerm).messages().get(1).content();
 
         assertTrue(context.startsWith("## Visible context"));
         assertTrue(context.contains("[COMMANDER][navigation] where are we"));
@@ -140,15 +104,13 @@ class PromptComposerTest {
 
     @Test
     void emptyTimelineRendersPlaceholder() {
-        String context = composeCommander(List.of(),
-                new MemoryAvailabilitySnapshot(List.of())).messages().get(1).content();
+        String context = composeCommander(List.of()).messages().get(1).content();
         assertTrue(context.contains("(empty)"));
     }
 
     @Test
     void currentInputBlockCarriesSourceUrgencyTopicsAndContent() {
-        String input = composeCommander(List.of(),
-                new MemoryAvailabilitySnapshot(List.of())).messages().get(2).content();
+        String input = composeCommander(List.of()).messages().get(2).content();
 
         assertTrue(input.contains("source: COMMANDER"));
         assertTrue(input.contains("urgency: normal"));
@@ -165,7 +127,7 @@ class PromptComposerTest {
                 ThoughtSource.COMMANDER, Urgency.NORMAL,
                 ConversationTopic.NAVIGATION, "go",
                 List.of(game), List.of(system),
-                List.of(), new MemoryAvailabilitySnapshot(List.of()), List.of());
+                List.of(), List.of());
 
         assertEquals(List.of(game, system), prompt.tools());
     }

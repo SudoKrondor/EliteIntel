@@ -18,7 +18,7 @@ import java.util.Map;
  */
 class MidTermTopicMemory {
 
-    // EnumMap keeps topics in natural enum order, so the prompt topic index is stable.
+    // EnumMap keeps topics in natural enum order, so iteration (allEntries, eviction) is deterministic.
     private final Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
 
     /** Stores an evicted entry under its topic. */
@@ -73,17 +73,6 @@ class MidTermTopicMemory {
             all.addAll(entries);
         }
         return all;
-    }
-
-    /** Topics that currently hold entries (for the prompt topic-memory index). */
-    List<ConversationTopic> topicsWithMemory() {
-        List<ConversationTopic> topics = new ArrayList<>();
-        for (Map.Entry<ConversationTopic, List<MemoryEntry>> e : byTopic.entrySet()) {
-            if (!e.getValue().isEmpty()) {
-                topics.add(e.getKey());
-            }
-        }
-        return topics;
     }
 
     /**

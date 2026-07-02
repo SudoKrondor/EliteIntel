@@ -87,7 +87,6 @@ class OversizedMemoryCompressorTest {
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }

@@ -21,9 +21,4 @@ final class PromptSections {
         }
         sb.append("## ").append(title).append('\n');
     }
-
-    /** Appends a level-3 subsection header (no surrounding blank line; subsections are kept tight). */
-    static void subheading(StringBuilder sb, String title) {
-        sb.append("### ").append(title).append('\n');
-    }
 }

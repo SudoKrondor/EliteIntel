@@ -10,6 +10,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +19,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Phase 2 memory spine: short-term timeline, count/token eviction into mid-term by topic, and the
- * index snapshot. A fixed-cost token estimator makes the budget eviction deterministic.
+ * Phase 2 memory spine: short-term timeline and count/token eviction into mid-term by topic. A
+ * fixed-cost token estimator makes the budget eviction deterministic.
  */
 class SessionMemoryGatewayTest {
+
+    /** Topics that currently hold mid-term entries, in enum order (observed via the public per-topic recall). */
+    private static List<ConversationTopic> midTermTopics(SessionMemoryGateway gateway) {
+        List<ConversationTopic> topics = new ArrayList<>();
+        for (ConversationTopic topic : ConversationTopic.values()) {
+            if (!gateway.recallTopicMemory(topic, null, 1000).isEmpty()) {
+                topics.add(topic);
+            }
+        }
+        return topics;
+    }
 
     /** Every entry costs a constant number of tokens, independent of content length. */
     private static final class FixedTokenEstimator implements TokenEstimator {
@@ -57,7 +69,7 @@ class SessionMemoryGatewayTest {
         assertEquals("first", timeline.get(0).content());
         assertEquals("second", timeline.get(1).content());
         // Nothing evicted yet, so mid-term has no topics.
-        assertTrue(gateway.indexes().topicsWithMemory().isEmpty());
+        assertTrue(midTermTopics(gateway).isEmpty());
     }
 
     @Test
@@ -75,7 +87,7 @@ class SessionMemoryGatewayTest {
         // The three oldest (MINING) were evicted; the newest entry is still the last one written.
         assertEquals("entry-" + (CompanionConfig.shortTermMemorySize() + 2), timeline.get(timeline.size() - 1).content());
 
-        List<ConversationTopic> topics = gateway.indexes().topicsWithMemory();
+        List<ConversationTopic> topics = midTermTopics(gateway);
         assertTrue(topics.contains(ConversationTopic.MINING));
         assertFalse(topics.contains(ConversationTopic.TRADE));
     }
@@ -99,7 +111,7 @@ class SessionMemoryGatewayTest {
         // Both topics filled mid-term, reported once each in enum order.
         assertEquals(
                 List.of(ConversationTopic.NAVIGATION, ConversationTopic.COMBAT),
-                gateway.indexes().topicsWithMemory());
+                midTermTopics(gateway));
     }
 
     @Test
@@ -114,7 +126,7 @@ class SessionMemoryGatewayTest {
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
         assertEquals(1, timeline.size());
         assertEquals("b", timeline.get(0).content());
-        assertTrue(gateway.indexes().topicsWithMemory().contains(ConversationTopic.EXPLORATION));
+        assertTrue(midTermTopics(gateway).contains(ConversationTopic.EXPLORATION));
     }
 
     @Test

@@ -1,7 +1,6 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.companion.CompanionConfig;
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.ConversationTopic;
@@ -20,9 +19,9 @@ import java.util.Locale;
  * commands are relevant, or how to describe a tool; it receives already-prepared data and assembles
  * the OpenAI/Mistral-compatible prompt (see COMPANION_ARCHITECTURE.md §2.10).
  * <p>
- * Cache-friendly ordering: the stable narrative + topic enum head the system message, the
- * slowly-changing memory index follows, and the per-turn Visible context and current input are
- * separate later messages so the cached prefix survives across turns.
+ * Cache-friendly ordering: the stable narrative + topic enum head the system message, and the
+ * per-turn Visible context, remembered-fact candidates, and current input are separate later
+ * messages so the cached prefix survives across turns.
  */
 public final class PromptComposer {
 
@@ -48,7 +47,6 @@ public final class PromptComposer {
      * @param selectedTools    Reducer-selected game/query tools
      * @param systemTools      system function tools for this source
      * @param shortTerm        short-term memory timeline for the context block
-     * @param indexes          cheap memory index metadata (topics with mid-term memory)
      * @param memoryCandidates pre-selected clean answer facts to inline as "Relevant remembered facts" (may be empty)
      */
     public ComposedPrompt compose(
@@ -59,12 +57,11 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            MemoryAvailabilitySnapshot indexes,
             List<String> memoryCandidates
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, urgency, currentTopic, currentInput,
-                    selectedTools, systemTools, shortTerm, indexes, memoryCandidates);
+                    selectedTools, systemTools, shortTerm, memoryCandidates);
             case NARRATION -> composeNarration(source, urgency, currentTopic, currentInput, systemTools, shortTerm);
             // EVENT thoughts are memory-only (see EventThought); they never reach here.
             case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
@@ -72,18 +69,17 @@ public final class PromptComposer {
     }
 
     /**
-     * Full consciousness prompt: stable prefix (rules + topic enum + memory indexes), the Visible context
-     * block, the current-input block, the reduced game tools plus system functions, and the COMMANDER cache
-     * profile.
+     * Full consciousness prompt: stable prefix (rules + topic enum), the Visible context block, the answer-fact
+     * candidates, the current-input block, the reduced game tools plus system functions, and the COMMANDER
+     * cache profile.
      */
     private ComposedPrompt composeCommander(
             ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            MemoryAvailabilitySnapshot indexes,
             List<String> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
-        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes)));
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
         // Per-turn clean answer facts (kept out of the cached prefix, like the Visible context). Omitted when empty.
         if (memoryCandidates != null && !memoryCandidates.isEmpty()) {
@@ -102,7 +98,7 @@ public final class PromptComposer {
      * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
      * a narration thought has only speak), the Visible context for continuity, the sensor data as the
      * current input, the system tools, and its own NARRATION cache profile so it never shares the commander
-     * prefix. {@code selectedTools}/{@code indexes} do not apply here.
+     * prefix. {@code selectedTools} does not apply here.
      */
     private ComposedPrompt composeNarration(
             ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
@@ -115,12 +111,11 @@ public final class PromptComposer {
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
 
-    /** Stable narrative + topic enum (truly stable) followed by the slowly-changing memory index. */
-    private String buildStablePrefix(ThoughtSource source, MemoryAvailabilitySnapshot indexes) {
+    /** Stable narrative + topic enum (the cached prefix). Remembered facts are inlined per-turn, not here. */
+    private String buildStablePrefix(ThoughtSource source) {
         StringBuilder sb = new StringBuilder();
         sb.append(systemPrompt.staticRules(source));
         appendTopics(sb);
-        appendMemory(sb, indexes);
         return sb.toString();
     }
 
@@ -137,28 +132,6 @@ public final class PromptComposer {
         // an earlier subject does not keep tagging unrelated turns (the cause of topic "stickiness").
         sb.append("The current topic is shown with each input and stays until you move it. Keep it when the new "
                 + "input still fits; move it to the matching topic above only on a real subject change.\n");
-    }
-
-    /** Cheap memory index (topics with mid-term memory), so the model knows memory is worth searching. */
-    private void appendMemory(StringBuilder sb, MemoryAvailabilitySnapshot indexes) {
-        PromptSections.heading(sb, "Memory data");
-        sb.append("You carry memory from earlier this session.\n");
-
-        // Lists only topics that actually hold mid-term memory, so the model knows what it has on record.
-        // Non-selectable sentinels (unresolved_commander_input/unresolved_game_event) can hold memory too, but
-        // they are not valid classify_turn topics, so they are filtered out here to avoid tempting the model
-        // into emitting one as a topic (a schema error); their content still surfaces as answer candidates.
-        PromptSections.subheading(sb, "Topics with stored memory");
-        List<ConversationTopic> topics = indexes.topicsWithMemory().stream()
-                .filter(ConversationTopic::selectable)
-                .toList();
-        if (topics.isEmpty()) {
-            sb.append("- none\n");
-        } else {
-            for (ConversationTopic topic : topics) {
-                sb.append("- ").append(topic.id()).append('\n');
-            }
-        }
     }
 
     /**

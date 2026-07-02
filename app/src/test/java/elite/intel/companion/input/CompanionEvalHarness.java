@@ -320,7 +320,7 @@ public final class CompanionEvalHarness {
     /** The mid-term topic id (lowercase enum name) whose memory holds the token, or null. */
     public String midTermTopic(String token) {
         String tok = token.toLowerCase(Locale.ROOT);
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             if (memory.recallTopicMemory(topic, null, 100).stream().anyMatch(e -> contains(e.content(), tok))) {
                 return topic.name().toLowerCase(Locale.ROOT);
             }
@@ -507,7 +507,7 @@ public final class CompanionEvalHarness {
     /** Every stored entry across short-term, mid-term (all topics) and pinned long-term facts. */
     public List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>(memory.readShortTermTimeline());
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             all.addAll(memory.recallTopicMemory(topic, null, 1000));
         }
         all.addAll(memory.longTermPinnedFacts());

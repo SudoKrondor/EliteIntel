@@ -159,11 +159,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public synchronized MemoryAvailabilitySnapshot indexes() {
-        return new MemoryAvailabilitySnapshot(midTerm.topicsWithMemory());
-    }
-
-    @Override
     public synchronized String longTermSummary() {
         return longTerm.get();
     }

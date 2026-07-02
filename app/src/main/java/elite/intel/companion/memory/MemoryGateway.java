@@ -49,9 +49,6 @@ public interface MemoryGateway {
      */
     List<MemoryEntry> recallCandidates(String query, int limit);
 
-    /** Cheap index metadata for the prompt (no content loaded). */
-    MemoryAvailabilitySnapshot indexes();
-
     /** The single session-wide long-term summary, always added to the prompt. */
     String longTermSummary();
 

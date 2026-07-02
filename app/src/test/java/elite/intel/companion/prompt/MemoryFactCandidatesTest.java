@@ -1,6 +1,5 @@
 package elite.intel.companion.prompt;
 
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -73,7 +72,6 @@ class MemoryFactCandidatesTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }

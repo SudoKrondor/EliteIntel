@@ -148,7 +148,6 @@ class MidTermToLongTermConsolidatorTest {
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { return summary; }
         @Override public void replaceLongTermSummary(String summary) { this.summary = summary; }
         @Override public List<MemoryEntry> longTermPinnedFacts() { return List.copyOf(pinned); }

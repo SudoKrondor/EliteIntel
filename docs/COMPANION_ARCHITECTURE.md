@@ -2021,7 +2021,7 @@ elite.intel.companion
 ├─ llm                  LlmGateway, CompanionLlmGateway, ...
 ├─ speech               SpeechGateway, CompanionSpeechGateway
 ├─ execution            ExecutionGateway, CompanionExecutionGateway
-├─ memory               MemoryGateway, MemoryAvailabilitySnapshot, SessionMemoryGateway,
+├─ memory               MemoryGateway, SessionMemoryGateway,
 │                       ShortTermMemory, MidTermTopicMemory, LongTermMemory, LlmMemory, MidTermToLongTermConsolidator
 └─ confirm              DangerousActionConfirmedEvent
 ```

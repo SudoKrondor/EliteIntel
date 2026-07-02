@@ -203,7 +203,6 @@ public abstract class Thought {
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
-                ctx.memoryGateway().indexes(),
                 memoryCandidates());
     }
 

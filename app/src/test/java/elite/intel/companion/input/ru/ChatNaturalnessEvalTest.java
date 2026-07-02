@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Theme (Russian): reproduces the "unnatural replies" seen in the running app - the companion narrating the
@@ -78,12 +79,20 @@ class ChatNaturalnessEvalTest {
         List<String> priorSpoken = new ArrayList<>();
         int verbatimEchoes = 0;
         int thirdPersonReplies = 0;
+        int silentReplies = 0;
 
         for (String line : script) {
             h.beginTurn();
             h.say(line);
             String said = String.join(" ", h.spokenTexts()).strip();
             String saidLower = said.toLowerCase(Locale.ROOT);
+
+            // None of these lines is a bare acknowledgement, so every one must get a spoken reply (rule 4/5):
+            // banter is not noise and must not fall silent.
+            boolean silent = said.isBlank();
+            if (silent) {
+                silentReplies++;
+            }
             String body = h.lastRequestBody();
             List<String> candidates = h.recallResult();
 
@@ -109,17 +118,22 @@ class ChatNaturalnessEvalTest {
 
             block.append("[CMDR] ").append(line).append("\n");
             block.append("   -> ").append(said).append("\n");
-            block.append(String.format("   echo=%s%s | thirdPerson=%s | candidates=%s%n",
+            block.append(String.format("   echo=%s%s | thirdPerson=%s | silent=%s | candidates=%s%n",
                     echo, echo ? " (visible=" + echoInVisible + ", inCandidates=" + echoInCandidates + ")" : "",
-                    thirdPerson, candidates));
+                    thirdPerson, silent, candidates));
             priorSpoken.add(saidLower);
         }
 
         block.append(String.format("%nverbatim echoes: %d / %d turns%n", verbatimEchoes, script.size()));
         block.append(String.format("third-person replies: %d / %d turns%n", thirdPersonReplies, script.size()));
+        block.append(String.format("silent replies: %d / %d turns%n", silentReplies, script.size()));
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
+        // Live LLM eval: tolerate a single silent turn (a transient model/LM Studio hiccup blanks the reply),
+        // but banter must not systematically fall silent (rule 5 narrowed to pure acks/noise).
+        assertTrue(silentReplies <= 1,
+                "banter must get a spoken reply, not silence - silent turns: " + silentReplies + " / " + script.size());
     }
 
     /** The prompt section starting at {@code head} up to the first of the following markers, or empty. */

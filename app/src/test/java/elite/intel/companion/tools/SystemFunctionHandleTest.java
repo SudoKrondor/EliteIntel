@@ -2,7 +2,6 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
@@ -123,7 +122,6 @@ class SystemFunctionHandleTest {
             return matchingItems;
         }
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }
