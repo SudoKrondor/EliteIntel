@@ -554,6 +554,7 @@ class ThoughtTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
         @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }

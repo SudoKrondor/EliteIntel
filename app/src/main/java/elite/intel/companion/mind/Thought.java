@@ -197,13 +197,22 @@ public abstract class Thought {
         }
     }
 
-    /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot. */
+    /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */
     protected ComposedPrompt composeInitialPrompt() {
         return ctx.promptComposer().compose(
                 source, urgency, ctx.state().globalTopic(), matchInput,
                 selectedGameTools(), systemTools(),
                 ctx.memoryGateway().readShortTermTimeline(),
-                ctx.memoryGateway().indexes());
+                ctx.memoryGateway().indexes(),
+                memoryCandidates());
+    }
+
+    /**
+     * Pre-turn clean memory answer facts to inline in the prompt (see {@code MemoryFactCandidates}). Default
+     * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
+     */
+    protected List<String> memoryCandidates() {
+        return List.of();
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */

@@ -39,6 +39,16 @@ public interface MemoryGateway {
      */
     List<String> recallMatching(String query, int limit);
 
+    /**
+     * The same unified recall as {@link #recallMatching}, but returns the ranked {@link MemoryEntry entries}
+     * (keeping each entry's {@code source}/{@code importance}) rather than labelled text. Feeds the pre-turn
+     * memory-candidate lookup, which filters the ranked matches down to a few clean answer facts for the prompt.
+     *
+     * @param query plain-text filter; blank returns the most recent entries regardless of content
+     * @param limit maximum entries to return
+     */
+    List<MemoryEntry> recallCandidates(String query, int limit);
+
     /** Cheap index metadata for the prompt (no content loaded). */
     MemoryAvailabilitySnapshot indexes();
 

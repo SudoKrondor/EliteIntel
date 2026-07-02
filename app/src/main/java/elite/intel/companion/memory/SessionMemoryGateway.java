@@ -128,6 +128,14 @@ public final class SessionMemoryGateway implements MemoryGateway {
                 longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
     }
 
+    @Override
+    public synchronized List<MemoryEntry> recallCandidates(String query, int limit) {
+        // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
+        // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
+        return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
+    }
+
     /**
      * The session long-term summary wrapped as a single searchable entry, or empty when nothing has been
      * consolidated yet. It carries no meaning-vector (it is replaced as a plain string), so it recalls by

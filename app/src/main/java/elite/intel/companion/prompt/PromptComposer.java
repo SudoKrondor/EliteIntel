@@ -49,6 +49,7 @@ public final class PromptComposer {
      * @param systemTools      system function tools for this source
      * @param shortTerm        short-term memory timeline for the context block
      * @param indexes          cheap memory index metadata (topics with mid-term memory)
+     * @param memoryCandidates pre-selected clean answer facts to inline as "Relevant remembered facts" (may be empty)
      */
     public ComposedPrompt compose(
             ThoughtSource source,
@@ -58,11 +59,12 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            MemoryAvailabilitySnapshot indexes
+            MemoryAvailabilitySnapshot indexes,
+            List<String> memoryCandidates
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, urgency, currentTopic, currentInput,
-                    selectedTools, systemTools, shortTerm, indexes);
+                    selectedTools, systemTools, shortTerm, indexes, memoryCandidates);
             case NARRATION -> composeNarration(source, urgency, currentTopic, currentInput, systemTools, shortTerm);
             // EVENT thoughts are memory-only (see EventThought); they never reach here.
             case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
@@ -78,10 +80,15 @@ public final class PromptComposer {
             ThoughtSource source, Urgency urgency, ConversationTopic currentTopic, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            MemoryAvailabilitySnapshot indexes) {
+            MemoryAvailabilitySnapshot indexes,
+            List<String> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source, indexes)));
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildContextBlock(shortTerm)));
+        // Per-turn clean answer facts (kept out of the cached prefix, like the Visible context). Omitted when empty.
+        if (memoryCandidates != null && !memoryCandidates.isEmpty()) {
+            messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildCandidatesBlock(memoryCandidates)));
+        }
         messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(source, urgency, currentTopic, currentInput)));
 
         // Game/query tools first, then system functions; both already chosen upstream.
@@ -169,6 +176,20 @@ public final class PromptComposer {
         for (MemoryEntry entry : shortTerm) {
             appendEntry(sb, entry);
         }
+        return sb.toString();
+    }
+
+    /**
+     * Per-turn "Relevant remembered facts" block: the pre-selected clean answer facts, one per line, with a
+     * single usage rule. Kept out of the cached prefix (it changes every turn). Only built when non-empty.
+     */
+    private String buildCandidatesBlock(List<String> memoryCandidates) {
+        StringBuilder sb = new StringBuilder();
+        PromptSections.heading(sb, "Relevant remembered facts");
+        for (String fact : memoryCandidates) {
+            sb.append("- ").append(fact).append('\n');
+        }
+        sb.append("Use a remembered fact only to answer a question it directly matches.\n");
         return sb.toString();
     }
 

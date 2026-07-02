@@ -40,7 +40,7 @@ class PromptComposerTest {
                 ConversationTopic.NAVIGATION,
                 "set course to Sol",
                 List.of(), List.of(),
-                shortTerm, indexes);
+                shortTerm, indexes, List.of());
     }
 
     @Test
@@ -67,7 +67,7 @@ class PromptComposerTest {
                 ConversationTopic.COMBAT,
                 "fuel reserve critical",
                 List.of(), List.of(speak),
-                List.of(), new MemoryAvailabilitySnapshot(List.of(ConversationTopic.NAVIGATION)));
+                List.of(), new MemoryAvailabilitySnapshot(List.of(ConversationTopic.NAVIGATION)), List.of());
 
         assertEquals(PromptCacheProfile.NARRATION, prompt.profile());
         // 3 messages: the narration static block, the Visible context, the current input.
@@ -165,7 +165,7 @@ class PromptComposerTest {
                 ThoughtSource.COMMANDER, Urgency.NORMAL,
                 ConversationTopic.NAVIGATION, "go",
                 List.of(game), List.of(system),
-                List.of(), new MemoryAvailabilitySnapshot(List.of()));
+                List.of(), new MemoryAvailabilitySnapshot(List.of()), List.of());
 
         assertEquals(List.of(game, system), prompt.tools());
     }

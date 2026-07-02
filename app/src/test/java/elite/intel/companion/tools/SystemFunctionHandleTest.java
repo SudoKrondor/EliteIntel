@@ -133,6 +133,7 @@ class SystemFunctionHandleTest {
             recalledQuery = query;
             return matchingItems;
         }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }

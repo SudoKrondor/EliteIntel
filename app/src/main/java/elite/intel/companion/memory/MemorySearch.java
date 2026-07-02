@@ -54,6 +54,29 @@ final class MemorySearch {
         if (limit <= 0) {
             return List.of();
         }
+        return emit(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource), limit);
+    }
+
+    /**
+     * The same ranking as {@link #recall}, but returns the ranked {@link MemoryEntry entries} themselves (not
+     * labelled text) so a caller can read each entry's {@code source}/{@code importance} - used by the pre-turn
+     * memory-candidate lookup, which filters the ranked matches down to a few clean answer facts before the
+     * prompt. Archive (pinned MAX) facts are capped exactly as in {@link #emit}, and identical content is
+     * de-duplicated.
+     */
+    static List<MemoryEntry> recallEntries(String query, int limit, List<MemoryEntry> shortTerm,
+                                           List<MemoryEntry> midTerm, List<MemoryEntry> summary,
+                                           List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        return emitEntries(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource), limit);
+    }
+
+    /** Scores, filters and orders every memory area against {@code query} into the final ranked candidate list. */
+    private static List<Scored> rankEligible(String query, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
+                                             List<MemoryEntry> summary, List<MemoryEntry> archive,
+                                             Supplier<SemanticPhraseMatcher> matcherSource) {
         Set<String> queryTokens = tokens(query);
         boolean blank = queryTokens.isEmpty();
         // Semantic search runs only for a real query with a loaded model; a blank query keeps the old behaviour
@@ -73,7 +96,7 @@ final class MemorySearch {
         // With both signals present, fuse the two rankings by position (reciprocal rank) so neither scale's raw
         // numbers dominate; with words only, keep the original relevance-then-importance-then-recency order.
         eligible.sort(semantic ? byFusedRank(eligible) : BY_WORD_RANK);
-        return emit(eligible, limit);
+        return eligible;
     }
 
     /** Whether two entries mean the same thing (cosine &ge; {@code floor}); false if either lacks a vector. */
@@ -121,6 +144,31 @@ final class MemorySearch {
                     archiveUsed++;
                 }
                 out.add(content);
+                if (out.size() >= limit) {
+                    break;
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Like {@link #emit}, but yields the ranked {@link MemoryEntry entries} (same archive cap and
+     * content-dedup) instead of labelled text, so the caller keeps each entry's source/importance metadata.
+     */
+    private static List<MemoryEntry> emitEntries(List<Scored> ranked, int limit) {
+        List<MemoryEntry> out = new ArrayList<>();
+        Set<String> seen = new HashSet<>();
+        int archiveUsed = 0;
+        for (Scored s : ranked) {
+            if (s.archive() && archiveUsed >= CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT) {
+                continue;
+            }
+            if (seen.add(s.entry().content())) {
+                if (s.archive()) {
+                    archiveUsed++;
+                }
+                out.add(s.entry());
                 if (out.size() >= limit) {
                     break;
                 }
