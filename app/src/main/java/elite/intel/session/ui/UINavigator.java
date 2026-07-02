@@ -1,6 +1,8 @@
 package elite.intel.session.ui;
 
 import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.BindingsMonitor;
+import elite.intel.ai.hands.KeyBindingsParser;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.db.managers.GlobalSettingsManager;
@@ -11,6 +13,7 @@ import elite.intel.session.StatusFlags.GuiFocus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static elite.intel.util.SleepNoThrow.sleep;
@@ -71,8 +74,15 @@ public class UINavigator {
         // openPanel() is a toggle - sending it while the panel is open would close it.
         if (status.getGuiFocus() != panel) {
             for (int attempt = 1; attempt <= PANEL_OPEN_MAX_ATTEMPTS; attempt++) {
-                openPanel(panel);
+                boolean bound = openPanel(panel);
                 if (waitForPanel(panel)) break;
+                if (!bound) {
+                    // The panel key is unbound in the game: retrying only re-sends the same key and
+                    // re-announces "key binding not found" (InputSequenceExecutor already announced once).
+                    // A missing binding is permanent, so fail fast instead of spamming attempts.
+                    log.warn("Panel {} key is unbound; aborting after one attempt", panel);
+                    break;
+                }
                 log.warn("Panel {} did not open after {}ms (attempt {}/{}), retrying",
                         panel, PANEL_OPEN_TIMEOUT_MS, attempt, PANEL_OPEN_MAX_ATTEMPTS);
             }
@@ -223,7 +233,14 @@ public class UINavigator {
         return status.getGuiFocus() == panel;
     }
 
-    private void openPanel(GuiFocus panel) {
+    /**
+     * Sends the panel's focus keystroke.
+     *
+     * @return true if the resolved key is actually bound in the game (and was dispatched);
+     * false if no binding applies to the current context or the key is unbound - the caller
+     * uses this to avoid retrying a permanently missing binding.
+     */
+    private boolean openPanel(GuiFocus panel) {
         Status status = Status.getInstance();
         String binding = null;
         if (status.isInSrv()) {
@@ -243,12 +260,20 @@ public class UINavigator {
                 default -> throw new IllegalArgumentException("No panel binding for GuiFocus: " + panel);
             };
         }
-        if (binding != null) {
-            GameControllerBus.publish(GameInputSequenceEvent.of(
-                    GameInputStep.bindingTap(binding), // panel focus keys must be tapped, not held
-                    GameInputStep.delay(RANDOM_MAX)
-            ));
+        if (binding == null) {
+            return false; // no panel binding applies to the current context (e.g. on foot)
         }
+        GameControllerBus.publish(GameInputSequenceEvent.of(
+                GameInputStep.bindingTap(binding), // panel focus keys must be tapped, not held
+                GameInputStep.delay(RANDOM_MAX)
+        ));
+        return isBound(binding);
+    }
+
+    /** True if the game currently has a key assigned to the given binding id (shares BindingsMonitor's live map). */
+    private boolean isBound(String bindingId) {
+        Map<String, KeyBindingsParser.KeyBinding> bindings = BindingsMonitor.getInstance().getBindings();
+        return bindings != null && bindings.get(bindingId) != null;
     }
 
     private void closePanel(GuiFocus panel) {
