@@ -218,8 +218,8 @@ class MemoryEvalTest {
             if (recalled) {
                 recalledCount++;
             }
-            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | запрос='%s' | вернулось=%s | %s%n",
-                    probe.b(), tier, recalled, hit, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | вернулось=%s | %s%n",
+                    probe.b(), tier, recalled, hit, h.recallResult(), h.spokenTexts()));
         }
 
         // Phase 3: coherence probes, each weaving together two separately-stated facts.
@@ -233,8 +233,8 @@ class MemoryEvalTest {
             if (ok) {
                 coherenceHits++;
             }
-            block.append(String.format("ждём '%s'+'%s' | ok=%s | запрос='%s' | вернулось=%s | %s%n",
-                    probe.kw1(), probe.kw2(), ok, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s'+'%s' | ok=%s | вернулось=%s | %s%n",
+                    probe.kw1(), probe.kw2(), ok, h.recallResult(), h.spokenTexts()));
         }
 
         // Phase 4: events landed in memory.
@@ -259,8 +259,8 @@ class MemoryEvalTest {
             if (hit) {
                 eventRecallHits++;
             }
-            block.append(String.format("ждём '%s' | hit=%s | запрос='%s' | вернулось=%s | %s%n",
-                    probe.b(), hit, h.recalledQuery(), h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s' | hit=%s | вернулось=%s | %s%n",
+                    probe.b(), hit, h.recallResult(), h.spokenTexts()));
         }
 
         // Phase 5: live-state routing - must use a query, not memory.
@@ -299,7 +299,7 @@ class MemoryEvalTest {
 
         block.append("\n---- итоги ----\n");
         block.append(String.format("горячий recall:        %d / %d%n", hotHits, hotAsks));
-        block.append(String.format("recall после вытеснения: %d / %d (search_in_memory вызван %d)%n", recallHits, recallProbes.size(), recalledCount));
+        block.append(String.format("recall после вытеснения: %d / %d (кандидаты подмешаны %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("связность (пары фактов): %d / %d%n", coherenceHits, coherenceProbes.size()));
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("recall событий:         %d / %d%n", eventRecallHits, eventRecallProbes.size()));

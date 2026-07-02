@@ -187,14 +187,19 @@ public final class SessionMemoryGateway implements MemoryGateway {
      * stored as the one short-term copy. A no-op when {@code incoming} has no vector (semantic search off).
      */
     private MemoryEntry mergeDuplicate(MemoryEntry incoming) {
-        if (incoming.embedding() == null) {
-            return incoming;
+        // An event is a discrete occurrence, not a restatement of a fact: "docked at A" and "docked at B" are
+        // near-identical in meaning (they differ only in a name), so vector dedup would collapse them and make an
+        // enumeration ("which stations did we dock at") impossible. An event therefore dedups only against a
+        // LITERAL repeat (identical content, e.g. the same station twice); every other entry dedups by meaning.
+        boolean literal = incoming.source() == MemorySource.EVENT;
+        if (!literal && incoming.embedding() == null) {
+            return incoming; // meaning dedup needs a vector; with none (semantic search off) there is nothing to do
         }
         double floor = CompanionConfig.semanticDedupFloor();
         MemoryEntry keep = incoming;
         Instant freshest = incoming.timestamp();
         boolean merged = false;
-        for (MemoryEntry existing : sameByMeaning(incoming, floor)) {
+        for (MemoryEntry existing : duplicatesOf(incoming, floor)) {
             removeStored(existing);
             merged = true;
             if (existing.importance().compareTo(keep.importance()) > 0) {
@@ -207,21 +212,33 @@ public final class SessionMemoryGateway implements MemoryGateway {
         return merged ? keep.withTimestamp(freshest) : incoming;
     }
 
-    /** Every stored short-term/mid-term entry whose meaning matches {@code probe} (the MAX archive is left intact). */
-    private List<MemoryEntry> sameByMeaning(MemoryEntry probe, double floor) {
+    /** Every stored short-term/mid-term entry that is a duplicate of {@code probe} (the MAX archive is left intact). */
+    private List<MemoryEntry> duplicatesOf(MemoryEntry probe, double floor) {
         List<MemoryEntry> out = new ArrayList<>();
-        collectSameByMeaning(out, shortTerm.timeline(), probe, floor);
-        collectSameByMeaning(out, midTerm.allEntries(), probe, floor);
+        collectDuplicates(out, shortTerm.timeline(), probe, floor);
+        collectDuplicates(out, midTerm.allEntries(), probe, floor);
         return out;
     }
 
-    private static void collectSameByMeaning(List<MemoryEntry> out, List<MemoryEntry> entries,
-                                             MemoryEntry probe, double floor) {
+    private static void collectDuplicates(List<MemoryEntry> out, List<MemoryEntry> entries,
+                                          MemoryEntry probe, double floor) {
         for (MemoryEntry entry : entries) {
-            if (MemorySearch.sameMeaning(probe, entry, floor)) {
+            if (isDuplicate(probe, entry, floor)) {
                 out.add(entry);
             }
         }
+    }
+
+    /**
+     * Whether {@code entry} duplicates {@code probe}. Anything involving an event uses LITERAL equality
+     * (identical content) - a discrete occurrence is only a duplicate of an exact repeat, never of a
+     * merely similar-meaning line; every other pair dedups by meaning (cosine &ge; {@code floor}).
+     */
+    private static boolean isDuplicate(MemoryEntry probe, MemoryEntry entry, double floor) {
+        if (probe.source() == MemorySource.EVENT || entry.source() == MemorySource.EVENT) {
+            return Objects.equals(probe.content(), entry.content());
+        }
+        return MemorySearch.sameMeaning(probe, entry, floor);
     }
 
     /** Removes a superseded entry from whichever store holds it (short-term first, then mid-term). */

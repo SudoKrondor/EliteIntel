@@ -27,8 +27,8 @@ import java.util.List;
  */
 public final class MemoryFactCandidates {
 
-    /** How many ranked matches to pull before tier-2 filtering (a small pool leaves room after noise drops out). */
-    private static final int CANDIDATE_POOL = 8;
+    /** How many ranked matches to pull before tier-2 filtering (a generous pool so noise dropping out never starves the real facts). */
+    private static final int CANDIDATE_POOL = 20;
     /** Max clean facts inlined into the prompt (enough to answer a two-fact/coherence question, not enough to clutter). */
     private static final int MAX_CANDIDATES = 3;
 

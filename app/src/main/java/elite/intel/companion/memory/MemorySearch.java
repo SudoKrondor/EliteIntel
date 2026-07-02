@@ -113,7 +113,7 @@ final class MemorySearch {
      * still-relevant second fact and leave the model to guess it.
      */
     private static List<Scored> filterEligible(List<Scored> scored, boolean blank, boolean semantic) {
-        double floor = CompanionConfig.semanticSearchInMemoryFloor();
+        double floor = CompanionConfig.semanticRecallFloor();
         List<Scored> eligible = new ArrayList<>();
         for (Scored s : scored) {
             boolean semanticHit = semantic && !Double.isNaN(s.semScore()) && s.semScore() >= floor;
@@ -209,7 +209,7 @@ final class MemorySearch {
      * the two incompatible scales (an overlap count vs a cosine) directly.
      */
     private static Comparator<Scored> byFusedRank(List<Scored> eligible) {
-        double floor = CompanionConfig.semanticSearchInMemoryFloor();
+        double floor = CompanionConfig.semanticRecallFloor();
         Map<Scored, Double> fused = new IdentityHashMap<>();
         accumulateReciprocalRank(fused, eligible, s -> s.wordScore() > 0, Scored::wordScore);
         accumulateReciprocalRank(fused, eligible, s -> s.semScore() >= floor, Scored::semScore);

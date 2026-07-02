@@ -130,6 +130,7 @@ class AiActionMapGeneratorTest {
             "query_bio_scans_and_samples_in_star_system",
             "query_biome_analysis",
             "query_cargo_hold_contents",
+            "memory_search",
             "query_carriers",
             "query_current_location",
             "query_distance_to_bio_sample",

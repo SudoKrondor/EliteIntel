@@ -75,6 +75,8 @@ public final class CompanionEvalHarness {
     private final AtomicLong rounds = new AtomicLong();
     // Identities of short-term entries already reported, so each memoryDeltaBlock() shows only new writes.
     private final Set<String> seenMemory = new HashSet<>();
+    // The raw body of the last LLM request this turn, so recall scoring can read the injected candidate block.
+    private volatile String lastRequestBody;
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -116,6 +118,7 @@ public final class CompanionEvalHarness {
         model = SystemSession.getInstance().getLmStudioCommandModel().trim();
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
+            lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
@@ -234,6 +237,7 @@ public final class CompanionEvalHarness {
     /** Clears the per-turn capture; call before driving input that should be scored in isolation. */
     public void beginTurn() {
         turnCalls.clear();
+        lastRequestBody = null;
     }
 
     /** Blocks until both lanes are idle (the real turn-boundary signal) or the per-turn timeout elapses. */
@@ -311,15 +315,9 @@ public final class CompanionEvalHarness {
         return null;
     }
 
-    /** Whether the model called search_in_memory this turn. */
+    /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
     public boolean recalled() {
-        return called("search_in_memory");
-    }
-
-    /** The query passed to the first search_in_memory call this turn, or empty when it was not called. */
-    public String recalledQuery() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+        return lastRequestBody != null && lastRequestBody.contains("## Relevant remembered facts");
     }
 
     /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
@@ -334,15 +332,25 @@ public final class CompanionEvalHarness {
         return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
     }
 
-    /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
+    /** The answer-fact candidates inlined into this turn's prompt (the two-tier "Relevant remembered facts"), or empty. */
     public List<String> recallResult() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        if (recalls.isEmpty() || !recalls.get(0).result().has("items")) {
+        if (lastRequestBody == null) {
             return List.of();
         }
-        List<String> items = new ArrayList<>();
-        recalls.get(0).result().getAsJsonArray("items").forEach(e -> items.add(e.getAsString()));
-        return items;
+        int start = lastRequestBody.indexOf("## Relevant remembered facts");
+        if (start < 0) {
+            return List.of();
+        }
+        int end = lastRequestBody.indexOf("These are what you remember", start);
+        String block = lastRequestBody.substring(start, end < 0 ? lastRequestBody.length() : end);
+        List<String> facts = new ArrayList<>();
+        for (String part : block.split("\\\\n")) { // request body is JSON: newlines are the escaped literal \n
+            String line = part.strip();
+            if (line.startsWith("- ")) {
+                facts.add(line.substring(2).strip());
+            }
+        }
+        return facts;
     }
 
     private static String str(JsonObject o, String key) {

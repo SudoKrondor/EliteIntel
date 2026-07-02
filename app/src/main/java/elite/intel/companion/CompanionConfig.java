@@ -30,12 +30,10 @@ public final class CompanionConfig {
     private static final int SHORT_TERM_MEMORY_SIZE = 20;
     /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
-    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
-    private static final int MAX_LLM_CHAIN_STEPS = 8;
     /** Max commander thoughts that may run concurrently on the commander lane. */
     private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
-    /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of {@code search_in_memory}. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
-    private static final double SEMANTIC_SEARCH_IN_MEMORY_FLOOR = 0.85;
+    /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
+    private static final double SEMANTIC_RECALL_FLOOR = 0.85;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
     private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
     /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
@@ -94,19 +92,14 @@ public final class CompanionConfig {
         return MID_TERM_MEMORY_SIZE_PER_TOPIC;
     }
 
-    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
-    public static int maxLlmChainSteps() {
-        return MAX_LLM_CHAIN_STEPS;
-    }
-
     /** Max commander thoughts that may run concurrently on the commander lane. */
     public static int maxParallelCommanderThoughts() {
         return MAX_PARALLEL_COMMANDER_THOUGHTS;
     }
 
-    /** Absolute floor (cosine 0..1) below which a semantic match is dropped from {@code search_in_memory}. */
-    public static double semanticSearchInMemoryFloor() {
-        return SEMANTIC_SEARCH_IN_MEMORY_FLOOR;
+    /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */
+    public static double semanticRecallFloor() {
+        return SEMANTIC_RECALL_FLOOR;
     }
 
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */

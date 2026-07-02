@@ -73,9 +73,10 @@ class CompanionConversationIntegrationTest {
         transport.scripted.add(response(
                 call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}")));
-        // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
-        transport.scripted.add(response(call("c8", "search_in_memory", "{\"query\":\"hull\"}")));
+        // Turn 3: the stated fact is injected as a "Relevant remembered fact" before the turn, so the companion
+        // answers from it in one round (no in-turn lookup).
         transport.scripted.add(response(
+                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\"}"),
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
         // A conversation is sequential: each turn is submitted and drained before the next, so the
@@ -94,10 +95,10 @@ class CompanionConversationIntegrationTest {
         // The companion actually spoke the scripted phrases (real SpeakFunction -> SpeechGateway).
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("Course plotted")));
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));
-        // The multi-round turn replayed the assistant tool-call and round-tripped the recalled fact.
+        // The stated fact was injected as a remembered-fact candidate before the recall turn (no lookup round).
         String lastRequestBody = transport.bodies.get(transport.bodies.size() - 1);
-        assertTrue(lastRequestBody.contains("tool_calls"), "assistant tool-call turn must be replayed");
-        assertTrue(lastRequestBody.contains("hull is solid"), "recall result must round-trip into the next round");
+        assertTrue(lastRequestBody.contains("Relevant remembered facts"), "the remembered fact must be injected before the turn");
+        assertTrue(lastRequestBody.contains("hull is solid"), "the remembered fact must be available to answer");
     }
 
     /** Wires the real companion graph against the scripted transport and stubbed game tools, then installs it. */

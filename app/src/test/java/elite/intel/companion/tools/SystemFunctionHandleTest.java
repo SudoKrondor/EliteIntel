@@ -89,17 +89,6 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void recallSearchesAllMemoryWithASingleQuery() {
-        memory.matchingItems = List.of("painite in cargo rack seven", "rendezvous at Maia");
-
-        JsonObject result = new SearchInMemoryFunction().handle("search_in_memory", params("query", "painite"), "");
-
-        assertEquals("painite", memory.recalledQuery);
-        assertEquals(2, result.getAsJsonArray("items").size());
-        assertEquals("painite in cargo rack seven", result.getAsJsonArray("items").get(0).getAsString());
-    }
-
-    @Test
     void findActionReturnsReducerMatches() {
         JsonObject result = new FindActionFunction().handle("find_action", params("query", "gear"), "");
 

@@ -144,10 +144,10 @@ public final class PromptComposer {
         PromptSections.heading(sb, "Memory data");
         sb.append("You carry memory from earlier this session.\n");
 
-        // Lists only topics that actually hold mid-term memory, so the model knows memory is worth searching.
+        // Lists only topics that actually hold mid-term memory, so the model knows what it has on record.
         // Non-selectable sentinels (unresolved_commander_input/unresolved_game_event) can hold memory too, but
         // they are not valid classify_turn topics, so they are filtered out here to avoid tempting the model
-        // into emitting one as a topic (a schema error); their content is still reachable via search_in_memory.
+        // into emitting one as a topic (a schema error); their content still surfaces as answer candidates.
         PromptSections.subheading(sb, "Topics with stored memory");
         List<ConversationTopic> topics = indexes.topicsWithMemory().stream()
                 .filter(ConversationTopic::selectable)
@@ -163,8 +163,8 @@ public final class PromptComposer {
 
     /**
      * Per-turn dynamic context block (kept out of the cached prefix): the short-term timeline, inlined whole as
-     * the "Visible context". Durable facts that aged out of short-term are not inlined - they are reached through
-     * {@code search_in_memory}.
+     * the "Visible context". Durable facts that aged out of short-term are not inlined here - the relevant ones
+     * are surfaced as "Relevant remembered facts" (see {@link #buildCandidatesBlock}).
      */
     private String buildContextBlock(List<MemoryEntry> shortTerm) {
         StringBuilder sb = new StringBuilder();
@@ -189,7 +189,7 @@ public final class PromptComposer {
         for (String fact : memoryCandidates) {
             sb.append("- ").append(fact).append('\n');
         }
-        sb.append("Use a remembered fact only to answer a question it directly matches.\n");
+        sb.append("These are what you remember about the current input; answer the commander's question from them.\n");
         return sb.toString();
     }
 

@@ -25,7 +25,6 @@ import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.ClassifyTurnFunction;
-import elite.intel.companion.tools.SearchInMemoryFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
@@ -211,24 +210,6 @@ class ThoughtTest {
                 "the command settles the turn; the scripted second round is never requested");
         assertEquals(List.of("close_panel"), execution.toolNames(),
                 "only the command runs; the later speak is never executed");
-    }
-
-    @Test
-    void memoryLookupReplaysAssistantCallAndToolResultForOneMoreRound() {
-        // search_in_memory is the one continuation: round 0 runs the lookup, round 1 speaks the recalled answer.
-        llm.scripted.add(ok(call(SearchInMemoryFunction.ID, new JsonObject())));
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("the hull is solid"))));
-
-        Thought.commander(Urgency.NORMAL, "what did I say about the hull", ctx()).run();
-
-        assertEquals(2, llm.requests.size(), "a memory lookup triggers one more LLM round to speak the answer");
-        // The second request's flow must carry the protocol-valid assistant(tool_calls) -> tool(result) pair.
-        List<LlmMessage> secondFlow = llm.requests.get(1).messages();
-        assertTrue(secondFlow.stream().anyMatch(m -> m.role() == LlmMessageRole.ASSISTANT && !m.toolCalls().isEmpty()),
-                "assistant tool-call turn must be replayed");
-        assertTrue(secondFlow.stream().anyMatch(m -> m.role() == LlmMessageRole.TOOL && m.toolCallId() != null),
-                "tool result must reference its tool_call_id");
-        assertEquals(List.of(SearchInMemoryFunction.ID, SpeakFunction.ID), execution.toolNames());
     }
 
     @Test
