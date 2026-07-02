@@ -94,7 +94,7 @@ class MemoryEvalTest {
 
     /** System-function ids; any other executed tool is a real game query/action. */
     private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "classify_turn", "clarify", "search_in_memory");
+            "speak", "classify_turn", "search_in_memory");
 
     @BeforeAll
     void boot() throws Exception {

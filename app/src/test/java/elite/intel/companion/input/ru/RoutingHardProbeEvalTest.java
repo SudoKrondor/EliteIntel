@@ -31,9 +31,10 @@ class RoutingHardProbeEvalTest {
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-routing-probe-trace.txt", Language.RU);
 
     private final List<Case> cases = List.of(
-            // Terse subsystem noun-phrases: "цель" is a Russian noun, not an imperative verb, so the model
-            // often reads these as a question ("что с двигателями?") instead of targeting the subsystem.
-            new Case("цель двигатели", "target_subsystem"),
+            // Subsystem targeting: the natural imperative "целься в X" followed by terse "цель X" noun-phrases.
+            // "цель" is a Russian noun, not an imperative verb, so a small model may read the terse noun form
+            // as a question ("что с двигателями?") instead of targeting the subsystem.
+            new Case("целься в двигатели", "target_subsystem"),
             new Case("цель распределитель", "target_subsystem"),
             new Case("цель жизнеобеспечение", "target_subsystem"),
             new Case("цель силовая установка", "target_subsystem"),

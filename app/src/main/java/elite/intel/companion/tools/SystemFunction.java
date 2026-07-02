@@ -6,7 +6,7 @@ import elite.intel.companion.model.ThoughtSource;
 import java.util.Set;
 
 /**
- * Self-describing companion system function (speak, classify_turn, clarify,
+ * Self-describing companion system function (speak, classify_turn,
  * search_in_memory), modeled on {@code IntelCommand} and - like every other invokable tool -
  * an {@link IntelAction}: it owns its metadata (id, parameter schema via {@link IntelAction#parameters()},
  * the sources that may use it, an English model-facing {@link IntelAction#llmDescription()}) and its

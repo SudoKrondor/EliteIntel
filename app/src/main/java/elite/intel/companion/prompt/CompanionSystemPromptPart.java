@@ -9,9 +9,9 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
- * Single owner of the companion's static system-prompt section (persona, tool-calling rules, memory
- * rules, source rules, language rule). It produces only this part; {@link PromptComposer} assembles the full
- * system prompt around it (topic enum, memory indexes, Visible context, current input).
+ * Single owner of the companion's static system-prompt section (persona, tool-calling mechanics, the
+ * ordered Turn source decision ladder, language rule). It produces only this part; {@link PromptComposer}
+ * assembles the full system prompt around it (topic enum, memory indexes, Visible context, current input).
  * <p>
  * The instructions are authored in English (the most token-efficient and instruction-reliable language,
  * and a single cache prefix across all commander languages); only the language rule injects the
@@ -32,58 +32,55 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             Visible context, or your memory.
             """;
 
-    private static final String MEMORY_RULES = """
-            The Visible context below is only the most recent conversation: [COMMANDER] lines are the \
-            commander's own words, [%s] lines are your own earlier replies - both reliable, but it holds \
-            only the last few turns.
-            - Answer already in the Visible context -> answer from it directly.
-            - Anything set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
-            that is NOT in the Visible context -> call search_in_memory first and answer from its result. \
-            What it returns is your own memory and is reliable: if the answer is there, give it; never reply \
-            that it is not in memory, and never ask the commander to decide it again, once a search has \
-            returned it.
-            - Current state of the ship or galaxy (cargo, fuel, location, market, contacts, status, \
-            distances) -> call the matching query function; that lives in the game, not your memory.
-            - Could be either -> do both.
-            Say you cannot only when neither your memory nor a function can provide the answer.
-            """;
-
     private static final String TOOL_CALLING = """
             You act only by calling functions; never reply in free text, and an empty response with no \
             function call is an error, not a way to stay silent.
             Begin every turn with exactly one classify_turn call: it only files the turn in memory and never \
-            answers or acts. Then settle the turn in that same response:
-            - Run a command, query, or macro -> call that function. Its outcome is spoken to the commander \
-            automatically, so do not add speak to repeat it.
-            - Only talk (chat, answer from what you already know, or tell the commander you cannot act) -> \
-            call speak.
-            - Nothing to say or do -> just classify_turn, nothing else.
-            One exception takes a second response: a memory lookup. If the answer is something the commander \
-            told you or you noted earlier and it is not already in view, send ONLY classify_turn + \
-            search_in_memory now and do NOT answer yet. Its result returns to you, not the commander; read it, \
-            then speak the answer in your next response.
-            If no offered function fits, do not force or fake an unrelated one: ask with clarify, or say with \
-            speak that you cannot. Never say you will check and then fall silent. Never call speak twice for \
-            the same thing.
+            answers or acts. classify_turn is never a complete turn on its own - in the SAME response you must \
+            also emit exactly one settling call (a command, query, macro, speak, or search_in_memory), chosen \
+            by the Turn source rules below. The only turn that is classify_turn alone is rule 5 (nothing to \
+            answer or do).
+            The turn is single-round: one command, query, or macro - or one speak - ends it. The only \
+            exception is a memory lookup (rule 3 below): send ONLY classify_turn + search_in_memory now, read \
+            its result when it returns to you (not the commander), then speak the answer in your next response.
+            Never say you will check and then fall silent. Within one response do not call speak twice and do \
+            not add speak to repeat an outcome that is voiced automatically - but this never means meeting a \
+            repeated request with silence: always act or reply (rules 1 and 4).
             """;
 
     private static final String COMMANDER_RULES = """
-            This turn was started by the commander addressing you; you may use the query, action, and macro \
-            functions offered.
-            - The commander tells you to DO something (open a panel, navigate, find or search, target, deploy \
-            or retract, enable or disable, otherwise change ship state) -> call the matching action or macro \
-            function.
-            - The commander ASKS for information -> call the matching query function.
-            - A bare panel/mode/action name ("navigation", "inventory", "contacts") is a command -> call that \
-            function.
-            - A single-word or very short input is almost always a command, not small talk -> if it matches \
-            an offered function, call it.
-            Always prefer the closest offered query, action, or macro function over speak; fall back to \
-            clarify only when intent is genuinely ambiguous and no offered function fits. "inventory" and \
-            "storage" are different panels - never substitute one for the other.
-            A query or action result is spoken to the commander automatically in the ship's voice - do not \
-            add speak to repeat or rephrase it. Use speak yourself only to converse, ask for clarification, \
-            or confirm a dangerous action.
+            This turn was started by the commander addressing you. First read the Visible context below: \
+            [COMMANDER] lines are the commander's own words, [%s] lines are your own earlier replies - both \
+            reliable, but it holds only the last few turns. Then settle the turn by taking the FIRST rule that \
+            applies, in order:
+            1. The commander wants an action - open a panel, navigate, find or search, target, deploy or \
+            retract, enable or disable, otherwise change ship state. A bare or one-word panel/mode/action name \
+            ("navigation", "inventory", "contacts") counts here.
+               - Exactly one offered action or macro matches -> call it. Execute it EVERY time the commander \
+            gives it, even if an identical command already ran earlier in the Visible context; a command is \
+            never skipped as "already done".
+               - Two or more offered functions could match and you cannot tell which one the commander means \
+            -> call speak to ask which one; do NOT guess and do NOT fall silent - a wrong command is worse \
+            than a question.
+               - No offered function matches -> do not fake an unrelated one; say with speak that you cannot.
+            2. The commander asks for the current state of the ship or galaxy (cargo, fuel, location, market, \
+            contacts, status, distances) -> call the matching query, with the same one / several / none \
+            branches as rule 1. That state lives in the game, not your memory.
+            3. The commander asks about something set earlier this run (a name, callsign, codeword, plan, \
+            target, or what you agreed) that is NOT in the Visible context -> call ONLY classify_turn + \
+            search_in_memory now; its result is your own reliable memory, so speak that answer in your next \
+            response and never reply that you do not remember once it returns. If the answer needs both memory \
+            and a query, do both.
+            4. Otherwise the commander is chatting, or asks something you can answer yourself - from the \
+            Visible context, from who you are (your name and role are in the Persona above), or from what you \
+            already know -> call speak with the reply. A question ALWAYS gets a spoken answer, even one you \
+            answered before: never stay silent because the answer is already in the Visible context; if the \
+            commander repeats it, answer again (you may briefly note they already asked). Never leave a \
+            question with classify_turn alone.
+            5. Only if there is truly nothing to answer or do - a bare acknowledgement, filler, or noise, not \
+            a question -> classify_turn alone, nothing else.
+            "inventory" and "storage" are different panels - never substitute one for the other. A query or \
+            action result is spoken to the commander automatically - never add speak to repeat or rephrase it.
             """;
 
     private static final String NARRATION_RULES = """
@@ -104,7 +101,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     }
 
     /**
-     * Full consciousness prompt: persona (with memory/query guidance), tool-calling, commander rules, language.
+     * Full consciousness prompt: persona, tool-calling mechanics, the ordered Turn source decision ladder
+     * (with visible-context / memory / query branches folded in), and the language rule.
      * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous;
      * the {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13).
      */
@@ -114,10 +112,8 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         sb.append(personaCore()).append(addressRule()).append(COMMANDER_PERSONA);
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
-        PromptSections.heading(sb, "Memory usage rules");
-        sb.append(MEMORY_RULES.formatted(CompanionConfig.companionName()));
         PromptSections.heading(sb, "Turn source");
-        sb.append(COMMANDER_RULES);
+        sb.append(COMMANDER_RULES.formatted(CompanionConfig.companionName()));
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();
@@ -160,7 +156,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         String name = PromptLocalizations.rulesFor(language).languageName();
         String rule = "The commander speaks " + name + ", and game events are summarized in " + name + ". "
-                + "Form every phrase the commander hears - the text in speak and the question in clarify - in "
+                + "Form every phrase the commander hears - the text in speak - in "
                 + name + ". Function names and all other arguments stay exactly as defined.\n";
         if (language != Language.EN) {
             // Tool descriptions are English; small models match them most reliably from English.

@@ -39,8 +39,8 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("never invent or guess facts"));
-        // No-fit: clarify or decline instead of forcing (or pretending to perform) an unrelated function.
-        assertTrue(text.contains("clarify"));
+        // No-fit: ask or decline via speak instead of forcing (or pretending to perform) an unrelated function.
+        assertTrue(text.contains("say with speak that you cannot"));
         // Polite closing: do not promise to check and then go silent.
         assertTrue(text.contains("fall silent"));
     }
@@ -83,7 +83,7 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("## Language"));
         // The commander's language is named, and spoken output is bound to that same language.
         assertTrue(text.contains("The commander speaks " + name));
-        // Both spoken surfaces (speak and clarify) are bound to the commander's language.
-        assertTrue(text.contains("the text in speak and the question in clarify - in " + name));
+        // The spoken surface (speak) is bound to the commander's language.
+        assertTrue(text.contains("the text in speak - in " + name));
     }
 }

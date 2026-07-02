@@ -44,7 +44,7 @@ import java.util.concurrent.TimeoutException;
  * A thought born from a commander reply. It owns the full tool-calling loop: compose -> LLM round -> (first
  * round) apply {@code classify_turn} and record the input -> dangerous-action confirmation -> execute
  * tool-calls -> (search_in_memory only) one more round, until the turn ends - it is single-round by design,
- * a command/query/macro or speak/clarify settles it - or an unrecoverable response stops it
+ * a command/query/macro or speak settles it - or an unrecoverable response stops it
  * (§2.5/§2.6/§2.8/§5.1).
  * <p>
  * It has the full commander tool set and the COMMANDER-only paths an EVENT/narration thought cannot reach:
@@ -134,7 +134,7 @@ public final class CommanderThought extends Thought {
                 if (executeRound(flow, tools, invocations, preExecuted) != RoundResult.CONTINUE) {
                     // The turn is complete. The companion turn is single-round by design: only a
                     // search_in_memory lookup returns CONTINUE (to read its result next round); anything else
-                    // - a command/query/macro, a speak/clarify, or a bare classify_turn - ends here.
+                    // - a command/query/macro, a speak, or a bare classify_turn - ends here.
                     return;
                 }
             }
@@ -197,14 +197,14 @@ public final class CommanderThought extends Thought {
     private enum RoundResult {
         /** The round issued a {@code search_in_memory} lookup; the LLM reads its result in one more round. */
         CONTINUE,
-        /** The turn is complete (single-round default: any command/query/macro/speak/clarify, or nothing). */
+        /** The turn is complete (single-round default: any command/query/macro/speak, or nothing). */
         TERMINATED
     }
 
     /**
      * Executes the round's tool-calls in LLM order, synchronously, and voices/remembers each outcome by its
      * action type via {@link #recordOutcome} (the handler owns speech, not the LLM). The companion turn is
-     * single-round by design: a command, query, macro, {@code speak}, {@code clarify} - or a bare
+     * single-round by design: a command, query, macro, {@code speak} - or a bare
      * {@code classify_turn} - completes the turn. The one continuation is {@code search_in_memory}, whose
      * result the model must read before it can answer: that round feeds its result into the flow and the loop
      * runs one more round to speak the recalled answer. {@code speak} is voiced or withheld here.
