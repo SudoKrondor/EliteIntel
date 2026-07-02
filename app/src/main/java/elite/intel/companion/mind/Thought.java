@@ -242,23 +242,39 @@ public abstract class Thought {
         return error;
     }
 
-    /** Records the current input under the resolved topic before tool-calls run (§2.6). */
+    /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
+        String canonical = memoryCanonicalFact();
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance()));
+                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance(),
+                null, canonical == null || canonical.isBlank() ? null : canonical));
+    }
+
+    /**
+     * Optional clean one-line restatement of a durable fact stated this turn, used only as the memory
+     * candidate/embedding text (the verbatim input stays the ground truth). Empty by default; a COMMANDER
+     * thought supplies it from {@code classify_turn}.
+     */
+    protected String memoryCanonicalFact() {
+        return "";
     }
 
     /**
      * Records what the companion actually said as its own {@code COMPANION} timeline entry - the spoken text
      * itself, not a {@code {"status":"spoken"}} ack - so a future thought (which reads the past only through
      * memory) knows it already answered. A blank utterance is not recorded.
+     * <p>
+     * Stamped {@link MemoryImportance#LOW}, not the turn's importance: the companion's own words are never a
+     * durable fact (only the commander's statements and events are). It stays in the recent timeline for
+     * continuity but never surfaces as a memory candidate, so a fact turn's reply/acknowledgement ("understood,
+     * noted...") cannot pollute recall.
      */
     protected void recordCompanionSpeech(String text) {
         if (text == null || text.isBlank()) {
             return;
         }
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, memoryImportance()));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */

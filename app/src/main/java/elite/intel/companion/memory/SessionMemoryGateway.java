@@ -91,9 +91,13 @@ public final class SessionMemoryGateway implements MemoryGateway {
         // count/token bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
         MemoryEntry stored = entry;
         if (entry.content() != null) {
-            String lower = entry.content().toLowerCase(Locale.ROOT);
-            stored = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lower,
-                    entry.importance(), embed(lower));
+            // Store both texts lower-cased (case carries no recall signal), then embed the clean candidate text
+            // (MemoryEntry.embeddingText: the canonical fact when present, else the verbatim content).
+            String lowerContent = entry.content().toLowerCase(Locale.ROOT);
+            String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
+            MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
+                    entry.importance(), null, lowerCanonical);
+            stored = lowered.withEmbedding(embed(lowered.embeddingText()));
         }
         // Collapse a fact that is already in memory under near-identical meaning into one fresh copy, so a
         // re-stated or re-asked fact (commander fact + the companion's echo, repeated questions, repeated

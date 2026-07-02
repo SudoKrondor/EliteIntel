@@ -77,6 +77,9 @@ public final class CommanderThought extends Thought {
     /** Whether classify_turn flagged this turn as a question; a question carries no new fact, so its input is not filed. */
     private boolean turnIsQuestion;
 
+    /** The clean canonical fact the consciousness stated for this turn via classify_turn (empty when none). */
+    private String turnCanonicalFact = "";
+
     CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
         super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
     }
@@ -166,6 +169,12 @@ public final class CommanderThought extends Thought {
         return MemoryFactCandidates.forInput(ctx.memoryGateway(), matchInput);
     }
 
+    /** The canonical fact classify_turn stated this turn (empty when none), for the recorded entry. */
+    @Override
+    protected String memoryCanonicalFact() {
+        return turnCanonicalFact;
+    }
+
     /**
      * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code classify_turn}, apply it now,
      * before the input is filed - read its importance into the turn's importance (so the recorded input and
@@ -186,6 +195,8 @@ public final class CommanderThought extends Thought {
                 }
                 turnIsQuestion = Boolean.parseBoolean(
                         JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
+                turnCanonicalFact = JsonUtils.getAsStringOrEmpty(
+                        inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT).strip();
                 preExecuted.put(inv, execute(inv));
                 break;
             }

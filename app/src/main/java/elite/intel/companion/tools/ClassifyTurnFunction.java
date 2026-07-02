@@ -34,6 +34,7 @@ public final class ClassifyTurnFunction implements SystemFunction {
     public static final String PARAM_TOPIC = "topic";
     public static final String PARAM_IMPORTANCE = "importance";
     public static final String PARAM_IS_QUESTION = "is_question";
+    public static final String PARAM_CANONICAL_FACT = "canonical_fact";
 
     private static final String STATUS_CLASSIFIED = "turn_classified";
     private static final String ERROR_UNKNOWN_TOPIC = "unknown topic";
@@ -45,8 +46,9 @@ public final class ClassifyTurnFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Classify this commander turn for memory organization. This function only sets the turn's "
-                + "importance and topic; it never answers the commander and never stores new facts by itself.";
+        return "Classify this commander turn for memory: its topic, its importance, whether it is a question, "
+                + "and a clean canonical fact for later recall. It never answers the commander and never stores "
+                + "facts by itself.";
     }
 
     @Override
@@ -69,6 +71,16 @@ public final class ClassifyTurnFunction implements SystemFunction {
                         "Required. True if the commander expects an answer, explanation, decision, or memory recall. "
                                 + "This includes questions and requests like 'tell me', 'remind me', or 'repeat'. "
                                 + "False for new facts, action commands, remember/write-down orders, acknowledgements, or banter.",
+                        List.of(), null),
+                new ActionParameterSpec(PARAM_CANONICAL_FACT, "string", true,
+                        "A short clean sentence in the commander's language stating a durable fact from the "
+                                + "commander's current phrase, for later recall - use it for any fact worth recalling "
+                                + "(a name, plan, target, codeword, agreement, place, or role), whatever importance you "
+                                + "assigned. Leave it EMPTY (\"\") for chatter, questions, action commands, "
+                                + "acknowledgements, and 'max' remember-word-for-word orders (a max fact is kept "
+                                + "verbatim). Never copy or summarise your own earlier replies. Never include "
+                                + "acknowledgement words like 'understood' or 'noted'. Do not invent names, numbers, "
+                                + "codes, locations, or values. If unsure, leave it empty.",
                         List.of(), null)
         );
     }

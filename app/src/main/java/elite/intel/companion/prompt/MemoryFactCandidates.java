@@ -18,9 +18,11 @@ import java.util.List;
  * never inlined: those would read to the model as reliable context and steer answers wrong. The filter is:
  * <ul>
  *   <li>drop {@link MemorySource#TOOL_RESULT} (action logs) and {@link MemorySource#SYSTEM} (markers/summary);</li>
+ *   <li>drop {@link MemorySource#COMPANION} - the companion's own words are never a durable fact (recorded at
+ *       LOW; see {@code recordCompanionSpeech}), and its acks/echoes/hedges are exactly the noise to exclude;</li>
  *   <li>keep {@link MemorySource#EVENT} facts (curated at capture, and already relevance-gated by recall);</li>
- *   <li>otherwise keep only {@link MemoryImportance#HIGH} or {@link MemoryImportance#MAX} entries - the
- *       durable facts (name, codeword, plan, target, agreement); LOW/NORMAL chatter, acks and echoes drop out.</li>
+ *   <li>keep a {@link MemorySource#COMMANDER} statement at {@link MemoryImportance#NORMAL} or above - a stated
+ *       fact (name, codeword, plan, target, agreement); only LOW idle banter drops out.</li>
  * </ul>
  * Recall already applies its own relevance floor, so every returned entry is a real match; this only removes
  * noise and caps the count. Empty result -&gt; no block is added to the prompt.
@@ -46,7 +48,8 @@ public final class MemoryFactCandidates {
         List<String> facts = new ArrayList<>();
         for (MemoryEntry entry : memory.recallCandidates(input, CANDIDATE_POOL)) {
             if (isTier2(entry)) {
-                facts.add(entry.content());
+                // The clean canonical restatement when present, else the verbatim content.
+                facts.add(entry.embeddingText());
                 if (facts.size() >= MAX_CANDIDATES) {
                     break;
                 }
@@ -65,9 +68,9 @@ public final class MemoryFactCandidates {
             // The commander's own words: a stated fact even at NORMAL (docking-code callsign, field name, plan);
             // only LOW idle banter drops out. Commander questions are never filed, so these are statements.
             case COMMANDER -> entry.importance().compareTo(MemoryImportance.NORMAL) >= 0;
-            // The companion's own lines: keep only HIGH/MAX facts; NORMAL/LOW are acks, echoes and hedges - the
-            // self-poisoning noise this filter exists to exclude.
-            case COMPANION -> entry.importance().compareTo(MemoryImportance.HIGH) >= 0;
+            // The companion's own lines are never a durable fact (recorded at LOW; see recordCompanionSpeech) -
+            // its acks/echoes/hedges are exactly the self-poisoning noise this filter exists to exclude.
+            case COMPANION -> false;
         };
     }
 }
