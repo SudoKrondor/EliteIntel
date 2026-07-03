@@ -3,15 +3,17 @@ package elite.intel.ui.screen.settings;
 import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
-import elite.intel.db.managers.ShipManager;
+import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.RestartBrainEvent;
 import elite.intel.ui.event.RestartMouthEvent;
 import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.widget.*;
+import elite.intel.util.StringUtls;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -30,10 +32,15 @@ import static elite.intel.ui.theme.HudPalette.*;
  * LOCAL and a CLOUD source via {@link HudSegmentedControl} switches, with the active source's
  * configuration highlighted and the unused one dimmed (section 0.6).
  * <p>
- * Persistence is transactional: no control writes to {@link SystemSession} on its own. All edits
- * live in an in-memory working copy and are committed atomically by {@link #save()} (the only point
- * that fires {@link RestartBrainEvent}/{@link RestartMouthEvent}). This removes the previous
- * cross-panel "Use" checkbox synchronisation and the risk of half-saved, inconsistent state.
+ * The source/model/key configuration is transactional: those controls never write to
+ * {@link SystemSession} on their own; their edits live in an in-memory working copy and are committed
+ * atomically by {@link #save()} (the only point that fires
+ * {@link RestartBrainEvent}/{@link RestartMouthEvent}). This removes the previous cross-panel "Use"
+ * checkbox synchronisation and the risk of half-saved, inconsistent state.
+ * <p>
+ * The per-provider voice dropdowns are the intentional exception: voice is a lightweight setting that
+ * needs no service restart, so it applies immediately on selection (like Language/Personality in the
+ * Common tab) rather than through the transactional bundle.
  */
 public class AiServicesSettingsPanel extends JPanel {
 
@@ -58,9 +65,12 @@ public class AiServicesSettingsPanel extends JPanel {
     private HudSegmentedControl ttsSourceControl;
     private JPasswordField ttsKeyField;
     private JCheckBox ttsLockCheck;
+    private HudComboBox<KokoroVoices> kokoroVoiceCombo;
+    private HudComboBox<GoogleVoices> googleVoiceCombo;
 
     private JPanel localCol;
     private JPanel rightCol;
+    private JPanel ttsLeftCol;
     private JPanel ttsRightCol;
     private JButton saveButton;
     private JLabel unsavedLabel;
@@ -165,8 +175,15 @@ public class AiServicesSettingsPanel extends JPanel {
                 new String[]{getText("settings.ai.voice.local"), getText("settings.ai.voice.cloud")}, SRC_CLOUD);
         tts.add(ttsSourceControl, BorderLayout.NORTH);
 
-        // Left column - LOCAL (Kokoro has no configuration). Right column - CLOUD Google TTS key.
-        JPanel ttsLeftCol = transparentPanel(new BorderLayout());
+        // Left column - LOCAL Kokoro voice. Right column - CLOUD Google TTS key + Google voice.
+        // Voice is a single app-wide setting per provider (not per ship); each provider keeps its own
+        // selection so switching TTS source preserves both.
+        ttsLeftCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints lgc = baseGbc();
+        kokoroVoiceCombo = new HudComboBox<>(KokoroVoices.values(), v -> getText(v.i18nKey()));
+        addLabel(ttsLeftCol, getText("settings.ai.kokoroVoice"), lgc, 0);
+        addField(ttsLeftCol, kokoroVoiceCombo, lgc, 1, 1.0);
+
         ttsRightCol = transparentPanel(new GridBagLayout());
         GridBagConstraints tgc = baseGbc();
         ttsKeyField = makePasswordField();
@@ -177,9 +194,16 @@ public class AiServicesSettingsPanel extends JPanel {
         addLabel(ttsRightCol, getText("settings.ai.googleTtsKey"), tgc, 0);
         addField(ttsRightCol, ttsKeyRow, tgc, 1, 1.0);
 
+        nextRow(tgc);
+        googleVoiceCombo = new HudComboBox<>(GoogleVoices.values(), v -> getText(v.i18nKey()));
+        addLabel(ttsRightCol, getText("settings.ai.googleVoice"), tgc, 0);
+        addField(ttsRightCol, googleVoiceCombo, tgc, 1, 1.0);
+
+        JPanel ttsLeftWrap = transparentPanel(new BorderLayout());
+        ttsLeftWrap.add(ttsLeftCol, BorderLayout.NORTH);
         JPanel ttsRightWrap = transparentPanel(new BorderLayout());
         ttsRightWrap.add(ttsRightCol, BorderLayout.NORTH);
-        tts.add(new HudTwoColumns(ttsLeftCol, ttsRightWrap), BorderLayout.CENTER);
+        tts.add(new HudTwoColumns(ttsLeftWrap, ttsRightWrap), BorderLayout.CENTER);
 
         // ----- Footer controls -----
         saveButton = makeButton(getText("button.save"));
@@ -226,6 +250,11 @@ public class AiServicesSettingsPanel extends JPanel {
         llmLockCheck.addItemListener(e -> updateEnablement());
         ttsLockCheck.addItemListener(e -> updateEnablement());
 
+        // Voice is a lightweight, immediate-apply setting (no service restart, unlike the source/key
+        // bundle that save() commits transactionally); each provider persists its own selection.
+        kokoroVoiceCombo.addActionListener(e -> onVoiceSelected(SRC_LOCAL));
+        googleVoiceCombo.addActionListener(e -> onVoiceSelected(SRC_CLOUD));
+
         onTextChange(addressField);
         onTextChange(commandModelField);
         onTextChange(queryModelField);
@@ -239,6 +268,32 @@ public class AiServicesSettingsPanel extends JPanel {
             public void removeUpdate(DocumentEvent e) { recomputeDirty(); }
             public void changedUpdate(DocumentEvent e) { recomputeDirty(); }
         });
+    }
+
+    /**
+     * Persists the selected voice immediately and previews it when its provider is the active TTS.
+     */
+    private void onVoiceSelected(int source) {
+        if (loading) return;
+        if (source == SRC_LOCAL) {
+            KokoroVoices voice = (KokoroVoices) kokoroVoiceCombo.getSelectedItem();
+            if (voice == null) return;
+            systemSession.setKokoroVoice(voice);
+            if (systemSession.useLocalTTS()) previewVoice(voice.name());
+        } else {
+            GoogleVoices voice = (GoogleVoices) googleVoiceCombo.getSelectedItem();
+            if (voice == null) return;
+            systemSession.setGoogleVoice(voice);
+            if (!systemSession.useLocalTTS()) previewVoice(voice.name());
+        }
+    }
+
+    /**
+     * Plays a short greeting through the active mouth using the given voice, as an audition.
+     */
+    private void previewVoice(String voiceName) {
+        String text = StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName());
+        GameEventBus.publish(new AiVoxDemoEvent(text, voiceName));
     }
 
     // -------------------------------------------------------------------------
@@ -267,6 +322,8 @@ public class AiServicesSettingsPanel extends JPanel {
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
             ttsKeyField.setText(nz(systemSession.getTtsApiKey(), ""));
             ttsSourceControl.setSelectedIndex(systemSession.useLocalTTS() ? SRC_LOCAL : SRC_CLOUD);
+            kokoroVoiceCombo.setSelectedItem(systemSession.getKokoroVoice());
+            googleVoiceCombo.setSelectedItem(systemSession.getGoogleVoice());
 
             savedLlmLocal = local;
             savedProvider = provider;
@@ -351,6 +408,13 @@ public class AiServicesSettingsPanel extends JPanel {
         }
         ttsKeyField.setEnabled(ttsCloud && !ttsLockCheck.isSelected());
         ttsLockCheck.setEnabled(ttsCloud);
+
+        // Each provider's voice dropdown follows its own source: Kokoro under LOCAL, Google under CLOUD.
+        for (Component c : ttsLeftCol.getComponents()) {
+            if (c instanceof JLabel) c.setEnabled(!ttsCloud);
+        }
+        kokoroVoiceCombo.setEnabled(!ttsCloud);
+        googleVoiceCombo.setEnabled(ttsCloud);
     }
 
     /** Re-evaluates whether the working copy differs from the last saved snapshot. */
@@ -398,13 +462,9 @@ public class AiServicesSettingsPanel extends JPanel {
     // -------------------------------------------------------------------------
 
     /**
-     * Atomically persists the whole working copy. If the TTS source changed, a confirmation
-     * dialog (voice reset) is shown first; declining it aborts the entire save and leaves the
-     * panel in its edited state.
-     *
-     * @return {@code true} if the configuration was saved, {@code false} if the user aborted
+     * Atomically persists the whole working copy and fires the relevant restart events.
      */
-    public boolean save() {
+    public void save() {
         captureFields(shownProvider);
 
         boolean newLocal = llmSourceControl.getSelectedIndex() == SRC_LOCAL;
@@ -415,19 +475,8 @@ public class AiServicesSettingsPanel extends JPanel {
         String newTtsKey = new String(ttsKeyField.getPassword());
 
         boolean oldTtsLocal = systemSession.useLocalTTS();
-        if (newTtsLocal != oldTtsLocal) {
-            boolean confirmed = HudConfirmDialog.confirm(
-                    this,
-                    getText("settings.audio.switchTts.title"),
-                    getText("settings.audio.switchTts.message"),
-                    getText("button.continue"),
-                    getText("button.cancel"));
-            if (!confirmed) {
-                return false; // abort entire save, stay in editing state
-            }
-            String defaultVoice = newTtsLocal ? KokoroVoices.BELLA.name() : GoogleVoices.EMMA.name();
-            ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
-        }
+        // Voice is per-provider and persisted independently, so switching the TTS source no longer
+        // resets any voice; each provider keeps its own selection.
 
         // Restart side-effects fire only when the relevant config actually changed.
         boolean oldLocal = systemSession.useLocalCommandLlm() && systemSession.useLocalQueryLlm();
@@ -474,7 +523,6 @@ public class AiServicesSettingsPanel extends JPanel {
         savedTtsLocal = newTtsLocal;
 
         clearDirty();
-        return true;
     }
 
     /** Resets the LLM configuration to defaults and commits immediately. */

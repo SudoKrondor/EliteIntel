@@ -136,7 +136,9 @@ public class ApiFactory {
     @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
     public MouthInterface getMouthImpl() {
         if (systemSession.useLocalTTS()) {
-            return KokoroTTS.getInstance();
+            KokoroTTS kokoro = KokoroTTS.getInstance();
+            kokoro.setRole(KokoroTTS.Role.MAIN);
+            return kokoro;
         }
 
         String apiKey = SystemSession.getInstance().getTtsApiKey();
@@ -146,7 +148,9 @@ public class ApiFactory {
                 return GoogleTTSImpl.getInstance();
             // TODO: Add ElevenLabs, AWS Polly, etc.
             default:
-                return KokoroTTS.getInstance();
+                KokoroTTS kokoro = KokoroTTS.getInstance();
+                kokoro.setRole(KokoroTTS.Role.MAIN);
+                return kokoro;
         }
     }
 

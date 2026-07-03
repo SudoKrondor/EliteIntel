@@ -11,6 +11,7 @@ import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
+import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.companion.CompanionConfig;
@@ -272,8 +273,33 @@ public class AppController implements Runnable {
         ServiceHolder mouth = services.get(ServiceType.MOUTH);
         if (mouth == null) return;
         appendToLog("Restarting TTS service...");
+
+        // Radio is always voiced by Kokoro, so a dedicated radio engine is needed only when the main
+        // mouth is not Kokoro. The radio engine and a Kokoro main mouth share the Kokoro singleton, so
+        // ordering matters: retire an unneeded radio engine BEFORE (re)starting the main mouth, and
+        // leave an already-running radio engine untouched on a main-mouth-only change (no model reload).
+        boolean needRadio = !systemSession.useLocalTTS();
+        ServiceHolder radio = services.get(ServiceType.RADIO_MOUTH);
+        if (radio != null && !needRadio) {
+            radio.stop();
+            services.remove(ServiceType.RADIO_MOUTH);
+            radio = null;
+        }
+
         mouth.stop();
         mouth.start();
+
+        if (needRadio) {
+            if (radio == null) {
+                radio = new ServiceHolder(() -> {
+                    KokoroTTS r = KokoroTTS.getInstance();
+                    r.setRole(KokoroTTS.Role.RADIO);
+                    return r;
+                });
+                services.put(ServiceType.RADIO_MOUTH, radio);
+            }
+            radio.start(); // no-op if the radio engine is already running (Kokoro.start() guards on running)
+        }
         appendToLog("TTS service restarted");
     }
 
@@ -384,7 +410,7 @@ public class AppController implements Runnable {
     private void initServices() {
         stopServices();
         this.services.clear();
-        this.services.putAll(buildServices(CompanionConfig.companionModeOn()));
+        this.services.putAll(buildServices(CompanionConfig.companionModeOn(), systemSession.useLocalTTS()));
     }
 
     /**
@@ -392,10 +418,22 @@ public class AppController implements Runnable {
      * nothing is started here) so the registration can be verified in tests without standing up the
      * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
      * is registered per {@code companionModeOn} (§0).
+     * <p>
+     * Radio transmissions are always voiced by Kokoro. When Kokoro is also the main mouth
+     * ({@code useLocalTts}) it handles radio through its own queue and no extra service is needed.
+     * When the main mouth is a cloud provider, a dedicated {@link ServiceType#RADIO_MOUTH} runs the
+     * Kokoro engine in {@link KokoroTTS.Role#RADIO} alongside it.
      */
-    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn) {
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn, boolean useLocalTts) {
         LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
+        if (!useLocalTts) {
+            services.put(ServiceType.RADIO_MOUTH, new ServiceHolder(() -> {
+                KokoroTTS radio = KokoroTTS.getInstance();
+                radio.setRole(KokoroTTS.Role.RADIO);
+                return radio;
+            }));
+        }
         services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
@@ -448,7 +486,7 @@ public class AppController implements Runnable {
     }
 
     enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, RADIO_MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

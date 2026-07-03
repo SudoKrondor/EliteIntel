@@ -70,12 +70,4 @@ public class ShipManager {
     public List<ShipDao.Ship> getShipsForCommander(String commanderName) {
         return Database.withDao(ShipDao.class, dao -> dao.allShipsForCommander(commanderName));
     }
-
-    public void resetAllVoicesToDefault(String defaultVoice) {
-        List<ShipDao.Ship> ships = getAllShips();
-        for (ShipDao.Ship ship : ships) {
-            ship.setVoice(defaultVoice);
-            saveShip(ship);
-        }
-    }
 }

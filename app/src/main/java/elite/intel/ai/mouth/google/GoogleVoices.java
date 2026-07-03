@@ -1,8 +1,13 @@
 package elite.intel.ai.mouth.google;
 
+import java.util.Locale;
+
 /**
  * If you implement another TTS, map these voices in your class to the
  * voices available in your TTS provider.
+ * <p>
+ * The UI renders each voice's display label via {@link #i18nKey()} resolved against the {@code gui}
+ * bundles ("Name - Accent"), falling back to the English bundle when a translation is missing.
  */
 public enum GoogleVoices {
 
@@ -49,5 +54,12 @@ public enum GoogleVoices {
 
     public boolean isMale() {
         return isMale;
+    }
+
+    /**
+     * Resource-bundle key for this voice's localized display label (e.g. {@code voice.google.emma}).
+     */
+    public String i18nKey() {
+        return "voice.google." + name().toLowerCase(Locale.ROOT);
     }
 }

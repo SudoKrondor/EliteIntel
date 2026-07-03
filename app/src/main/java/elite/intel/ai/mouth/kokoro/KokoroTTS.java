@@ -7,6 +7,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.mouth.AudioDeClicker;
+import elite.intel.ai.mouth.MainVoicePlaybackGate;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
@@ -53,8 +54,20 @@ public class KokoroTTS implements MouthInterface {
 
     private static final int SAMPLE_RATE = 24000;
     private static final int DEFAULT_SID = KokoroVoices.GEORGE.getSid();
+    /**
+     * How long a radio transmission waits out ongoing main-voice speech before it plays anyway.
+     */
+    private static final long RADIO_MAIN_WAIT_MS = 15_000;
+
+    /**
+     * MAIN: the primary voice engine (handles all narration, including radio, through one queue).
+     * RADIO: a radio-only engine that runs alongside a non-Kokoro main mouth (e.g. Google), handling
+     * only radio transmissions and ducking behind the main voice via {@link MainVoicePlaybackGate}.
+     */
+    public enum Role {MAIN, RADIO}
 
     private static volatile KokoroTTS instance;
+    private volatile Role role = Role.MAIN;
 
     private final AtomicBoolean interruptRequested = new AtomicBoolean(false);
     private final AtomicBoolean canBeInterrupted = new AtomicBoolean(true);
@@ -76,6 +89,7 @@ public class KokoroTTS implements MouthInterface {
     private final BlockingQueue<PlaybackTask> playbackQueue = new LinkedBlockingQueue<>();
 
     private final SystemSession systemSession = SystemSession.getInstance();
+    private final PlayerSession playerSession = PlayerSession.getInstance();
     private SourceDataLine persistentLine;
     private volatile boolean running = false;
     private Thread synthesisThread;
@@ -93,6 +107,14 @@ public class KokoroTTS implements MouthInterface {
             }
         }
         return instance;
+    }
+
+    /**
+     * Sets whether this engine acts as the main mouth or the radio-only engine. Must be set before
+     * {@link #start()}; a running engine keeps its role until the next stop/start cycle.
+     */
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     // -- Lifecycle -------------------------------------------------------------
@@ -141,8 +163,12 @@ public class KokoroTTS implements MouthInterface {
         playbackThread.start();
 
         GameEventBus.register(this);
-        log.info("KokoroTTS started - voice: {} sid={}", KokoroVoices.GEORGE.getDisplayName(), DEFAULT_SID);
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
+        log.info("KokoroTTS started ({}) - voice: {} sid={}", role, KokoroVoices.GEORGE.getDisplayName(), DEFAULT_SID);
+        // Only the main voice greets on start; the radio-only engine stays silent (its greeting would
+        // otherwise be voiced by the main mouth as a normal narration).
+        if (role == Role.MAIN) {
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
+        }
     }
 
     @Override
@@ -239,6 +265,9 @@ public class KokoroTTS implements MouthInterface {
     @Subscribe
     public void onVoiceProcessEvent(VocalisationRequestEvent event) {
         if (!running) return;
+        // In RADIO role this engine runs alongside a non-Kokoro main mouth and voices radio only;
+        // normal narration belongs to the main mouth. In MAIN role it handles everything.
+        if (role == Role.RADIO && !event.isRadio()) return;
         canBeInterrupted.set(event.canBeInterrupted());
 
         String sanitizedText = StringUtls.sanitizeTts(event.getText());
@@ -349,26 +378,38 @@ public class KokoroTTS implements MouthInterface {
             if (!openPersistentLine()) return;
         }
 
-        currentLine.set(persistentLine);
-
-        AudioFormat fmt = persistentLine.getFormat();
-        int frameSize = fmt.getFrameSize();
-
-        // Small silence gap between sentences
-        byte[] silence = new byte[(int) (SAMPLE_RATE * 0.03f) * frameSize];
-        persistentLine.write(silence, 0, silence.length);
-
-        final int CHUNK = 8192;
-        for (int offset = 0; offset < audioData.length; offset += CHUNK) {
-            if (interruptRequested.get()) break;
-            int remaining = audioData.length - offset;
-            int thisChunk = (Math.min(CHUNK, remaining) / frameSize) * frameSize;
-            if (thisChunk == 0) break;
-            persistentLine.write(audioData, offset, thisChunk);
+        // Radio ducks behind the main voice: wait out any ongoing main-voice sentence, then play.
+        // The main voice (Google, or Kokoro-as-MAIN) brackets its own playback so radio can see it.
+        if (role == Role.RADIO) {
+            MainVoicePlaybackGate.awaitIdle(RADIO_MAIN_WAIT_MS);
+        } else {
+            MainVoicePlaybackGate.begin();
         }
 
-        if (!interruptRequested.get()) persistentLine.drain();
-        else persistentLine.flush();
+        try {
+            currentLine.set(persistentLine);
+
+            AudioFormat fmt = persistentLine.getFormat();
+            int frameSize = fmt.getFrameSize();
+
+            // Small silence gap between sentences
+            byte[] silence = new byte[(int) (SAMPLE_RATE * 0.03f) * frameSize];
+            persistentLine.write(silence, 0, silence.length);
+
+            final int CHUNK = 8192;
+            for (int offset = 0; offset < audioData.length; offset += CHUNK) {
+                if (interruptRequested.get()) break;
+                int remaining = audioData.length - offset;
+                int thisChunk = (Math.min(CHUNK, remaining) / frameSize) * frameSize;
+                if (thisChunk == 0) break;
+                persistentLine.write(audioData, offset, thisChunk);
+            }
+
+            if (!interruptRequested.get()) persistentLine.drain();
+            else persistentLine.flush();
+        } finally {
+            if (role != Role.RADIO) MainVoicePlaybackGate.end();
+        }
     }
 
     private boolean openPersistentLine() {

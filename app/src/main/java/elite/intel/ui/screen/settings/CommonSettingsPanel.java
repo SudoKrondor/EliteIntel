@@ -1,5 +1,6 @@
 package elite.intel.ui.screen.settings;
 
+import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -34,7 +35,13 @@ public class CommonSettingsPanel extends JPanel {
     private final SystemSession systemSession = SystemSession.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
+    /**
+     * i18n key prefix for {@link ShipPersonality} labels (shared with the localized dropdown text).
+     */
+    private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
+
     private HudComboBox<LanguageOption> languageCombo;
+    private HudComboBox<ShipPersonality> personalityCombo;
     private JCheckBox conversationModeCheckBox;
     private JCheckBox companionModeCheckBox;
     private JTextField journalDirField;
@@ -55,7 +62,9 @@ public class CommonSettingsPanel extends JPanel {
         JPanel body = section.body();
         int fieldHeight = HUD_FIELD_HEIGHT;
 
-        // Row 0 - command language (wide first column, cols 0-2) + conversation mode (right, col 3).
+        // Row 0 - command language (col 0-1) and AI personality (col 2-3) share the row to save vertical
+        // space; conversation mode on the right (col 4). Personality is independent of the voice and
+        // app-wide (not per ship), so it lives next to language rather than in the fleet grid.
         GridBagConstraints g = baseGbc();
         addLabel(body, getText("player.commandLanguage"), g);
 
@@ -73,16 +82,39 @@ public class CommonSettingsPanel extends JPanel {
         });
         g.gridx = 1;
         g.gridy = 0;
-        g.gridwidth = 2;
-        g.weightx = 1.0;
+        g.gridwidth = 1;
+        g.weightx = 0.5;
         g.fill = GridBagConstraints.HORIZONTAL;
         body.add(languageCombo, g);
+
+        // Personality label + dropdown immediately to the right of the language dropdown. Built manually
+        // (addLabel always anchors to col 0) with a compact label so it does not reserve a full column.
+        JLabel persLabel = fieldLabel(getText("player.personality"));
+        GridBagConstraints plg = baseGbc();
+        plg.gridx = 2;
+        plg.gridy = 0;
+        plg.insets = new Insets(6, HUD_GAP * 2, 6, 6);
+        body.add(persLabel, plg);
+
+        personalityCombo = new HudComboBox<>(ShipPersonality.values(), CommonSettingsPanel::personalityLabel);
+        personalityCombo.setToolTipText(getText("player.personality.tooltip"));
+        personalityCombo.addActionListener(e -> {
+            ShipPersonality selected = (ShipPersonality) personalityCombo.getSelectedItem();
+            if (selected == null || selected == systemSession.getAIPersonality()) return;
+            systemSession.setAIPersonality(selected);
+        });
+        GridBagConstraints pcg = baseGbc();
+        pcg.gridx = 3;
+        pcg.gridy = 0;
+        pcg.weightx = 0.5;
+        pcg.fill = GridBagConstraints.HORIZONTAL;
+        body.add(personalityCombo, pcg);
 
         conversationModeCheckBox = makeCheckBox(getText("player.conversationMode"), false);
         conversationModeCheckBox.addActionListener(e ->
                 systemSession.setConversationalMode(conversationModeCheckBox.isSelected()));
         GridBagConstraints cg = baseGbc();
-        cg.gridx = 3;
+        cg.gridx = 4;
         cg.gridy = 0;
         cg.weightx = 0;
         cg.fill = GridBagConstraints.NONE;
@@ -90,7 +122,7 @@ public class CommonSettingsPanel extends JPanel {
         cg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
         body.add(conversationModeCheckBox, cg);
 
-        // Companion mode toggle, right column under conversation mode (row 1, col 3).
+        // Companion mode toggle, right column under conversation mode (row 1, col 4).
         companionModeCheckBox = makeCheckBox(getText("player.companionMode"), false);
         companionModeCheckBox.addActionListener(e -> {
             systemSession.setCompanionMode(companionModeCheckBox.isSelected());
@@ -100,7 +132,7 @@ public class CommonSettingsPanel extends JPanel {
             UiBus.publish(new RestartServicesEvent());
         });
         GridBagConstraints mg = baseGbc();
-        mg.gridx = 3;
+        mg.gridx = 4;
         mg.gridy = 1;
         mg.weightx = 0;
         mg.fill = GridBagConstraints.NONE;
@@ -108,7 +140,7 @@ public class CommonSettingsPanel extends JPanel {
         mg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
         body.add(companionModeCheckBox, mg);
 
-        // Row 1 - journal directory under language (label + field + compact picker).
+        // Row 1 - journal directory under language (label + field spanning both dropdown columns + picker).
         GridBagConstraints jg = baseGbc();
         jg.gridy = 1;
         addLabel(body, getText("player.journalDirectory"), jg);
@@ -116,18 +148,30 @@ public class CommonSettingsPanel extends JPanel {
         journalDirField = makeTextField();
         journalDirField.setEditable(false);
         journalDirField.setToolTipText(getText("player.journalDirectory.tooltip"));
-        addField(body, journalDirField, jg, 1, 1.0);
+        jg.gridx = 1;
+        jg.gridwidth = 2;
+        jg.weightx = 1.0;
+        jg.fill = GridBagConstraints.HORIZONTAL;
+        body.add(journalDirField, jg);
 
         JButton selectJournalDirButton = makeFieldButton(verticalEllipsisIcon(fieldHeight), fieldHeight);
         selectJournalDirButton.setToolTipText(getText("button.select"));
         selectJournalDirButton.addActionListener(e -> chooseJournalDir());
-        // Compact square picker - fixed size, do not stretch like a field.
-        jg.gridx = 2;
+        // Compact square picker - fixed size, do not stretch like a field (col 3, clear of the checkboxes).
+        jg.gridx = 3;
+        jg.gridwidth = 1;
         jg.weightx = 0;
         jg.fill = GridBagConstraints.NONE;
         body.add(selectJournalDirButton, jg);
 
         add(section, BorderLayout.CENTER);
+    }
+
+    /**
+     * Localized, HUD-cased label for a {@link ShipPersonality} dropdown entry.
+     */
+    private static String personalityLabel(ShipPersonality personality) {
+        return getText(PERSONALITY_I18N_PREFIX + personality.name().toLowerCase(java.util.Locale.ROOT));
     }
 
     /**
@@ -169,6 +213,7 @@ public class CommonSettingsPanel extends JPanel {
 
     public void initData() {
         selectLanguage(systemSession.getLanguage());
+        personalityCombo.setSelectedItem(systemSession.getAIPersonality());
         conversationModeCheckBox.setSelected(systemSession.conversationalModeOn());
         companionModeCheckBox.setSelected(systemSession.companionModeOn());
         conversationModeBeforeCompanion = conversationModeCheckBox.isSelected();

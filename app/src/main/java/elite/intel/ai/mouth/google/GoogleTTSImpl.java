@@ -4,6 +4,7 @@ import com.google.cloud.texttospeech.v1.*;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.mouth.AudioDeClicker;
+import elite.intel.ai.mouth.MainVoicePlaybackGate;
 import elite.intel.ai.mouth.MouthInterface;
 import elite.intel.ai.mouth.RadioFilter;
 import elite.intel.ai.mouth.subscribers.events.*;
@@ -53,6 +54,7 @@ public class GoogleTTSImpl implements MouthInterface {
     private volatile boolean running;
     private SourceDataLine persistentLine; // Add persistent line
     private final SystemSession systemSession = SystemSession.getInstance();
+    private final PlayerSession playerSession = PlayerSession.getInstance();
     private final AtomicBoolean canBeInterrupted = new AtomicBoolean(true);
 
     private GoogleTTSImpl() {
@@ -100,7 +102,7 @@ public class GoogleTTSImpl implements MouthInterface {
         if (systemSession.getRmsThresholdHigh() != null) {
             UiBus.publish(new AiResponseLogEvent(MultiLingualTextProvider.getText("speech.enabled")));
         }
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(PlayerSession.getInstance().getConfiguredPlayerName())));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.greeting(playerSession.getConfiguredPlayerName())));
     }
 
     @Override
@@ -184,6 +186,9 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     @Subscribe @Override public void onVoiceProcessEvent(VocalisationRequestEvent event) {
+        // Radio transmissions are always voiced by the Kokoro radio engine, even when Google is the
+        // main mouth; ignore them here so radio is not double-spoken.
+        if (event.isRadio()) return;
         canBeInterrupted.set(event.canBeInterrupted());
         log.debug("Received VoiceProcessEvent: text='{}', useRandom={}", event.getText(), event.useRandomVoice());
         String text = StringUtls.sanitizeTts(event.getText());
@@ -388,28 +393,34 @@ public class GoogleTTSImpl implements MouthInterface {
         int silenceFrames = (int) (format.getSampleRate() / 50);
         byte[] silenceBuffer = new byte[silenceFrames * format.getFrameSize()];
 
-        persistentLine.write(silenceBuffer, 0, silenceBuffer.length);
-        log.info("Spoke with voice {}: {}", voiceName, text);
-        long writeStartTime = System.currentTimeMillis();
-        for (int i = 0; i < audioData.length; i += bufferBytes) {
-            if (interruptRequested.get()) {
-                log.debug("Playback interrupted mid-stream: {}", text);
-                break;
+        // Bracket main-voice playback so the always-on Kokoro radio engine can duck behind it.
+        MainVoicePlaybackGate.begin();
+        try {
+            persistentLine.write(silenceBuffer, 0, silenceBuffer.length);
+            log.info("Spoke with voice {}: {}", voiceName, text);
+            long writeStartTime = System.currentTimeMillis();
+            for (int i = 0; i < audioData.length; i += bufferBytes) {
+                if (interruptRequested.get()) {
+                    log.debug("Playback interrupted mid-stream: {}", text);
+                    break;
+                }
+                int len = Math.min(bufferBytes, audioData.length - i);
+                persistentLine.write(audioData, i, len);
             }
-            int len = Math.min(bufferBytes, audioData.length - i);
-            persistentLine.write(audioData, i, len);
-        }
-        if (interruptRequested.get()) {
-            persistentLine.flush();
-            log.debug("Playback interrupted");
-        } else {
-            persistentLine.drain();
+            if (interruptRequested.get()) {
+                persistentLine.flush();
+                log.debug("Playback interrupted");
+            } else {
+                persistentLine.drain();
+            }
+            log.debug("Audio playback completed in {}ms", System.currentTimeMillis() - writeStartTime);
+        } finally {
+            MainVoicePlaybackGate.end();
         }
         publishCompletionEvent(originType);
         if (completionFuture != null) {
             completionFuture.complete(null);
         }
-        log.debug("Audio playback completed in {}ms", System.currentTimeMillis() - writeStartTime);
     }
 
     private void publishCompletionEvent(Class<? extends BaseVoxEvent> originType) {

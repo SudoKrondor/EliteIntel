@@ -49,6 +49,16 @@ public final class HudForms {
     }
 
     /**
+     * Creates a section-5.1 styled field label (upper-cased, compact) without placing it, for callers
+     * that need to position a label somewhere other than column 0 (which {@link #addLabel} forces).
+     */
+    public static JLabel fieldLabel(String text) {
+        JLabel label = new JLabel(text.toUpperCase());
+        AppTheme.styleFieldLabel(label);
+        return label;
+    }
+
+    /**
      * Adds a dim-aware field label (section 5.1) at column 0. {@code labelWidth} fixes the label-column
      * width for aligned single-column forms; pass {@code <= 0} to size the label to its text so the
      * field hugs it (tight two-column forms - avoids the large gap after short labels).
