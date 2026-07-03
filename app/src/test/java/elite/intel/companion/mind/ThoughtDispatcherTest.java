@@ -108,8 +108,8 @@ class ThoughtDispatcherTest {
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("navigation", memory.writes.get(0).content());
         MemoryEntry outcome = memory.writes.get(1);
-        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
-        assertEquals("command open_nav executed", outcome.content());
+        assertEquals(MemorySource.COMPANION, outcome.source(), "the reflex command is recorded as its call for pair replay");
+        assertEquals("open_nav", outcome.toolLink().toolName());
     }
 
     @Test
@@ -142,7 +142,7 @@ class ThoughtDispatcherTest {
         assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("combat mode", memory.writes.get(0).content(), "memory keeps the raw words, not the canonical form");
-        assertEquals("command switch_combat executed", memory.writes.get(1).content());
+        assertEquals("switch_combat", memory.writes.get(1).toolLink().toolName());
     }
 
     @Test
@@ -175,7 +175,7 @@ class ThoughtDispatcherTest {
         assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals(input, memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-        assertEquals("command stop_ship executed", memory.writes.get(1).content());
+        assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
     }
 
     @Test
@@ -210,7 +210,7 @@ class ThoughtDispatcherTest {
 
             assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
             assertEquals("Вега, all stop", memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-            assertEquals("command stop_ship executed", memory.writes.get(1).content());
+            assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
         } finally {
             SystemSession.getInstance().setLanguage(previousLanguage);
         }

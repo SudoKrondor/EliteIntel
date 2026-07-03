@@ -21,6 +21,9 @@ import java.util.Objects;
  * @param canonicalFact optional clean one-line restatement of a durable fact (from {@code classify_turn}), used
  *                      only as the searchable/candidate text; {@code null}/blank for chatter, questions, and MAX
  *                      facts. Never the ground truth - {@link #content} is.
+ * @param toolLink      optional tool-call linkage (a CALL the model made, or its RESULT) so the timeline can be
+ *                      replayed as a protocol-valid {@code assistant(tool_calls) -> tool(result)} pair (see
+ *                      {@link ToolLink}); {@code null} for ordinary commander/companion/event entries.
  */
 public record MemoryEntry(
         Instant timestamp,
@@ -29,31 +32,37 @@ public record MemoryEntry(
         String content,
         MemoryImportance importance,
         float[] embedding,
-        String canonicalFact
+        String canonicalFact,
+        ToolLink toolLink
 ) {
+    /** Convenience constructor with a canonical fact but no tool linkage (the common recorded-fact case). */
+    public MemoryEntry(Instant timestamp, ConversationTopic topic, MemorySource source, String content, MemoryImportance importance, float[] embedding, String canonicalFact) {
+        this(timestamp, topic, source, content, importance, embedding, canonicalFact, null);
+    }
+
     /** Convenience constructor with no meaning-vector or canonical fact yet (the gateway fills the vector on write). */
     public MemoryEntry(Instant timestamp, ConversationTopic topic, MemorySource source, String content, MemoryImportance importance, float[] embedding) {
-        this(timestamp, topic, source, content, importance, embedding, null);
+        this(timestamp, topic, source, content, importance, embedding, null, null);
     }
 
     /** Convenience constructor with no meaning-vector and no canonical fact. */
     public MemoryEntry(Instant timestamp, ConversationTopic topic, MemorySource source, String content, MemoryImportance importance) {
-        this(timestamp, topic, source, content, importance, null, null);
+        this(timestamp, topic, source, content, importance, null, null, null);
     }
 
     /** Convenience constructor defaulting to {@link MemoryImportance#NORMAL} - the level when none is assigned. */
     public MemoryEntry(Instant timestamp, ConversationTopic topic, MemorySource source, String content) {
-        this(timestamp, topic, source, content, MemoryImportance.NORMAL, null, null);
+        this(timestamp, topic, source, content, MemoryImportance.NORMAL, null, null, null);
     }
 
     /** Returns a copy carrying the given meaning-vector; used by the gateway to attach the embedding on write. */
     public MemoryEntry withEmbedding(float[] embedding) {
-        return new MemoryEntry(timestamp, topic, source, content, importance, embedding, canonicalFact);
+        return new MemoryEntry(timestamp, topic, source, content, importance, embedding, canonicalFact, toolLink);
     }
 
     /** Returns a copy stamped with the given time; used to refresh a fact's freshness when a re-statement is merged in. */
     public MemoryEntry withTimestamp(Instant timestamp) {
-        return new MemoryEntry(timestamp, topic, source, content, importance, embedding, canonicalFact);
+        return new MemoryEntry(timestamp, topic, source, content, importance, embedding, canonicalFact, toolLink);
     }
 
     /**
@@ -64,9 +73,10 @@ public record MemoryEntry(
         return canonicalFact != null && !canonicalFact.isBlank() ? canonicalFact : content;
     }
 
-    // Equality deliberately ignores the embedding and the canonicalFact: both are data derived from the entry
-    // (a vector, a cleaned restatement), not part of its identity, so two entries are equal exactly when their
-    // recorded fields match (the prior record semantics). This keeps content-based de-duplication unaffected.
+    // Equality deliberately ignores the embedding, the canonicalFact and the toolLink: all are data derived
+    // from or attached to the entry (a vector, a cleaned restatement, a replay linkage), not part of its
+    // identity, so two entries are equal exactly when their recorded fields match (the prior record semantics).
+    // This keeps content-based de-duplication unaffected.
     @Override
     public boolean equals(Object o) {
         if (this == o) {

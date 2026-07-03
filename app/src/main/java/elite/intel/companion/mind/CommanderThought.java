@@ -74,7 +74,7 @@ public final class CommanderThought extends Thought {
     /** Importance the consciousness set for this turn via classify_turn (default NORMAL); stamps the turn's entries. */
     private MemoryImportance turnImportance = MemoryImportance.NORMAL;
 
-    /** Whether classify_turn flagged this turn as a question; a question carries no new fact, so its input is not filed. */
+    /** Whether classify_turn flagged this turn as a question; a question is still recorded, but stamped LOW so it is not a fact candidate. */
     private boolean turnIsQuestion;
 
     /** The clean canonical fact the consciousness stated for this turn via classify_turn (empty when none). */
@@ -116,17 +116,14 @@ public final class CommanderThought extends Thought {
             List<LlmToolInvocation> invocations = result.toolInvocations();
 
             // Classify the turn (topic + importance + is_question) and record the input before any tool runs
-            // (§2.6). A question carries no new fact - the answer does - so a question turn's input is not filed;
-            // the turn is still marked recorded so it is not re-filed.
+            // (§2.6). The turn is marked recorded once filed so it is not re-filed on interrupt/error.
             Map<LlmToolInvocation, JsonObject> preExecuted = applyClassification(invocations);
-            // File the commander input as a durable fact only when it is neither a question nor a live-state
-            // query. A query phrase ("how much fuel", "what's in the hold") reads game state and is never a
-            // fact - filing it lets it later surface as a recall candidate. This is a stronger signal than
-            // classify_turn's is_question, which the small model sometimes mislabels. Commands/macros are NOT
-            // gated: many carry a fact worth keeping (add_mining_target "diamonds", set_reminder "Hutton").
-            if (!turnIsQuestion && !settlesAsLiveStateQuery(invocations)) {
-                recordCurrentInput();
-            }
+            // Record every commander turn so the dialogue history alternates user/assistant (needed for the
+            // model to follow the conversation). A question carries no durable fact, so it is stamped LOW in
+            // applyClassification and filtered out of fact-recall candidates (see MemoryFactCandidates); a
+            // statement keeps its rated importance. Commands/macros often carry a fact worth keeping
+            // (add_mining_target "diamonds", set_reminder "Hutton").
+            recordCurrentInput();
             inputRecorded = true;
 
             // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
@@ -178,11 +175,11 @@ public final class CommanderThought extends Thought {
     /**
      * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code classify_turn}, apply it now,
      * before the input is filed - read its importance into the turn's importance (so the recorded input and
-     * outcome are stamped with it), read its {@code is_question} flag (which decides whether the input is filed
-     * at all), and run its handle, which moves the global topic (so the input is tagged with the new topic).
-     * Returns the pre-executed result keyed by its invocation so the main loop does not run it twice. An absent
-     * or unknown importance leaves the turn at {@code NORMAL}; an absent flag leaves it a non-question; an
-     * absent {@code classify_turn} leaves the topic unchanged.
+     * outcome are stamped with it), read its {@code is_question} flag (a question is still recorded, but forced
+     * to LOW so it never becomes a fact candidate), and run its handle, which moves the global topic (so the
+     * input is tagged with the new topic). Returns the pre-executed result keyed by its invocation so the main
+     * loop does not run it twice. An absent or unknown importance leaves the turn at {@code NORMAL}; an absent
+     * flag leaves it a non-question; an absent {@code classify_turn} leaves the topic unchanged.
      */
     private Map<LlmToolInvocation, JsonObject> applyClassification(List<LlmToolInvocation> invocations) {
         Map<LlmToolInvocation, JsonObject> preExecuted = new IdentityHashMap<>();
@@ -195,6 +192,11 @@ public final class CommanderThought extends Thought {
                 }
                 turnIsQuestion = Boolean.parseBoolean(
                         JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
+                if (turnIsQuestion) {
+                    // A question carries no durable fact; stamp it LOW so its recorded input never surfaces as a
+                    // fact-recall candidate (the MemoryFactCandidates filter drops LOW commander lines).
+                    turnImportance = MemoryImportance.LOW;
+                }
                 turnCanonicalFact = JsonUtils.getAsStringOrEmpty(
                         inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT).strip();
                 preExecuted.put(inv, execute(inv));
@@ -230,13 +232,39 @@ public final class CommanderThought extends Thought {
                 recordCompanionSpeech(spokenTextOf(inv));
                 continue;
             }
-            // Game tool / system function: execute synchronously; speech and timeline memory depend on the type.
+            // Game tool / system function: acknowledge a command immediately (before it runs), then settle it.
             if (!preExecuted.containsKey(inv) && isCommand(inv)) {
                 voice(StringUtls.affirmative(), false);
             }
-            JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
-            recordOutcome(inv, result, tools);
+            settleGameCall(inv, tools, preExecuted);
         }
+    }
+
+    /**
+     * Settles one game tool-call: record the model's call (for pair replay), run it (reusing a pre-executed
+     * result when present), then record its outcome - all under one tool-call id linking the call to its result.
+     * A system function (classify_turn) gets no id and no CALL entry. Shared by the normal round and the
+     * dangerous-confirmation round so the recording sequence lives in one place.
+     */
+    private void settleGameCall(LlmToolInvocation inv, List<LlmToolDefinition> tools,
+                                Map<LlmToolInvocation, JsonObject> preExecuted) {
+        String toolCallId = gameToolCallId(inv);
+        if (toolCallId != null) {
+            recordCall(toolCallId, inv);
+        }
+        JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv, toolCallId);
+        recordOutcome(inv, result, tools, toolCallId);
+    }
+
+    /**
+     * A fresh tool-call id for a game tool (command/query/macro), so its recorded call pairs with its result on
+     * replay; {@code null} for a system function (classify_turn), which needs no pairing.
+     */
+    private String gameToolCallId(LlmToolInvocation inv) {
+        return switch (ctx.actionTypeResolver().resolve(inv.name())) {
+            case COMMAND, QUERY, MACRO -> newId();
+            default -> null;
+        };
     }
 
     /**
@@ -263,17 +291,7 @@ public final class CommanderThought extends Thought {
         return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.COMMAND;
     }
 
-    /** Whether the turn settles by running a live-state query, whose phrase reads game state and is not a fact. */
-    private boolean settlesAsLiveStateQuery(List<LlmToolInvocation> invocations) {
-        for (LlmToolInvocation inv : invocations) {
-            if (ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // recordOutcome / voice / description / rememberAction now live on the base Thought - shared with the
+    // recordOutcome / recordCall / recordToolResult / voice now live on the base Thought - shared with the
     // deterministic ReflexThought, which runs the same per-type outcome handling without an LLM round.
 
     /** Whether any tool-call in the validated set is a dangerous action requiring confirmation (§2.13). */
@@ -306,11 +324,10 @@ public final class CommanderThought extends Thought {
 
         MemoryProcessingState outcome = awaitConfirmationOutcome();
         if (outcome == MemoryProcessingState.CONFIRMED) {
-            // Execute the frozen set in LLM order. Each outcome is voiced and remembered by its action type,
-            // exactly like a normal turn (§recordOutcome).
+            // Execute the frozen set in LLM order. Each call is recorded then voiced and remembered by its
+            // action type, exactly like a normal turn (§settleGameCall / §recordOutcome).
             for (LlmToolInvocation inv : invocations) {
-                JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
-                recordOutcome(inv, result, tools);
+                settleGameCall(inv, tools, preExecuted);
             }
         }
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,

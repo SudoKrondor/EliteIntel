@@ -66,7 +66,7 @@ public final class MemoryFactCandidates {
             // Curated at capture and already relevance-gated by recall.
             case EVENT -> true;
             // The commander's own words: a stated fact even at NORMAL (docking-code callsign, field name, plan);
-            // only LOW idle banter drops out. Commander questions are never filed, so these are statements.
+            // LOW idle banter and questions (recorded at LOW so the dialogue history alternates) both drop out.
             case COMMANDER -> entry.importance().compareTo(MemoryImportance.NORMAL) >= 0;
             // The companion's own lines are never a durable fact (recorded at LOW; see recordCompanionSpeech) -
             // its acks/echoes/hedges are exactly the self-poisoning noise this filter exists to exclude.

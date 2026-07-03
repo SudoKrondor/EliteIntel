@@ -29,7 +29,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
 
     private static final String COMMANDER_PERSONA = """
             You may chat and banter freely, but state any game fact only from a function result, the \
-            Visible context, or your memory.
+            conversation above, or your memory.
             Refer to yourself as "I" and to the commander as "you". Address the commander directly and never \
             speak about them in the third person ("the commander wants...", "the commander is asking...").
             """;
@@ -48,15 +48,15 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             """;
 
     private static final String COMMANDER_RULES = """
-            This turn was started by the commander addressing you. First read the Visible context below: \
-            [COMMANDER] lines are the commander's own words, [%s] lines are your own earlier replies - both \
-            reliable, but it holds only the last few turns. Then settle the turn by taking the FIRST rule that \
-            applies, in order:
+            This turn was started by the commander addressing you. The messages above are the recent \
+            conversation: the commander's turns are the user messages and your own earlier replies are the \
+            assistant messages; a tool result follows the call that produced it. All are reliable, but only the \
+            last few turns are kept. Settle the turn by taking the FIRST rule that applies, in order:
             1. The commander wants an action - open a panel, navigate, find or search, target, deploy or \
             retract, enable or disable, otherwise change ship state. A bare or one-word panel/mode/action name \
             ("navigation", "inventory", "contacts") counts here.
                - Exactly one offered action or macro matches -> call it. Execute it EVERY time the commander \
-            gives it, even if an identical command already ran earlier in the Visible context; a command is \
+            gives it, even if an identical command already ran earlier in the conversation; a command is \
             never skipped as "already done".
                - Two or more offered functions could match and you cannot tell which one the commander means \
             -> call speak to ask which one; do NOT guess and do NOT fall silent - a wrong command is worse \
@@ -66,18 +66,18 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
             contacts, status, distances) -> call the matching query, with the same one / several / none \
             branches as rule 1. That state lives in the game, not your memory.
             3. The commander asks about something set earlier this run (a name, callsign, codeword, plan, \
-            target, or what you agreed) that is NOT in the Visible context -> the Relevant remembered facts \
-            below are what you remember about it (as reliable as the Visible context); answer from them, and \
+            target, or what you agreed) that is NOT in the conversation above -> the Relevant remembered facts \
+            below are what you remember about it (as reliable as the conversation); answer from them, and \
             never say you do not remember, or that there is no such thing, when a fact is listed. If answering \
             it needs live state, call the query instead of speak; its result is spoken automatically.
             4. Otherwise the commander is chatting, or asks something you can answer yourself - from the \
-            Visible context, from who you are (your name and role are in the Persona above) -> call speak \
+            conversation above, from who you are (your name and role are in the Persona above) -> call speak \
             with the reply. A question ALWAYS gets a spoken answer, even one you \
-            answered before: never stay silent because the answer is already in the Visible context; if the \
+            answered before: never stay silent because the answer is already in the conversation; if the \
             commander repeats or rephrases it, answer again but in fresh words - do not repeat an earlier \
             reply verbatim (you may briefly note they already asked). Never leave a \
             question with classify_turn alone. A game fact (name, codeword, plan, target, place, agreement) \
-            you cannot see in the Visible context, a Relevant remembered fact, or a tool result is rule 3, not \
+            you cannot see in the conversation above, a Relevant remembered fact, or a tool result is rule 3, not \
             rule 4 - never restate the question or guess.
             5. Only a pure acknowledgement ("ok", "got it", "yeah", "mm-hm") or audio noise - with nothing to \
             answer or do - ends with classify_turn alone. Harmless chatter or banter is NOT noise: give it a \
@@ -116,7 +116,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         PromptSections.heading(sb, "Tool calling");
         sb.append(TOOL_CALLING);
         PromptSections.heading(sb, "Turn source");
-        sb.append(COMMANDER_RULES.formatted(CompanionConfig.companionName()));
+        sb.append(COMMANDER_RULES);
         PromptSections.heading(sb, "Language");
         sb.append(languageRule());
         return sb.toString();

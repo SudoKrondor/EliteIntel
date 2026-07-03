@@ -112,8 +112,8 @@ class ThoughtTest {
                 "the withheld speak said nothing, so it leaves no narration_suppressed noise in memory");
         assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
         assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
-                "the immediate command ack is not recorded as a COMPANION line");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION && e.toolLink() == null),
+                "the immediate command ack is not recorded as a COMPANION speech line (the tool-call entry is a CALL link)");
     }
 
     @Test
@@ -133,31 +133,18 @@ class ThoughtTest {
         assertFalse(speech.requests.get(0).text().isBlank(), "the voice is the immediate command ack");
         assertFalse(execution.toolNames().contains(SpeakFunction.ID),
                 "the LLM's own speak is withheld once a command owns the spoken outcome");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
-                        && e.content().contains("command ship_status executed")),
-                "the command execution is recorded");
-    }
-
-    @Test
-    void commandMemoryDropsExamplePhrasesFromToolDescription() {
-        reducer.tools = List.of(new LlmToolDefinition("ship_status",
-                "Read ship status. Example phrases: ship status, status report.", "", List.of()));
-        execution.resultsByTool.put("ship_status", new JsonObject());
-        llm.scripted.add(ok(call("ship_status", new JsonObject())));
-
-        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
-
-        MemoryEntry outcome = memory.writes.stream()
-                .filter(e -> e.source() == MemorySource.TOOL_RESULT)
+        MemoryEntry recordedCall = memory.writes.stream()
+                .filter(e -> e.source() == MemorySource.COMPANION && e.toolLink() != null && e.toolLink().isCall())
                 .findFirst()
                 .orElseThrow();
-        assertEquals("command ship_status executed: Read ship status.", outcome.content());
+        assertEquals("ship_status", recordedCall.toolLink().toolName(),
+                "the command call is recorded for pair replay (its voiced result would be the RESULT half)");
     }
 
     @Test
-    void reflexSilentCommandRemembersExecutionWithoutAck() {
-        // Command handlers are self-narrating after the command-outcome revert: a blank command result is
-        // remembered, but the companion must not add a second affirmative voice.
+    void reflexSilentCommandRecordsItsCallWithoutAck() {
+        // Command handlers are self-narrating: a silent command records its call (for pair replay) but the
+        // companion adds no second affirmative voice. Its RESULT would arrive via the bridge; there is none here.
         Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
 
         assertTrue(llm.requests.isEmpty());
@@ -165,8 +152,10 @@ class ThoughtTest {
         assertTrue(speech.requests.isEmpty(), "silent self-narrating commands are not acknowledged by companion");
         assertEquals(2, memory.writes.size());
         assertEquals("close the panel", memory.writes.get(0).content());
-        assertEquals(MemorySource.TOOL_RESULT, memory.writes.get(1).source());
-        assertEquals("command close_panel executed", memory.writes.get(1).content());
+        MemoryEntry recordedCall = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, recordedCall.source());
+        assertTrue(recordedCall.toolLink() != null && recordedCall.toolLink().isCall());
+        assertEquals("close_panel", recordedCall.toolLink().toolName());
     }
 
     @Test
@@ -192,8 +181,11 @@ class ThoughtTest {
         assertEquals(List.of("two stars and a gas giant"), voxTexts,
                 "the query answer is published as an AiVoxResponseEvent for the bridge to voice and remember");
         assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION),
-                "recordOutcome no longer records the query answer; the bridge owns that");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION && e.toolLink() == null),
+                "recordOutcome records no companion speech for the query; its answer becomes the call's RESULT via the bridge");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && e.toolLink() != null && e.toolLink().isCall() && "scan_system".equals(e.toolLink().toolName())),
+                "the query call is recorded for pair replay");
     }
 
     @Test
@@ -228,17 +220,22 @@ class ThoughtTest {
     }
 
     @Test
-    void questionTurnInputIsNotFiledButTheAnswerIs() {
+    void questionTurnInputIsFiledAtLowSoItIsNotAFactCandidate() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
         llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
                 call(SpeakFunction.ID, text("forty percent"))));
 
         Thought.commander(Urgency.NORMAL, "how much fuel is left", ctx()).run();
 
-        // A question carries no new fact, so the commander's input is not filed; only the answer (which carries
-        // the fact) is recorded, as the companion's own words.
-        assertEquals(1, memory.writes.size(), "the question input is not filed, only the answer is");
-        MemoryEntry spoken = memory.writes.get(0);
+        // Every commander turn is recorded so the dialogue history alternates user/assistant. A question carries
+        // no durable fact, so its input is stamped LOW (forced, even though classify_turn said "normal") - kept
+        // out of fact-recall - while the answer that carries the fact is recorded as the companion's own words.
+        assertEquals(2, memory.writes.size(), "both the question input and the answer are recorded");
+        MemoryEntry input = memory.writes.get(0);
+        assertEquals(MemorySource.COMMANDER, input.source());
+        assertEquals("how much fuel is left", input.content());
+        assertEquals(MemoryImportance.LOW, input.importance(), "a question is forced LOW so it is not a fact candidate");
+        MemoryEntry spoken = memory.writes.get(1);
         assertEquals(MemorySource.COMPANION, spoken.source());
         assertEquals("forty percent", spoken.content());
     }

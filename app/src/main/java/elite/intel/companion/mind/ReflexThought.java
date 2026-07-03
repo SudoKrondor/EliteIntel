@@ -32,8 +32,12 @@ final class ReflexThought extends Thought {
     public void run() {
         recordCurrentInput(); // file the commander's words ([COMMANDER]) before the command runs (§2.6)
         LlmToolInvocation inv = new LlmToolInvocation(newId(), commandId, new JsonObject());
-        JsonObject result = execute(inv);
-        recordOutcome(inv, result, List.of()); // COMMAND outcome: handler text / ack + compact memory
+        // Record the call (for pair replay), execute it under its id (so the handler's narration is recorded as
+        // this call's tool result), then handle the COMMAND outcome exactly like the commander loop.
+        String toolCallId = newId();
+        recordCall(toolCallId, inv);
+        JsonObject result = execute(inv, toolCallId);
+        recordOutcome(inv, result, List.of(), toolCallId);
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */

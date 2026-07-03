@@ -220,13 +220,24 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     @Override
     public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
                                         java.util.concurrent.CompletableFuture<Void> spokenSignal) {
+        submitVerbatimNarration(text, topic, urgency, spokenSignal, null);
+    }
+
+    /**
+     * As above, but attributes the line to a model tool-call ({@code toolCallId}), so it is remembered as that
+     * call's tool result rather than free-standing companion speech (see {@code VerbatimNarrationThought}).
+     */
+    @Override
+    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
+                                        java.util.concurrent.CompletableFuture<Void> spokenSignal, String toolCallId) {
         if (text == null || text.isBlank()) {
             if (spokenSignal != null) {
                 spokenSignal.complete(null); // never strand a caller blocked on an empty line
             }
             return;
         }
-        enqueue(ThoughtSource.NARRATION, Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal), urgency);
+        enqueue(ThoughtSource.NARRATION,
+                Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId), urgency);
     }
 
     @Override

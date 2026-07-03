@@ -9,6 +9,7 @@ import elite.intel.ai.mouth.subscribers.events.NavigationVocalisationEvent;
 import elite.intel.ai.mouth.subscribers.events.RadarContactAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.mind.VerbatimNarrationSink;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
@@ -78,17 +79,22 @@ public final class CompanionAnnouncementBridge {
      * A command/query/macro's own narration. Voiced and remembered by the companion under the current global
      * topic. A synchronous emitter passes a completion future (it blocks until playback ends); it is completed
      * when the companion finishes speaking, so the caller waits exactly as on the legacy path.
+     * <p>
+     * The bus is synchronous, so this runs on the thread that published: {@link ActiveToolCall#current()}
+     * carries the tool-call id when this narration is the voiced outcome of a command/query being settled, so
+     * it is remembered as that call's tool result. It is {@code null} for narration published outside a
+     * tool-call, which is then remembered as free-standing companion speech.
      */
     @Subscribe
     public void onAiVoxResponse(AiVoxResponseEvent event) {
         dispatcher.submitVerbatimNarration(event.getText(), CompanionRuntime.state().globalTopic(),
-                Urgency.NORMAL, event.getCompletionFuture());
+                Urgency.NORMAL, event.getCompletionFuture(), ActiveToolCall.current());
     }
 
     /** A handler's mission-critical line: same bridge, but urgent so it preempts whatever is playing. */
     @Subscribe
     public void onMissionCritical(MissionCriticalAnnouncementEvent event) {
         dispatcher.submitVerbatimNarration(event.getText(), CompanionRuntime.state().globalTopic(),
-                Urgency.URGENT, null);
+                Urgency.URGENT, null, ActiveToolCall.current());
     }
 }

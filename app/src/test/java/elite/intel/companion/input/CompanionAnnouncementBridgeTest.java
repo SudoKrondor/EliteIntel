@@ -3,6 +3,7 @@ package elite.intel.companion.input;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.VerbatimNarrationSink;
 import elite.intel.companion.model.ConversationTopic;
@@ -36,16 +37,21 @@ class CompanionAnnouncementBridgeTest {
         Database.init().close(); // init() returns an open pooled handle; close it so the pool isn't starved
     }
 
-    private record Submission(String text, ConversationTopic topic, Urgency urgency, CompletableFuture<Void> signal) {}
+    private record Submission(String text, ConversationTopic topic, Urgency urgency, CompletableFuture<Void> signal,
+                              String toolCallId) {}
 
     private final List<Submission> submissions = new ArrayList<>();
     private final VerbatimNarrationSink sink = new VerbatimNarrationSink() {
         @Override public void submitVerbatimNarration(String text, ConversationTopic topic) {
-            submissions.add(new Submission(text, topic, null, null));
+            submissions.add(new Submission(text, topic, null, null, null));
         }
         @Override public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
                                                       CompletableFuture<Void> signal) {
-            submissions.add(new Submission(text, topic, urgency, signal));
+            submissions.add(new Submission(text, topic, urgency, signal, null));
+        }
+        @Override public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
+                                                      CompletableFuture<Void> signal, String toolCallId) {
+            submissions.add(new Submission(text, topic, urgency, signal, toolCallId));
         }
     };
 
@@ -86,5 +92,18 @@ class CompanionAnnouncementBridgeTest {
         assertEquals(Urgency.NORMAL, s.urgency());
         assertSame(done, s.signal(),
                 "the synchronous emitter's completion future is forwarded so it waits for playback");
+        assertNull(s.toolCallId(), "no tool-call active on this thread -> recorded as free-standing speech");
+    }
+
+    @Test
+    void aiVoxNarrationInheritsTheActiveToolCallId() {
+        // The synchronous bus runs the subscriber on the publishing thread, so the tool-call being settled is
+        // visible via ActiveToolCall - and is forwarded so the narration is recorded as that call's tool result.
+        CompanionAnnouncementBridge bridge = new CompanionAnnouncementBridge(sink);
+        ActiveToolCall.runWith("call-7",
+                () -> bridge.onAiVoxResponse(new AiVoxResponseEvent("fuel at 40 percent")));
+
+        assertEquals(1, submissions.size());
+        assertEquals("call-7", submissions.get(0).toolCallId());
     }
 }

@@ -62,10 +62,10 @@ public final class ClassifyTurnFunction implements SystemFunction {
                                 + "down, save, log, or not forget, kept word-for-word. Pick the highest that fits.",
                         List.of(), null, MemoryImportance.ids()),
                 new ActionParameterSpec(PARAM_TOPIC, "string", true,
-                        // Stickiness (keep vs. move the topic) is owned by the prompt's Topics section; not
-                        // restated here to avoid duplicating the rule in two places.
-                        "The topic this turn belongs to; the valid ids and how to keep or move the topic are "
-                                + "in the Topics section.",
+                        // How to choose the topic (classify from the turn's content, continuations inherit from
+                        // the conversation) is owned by the prompt's Topics section; not restated here.
+                        "The topic this turn belongs to; the valid ids and how to choose it are in the "
+                                + "Topics section.",
                         List.of(), null, ConversationTopic.selectableIds()),
                 new ActionParameterSpec(PARAM_IS_QUESTION, "boolean", true,
                         "Required. True if the commander expects an answer, explanation, decision, or memory recall. "
