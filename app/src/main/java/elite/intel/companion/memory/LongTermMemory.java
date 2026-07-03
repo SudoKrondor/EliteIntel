@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * (replaced atomically by {@code MidTermToLongTermConsolidator}), and an archive of pinned {@code MAX}-importance
  * facts carried verbatim - never summarized, never dropped (the commander explicitly asked to remember them).
  * Neither is force-fed into every prompt: both the summary and the archive are surfaced through
- * {@code search_in_memory} on demand, so they can grow without bloating the context.
+ * {@code memory_search} on demand, so they can grow without bloating the context.
  * Package-private internal of {@link SessionMemoryGateway}.
  */
 class LongTermMemory {

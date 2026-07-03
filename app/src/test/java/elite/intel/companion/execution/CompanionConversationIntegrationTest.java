@@ -97,7 +97,7 @@ class CompanionConversationIntegrationTest {
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));
         // The stated fact was injected as a remembered-fact candidate before the recall turn (no lookup round).
         String lastRequestBody = transport.bodies.get(transport.bodies.size() - 1);
-        assertTrue(lastRequestBody.contains("Relevant remembered facts"), "the remembered fact must be injected before the turn");
+        assertTrue(lastRequestBody.contains("<facts>"), "the remembered fact must be injected before the turn");
         assertTrue(lastRequestBody.contains("hull is solid"), "the remembered fact must be available to answer");
     }
 

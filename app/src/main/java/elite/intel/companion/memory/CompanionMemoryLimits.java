@@ -22,7 +22,7 @@ public final class CompanionMemoryLimits {
 
     // --- long-term MAX archive ---
     /**
-     * Max pinned-MAX archive entries a single {@code search_in_memory} may contribute. The archive is
+     * Max pinned-MAX archive entries a single {@code memory_search} may contribute. The archive is
      * unbounded (every explicit "remember this" is kept verbatim), so this caps its share of a recall result
      * to keep an accumulating archive from crowding out more relevant short/mid-term matches.
      */

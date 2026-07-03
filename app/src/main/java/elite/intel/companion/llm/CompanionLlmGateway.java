@@ -7,6 +7,7 @@ import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.tools.ClassifyTurnFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +24,12 @@ import java.util.stream.Collectors;
  * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does a
  * single repair/retry before reporting {@link LlmResult.Status#INVALID_RESPONSE}. A response is valid
  * only when it is one or more tool-calls whose names were actually offered this turn.
+ * <p>
+ * It also enforces the classify-first protocol: when {@code classify_turn} is among the offered tools (a
+ * classifying turn - narration never offers it), a response without a {@code classify_turn} call draws the
+ * same single repair/retry with a targeted nudge. This omission is not fatal: if the retry still lacks it,
+ * the structurally valid response is returned anyway (the turn settles; only the memory stamping degrades
+ * to defaults), never downgraded to INVALID.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future.
@@ -63,16 +70,34 @@ public final class CompanionLlmGateway implements LlmGateway {
         return CompletableFuture.supplyAsync(() -> adapter.parseText(transport.send(adapter.buildRequestBody(request))), executor);
     }
 
+    /**
+     * What is wrong with a parsed response; drives the repair nudge and the fallback. NONE means no defect;
+     * MALFORMED (not offered tool-calls at all) is more severe than MISSING_CLASSIFY (usable but unclassified).
+     */
+    private enum Defect { NONE, MALFORMED, MISSING_CLASSIFY }
+
     private LlmResult process(LlmRequest request) {
         LlmResult first = attempt(request);
-        if (isUsable(first, request)) {
+        Defect firstDefect = defectOf(first, request);
+        if (firstDefect == Defect.NONE) {
             return first;
         }
-        // Single repair/retry: nudge the model that only a function call is acceptable.
-        log.warn("LLM response not usable (status={}, tool-calls={}); retrying once",
-                first.status(), first.toolInvocations().size());
-        LlmResult second = attempt(repair(request));
-        if (isUsable(second, request)) {
+        // Single repair/retry with a defect-targeted nudge.
+        log.warn("LLM response not usable ({}, status={}, tool-calls={}); retrying once",
+                firstDefect, first.status(), first.toolInvocations().size());
+        LlmResult second = attempt(repair(request, firstDefect));
+        Defect secondDefect = defectOf(second, request);
+        if (secondDefect == Defect.NONE) {
+            return second;
+        }
+        // Graceful degradation: a response that only lacks classify_turn still settles the turn for the
+        // commander (memory stamping falls back to defaults) - better than a service-phrase INVALID.
+        if (firstDefect == Defect.MISSING_CLASSIFY) {
+            log.warn("classify_turn still missing after retry; accepting the response without it");
+            return first;
+        }
+        if (secondDefect == Defect.MISSING_CLASSIFY) {
+            log.warn("classify_turn missing in the repaired response; accepting it without classification");
             return second;
         }
         log.warn("LLM response still invalid after retry; returning INVALID_RESPONSE");
@@ -85,23 +110,38 @@ public final class CompanionLlmGateway implements LlmGateway {
         return adapter.parse(response);
     }
 
-    /** Valid = OK status, at least one tool-call, and every called tool was offered this turn. */
-    private boolean isUsable(LlmResult result, LlmRequest request) {
+    /**
+     * Classifies a parsed response: {@link Defect#MALFORMED} when it is not one-or-more offered tool-calls;
+     * {@link Defect#MISSING_CLASSIFY} when the turn offered {@code classify_turn} (a classifying turn) but the
+     * response does not call it; {@link Defect#NONE} otherwise. A bare {@code classify_turn} alone is NONE here -
+     * whether that settles the turn is the thought's business, not the protocol's.
+     */
+    private Defect defectOf(LlmResult result, LlmRequest request) {
         if (!result.isValid() || result.toolInvocations().isEmpty()) {
-            return false;
+            return Defect.MALFORMED;
         }
         Set<String> offered = request.tools().stream()
                 .map(LlmToolDefinition::name)
                 .collect(Collectors.toSet());
-        return result.toolInvocations().stream()
+        boolean allOffered = result.toolInvocations().stream()
                 .map(LlmToolInvocation::name)
                 .allMatch(offered::contains);
+        if (!allOffered) {
+            return Defect.MALFORMED;
+        }
+        boolean classifyRequired = offered.contains(ClassifyTurnFunction.ID);
+        boolean classifyCalled = result.toolInvocations().stream()
+                .anyMatch(inv -> ClassifyTurnFunction.ID.equals(inv.name()));
+        return classifyRequired && !classifyCalled ? Defect.MISSING_CLASSIFY : Defect.NONE;
     }
 
-    private LlmRequest repair(LlmRequest request) {
+    private LlmRequest repair(LlmRequest request, Defect defect) {
+        String nudge = defect == Defect.MISSING_CLASSIFY
+                ? "Your previous response omitted the mandatory 'classify_turn' call. Resend it: call"
+                + " 'classify_turn' first, then the same settling function call."
+                : "Your previous response was not a valid function call. Respond only by calling one of the provided functions.";
         List<LlmMessage> messages = new ArrayList<>(request.messages());
-        messages.add(LlmMessage.of(LlmMessageRole.USER,
-                "Your previous response was not a valid function call. Respond only by calling one of the provided functions."));
+        messages.add(LlmMessage.of(LlmMessageRole.USER, nudge));
         return new LlmRequest(request.requestId(), messages, request.tools(), request.profile());
     }
 }

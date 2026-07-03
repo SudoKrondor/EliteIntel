@@ -16,6 +16,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
+import elite.intel.companion.prompt.MemoryFactCandidates;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -222,7 +223,7 @@ public abstract class Thought {
      * Pre-turn clean memory answer facts to inline in the prompt (see {@code MemoryFactCandidates}). Default
      * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
      */
-    protected List<String> memoryCandidates() {
+    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
         return List.of();
     }
 

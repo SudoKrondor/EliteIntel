@@ -48,7 +48,7 @@ class MemoryEvalTest {
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-memory-eval-trace.txt", Language.RU);
 
     // 10 ASK turns are interleaved right after their fact, so the fact is still in the inlined short-term
-    // timeline when asked - scored as hot (in-conversation) recall that needs no search_in_memory.
+    // timeline when asked - scored as hot (in-conversation) recall that needs no memory_search.
     private final List<Turn> script = List.of(
             say("значит так, в этот рейс у нас тихая работа по утилю за Дециатом, держим всё мимо журналов"),
             say("запиши: код стыковки на станции — Сьерра Девять Четыре, понадобится на подходе"),
@@ -157,7 +157,7 @@ class MemoryEvalTest {
 
     /** System-function ids; any other executed tool is a real game query/action. */
     private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "classify_turn", "search_in_memory");
+            "speak", "classify_turn", "memory_search");
 
     @BeforeAll
     void boot() throws Exception {

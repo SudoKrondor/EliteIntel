@@ -134,7 +134,7 @@ public final class CompanionEvalHarness {
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, search_in_memory,
+        // executed (they would press keys); QUERIES and system functions (speak, memory_search,
         // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
         // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
@@ -335,7 +335,7 @@ public final class CompanionEvalHarness {
 
     /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
     public boolean recalled() {
-        return lastRequestBody != null && lastRequestBody.contains("## Relevant remembered facts");
+        return lastRequestBody != null && lastRequestBody.contains("<facts>");
     }
 
     /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
@@ -355,17 +355,19 @@ public final class CompanionEvalHarness {
         if (lastRequestBody == null) {
             return List.of();
         }
-        int start = lastRequestBody.indexOf("## Relevant remembered facts");
+        int start = lastRequestBody.indexOf("<facts>");
         if (start < 0) {
             return List.of();
         }
-        int end = lastRequestBody.indexOf("These are what you remember", start);
+        int end = lastRequestBody.indexOf("</facts>", start);
         String block = lastRequestBody.substring(start, end < 0 ? lastRequestBody.length() : end);
         List<String> facts = new ArrayList<>();
-        for (String part : block.split("\\\\n")) { // request body is JSON: newlines are the escaped literal \n
-            String line = part.strip();
-            if (line.startsWith("- ")) {
-                facts.add(line.substring(2).strip());
+        // Facts are XML elements <fact ... >text</fact>; pull the text between each element's tags.
+        for (String part : block.split("<fact")) {
+            int gt = part.indexOf('>');
+            int close = part.indexOf("</fact>");
+            if (gt >= 0 && close > gt) {
+                facts.add(part.substring(gt + 1, close).strip());
             }
         }
         return facts;

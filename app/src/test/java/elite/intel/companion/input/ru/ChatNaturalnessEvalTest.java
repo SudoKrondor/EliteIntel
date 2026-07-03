@@ -114,7 +114,7 @@ class ChatNaturalnessEvalTest {
 
             // History is now native user/assistant messages, not a "## Visible context" block: treat the whole
             // request body minus the injected candidates block as the visible conversation.
-            String candidatesBlock = section(body, "## Relevant remembered facts", "These are what you remember");
+            String candidatesBlock = section(body, "<facts>", "</facts>");
             String visible = body.toLowerCase(Locale.ROOT).replace(candidatesBlock, "");
             boolean echoInVisible = echo && visible.contains(echoedOf);
             boolean echoInCandidates = echo && candidates.stream()

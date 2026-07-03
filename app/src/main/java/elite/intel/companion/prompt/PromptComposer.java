@@ -55,7 +55,7 @@ public final class PromptComposer {
      * @param selectedTools    Reducer-selected game/query tools
      * @param systemTools      system function tools for this source
      * @param shortTerm        short-term memory timeline replayed as role-based history
-     * @param memoryCandidates pre-selected clean answer facts to inline as "Relevant remembered facts" (may be empty)
+     * @param memoryCandidates pre-selected clean answer facts (text + provenance) to inline as a {@code <facts>} block (may be empty)
      */
     public ComposedPrompt compose(
             ThoughtSource source,
@@ -63,7 +63,7 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<String> memoryCandidates
+            List<MemoryFactCandidates.Fact> memoryCandidates
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
@@ -83,7 +83,7 @@ public final class PromptComposer {
             ThoughtSource source, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<String> memoryCandidates) {
+            List<MemoryFactCandidates.Fact> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
         messages.addAll(coalesceHistory(buildHistoryMessages(shortTerm)));
@@ -151,7 +151,7 @@ public final class PromptComposer {
      * Per-turn conversation history (kept out of the cached prefix): the short-term timeline replayed as native
      * role-alternating messages instead of one flattened block, so the model reads the dialogue in the role
      * structure it was aligned on. Durable facts that aged out of short-term are not replayed here - the
-     * relevant ones are surfaced as "Relevant remembered facts" (see {@link #buildCandidatesBlock}).
+     * relevant ones are surfaced as an inline {@code <facts>} block (see {@link #buildCandidatesBlock}).
      * <p>
      * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant}; a recorded
      * model tool-call ({@code COMPANION} carrying a {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)}
@@ -240,16 +240,22 @@ public final class PromptComposer {
     }
 
     /**
-     * Per-turn "Relevant remembered facts" block: the pre-selected clean answer facts, one per line, with a
-     * single usage rule. Kept out of the cached prefix (it changes every turn). Only built when non-empty.
+     * Per-turn remembered-fact context: data only - a single {@code <facts>} XML element whose children carry an
+     * {@code id} and a {@code source} attribute (provenance: {@code "event"} past occurrence / {@code "commander"}
+     * told to you). No heading and no usage instruction: the XML self-delineates the content, and how to use these
+     * facts is owned once by the Function-calling rules, not duplicated per turn. XML with attributes tested best
+     * for delineating provided context (OpenAI long-context guidance). Kept out of the cached prefix (it changes
+     * every turn); only built when non-empty.
      */
-    private String buildCandidatesBlock(List<String> memoryCandidates) {
+    private String buildCandidatesBlock(List<MemoryFactCandidates.Fact> memoryCandidates) {
         StringBuilder sb = new StringBuilder();
-        PromptSections.heading(sb, "Relevant remembered facts");
-        for (String fact : memoryCandidates) {
-            sb.append("- ").append(fact).append('\n');
+        sb.append("<facts>\n");
+        int id = 1;
+        for (MemoryFactCandidates.Fact fact : memoryCandidates) {
+            sb.append("  <fact id=\"").append(id++).append("\" source=\"").append(fact.source()).append("\">")
+                    .append(fact.text()).append("</fact>\n");
         }
-        sb.append("These are what you remember about the current input; answer the commander's question from them.\n");
+        sb.append("</facts>\n");
         return sb.toString();
     }
 

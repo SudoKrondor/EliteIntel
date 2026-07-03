@@ -135,13 +135,14 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             return;
         }
         Urgency urgency = urgencyPolicy.forCommander(input);
-        String matchInput = inputNormalizer.apply(input);
-        // Reflex path only: ignore a leading vocative address by the companion's own name ("Vega, all stop" ->
-        // "all stop") before canonicalizing, so a name-addressed short command still takes the deterministic
-        // fast-path. Stripped before normalization so a synonym phrase ("Vega, combat mode") still canonicalizes.
-        // The LLM path keeps the name (it routes fine with it), and memory keeps the raw words either way.
-        String reflexInput = inputNormalizer.apply(stripLeadingCompanionName(input));
-        Optional<String> reflexCommand = reflexResolver.resolve(reflexInput);
+        // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
+        // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
+        // reflex fast-path and the LLM path (the reducer and the prompt's current-input). The name carries no
+        // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
+        // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
+        // recorded from `input`, never from this normalized match text.
+        String matchInput = inputNormalizer.apply(stripLeadingCompanionName(input));
+        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
@@ -149,12 +150,13 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Removes a single leading vocative use of the companion's name (e.g. "Vega, ..." or, as Russian STT
-     * returns it, "Вега, ...") from the input, used for reflex matching only. Any recognized name form
+     * Removes a single leading vocative use of the companion's name (e.g. "Vega, ..." or, as STT usually returns
+     * it without a comma, "Vega ..." / "Вега ...") from the input, used for both the reflex fast-path and the LLM
+     * match text (reducer + prompt current-input). Any recognized name form
      * ({@link CompanionConfig#companionNameForms()}: the canonical name plus transliterations) is matched as a
-     * whole leading word - a Unicode-aware {@code \b}, so a Cyrillic form matches too - so it is an address,
-     * not part of a longer word; any following separators/spaces are consumed. If only the name remains (a bare
-     * address), the original input is returned unchanged so it falls through to the LLM path.
+     * whole leading word - a Unicode-aware {@code \b}, so a Cyrillic form matches too - so it is an address, not
+     * part of a longer word; any following separators/spaces are consumed (all optional, so a comma-less STT
+     * address still strips). If only the name remains (a bare address), the original input is returned unchanged.
      */
     private static String stripLeadingCompanionName(String input) {
         String alternation = CompanionConfig.companionNameForms().stream()

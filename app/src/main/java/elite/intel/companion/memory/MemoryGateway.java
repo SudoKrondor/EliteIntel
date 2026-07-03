@@ -30,7 +30,7 @@ public interface MemoryGateway {
     List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit);
 
     /**
-     * Unified recall (the {@code search_in_memory} system function): searches all stored memory - the
+     * Unified recall (the {@code memory_search} system function): searches all stored memory - the
      * short-term timeline plus mid-term topic memory across every topic - for entries whose content matches the
      * query, and returns the matches ranked by importance, then recency, at most {@code limit}.
      *

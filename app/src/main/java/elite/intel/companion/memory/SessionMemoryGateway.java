@@ -17,7 +17,7 @@ import java.util.function.Supplier;
 /**
  * Default {@link MemoryGateway} implementation. Composes the session memory areas
  * (short-term, mid-term topic, long-term summary), owns the eviction transitions between them, and embeds and
- * de-duplicates entries on write. The recall ranking ({@code search_in_memory}) lives in {@link MemorySearch};
+ * de-duplicates entries on write. The recall ranking ({@code memory_search}) lives in {@link MemorySearch};
  * the internal stores are package-private; nothing outside this package touches them.
  * <p>
  * Session-only: nothing is persisted to disk.
@@ -109,7 +109,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
             // LOW entries (idle banter and the companion's own speech) exist only for hot-timeline continuity;
             // they are dropped when they age out of short-term, never promoted to mid-term.
             if (evicted.importance() != MemoryImportance.LOW) {
-                midTerm.add(evicted);
+                // Collapse against mid-term duplicates at the hand-off: the hot window is verbatim, so two
+                // near-identical copies can ride it together - merging here keeps mid-term (and thus the
+                // <facts> candidates) free of duplicates instead of waiting for a future matching write.
+                midTerm.add(mergeDuplicate(evicted));
             }
         }
         // Per-topic mid-term overflow is handed to the consolidator (long-term summary lives behind the LLM).
@@ -184,11 +187,13 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     /**
-     * Collapses every entry already in short-term/mid-term that means the same thing as {@code incoming}
+     * Collapses every entry already in <em>mid-term</em> that means the same thing as {@code incoming}
      * (cosine &ge; {@link CompanionConfig#semanticDedupFloor()}) into a single surviving copy: the most
      * important wording (the newest when importance ties), stamped with the newest mention so a re-confirmed
-     * fact is fresh again. The superseded copies are removed from their stores; the survivor is returned to be
-     * stored as the one short-term copy. A no-op when {@code incoming} has no vector (semantic search off).
+     * fact is fresh again. The superseded copies are removed from their store; the survivor is returned to be
+     * stored by the caller - as the one short-term copy on a write, or as the one mid-term copy at the
+     * eviction hand-off. Short-term itself is never scanned - the hot window is kept verbatim
+     * (see {@link ShortTermMemory#add}). A no-op when {@code incoming} has no vector (semantic search off).
      */
     private MemoryEntry mergeDuplicate(MemoryEntry incoming) {
         // An event is a discrete occurrence, not a restatement of a fact: "docked at A" and "docked at B" are
@@ -216,10 +221,11 @@ public final class SessionMemoryGateway implements MemoryGateway {
         return merged ? keep.withTimestamp(freshest) : incoming;
     }
 
-    /** Every stored short-term/mid-term entry that is a duplicate of {@code probe} (the MAX archive is left intact). */
+    /** Every stored mid-term entry that is a duplicate of {@code probe} (short-term is kept verbatim; the MAX archive is left intact). */
     private List<MemoryEntry> duplicatesOf(MemoryEntry probe, double floor) {
         List<MemoryEntry> out = new ArrayList<>();
-        collectDuplicates(out, shortTerm.timeline(), probe, floor);
+        // Short-term is intentionally not scanned: the hot window keeps every entry, including repeated
+        // boundary markers, so only durable mid-term facts are collapsed by meaning.
         collectDuplicates(out, midTerm.allEntries(), probe, floor);
         return out;
     }

@@ -26,7 +26,10 @@ class MemoryFactCandidatesTest {
                 entry(MemorySource.SYSTEM, MemoryImportance.NORMAL, "long-term summary", null)));
 
         // Keep COMMANDER at NORMAL+ and EVENT; drop COMMANDER LOW banter, COMPANION acks, TOOL_RESULT, SYSTEM.
-        assertEquals(List.of("поле зовётся бедлам", "прибыли в систему вольф"),
+        // Each surviving fact carries its provenance: a commander statement vs a game event.
+        assertEquals(
+                List.of(new MemoryFactCandidates.Fact("поле зовётся бедлам", "commander"),
+                        new MemoryFactCandidates.Fact("прибыли в систему вольф", "event")),
                 MemoryFactCandidates.forInput(memory, "что помним"));
     }
 
@@ -36,7 +39,8 @@ class MemoryFactCandidatesTest {
                 entry(MemorySource.COMMANDER, MemoryImportance.HIGH,
                         "и запиши: покупатель утиля — халлоран", "покупатель утиля — халлоран")));
 
-        assertEquals(List.of("покупатель утиля — халлоран"), MemoryFactCandidates.forInput(memory, "утиль"));
+        assertEquals(List.of(new MemoryFactCandidates.Fact("покупатель утиля — халлоран", "commander")),
+                MemoryFactCandidates.forInput(memory, "утиль"));
     }
 
     @Test

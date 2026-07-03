@@ -25,41 +25,41 @@ class CompanionSystemPromptPartTest {
     }
 
     @Test
-    void alwaysCarriesPersonaAndToolCalling() {
+    void alwaysCarriesPersonaAndFunctionCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("## Persona"));
-        assertTrue(text.contains("the commander's right hand"));
-        assertTrue(text.contains("## Tool calling"));
+        assertTrue(text.contains("the commander's female ship companion"));
+        assertTrue(text.contains("## Function calling"));
         // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
         assertFalse(text.contains("## Safety"));
     }
 
     @Test
-    void carriesGroundingNoFitAndPoliteClosingRules() {
+    void carriesGroundingAndSettlingRules() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
-        assertTrue(text.contains("never invent or guess facts"));
-        // No-fit: ask or decline via speak instead of forcing (or pretending to perform) an unrelated function.
-        assertTrue(text.contains("say with speak that you cannot"));
-        // Polite closing: do not promise to check and then go silent.
-        assertTrue(text.contains("fall silent"));
+        assertTrue(text.contains("Never invent game facts"));
+        // Every turn must settle - never stop after the metadata-only classify_turn.
+        assertTrue(text.contains("Never stop after 'classify_turn'"));
+        // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
+        assertTrue(text.contains("<no_reply/> or <cut_off/>"));
     }
 
     @Test
-    void addressesTheCommanderFromSharedFormsNotAHardcodedCommander() {
+    void addressesTheCommanderDirectlyInSecondPerson() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        // Reuses the legacy "choose one at random" address instruction (PromptFactory.appendContext)...
-        assertTrue(text.contains("When addressing the commander, choose one at random each time from:"));
-        // ...and the old hardcoded persona address is gone.
-        assertFalse(text.contains("Refer to the commander as \"Commander\""));
+        // Address the commander directly as "you", never narrate them in the third person.
+        assertTrue(text.contains("Use \"I\" for yourself and \"you\" for the commander"));
+        assertTrue(text.contains("never say \"the commander wants...\""));
     }
 
     @Test
-    void commanderBranchAllowsActionsAndExcludesEventRule() {
+    void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("## Turn source"));
-        assertTrue(text.contains("started by the commander"));
-        assertFalse(text.contains("started by a game event"));
+        assertTrue(text.contains("## Function calling"));
+        assertTrue(text.contains("that settles the turn"));
+        // The commander branch is not the narration report-only task.
+        assertFalse(text.contains("## Narration"));
     }
 
     @Test
@@ -67,11 +67,11 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.NARRATION);
         assertTrue(text.contains("## Persona"));
         assertTrue(text.contains("## Narration"));
-        assertTrue(text.contains("report what"));
-        // The lean narration prompt drops the commander-only sections and memory/query guidance.
-        assertFalse(text.contains("## Turn source"));
+        assertTrue(text.contains("must be reported to the commander"));
+        // The lean narration prompt drops the commander-only function-calling section and memory/query guidance.
+        assertFalse(text.contains("## Function calling"));
         assertFalse(text.contains("## Safety"));
-        assertFalse(text.contains("search_in_memory"));
+        assertFalse(text.contains("memory_search"));
         assertTrue(text.contains("## Language"));
     }
 

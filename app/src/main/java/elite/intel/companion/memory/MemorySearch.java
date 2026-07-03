@@ -21,7 +21,7 @@ import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
 /**
- * Read-only recall over the companion's memory areas (the {@code search_in_memory} ranking). Scores each
+ * Read-only recall over the companion's memory areas (the {@code memory_search} ranking). Scores each
  * candidate by word-overlap and by meaning (cosine of the query vector to the entry's vector), collapses
  * near-duplicate paraphrases into one, fuses the two signals by reciprocal rank, and returns the top entries as
  * labelled text. Pure: it never mutates the stores. Split out of {@link SessionMemoryGateway} so the gateway

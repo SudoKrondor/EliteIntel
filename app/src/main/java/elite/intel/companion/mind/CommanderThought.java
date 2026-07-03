@@ -3,7 +3,6 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
@@ -63,6 +62,16 @@ public final class CommanderThought extends Thought {
     private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
     /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt (§2.13). */
     private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
+    /**
+     * System turn-boundary marker recorded when a commander turn produced no reply (the model chose not to
+     * answer). Explained to the model literally in {@code CompanionSystemPromptPart.FUNCTION_CALLING} - keep in sync.
+     */
+    private static final String NO_ANSWER_NOTE = "<no_reply/>";
+    /**
+     * System turn-boundary marker recorded when a commander turn was interrupted before it could reply.
+     * Explained to the model literally in {@code CompanionSystemPromptPart.FUNCTION_CALLING} - keep in sync.
+     */
+    private static final String INTERRUPTED_NOTE = "<cut_off/>";
 
     /**
      * Turn-scoped narration accounting. Set once any game command/query runs this turn; from then on the
@@ -126,6 +135,13 @@ public final class CommanderThought extends Thought {
             recordCurrentInput();
             inputRecorded = true;
 
+            // An interrupt landing after the input was filed but before the turn replies is a cut-off turn:
+            // route it through safeFlush so it drops a <cut_off/> boundary marker instead of ending silently.
+            if (interrupted) {
+                safeFlush(inputRecorded);
+                return;
+            }
+
             // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
             if (hasDangerousAction(invocations)) {
                 handleDangerousConfirmation(tools, invocations, preExecuted);
@@ -160,9 +176,9 @@ public final class CommanderThought extends Thought {
         return ctx.systemFunctionProvider().systemFunctions(source());
     }
 
-    /** Pre-turn clean answer facts for this commander input, inlined in the prompt as "Relevant remembered facts". */
+    /** Pre-turn clean answer facts for this commander input, inlined in the prompt as a {@code <facts>} block. */
     @Override
-    protected List<String> memoryCandidates() {
+    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
         return MemoryFactCandidates.forInput(ctx.memoryGateway(), matchInput);
     }
 
@@ -238,6 +254,32 @@ public final class CommanderThought extends Thought {
             }
             settleGameCall(inv, tools, preExecuted);
         }
+        // No game action owned the outcome and no non-blank speak was voiced (bare classify_turn, or an empty
+        // speak): the turn drew no reply - record that so the timeline keeps a distinct turn boundary here.
+        if (!suppressSpeak && !spokeToCommander(invocations)) {
+            recordSystemNote(NO_ANSWER_NOTE);
+        }
+    }
+
+    /** Whether the round emitted a non-blank {@code speak} - i.e. the companion actually said something this turn. */
+    private static boolean spokeToCommander(List<LlmToolInvocation> invocations) {
+        return invocations.stream()
+                .anyMatch(inv -> SpeakFunction.ID.equals(inv.name()) && !spokenTextOf(inv).isBlank());
+    }
+
+    /**
+     * Records a turn-boundary marker ({@link #NO_ANSWER_NOTE} / {@link #INTERRUPTED_NOTE}) as a {@code SYSTEM}
+     * short-term entry. It keeps a distinct boundary between two commander turns instead of leaving them
+     * adjacent to be coalesced into one blurred {@code user} message, which erodes anaphora resolution across
+     * turns (an unanswered "why?" then a follow-up would otherwise fuse). It is written as SYSTEM, not as a
+     * fabricated companion reply, so the model reads it as an out-of-band observation rather than an
+     * in-character example of staying silent (which would normalize non-answers, against the always-answer
+     * rule); a self-closing tag is used - not prose - so it never reads as speech or a stray instruction.
+     * Stamped LOW: transient bookkeeping, never a durable fact or a recall candidate.
+     */
+    private void recordSystemNote(String marker) {
+        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+                marker, MemoryImportance.LOW));
     }
 
     /**
@@ -379,12 +421,16 @@ public final class CommanderThought extends Thought {
     /**
      * Safe-flush on interrupt (§2.7): never leave a memory hole. If the input was not yet recorded, write it
      * under the unresolved-commander-input fallback as INTERRUPTED; tool results are written as they execute,
-     * so nothing is batched to flush. No new LLM/query/action/speech is started after this.
+     * so nothing is batched to flush. If the input WAS already recorded (the turn was cut off after filing it
+     * but before replying), drop a {@link #INTERRUPTED_NOTE} boundary marker so the interrupted turn is not left
+     * adjacent to the next commander turn and coalesced with it. No new LLM/query/action/speech is started here.
      */
     private void safeFlush(boolean inputRecorded) {
         if (!inputRecorded) {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput));
+        } else {
+            recordSystemNote(INTERRUPTED_NOTE);
         }
     }
 

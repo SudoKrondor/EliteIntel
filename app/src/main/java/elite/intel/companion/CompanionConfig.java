@@ -27,7 +27,7 @@ public final class CompanionConfig {
 
     // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
     /** Max entries kept in the hot short-term timeline (the primary eviction control). */
-    private static final int SHORT_TERM_MEMORY_SIZE = 20;
+    private static final int SHORT_TERM_MEMORY_SIZE = 30;
     /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
     /** Max commander thoughts that may run concurrently on the commander lane. */

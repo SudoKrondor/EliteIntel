@@ -74,8 +74,11 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("set speed to 50");
         dispatcher.stop();
 
-        assertEquals(1, memory.writes.size());
+        // The bare classify_turn settles with no speak and no action, so the turn records the commander input
+        // and then a <no_reply/> boundary marker (see CommanderThought.recordSystemNote).
+        assertEquals(2, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals(MemorySource.SYSTEM, memory.writes.get(1).source());
     }
 
     @Test
@@ -386,9 +389,41 @@ class ThoughtDispatcherTest {
         dispatcher.submitEvent(new FakeEvent("MarketSell"));
         dispatcher.stop();
 
-        assertEquals(2, memory.writes.size());
+        // Commander turn: the input plus a <no_reply/> marker (bare classify_turn settles with no reply);
+        // event lane: one write. The separate-lane check is the two source kinds both being present.
+        assertEquals(3, memory.writes.size());
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.EVENT));
+    }
+
+    @Test
+    void interruptAfterInputRecordedWritesACutOffMarker() throws InterruptedException {
+        // An interrupt landing after the LLM round but before the turn replies (raised here while the
+        // classify_turn pre-execution runs on the lane) must leave the recorded input followed by a
+        // <cut_off/> SYSTEM boundary marker, not end silently (see CommanderThought.safeFlush). The turn is
+        // awaited BEFORE stop(): stop() nulls the lanes first, which would make the barge-in a no-op.
+        ThoughtDispatcher[] holder = new ThoughtDispatcher[1];
+        ExecutionGateway interruptingExecution = request -> {
+            holder[0].interruptLiveThoughts();
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                new TerminatingLlm(), new FakeSpeech(), interruptingExecution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        holder[0] = dispatcher;
+        dispatcher.start();
+        dispatcher.submitCommanderInput("set speed to 50");
+        waitUntil(() -> memory.writes.size() >= 2);
+        dispatcher.stop();
+
+        assertEquals(2, memory.writes.size());
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        MemoryEntry marker = memory.writes.get(1);
+        assertEquals(MemorySource.SYSTEM, marker.source());
+        assertEquals("<cut_off/>", marker.content());
     }
 
     @Test

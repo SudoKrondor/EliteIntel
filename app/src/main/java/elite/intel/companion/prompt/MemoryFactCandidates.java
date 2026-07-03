@@ -10,8 +10,8 @@ import java.util.List;
 
 /**
  * Single owner of the pre-turn memory answer-candidate selection: given the commander's current input, it
- * pulls the top ranked memory matches (the same unified recall path as {@code search_in_memory}) and filters
- * them down to a few clean, durable answer facts to inline in the prompt as "Relevant remembered facts".
+ * pulls the top ranked memory matches (the same unified recall path as {@code memory_search}) and filters
+ * them down to a few clean, durable answer facts to inline in the prompt as a {@code <facts>} block.
  * <p>
  * Only <b>tier-2</b> facts qualify - the durable, safe subset of the raw timeline (tier-1). The raw history
  * (repeated action logs, the companion's own paraphrases/echoes/hallucinations, "I'm not sure" fillers) is
@@ -38,24 +38,38 @@ public final class MemoryFactCandidates {
     }
 
     /**
-     * The clean answer facts to inline for the current commander input, most relevant first, at most
-     * {@value #MAX_CANDIDATES}. The entry content is returned verbatim (already lower-cased in the store).
+     * One inlined answer fact: the recalled text plus its provenance ({@code source}), so the prompt can tag
+     * each fact with where it came from - {@code "event"} (a past ship/game occurrence) or {@code "commander"}
+     * (something the commander stated). The provenance lets the model tell a remembered past fact from live
+     * state and answer from it instead of re-querying (OpenAI long-context guidance: metadata in attributes).
      */
-    public static List<String> forInput(MemoryGateway memory, String input) {
+    public record Fact(String text, String source) {}
+
+    /**
+     * The clean answer facts to inline for the current commander input, most relevant first, at most
+     * {@value #MAX_CANDIDATES}. The text is the entry content verbatim (already lower-cased in the store),
+     * paired with its provenance for the prompt's per-fact {@code source} attribute.
+     */
+    public static List<Fact> forInput(MemoryGateway memory, String input) {
         if (memory == null || input == null || input.isBlank()) {
             return List.of();
         }
-        List<String> facts = new ArrayList<>();
+        List<Fact> facts = new ArrayList<>();
         for (MemoryEntry entry : memory.recallCandidates(input, CANDIDATE_POOL)) {
             if (isTier2(entry)) {
-                // The clean canonical restatement when present, else the verbatim content.
-                facts.add(entry.embeddingText());
+                // The clean canonical restatement when present, else the verbatim content, tagged by provenance.
+                facts.add(new Fact(entry.embeddingText(), sourceLabel(entry.source())));
                 if (facts.size() >= MAX_CANDIDATES) {
                     break;
                 }
             }
         }
         return List.copyOf(facts);
+    }
+
+    /** Provenance label for a tier-2 fact: only EVENT and COMMANDER entries reach here (see {@link #isTier2}). */
+    private static String sourceLabel(MemorySource source) {
+        return source == MemorySource.EVENT ? "event" : "commander";
     }
 
     /** Whether an entry is a durable, safe answer fact (see class doc). */
