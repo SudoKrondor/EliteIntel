@@ -267,5 +267,18 @@ public class AppView extends JFrame implements AppViewInterface {
         // cold-blue theme default so selection follows the warm HUD palette.
         UIManager.put("ComboBox.selectionBackground", HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION);
         UIManager.put("ComboBox.selectionForeground", HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT);
+
+        // Tooltips: a flat HUD-dark chip with a warm 1px rail instead of the pale LAF default, so every
+        // setToolTipText across the app matches the cockpit look (canon §13). The popup drop shadow is killed
+        // app-wide (tooltips, menus, combo popups) because the HUD is shadowless by design.
+        UIManager.put("ToolTip.background", HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
+        UIManager.put("ToolTip.foreground", HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
+        // Explicit small tooltip font: without this the tooltip inherits the 18px UI defaultFont and reads oversized.
+        UIManager.put("ToolTip.font", new FontUIResource(
+                new Font(UI_FONT_FAMILY, Font.PLAIN, (int) HudPalette.HUD_FONT_TOOLTIP)));
+        UIManager.put("ToolTip.border", BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_BORDER_THICKNESS),
+                BorderFactory.createEmptyBorder(4, 8, 4, 8)));
+        UIManager.put("Popup.dropShadowPainted", Boolean.FALSE);
     }
 }

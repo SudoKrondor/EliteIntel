@@ -206,6 +206,7 @@ public final class HudPalette {
     public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
     public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 - banner message text
+    public static final float HUD_FONT_TOOLTIP        = HUD_FONT_SM;   // 12 - hover tooltip text (global ToolTip.font)
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;

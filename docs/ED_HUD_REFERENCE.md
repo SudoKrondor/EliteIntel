@@ -605,6 +605,10 @@ editor picker'а (`HUD_COMBO_EDITOR_LOCKED`; иначе палитра став�
   «i» `paintHudInfoGlyph`; × `paintHudCloseGlyph`; маркер чекбокса `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`;
   ⤓ save/download `paintHudSaveGlyph`; тинт `tintIcon`; приглушение альфой `dimIcon`. Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
 - Info-«i» — ВНУТРИ контрола (§5.2/§5.1) через `setInfoAction`. Синие ссылки — антипаттерн.
+- Тултипы (`setToolTipText`) — стиль ГЛОБАЛЬНО через `UIManager` `ToolTip.*` в `AppView.installDarkDefaults`
+  (тёмный `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` + тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` `HUD_BORDER_THICKNESS`,
+  текст `HUD_COLOR_ROLE_PRIMARY_TEXT`, шрифт `HUD_FONT_TOOLTIP` — иначе наследует крупный `HUD_FONT_UI_DEFAULT`);
+  тени попапов сняты `Popup.dropShadowPainted=false` (HUD без теней). Кастомный tooltip по месту — антипаттерн.
 - Метка-ключ — `hudReadoutLabel` (`HUD_COLOR_ROLE_SECONDARY_TEXT`-капс без двоеточия). Двоеточие чистить в i18n (ВСЕ языки).
 - Read-only key→value (§7.2) — `hudReadoutValue(value, color)`: плоский текст, микс-кейс.
   Рамка-поле — только у вводимого/area.
