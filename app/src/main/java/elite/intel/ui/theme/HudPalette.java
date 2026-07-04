@@ -99,6 +99,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;
 
     public static final int HUD_GAP = 8;
+    /** Tight gap between adjacent compact controls (e.g. icon actions in a section header). */
+    public static final int HUD_GAP_TIGHT = HUD_GAP / 2; // =4
     /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
     public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;

@@ -271,6 +271,49 @@ public final class HudGlyphs {
     }
 
     /**
+     * Draws the flat "clear / delete" (trash can) glyph centred within (x, y, w, h): a lid with a small handle
+     * tab above a slightly tapered open can body (no fill slats, to keep the same light stroke weight as the
+     * neighbouring save glyph). All geometry is proportional so it scales with the box; caller chooses colour by
+     * state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour for the can
+     */
+    public static void paintHudTrashGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 9f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(color);
+
+        int cx = x + w / 2;
+        int lidY = y + Math.round(h * 0.30f);
+        g2.drawLine(x + Math.round(w * 0.18f), lidY, x + w - Math.round(w * 0.18f), lidY); // lid
+
+        int handleHalf = Math.round(w * 0.12f);
+        int handleTop = y + Math.round(h * 0.19f);
+        g2.drawLine(cx - handleHalf, handleTop, cx + handleHalf, handleTop);               // handle top
+        g2.drawLine(cx - handleHalf, handleTop, cx - handleHalf, lidY);                    // handle left
+        g2.drawLine(cx + handleHalf, handleTop, cx + handleHalf, lidY);                    // handle right
+
+        int bodyTop = lidY + Math.round(h * 0.05f);
+        int bodyBottom = y + Math.round(h * 0.82f);
+        int topInset = Math.round(w * 0.24f);
+        int botInset = Math.round(w * 0.30f);
+        g2.drawLine(x + topInset, bodyTop, x + botInset, bodyBottom);                       // left wall (tapered)
+        g2.drawLine(x + w - topInset, bodyTop, x + w - botInset, bodyBottom);               // right wall (tapered)
+        g2.drawLine(x + botInset, bodyBottom, x + w - botInset, bodyBottom);                // bottom
+
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
      * Draws a vertical three-dot "more/options" glyph (three stacked squares) centred within
      * the box (x, y, w, h). All geometry is proportional. Flat squares (not rounded dots) per
      * the HUD flat-style rule; caller chooses colour based on component state.

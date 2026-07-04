@@ -121,25 +121,34 @@ public class HudSection extends HudPanel {
     }
 
     /**
-     * Places an icon-only action (typically a {@link HudGlyphButton}) at the right edge of the section header
-     * strip, opposite the title. Replaces any previous header action; pass {@code null} to remove it. The header
-     * already carries the shared right inset, so the action aligns with the title's left inset.
+     * Places one or more icon-only actions (typically {@link HudGlyphButton}s) at the right edge of the section
+     * header strip, opposite the title, laid out left-to-right in the given order (so the last argument sits
+     * flush at the right inset). Replaces any previous header actions; pass no arguments to clear them.
+     * <p>
+     * The actions sit in a {@link GridLayout} strip whose height is pinned to the title-row height, so the header
+     * never grows to the full compact-control footprint of the buttons. {@code GridLayout} stretches each action
+     * to the strip's full height (like a single action in {@code BorderLayout.EAST}), so each button's own paint
+     * keeps its glyph vertically centred rather than clipped at the top.
      *
-     * @param action header action component, or {@code null} to clear it
+     * @param actions header action components in left-to-right order (empty to clear)
      */
-    public void setHeaderAction(JComponent action) {
+    public void setHeaderActions(JComponent... actions) {
         if (headerAction != null) {
             header.remove(headerAction);
+            headerAction = null;
         }
-        headerAction = action;
-        if (action != null) {
-            // Pin the action to the title row's height so it never makes this section's header taller than the
-            // sibling section headers that carry no action; its own paint centres the glyph within that height.
-            int rowHeight = headerLabel.getPreferredSize().height;
-            Dimension sized = new Dimension(action.getPreferredSize().width, rowHeight);
-            action.setPreferredSize(sized);
-            action.setMaximumSize(sized);
-            header.add(action, BorderLayout.EAST);
+        if (actions != null && actions.length > 0) {
+            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_TIGHT, 0));
+            for (JComponent action : actions) {
+                strip.add(action);
+            }
+            // Pin the strip (not the buttons) to the title-row height: the header grows only to that height, while
+            // GridLayout stretches each button to it so the glyph stays centred.
+            Dimension pinned = new Dimension(strip.getPreferredSize().width, headerLabel.getPreferredSize().height);
+            strip.setPreferredSize(pinned);
+            strip.setMaximumSize(pinned);
+            headerAction = strip;
+            header.add(strip, BorderLayout.EAST);
         }
         header.revalidate();
         header.repaint();

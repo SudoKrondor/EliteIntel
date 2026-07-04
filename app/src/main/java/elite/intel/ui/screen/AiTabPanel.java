@@ -153,7 +153,7 @@ public class AiTabPanel extends JPanel {
         topSplit.setResizeWeight(0.38);
 
         HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
-        systemSection.setHeaderAction(buildSaveLogButton());
+        systemSection.setHeaderActions(buildSaveLogButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 topSplit,
@@ -252,6 +252,13 @@ public class AiTabPanel extends JPanel {
         HudSection section = new HudSection(title, new BorderLayout());
         section.body().add(content, BorderLayout.CENTER);
         return section;
+    }
+
+    /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
+    private HudGlyphButton buildClearLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudTrashGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear);
     }
 
     /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */

@@ -207,7 +207,7 @@ key, НЕ на таблицу каталога (§6), НЕ на binding id.
 компактный picker — `makeFieldButton(glyph|Icon, fieldHeight)` + `HudButton.setSquareSide`,
 глиф ⋮ — `verticalEllipsisIcon` / `paintHudVerticalEllipsis`;
 иконка-аффорданс (close ×, save-в-файл) — `HudGlyphButton(painter, restTint, hoverTint, tooltip, onClick)`
-(глиф-примитив §13, футпринт `HUD_TABLE_ROW_HEIGHT_COMPACT`, глиф `HUD_ICON_TABLE`; единственный владелец — `HudDialogHeader` и шапка секции его переиспользуют); в шапку секции — через `HudSection.setHeaderAction` (§9);
+(глиф-примитив §13, футпринт `HUD_TABLE_ROW_HEIGHT_COMPACT`, глиф `HUD_ICON_TABLE`; единственный владелец — `HudDialogHeader` и шапка секции его переиспользуют); в шапку секции — через `HudSection.setHeaderActions` (§9);
 слайдер-шкала — `HudSlider(min, max, step, value)` (токены `HUD_SLIDER_*`, цвет заливки `HUD_COLOR_ROLE_SLIDER_VALUE_TRACK`);
 сегментный метр уровня — `HudMicMeter` (токены `HUD_METER_*`; подписка `AudioMonitorBus`).
 
@@ -440,10 +440,13 @@ key, НЕ на таблицу каталога (§6), НЕ на binding id.
 Эталоны: AI Services (local/cloud setup), `CustomCommandEditorDialog` (identity/steps). НЕ городить
 локальный `GridBag`-хак равных колонок по месту.
 
-**Действие в шапке секции** — `HudSection.setHeaderAction(JComponent)`: иконка-аффорданс (`HudGlyphButton`
-§4) в правый край полосы заголовка, напротив тайтла, для действия над содержимым секции
-(напр. save-в-файл у лог-панели). Правый инсет — общий `HEADER_H_INSET` (несёт бордер шапки). Одно
-действие; НЕ верстать кнопку по месту в теле секции. Эталон: AI-вкладка, шапка «Диагностика».
+**Действия в шапке секции** — `HudSection.setHeaderActions(JComponent...)`: одна или несколько иконок-аффордансов
+(`HudGlyphButton` §4) в правый край полосы заголовка, напротив тайтла, слева-направо в порядке аргументов
+(последний — у правого инсета), для действий над содержимым секции (напр. save + clear у лог-панели). Кладутся в
+`GridLayout`-полосу, зазор `HUD_GAP_TIGHT`; ПОЛОСА пиннится к высоте строки заголовка (шапка не растёт), а
+`GridLayout` растягивает каждую иконку на эту высоту (глиф центрируется, не обрезается). Правый инсет — общий
+`HEADER_H_INSET` (несёт бордер шапки). Действия — однотипные глиф-кнопки (равная ширина ячеек). НЕ верстать
+кнопку по месту в теле секции. Эталон: AI-вкладка, шапка «Диагностика».
 
 ## 10. Диалоги
 
@@ -603,7 +606,7 @@ editor picker'а (`HUD_COMBO_EDITOR_LOCKED`; иначе палитра став�
   выбором строки. Без `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
 - Примитивы для >1 места — в `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
   «i» `paintHudInfoGlyph`; × `paintHudCloseGlyph`; маркер чекбокса `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`;
-  ⤓ save/download `paintHudSaveGlyph`; тинт `tintIcon`; приглушение альфой `dimIcon`. Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
+  ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; тинт `tintIcon`; приглушение альфой `dimIcon`. Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
 - Info-«i» — ВНУТРИ контрола (§5.2/§5.1) через `setInfoAction`. Синие ссылки — антипаттерн.
 - Тултипы (`setToolTipText`) — стиль ГЛОБАЛЬНО через `UIManager` `ToolTip.*` в `AppView.installDarkDefaults`
   (тёмный `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` + тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` `HUD_BORDER_THICKNESS`,
