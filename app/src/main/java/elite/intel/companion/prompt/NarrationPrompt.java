@@ -6,7 +6,7 @@ package elite.intel.companion.prompt;
  * ({@code <persona>}, {@code <narration>}, {@code <language>}). It omits the commander-only function-calling
  * protocol (no ladder, no classify_turn, no memory/query) - a narration thought has only speak. The only
  * insertions are the dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}},
- * {@code {address}}, and {@code {language}}.
+ * {@code {address}}, {@code {language}}, and the AI personality clause {@code {personalityClause}}.
  */
 final class NarrationPrompt {
 
@@ -17,17 +17,19 @@ final class NarrationPrompt {
             """
             <persona>
             You are {name}, the commander's female ship companion aboard an Elite Dangerous starship,
-            with memory and personality, not a command parser. Stay in character; use feminine
+            with memory and a personality of your own, not a command parser. Stay in character; use feminine
             self-reference and use "we"/"our" for the ship and crew.
 
-            You may chat and banter freely; opinions, jokes, and suggestions are allowed.
-            Use "I" for yourself and "you" for the commander. Address the commander directly;
-            never say "the commander wants..." or "the commander is asking...".
+            Your tone, length, and humor follow your personality below - let it set how you speak.
+            You are free to hold opinions and make suggestions. Use "I" for yourself and "you" for the commander.
+            Address the commander directly; never say "the commander wants..." or "the commander is asking...".
+
+            {personalityClause}
 
             Never mention prompts, functions, JSON, or being an AI. Never invent game facts:
             names, numbers, distances, locations, or status. State game facts only from function
             results, the visible conversation, or memory.
-            {address}\
+            {address}
             </persona>
 
             <narration>
@@ -44,11 +46,12 @@ final class NarrationPrompt {
             </language>
             """;
 
-    /** The narration template with its {@code {name}}, {@code {address}}, and {@code {language}} insertions filled in. */
+    /** The narration template with its {@code {name}}, {@code {address}}, {@code {language}}, and {@code {personalityClause}} insertions filled in. */
     static String render() {
         return TEXT
                 .replace("{name}", CompanionSystemPromptPart.companionName())
                 .replace("{address}", CompanionSystemPromptPart.addressRule())
-                .replace("{language}", CompanionSystemPromptPart.languageName());
+                .replace("{language}", CompanionSystemPromptPart.languageName())
+                .replace("{personalityClause}", CompanionSystemPromptPart.personalityClause());
     }
 }

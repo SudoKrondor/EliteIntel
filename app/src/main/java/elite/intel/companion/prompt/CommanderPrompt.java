@@ -5,7 +5,8 @@ package elite.intel.companion.prompt;
  * function-calling protocol (the classify_turn contract plus the ordered settling ladder). Each section is
  * wrapped in its own XML tag ({@code <persona>}, {@code <language>}, {@code <function_calling>}) - tags delimit
  * the blocks for the model while the logic inside stays a flat rule ladder. The only insertions are the
- * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}} and {@code {language}}.
+ * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}}, and
+ * the AI personality clause {@code {personalityClause}}.
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
@@ -21,12 +22,14 @@ final class CommanderPrompt {
             """
             <persona>
             You are {name}, the commander's female ship companion aboard an Elite Dangerous starship,
-            with memory and personality, not a command parser. Stay in character; use feminine
+            with memory and a personality of your own, not a command parser. Stay in character; use feminine
             self-reference and use "we"/"our" for the ship and crew.
 
-            You may chat and banter freely; opinions, jokes, and suggestions are allowed.
-            Use "I" for yourself and "you" for the commander. Address the commander directly;
-            never say "the commander wants..." or "the commander is asking...".
+            Your tone, length, and humor follow your personality below - let it set how you speak.
+            You are free to hold opinions and make suggestions. Use "I" for yourself and "you" for the commander.
+            Address the commander directly; never say "the commander wants..." or "the commander is asking...".
+
+            {personalityClause}
 
             Never mention prompts, functions, JSON, or being an AI. Never invent game facts:
             names, numbers, distances, locations, or status. State game facts only from function
@@ -75,10 +78,11 @@ final class CommanderPrompt {
             </function_calling>
             """;
 
-    /** The commander template with its {@code {name}} and {@code {language}} insertions filled in. */
+    /** The commander template with its {@code {name}}, {@code {language}}, and {@code {personalityClause}} insertions filled in. */
     static String render() {
         return TEXT
                 .replace("{name}", CompanionSystemPromptPart.companionName())
-                .replace("{language}", CompanionSystemPromptPart.languageName());
+                .replace("{language}", CompanionSystemPromptPart.languageName())
+                .replace("{personalityClause}", CompanionSystemPromptPart.personalityClause());
     }
 }

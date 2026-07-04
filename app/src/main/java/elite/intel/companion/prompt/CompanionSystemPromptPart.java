@@ -18,8 +18,9 @@ import elite.intel.session.SystemSession;
  * <p>
  * Fragments: the templates are otherwise literal text; the only insertions are the genuinely dynamic values
  * provided here - the companion name ({@code {name}}), the resolved commander-language name ({@code {language}}),
- * and the address rule ({@code {address}}) - because the name comes from config, the language name is resolved
- * from the session, and the address form is chosen at random.
+ * the address rule ({@code {address}}), and the AI personality roleplay clause ({@code {personalityClause}}) -
+ * because the name comes from config, the language name is resolved from the session, the address form is chosen
+ * at random, and the personality is the commander's session setting (shared with the legacy router).
  */
 public final class CompanionSystemPromptPart implements SystemPromptText {
 
@@ -41,6 +42,16 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     /** The resolved commander-language name, named in the templates' language rule as {@code {language}}. */
     static String languageName() {
         return PromptLocalizations.rulesFor(effectiveLanguage()).languageName();
+    }
+
+    /**
+     * The commander-chosen AI personality's roleplay clause, woven into the persona as {@code {personalityClause}}.
+     * Reuses the same source as the legacy router ({@link SystemSession#getAIPersonality()}), so the companion and
+     * the legacy brain share one personality setting. The clause is already self-labeled ("Your Personality
+     * Roleplay: ..."), so no extra label is added.
+     */
+    static String personalityClause() {
+        return SystemSession.getInstance().getAIPersonality().getPersonalityClause();
     }
 
     /**
