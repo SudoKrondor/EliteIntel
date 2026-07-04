@@ -47,7 +47,7 @@ public class NaturalSpeechIntegrationTestIT {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 5000;
+    private static final int LLM_WAIT_MS = 3000;
     private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
@@ -56,6 +56,7 @@ public class NaturalSpeechIntegrationTestIT {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
+        systemSession.setCompanionMode(true);
         systemSession.setLanguage(Language.IT);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();

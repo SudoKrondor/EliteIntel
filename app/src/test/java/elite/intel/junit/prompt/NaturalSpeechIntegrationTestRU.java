@@ -33,6 +33,7 @@ public class NaturalSpeechIntegrationTestRU {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
+        systemSession.setCompanionMode(true);
         systemSession.setLanguage(Language.RU);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();

@@ -35,6 +35,7 @@ public class NaturalSpeechIntegrationTestUK {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
+        systemSession.setCompanionMode(true);
         systemSession.setLanguage(Language.UK);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();

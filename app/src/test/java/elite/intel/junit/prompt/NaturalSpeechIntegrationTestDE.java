@@ -36,6 +36,7 @@ public class NaturalSpeechIntegrationTestDE {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
         systemSession.setLanguage(Language.DE);
+        systemSession.setCompanionMode(true);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();
         capture = new HandlerCapture();
@@ -92,6 +93,7 @@ public class NaturalSpeechIntegrationTestDE {
     static Stream<String> startListening() {
         return Stream.of("wach auf", "aufwachen");
     }
+
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(11)

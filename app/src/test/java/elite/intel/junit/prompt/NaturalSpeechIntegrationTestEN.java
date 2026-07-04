@@ -55,6 +55,7 @@ public class NaturalSpeechIntegrationTestEN {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
+        systemSession.setCompanionMode(true);
         systemSession.setLanguage(Language.EN);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();
