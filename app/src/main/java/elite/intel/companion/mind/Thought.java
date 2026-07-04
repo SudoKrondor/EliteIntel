@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A unit of work of the consciousness: the parts shared by every kind of thought. It holds the source,
@@ -50,8 +52,13 @@ public abstract class Thought {
 
     private static final Logger log = LogManager.getLogger(Thought.class);
 
+    /** Monotonic sequence backing the short per-thought {@link #trace} id, so concurrent lanes are told apart in the log. */
+    private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
+
     private final ThoughtSource source;
     private final Urgency urgency;
+    /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
+    private final String trace;
     protected final String currentInput;
     /**
      * Canonical form of {@link #currentInput} used only for command matching (the reducer) and as the
@@ -78,6 +85,12 @@ public abstract class Thought {
         this.currentInput = currentInput;
         this.matchInput = matchInput;
         this.ctx = ctx;
+        this.trace = source + "#" + TRACE_SEQ.incrementAndGet();
+    }
+
+    /** The per-thought diagnostic tag ({@code SOURCE#n}); every {@link CompanionDiagnostics} line of this thought carries it. */
+    public final String trace() {
+        return trace;
     }
 
     // --- factories (the public construction API; each returns the matching concrete kind) ---
@@ -191,6 +204,7 @@ public abstract class Thought {
      * interrupt-driven cancellation (exceptional future) is treated as no usable result (§2.9/§2.7).
      */
     protected LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
+        CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
         CompletableFuture<LlmResult> future = ctx.llmGateway()
                 .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile));
         inFlight = future;
@@ -198,12 +212,17 @@ public abstract class Thought {
             future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
         }
         try {
-            return future.join();
+            LlmResult result = future.join();
+            CompanionDiagnostics.debug(trace, "llm", result == null ? "response: none"
+                    : result.isValid() ? "response: " + CompanionDiagnostics.calls(result.toolInvocations())
+                    : "response: INVALID");
+            return result;
         } catch (RuntimeException llmFailure) {
             if (!interrupted) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
                 log.warn("Companion LLM round failed; treating as no usable result", llmFailure);
             }
+            CompanionDiagnostics.debug(trace, "llm", interrupted ? "response: cancelled" : "response: failed");
             return null;
         } finally {
             inFlight = null;
@@ -212,11 +231,15 @@ public abstract class Thought {
 
     /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */
     protected ComposedPrompt composeInitialPrompt() {
-        return ctx.promptComposer().compose(
-                source, matchInput,
-                selectedGameTools(), systemTools(),
-                ctx.memoryGateway().readShortTermTimeline(),
-                memoryCandidates());
+        List<LlmToolDefinition> gameTools = selectedGameTools();
+        List<LlmToolDefinition> sysTools = systemTools();
+        List<MemoryEntry> timeline = ctx.memoryGateway().readShortTermTimeline();
+        List<MemoryFactCandidates.Fact> candidates = memoryCandidates();
+        CompanionDiagnostics.debug(trace, "compose",
+                "gameTools=" + CompanionDiagnostics.names(gameTools)
+                        + " sysTools=" + CompanionDiagnostics.names(sysTools)
+                        + " facts=" + candidates.size() + " timeline=" + timeline.size());
+        return ctx.promptComposer().compose(source, matchInput, gameTools, sysTools, timeline, candidates);
     }
 
     /**
@@ -243,11 +266,18 @@ public abstract class Thought {
      * (see {@link ActiveToolCall}). A {@code null} id runs with no pairing (system functions, plain reflexes).
      */
     protected JsonObject execute(LlmToolInvocation inv, String toolCallId) {
+        // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
+        // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
+        // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
+        if (ctx.actionTypeResolver().resolve(inv.name()).isGameAction()) {
+            CompanionDiagnostics.debug(trace, "exec", inv.name() + CompanionDiagnostics.args(inv.arguments()));
+        }
         try {
             return ctx.executionGateway()
                     .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), toolCallId))
                     .join();
         } catch (RuntimeException failed) {
+            CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
             return executionError(inv.name(), failed);
         }
     }
@@ -266,6 +296,8 @@ public abstract class Thought {
     /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         String canonical = memoryCanonicalFact();
+        CompanionDiagnostics.debug(trace, "memory",
+                "record input [" + memoryTopic() + "/" + memoryImportance() + "]: \"" + CompanionDiagnostics.truncate(currentInput) + "\"");
         ctx.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
@@ -294,6 +326,7 @@ public abstract class Thought {
         if (text == null || text.isBlank()) {
             return;
         }
+        CompanionDiagnostics.debug(trace, "memory", "record reply: \"" + CompanionDiagnostics.truncate(text) + "\"");
         ctx.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
@@ -366,6 +399,7 @@ public abstract class Thought {
         if (text == null || text.isBlank()) {
             return;
         }
+        CompanionDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + CompanionDiagnostics.truncate(text) + "\"");
         ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
     }
 

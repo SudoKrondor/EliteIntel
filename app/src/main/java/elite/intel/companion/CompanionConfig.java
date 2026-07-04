@@ -38,6 +38,12 @@ public final class CompanionConfig {
     private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
     /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
     private static final int MEMORY_ENTRY_MAX_CHARS = 200;
+    /**
+     * Whether the companion's internal-detail diagnostics (compose/LLM/classify/exec/memory/lifecycle) are
+     * promoted onto the always-visible SYSTEM LOG. On by default while the detailed-log GUI toggle for this
+     * channel is still pending; set to {@code false} to keep only the per-turn headlines.
+     */
+    private static final boolean DIAGNOSTICS_VERBOSE = true;
 
     private CompanionConfig() {
     }
@@ -110,5 +116,10 @@ public final class CompanionConfig {
     /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
     public static int memoryEntryMaxChars() {
         return MEMORY_ENTRY_MAX_CHARS;
+    }
+
+    /** Whether the companion's internal-detail diagnostics are promoted onto the always-visible SYSTEM LOG (default on). */
+    public static boolean diagnosticsVerbose() {
+        return DIAGNOSTICS_VERBOSE;
     }
 }

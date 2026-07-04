@@ -39,8 +39,8 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("Never invent game facts"));
-        // Every turn must settle - never stop after the metadata-only classify_turn.
-        assertTrue(text.contains("Never stop after 'classify_turn'"));
+        // Every turn must settle - the metadata-only classify_turn never ends the turn.
+        assertTrue(text.contains("it never ends the turn"));
         // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
     }

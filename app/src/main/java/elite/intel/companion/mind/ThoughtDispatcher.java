@@ -2,6 +2,7 @@ package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
@@ -146,6 +147,12 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+        CompanionDiagnostics.info(thought.trace(), "intake",
+                "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + reflexCommand.map(id -> "reflex " + id).orElse("think"));
+        if (!matchInput.equals(input)) {
+            // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
+            CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
+        }
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
     }
 
@@ -183,9 +190,11 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             return;
         }
         Urgency urgency = urgencyPolicy.forEvent(event);
-        enqueue(ThoughtSource.EVENT,
-                Thought.event(urgency, event.memorySummary(), EventTopicMap.topicFor(event), ctx),
-                urgency);
+        ConversationTopic topic = EventTopicMap.topicFor(event);
+        Thought thought = Thought.event(urgency, event.memorySummary(), topic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "event",
+                "\"" + CompanionDiagnostics.truncate(event.memorySummary()) + "\" topic=" + topic);
+        enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
@@ -199,9 +208,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             return;
         }
         Urgency urgency = Urgency.URGENT;
-        enqueue(ThoughtSource.NARRATION,
-                Thought.sensorNarration(urgency, SensorInputFormatter.format(event), sensorTopic(event), ctx),
-                urgency);
+        ConversationTopic topic = sensorTopic(event);
+        Thought thought = Thought.sensorNarration(urgency, SensorInputFormatter.format(event), topic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "narration", "sensor topic=" + topic);
+        enqueue(ThoughtSource.NARRATION, thought, urgency);
     }
 
     /**
@@ -238,8 +248,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             }
             return;
         }
-        enqueue(ThoughtSource.NARRATION,
-                Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId), urgency);
+        Thought thought = Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId);
+        CompanionDiagnostics.debug(thought.trace(), "narration",
+                "verbatim topic=" + topic + ": \"" + CompanionDiagnostics.truncate(text) + "\"");
+        enqueue(ThoughtSource.NARRATION, thought, urgency);
     }
 
     @Override
@@ -282,6 +294,7 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     /** Interrupts every live thought on barge-in (§2.15); the dispatcher owns the thought lifecycle, not speech. */
     public void interruptLiveThoughts() {
+        CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "barge-in", "interrupting live thoughts");
         interruptLive();
     }
 
