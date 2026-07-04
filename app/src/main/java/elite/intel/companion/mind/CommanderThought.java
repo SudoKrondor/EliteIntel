@@ -215,8 +215,8 @@ public final class CommanderThought extends Thought {
                     // fact-recall candidate (the MemoryFactCandidates filter drops LOW commander lines).
                     turnImportance = MemoryImportance.LOW;
                 }
-                turnCanonicalFact = JsonUtils.getAsStringOrEmpty(
-                        inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT).strip();
+                turnCanonicalFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
+                        inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT));
                 preExecuted.put(inv, execute(inv)); // runs classify_turn's handle, which moves the global topic
                 CompanionDiagnostics.debug(trace(), "classify",
                         "topic=" + memoryTopic() + " importance=" + turnImportance + " question=" + turnIsQuestion
@@ -225,6 +225,26 @@ public final class CommanderThought extends Thought {
             }
         }
         return preExecuted;
+    }
+
+    /**
+     * Normalizes classify_turn's canonical_fact to a real fact or empty. Small local models echo the literal
+     * placeholder {@code ""} (or wrap the fact in quotes) when they mean "no fact"; any quote-only or
+     * whitespace-only value carries no fact, so it must never reach memory as a stored fact / recall line.
+     */
+    private static String cleanCanonicalFact(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String s = raw.strip();
+        while (s.length() >= 2 && isQuote(s.charAt(0)) && isQuote(s.charAt(s.length() - 1))) {
+            s = s.substring(1, s.length() - 1).strip();
+        }
+        return s.chars().anyMatch(Character::isLetterOrDigit) ? s : "";
+    }
+
+    private static boolean isQuote(char c) {
+        return c == '"' || c == '\'' || c == '«' || c == '»';
     }
 
     /**

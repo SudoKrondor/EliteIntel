@@ -193,7 +193,8 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         ConversationTopic topic = EventTopicMap.topicFor(event);
         Thought thought = Thought.event(urgency, event.memorySummary(), topic, ctx);
         CompanionDiagnostics.debug(thought.trace(), "event",
-                "\"" + CompanionDiagnostics.truncate(event.memorySummary()) + "\" topic=" + topic);
+                "\"" + CompanionDiagnostics.truncate(event.memorySummary()) + "\" type=" + event.getEventType()
+                        + " topic=" + topic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 

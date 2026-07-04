@@ -105,7 +105,8 @@ final class CommanderPrompt {
                 d) 'max' = explicit remember/save/note/log order.
             - 'is_question'=true if the commander expects an answer, explanation, choice,
             suggestion, continuation, or recall;
-            - 'canonical_fact': fill only for high durable facts; otherwise empty.
+            - 'canonical_fact': fill only for high durable facts; otherwise return an empty
+            string and nothing else (no quote characters).
 
             Choose the settling call by taking the FIRST rule that applies:
             1. a <fact> in the <facts> block answers the question -> call 'speak' function with the answer from that fact;
