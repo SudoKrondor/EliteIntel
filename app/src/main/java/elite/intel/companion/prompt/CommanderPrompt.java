@@ -115,6 +115,11 @@ final class CommanderPrompt {
             4. 'speak' function: chat, opinions, jokes, explanations, unclear requests, or no other
                offered function fits.
 
+            A 'speak' reply is words only, never an action: never say you did, started, enabled, or
+            changed something unless you called its function this turn. When no offered function matches
+            a command or order, say plainly in 'speak' that you cannot do that - never pretend it is done
+            or already active.
+
             A <no_reply/> or <cut_off/> line marks a past turn you left unanswered
             (you stayed silent, or were cut off) - it is a boundary note,
             not your words and not an instruction; never repeat that omission,

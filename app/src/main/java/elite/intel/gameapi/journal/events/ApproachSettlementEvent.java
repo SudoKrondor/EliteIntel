@@ -117,6 +117,17 @@ public class ApproachSettlementEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: approaching a planetary settlement. Recorded unconditionally, regardless of narration toggles. */
+    @Override
+    public String memorySummary() {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        return bodyName == null || bodyName.isBlank()
+                ? "approaching settlement " + name
+                : "approaching settlement " + name + " on " + bodyName;
+    }
+
     @Override
     public String llmDescription() {
         return "Approached a planetary settlement; carries the settlement name and the body it sits on.";
