@@ -129,7 +129,8 @@ public final class PromptComposer {
 
     /** Full selectable topic enum; the model needs the valid values for the classify_turn topic parameter. */
     private void appendTopics(StringBuilder sb) {
-        PromptSections.heading(sb, "Topics");
+        // Blank line separates the topics block from the static prefix ending in </function_calling>.
+        sb.append("\n<topics>\n");
         sb.append("Valid values for the classify_turn topic parameter:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
@@ -142,6 +143,7 @@ public final class PromptComposer {
         sb.append("Classify every turn under the topic its content fits. If the turn is a short continuation "
                 + "with no topic of its own (\"and then?\", \"yeah\"), use the conversation above to place it "
                 + "under the topic it continues.\n");
+        sb.append("</topics>\n");
     }
 
     /** Wire content of a synthesized tool result when a recorded tool-call left no voiced/textual outcome. */

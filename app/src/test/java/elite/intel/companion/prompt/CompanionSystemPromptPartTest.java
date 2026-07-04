@@ -27,11 +27,11 @@ class CompanionSystemPromptPartTest {
     @Test
     void alwaysCarriesPersonaAndFunctionCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("## Persona"));
+        assertTrue(text.contains("<persona>"));
         assertTrue(text.contains("the commander's female ship companion"));
-        assertTrue(text.contains("## Function calling"));
+        assertTrue(text.contains("<function_calling>"));
         // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
-        assertFalse(text.contains("## Safety"));
+        assertFalse(text.contains("<safety>"));
     }
 
     @Test
@@ -56,23 +56,23 @@ class CompanionSystemPromptPartTest {
     @Test
     void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("## Function calling"));
+        assertTrue(text.contains("<function_calling>"));
         assertTrue(text.contains("that settles the turn"));
         // The commander branch is not the narration report-only task.
-        assertFalse(text.contains("## Narration"));
+        assertFalse(text.contains("<narration>"));
     }
 
     @Test
     void narrationBranchIsReportOnlyAndExcludesCommanderSections() {
         String text = prompt.staticRules(ThoughtSource.NARRATION);
-        assertTrue(text.contains("## Persona"));
-        assertTrue(text.contains("## Narration"));
+        assertTrue(text.contains("<persona>"));
+        assertTrue(text.contains("<narration>"));
         assertTrue(text.contains("must be reported to the commander"));
         // The lean narration prompt drops the commander-only function-calling section and memory/query guidance.
-        assertFalse(text.contains("## Function calling"));
-        assertFalse(text.contains("## Safety"));
+        assertFalse(text.contains("<function_calling>"));
+        assertFalse(text.contains("<safety>"));
         assertFalse(text.contains("memory_search"));
-        assertTrue(text.contains("## Language"));
+        assertTrue(text.contains("<language>"));
     }
 
     @Test
@@ -80,7 +80,7 @@ class CompanionSystemPromptPartTest {
         String name = resolvedLanguageName();
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
 
-        assertTrue(text.contains("## Language"));
+        assertTrue(text.contains("<language>"));
         // The commander's language is named, and spoken output is bound to that same language.
         assertTrue(text.contains("The commander speaks " + name));
         // The spoken surface (speak) is bound to the commander's language.
