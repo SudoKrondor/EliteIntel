@@ -179,9 +179,6 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(ToggleCargoScoopCommand.ID);
         sb.append("\n");
 
-        sb.append("- 'unbound keys' / 'check key bindings' / 'missing bindings' / 'keybind check' → ");
-        sb.append(AnalyzeMisingKeyBindingQueryCommand.ID);
-        sb.append(" (this IS a valid game command, not meta-talk)\n");
         sb.append("- 'listen' / 'listen up' / 'wake up' alone → ");
         sb.append(WakeupCommand.ID);
         sb.append("\n");

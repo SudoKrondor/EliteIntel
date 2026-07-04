@@ -11,9 +11,18 @@ import com.google.gson.JsonObject;
  * @param requestId  unique id for correlation/diagnostics
  * @param toolName   name of the tool/command/query to run
  * @param arguments  parsed JSON arguments
+ * @param toolCallId correlation id of the model tool-call this settles, so a command handler's own narration
+ *                   is recorded as this call's {@code tool} result (see {@code ActiveToolCall}); {@code null}
+ *                   for calls that need no tool-result pairing (system functions, reflexes with no id)
  */
 public record ExecutionRequest(
         String requestId,
         String toolName,
-        JsonObject arguments
-) {}
+        JsonObject arguments,
+        String toolCallId
+) {
+    /** Convenience constructor for a request that needs no tool-call pairing ({@code toolCallId} is null). */
+    public ExecutionRequest(String requestId, String toolName, JsonObject arguments) {
+        this(requestId, toolName, arguments, null);
+    }
+}

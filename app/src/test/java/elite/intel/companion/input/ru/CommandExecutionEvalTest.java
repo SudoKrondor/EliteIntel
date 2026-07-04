@@ -11,6 +11,7 @@ import org.junit.jupiter.api.TestInstance;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
@@ -107,7 +108,14 @@ class CommandExecutionEvalTest {
         int hits = 0;
         for (Case c : cases) {
             long roundsBefore = h.roundCount();
+            int latencyCountBefore = h.latencies().size();
+            long startNanos = System.nanoTime();
             h.say(c.input());
+            long elapsedMs = (System.nanoTime() - startNanos) / 1_000_000;
+            List<Long> latenciesAfter = h.latencies();
+            long llmMs = latenciesAfter.subList(latencyCountBefore, latenciesAfter.size()).stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
             long llmRounds = h.roundCount() - roundsBefore; // 0 == reflex fast-path, >=1 == LLM path
 
             List<Executed> calls = h.callsNamed(c.expectedTool());
@@ -123,11 +131,13 @@ class CommandExecutionEvalTest {
             String pathCell = String.format("%s%s",
                     tookReflex ? "reflex" : "llm(" + llmRounds + ")",
                     pathOk ? "" : (c.reflex() ? " WANT-REFLEX" : " WANT-LLM"));
-            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s | %s%n",
+            block.append(String.format("%n%-56s | call=%-3s arg=%-4s path=%-12s time=%5dms llm=%5dms | %s%n",
                     c.input(),
                     called ? "yes" : "NO",
                     c.argContains() == null ? "-" : (argOk ? "ok" : "MISS"),
                     pathCell,
+                    elapsedMs,
+                    llmMs,
                     actualTools() + (called && !args.isEmpty() ? " args=" + args : "")));
             block.append(h.memoryDeltaBlock()); // what this command wrote to memory, this turn
         }
@@ -137,6 +147,27 @@ class CommandExecutionEvalTest {
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
+    }
+
+    /**
+     * A command repeated verbatim must fire every single time: the companion never skips it as
+     * "already done" just because an identical command with its TOOL_RESULT already sits in the Visible
+     * context. Says the unambiguous imperative "целься в двигатели" (target the drive) three times in one
+     * conversation and asserts target_subsystem executed on every turn.
+     */
+    @Test
+    void repeatedCommandFiresEveryTime() throws Exception {
+        int fired = 0;
+        for (int i = 0; i < 3; i++) {
+            h.say("целься в двигатели");
+            if (h.called("target_subsystem")) {
+                fired++;
+            }
+        }
+        // WHY: exact 3/3 is intentional and stricter than this package's usual loose eval assertions - it
+        // encodes a hard product requirement (a repeated command must NEVER be skipped as "already done"),
+        // not a probabilistic expectation. This is an opt-in local-integration test, not a CI gate.
+        assertEquals(3, fired, "a repeated command must execute on every utterance - see the trace");
     }
 
     /** The tool names the model actually called this turn (for diagnosing a miss). */

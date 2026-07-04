@@ -6,6 +6,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.status_events.InGlideEvent;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.events.DisembarkEvent;
+import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -422,6 +423,18 @@ public class LocationTrackingSubscriber {
 
     @Subscribe
     public void onDisembarkEvent(DisembarkEvent event) {
+        resetTrackingState();
+    }
+
+    /**
+     * After a hyperspace jump any in-system landing target is stale, so tracking is cleared here. Clearing
+     * disables the shared-session target immediately, so PlayerMovedEvent tasks still queued on navExecutor
+     * from the previous system read a disabled target and no-op instead of replaying the old approach callouts.
+     * Hyperspace-only: supercruise entry/exit is a different event, so navigation to a surface target survives
+     * dropping out of supercruise.
+     */
+    @Subscribe
+    public void onFSDJumpEvent(FSDJumpEvent event) {
         resetTrackingState();
     }
 

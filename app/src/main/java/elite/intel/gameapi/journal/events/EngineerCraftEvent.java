@@ -72,6 +72,14 @@ public class EngineerCraftEvent extends BaseEvent {
         return "Applied an engineer modification to a module; carries the engineer, blueprint, level, and resulting effects.";
     }
 
+    @Override
+    public String memorySummary() {
+        if (engineer == null || engineer.isBlank() || blueprintName == null || blueprintName.isBlank()) {
+            return "";
+        }
+        return "engineered " + blueprintName + " grade " + level + " at " + engineer;
+    }
+
     // Getters
     public String getSlot() {
         return slot;

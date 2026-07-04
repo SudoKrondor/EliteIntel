@@ -49,6 +49,12 @@ public class ReputationEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return "reputation - federation " + getFederationPercent() + ", empire " + getEmpirePercent()
+                + ", alliance " + getAlliancePercent();
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

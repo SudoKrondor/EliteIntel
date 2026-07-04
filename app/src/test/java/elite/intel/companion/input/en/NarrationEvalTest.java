@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *       stays within its entry cap and token budget, so it never bloats the commander prompt later.</li>
  * </ol>
  * It also re-checks the {@code NarrationThought} contract per turn: one LLM round, only the narration system
- * tools ({@code speak}/{@code nothing_to_do}). Opt-in via the local-integration tag; LM Studio must be up.
+ * tools ({@code speak}). Opt-in via the local-integration tag; LM Studio must be up.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -108,7 +108,7 @@ class NarrationEvalTest {
             boolean spoke = !spoken.isBlank();
             boolean oneRound = rounds == 1;
             boolean onlyNarrationTools = h.turnToolNames().stream()
-                    .allMatch(t -> t.equals("speak") || t.equals("nothing_to_do"));
+                    .allMatch(t -> t.equals("speak"));
             if (spoke) {
                 spokeCount++;
             }

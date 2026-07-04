@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -64,7 +65,7 @@ class BehavioralEvalTest {
         int good = 0;
         for (String ask : asks) {
             h.say(ask);
-            boolean clarify = h.called("clarify") || cued(h.spokenTexts(), CLARIFY_CUES);
+            boolean clarify = cued(h.spokenTexts(), CLARIFY_CUES);
             boolean honestMiss = cued(h.spokenTexts(), MISS_CUES);
             boolean handledWell = clarify || honestMiss;
             if (handledWell) {
@@ -112,6 +113,26 @@ class BehavioralEvalTest {
         h.trace(block.toString());
 
         assertTrue(said > 0, "the companion never said its own name \"" + name + "\" - see the trace");
+    }
+
+    /**
+     * A question repeated three times in a row must always get a spoken reaction - never silence - even
+     * after the companion already answered it. A repeat may be acknowledged ("you already asked"), but the
+     * commander always expects a response, so an empty (silent) turn on any repeat is a failure.
+     */
+    @Test
+    void repeatedQuestionAlwaysGetsAResponse() throws Exception {
+        int answered = 0;
+        for (int i = 0; i < 3; i++) {
+            h.say("как тебя зовут");
+            if (!h.spokenTexts().isEmpty()) {
+                answered++;
+            }
+        }
+        // WHY: exact 3/3 is intentional and stricter than this package's usual loose eval assertions - it
+        // encodes a hard product requirement (a repeated question must NEVER be met with silence), not a
+        // probabilistic expectation. This is an opt-in local-integration test, not a CI gate.
+        assertEquals(3, answered, "every repeat of a question must get a spoken response - see the trace");
     }
 
     private static boolean cued(List<String> texts, List<String> cues) {

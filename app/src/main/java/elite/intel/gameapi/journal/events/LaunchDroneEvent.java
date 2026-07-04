@@ -10,7 +10,7 @@ import java.util.StringJoiner;
 
 public class LaunchDroneEvent extends BaseEvent {
     @SerializedName("Type")
-    private String Type;
+    private String type;
 
     @SerializedName("DroneId")
     private String droneId;
@@ -18,7 +18,7 @@ public class LaunchDroneEvent extends BaseEvent {
     public LaunchDroneEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofMinutes(5), "LaunchDrone");
         LaunchDroneEvent event = GsonFactory.getGson().fromJson(json, LaunchDroneEvent.class);
-        this.Type = event.Type;
+        this.type = event.type;
         this.droneId = String.valueOf(json.get("timestamp").getAsString());
     }
 
@@ -49,11 +49,11 @@ public class LaunchDroneEvent extends BaseEvent {
     }
 
     public String getType() {
-        return Type;
+        return type;
     }
 
     public void setType(String type) {
-        Type = type;
+        this.type = type;
     }
 
     public String getDroneId() {

@@ -75,6 +75,8 @@ public final class CompanionEvalHarness {
     private final AtomicLong rounds = new AtomicLong();
     // Identities of short-term entries already reported, so each memoryDeltaBlock() shows only new writes.
     private final Set<String> seenMemory = new HashSet<>();
+    // The raw body of the last LLM request this turn, so recall scoring can read the injected candidate block.
+    private volatile String lastRequestBody;
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -116,6 +118,7 @@ public final class CompanionEvalHarness {
         model = SystemSession.getInstance().getLmStudioCommandModel().trim();
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
+            lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
@@ -131,8 +134,8 @@ public final class CompanionEvalHarness {
         LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, recall, remember,
-        // change_global_topic, ...) run for real, so the LLM and memory get the actual query result and the
+        // executed (they would press keys); QUERIES and system functions (speak, memory_search,
+        // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
         // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
             String toolName = request.toolName();
@@ -234,6 +237,7 @@ public final class CompanionEvalHarness {
     /** Clears the per-turn capture; call before driving input that should be scored in isolation. */
     public void beginTurn() {
         turnCalls.clear();
+        lastRequestBody = null;
     }
 
     /** Blocks until both lanes are idle (the real turn-boundary signal) or the per-turn timeout elapses. */
@@ -266,12 +270,25 @@ public final class CompanionEvalHarness {
         return !callsNamed(tool).isEmpty();
     }
 
-    /** The text passed to every speak call this turn. */
+    /**
+     * Everything the commander actually hears this turn: the LLM's own {@code speak} calls plus the spoken
+     * answer of any self-narrating query/command (a query voices its {@code text_to_speech_response} through the
+     * announcement path, not a speak call), so scoring reflects what was said regardless of which tool said it.
+     */
     public List<String> spokenTexts() {
-        return callsNamed("speak").stream()
-                .filter(c -> c.args().has("text") && !c.args().get("text").isJsonNull())
-                .map(c -> c.args().get("text").getAsString())
-                .toList();
+        List<String> spoken = new ArrayList<>();
+        for (Executed c : callsNamed("speak")) {
+            if (c.args().has("text") && !c.args().get("text").isJsonNull()) {
+                spoken.add(c.args().get("text").getAsString());
+            }
+        }
+        for (Executed c : turnCalls) {
+            String tts = str(c.result(), "text_to_speech_response");
+            if (!tts.isBlank()) {
+                spoken.add(tts);
+            }
+        }
+        return spoken;
     }
 
     /** Whether any spoken phrase this turn contains the token (case-insensitive). */
@@ -303,7 +320,7 @@ public final class CompanionEvalHarness {
     /** The mid-term topic id (lowercase enum name) whose memory holds the token, or null. */
     public String midTermTopic(String token) {
         String tok = token.toLowerCase(Locale.ROOT);
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             if (memory.recallTopicMemory(topic, null, 100).stream().anyMatch(e -> contains(e.content(), tok))) {
                 return topic.name().toLowerCase(Locale.ROOT);
             }
@@ -311,26 +328,49 @@ public final class CompanionEvalHarness {
         return null;
     }
 
-    /** Whether the model called search_in_memory this turn. */
+    /** The raw body of the last LLM request this turn (for inspecting what the prompt carried: context + candidates). */
+    public String lastRequestBody() {
+        return lastRequestBody == null ? "" : lastRequestBody;
+    }
+
+    /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
     public boolean recalled() {
-        return called("search_in_memory");
+        return lastRequestBody != null && lastRequestBody.contains("<facts>");
     }
 
-    /** The query passed to the first search_in_memory call this turn, or empty when it was not called. */
-    public String recalledQuery() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+    /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
+    public String assignedImportance() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "importance");
     }
 
-    /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
+    /** The is_question flag the model set this turn via classify_turn ("true"/"false"), or empty when not called. */
+    public String assignedIsQuestion() {
+        List<Executed> calls = callsNamed("classify_turn");
+        return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
+    }
+
+    /** The answer-fact candidates inlined into this turn's prompt (the two-tier "Relevant remembered facts"), or empty. */
     public List<String> recallResult() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        if (recalls.isEmpty() || !recalls.get(0).result().has("items")) {
+        if (lastRequestBody == null) {
             return List.of();
         }
-        List<String> items = new ArrayList<>();
-        recalls.get(0).result().getAsJsonArray("items").forEach(e -> items.add(e.getAsString()));
-        return items;
+        int start = lastRequestBody.indexOf("<facts>");
+        if (start < 0) {
+            return List.of();
+        }
+        int end = lastRequestBody.indexOf("</facts>", start);
+        String block = lastRequestBody.substring(start, end < 0 ? lastRequestBody.length() : end);
+        List<String> facts = new ArrayList<>();
+        // Facts are XML elements <fact ... >text</fact>; pull the text between each element's tags.
+        for (String part : block.split("<fact")) {
+            int gt = part.indexOf('>');
+            int close = part.indexOf("</fact>");
+            if (gt >= 0 && close > gt) {
+                facts.add(part.substring(gt + 1, close).strip());
+            }
+        }
+        return facts;
     }
 
     private static String str(JsonObject o, String key) {
@@ -448,6 +488,9 @@ public final class CompanionEvalHarness {
             @Override public BaseEvent.Importance importance() {
                 return importance;
             }
+            @Override public String memorySummary() {
+                return summary; // the readable line EventThought records (mirrors a real event's memorySummary)
+            }
             @Override public String toJson() {
                 JsonObject o = new JsonObject();
                 o.addProperty("event", type);
@@ -466,7 +509,7 @@ public final class CompanionEvalHarness {
     /** Every stored entry across short-term, mid-term (all topics) and pinned long-term facts. */
     public List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>(memory.readShortTermTimeline());
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             all.addAll(memory.recallTopicMemory(topic, null, 1000));
         }
         all.addAll(memory.longTermPinnedFacts());

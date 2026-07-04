@@ -22,4 +22,12 @@ public interface VerbatimNarrationSink {
      */
     void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
                                  CompletableFuture<Void> spokenSignal);
+
+    /**
+     * As above, but attributes the line to a model tool-call: it is recorded as that call's tool result (linked
+     * by {@code toolCallId}) instead of free-standing companion speech, so the timeline replays it as the RESULT
+     * half of an {@code assistant(tool_calls) -> tool} pair. A {@code null} id behaves like the method above.
+     */
+    void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
+                                 CompletableFuture<Void> spokenSignal, String toolCallId);
 }

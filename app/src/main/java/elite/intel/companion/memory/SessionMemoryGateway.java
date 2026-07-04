@@ -1,18 +1,24 @@
 package elite.intel.companion.memory;
 
-import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
-import elite.intel.companion.prompt.CompanionWordMatch;
+import elite.intel.companion.model.memory.MemorySource;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Default {@link MemoryGateway} implementation. Composes the session memory areas
- * (short-term, mid-term topic, long-term summary) and owns the eviction transitions
- * between them. The internal stores are package-private; nothing outside this package touches them.
+ * (short-term, mid-term topic, long-term summary), owns the eviction transitions between them, and embeds and
+ * de-duplicates entries on write. The recall ranking ({@code memory_search}) lives in {@link MemorySearch};
+ * the internal stores are package-private; nothing outside this package touches them.
  * <p>
  * Session-only: nothing is persisted to disk.
  * <p>
@@ -23,7 +29,9 @@ import java.util.*;
  */
 public final class SessionMemoryGateway implements MemoryGateway {
 
-    private final TokenEstimator tokenEstimator;
+    private static final Logger log = LogManager.getLogger(SessionMemoryGateway.class);
+
+    private final Supplier<SemanticPhraseMatcher> matcherSource;
     private final ShortTermMemory shortTerm;
     private final MidTermTopicMemory midTerm = new MidTermTopicMemory();
     private final LongTermMemory longTerm = new LongTermMemory();
@@ -31,15 +39,32 @@ public final class SessionMemoryGateway implements MemoryGateway {
     // Hands mid-term overflow to the consolidator; no-op until wired at subsystem start. The gateway stays
     // mechanical (it never calls the LLM) - it only forwards evicted entries.
     private volatile MidTermEvictionListener evictionListener = entry -> {};
+    // Hands an over-long write off for silent compression; no-op until wired at subsystem start (then the
+    // entry is simply dropped). The gateway never calls the LLM itself - the listener owns that.
+    private volatile OversizedMemoryListener oversizedListener = entry -> {};
 
-    /** Production constructor: uses the default heuristic token estimator. */
+    /** Production constructor: heuristic token estimator and the process-wide shared semantic matcher. */
     public SessionMemoryGateway() {
-        this(new HeuristicTokenEstimator());
+        this(SemanticSearchProvider::matcher);
     }
 
-    /** Injectable constructor for tests and a future provider-accurate tokenizer swap. */
+    /**
+     * Chooses the semantic-search source (with the heuristic token estimator). Production passes the shared
+     * provider; a caller that must stay off the embedding model - e.g. the default-suite integration test -
+     * passes {@code () -> null}, which keeps recall on word matching alone.
+     */
+    public SessionMemoryGateway(Supplier<SemanticPhraseMatcher> matcherSource) {
+        this(new HeuristicTokenEstimator(), matcherSource);
+    }
+
+    /** Injectable token estimator for tests; word-only recall (no semantic matcher). */
     SessionMemoryGateway(TokenEstimator tokenEstimator) {
-        this.tokenEstimator = tokenEstimator;
+        this(tokenEstimator, () -> null);
+    }
+
+    /** Canonical constructor: injectable token estimator and semantic-matcher source. */
+    SessionMemoryGateway(TokenEstimator tokenEstimator, Supplier<SemanticPhraseMatcher> matcherSource) {
+        this.matcherSource = matcherSource;
         this.shortTerm = new ShortTermMemory(tokenEstimator);
     }
 
@@ -48,17 +73,47 @@ public final class SessionMemoryGateway implements MemoryGateway {
         this.evictionListener = listener == null ? entry -> {} : listener;
     }
 
+    /** Registers the handler that compresses an over-long write; defaults to a no-op (the entry is dropped). */
+    public void setOversizedMemoryListener(OversizedMemoryListener listener) {
+        this.oversizedListener = listener == null ? entry -> {} : listener;
+    }
+
     @Override
     public synchronized void write(MemoryEntry entry) {
+        // Too long to store as-is (it would bloat the prompt timeline): hand it off for silent LLM compression,
+        // which re-writes a short gist here. Checked before embedding/dedup so a doomed long entry costs nothing.
+        if (entry.content() != null && entry.content().length() > CompanionConfig.memoryEntryMaxChars()) {
+            oversizedListener.onOversized(entry);
+            return;
+        }
         // Stored lower-cased: case carries no recall signal (search lower-cases anyway) and it keeps the
-        // inlined timeline uniform. New entries land in short-term first; whatever overflows the count/token
-        // bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
-        MemoryEntry stored = entry.content() == null ? entry : new MemoryEntry(
-                entry.timestamp(), entry.topic(), entry.source(), entry.content().toLowerCase(Locale.ROOT),
-                entry.importance());
+        // inlined timeline uniform. The meaning-vector is computed here, once, on the lower-cased text so
+        // semantic recall reads it for free. New entries land in short-term first; whatever overflows the
+        // count/token bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
+        MemoryEntry stored = entry;
+        if (entry.content() != null) {
+            // Store both texts lower-cased (case carries no recall signal), then embed the clean candidate text
+            // (MemoryEntry.embeddingText: the canonical fact when present, else the verbatim content).
+            String lowerContent = entry.content().toLowerCase(Locale.ROOT);
+            String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
+            MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
+                    entry.importance(), null, lowerCanonical);
+            stored = lowered.withEmbedding(embed(lowered.embeddingText()));
+        }
+        // Collapse a fact that is already in memory under near-identical meaning into one fresh copy, so a
+        // re-stated or re-asked fact (commander fact + the companion's echo, repeated questions, repeated
+        // "I didn't find it" replies) does not pile up near-duplicate entries that later crowd out recall.
+        stored = mergeDuplicate(stored);
         shortTerm.add(stored);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
-            midTerm.add(evicted);
+            // LOW entries (idle banter and the companion's own speech) exist only for hot-timeline continuity;
+            // they are dropped when they age out of short-term, never promoted to mid-term.
+            if (evicted.importance() != MemoryImportance.LOW) {
+                // Collapse against mid-term duplicates at the hand-off: the hot window is verbatim, so two
+                // near-identical copies can ride it together - merging here keeps mid-term (and thus the
+                // <facts> candidates) free of duplicates instead of waiting for a future matching write.
+                midTerm.add(mergeDuplicate(evicted));
+            }
         }
         // Per-topic mid-term overflow is handed to the consolidator (long-term summary lives behind the LLM).
         for (MemoryEntry overflow : midTerm.evictOverflow()) {
@@ -78,106 +133,32 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized List<String> recallMatching(String query, int limit) {
-        // Unified search across short-term timeline + mid-term (all topics), ranked by importance then recency.
-        // Matching is word-overlap (does the entry share a meaningful word with the query), NOT a
-        // contiguous substring, so the model's paraphrased or whole-question query still finds the stored fact.
-        Set<String> queryTokens = tokens(query);
-        List<TimedHit> hits = new ArrayList<>();
-        // Short-term is already inlined into the prompt, but search it too: if the model does decide to recall,
-        // it then gets the whole picture instead of missing the most recent facts. A given entry lives in exactly
-        // one of short-term / mid-term (mid-term only receives short-term overflow), so the two never double-count.
-        for (MemoryEntry entry : shortTerm.timeline()) {
-            if (matches(queryTokens, entry.content())) {
-                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
-                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
-            }
-        }
-        for (MemoryEntry entry : midTerm.allEntries()) {
-            if (matches(queryTokens, entry.content())) {
-                // Carry the speaker tag so the model knows whose words it recalled (same speaker-tag
-                // convention as the timeline via MemorySource.displayLabel), matching its prompt legend.
-                hits.add(new TimedHit(entry.importance(), entry.timestamp(),
-                        "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] " + entry.content()));
-            }
-        }
-        // Importance first so a MAX/HIGH match outranks routine chatter that merely shares a word; recency
-        // breaks ties. This keeps the most important matching fact inside the result limit instead of letting
-        // newer trivia evict it.
-        hits.sort(Comparator.comparing(TimedHit::importance, Comparator.reverseOrder())
-                .thenComparing(TimedHit::at, Comparator.reverseOrder()));
-        return hits.stream().limit(Math.max(0, limit)).map(TimedHit::content).distinct().toList();
-    }
-
-    /** A matched memory entry with its importance and write time, for ranking the two memory areas. */
-    private record TimedHit(MemoryImportance importance, java.time.Instant at, String content) {}
-
-    /** An entry matches when it shares at least one meaningful word with the query; a query with no meaningful
-     *  words (blank / all stop words) matches everything, i.e. returns simply the most recent entries. Two words
-     *  are compared with the companion's shared inflection-tolerant rule ({@link CompanionWordMatch}): the same
-     *  word up to an appended/changed ending or a small typo, so a paraphrase in a different word form
-     *  ("jump"/"jumps", "звезда"/"звезду") still recalls the stored fact. Recall favours catching a match, so the
-     *  tolerant rule is used for every language (over-recall is cheap here). */
-    private static boolean matches(Set<String> queryTokens, String content) {
-        if (queryTokens.isEmpty()) {
-            return true;
-        }
-        Set<String> contentTokens = tokens(content);
-        for (String q : queryTokens) {
-            for (String c : contentTokens) {
-                if (CompanionWordMatch.similar(q, c)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */
-    private static Set<String> tokens(String text) {
-        if (text == null) {
-            return Set.of();
-        }
-        Set<String> set = new HashSet<>();
-        for (String word : text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+")) {
-            if (word.length() > 2 && !InputNormalizerLocalizations.stopWords().contains(word)) {
-                set.add(word);
-            }
-        }
-        return set;
+        // Ranking and de-duplication live in MemorySearch; the gateway only supplies the current memory areas
+        // and the shared matcher. A given entry lives in exactly one of short-term / mid-term, so no double-count.
+        // The long-term summary is no longer inlined into every prompt - it is reached here, as a searchable entry.
+        return MemorySearch.recall(query, limit, shortTerm.timeline(), midTerm.allEntries(),
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
     }
 
     @Override
-    public synchronized List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) {
-        // Important mid-term entries only: short-term is already inlined whole (and searched), so re-including it
-        // would duplicate the prompt. Take the most recent HIGH/MAX, capped by count and token budget, then
-        // return oldest-to-newest for a stable, timeline-like ordering.
-        List<MemoryEntry> important = new ArrayList<>();
-        for (MemoryEntry entry : midTerm.allEntries()) {
-            if (entry.importance().compareTo(MemoryImportance.HIGH) >= 0) {
-                important.add(entry);
-            }
-        }
-        important.sort(Comparator.comparing(MemoryEntry::timestamp).reversed());
-        List<MemoryEntry> selected = new ArrayList<>();
-        int tokens = 0;
-        for (MemoryEntry entry : important) {
-            if (selected.size() >= maxEntries) {
-                break;
-            }
-            int cost = tokenEstimator.estimate(entry.content()) + CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
-            if (!selected.isEmpty() && tokens + cost > tokenBudget) {
-                break; // keep at least the newest, then stop once the budget would overflow
-            }
-            tokens += cost;
-            selected.add(entry);
-        }
-        Collections.reverse(selected); // oldest-to-newest, matching the timeline block
-        return selected;
+    public synchronized List<MemoryEntry> recallCandidates(String query, int limit) {
+        // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
+        // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
+        return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
     }
 
-    @Override
-    public synchronized MemoryAvailabilitySnapshot indexes() {
-        return new MemoryAvailabilitySnapshot(midTerm.topicsWithMemory());
+    /**
+     * The session long-term summary wrapped as a single searchable entry, or empty when nothing has been
+     * consolidated yet. It carries no meaning-vector (it is replaced as a plain string), so it recalls by
+     * word-overlap; an old timestamp keeps it from winning recency ties against specific recent facts.
+     */
+    private List<MemoryEntry> longTermSummaryAsSearchable() {
+        String summary = longTerm.get();
+        if (summary == null || summary.isBlank()) {
+            return List.of();
+        }
+        return List.of(new MemoryEntry(Instant.EPOCH, ConversationTopic.SYSTEM, MemorySource.SYSTEM, summary.strip()));
     }
 
     @Override
@@ -197,6 +178,106 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public synchronized void addLongTermPinned(MemoryEntry fact) {
-        longTerm.pin(fact);
+        // Pinned facts are searched too, so they need a meaning-vector; attach one if the consolidator did not.
+        MemoryEntry withVector = fact;
+        if (fact != null && fact.content() != null && fact.embedding() == null) {
+            withVector = fact.withEmbedding(embed(fact.content()));
+        }
+        longTerm.pin(withVector);
+    }
+
+    /**
+     * Collapses every entry already in <em>mid-term</em> that means the same thing as {@code incoming}
+     * (cosine &ge; {@link CompanionConfig#semanticDedupFloor()}) into a single surviving copy: the most
+     * important wording (the newest when importance ties), stamped with the newest mention so a re-confirmed
+     * fact is fresh again. The superseded copies are removed from their store; the survivor is returned to be
+     * stored by the caller - as the one short-term copy on a write, or as the one mid-term copy at the
+     * eviction hand-off. Short-term itself is never scanned - the hot window is kept verbatim
+     * (see {@link ShortTermMemory#add}). A no-op when {@code incoming} has no vector (semantic search off).
+     */
+    private MemoryEntry mergeDuplicate(MemoryEntry incoming) {
+        // An event is a discrete occurrence, not a restatement of a fact: "docked at A" and "docked at B" are
+        // near-identical in meaning (they differ only in a name), so vector dedup would collapse them and make an
+        // enumeration ("which stations did we dock at") impossible. An event therefore dedups only against a
+        // LITERAL repeat (identical content, e.g. the same station twice); every other entry dedups by meaning.
+        boolean literal = incoming.source() == MemorySource.EVENT;
+        if (!literal && incoming.embedding() == null) {
+            return incoming; // meaning dedup needs a vector; with none (semantic search off) there is nothing to do
+        }
+        double floor = CompanionConfig.semanticDedupFloor();
+        MemoryEntry keep = incoming;
+        Instant freshest = incoming.timestamp();
+        boolean merged = false;
+        for (MemoryEntry existing : duplicatesOf(incoming, floor)) {
+            removeStored(existing);
+            merged = true;
+            if (existing.importance().compareTo(keep.importance()) > 0) {
+                keep = existing; // a strictly more important wording wins; an equal-importance tie keeps the incoming (newest)
+            }
+            if (existing.timestamp().isAfter(freshest)) {
+                freshest = existing.timestamp();
+            }
+        }
+        return merged ? keep.withTimestamp(freshest) : incoming;
+    }
+
+    /** Every stored mid-term entry that is a duplicate of {@code probe} (short-term is kept verbatim; the MAX archive is left intact). */
+    private List<MemoryEntry> duplicatesOf(MemoryEntry probe, double floor) {
+        List<MemoryEntry> out = new ArrayList<>();
+        // Short-term is intentionally not scanned: the hot window keeps every entry, including repeated
+        // boundary markers, so only durable mid-term facts are collapsed by meaning.
+        collectDuplicates(out, midTerm.allEntries(), probe, floor);
+        return out;
+    }
+
+    private static void collectDuplicates(List<MemoryEntry> out, List<MemoryEntry> entries,
+                                          MemoryEntry probe, double floor) {
+        for (MemoryEntry entry : entries) {
+            if (isDuplicate(probe, entry, floor)) {
+                out.add(entry);
+            }
+        }
+    }
+
+    /**
+     * Whether {@code entry} duplicates {@code probe}. Anything involving an event uses LITERAL equality
+     * (identical content) - a discrete occurrence is only a duplicate of an exact repeat, never of a
+     * merely similar-meaning line; every other pair dedups by meaning (cosine &ge; {@code floor}).
+     */
+    private static boolean isDuplicate(MemoryEntry probe, MemoryEntry entry, double floor) {
+        if (probe.source() == MemorySource.EVENT || entry.source() == MemorySource.EVENT) {
+            return Objects.equals(probe.content(), entry.content());
+        }
+        return MemorySearch.sameMeaning(probe, entry, floor);
+    }
+
+    /** Removes a superseded entry from whichever store holds it (short-term first, then mid-term). */
+    private void removeStored(MemoryEntry entry) {
+        if (!shortTerm.remove(entry)) {
+            midTerm.remove(entry);
+        }
+    }
+
+    /**
+     * Computes the meaning-vector for an entry's text once, via the shared semantic matcher, or {@code null}
+     * when semantic search is unavailable.
+     */
+    private float[] embed(String text) {
+        if (text == null || text.isBlank()) {
+            return null;
+        }
+        SemanticPhraseMatcher matcher = matcherSource.get();
+        if (matcher == null) {
+            return null;
+        }
+        try {
+            return matcher.embedQuery(text);
+        } catch (RuntimeException e) {
+            // WHY: a transient embed failure must not block storing the memory; the entry is kept without a
+            // vector (word-only recall). The matcher exists only after a successful model load, so a throw here
+            // is unexpected - log it rather than hide it.
+            log.warn("Embedding a memory entry failed; storing it without a meaning-vector", e);
+            return null;
+        }
     }
 }

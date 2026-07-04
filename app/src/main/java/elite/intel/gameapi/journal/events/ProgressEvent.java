@@ -61,6 +61,11 @@ public class ProgressEvent extends BaseEvent implements PlayerProgressStats {
     }
 
     @Override
+    public String memorySummary() {
+        return "rank progress - combat " + combat + "%, trade " + trade + "%, exploration " + explore + "%";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

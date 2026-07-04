@@ -150,6 +150,16 @@ public class DockedEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        if (stationName == null || stationName.isBlank()) {
+            return "";
+        }
+        return starSystem == null || starSystem.isBlank()
+                ? "docked at " + stationName
+                : "docked at " + stationName + " in " + starSystem;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -1,5 +1,7 @@
 package elite.intel.ai.mouth.kokoro;
 
+import java.util.Locale;
+
 /**
  * Speaker IDs for the kokoro-multi-lang-v1_0 model (53 voices).
  * <p>
@@ -13,6 +15,9 @@ package elite.intel.ai.mouth.kokoro;
  *   jf_ = Japanese Female   jm_ = Japanese Male
  *   pf_ = Portuguese Female pm_ = Portuguese Male
  *   zf_ = Chinese Female    zm_ = Chinese Male
+ * <p>
+ * The UI renders each voice's display label via {@link #i18nKey()} resolved against the {@code gui}
+ * bundles ("Name - Accent"), falling back to the English bundle when a translation is missing.
  * <p>
  * Source: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
  */
@@ -119,5 +124,12 @@ public enum KokoroVoices {
 
     public String getDescription() {
         return description;
+    }
+
+    /**
+     * Resource-bundle key for this voice's localized display label (e.g. {@code voice.kokoro.bella}).
+     */
+    public String i18nKey() {
+        return "voice.kokoro." + name().toLowerCase(Locale.ROOT);
     }
 }

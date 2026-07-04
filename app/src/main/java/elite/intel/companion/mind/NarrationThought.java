@@ -56,7 +56,7 @@ public final class NarrationThought extends Thought {
         return eventTopic;
     }
 
-    /** Narration carries ordinary importance; only the commander rates a turn (set_importance). */
+    /** Narration carries ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;
@@ -66,8 +66,8 @@ public final class NarrationThought extends Thought {
     // so the prompt offers no commands and no queries.
 
     /**
-     * System tools for the NARRATION source ({@code speak} + {@code nothing_to_do}), with {@code speak}
-     * ungated: the subscriber layer already decided this should be narrated, so verbosity does not suppress it.
+     * System tools for the NARRATION source ({@code speak} only): the subscriber layer already decided this
+     * should be narrated, so it is voiced unconditionally.
      */
     @Override
     protected List<LlmToolDefinition> systemTools() {

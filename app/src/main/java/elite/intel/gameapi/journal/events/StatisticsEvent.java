@@ -93,6 +93,11 @@ public class StatisticsEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return bankAccount == null ? "" : "net worth: " + bankAccount.currentWealth + " credits";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

@@ -39,6 +39,7 @@ public class AppView extends JFrame implements AppViewInterface {
 
     private final SystemSession systemSession = SystemSession.getInstance();
     private Font monoFont;
+    private AiUiState uiState;
     private AiTabPanel aiTabPanel;
     private CommanderTabPanel commanderTabPanel;
     private ActionsTabPanel actionsTabPanel;
@@ -100,8 +101,10 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
         ImageIcon manualIcon = scaledIcon(MANUAL_ICON);
-
-        aiTabPanel = new AiTabPanel(monoFont);
+        if (uiState == null) {
+            uiState = new AiUiState();
+        }
+        aiTabPanel = new AiTabPanel(monoFont, uiState);
         commanderTabPanel = new CommanderTabPanel();
         actionsTabPanel = new ActionsTabPanel();
         bindForgeTabPanel = new BindForgeTabPanel();

@@ -46,7 +46,7 @@ public class NaturalSpeechIntegrationTestEN {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 5000;
+    private static final int LLM_WAIT_MS = 3000;
     private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
@@ -1229,17 +1229,6 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> queryTotalBounties() {
         return Stream.of("bounties", "total bounties", "how much in bounties");
-    }
-
-    @ParameterizedTest(name = "[{index}] \"{0}\"")
-    @Order(230)
-    @MethodSource
-    void queryKeyBindings(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeMisingKeyBindingQueryCommand.ID);
-    }
-
-    static Stream<String> queryKeyBindings() {
-        return Stream.of("check key bindings", "missing key bindings", "unbound keys");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

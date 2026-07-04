@@ -26,11 +26,19 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 public class BindingsGroupTableFactory {
     public static final int TABLE_ROW_HEIGHT = HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
     public static final String HOVER_ROW_PROPERTY = "elite.intel.bindings.hoverRow";
+    private static final String ROW_ACTION_PROPERTY = "elite.intel.bindings.rowAction";
     private static final Border TABLE_SECTION_BORDER = BorderFactory.createEmptyBorder(1, 0, 0, 0);
+
+    /**
+     * The per-row action offered in a table's trailing column: the Missing view offers AUTO_FIX,
+     * the Used view offers CLEAR (of the keyboard binding only), and other tables offer none.
+     */
+    public enum RowAction {NONE, AUTO_FIX, CLEAR}
 
     private final BindingsSelectionController selectionController;
     private final BiConsumer<String, BindingSlotType> slotClickHandler;
     private final Consumer<String> autoFixHandler;
+    private final Consumer<String> clearHandler;
     private final Predicate<String> hasConflict;
     private final Predicate<String> hasRecommendation;
     /**
@@ -46,6 +54,7 @@ public class BindingsGroupTableFactory {
             BindingsSelectionController selectionController,
             BiConsumer<String, BindingSlotType> slotClickHandler,
             Consumer<String> autoFixHandler,
+            Consumer<String> clearHandler,
             Predicate<String> hasConflict,
             Predicate<String> hasRecommendation,
             Function<String, JComponent> conflictPopupContent
@@ -53,6 +62,7 @@ public class BindingsGroupTableFactory {
         this.selectionController = selectionController;
         this.slotClickHandler = slotClickHandler;
         this.autoFixHandler = autoFixHandler;
+        this.clearHandler = clearHandler;
         this.hasConflict = hasConflict;
         this.hasRecommendation = hasRecommendation;
         this.conflictPopupContent = conflictPopupContent;
@@ -66,14 +76,21 @@ public class BindingsGroupTableFactory {
     }
 
     /**
-     * Tables with a fourth column expose a per-row "auto fix" action in that
-     * column; three-column tables (the Used view) have none.
+     * The trailing column that carries this table's per-row action, or {@code -1} when the table has
+     * none. The action kind is stamped on the table in {@link #groupTable} and read back here so the
+     * click and hover logic stay agnostic to which action (auto fix vs. clear) the column represents.
      */
-    private int autoFixColumn(JTable table) {
-        return autoFixHandler != null && table.getColumnCount() == 4 ? 3 : -1;
+    private int actionColumn(JTable table) {
+        return rowAction(table) == RowAction.NONE ? -1 : table.getColumnCount() - 1;
     }
 
-    public JScrollPane groupTable(List<Object[]> rows, JScrollPane outerScrollPane, String... columnNames) {
+    private RowAction rowAction(JTable table) {
+        Object value = table.getClientProperty(ROW_ACTION_PROPERTY);
+        return value instanceof RowAction action ? action : RowAction.NONE;
+    }
+
+    public JScrollPane groupTable(
+            List<Object[]> rows, JScrollPane outerScrollPane, RowAction rowAction, String... columnNames) {
         DefaultTableModel model = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -85,6 +102,7 @@ public class BindingsGroupTableFactory {
         }
 
         JTable table = new JTable(model);
+        table.putClientProperty(ROW_ACTION_PROPERTY, rowAction);
         styleGroupTable(table);
         configureColumnWidths(table);
         selectionController.register(table);
@@ -125,9 +143,9 @@ public class BindingsGroupTableFactory {
                 }
                 int column = table.columnAtPoint(event.getPoint());
 
-                if (column == autoFixColumn(table)) {
+                if (column == actionColumn(table)) {
                     String bindingId = selectionController.selectRow(table, row);
-                    autoFixHandler.accept(bindingId);
+                    dispatchRowAction(table, bindingId);
                     return;
                 }
 
@@ -139,6 +157,23 @@ public class BindingsGroupTableFactory {
                 slotClickHandler.accept(bindingId, slotType);
             }
         });
+    }
+
+    private void dispatchRowAction(JTable table, String bindingId) {
+        switch (rowAction(table)) {
+            case AUTO_FIX -> {
+                if (autoFixHandler != null) {
+                    autoFixHandler.accept(bindingId);
+                }
+            }
+            case CLEAR -> {
+                if (clearHandler != null) {
+                    clearHandler.accept(bindingId);
+                }
+            }
+            case NONE -> {
+            }
+        }
     }
 
     private void highlightDataRowsOnHover(JTable table) {
@@ -208,7 +243,7 @@ public class BindingsGroupTableFactory {
             return false;
         }
         int column = table.columnAtPoint(point);
-        return slotTypeForColumn(column) != null || column == autoFixColumn(table);
+        return slotTypeForColumn(column) != null || column == actionColumn(table);
     }
 
     private BindingSlotType slotTypeForColumn(int column) {

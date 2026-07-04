@@ -61,7 +61,7 @@ public class DistanceFromShipTracker {
         boolean movingAway = previousDistance >= 0 && distance > previousDistance;
         boolean isInDonut = distance >= innerDonut && distance <= outerDonut;
 
-        if (isInDonut && movingAway && !announcedForCurrentEntry && !status.isInMainShip()) {
+        if (isInDonut && movingAway && !announcedForCurrentEntry && status.isInSrv() && event.getAltitude() < 1) {
             EventNarrator.critical(localizedEvent("event.distance.shipProximity", Math.round(distance)));
             log.info("Alert triggered: Player moving away from ship at {} meters.", distance);
             announcedForCurrentEntry = true;

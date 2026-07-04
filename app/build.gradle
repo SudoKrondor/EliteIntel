@@ -69,6 +69,12 @@ dependencies {
     //sherpa
     implementation files('libs/sherpa-onnx-v1.12.33.jar')
 
+    // In-process text embeddings (semantic command/memory matching). CPU-only, runs the
+    // multilingual-e5-small int8 ONNX model shipped in distribution/embed/. ONNX Runtime drives
+    // the model; the DJL HuggingFace tokenizer turns text into the model's input ids.
+    implementation 'com.microsoft.onnxruntime:onnxruntime:1.20.0'
+    implementation 'ai.djl.huggingface:tokenizers:0.30.0'
+
     // JNA - platform-native key simulation (left/right ctrl, alt, shift)
     implementation 'net.java.dev.jna:jna:5.14.0'
     implementation 'net.java.dev.jna:jna-platform:5.14.0'
@@ -163,10 +169,12 @@ shadowJar {
     dependsOn extractLwjglNatives
 }
 
-// Default test task — exclude local-integration tests so CI never tries to call Ollama
+// Default test task — exclude local-integration tests so CI never tries to call Ollama,
+// and embedding-manual tests so CI never tries to load the 118 MB ONNX model.
 test {
     useJUnitPlatform {
         excludeTags 'local-integration'
+        excludeTags 'embedding-manual'
     }
     systemProperty 'elite.intel.db.url', 'jdbc:sqlite:file:testdb?mode=memory&cache=shared&busy_timeout=5000'
     systemProperty 'elite.intel.db.pool.size', '1'
@@ -185,6 +193,23 @@ tasks.register('localIntegrationTest', Test) {
         events 'passed', 'failed', 'skipped'
         exceptionFormat 'full'
         showStandardStreams = true // surface the companion eval's printed conversation
+    }
+}
+
+// Run with: ./gradlew embeddingTest
+// Loads the real multilingual-e5-small int8 model from distribution/embed/ and prints the
+// cosine matrix proving Russian/Ukrainian inflected forms cluster. Excluded from CI (118 MB model).
+tasks.register('embeddingTest', Test) {
+    description = 'Semantic-embedding smoke test: prints cosine similarities for inflected forms. Not for CI.'
+    group = 'verification'
+    useJUnitPlatform {
+        includeTags 'embedding-manual'
+    }
+    maxParallelForks = 1
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+        exceptionFormat 'full'
+        showStandardStreams = true // surface the printed cosine matrix
     }
 }
 

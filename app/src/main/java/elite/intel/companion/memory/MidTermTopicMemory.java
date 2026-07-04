@@ -18,7 +18,7 @@ import java.util.Map;
  */
 class MidTermTopicMemory {
 
-    // EnumMap keeps topics in natural enum order, so the prompt topic index is stable.
+    // EnumMap keeps topics in natural enum order, so iteration (allEntries, eviction) is deterministic.
     private final Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
 
     /** Stores an evicted entry under its topic. */
@@ -49,6 +49,23 @@ class MidTermTopicMemory {
         return matched;
     }
 
+    /**
+     * Removes the given entry (by identity) from its topic if present. Used by the gateway's semantic
+     * de-duplication when a re-stated fact supersedes this copy. Returns whether it removed.
+     */
+    boolean remove(MemoryEntry entry) {
+        List<MemoryEntry> entries = byTopic.get(entry.topic());
+        if (entries != null) {
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i) == entry) {
+                    entries.remove(i);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Every entry across all topics; the gateway's unified search does the query matching. */
     List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>();
@@ -56,17 +73,6 @@ class MidTermTopicMemory {
             all.addAll(entries);
         }
         return all;
-    }
-
-    /** Topics that currently hold entries (for the prompt topic-memory index). */
-    List<ConversationTopic> topicsWithMemory() {
-        List<ConversationTopic> topics = new ArrayList<>();
-        for (Map.Entry<ConversationTopic, List<MemoryEntry>> e : byTopic.entrySet()) {
-            if (!e.getValue().isEmpty()) {
-                topics.add(e.getKey());
-            }
-        }
-        return topics;
     }
 
     /**

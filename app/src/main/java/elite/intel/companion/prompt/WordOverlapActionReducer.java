@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  */
 public final class WordOverlapActionReducer implements CompanionActionReducer {
 
-    /** Fallback ids the companion never offers; it has its own speak/nothing_to_do. */
+    /** Fallback ids the companion never offers; it has its own speak. */
     private static final Set<String> FALLBACK_IDS = Set.of(
             GeneralConversationQueryCommand.ID,
             ConnectionCheckQueryCommand.ID,

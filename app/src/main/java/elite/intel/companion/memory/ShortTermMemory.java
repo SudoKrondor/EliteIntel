@@ -21,7 +21,13 @@ class ShortTermMemory {
         this.tokenEstimator = tokenEstimator;
     }
 
-    /** Appends a new entry. */
+    /**
+     * Appends an entry to the hot timeline verbatim - the short-term window is not de-duplicated. Every turn is
+     * kept as its own entry until it ages out by the count/token bounds, so repeated commands and, crucially,
+     * repeated structural boundary markers survive (a second {@code <no_reply/>} never deletes an earlier one,
+     * which would re-merge the two commander turns it separated). Fact de-duplication happens only in mid-term
+     * (see {@code SessionMemoryGateway.mergeDuplicate}), where near-duplicates would otherwise crowd out recall.
+     */
     void add(MemoryEntry entry) {
         entries.add(entry);
         estimatedTokens += cost(entry);
@@ -30,6 +36,21 @@ class ShortTermMemory {
     /** Current timeline, oldest-to-newest. */
     List<MemoryEntry> timeline() {
         return List.copyOf(entries);
+    }
+
+    /**
+     * Removes the given entry (by identity) if present, keeping the token estimate in sync. Used by the
+     * gateway's semantic de-duplication when a re-stated fact supersedes this copy. Returns whether it removed.
+     */
+    boolean remove(MemoryEntry entry) {
+        for (int i = 0; i < entries.size(); i++) {
+            if (entries.get(i) == entry) {
+                estimatedTokens -= cost(entries.get(i));
+                entries.remove(i);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Evicts entries that exceed the count/token limits and returns them for mid-term storage. */

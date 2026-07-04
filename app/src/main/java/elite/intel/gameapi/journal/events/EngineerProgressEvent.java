@@ -35,6 +35,11 @@ public class EngineerProgressEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        return engineers == null || engineers.isEmpty() ? "" : "engineer progress: " + engineers.size() + " engineers on record";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

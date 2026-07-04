@@ -34,7 +34,7 @@ public class PromotionEvent extends BaseEvent {
     private Integer exobiologist;
 
     public PromotionEvent(JsonObject json) {
-        super(json.get("timestamp").getAsString(), Duration.ofSeconds(60), "Promotion");
+        super(json.get("timestamp").getAsString(), Duration.ofMinutes(10), "Promotion");
         this.combat = json.has("Combat") ? json.get("Combat").getAsInt() : null;
         this.trade = json.has("Trade") ? json.get("Trade").getAsInt() : null;
         this.explore = json.has("Explore") ? json.get("Explore").getAsInt() : null;
@@ -59,6 +59,13 @@ public class PromotionEvent extends BaseEvent {
     @Override
     public String llmDescription() {
         return "Ranked up in a career (combat, trade, exploration, CQC, Federation or Empire); carries which rank and the new level.";
+    }
+
+    @Override
+    public String memorySummary() {
+        return getPromotedRank()
+                .map(rank -> "promoted: " + rank.type() + " rank " + rank.rank())
+                .orElse("");
     }
 
     @Override

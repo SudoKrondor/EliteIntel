@@ -71,7 +71,7 @@ public class ApiFactory {
             case OPENAI -> OpenAiAnalysisEndPoint.getInstance();
             case ANTHROPIC -> AnthropicAnalysisEndpoint.getInstance();
             case GEMINI -> GeminiAnalysisEndpoint.getInstance();
-            default -> OllamaAnalysisEndpoint.getInstance();
+            default -> LMStudioAnalysisEndpoint.getInstance();
         };
 
     }
@@ -93,7 +93,7 @@ public class ApiFactory {
             case OPENAI -> OpenAiChatEndPoint.getInstance();
             case ANTHROPIC -> AnthropicUserEndPoint.getInstance();
             case GEMINI -> GeminiChatEndPoint.getInstance();
-            default -> OllamaCommandEndPoint.getInstance();
+            default -> LMStudioCommandEndPoint.getInstance();
         };
     }
 
@@ -124,7 +124,7 @@ public class ApiFactory {
             case OPENAI -> OpenAiCommandEndPoint.getInstance();
             case ANTHROPIC -> AnthropicCommandEndPoint.getInstance();
             case GEMINI -> GeminiCommandEndPoint.getInstance();
-            default -> OllamaUserInputProcessor.getInstance();
+            default -> LMStudioUserInputProcessor.getInstance();
         };
     }
 
@@ -136,7 +136,9 @@ public class ApiFactory {
     @SuppressWarnings({"SwitchStatementWithTooFewBranches", "EnhancedSwitchMigration"})
     public MouthInterface getMouthImpl() {
         if (systemSession.useLocalTTS()) {
-            return KokoroTTS.getInstance();
+            KokoroTTS kokoro = KokoroTTS.getInstance();
+            kokoro.setRole(KokoroTTS.Role.MAIN);
+            return kokoro;
         }
 
         String apiKey = SystemSession.getInstance().getTtsApiKey();
@@ -146,7 +148,9 @@ public class ApiFactory {
                 return GoogleTTSImpl.getInstance();
             // TODO: Add ElevenLabs, AWS Polly, etc.
             default:
-                return KokoroTTS.getInstance();
+                KokoroTTS kokoro = KokoroTTS.getInstance();
+                kokoro.setRole(KokoroTTS.Role.MAIN);
+                return kokoro;
         }
     }
 

@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Static classifier of a game event's journal type ({@link BaseEvent#getEventType()}) to the
  * {@link ConversationTopic} its memory entry is tagged with. EVENT thoughts never choose a topic via the
- * LLM (they cannot call change_global_topic); this map provides it mechanically so an event is recorded
+ * LLM (they cannot call classify_turn); this map provides it mechanically so an event is recorded
  * under the right topic without moving the commander's global conversation topic (see
  * COMPANION_ARCHITECTURE.md §2.5).
  * <p>
@@ -69,7 +69,8 @@ public final class EventTopicMap {
                 "MissionAbandoned", "MissionAccepted", "MissionCompleted", "MissionFailed", "MissionRedirected",
                 "Missions", "Powerplay", "RedeemVoucher", "Reputation");
         put(m, ConversationTopic.SHIP_STATUS,
-                "CarrierDepositFuel", "CarrierStats", "Loadout", "ShipyardBuy", "ShipyardNew", "SwitchSuitLoadout");
+                "CarrierDepositFuel", "CarrierStats", "Loadout", "ModuleBuy", "ModuleSell", "ModuleSellRemote",
+                "ShipyardBuy", "ShipyardNew", "ShipyardSell", "ShipyardSwap", "ShipyardTransfer", "SwitchSuitLoadout");
         put(m, ConversationTopic.ENGINEERING,
                 "EngineerCraft", "EngineerProgress", "MaterialCollected", "Materials");
         put(m, ConversationTopic.CREW,

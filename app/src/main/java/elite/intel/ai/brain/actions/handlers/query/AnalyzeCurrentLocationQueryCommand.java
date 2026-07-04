@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.search.edsm.EdsmApiClient;
@@ -59,7 +59,7 @@ public class AnalyzeCurrentLocationQueryCommand extends BaseQueryAnalyzer implem
                 - starSystemName: current star system
                 - planetName: current planet or body (if applicable)
                 - securityLevel: system security level
-                - controllingFaction: faction controlling current location
+                - stationFaction: faction controlling current station
                 - localPowers: powers active in this system
                 - deathsData: EDSM historical death statistics for this system
                 - trafficData: EDSM historical traffic statistics for this system

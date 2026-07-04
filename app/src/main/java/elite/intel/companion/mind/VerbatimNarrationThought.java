@@ -25,23 +25,37 @@ public final class VerbatimNarrationThought extends Thought {
 
     private final ConversationTopic eventTopic;
     private final CompletableFuture<Void> spokenSignal;
+    /** When non-null, this line is a tool-call's voiced outcome: recorded as that call's RESULT, not as speech. */
+    private final String toolCallId;
 
     VerbatimNarrationThought(Urgency urgency, String text, ConversationTopic eventTopic, ThoughtContext ctx) {
-        this(urgency, text, eventTopic, ctx, null);
+        this(urgency, text, eventTopic, ctx, null, null);
     }
 
     VerbatimNarrationThought(Urgency urgency, String text, ConversationTopic eventTopic, ThoughtContext ctx,
                              CompletableFuture<Void> spokenSignal) {
+        this(urgency, text, eventTopic, ctx, spokenSignal, null);
+    }
+
+    VerbatimNarrationThought(Urgency urgency, String text, ConversationTopic eventTopic, ThoughtContext ctx,
+                             CompletableFuture<Void> spokenSignal, String toolCallId) {
         super(ThoughtSource.NARRATION, urgency, text, ctx);
         this.eventTopic = eventTopic;
         this.spokenSignal = spokenSignal;
+        this.toolCallId = toolCallId;
     }
 
     /** Remember the line first, then voice it verbatim - no LLM, no tools. */
     @Override
     public void run() {
         try {
-            recordCompanionSpeech(currentInput);
+            // A tool-call's own narration is recorded as that call's tool RESULT (paired with its recorded call);
+            // a spontaneous curated announcement (no tool-call id) is recorded as the companion's own words.
+            if (toolCallId != null) {
+                recordToolResult(toolCallId, currentInput);
+            } else {
+                recordCompanionSpeech(currentInput);
+            }
             CompletableFuture<Void> played = ctx.speechGateway().submit(new SpeechRequest(newId(), currentInput, urgency()));
             // A synchronous caller waits for playback, not for this thought to return; mirror the legacy
             // AiVoxResponseEvent future by completing its signal when the gateway reports playback finished.
@@ -73,7 +87,7 @@ public final class VerbatimNarrationThought extends Thought {
         return eventTopic;
     }
 
-    /** Verbatim narration carries ordinary importance; only the commander rates a turn (set_importance). */
+    /** Verbatim narration carries ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;

@@ -119,7 +119,7 @@ class NarrationEvalTest {
             boolean spoke = !spoken.isBlank();
             boolean oneRound = rounds == 1;
             boolean onlyNarrationTools = h.turnToolNames().stream()
-                    .allMatch(t -> t.equals("speak") || t.equals("nothing_to_do"));
+                    .allMatch(t -> t.equals("speak"));
             if (spoke) {
                 spokeCount++;
             }

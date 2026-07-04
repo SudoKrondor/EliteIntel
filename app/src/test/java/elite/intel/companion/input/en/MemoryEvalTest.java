@@ -94,8 +94,7 @@ class MemoryEvalTest {
 
     /** System-function ids; any other executed tool is a real game query/action. */
     private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "nothing_to_do", "change_global_topic", "change_verbosity", "clarify",
-            "search_in_memory", "set_importance");
+            "speak", "classify_turn", "memory_search");
 
     @BeforeAll
     void boot() throws Exception {
@@ -199,7 +198,7 @@ class MemoryEvalTest {
 
         block.append("\n---- scores ----\n");
         block.append(String.format("in-conversation recall: %d / %d%n", hotHits, hotAsks));
-        block.append(String.format("recall after eviction:  %d / %d (search_in_memory called %d)%n", recallHits, recallProbes.size(), recalledCount));
+        block.append(String.format("recall after eviction:  %d / %d (candidates injected %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("coherence (2 facts):    %s%n", coherenceOk ? "ok" : "no"));
         block.append(String.format("events recorded:        %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("query routing:          %d / %d%n", routedOk, queryProbes.size()));

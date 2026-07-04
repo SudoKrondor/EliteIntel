@@ -1,5 +1,6 @@
 package elite.intel.gameapi.journal.events.dto.shiploadout;
 
+import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.gameapi.journal.events.LoadoutEvent;
 
 import java.util.ArrayList;
@@ -32,8 +33,8 @@ public class LoadoutConverter {
     }
 
     /**
-     * Returns the player-defined ship name when present, otherwise falls back to
-     * the journal ship type with a capitalized first letter. Returns null when
+     * Returns the player-defined ship name when present, otherwise resolves the
+     * journal ship type to a human-readable display name. Returns null when
      * neither value is usable so existing Unknown fallback text can still apply.
      */
     public static String toDisplayShipName(LoadoutEvent event) {
@@ -42,6 +43,10 @@ public class LoadoutConverter {
 
     /**
      * Normalizes a stored or journal ship name into the display name used by the UI.
+     * Prefers the player-assigned name when non-blank. Otherwise resolves the internal
+     * ship identifier to a display name via {@link ShipMakeManager}; if the make is not
+     * known, title-cases the raw value (correct for identifiers the game itself considers
+     * self-explanatory, e.g. "vulture" -> "Vulture").
      */
     public static String toDisplayShipName(String shipName, String ship) {
         String normalizedShipName = normalizeBlank(shipName);
@@ -53,6 +58,12 @@ public class LoadoutConverter {
         if (normalizedShip == null) {
             return null;
         }
+
+        String displayName = ShipMakeManager.getInstance().getDisplayName(normalizedShip);
+        if (displayName != null) {
+            return displayName;
+        }
+
         return normalizedShip.substring(0, 1).toUpperCase(Locale.ROOT) + normalizedShip.substring(1);
     }
 

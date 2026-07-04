@@ -92,6 +92,17 @@ public class MissionsEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        int activeCount = active == null ? 0 : active.size();
+        int completeCount = complete == null ? 0 : complete.size();
+        int failedCount = failed == null ? 0 : failed.size();
+        if (activeCount == 0 && completeCount == 0 && failedCount == 0) {
+            return ""; // an empty mission log carries nothing worth remembering
+        }
+        return "mission log: " + activeCount + " active, " + completeCount + " completed, " + failedCount + " failed";
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }

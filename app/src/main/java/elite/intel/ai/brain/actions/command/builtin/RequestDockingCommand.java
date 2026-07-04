@@ -48,9 +48,12 @@ public final class RequestDockingCommand implements IntelCommand {
             // Exit the panel and restore the assumed UI state.
             navigator.closeAndRestore(StatusFlags.GuiFocus.EXTERNAL_PANEL);
         }
-        if (status.isInFighter()) {
+        //if (!status.isOnFoot() && !status.isInMainShip() && !status.isInSrv()) {
+        else {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.bindingHold(Bindings.GameCommand.BINDING_UI_SELECT.getGameBinding(), 120),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding())

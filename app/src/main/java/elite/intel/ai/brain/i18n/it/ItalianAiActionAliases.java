@@ -8,11 +8,11 @@ public class ItalianAiActionAliases extends AiActionAliasProvider {
 
     @Override
     public Set<String> wakeBypassPhrases() {
-        return Set.of();
+        return Set.of("riattivati", "svegliati", "ascoltami");
     }
 
     @Override
     public Set<String> listenBypassPrefixes() {
-        return Set.of();
+        return Set.of("riattivati", "svegliati", "senti", "ascolta", "ascoltami");
     }
 }

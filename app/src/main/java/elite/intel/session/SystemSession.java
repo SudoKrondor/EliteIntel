@@ -40,23 +40,34 @@ public class SystemSession {
     }
 
 
+    // Voice and personality are app-global (single voice per TTS provider, one personality), stored in
+    // the game_session row. The two providers keep independent selections so switching TTS preserves each:
+    //   Kokoro voice -> kokoroVoice column, Google voice -> googleVoice column, personality -> aiPersonality.
+    // The legacy aiVoice/aiCadence columns are retired (dropped in the pre-release cleanup); the per-ship
+    // ship.voice/ship.personality columns are left untouched for V1.0 compatibility.
+
     public GoogleVoices getGoogleVoice() {
-        ShipDao.Ship ship = ShipManager.getInstance().getShip();
-        if (ship == null) return GoogleVoices.STEVE;
-        String voice = ship.getVoice();
-        if (voice == null) return GoogleVoices.STEVE;
+        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleVoice());
+        if (voice == null) return GoogleVoices.EMMA;
         try {
             return GoogleVoices.valueOf(voice);
         } catch (IllegalArgumentException e) {
-            return GoogleVoices.STEVE;
+            return GoogleVoices.EMMA;
         }
+    }
+
+    public void setGoogleVoice(GoogleVoices voice) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setGoogleVoice(voice.name());
+            dao.save(session);
+            return null;
+        });
     }
 
 
     public KokoroVoices getKokoroVoice() {
-        ShipDao.Ship ship = ShipManager.getInstance().getShip();
-        if (ship == null) return KokoroVoices.BELLA;
-        String voice = ship.getVoice();
+        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getKokoroVoice());
         if (voice == null) return KokoroVoices.BELLA;
         try {
             return KokoroVoices.valueOf(voice);
@@ -65,19 +76,33 @@ public class SystemSession {
         }
     }
 
-    private void setShipVoice(String voice) {
-        ShipManager shipManager = ShipManager.getInstance();
-        ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return;
-        ship.setVoice(voice);
-        shipManager.saveShip(ship);
+    public void setKokoroVoice(KokoroVoices voice) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setKokoroVoice(voice.name());
+            dao.save(session);
+            return null;
+        });
     }
 
 
     public ShipPersonality getAIPersonality() {
-        ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return ShipPersonality.CASUAL;
-        return ShipPersonality.valueOf(ship.getPersonality());
+        String personality = Database.withDao(GameSessionDao.class, dao -> dao.get().getAiPersonality());
+        if (personality == null) return ShipPersonality.CASUAL;
+        try {
+            return ShipPersonality.valueOf(personality);
+        } catch (IllegalArgumentException e) {
+            return ShipPersonality.CASUAL;
+        }
+    }
+
+    public void setAIPersonality(ShipPersonality personality) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setAiPersonality(personality.name());
+            dao.save(session);
+            return null;
+        });
     }
 
 
@@ -159,7 +184,6 @@ public class SystemSession {
         if (ttsApiKey == null || ttsApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
-                session.setTtsApiKey(null);
                 session.setEncryptedTTSKey(null);
                 dao.save(session);
                 return Void.class;
@@ -186,7 +210,6 @@ public class SystemSession {
         if (aiApiKey == null || aiApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
-                session.setAiApiKey(null);
                 session.setEncryptedLLMKey(null);
                 dao.save(session);
                 return Void.class;

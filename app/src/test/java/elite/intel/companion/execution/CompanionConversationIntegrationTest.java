@@ -50,7 +50,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CompanionConversationIntegrationTest {
 
     private final ScriptedTransport transport = new ScriptedTransport();
-    private final SessionMemoryGateway memory = new SessionMemoryGateway();
+    // Word-only memory (no embedding model) keeps this default-suite test off the heavy ONNX load; semantic
+    // recall has its own coverage in SessionMemoryGatewayTest with a deterministic stand-in embedder.
+    private final SessionMemoryGateway memory = new SessionMemoryGateway(() -> null);
     private final CompanionState state = new CompanionState();
     private final RecordingSpeech speech = new RecordingSpeech();
 
@@ -65,19 +67,17 @@ class CompanionConversationIntegrationTest {
 
         // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
         transport.scripted.add(response(
-                call("c1", "change_global_topic", "{\"topic\":\"navigation\"}"),
-                call("c2", "speak", "{\"text\":\"Course plotted.\"}"),
-                call("c3", "nothing_to_do", "{}")));
+                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\"}"),
+                call("c2", "speak", "{\"text\":\"Course plotted.\"}")));
         // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
-                call("c4", "change_global_topic", "{\"topic\":\"ship_status\"}"),
-                call("c6", "speak", "{\"text\":\"Noted.\"}"),
-                call("c7", "nothing_to_do", "{}")));
-        // Turn 3, round 1: search memory for the fact; round 2: speak using it (multi-round round-trip).
-        transport.scripted.add(response(call("c8", "search_in_memory", "{\"query\":\"hull\"}")));
+                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
+                call("c6", "speak", "{\"text\":\"Noted.\"}")));
+        // Turn 3: the stated fact is injected as a "Relevant remembered fact" before the turn, so the companion
+        // answers from it in one round (no in-turn lookup).
         transport.scripted.add(response(
-                call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}"),
-                call("c10", "nothing_to_do", "{}")));
+                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\"}"),
+                call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
         // A conversation is sequential: each turn is submitted and drained before the next, so the
         // memory -> recall dependency holds (the bounded commander pool would otherwise race the turns).
@@ -87,7 +87,7 @@ class CompanionConversationIntegrationTest {
         playTurn(dispatcher, "what did I tell you about the hull");
         dispatcher.stop();
 
-        // The global topic moved across turns (real change_global_topic handle on the real state).
+        // The global topic moved across turns (real classify_turn handle on the real state).
         assertEquals(ConversationTopic.SHIP_STATUS, state.globalTopic());
         // The stated fact survived in short-term memory.
         assertTrue(memory.readShortTermTimeline().stream()
@@ -95,10 +95,10 @@ class CompanionConversationIntegrationTest {
         // The companion actually spoke the scripted phrases (real SpeakFunction -> SpeechGateway).
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("Course plotted")));
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));
-        // The multi-round turn replayed the assistant tool-call and round-tripped the recalled fact.
+        // The stated fact was injected as a remembered-fact candidate before the recall turn (no lookup round).
         String lastRequestBody = transport.bodies.get(transport.bodies.size() - 1);
-        assertTrue(lastRequestBody.contains("tool_calls"), "assistant tool-call turn must be replayed");
-        assertTrue(lastRequestBody.contains("hull is solid"), "recall result must round-trip into the next round");
+        assertTrue(lastRequestBody.contains("<facts>"), "the remembered fact must be injected before the turn");
+        assertTrue(lastRequestBody.contains("hull is solid"), "the remembered fact must be available to answer");
     }
 
     /** Wires the real companion graph against the scripted transport and stubbed game tools, then installs it. */

@@ -6,8 +6,8 @@ import java.util.Locale;
 
 /**
  * Closed set of conversation/experience topics the companion can focus on. Always rendered (with
- * descriptions) into the prompt so the LLM knows the valid values for {@code change_global_topic} and
- * {@code recall(topic=...)}.
+ * descriptions) into the prompt so the LLM knows the valid values for the {@code classify_turn} topic
+ * parameter and {@code recall(topic=...)}.
  * <p>
  * {@link #selectable} marks LLM-facing topics. Non-selectable members are internal fallbacks
  * ({@link #UNRESOLVED_COMMANDER_INPUT}, {@link #UNRESOLVED_GAME_EVENT}) and must not be offered to the LLM.
@@ -49,7 +49,7 @@ public enum ConversationTopic {
         return description;
     }
 
-    /** Whether this topic may be chosen by the LLM (change_global_topic / recall). */
+    /** Whether this topic may be chosen by the LLM (classify_turn / recall). */
     public boolean selectable() {
         return selectable;
     }
@@ -59,7 +59,7 @@ public enum ConversationTopic {
         return name().toLowerCase(Locale.ROOT);
     }
 
-    /** The ids of every LLM-selectable topic, in declaration order - the change_global_topic enum. */
+    /** The ids of every LLM-selectable topic, in declaration order - the classify_turn topic enum. */
     public static List<String> selectableIds() {
         return Arrays.stream(values()).filter(ConversationTopic::selectable).map(ConversationTopic::id).toList();
     }

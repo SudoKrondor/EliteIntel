@@ -15,7 +15,7 @@ public interface GameSessionDao {
 
 
     @SqlUpdate("""
-            INSERT OR REPLACE INTO game_session (id, aiPersonality,  aiCadence, aiVoice, aiApiKey, ttsApiKey, sttApiKey,
+            INSERT OR REPLACE INTO game_session (id, aiPersonality,  kokoroVoice, googleVoice, sttApiKey,
                                                              edsmApiKey, loggingEnabled, privacyModeOn, rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
                                                              encryptedEDSSMKey, speechSpeed, localLlmCommandModel, localLlmQueryModel,
@@ -29,7 +29,7 @@ public interface GameSessionDao {
                                                              pushToTalkButtonIndex, pushToTalkToggleMode,
                                                              noiseReductionEnabled, noiseReductionStrength
                                                 )
-                                  VALUES (1, :aiPersonality, :aiCadence, :aiVoice, :aiApiKey, :ttsApiKey, :sttApiKey,
+                                  VALUES (1, :aiPersonality, :kokoroVoice, :googleVoice, :sttApiKey,
                                                       :edsmApiKey, :loggingEnabled, :privacyModeOn, :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
                                                       :encryptedEDSSMKey,  :speechSpeed, :localLlmCommandModel, :localLlmQueryModel,
@@ -55,20 +55,14 @@ public interface GameSessionDao {
         @Override public GameSession map(ResultSet rs, StatementContext ctx) throws SQLException {
             GameSession session = new GameSession();
             session.setAiPersonality(rs.getString("aiPersonality"));
-            session.setAiCadence(rs.getString("aiCadence"));
-
-            /// >> DEPRECATED
-            session.setAiApiKey(rs.getString("aiApiKey"));
-            session.setTtsApiKey(rs.getString("ttsApiKey"));
-            session.setSttApiKey(rs.getString("sttApiKey"));
-            /// <<
 
             session.setEncryptedLLMKey(rs.getString("encryptedLLMKey"));
             session.setEncryptedTTSKey(rs.getString("encryptedTTSKey"));
             session.setEncryptedEDSSMKey(rs.getString("encryptedEDSSMKey"));
 
             session.setLoggingEnabled(rs.getBoolean("loggingEnabled"));
-            session.setAiVoice(rs.getString("aiVoice"));
+            session.setKokoroVoice(rs.getString("kokoroVoice"));
+            session.setGoogleVoice(rs.getString("googleVoice"));
             session.setPrivacyModeOn(rs.getBoolean("privacyModeOn"));
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
@@ -110,10 +104,6 @@ public interface GameSessionDao {
 
     class GameSession {
         private String aiPersonality;
-        private String aiCadence;
-
-        private String aiApiKey;
-        private String ttsApiKey;
         private String sttApiKey;
 
         private String encryptedLLMKey;
@@ -121,7 +111,8 @@ public interface GameSessionDao {
         private String encryptedEDSSMKey;
 
         private Boolean loggingEnabled;
-        private String aiVoice;
+        private String kokoroVoice;
+        private String googleVoice;
         private Boolean privacyModeOn;
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
@@ -165,29 +156,6 @@ public interface GameSessionDao {
             this.aiPersonality = aiPersonality;
         }
 
-        public String getAiApiKey() {
-            return aiApiKey;
-        }
-
-        public void setAiApiKey(String aiApiKey) {
-            this.aiApiKey = aiApiKey;
-        }
-
-        public String getAiCadence() {
-            return aiCadence;
-        }
-
-        public void setAiCadence(String aiCadence) {
-            this.aiCadence = aiCadence;
-        }
-
-        public String getTtsApiKey() {
-            return ttsApiKey;
-        }
-
-        public void setTtsApiKey(String ttsApiKey) {
-            this.ttsApiKey = ttsApiKey;
-        }
 
         public String getSttApiKey() {
             return sttApiKey;
@@ -205,12 +173,26 @@ public interface GameSessionDao {
             this.loggingEnabled = loggingEnabled;
         }
 
-        public String getAiVoice() {
-            return aiVoice;
+        /**
+         * App-global Kokoro (local TTS) voice, independent of {@link #googleVoice}.
+         */
+        public String getKokoroVoice() {
+            return kokoroVoice;
         }
 
-        public void setAiVoice(String aiVoice) {
-            this.aiVoice = aiVoice;
+        public void setKokoroVoice(String kokoroVoice) {
+            this.kokoroVoice = kokoroVoice;
+        }
+
+        /**
+         * App-global Google (cloud TTS) voice, independent of {@link #kokoroVoice}.
+         */
+        public String getGoogleVoice() {
+            return googleVoice;
+        }
+
+        public void setGoogleVoice(String googleVoice) {
+            this.googleVoice = googleVoice;
         }
 
         public Boolean getPrivacyModeOn() {

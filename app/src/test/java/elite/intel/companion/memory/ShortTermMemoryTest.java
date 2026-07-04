@@ -38,6 +38,10 @@ class ShortTermMemoryTest {
         return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, MemorySource.COMMANDER, content);
     }
 
+    private static MemoryEntry entry(MemorySource source, String content) {
+        return new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION, source, content);
+    }
+
     private static List<String> contents(List<MemoryEntry> entries) {
         return entries.stream().map(MemoryEntry::content).collect(Collectors.toList());
     }
@@ -102,6 +106,41 @@ class ShortTermMemoryTest {
         List<MemoryEntry> evicted = memory.evictOverflow();
         assertEquals(List.of("old"), contents(evicted));
         assertEquals(List.of("new"), contents(memory.timeline()));
+    }
+
+    @Test
+    void repeatedCommandsAreKeptVerbatimNotCollapsed() {
+        // The short-term window is not de-duplicated: a subsystem-targeting cycle keeps every occurrence, in
+        // order, so the hot timeline is a faithful record of the turns (fact dedup happens only in mid-term).
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        List<String> commands = List.of("target drive", "target drive", "target power plant",
+                "target drive", "target power plant", "target power plant");
+        for (String c : commands) {
+            memory.add(entry(c));
+        }
+
+        assertEquals(commands, contents(memory.timeline()));
+    }
+
+    @Test
+    void identicalEntriesFromTheSameSourceBothSurvive() {
+        // Why short-term dedup was removed: a repeated structural boundary marker must persist. Two identical
+        // <no_reply/> notes are both kept, so neither erases the turn boundary the other separates.
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        memory.add(entry(MemorySource.SYSTEM, "<no_reply/>"));
+        memory.add(entry(MemorySource.SYSTEM, "<no_reply/>"));
+
+        assertEquals(2, memory.timeline().size());
+    }
+
+    @Test
+    void sameContentFromDifferentSpeakersIsNotDeduped() {
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        memory.add(entry(MemorySource.COMMANDER, "shields"));
+        memory.add(entry(MemorySource.COMPANION, "shields"));
+
+        // Dedup only collapses one author's own repeat; the commander's word and the reply both stay.
+        assertEquals(2, memory.timeline().size());
     }
 
     @Test

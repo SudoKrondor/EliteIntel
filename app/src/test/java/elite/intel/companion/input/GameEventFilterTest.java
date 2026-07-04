@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtContext;
@@ -136,8 +135,8 @@ class GameEventFilterTest {
     // --- helpers ---
 
     private static BaseEvent event(String type) {
-        // HIGH so a forwarded event is retained by the memory-only EventThought (NORMAL is dropped), keeping
-        // the dispatcher routing observable through memory; the importance gate only rejects LOW.
+        // Non-LOW so the importance gate forwards it; a non-blank memorySummary makes the memory-only
+        // EventThought record it, keeping the dispatcher routing observable through memory.
         return event(type, BaseEvent.Importance.HIGH);
     }
 
@@ -145,6 +144,7 @@ class GameEventFilterTest {
         return new BaseEvent(Instant.now().toString(), Duration.ofMinutes(1), type) {
             @Override public String getEventType() { return type; }
             @Override public Importance importance() { return importance; }
+            @Override public String memorySummary() { return type + " happened"; }
             @Override public JsonObject toJsonObject() { return new JsonObject(); }
         };
     }
@@ -175,8 +175,7 @@ class GameEventFilterTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget) { return List.of(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
         @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }

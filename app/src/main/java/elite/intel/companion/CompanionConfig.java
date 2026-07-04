@@ -27,17 +27,17 @@ public final class CompanionConfig {
 
     // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
     /** Max entries kept in the hot short-term timeline (the primary eviction control). */
-    private static final int SHORT_TERM_MEMORY_SIZE = 20;
+    private static final int SHORT_TERM_MEMORY_SIZE = 30;
     /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
-    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
-    private static final int MAX_LLM_CHAIN_STEPS = 8;
     /** Max commander thoughts that may run concurrently on the commander lane. */
     private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
-    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
-    private static final int WORKING_SET_SIZE = 8;
-    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
-    private static final int WORKING_SET_TOKEN_BUDGET = 400;
+    /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
+    private static final double SEMANTIC_RECALL_FLOOR = 0.85;
+    /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
+    private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
+    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
+    private static final int MEMORY_ENTRY_MAX_CHARS = 200;
 
     private CompanionConfig() {
     }
@@ -92,23 +92,23 @@ public final class CompanionConfig {
         return MID_TERM_MEMORY_SIZE_PER_TOPIC;
     }
 
-    /** Max tool-calling rounds a single commander thought may chain with the LLM in one turn. */
-    public static int maxLlmChainSteps() {
-        return MAX_LLM_CHAIN_STEPS;
-    }
-
     /** Max commander thoughts that may run concurrently on the commander lane. */
     public static int maxParallelCommanderThoughts() {
         return MAX_PARALLEL_COMMANDER_THOUGHTS;
     }
 
-    /** Max important (HIGH/MAX) mid-term entries always surfaced in the prompt working-set. */
-    public static int workingSetSize() {
-        return WORKING_SET_SIZE;
+    /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */
+    public static double semanticRecallFloor() {
+        return SEMANTIC_RECALL_FLOOR;
     }
 
-    /** Soft token ceiling for the working-set block, so the always-on slice cannot itself bloat the prompt. */
-    public static int workingSetTokenBudget() {
-        return WORKING_SET_TOKEN_BUDGET;
+    /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
+    public static double semanticDedupFloor() {
+        return SEMANTIC_DEDUP_FLOOR;
+    }
+
+    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
+    public static int memoryEntryMaxChars() {
+        return MEMORY_ENTRY_MAX_CHARS;
     }
 }

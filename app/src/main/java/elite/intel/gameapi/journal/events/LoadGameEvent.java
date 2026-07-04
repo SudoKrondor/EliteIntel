@@ -10,43 +10,46 @@ import java.util.StringJoiner;
 
 public class LoadGameEvent extends BaseEvent {
     @SerializedName("FID")
-    private String FID;
+    private String fid;
 
     @SerializedName("Commander")
-    private String Commander;
+    private String commander;
 
     @SerializedName("Horizons")
-    private boolean Horizons;
+    private boolean horizons;
 
     @SerializedName("Odyssey")
-    private boolean Odyssey;
+    private boolean odyssey;
 
     @SerializedName("Ship")
-    private String Ship;
+    private String ship;
+
+    @SerializedName("Ship_Localised")
+    private String shipLocalised;
 
     @SerializedName("ShipID")
-    private int ShipID;
+    private int shipID;
 
     @SerializedName("ShipName")
-    private String ShipName;
+    private String shipName;
 
     @SerializedName("ShipIdent")
-    private String ShipIdent;
+    private String shipIdent;
 
     @SerializedName("FuelLevel")
-    private double FuelLevel;
+    private double fuelLevel;
 
     @SerializedName("FuelCapacity")
-    private double FuelCapacity;
+    private double fuelCapacity;
 
     @SerializedName("GameMode")
-    private String GameMode;
+    private String gameMode;
 
     @SerializedName("Credits")
-    private long Credits;
+    private long credits;
 
     @SerializedName("Loan")
-    private long Loan;
+    private long loan;
 
     @SerializedName("language")
     private String language;
@@ -60,19 +63,20 @@ public class LoadGameEvent extends BaseEvent {
     public LoadGameEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofDays(30), "LoadGame");
         LoadGameEvent event = GsonFactory.getGson().fromJson(json, LoadGameEvent.class);
-        this.FID = event.FID;
-        this.Commander = event.Commander;
-        this.Horizons = event.Horizons;
-        this.Odyssey = event.Odyssey;
-        this.Ship = event.Ship;
-        this.ShipID = event.ShipID;
-        this.ShipName = event.ShipName;
-        this.ShipIdent = event.ShipIdent;
-        this.FuelLevel = event.FuelLevel;
-        this.FuelCapacity = event.FuelCapacity;
-        this.GameMode = event.GameMode;
-        this.Credits = event.Credits;
-        this.Loan = event.Loan;
+        this.fid = event.fid;
+        this.commander = event.commander;
+        this.horizons = event.horizons;
+        this.odyssey = event.odyssey;
+        this.ship = event.ship;
+        this.shipLocalised = event.shipLocalised;
+        this.shipID = event.shipID;
+        this.shipName = event.shipName;
+        this.shipIdent = event.shipIdent;
+        this.fuelLevel = event.fuelLevel;
+        this.fuelCapacity = event.fuelCapacity;
+        this.gameMode = event.gameMode;
+        this.credits = event.credits;
+        this.loan = event.loan;
         this.language = event.language;
         this.gameversion = event.gameversion;
         this.build = event.build;
@@ -95,6 +99,12 @@ public class LoadGameEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        String ship = shipLocalised != null && !shipLocalised.isBlank() ? shipLocalised : this.ship;
+        return ship == null || ship.isBlank() ? "" : "started the session flying the " + ship;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }
@@ -105,107 +115,115 @@ public class LoadGameEvent extends BaseEvent {
     }
 
     public String getFID() {
-        return FID;
+        return fid;
     }
 
-    public void setFID(String FID) {
-        this.FID = FID;
+    public void setFID(String fid) {
+        this.fid = fid;
     }
 
     public String getCommander() {
-        return Commander;
+        return commander;
     }
 
     public void setCommander(String commander) {
-        Commander = commander;
+        this.commander = commander;
     }
 
     public boolean isHorizons() {
-        return Horizons;
+        return horizons;
     }
 
     public void setHorizons(boolean horizons) {
-        Horizons = horizons;
+        this.horizons = horizons;
     }
 
     public boolean isOdyssey() {
-        return Odyssey;
+        return odyssey;
     }
 
     public void setOdyssey(boolean odyssey) {
-        Odyssey = odyssey;
+        this.odyssey = odyssey;
     }
 
     public String getShip() {
-        return Ship;
+        return ship;
     }
 
     public void setShip(String ship) {
-        Ship = ship;
+        this.ship = ship;
+    }
+
+    public String getShipLocalised() {
+        return shipLocalised;
+    }
+
+    public void setShipLocalised(String shipLocalised) {
+        this.shipLocalised = shipLocalised;
     }
 
     public int getShipID() {
-        return ShipID;
+        return shipID;
     }
 
     public void setShipID(int shipID) {
-        ShipID = shipID;
+        this.shipID = shipID;
     }
 
     public String getShipName() {
-        return ShipName;
+        return shipName;
     }
 
     public void setShipName(String shipName) {
-        ShipName = shipName;
+        this.shipName = shipName;
     }
 
     public String getShipIdent() {
-        return ShipIdent;
+        return shipIdent;
     }
 
     public void setShipIdent(String shipIdent) {
-        ShipIdent = shipIdent;
+        this.shipIdent = shipIdent;
     }
 
     public double getFuelLevel() {
-        return FuelLevel;
+        return fuelLevel;
     }
 
     public void setFuelLevel(double fuelLevel) {
-        FuelLevel = fuelLevel;
+        this.fuelLevel = fuelLevel;
     }
 
     public double getFuelCapacity() {
-        return FuelCapacity;
+        return fuelCapacity;
     }
 
     public void setFuelCapacity(double fuelCapacity) {
-        FuelCapacity = fuelCapacity;
+        this.fuelCapacity = fuelCapacity;
     }
 
     public String getGameMode() {
-        return GameMode;
+        return gameMode;
     }
 
     public void setGameMode(String gameMode) {
-        GameMode = gameMode;
+        this.gameMode = gameMode;
     }
 
     public long getCredits() {
-        return Credits;
+        return credits;
     }
 
     public void setCredits(long credits) {
-        Credits = credits;
+        this.credits = credits;
     }
 
     public long getLoan() {
-        return Loan;
+        return loan;
     }
 
     public void setLoan(long loan) {
-        Loan = loan;
+        this.loan = loan;
     }
 
     public String getLanguage() {
@@ -237,19 +255,20 @@ public class LoadGameEvent extends BaseEvent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         LoadGameEvent that = (LoadGameEvent) o;
-        return Horizons == that.Horizons &&
-                Odyssey == that.Odyssey &&
-                ShipID == that.ShipID &&
-                Double.compare(that.FuelLevel, FuelLevel) == 0 &&
-                Double.compare(that.FuelCapacity, FuelCapacity) == 0 &&
-                Credits == that.Credits &&
-                Loan == that.Loan &&
-                Objects.equals(FID, that.FID) &&
-                Objects.equals(Commander, that.Commander) &&
-                Objects.equals(Ship, that.Ship) &&
-                Objects.equals(ShipName, that.ShipName) &&
-                Objects.equals(ShipIdent, that.ShipIdent) &&
-                Objects.equals(GameMode, that.GameMode) &&
+        return horizons == that.horizons &&
+                odyssey == that.odyssey &&
+                shipID == that.shipID &&
+                Double.compare(that.fuelLevel, fuelLevel) == 0 &&
+                Double.compare(that.fuelCapacity, fuelCapacity) == 0 &&
+                credits == that.credits &&
+                loan == that.loan &&
+                Objects.equals(fid, that.fid) &&
+                Objects.equals(commander, that.commander) &&
+                Objects.equals(ship, that.ship) &&
+                Objects.equals(shipLocalised, that.shipLocalised) &&
+                Objects.equals(shipName, that.shipName) &&
+                Objects.equals(shipIdent, that.shipIdent) &&
+                Objects.equals(gameMode, that.gameMode) &&
                 Objects.equals(language, that.language) &&
                 Objects.equals(gameversion, that.gameversion) &&
                 Objects.equals(build, that.build);
@@ -257,26 +276,27 @@ public class LoadGameEvent extends BaseEvent {
 
     @Override
     public int hashCode() {
-        return Objects.hash(FID, Commander, Horizons, Odyssey, Ship, ShipID, ShipName, ShipIdent,
-                FuelLevel, FuelCapacity, GameMode, Credits, Loan, language, gameversion, build);
+        return Objects.hash(fid, commander, horizons, odyssey, ship, shipLocalised, shipID, shipName, shipIdent,
+                fuelLevel, fuelCapacity, gameMode, credits, loan, language, gameversion, build);
     }
 
     @Override
     public String toString() {
         return new StringJoiner(", ", LoadGameEvent.class.getSimpleName() + "[", "]")
-                .add("FID='" + FID + "'")
-                .add("Commander='" + Commander + "'")
-                .add("Horizons=" + Horizons)
-                .add("Odyssey=" + Odyssey)
-                .add("Ship='" + Ship + "'")
-                .add("ShipID=" + ShipID)
-                .add("ShipName='" + ShipName + "'")
-                .add("ShipIdent='" + ShipIdent + "'")
-                .add("FuelLevel=" + FuelLevel)
-                .add("FuelCapacity=" + FuelCapacity)
-                .add("GameMode='" + GameMode + "'")
-                .add("Credits=" + Credits)
-                .add("Loan=" + Loan)
+                .add("FID='" + fid + "'")
+                .add("Commander='" + commander + "'")
+                .add("Horizons=" + horizons)
+                .add("Odyssey=" + odyssey)
+                .add("Ship='" + ship + "'")
+                .add("shipLocalised='" + shipLocalised + "'")
+                .add("ShipID=" + shipID)
+                .add("ShipName='" + shipName + "'")
+                .add("ShipIdent='" + shipIdent + "'")
+                .add("FuelLevel=" + fuelLevel)
+                .add("FuelCapacity=" + fuelCapacity)
+                .add("GameMode='" + gameMode + "'")
+                .add("Credits=" + credits)
+                .add("Loan=" + loan)
                 .add("language='" + language + "'")
                 .add("gameversion='" + gameversion + "'")
                 .add("build='" + build + "'")

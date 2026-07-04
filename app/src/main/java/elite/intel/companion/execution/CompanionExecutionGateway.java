@@ -32,8 +32,7 @@ import java.util.concurrent.Executors;
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
- * {@code completed_by_executor} status. The gateway never writes to memory. The lifecycle-only terminator
- * {@code nothing_to_do} is intercepted by the {@code Thought} and normally never reaches the gateway.
+ * {@code completed_by_executor} status. The gateway never writes to memory.
  */
 public final class CompanionExecutionGateway implements ExecutionGateway {
 
@@ -77,32 +76,43 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
         // Command precedence mirrors ResponseRouter; ids do not collide across registries.
         IntelAction command = commandHandlers.get(toolName);
         if (command != null) {
-            return run(actionLane, command, request);
+            // A command handler emits its own narration during handle(); run it under the tool-call id so the
+            // bridge records that narration as this call's tool result (see ActiveToolCall).
+            return run(actionLane, command, request, request.toolCallId());
         }
         IntelAction query = queryHandlers.get(toolName);
         if (query != null) {
-            return run(queryLane, query, request);
+            // A query returns its answer as the result; its voicing is published by the issuer, which sets the
+            // active id itself - so no active id is needed on the query lane.
+            return run(queryLane, query, request, null);
         }
         IntelAction systemFunction = systemFunctions.get(toolName);
         if (systemFunction != null) {
-            return run(queryLane, systemFunction, request);
+            return run(queryLane, systemFunction, request, null);
         }
         return CompletableFuture.failedFuture(
                 new IllegalArgumentException("Unknown companion tool: " + toolName));
     }
 
-    /** Submits work to a lane; a future cancelled before the task starts skips execution entirely. */
-    private CompletableFuture<JsonObject> run(Executor lane, IntelAction tool, ExecutionRequest request) {
+    /**
+     * Submits work to a lane; a future cancelled before the task starts skips execution entirely. When an
+     * {@code activeToolCallId} is given, the handler runs with it active on the lane thread, so any
+     * {@code AiVoxResponseEvent} it publishes synchronously is attributed to that tool-call.
+     */
+    private CompletableFuture<JsonObject> run(Executor lane, IntelAction tool, ExecutionRequest request,
+                                              String activeToolCallId) {
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
         lane.execute(() -> {
             if (future.isCancelled()) {
                 return; // cancelled while queued: skip (an already-started action/macro is never interrupted)
             }
-            try {
-                future.complete(execute(tool, request));
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
-            }
+            ActiveToolCall.runWith(activeToolCallId, () -> {
+                try {
+                    future.complete(execute(tool, request));
+                } catch (Throwable t) {
+                    future.completeExceptionally(t);
+                }
+            });
         });
         return future;
     }

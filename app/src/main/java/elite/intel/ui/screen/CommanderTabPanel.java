@@ -1,64 +1,42 @@
 package elite.intel.ui.screen;
 
-import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.ShipPersonality;
-import elite.intel.ai.mouth.google.GoogleVoices;
-import elite.intel.ai.mouth.kokoro.KokoroVoices;
-import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
-import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
-import elite.intel.ui.event.TTSProviderChangedEvent;
 import elite.intel.ui.screen.settings.SettingsPopup;
 import elite.intel.ui.screen.settings.ShipSettingsPopup;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
-import elite.intel.util.StringUtls;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import java.awt.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.EventObject;
 import java.util.List;
-import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.*;
 import static elite.intel.ui.theme.HudPalette.*;
-import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public class CommanderTabPanel extends JPanel {
 
     private static final int COL_SHIP = 0;
-    private static final int COL_VOICE = 1;
-    private static final int COL_PERSONALITY = 2;
-    private static final int COL_GEAR = 3;
-
-    /** i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor. */
-    private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
-
-    /** Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label. */
-    private static String personalityLabel(String enumName) {
-        return getText(PERSONALITY_I18N_PREFIX + enumName.toLowerCase(Locale.ROOT))
-                .toUpperCase(Locale.ROOT);
-    }
+    private static final int COL_SHIP_MAKE = 1;
+    private static final int COL_GEAR = 2;
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
@@ -68,12 +46,6 @@ public class CommanderTabPanel extends JPanel {
 
     public CommanderTabPanel() {
         buildUi();
-        UiBus.register(this);
-    }
-
-    @Subscribe
-    public void onTTSProviderChanged(TTSProviderChangedEvent event) {
-        SwingUtilities.invokeLater(this::initData);
     }
 
     private void buildUi() {
@@ -157,6 +129,8 @@ public class CommanderTabPanel extends JPanel {
 
         sc.gridy = 4;
         JCheckBox cb10 = makeCheckBox(getText("automation.requestFighterDockOnFtl"), mgr.getAutoFighterOutFighterDocking());
+        cb10.setToolTipText("Disabled until FDev fixes Nomad related bug");
+        cb10.setEnabled(false);///NOTE disabled until FDev fixes their bug
         cb10.addActionListener(e -> mgr.setAutoFighterOutFighterDocking(cb10.isSelected()));
         shipOptions.add(cb10, sc);
 
@@ -189,22 +163,20 @@ public class CommanderTabPanel extends JPanel {
         content.add(shipOptionsSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
 
-        HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
+        HudSection fleetSection = HudSection.flat(getText("player.section.fleet"), new BorderLayout());
 
-        fleetTableModel = new FleetTableModel(playerSession);
+        fleetTableModel = new FleetTableModel();
         fleetTable = new JTable(fleetTableModel);
         HudTable.style(fleetTable);
         fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(null));
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
+        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
 
-        fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(200);
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setPreferredWidth(160);
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setPreferredWidth(160);
+        fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(220);
+        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setPreferredWidth(180);
         TableColumn gearCol = fleetTable.getColumnModel().getColumn(COL_GEAR);
         gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
         gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
@@ -227,27 +199,16 @@ public class CommanderTabPanel extends JPanel {
 
         fleetTableModel.setShips(ships);
         fleetTableModel.fireTableDataChanged();
-
-        // Voice options depend on current TTS provider; rebuild editor on every call.
-        boolean useLocal = SystemSession.getInstance().useLocalTTS();
-        String[] voiceOptions = useLocal
-                ? Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new)
-                : Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
-        fleetTable.getColumnModel().getColumn(COL_VOICE)
-                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions)));
-
-        String[] personalityOptions =
-                Arrays.stream(ShipPersonality.values()).map(Enum::name).toArray(String[]::new);
-        // labelFn localizes the dropdown display only; getCellEditorValue() still returns the raw enum name to store.
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY)
-                .setCellEditor(new HudComboCellEditor(
-                        new HudComboBox<>(personalityOptions, CommanderTabPanel::personalityLabel)));
-
     }
 
     static String displayShipName(ShipDao.Ship ship) {
         String displayName = LoadoutConverter.toDisplayShipName(ship.getShipName(), ship.getShipIdentifier());
         return displayName == null ? getText("player.fleet.unknown") : displayName;
+    }
+
+    static String shipMakeName(ShipDao.Ship ship) {
+        String resolved = LoadoutConverter.toDisplayShipName(null, ship.getShipIdentifier());
+        return resolved != null ? resolved : getText("player.fleet.unknown");
     }
 
     private void saveCommanderName() {
@@ -262,18 +223,19 @@ public class CommanderTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
-    /** Table model for the fleet voice configuration grid. */
+    /**
+     * Table model for the fleet grid. Voice and personality are now app-wide settings (Settings →
+     * AI Servers → Speech, and Settings → Language), so the grid only lists ships and their per-ship
+     * settings gear.
+     */
     private static class FleetTableModel extends AbstractTableModel {
-        private final PlayerSession playerSession;
         private final String[] columnNames;
         private List<ShipDao.Ship> ships = Collections.emptyList();
 
-        FleetTableModel(PlayerSession playerSession) {
-            this.playerSession = playerSession;
+        FleetTableModel() {
             columnNames = new String[]{
                     getText("player.fleet.ship"),
-                    getText("player.fleet.voice"),
-                    getText("player.fleet.personality"),
+                    getText("player.fleet.shipMake"),
                     ""
             };
         }
@@ -286,7 +248,7 @@ public class CommanderTabPanel extends JPanel {
 
         @Override
         public int getColumnCount() {
-            return 4;
+            return 3;
         }
         @Override public String getColumnName(int col) { return columnNames[col]; }
 
@@ -297,7 +259,7 @@ public class CommanderTabPanel extends JPanel {
 
         @Override
         public boolean isCellEditable(int row, int col) {
-            return col >= COL_VOICE;
+            return col == COL_GEAR;
         }
 
         @Override
@@ -305,94 +267,10 @@ public class CommanderTabPanel extends JPanel {
             ShipDao.Ship ship = ships.get(row);
             return switch (col) {
                 case COL_SHIP -> displayShipName(ship);
-                case COL_VOICE -> ship.getVoice();
-                case COL_PERSONALITY -> ship.getPersonality();
+                case COL_SHIP_MAKE -> shipMakeName(ship);
                 case COL_GEAR -> ship;
                 default -> null;
             };
-        }
-
-        @Override
-        public void setValueAt(Object value, int row, int col) {
-            ShipDao.Ship ship = ships.get(row);
-            switch (col) {
-                case COL_VOICE -> {
-                    String voiceName = (String) value;
-                    ship.setVoice(voiceName);
-                    String speakerName = trimToNull(displayShipName(ship));
-                    if (speakerName == null) speakerName = voiceName;
-                    String tts = StringUtls.shipIntroduction(
-                            playerSession.getConfiguredPlayerName(), speakerName);
-                    GameEventBus.publish(new AiVoxDemoEvent(tts, voiceName));
-                    ShipManager.getInstance().saveShip(ship);
-                }
-                case COL_PERSONALITY -> {
-                    ship.setPersonality((String) value);
-                    ShipManager.getInstance().saveShip(ship);
-                }
-            }
-            fireTableCellUpdated(row, col);
-        }
-    }
-
-    /**
-     * Cell renderer for editable combo columns (Voice/Personality).
-     * Optionally localizes enum values and draws a muted down affordance at the right edge.
-     */
-    private static final class ComboColumnRenderer extends HudTable.CellRenderer {
-        /**
-         * Display-text mapper applied to the raw cell value; {@code null} renders the value as-is (Voice).
-         * Personality passes {@link CommanderTabPanel#personalityLabel}, the shared owner used by the dropdown editor too.
-         */
-        private final Function<? super String, String> labelFn;
-        private boolean selectedRow;
-        // Local pixel geometry - not a colour/font/component-height token.
-        private static final int ARROW_AREA = 18;
-
-        ComboColumnRenderer(Function<? super String, String> labelFn) {
-            this.labelFn = labelFn;
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-            this.selectedRow = isSelected;
-            Object display = (labelFn != null && value != null) ? labelFn.apply((String) value) : value;
-            super.getTableCellRendererComponent(table, display, isSelected, hasFocus, row, col);
-            // Restore vpad from super, widen right side to reserve space for down.
-            int vpad = getVerticalPadding();
-            setBorder(new EmptyBorder(vpad, 8, vpad, ARROW_AREA));
-            return this;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                Color arrow = selectedRow ? HudPalette.HUD_COLOR_ROLE_SELECTED_TEXT : HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION;
-                HudGlyphs.paintHudArrowDown(g2, getWidth() - ARROW_AREA, 0, ARROW_AREA - 4, getHeight(), arrow);
-            } finally {
-                g2.dispose();
-            }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-
-    /** Combo cell editor that keeps HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND background regardless of row selection. */
-    private static final class HudComboCellEditor extends DefaultCellEditor {
-        HudComboCellEditor(HudComboBox<String> combo) {
-            super(combo);
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(
-                JTable table, Object value, boolean isSelected, int row, int col) {
-            Component c = super.getTableCellEditorComponent(table, value, isSelected, row, col);
-            c.setBackground(HudPalette.HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND); // section 3: input field stays warm on any row state
-            c.setForeground(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-            return c;
         }
     }
 

@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Duration;
@@ -10,16 +11,16 @@ import java.util.StringJoiner;
 
 public class CommanderEvent extends BaseEvent {
     @SerializedName("FID")
-    private String FID;
+    private String fid;
 
     @SerializedName("Name")
-    private String Name;
+    private String name;
 
     public CommanderEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofDays(30), "Commander");
         CommanderEvent event = GsonFactory.getGson().fromJson(json, CommanderEvent.class);
-        this.FID = event.FID;
-        this.Name = event.Name;
+        this.fid = event.fid;
+        this.name = event.name;
     }
 
     @Override
@@ -39,6 +40,18 @@ public class CommanderEvent extends BaseEvent {
     }
 
     @Override
+    public String memorySummary() {
+        // Feed the LLM the operator-configured name, not the raw in-game name: in-game
+        // commander names can carry numbers/random characters that TTS mangles, so the
+        // UI override (alternative/player name) takes precedence. getConfiguredPlayerName()
+        // falls back to the in-game name when no override is set, and to "Commander" when
+        // nothing is known -- which we treat as "nothing useful to remember".
+        String preferredName = PlayerSession.getInstance().getConfiguredPlayerName();
+        return preferredName == null || preferredName.isBlank() || "Commander".equals(preferredName)
+                ? "" : "our commander is " + preferredName;
+    }
+
+    @Override
     public String toJson() {
         return GsonFactory.getGson().toJson(this);
     }
@@ -49,19 +62,19 @@ public class CommanderEvent extends BaseEvent {
     }
 
     public String getFID() {
-        return FID;
+        return fid;
     }
 
-    public void setFID(String FID) {
-        this.FID = FID;
+    public void setFID(String fid) {
+        this.fid = fid;
     }
 
     public String getName() {
-        return Name;
+        return name;
     }
 
     public void setName(String name) {
-        this.Name = name;
+        this.name = name;
     }
 
     @Override
@@ -69,19 +82,19 @@ public class CommanderEvent extends BaseEvent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CommanderEvent commander = (CommanderEvent) o;
-        return Objects.equals(FID, commander.FID) && Objects.equals(Name, commander.Name);
+        return Objects.equals(fid, commander.fid) && Objects.equals(name, commander.name);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(FID, Name);
+        return Objects.hash(fid, name);
     }
 
     @Override
     public String toString() {
         return new StringJoiner(", ", CommanderEvent.class.getSimpleName() + "[", "]")
-                .add("FID='" + FID + "'")
-                .add("Name='" + Name + "'")
+                .add("FID='" + fid + "'")
+                .add("Name='" + name + "'")
                 .toString();
     }
 }

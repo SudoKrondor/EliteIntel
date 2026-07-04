@@ -4,23 +4,62 @@ import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputComman
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticSearchProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Narrows the full action catalog to the handful relevant to one user phrase, before the LLM makes the final
+ * pick. Two interchangeable strategies, chosen once by the {@code elite.intel.reducer} system property:
+ * <ul>
+ *   <li>{@code wordoverlap} (default) — the original exact word-overlap match. Fast, no model, but blind to
+ *       inflection: {@code авианосцу} does not match the trigger word {@code авианосец}.</li>
+ *   <li>{@code semantic} — embeds the input and scores it against the catalog by meaning
+ *       ({@link SemanticPhraseMatcher}), so inflected forms and synonyms match without per-language tables.</li>
+ * </ul>
+ * Both share the same exact-alias preservation and conversation/nonsensical fallback, so only the overlap test
+ * differs. The embedding model is loaded lazily and only when semantic mode is active, so word-overlap mode
+ * keeps its exact original cost.
+ * <p>
+ * This whole class is part of the temporary legacy LLM pipeline; once companion mode is the only mode it goes
+ * away. The durable piece is {@link SemanticPhraseMatcher}, which the companion path reuses. The toggle is a
+ * deliberately lightweight in-file switch (not a full strategy framework) so it is trivial to delete with the
+ * pipeline.
+ */
 public class Reducer {
 
+    /**
+     * Selection strategy, fixed at class load from {@code -Delite.intel.reducer=semantic|wordoverlap}.
+     */
+    private static final boolean SEMANTIC =
+            "semantic".equalsIgnoreCase(System.getProperty("elite.intel.reducer", "wordoverlap"));
+
+    // Semantic tuning. e5 cosines sit in a high, compressed band, so selection is relative to the best match,
+    // with an absolute floor below which the input is treated as unrelated (so the fallback fires). All three
+    // are overridable via -D for live A/B tuning without a recompile.
+    /**
+     * Below this best similarity, nothing is relevant — trigger the fallback.
+     */
+    private static final double SEM_FLOOR = parseDouble("elite.intel.reducer.semantic.floor", 0.80);
+    /**
+     * Keep candidates scoring within this margin of the best match.
+     */
+    private static final double SEM_MARGIN = parseDouble("elite.intel.reducer.semantic.margin", 0.04);
+    /**
+     * Hard cap on how many candidates survive, so a vague input cannot flood the prompt.
+     */
+    private static final int SEM_MAX = parseInt("elite.intel.reducer.semantic.max", 25);
 
     /**
-     * Reduces a given map of key-value pairs based on a normalized input string and a specified conversation mode flag.
-     * Filters out entries in the map unless the keys contain significant words from the normalized input.
-     * Ensures a fallback behavior for empty or irrelevant inputs based on the conversation mode.
+     * Reduces the action map to entries relevant to {@code normalizedInput}. Dispatches to the configured
+     * strategy; both preserve an exact-alias match and apply the same empty-result fallback.
      *
-     * @param normalizedInput the input string that is normalized and used to filter the map; null or blank input defaults to returning the original map
-     * @param full the original map of key-value pairs to be filtered
-     * @param isConversationMode a flag indicating whether the method is running in conversation mode; determines fallback behavior for empty input
-     * @return a reduced map containing only the entries whose keys match significant words from the normalized input;
-     *         may return a map with fallback values if the input is empty or irrelevant
+     * @param normalizedInput  normalized user input; null/blank returns the full map unchanged
+     * @param full             the complete trigger-phrase &rarr; action-name map
+     * @param isConversationMode selects the fallback action when nothing matches
+     * @return the reduced candidate map (never empty: falls back to conversation/nonsensical)
      */
     public static Map<String, String> reduce(
             String normalizedInput,
@@ -30,75 +69,146 @@ public class Reducer {
         if (normalizedInput == null || normalizedInput.isBlank()) {
             return full;
         }
+        SemanticPhraseMatcher activeMatcher = SEMANTIC ? SemanticSearchProvider.matcher() : null;
+        return reduceWith(activeMatcher, normalizedInput, full, isConversationMode);
+    }
 
-        // Preserve an exact alias match as a high-confidence candidate.
-        // This must not replace semantic classification; it only prevents
-        // the reducer from accidentally removing a valid action before the LLM sees it.
-        String directAction = full.get(normalizedInput);
-        if (directAction == null) {
-            String lowerInput = normalizedInput.toLowerCase(Locale.ROOT);
-            for (Map.Entry<String, String> entry : full.entrySet()) {
-                List<String> phrases = AiActionLocalizations.splitPhraseGroup(entry.getKey());
-                if (phrases.stream().anyMatch(p -> p.toLowerCase(Locale.ROOT).equals(lowerInput))) {
-                    directAction = entry.getValue();
-                    break;
-                }
-            }
-        }
+    /**
+     * Dispatch point, package-private for testing: a non-null matcher selects semantic reduction; a null
+     * matcher (semantic mode off, or model unavailable) selects word-overlap. This is where the graceful
+     * degradation from a failed model load lands.
+     */
+    static Map<String, String> reduceWith(
+            SemanticPhraseMatcher matcher,
+            String normalizedInput,
+            Map<String, String> full,
+            boolean isConversationMode
+    ) {
+        return matcher != null
+                ? semanticReduce(matcher, normalizedInput, full, isConversationMode)
+                : wordOverlapReduce(normalizedInput, full, isConversationMode);
+    }
 
-        // Use Unicode-aware tokenization.
-        // "\\W+" is too ASCII-centric and does not work reliably with Cyrillic,
-        // Ukrainian, German umlauts, and other non-English input.
-        Set<String> inputWords = Arrays.stream(
-                        normalizedInput
-                                .toLowerCase(Locale.ROOT)
-                                .split("[^\\p{L}\\p{N}_]+")
-                )
-                .filter(w -> w.length() > 2)
-                .filter(w -> !InputNormalizerLocalizations.stopWords().contains(w))
-                .collect(Collectors.toSet());
+    /**
+     * Original exact word-overlap reduction: keep an action when its trigger phrase shares a meaningful
+     * (long enough, non-stop) word with the input. Package-private so it can be tested directly.
+     */
+    static Map<String, String> wordOverlapReduce(
+            String normalizedInput,
+            Map<String, String> full,
+            boolean isConversationMode
+    ) {
+        String directAction = resolveDirectAlias(normalizedInput, full);
+
+        // Unicode-aware tokenization: "\\W+" is too ASCII-centric for Cyrillic, umlauts, etc.
+        Set<String> inputWords = significantWords(normalizedInput);
 
         Map<String, String> result = new LinkedHashMap<>();
-
-        // Add all actions whose trigger phrases share meaningful words
-        // with the normalized user input.
         for (Map.Entry<String, String> entry : full.entrySet()) {
-            String trigger = entry.getKey();
-            String action = entry.getValue();
-
-            Set<String> triggerWords = Arrays.stream(
-                            trigger
-                                    .toLowerCase(Locale.ROOT)
-                                    .split("[^\\p{L}\\p{N}_]+")
-                    )
-                    .filter(w -> w.length() > 2)
-                    .filter(w -> !InputNormalizerLocalizations.stopWords().contains(w))
-                    .collect(Collectors.toSet());
-
-            boolean hasOverlap = triggerWords.stream().anyMatch(inputWords::contains);
-
-            if (hasOverlap) {
-                result.put(trigger, action);
+            Set<String> triggerWords = significantWords(entry.getKey());
+            if (triggerWords.stream().anyMatch(inputWords::contains)) {
+                result.put(entry.getKey(), entry.getValue());
             }
         }
 
-        // If the user input exactly matches an alias from the action map,
-        // keep that action in the reduced candidate list.
-        // It is still only a candidate; the LLM remains responsible for final intent selection.
+        return finish(result, directAction, normalizedInput, isConversationMode);
+    }
+
+    /**
+     * Semantic reduction: keep actions whose trigger phrases are closest in meaning to the input. Scores each
+     * entry by the best cosine of the input against its (comma-grouped) alias phrases, keeps those within
+     * {@link #SEM_MARGIN} of the best and above {@link #SEM_FLOOR}, capped at {@link #SEM_MAX}. Package-private
+     * and matcher-injected so a test can drive it with a real model without touching the static singleton.
+     */
+    static Map<String, String> semanticReduce(
+            SemanticPhraseMatcher matcher,
+            String normalizedInput,
+            Map<String, String> full,
+            boolean isConversationMode
+    ) {
+        String directAction = resolveDirectAlias(normalizedInput, full);
+
+        float[] queryVector = matcher.embedQuery(normalizedInput);
+        List<Map.Entry<String, String>> entries = new ArrayList<>(full.entrySet());
+        double[] scores = new double[entries.size()];
+        double best = -1.0;
+        for (int i = 0; i < entries.size(); i++) {
+            List<String> aliases = AiActionLocalizations.splitPhraseGroup(entries.get(i).getKey());
+            scores[i] = matcher.bestSimilarity(queryVector, aliases);
+            best = Math.max(best, scores[i]);
+        }
+
+        Map<String, String> result = new LinkedHashMap<>();
+        if (best >= SEM_FLOOR) {
+            double cutoff = best - SEM_MARGIN;
+            // Rank by score so the cap keeps the strongest matches.
+            List<Integer> order = new ArrayList<>();
+            for (int i = 0; i < entries.size(); i++) {
+                if (scores[i] >= cutoff) {
+                    order.add(i);
+                }
+            }
+            order.sort((a, b) -> Double.compare(scores[b], scores[a]));
+            for (int idx : order) {
+                if (result.size() >= SEM_MAX) {
+                    break;
+                }
+                result.put(entries.get(idx).getKey(), entries.get(idx).getValue());
+            }
+        }
+
+        return finish(result, directAction, normalizedInput, isConversationMode);
+    }
+
+    /**
+     * Shared tail: re-add an exact alias match, then fall back if nothing survived.
+     */
+    private static Map<String, String> finish(
+            Map<String, String> result,
+            String directAction,
+            String normalizedInput,
+            boolean isConversationMode
+    ) {
+        // An exact alias is a high-confidence candidate; keep it regardless of the overlap/score test.
+        // The LLM still makes the final intent selection.
         if (directAction != null) {
             result.put(normalizedInput, directAction);
         }
-
-        // If no candidate survived reduction, fall back according to the current mode.
         if (result.isEmpty()) {
-            if (isConversationMode) {
-                result.put(GeneralConversationQueryCommand.ID, GeneralConversationQueryCommand.ID);
-            } else {
-                result.put(IgnoreNonsensicalInputCommand.ID, IgnoreNonsensicalInputCommand.ID);
+            String fallback = isConversationMode
+                    ? GeneralConversationQueryCommand.ID
+                    : IgnoreNonsensicalInputCommand.ID;
+            result.put(fallback, fallback);
+        }
+        return result;
+    }
+
+    /**
+     * The action whose key is, or contains as an alias, an exact case-insensitive match of the input.
+     */
+    private static String resolveDirectAlias(String normalizedInput, Map<String, String> full) {
+        String directAction = full.get(normalizedInput);
+        if (directAction != null) {
+            return directAction;
+        }
+        String lowerInput = normalizedInput.toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, String> entry : full.entrySet()) {
+            List<String> phrases = AiActionLocalizations.splitPhraseGroup(entry.getKey());
+            if (phrases.stream().anyMatch(p -> p.toLowerCase(Locale.ROOT).equals(lowerInput))) {
+                return entry.getValue();
             }
         }
+        return null;
+    }
 
-        return result;
+    /**
+     * Lowercased, long-enough, non-stop-word tokens — Unicode-aware (Cyrillic, umlauts, etc.).
+     */
+    private static Set<String> significantWords(String text) {
+        return Arrays.stream(text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+"))
+                .filter(w -> w.length() > 2)
+                .filter(w -> !InputNormalizerLocalizations.stopWords().contains(w))
+                .collect(Collectors.toSet());
     }
 
     public static String formatActions(Map<String, String> map) {
@@ -107,5 +217,23 @@ public class Reducer {
         map.forEach((key, action) ->
                 sb.append("  ").append(action).append(" ← ").append(key).append("\n"));
         return sb.toString();
+    }
+
+    private static double parseDouble(String key, double def) {
+        try {
+            String v = System.getProperty(key);
+            return v == null ? def : Double.parseDouble(v);
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
+    private static int parseInt(String key, int def) {
+        try {
+            String v = System.getProperty(key);
+            return v == null ? def : Integer.parseInt(v);
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 }

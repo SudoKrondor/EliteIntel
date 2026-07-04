@@ -30,7 +30,7 @@ public interface MemoryGateway {
     List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit);
 
     /**
-     * Unified recall (the {@code search_in_memory} system function): searches all stored memory - the
+     * Unified recall (the {@code memory_search} system function): searches all stored memory - the
      * short-term timeline plus mid-term topic memory across every topic - for entries whose content matches the
      * query, and returns the matches ranked by importance, then recency, at most {@code limit}.
      *
@@ -40,17 +40,14 @@ public interface MemoryGateway {
     List<String> recallMatching(String query, int limit);
 
     /**
-     * The always-on working set: the most recent important (HIGH/MAX) mid-term entries, for inlining into the
-     * prompt so durable facts that aged out of short-term stay visible without a recall. Short-term is not
-     * included - it is already inlined whole and searched by {@link #recallMatching}. Returned oldest-to-newest.
+     * The same unified recall as {@link #recallMatching}, but returns the ranked {@link MemoryEntry entries}
+     * (keeping each entry's {@code source}/{@code importance}) rather than labelled text. Feeds the pre-turn
+     * memory-candidate lookup, which filters the ranked matches down to a few clean answer facts for the prompt.
      *
-     * @param maxEntries  cap on entries returned
-     * @param tokenBudget soft token ceiling for the slice (at least the newest entry is always kept)
+     * @param query plain-text filter; blank returns the most recent entries regardless of content
+     * @param limit maximum entries to return
      */
-    List<MemoryEntry> importantWorkingSet(int maxEntries, int tokenBudget);
-
-    /** Cheap index metadata for the prompt (no content loaded). */
-    MemoryAvailabilitySnapshot indexes();
+    List<MemoryEntry> recallCandidates(String query, int limit);
 
     /** The single session-wide long-term summary, always added to the prompt. */
     String longTermSummary();
