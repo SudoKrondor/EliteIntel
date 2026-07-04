@@ -3,18 +3,22 @@ package elite.intel.companion.input;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
+import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.CompanionLlmGateway;
 import elite.intel.companion.llm.LlmGateway;
+import elite.intel.companion.llm.LlmProviderAdapter;
 import elite.intel.companion.llm.LlmTransport;
 import elite.intel.companion.llm.LmStudioLlmAdapter;
+import elite.intel.companion.llm.MistralLlmAdapter;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
@@ -78,25 +82,38 @@ public final class CompanionEvalHarness {
     // The raw body of the last LLM request this turn, so recall scoring can read the injected candidate block.
     private volatile String lastRequestBody;
 
+    /** The LLM backend the eval drives: the local LM Studio endpoint (default) or the Mistral cloud endpoint. */
+    public enum Backend { LMSTUDIO, MISTRAL }
+
+    private final Backend backend;
+
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
     private MemoryGateway memory;
     private CompanionState state;
     private String model;
     private Language previousLanguage;
+    private ShipPersonality previousPersonality;
 
     /** @param traceFileName the file name written under {@code build/} for this eval's trace. */
     public CompanionEvalHarness(String traceFileName) {
-        this(traceFileName, Language.EN);
+        this(traceFileName, Language.EN, Backend.LMSTUDIO);
+    }
+
+    /** Creates an eval harness pinned to the requested UI/AI language on the default LM Studio backend. */
+    public CompanionEvalHarness(String traceFileName, Language language) {
+        this(traceFileName, language, Backend.LMSTUDIO);
     }
 
     /**
-     * Creates an eval harness pinned to the requested UI/AI language. The language is set before the
-     * companion graph boots, so the system prompt and localized tool aliases match the scripted input.
+     * Creates an eval harness pinned to the requested UI/AI language and LLM backend. The language is set
+     * before the companion graph boots, so the system prompt and localized tool aliases match the scripted
+     * input; the backend selects which provider's adapter and client the traced transport drives.
      */
-    public CompanionEvalHarness(String traceFileName, Language language) {
+    public CompanionEvalHarness(String traceFileName, Language language, Backend backend) {
         this.traceFile = Paths.get("build", traceFileName).toAbsolutePath();
         this.language = language;
+        this.backend = backend;
     }
 
     /** Boots the full companion subsystem and starts a fresh trace file. */
@@ -115,14 +132,31 @@ public final class CompanionEvalHarness {
         // Queries are read-only (they press no keys), so the eval runs them for real - see recordingExecution.
         Map<String, IntelQuery> queryHandlers = QueryHandlerFactory.getInstance().registerQueryHandlers();
 
-        model = SystemSession.getInstance().getLmStudioCommandModel().trim();
+        previousPersonality = SystemSession.getInstance().getAIPersonality();
+
+        // Provider wiring by backend: the adapter plus the raw transport to that provider's client (mirrors
+        // CompanionLlmGatewayFactory). The tracing transport wraps the raw send, so every backend is traced.
+        LlmProviderAdapter adapter;
+        LlmTransport rawSend;
+        switch (backend) {
+            case MISTRAL -> {
+                model = "mistral (cloud)";
+                adapter = new MistralLlmAdapter();
+                rawSend = body -> MistralClient.getInstance().sendJsonRequest(body);
+            }
+            default -> {
+                model = SystemSession.getInstance().getLmStudioCommandModel().trim();
+                adapter = new LmStudioLlmAdapter(model);
+                rawSend = body -> LMStudioClient.getInstance().sendJsonRequest(body);
+            }
+        }
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
             lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
-                JsonObject response = LMStudioClient.getInstance().sendJsonRequest(body);
+                JsonObject response = rawSend.send(body);
                 latenciesMs.add((System.nanoTime() - t0) / 1_000_000);
                 traceRaw("\n======== LLM RESPONSE #" + round + " ========\n" + TRACE_JSON.toJson(response) + "\n");
                 return response;
@@ -131,7 +165,7 @@ public final class CompanionEvalHarness {
                 throw failure;
             }
         };
-        LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
+        LlmGateway llm = new CompanionLlmGateway(adapter, tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
         // executed (they would press keys); QUERIES and system functions (speak, memory_search,
@@ -182,6 +216,15 @@ public final class CompanionEvalHarness {
             SystemSession.getInstance().setLanguage(previousLanguage);
             previousLanguage = null;
         }
+        if (previousPersonality != null) {
+            SystemSession.getInstance().setAIPersonality(previousPersonality);
+            previousPersonality = null;
+        }
+    }
+
+    /** Switches the commander-chosen AI personality for the following turns (the prompt reads it live per render). */
+    public void setPersonality(ShipPersonality personality) {
+        SystemSession.getInstance().setAIPersonality(personality);
     }
 
     // --- driving the real system over the bus ---

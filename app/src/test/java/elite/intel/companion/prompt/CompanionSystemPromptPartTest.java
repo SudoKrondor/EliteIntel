@@ -28,7 +28,7 @@ class CompanionSystemPromptPartTest {
     void alwaysCarriesPersonaAndFunctionCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("<persona>"));
-        assertTrue(text.contains("the commander's female ship companion"));
+        assertTrue(text.contains("a human woman serving as the commander's"));
         assertTrue(text.contains("<function_calling>"));
         // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
         assertFalse(text.contains("<safety>"));
@@ -39,8 +39,8 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("Never invent game facts"));
-        // Every turn must settle - the metadata-only classify_turn never ends the turn.
-        assertTrue(text.contains("it never ends the turn"));
+        // Every turn must settle - a response that is only the metadata-only classify_turn is invalid.
+        assertTrue(text.contains("you MUST always add the settling call"));
         // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
     }
