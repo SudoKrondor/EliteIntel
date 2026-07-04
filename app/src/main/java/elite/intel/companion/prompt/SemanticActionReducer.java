@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -118,7 +119,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             best = Math.max(best, scores[i]);
         }
         if (best < SEM_FLOOR) {
-            CompanionDiagnostics.debugAmbient("reduce", String.format(
+            CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                     "semantic: candidates=%d best=%.3f < floor %.2f -> no game tools (conversation/recall)",
                     candidates.size(), best, SEM_FLOOR));
             return List.of();
@@ -145,7 +146,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 result.add(candidate.tool());
             }
         }
-        CompanionDiagnostics.debugAmbient("reduce", String.format(
+        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                 "semantic: candidates=%d best=%.3f cutoff=%.3f kept=%d -> %s",
                 candidates.size(), best, cutoff, result.size(), CompanionDiagnostics.names(result)));
         return result;

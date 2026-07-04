@@ -18,6 +18,8 @@ public class HudSection extends HudPanel {
     private final JPanel body;
     private final Variant sectionVariant;
     private final JLabel headerLabel;
+    private final JPanel header;
+    private JComponent headerAction;
     private JComponent footer;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
 
@@ -77,7 +79,7 @@ public class HudSection extends HudPanel {
                 borderColor == null ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : borderColor);
 
         headerLabel = AppTheme.hudSectionLabel(title == null ? "" : title.toUpperCase());
-        JPanel header = AppTheme.transparentPanel(new BorderLayout());
+        header = AppTheme.transparentPanel(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(3, HEADER_H_INSET, 4, HEADER_H_INSET));
         header.add(headerLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
@@ -116,6 +118,31 @@ public class HudSection extends HudPanel {
      */
     public JPanel body() {
         return body;
+    }
+
+    /**
+     * Places an icon-only action (typically a {@link HudGlyphButton}) at the right edge of the section header
+     * strip, opposite the title. Replaces any previous header action; pass {@code null} to remove it. The header
+     * already carries the shared right inset, so the action aligns with the title's left inset.
+     *
+     * @param action header action component, or {@code null} to clear it
+     */
+    public void setHeaderAction(JComponent action) {
+        if (headerAction != null) {
+            header.remove(headerAction);
+        }
+        headerAction = action;
+        if (action != null) {
+            // Pin the action to the title row's height so it never makes this section's header taller than the
+            // sibling section headers that carry no action; its own paint centres the glyph within that height.
+            int rowHeight = headerLabel.getPreferredSize().height;
+            Dimension sized = new Dimension(action.getPreferredSize().width, rowHeight);
+            action.setPreferredSize(sized);
+            action.setMaximumSize(sized);
+            header.add(action, BorderLayout.EAST);
+        }
+        header.revalidate();
+        header.repaint();
     }
 
     /**

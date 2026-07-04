@@ -51,7 +51,8 @@ public class HudDialogHeader extends JPanel {
 
         add(iconLabel, BorderLayout.WEST);
         add(titleLabel, BorderLayout.CENTER);
-        add(new CloseGlyphButton(onClose), BorderLayout.EAST);
+        add(new HudGlyphButton(HudGlyphs::paintHudCloseGlyph,
+                HUD_COLOR_ROLE_CONTROL_DECORATION, HUD_COLOR_ROLE_DANGER, null, onClose), BorderLayout.EAST);
 
         // Window drag - registered on the panel so empty areas and both labels forward events here
         MouseAdapter drag = new MouseAdapter() {
@@ -70,71 +71,5 @@ public class HudDialogHeader extends JPanel {
         };
         addMouseListener(drag);
         addMouseMotionListener(drag);
-    }
-
-    // -------------------------------------------------------------------------
-    // Close glyph button (icon-only, lightweight)
-    // -------------------------------------------------------------------------
-
-    private static final class CloseGlyphButton extends JComponent {
-
-        private final Runnable onClose;
-        private boolean hover;
-
-        CloseGlyphButton(Runnable onClose) {
-            this.onClose = onClose;
-            setOpaque(false);
-            setPreferredSize(new Dimension(HUD_TABLE_ROW_HEIGHT_COMPACT, HUD_TABLE_ROW_HEIGHT_COMPACT));
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-            addMouseListener(new MouseAdapter() {
-                private boolean armed = false;
-
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    hover = true;
-                    repaint();
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    armed = false;
-                    hover = false;
-                    repaint();
-                }
-
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    if (SwingUtilities.isLeftMouseButton(e)) {
-                        armed = true;
-                    }
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    if (armed && SwingUtilities.isLeftMouseButton(e)
-                            && contains(e.getPoint())) {
-                        armed = false;
-                        onClose.run();
-                    } else {
-                        armed = false;
-                    }
-                }
-            });
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                Color tint = hover ? HUD_COLOR_ROLE_DANGER : HUD_COLOR_ROLE_CONTROL_DECORATION;
-                int gs = HUD_ICON_TABLE;
-                int gx = (getWidth()  - gs) / 2;
-                int gy = (getHeight() - gs) / 2;
-                HudGlyphs.paintHudCloseGlyph(g2, gx, gy, gs, gs, tint);
-            } finally {
-                g2.dispose();
-            }
-        }
     }
 }

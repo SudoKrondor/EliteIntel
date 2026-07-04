@@ -167,7 +167,7 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
                 result.add(s.candidate().tool());
             }
         }
-        CompanionDiagnostics.debugAmbient("reduce", String.format(
+        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
                 "word-overlap: candidates=%d matched=%d top=%.2f -> %s",
                 candidates.size(), matched.size(), scored.get(0).score(), CompanionDiagnostics.names(result)));
         return result;
