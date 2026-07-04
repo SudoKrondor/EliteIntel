@@ -13,12 +13,7 @@ import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ExecutionGateway;
-import elite.intel.companion.llm.CompanionLlmGateway;
-import elite.intel.companion.llm.LlmGateway;
-import elite.intel.companion.llm.LlmProviderAdapter;
-import elite.intel.companion.llm.LlmTransport;
-import elite.intel.companion.llm.LmStudioLlmAdapter;
-import elite.intel.companion.llm.MistralLlmAdapter;
+import elite.intel.companion.llm.*;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
@@ -27,6 +22,8 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.db.dao.ShipDao;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
@@ -217,14 +214,25 @@ public final class CompanionEvalHarness {
             previousLanguage = null;
         }
         if (previousPersonality != null) {
-            SystemSession.getInstance().setAIPersonality(previousPersonality);
+            applyPersonality(previousPersonality);
             previousPersonality = null;
         }
     }
 
     /** Switches the commander-chosen AI personality for the following turns (the prompt reads it live per render). */
     public void setPersonality(ShipPersonality personality) {
-        SystemSession.getInstance().setAIPersonality(personality);
+        applyPersonality(personality);
+    }
+
+    /**
+     * Writes the personality onto the active ship (personality is per-ship). {@link SystemSession#getAIPersonality()}
+     * reads it back from the same ship, so this is how the harness drives the setting production reads.
+     */
+    private static void applyPersonality(ShipPersonality personality) {
+        ShipDao.Ship ship = ShipManager.getInstance().getShip();
+        if (ship == null) return;
+        ship.setPersonality(personality.name());
+        ShipManager.getInstance().saveShip(ship);
     }
 
     // --- driving the real system over the bus ---

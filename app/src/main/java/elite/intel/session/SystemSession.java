@@ -40,34 +40,28 @@ public class SystemSession {
     }
 
 
-    // Voice and personality are app-global (single voice per TTS provider, one personality), stored in
-    // the game_session row. The two providers keep independent selections so switching TTS preserves each:
-    //   Kokoro voice -> kokoroVoice column, Google voice -> googleVoice column, personality -> aiPersonality.
-    // The legacy aiVoice/aiCadence columns are retired (dropped in the pre-release cleanup); the per-ship
-    // ship.voice/ship.personality columns are left untouched for V1.0 compatibility.
+    // Voice and personality are per-ship: each ship carries one voice (ship.voice, interpreted against the
+    // active TTS provider's enum) and one personality (ship.personality). Switching TTS provider reinterprets
+    // the stored voice name and falls back to the provider's default when it isn't a valid voice there. The
+    // companion and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
 
     public GoogleVoices getGoogleVoice() {
-        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleVoice());
-        if (voice == null) return GoogleVoices.EMMA;
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return GoogleVoices.STEVE;
+        String voice = ship.getVoice();
+        if (voice == null) return GoogleVoices.STEVE;
         try {
             return GoogleVoices.valueOf(voice);
         } catch (IllegalArgumentException e) {
-            return GoogleVoices.EMMA;
+            return GoogleVoices.STEVE;
         }
-    }
-
-    public void setGoogleVoice(GoogleVoices voice) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setGoogleVoice(voice.name());
-            dao.save(session);
-            return null;
-        });
     }
 
 
     public KokoroVoices getKokoroVoice() {
-        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getKokoroVoice());
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return KokoroVoices.BELLA;
+        String voice = ship.getVoice();
         if (voice == null) return KokoroVoices.BELLA;
         try {
             return KokoroVoices.valueOf(voice);
@@ -76,18 +70,11 @@ public class SystemSession {
         }
     }
 
-    public void setKokoroVoice(KokoroVoices voice) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setKokoroVoice(voice.name());
-            dao.save(session);
-            return null;
-        });
-    }
-
 
     public ShipPersonality getAIPersonality() {
-        String personality = Database.withDao(GameSessionDao.class, dao -> dao.get().getAiPersonality());
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return ShipPersonality.CASUAL;
+        String personality = ship.getPersonality();
         if (personality == null) return ShipPersonality.CASUAL;
         try {
             return ShipPersonality.valueOf(personality);
@@ -95,16 +82,6 @@ public class SystemSession {
             return ShipPersonality.CASUAL;
         }
     }
-
-    public void setAIPersonality(ShipPersonality personality) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setAiPersonality(personality.name());
-            dao.save(session);
-            return null;
-        });
-    }
-
 
 
     public boolean isSleepingModeOn() {
