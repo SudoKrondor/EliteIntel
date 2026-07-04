@@ -169,10 +169,16 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
 
     @Override
     public LlmResult parse(JsonObject response) {
+        // Diagnostics (see LlmResult.finishReason/droppedText), read inside the try so a malformed-shape
+        // response still degrades to INVALID_RESPONSE rather than throwing out.
+        String finishReason = null;
+        String droppedText = null;
         try {
+            finishReason = stopReasonOf(response);
+            droppedText = parseText(response);
             JsonArray content = contentOf(response);
             if (content == null) {
-                return invalid();
+                return invalid(finishReason, droppedText);
             }
             List<LlmToolInvocation> invocations = new ArrayList<>();
             for (JsonElement element : content) {
@@ -181,21 +187,28 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
                     continue;
                 }
                 if (!block.has("name") || block.get("name").isJsonNull()) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 String name = block.get("name").getAsString();
                 if (name.isBlank()) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 String id = block.has("id") && !block.get("id").isJsonNull() ? block.get("id").getAsString() : null;
                 JsonObject input = block.has("input") && block.get("input").isJsonObject()
                         ? block.getAsJsonObject("input") : new JsonObject();
                 invocations.add(new LlmToolInvocation(id, name, input));
             }
-            return invocations.isEmpty() ? invalid() : new LlmResult(LlmResult.Status.OK, invocations);
+            return invocations.isEmpty() ? invalid(finishReason, droppedText)
+                    : new LlmResult(LlmResult.Status.OK, invocations, finishReason, droppedText);
         } catch (RuntimeException malformed) {
-            return invalid();
+            return invalid(finishReason, droppedText);
         }
+    }
+
+    /** The provider's top-level {@code stop_reason} ({@code end_turn}/{@code tool_use}/{@code max_tokens}/...), or null. */
+    private static String stopReasonOf(JsonObject response) {
+        return response != null && response.has("stop_reason") && !response.get("stop_reason").isJsonNull()
+                ? response.get("stop_reason").getAsString() : null;
     }
 
     @Override
@@ -231,7 +244,7 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
         return block.has("type") && !block.get("type").isJsonNull() ? block.get("type").getAsString() : null;
     }
 
-    private static LlmResult invalid() {
-        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
+    private static LlmResult invalid(String finishReason, String droppedText) {
+        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of(), finishReason, droppedText);
     }
 }

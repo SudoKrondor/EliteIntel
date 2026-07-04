@@ -213,9 +213,7 @@ public abstract class Thought {
         }
         try {
             LlmResult result = future.join();
-            CompanionDiagnostics.debug(trace, "llm", result == null ? "response: none"
-                    : result.isValid() ? "response: " + CompanionDiagnostics.calls(result.toolInvocations())
-                    : "response: INVALID");
+            CompanionDiagnostics.debug(trace, "llm", describeResult(result));
             return result;
         } catch (RuntimeException llmFailure) {
             if (!interrupted) {
@@ -227,6 +225,32 @@ public abstract class Thought {
         } finally {
             inFlight = null;
         }
+    }
+
+    /**
+     * One-line diagnostic for an LLM result: the tool-calls (or {@code none}/{@code INVALID}), the provider
+     * finish reason, and the length + snippet of any free text the model returned alongside the tool-calls -
+     * which the consciousness turn discards. A non-zero {@code dropped-text} means the model "answered" as plain
+     * text instead of a {@code speak} call, which reads in the log as a silent turn (see LlmResult.droppedText).
+     */
+    private static String describeResult(LlmResult result) {
+        if (result == null) {
+            return "response: none";
+        }
+        StringBuilder sb = new StringBuilder(result.isValid()
+                ? "response: " + CompanionDiagnostics.calls(result.toolInvocations())
+                : "response: INVALID");
+        if (result.finishReason() != null) {
+            sb.append(" | finish=").append(result.finishReason());
+        }
+        String dropped = result.droppedText();
+        if (dropped != null && !dropped.isBlank()) {
+            sb.append(" | dropped-text=").append(dropped.length())
+                    .append(": \"").append(CompanionDiagnostics.truncate(dropped)).append("\"");
+        } else {
+            sb.append(" | dropped-text=0");
+        }
+        return sb.toString();
     }
 
     /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */

@@ -234,10 +234,16 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
 
     @Override
     public LlmResult parse(JsonObject response) {
+        // Diagnostics (see LlmResult.finishReason/droppedText), read inside the try so a malformed-shape
+        // response still degrades to INVALID_RESPONSE rather than throwing out.
+        String finishReason = null;
+        String droppedText = null;
         try {
+            finishReason = finishReasonOf(response);
+            droppedText = parseText(response);
             JsonArray parts = partsOf(response);
             if (parts == null) {
-                return invalid();
+                return invalid(finishReason, droppedText);
             }
             List<LlmToolInvocation> invocations = new ArrayList<>();
             for (JsonElement element : parts) {
@@ -247,11 +253,11 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
                 }
                 JsonObject functionCall = part.getAsJsonObject("functionCall");
                 if (!functionCall.has("name") || functionCall.get("name").isJsonNull()) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 String name = functionCall.get("name").getAsString();
                 if (name.isBlank()) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 JsonObject args = functionCall.has("args") && functionCall.get("args").isJsonObject()
                         ? functionCall.getAsJsonObject("args") : new JsonObject();
@@ -261,10 +267,25 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
                         ? part.get("thoughtSignature").getAsString() : null;
                 invocations.add(new LlmToolInvocation(encodeCallId(name, signature), name, args));
             }
-            return invocations.isEmpty() ? invalid() : new LlmResult(LlmResult.Status.OK, invocations);
+            return invocations.isEmpty() ? invalid(finishReason, droppedText)
+                    : new LlmResult(LlmResult.Status.OK, invocations, finishReason, droppedText);
         } catch (RuntimeException malformed) {
-            return invalid();
+            return invalid(finishReason, droppedText);
         }
+    }
+
+    /** The provider's {@code candidates[0].finishReason} ({@code STOP}/{@code MAX_TOKENS}/...), or null. */
+    private static String finishReasonOf(JsonObject response) {
+        if (response == null || !response.has("candidates")) {
+            return null;
+        }
+        JsonArray candidates = response.getAsJsonArray("candidates");
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        JsonObject candidate = candidates.get(0).getAsJsonObject();
+        return candidate.has("finishReason") && !candidate.get("finishReason").isJsonNull()
+                ? candidate.get("finishReason").getAsString() : null;
     }
 
     @Override
@@ -338,7 +359,7 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
         return separator < 0 ? null : callId.substring(separator + 1);
     }
 
-    private static LlmResult invalid() {
-        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
+    private static LlmResult invalid(String finishReason, String droppedText) {
+        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of(), finishReason, droppedText);
     }
 }
