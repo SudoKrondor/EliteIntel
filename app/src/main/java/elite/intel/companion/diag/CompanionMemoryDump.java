@@ -9,6 +9,7 @@ import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,8 @@ import java.util.Map;
  * <p>
  * Serialization is delegated to the shared {@link GsonFactory} Gson (pretty-printing, ISO-8601 {@code Instant}s,
  * null fields omitted), so the format stays consistent with the rest of the app and no field ordering or
- * escaping is hand-rolled here.
+ * escaping is hand-rolled here. Timestamps are truncated to whole seconds so they render as the
+ * {@code yyyy-MM-ddTHH:mm:ssZ} journal form, matching the exported logs and the game journal for correlation.
  */
 public final class CompanionMemoryDump {
 
@@ -65,7 +67,7 @@ public final class CompanionMemoryDump {
                 summary.length());
 
         return new Dump(
-                Instant.now(),
+                secondsUtc(Instant.now()),
                 limits,
                 counts,
                 mapEntries(snapshot.shortTerm()),
@@ -78,9 +80,17 @@ public final class CompanionMemoryDump {
         return entries.stream().map(CompanionMemoryDump::mapEntry).toList();
     }
 
+    /**
+     * Truncates a timestamp to whole seconds so the shared Gson {@code Instant} adapter renders it as
+     * {@code yyyy-MM-ddTHH:mm:ssZ} (the journal/log form), without the sub-second precision those do not carry.
+     */
+    private static Instant secondsUtc(Instant timestamp) {
+        return timestamp == null ? null : timestamp.truncatedTo(ChronoUnit.SECONDS);
+    }
+
     private static Entry mapEntry(MemoryEntry e) {
         return new Entry(
-                e.timestamp(),
+                secondsUtc(e.timestamp()),
                 e.topic() == null ? null : e.topic().id(),
                 e.source() == null ? null : e.source().name(),
                 e.importance() == null ? null : e.importance().name(),

@@ -76,10 +76,20 @@ class CompanionMemoryDumpTest {
         assertEquals("EVENT", shortEntry.get("source").getAsString());
         assertEquals("NORMAL", shortEntry.get("importance").getAsString());
         assertEquals("docked at abraham lincoln", shortEntry.get("content").getAsString());
-        assertTrue(shortEntry.has("timestamp"));
+        // Timestamp is the whole-second UTC journal form, matching the exported logs and the game journal.
+        assertEquals("2026-07-05T10:00:00Z", shortEntry.get("timestamp").getAsString());
         // The meaning-vector is never dumped; only its presence is flagged.
         assertFalse(shortEntry.has("embedding"));
         assertTrue(shortEntry.get("hasEmbedding").getAsBoolean());
+    }
+
+    @Test
+    void dumpedAtUsesTheWholeSecondJournalForm() {
+        JsonObject dump = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot())).getAsJsonObject();
+        // dumpedAt comes from Instant.now(); it must be truncated to whole seconds (no sub-second part) so it
+        // reads exactly like the game journal / exported log timestamps.
+        assertTrue(dump.get("dumpedAt").getAsString().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"),
+                "dumpedAt must be the yyyy-MM-ddTHH:mm:ssZ journal form");
     }
 
     @Test
