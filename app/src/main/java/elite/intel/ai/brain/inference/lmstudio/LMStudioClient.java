@@ -67,7 +67,7 @@ public class LMStudioClient extends BaseAiClient implements Client {
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         long elapsed = System.nanoTime() - t0;
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
-        UiBus.publish(new AppLogEvent("LM Studio: " + meta));
+        UiBus.publish(new AppLogEvent("LM Studio: " + LlmMetadata.describe(meta)));
         if (meta != null && meta.usage() != null) {
             UiBus.publish(new LlmUsageEvent("LM Studio",
                     meta.model() != null ? meta.model() : "local",

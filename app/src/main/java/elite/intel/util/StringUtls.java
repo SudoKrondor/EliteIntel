@@ -94,16 +94,14 @@ public class StringUtls {
         String safeShipName = shipName == null || shipName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : shipName;
+        // WHY: the intro no longer carries an honorific. The honorific lookup resolves only for English
+        // (its maps are keyed by English rank names while the rank map is localized), so every non-English
+        // locale rendered a trailing "null". Dropping the title keeps the greeting clean in all languages.
         return MultiLingualTextProvider.getText(
                 language,
                 "speech.shipIntroduction",
                 spokenName,
-                safeShipName,
-                Ranks.getPlayerHonorific(
-                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankEmpire(),
-                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankFederation()
-                )
-        );
+                safeShipName);
     }
 
     public static String localizedSpeech(String key, Object... args) {
