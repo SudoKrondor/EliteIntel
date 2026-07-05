@@ -2,6 +2,7 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.session.PlayerSession;
@@ -71,8 +72,10 @@ public class OBSOverlayWindow extends JFrame {
     public void setVisible(boolean visible) {
         if (visible) {
             messages.clear();
+            GameEventBus.register(this);
             UiBus.register(this);
         } else {
+            GameEventBus.unregister(this);
             UiBus.unregister(this);
         }
         super.setVisible(visible);

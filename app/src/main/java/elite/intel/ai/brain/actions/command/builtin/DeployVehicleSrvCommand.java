@@ -18,11 +18,24 @@ import elite.intel.session.ui.UINavigator;
 public final class DeployVehicleSrvCommand implements IntelCommand {
     public static final String ID = "deploy_vehicle_srv";
 
-    @Override public String llmDescription() { return "Deploy the SRV from the ship."; }
+    @Override
+    public String llmDescription() {
+        return "Deploy the SRV surface vehicle from the ship's vehicle bay. Only when the ship is landed on a planet surface - not an undock/launch of the ship itself.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
+
+    /**
+     * The SRV can only leave the bay when the ship is landed on a planetary surface, so it is offered only in that
+     * context. This keeps "launch/deploy SRV" from competing with undocking (launch ship), which is a dock-only
+     * command - the game-state gate the legacy path relied on.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && status.isLanded();
+    }
 
     @Override
     public String id() {

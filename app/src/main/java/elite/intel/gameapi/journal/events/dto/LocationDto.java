@@ -10,10 +10,16 @@ import elite.intel.util.json.ToJsonConvertible;
 import org.apache.logging.log4j.core.config.plugins.validation.constraints.NotBlank;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static elite.intel.util.StringUtls.subtractString;
 
 public class LocationDto implements ToJsonConvertible {
+
+    /**
+     * ED planetary rings are named "&lt;parent&gt; &lt;letter&gt; Ring" - the authoritative ring signal.
+     */
+    private static final Pattern RING_NAME = Pattern.compile(".* [A-Z] Ring");
 
     private List<MaterialDto> materials = new ArrayList<>();
     private List<SAASignalsFoundEvent.Signal> saaSignals = new ArrayList<>();
@@ -247,10 +253,19 @@ public class LocationDto implements ToJsonConvertible {
         this.planetName = planetName;
         if (starName != null && planetShortName == null) {
             this.planetShortName = StringUtls.subtractString(planetName, starName);
-            if (this.planetShortName.toLowerCase(Locale.ROOT).contains("ring")) {
-                setLocationType(LocationType.PLANETARY_RING);
+        }
+        // The body name is the authoritative ring signal: "<parent> <letter> Ring". Lock in the
+        // classification and parent here so no classifier (Scan/FSS/Location) can later downgrade it.
+        if (RING_NAME.matcher(planetName).matches()) {
+            this.locationType = LocationType.PLANETARY_RING;
+            if (this.parentBodyName == null) {
+                this.parentBodyName = planetName.replaceAll(" [A-Z] Ring$", "");
             }
         }
+    }
+
+    private boolean isRingByName() {
+        return planetName != null && RING_NAME.matcher(planetName).matches();
     }
 
     public BodyData getPlanetData() {
@@ -716,6 +731,11 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setLocationType(LocationType locationType) {
+        // A ring (by name) must never be reclassified by another code path - the name wins.
+        if (isRingByName()) {
+            this.locationType = LocationType.PLANETARY_RING;
+            return;
+        }
         this.locationType = locationType;
     }
 

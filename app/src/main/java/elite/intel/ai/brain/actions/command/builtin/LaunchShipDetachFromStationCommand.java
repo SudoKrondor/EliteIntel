@@ -8,6 +8,7 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.inputs.UiNavCommon;
+import elite.intel.session.Status;
 
 /**
  * Self-describing "launch ship" command.
@@ -18,8 +19,20 @@ import elite.intel.gameapi.inputs.UiNavCommon;
 public final class LaunchShipDetachFromStationCommand implements IntelCommand {
     public static final String ID = "launch_ship_detach_from_station";
 
-    @Override public String llmDescription() { return "Launch the ship and detach from the station."; }
+    @Override
+    public String llmDescription() {
+        return "Undock: launch the main ship and detach it from the station pad. Only for leaving a dock - never for deploying an SRV, fighter, or Nomad scout.";
+    }
 
+    /**
+     * Undocking only makes sense while sitting in the main ship on a station/port pad. Restricting visibility to
+     * that context keeps "launch"/"detach" from competing with the vehicle-deploy commands (SRV/fighter/Nomad),
+     * which are never available at a dock - the game-state gate the legacy path relied on.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && status.isDocked();
+    }
 
     @Override
     public String id() {
