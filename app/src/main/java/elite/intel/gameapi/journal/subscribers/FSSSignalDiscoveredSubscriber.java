@@ -20,6 +20,7 @@ public class FSSSignalDiscoveredSubscriber {
     private static final String USS_TYPE_SALVAGE = "$USS_Type_Salvage";
     private static final String USS_TYPE_VALUABLE_SALVAGE = "$USS_Type_ValuableSalvage";
     private static final String USS_TYPE_VERY_VALUABLE_SALVAGE = "$USS_Type_VeryValuableSalvage";
+    private static final String NOTABLE_STELLAR_PHENOMENON = "$Fixed_Event_Life_Cloud;";
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final HuntingGroundManager pirateMissionDataManager = HuntingGroundManager.getInstance();
@@ -46,6 +47,9 @@ public class FSSSignalDiscoveredSubscriber {
             }
             if (event.getUssType() != null && event.getUssType().contains(USS_TYPE_VERY_VALUABLE_SALVAGE)) {
                 announceSalvage("event.fss.signal.salvage.veryValuable", event);
+            }
+            if (event.getSignalName() != null && event.getSignalName().contains(NOTABLE_STELLAR_PHENOMENON)) {
+                announceSalvage("event.fss.notable.stellar.phenomenon", event);
             }
         });
     }
