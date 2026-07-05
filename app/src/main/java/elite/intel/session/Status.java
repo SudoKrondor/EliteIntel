@@ -3,6 +3,7 @@ package elite.intel.session;
 import elite.intel.db.dao.StatusDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
+import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.util.json.GsonFactory;
 
 public class Status extends StatusFlags {
@@ -531,5 +532,51 @@ public class Status extends StatusFlags {
 
     public int getFireGroup() {
         return getStatus().getFireGroup();
+    }
+
+    // --- Composite situation ---
+
+    /**
+     * Classifies the commander's current physical context (in ship/SRV/fighter/taxi/on foot, and where:
+     * docked, landed, supercruise, ring, orbit, deep space, station, planet surface) from the given Status
+     * flags and location. Pure flag decoding, so it does not touch the database. Prefer this overload on the
+     * live Status-event path so classification uses the event's own flags rather than a snapshot that may not
+     * be persisted yet. {@code location} is consulted only to detect a planetary ring (asteroid belt) and may
+     * be null.
+     */
+    public PlayerSituation getSituation(long flags, long flags2, LocationDto location) {
+        // On foot (Odyssey): refine by where the commander is standing.
+        if (isOnFoot(flags2)) {
+            if (isOnFootInStation(flags2)) return PlayerSituation.ON_FOOT_STATION;
+            if (isOnFootInHangar(flags2)) return PlayerSituation.ON_FOOT_HANGAR;
+            if (isOnFootSocialSpace(flags2)) return PlayerSituation.ON_FOOT_SOCIAL;
+            if (isOnFootOnPlanet(flags2) || isOnFootExterior(flags2)) return PlayerSituation.ON_FOOT_PLANET;
+            return PlayerSituation.ON_FOOT;
+        }
+        if (isInTaxi(flags2)) return PlayerSituation.IN_TAXI;
+        if (isInSrv(flags)) return PlayerSituation.IN_SRV;
+        if (isInFighter(flags)) return PlayerSituation.IN_FIGHTER;
+
+        // In the main ship: docked/landed take priority, then flight mode, then the surroundings.
+        if (isDocked(flags)) return PlayerSituation.IN_SHIP_DOCKED;
+        if (isLanded(flags)) return PlayerSituation.IN_SHIP_LANDED;
+        if (isGlideModeF2(flags2)) return PlayerSituation.IN_SHIP_GLIDE;
+        if (isInSupercruise(flags)) return PlayerSituation.IN_SHIP_SUPERCRUISE;
+        if (location != null && location.getLocationType() == LocationDto.LocationType.PLANETARY_RING) {
+            return PlayerSituation.IN_SHIP_RING;
+        }
+        // Normal space with a surface reference means we are close to a body (orbital flight).
+        if (hasLatLong(flags)) return PlayerSituation.IN_SHIP_ORBIT;
+        if (isInMainShip(flags)) return PlayerSituation.IN_SHIP_DEEP_SPACE;
+        return PlayerSituation.UNKNOWN;
+    }
+
+    /**
+     * Convenience overload that classifies from the persisted status snapshot. Use for on-demand refreshes,
+     * not the live event path (which should pass the event's flags to avoid a persistence race).
+     */
+    public PlayerSituation getSituation(LocationDto location) {
+        GameEvents.StatusEvent status = getStatus();
+        return getSituation(status.getFlags(), status.getFlags2(), location);
     }
 }
