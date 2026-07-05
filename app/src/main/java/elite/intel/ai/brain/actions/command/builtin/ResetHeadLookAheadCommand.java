@@ -31,6 +31,11 @@ public final class ResetHeadLookAheadCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
 
         if (status.isInMainShip()) {

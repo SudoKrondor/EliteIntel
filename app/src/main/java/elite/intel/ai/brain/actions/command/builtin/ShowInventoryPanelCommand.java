@@ -29,6 +29,11 @@ public final class ShowInventoryPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.INVENTORY);

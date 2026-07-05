@@ -26,6 +26,11 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSupercruise();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 

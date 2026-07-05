@@ -34,6 +34,11 @@ public final class DismissShipToOrbitCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSrv() || status.isOnFoot();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_RECALL_DISMISS_SHIP.getGameBinding())));

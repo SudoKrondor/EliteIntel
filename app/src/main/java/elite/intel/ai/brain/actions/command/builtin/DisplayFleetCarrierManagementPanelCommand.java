@@ -30,6 +30,11 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
         return ID;
     }
 
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
+    }
+
     /// not a sure fire. assumes default UI selection. will fail often.
     @Override
     public void execute(JsonObject params, String responseText) {

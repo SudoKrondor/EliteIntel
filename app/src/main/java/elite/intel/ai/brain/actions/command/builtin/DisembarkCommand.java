@@ -33,6 +33,11 @@ public final class DisembarkCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         if (status.isInSrv()) {

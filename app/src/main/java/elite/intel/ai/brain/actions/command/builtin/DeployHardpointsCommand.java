@@ -29,6 +29,11 @@ public final class DeployHardpointsCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 

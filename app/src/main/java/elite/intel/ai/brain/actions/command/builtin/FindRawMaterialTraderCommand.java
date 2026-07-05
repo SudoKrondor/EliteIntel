@@ -32,6 +32,11 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
         if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {

@@ -32,6 +32,11 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSupercruise();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isScoopingFuel()) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.scooping")));

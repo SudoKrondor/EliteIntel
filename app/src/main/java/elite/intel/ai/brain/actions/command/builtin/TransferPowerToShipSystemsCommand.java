@@ -32,6 +32,11 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 

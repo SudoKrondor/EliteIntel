@@ -29,6 +29,11 @@ public final class DeployLandingGearCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return !(status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter());
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 

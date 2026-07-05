@@ -27,6 +27,11 @@ public final class ShowModulesPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.MODULES);

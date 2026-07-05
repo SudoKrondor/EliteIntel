@@ -29,6 +29,11 @@ public final class DisplayOpenSystemMapCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
         Status status = Status.getInstance();

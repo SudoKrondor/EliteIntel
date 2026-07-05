@@ -35,6 +35,11 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
 
 

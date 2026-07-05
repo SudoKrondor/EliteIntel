@@ -43,6 +43,11 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));
         UiNavCommon.close();
