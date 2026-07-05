@@ -109,54 +109,51 @@ class ThoughtTest {
 
         assertEquals(List.of("close_panel"), execution.toolNames(),
                 "silent command runs; the co-occurring speak is withheld (never executed)");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("narration_suppressed")),
-                "the withheld speak said nothing, so it leaves no narration_suppressed noise in memory");
         assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
         assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION && e.toolLink() == null),
-                "the immediate command ack is not recorded as a COMPANION speech line (the tool-call entry is a CALL link)");
+        assertTrue(memory.writes.isEmpty(),
+                "a command turn files nothing: the withheld speak and the immediate ack both leave no memory entry");
     }
 
     @Test
-    void commanderCommandWithholdsLlmSpeakAndRecordsExecution() {
-        // A command self-narrates its own outcome (via the handler's events, owned by the bridge), so the
-        // LLM's own speak for the same turn is dropped; only the immediate ack is voiced here, and the
-        // execution is recorded. An IntelCommand returns no text_to_speech_response, so nothing is voiced
-        // inline for the outcome.
-        execution.resultsByTool.put("ship_status", new JsonObject());
-        llm.scripted.add(ok(call("ship_status", new JsonObject()),
-                call(SpeakFunction.ID, text("let me check the ship"))));
+    void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
+        // A turn that runs both a QUERY and a COMMAND is not a pure side effect: the query records a call/result
+        // pair that must keep its preceding user turn (else it replays as an assistant tool-call with no user
+        // before it). So the commander input is still filed (a lone command turn would file nothing), and the
+        // query call is recorded; the co-occurring command still records no call echo.
+        IntelActionTypeResolver mixed = new IntelActionTypeResolver(id -> switch (id) {
+            case "scan_system" -> IntelActionType.QUERY;
+            case "close_panel" -> IntelActionType.COMMAND;
+            default -> IntelActionType.SYSTEM;
+        });
+        execution.resultsByTool.put("scan_system", outcomeText("two stars"));
+        llm.scripted.add(ok(call("scan_system", new JsonObject()), call("close_panel", new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "how is the ship", ctx(actionTypes())).run();
+        Thought.commander(Urgency.NORMAL, "scan the system and close the panel", ctx(mixed)).run();
 
-        assertEquals(1, speech.requests.size(),
-                "only the immediate command ack is voiced; the command self-narrates the rest");
-        assertFalse(speech.requests.get(0).text().isBlank(), "the voice is the immediate command ack");
-        assertFalse(execution.toolNames().contains(SpeakFunction.ID),
-                "the LLM's own speak is withheld once a command owns the spoken outcome");
-        MemoryEntry recordedCall = memory.writes.stream()
-                .filter(e -> e.source() == MemorySource.COMPANION && e.toolLink() != null && e.toolLink().isCall())
-                .findFirst()
-                .orElseThrow();
-        assertEquals("ship_status", recordedCall.toolLink().toolName(),
-                "the command call is recorded for pair replay (its voiced result would be the RESULT half)");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
+                        && "scan the system and close the panel".equals(e.content())),
+                "a turn that also runs a query keeps its commander input");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && e.toolLink() != null && e.toolLink().isCall() && "scan_system".equals(e.toolLink().toolName())),
+                "the query call is recorded for pair replay");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null && e.toolLink().isCall()
+                        && "close_panel".equals(e.toolLink().toolName())),
+                "the co-occurring command still records no call echo");
     }
 
     @Test
-    void reflexSilentCommandRecordsItsCallWithoutAck() {
-        // Command handlers are self-narrating: a silent command records its call (for pair replay) but the
-        // companion adds no second affirmative voice. Its RESULT would arrive via the bridge; there is none here.
+    void reflexSilentCommandFilesNoMemory() {
+        // A reflex is a COMMAND - a side effect, not dialogue - so neither the imperative nor the call echo is
+        // filed. A silent command (no handler-voiced outcome) therefore leaves no memory entry, and the
+        // companion adds no affirmative voice of its own.
         Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
 
         assertTrue(llm.requests.isEmpty());
         assertEquals(List.of("close_panel"), execution.toolNames());
         assertTrue(speech.requests.isEmpty(), "silent self-narrating commands are not acknowledged by companion");
-        assertEquals(2, memory.writes.size());
-        assertEquals("close the panel", memory.writes.get(0).content());
-        MemoryEntry recordedCall = memory.writes.get(1);
-        assertEquals(MemorySource.COMPANION, recordedCall.source());
-        assertTrue(recordedCall.toolLink() != null && recordedCall.toolLink().isCall());
-        assertEquals("close_panel", recordedCall.toolLink().toolName());
+        assertTrue(memory.writes.isEmpty(),
+                "a reflex command files nothing: neither the imperative nor the call echo is recorded");
     }
 
     @Test

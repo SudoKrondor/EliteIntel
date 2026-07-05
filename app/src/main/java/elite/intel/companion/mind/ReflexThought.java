@@ -7,14 +7,12 @@ import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryImportance;
 
-import java.util.List;
-
 /**
  * A reflex: a commander input the {@code ReflexResolver} matched verbatim to exactly one safe, parameterless
  * command. It runs on the commander lane like a {@link CommanderThought}, but skips the LLM entirely - there
- * is no prompt, no thinking loop and no tool selection. It records the input, executes the resolved command,
- * and voices/remembers the outcome through the shared {@link #recordOutcome} (the command's own COMMAND path:
- * the handler's text or an affirmative ack, plus a compact timeline entry).
+ * is no prompt, no thinking loop and no tool selection. It just executes the resolved command; a command is a
+ * side effect, not dialogue, so nothing is filed to memory (neither the imperative nor a call echo), and the
+ * handler owns any spoken outcome.
  * <p>
  * No interrupt handling (§1.9.41): the resolver only admits a fast, parameterless command, and a started
  * command is never cancelled - so a reflex simply runs to completion.
@@ -30,14 +28,12 @@ final class ReflexThought extends Thought {
 
     @Override
     public void run() {
-        recordCurrentInput(); // file the commander's words ([COMMANDER]) before the command runs (§2.6)
+        // A reflex is always a COMMAND - a side effect, not dialogue - so neither the commander's imperative nor
+        // the call echo is filed to memory (they carry nothing worth recalling and would only clutter the
+        // short-term timeline and the prompt). Executed with no tool-call id: any handler-voiced outcome is then
+        // remembered as a plain companion line rather than a linked tool result, so nothing is left orphaned.
         LlmToolInvocation inv = new LlmToolInvocation(newId(), commandId, new JsonObject());
-        // Record the call (for pair replay), execute it under its id (so the handler's narration is recorded as
-        // this call's tool result), then handle the COMMAND outcome exactly like the commander loop.
-        String toolCallId = newId();
-        recordCall(toolCallId, inv);
-        JsonObject result = execute(inv, toolCallId);
-        recordOutcome(inv, result, List.of(), toolCallId);
+        execute(inv, null);
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */
