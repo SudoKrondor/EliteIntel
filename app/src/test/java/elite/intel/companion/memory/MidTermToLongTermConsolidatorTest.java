@@ -144,6 +144,7 @@ class MidTermToLongTermConsolidatorTest {
         final List<MemoryEntry> pinned = new ArrayList<>();
 
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }

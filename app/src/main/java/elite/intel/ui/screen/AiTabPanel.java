@@ -2,6 +2,9 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.diag.CompanionMemoryDump;
+import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -153,7 +156,7 @@ public class AiTabPanel extends JPanel {
         topSplit.setResizeWeight(0.38);
 
         HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
-        systemSection.setHeaderActions(buildSaveLogButton(), buildClearLogButton());
+        systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 topSplit,
@@ -268,6 +271,50 @@ public class AiTabPanel extends JPanel {
                 getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog);
     }
 
+    /** Builds the SYSTEM LOG header action: a memory-glyph button that dumps the companion's memory to a JSON file. */
+    private HudGlyphButton buildDumpMemoryButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory);
+    }
+
+    /**
+     * Writes a full JSON snapshot of the companion's session memory to a user-chosen {@code .json} file. Runs on
+     * the EDT (button click). When the companion subsystem is not running its memory is unreachable, so the button
+     * reports that as a SYSTEM LOG line instead of failing; every outcome (dumped file, not running, or write
+     * error) is reported the same way, keeping feedback inside the HUD instead of a native popup.
+     */
+    private void dumpCompanionMemory() {
+        MemoryGateway memory;
+        try {
+            memory = CompanionRuntime.memory();
+        } catch (IllegalStateException notRunning) {
+            // WHY: only the not-installed case degrades to "nothing to dump" here (CompanionRuntime getters throw
+            // when the subsystem is stopped). Snapshot and serialization run outside this guard so any real failure
+            // there surfaces as a write error rather than being mislabelled "not running".
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.empty")));
+            return;
+        }
+        String content = CompanionMemoryDump.toJson(memory.snapshot());
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(getText("ai.section.systemMessages.dump.title"));
+        chooser.setSelectedFile(new File(defaultMemoryDumpFileName()));
+        chooser.setFileFilter(new FileNameExtensionFilter("JSON (*.json)", "json"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".json")) {
+            file = new File(file.getAbsolutePath() + ".json");
+        }
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.success", file.getName())));
+        } catch (IOException e) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.error", String.valueOf(e.getMessage()))));
+        }
+    }
+
     /**
      * Writes the full SYSTEM LOG transcript to a user-chosen {@code .log} file. Runs on the EDT (button click).
      * The outcome (saved file, empty log, or write error) is reported back as a SYSTEM LOG line, so feedback
@@ -302,6 +349,12 @@ public class AiTabPanel extends JPanel {
     private static String defaultLogFileName() {
         return "companion_diagnostics_"
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".log";
+    }
+
+    /** Timestamped default file name, e.g. {@code companion_memory_dump_20260704_132155.json}. */
+    private static String defaultMemoryDumpFileName() {
+        return "companion_memory_dump_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 
     public void initData(boolean sleepingModeOn, boolean servicesRunning) {

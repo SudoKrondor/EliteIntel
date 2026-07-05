@@ -3,6 +3,7 @@ package elite.intel.companion.tools;
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmToolDefinition;
@@ -113,6 +114,7 @@ class SystemFunctionHandleTest {
         List<String> matchingItems = List.of();
 
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) {
             throw new UnsupportedOperationException();

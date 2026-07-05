@@ -195,6 +195,20 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
+    public synchronized MemorySnapshot snapshot() {
+        // Regroup the flat mid-term view by topic for the dump; each entry already carries its topic, and an
+        // EnumMap keeps the natural topic order. Everything handed to the snapshot is an unmodifiable copy detached
+        // from the live stores (short-term/pinned are already List.copyOf), so the snapshot is truly immutable.
+        Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
+        for (MemoryEntry entry : midTerm.allEntries()) {
+            byTopic.computeIfAbsent(entry.topic(), t -> new ArrayList<>()).add(entry);
+        }
+        byTopic.replaceAll((topic, entries) -> List.copyOf(entries));
+        return new MemorySnapshot(shortTerm.timeline(), Collections.unmodifiableMap(byTopic),
+                longTerm.get(), longTerm.pinnedFacts());
+    }
+
+    @Override
     public synchronized void addLongTermPinned(MemoryEntry fact) {
         // Pinned facts are searched too, so they need a meaning-vector; attach one if the consolidator did not.
         MemoryEntry withVector = fact;

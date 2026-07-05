@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
@@ -70,6 +71,8 @@ class MemoryFactCandidatesTest {
         private FakeMemory(List<MemoryEntry> candidates) {
             this.candidates = candidates;
         }
+
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
 
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return candidates; }
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }

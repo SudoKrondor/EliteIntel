@@ -63,4 +63,11 @@ public interface MemoryGateway {
 
     /** Pins a MAX-importance fact verbatim into long-term memory (called by {@code MidTermToLongTermConsolidator}). */
     void addLongTermPinned(MemoryEntry fact);
+
+    /**
+     * A read-only {@link MemorySnapshot} of every memory area (short-term, mid-term by topic, long-term summary
+     * and pinned facts) taken atomically, for diagnostics/export. The gateway stays the single door: internal
+     * stores are never exposed, only a copied snapshot.
+     */
+    MemorySnapshot snapshot();
 }

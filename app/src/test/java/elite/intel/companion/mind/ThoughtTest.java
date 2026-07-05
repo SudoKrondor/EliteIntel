@@ -8,6 +8,7 @@ import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.Urgency;
@@ -528,6 +529,7 @@ class ThoughtTest {
         final List<MemoryEntry> writes = new ArrayList<>();
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }

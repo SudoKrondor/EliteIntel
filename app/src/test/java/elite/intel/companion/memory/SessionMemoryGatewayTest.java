@@ -445,6 +445,38 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void snapshotCapturesEveryAreaGroupedByTopic() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // Push two past the short-term cap so the two oldest NAVIGATION entries evict into mid-term.
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize() + 2; i++) {
+            gateway.write(entry(ConversationTopic.NAVIGATION, "nav-" + i));
+        }
+        gateway.addLongTermPinned(entry(ConversationTopic.SOCIAL, "operation name is ebb", MemoryImportance.MAX));
+        gateway.replaceLongTermSummary("old jumps summarized");
+
+        MemorySnapshot snapshot = gateway.snapshot();
+
+        assertEquals(CompanionConfig.shortTermMemorySize(), snapshot.shortTerm().size());
+        assertEquals(List.of("nav-0", "nav-1"),
+                snapshot.midTermByTopic().get(ConversationTopic.NAVIGATION).stream().map(MemoryEntry::content).toList());
+        assertEquals("old jumps summarized", snapshot.longTermSummary());
+        assertEquals(List.of("operation name is ebb"),
+                snapshot.longTermPinned().stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
+    void snapshotIsDetachedFromLiveStores() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "first"));
+
+        MemorySnapshot snapshot = gateway.snapshot();
+        gateway.write(entry(ConversationTopic.COMBAT, "second")); // a later write must not mutate the snapshot
+
+        assertEquals(1, snapshot.shortTerm().size());
+        assertEquals("first", snapshot.shortTerm().get(0).content());
+    }
+
+    @Test
     void heuristicEstimatorIsConservativeAndNonNegative() {
         TokenEstimator estimator = new HeuristicTokenEstimator();
         assertEquals(0, estimator.estimate(null));
