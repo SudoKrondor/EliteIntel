@@ -2,15 +2,18 @@ package elite.intel.ui.dialog;
 
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandKeyDeriver;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandValidator;
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.companion.llm.CustomCommandKeyGenerator;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -29,9 +32,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -40,6 +43,8 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * Modal CRUD editor for one custom command definition. It returns a validated customCommand but does not persist it.
  */
 public final class CustomCommandEditorDialog extends JDialog {
+
+    private static final Logger log = LogManager.getLogger(CustomCommandEditorDialog.class);
 
     private final List<CustomCommandDefinition> existingCustomCommands;
     /** Immutable UUID carried through edits; {@code null} for new customCommands until saved. */
@@ -51,9 +56,13 @@ public final class CustomCommandEditorDialog extends JDialog {
     private final JTextField nameField = AppTheme.makeTextField();
     private final JTextArea phrasesArea = textArea(7);
     /**
-     * Read-only live preview of the key derived from the phrases ("Triggers as: ...").
+     * The LLM-generated English routing key, shown read-only. It is produced by the "Generate" button
+     * (or carried from the existing command on edit) and never hand-typed: the key must be ASCII because
+     * it becomes the provider tool name (see {@link CustomCommandKeyGenerator}), which manual entry could
+     * violate. Its text is the value {@link #buildCandidate} persists.
      */
-    private final JLabel keyPreviewLabel = new JLabel();
+    private final JLabel keyLabel = new JLabel();
+    private JButton generateKeyButton;
     /**
      * Description is no longer surfaced; retained empty for backward-compatible persistence.
      */
@@ -94,6 +103,7 @@ public final class CustomCommandEditorDialog extends JDialog {
         nameField.setText(customCommand.getName());
         description = customCommand.getDescription();
         phrasesArea.setText(customCommand.getPhrases());
+        keyLabel.setText(customCommand.getActionKey());
         paramsModel.setParameters(customCommand.getParameters());
         stepsModel.setSteps(customCommand.getSteps());
     }
@@ -167,62 +177,93 @@ public final class CustomCommandEditorDialog extends JDialog {
         addExplainer(panel, gbc, getText("actions.customCommands.editor.explainer"));
         addField(panel, gbc, getText("actions.customCommands.editor.name"), nameField);
         addArea(panel, gbc, getText("actions.customCommands.editor.phrases"), phrasesArea);
-        addKeyPreview(panel, gbc);
-
-        // The action key is derived from the phrases (never hand-typed) so its tokens echo what the
-        // commander says; keep the preview live as they type.
-        SimpleDocumentListener listener = this::refreshKeyPreview;
-        phrasesArea.getDocument().addDocumentListener(listener);
-        refreshKeyPreview();
+        addKeyRow(panel, gbc);
         return panel;
     }
 
     /**
-     * Adds a non-editable, wrapped explanation spanning both form columns.
+     * Adds the instructional hint spanning the whole form width, as the same blue INFO banner the keybind
+     * editor uses for its capture hint.
      */
     private void addExplainer(JPanel panel, GridBagConstraints gbc, String text) {
-        JTextArea area = new JTextArea(text);
-        area.setEditable(false);
-        area.setFocusable(false);
-        area.setLineWrap(true);
-        area.setWrapStyleWord(true);
-        area.setOpaque(false);
-        area.setFont(new JLabel().getFont());
-        area.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        area.setBorder(new EmptyBorder(0, 0, HudPalette.HUD_GAP, 0));
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(area, gbc);
-        gbc.gridwidth = 1;
+        HudForms.addSpanComponent(panel, HudBanner.multiline(text, StatusBadge.State.INFO), gbc);
         gbc.gridx = 0;
         gbc.gridy++;
     }
 
     /**
-     * Adds the read-only "Triggers as: &lt;key&gt;" preview row beneath the phrases.
+     * Adds the action-key row: the read-only key display plus a "Generate" button that fills it from the
+     * phrases via the LLM. The key is the English snake_case token the routing model emits; it is generated
+     * (not hand-derived, not hand-edited) because it must be English even when the phrases are not - see
+     * {@link CustomCommandKeyGenerator}.
      */
-    private void addKeyPreview(JPanel panel, GridBagConstraints gbc) {
-        addLabel(panel, gbc, getText("actions.customCommands.editor.triggersAs"));
+    private void addKeyRow(JPanel panel, GridBagConstraints gbc) {
+        addLabel(panel, gbc, getText("actions.customCommands.editor.actionKey"));
         gbc.gridx = 1;
         gbc.weightx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        keyPreviewLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
-        panel.add(keyPreviewLabel, gbc);
+        JPanel row = AppTheme.transparentPanel(new BorderLayout(HudPalette.HUD_GAP, 0));
+        keyLabel.setForeground(HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT);
+        row.add(keyLabel, BorderLayout.CENTER);
+        generateKeyButton = AppTheme.makeButtonSubtle(getText("actions.customCommands.editor.generateKey"));
+        generateKeyButton.addActionListener(event -> generateKey());
+        row.add(generateKeyButton, BorderLayout.EAST);
+        panel.add(row, gbc);
         gbc.gridy++;
     }
 
     /**
-     * Recomputes the derived action key from the current phrases and updates the preview label.
+     * Generates the action key from the current phrases via the LLM, off the EDT so the modal stays
+     * responsive. Requires at least one phrase; on failure (no supported provider, timeout, unusable
+     * output) it surfaces the reason in the errors block rather than writing a key.
      */
-    private void refreshKeyPreview() {
+    private void generateKey() {
         String phrases = normalizePhrases(phrasesArea.getText());
         if (phrases.isBlank()) {
-            keyPreviewLabel.setText(getText("actions.customCommands.editor.triggersAs.empty"));
+            showErrors(List.of(getText("actions.customCommands.editor.keyPhrasesRequired")));
             return;
         }
-        keyPreviewLabel.setText(CustomCommandKeyDeriver.deriveUniqueKey(phrases, takenActionKeys()));
+        List<String> taken = takenActionKeys();
+        String idleLabel = generateKeyButton.getText();
+        generateKeyButton.setEnabled(false);
+        generateKeyButton.setText(getText("actions.customCommands.editor.generatingKey"));
+        new SwingWorker<String, Void>() {
+            private String error;
+
+            @Override
+            protected String doInBackground() {
+                try {
+                    return CustomCommandKeyGenerator.generate(phrases, taken);
+                } catch (CustomCommandKeyGenerator.KeyGenerationException e) {
+                    error = e.getMessage();
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                generateKeyButton.setEnabled(true);
+                generateKeyButton.setText(idleLabel);
+                String key = null;
+                try {
+                    key = get();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    log.warn("Custom command key generation was interrupted", e);
+                } catch (ExecutionException e) {
+                    // An unchecked failure inside generate() (not a KeyGenerationException, which the worker
+                    // already turned into an error message) surfaces here; log it so it is diagnosable.
+                    log.warn("Custom command key generation failed unexpectedly", e.getCause());
+                }
+                if (key != null && !key.isBlank()) {
+                    keyLabel.setText(key);
+                    hideErrors();
+                } else {
+                    showErrors(List.of(error != null ? error
+                            : getText("actions.customCommands.editor.keyGenerationFailed")));
+                }
+            }
+        }.execute();
     }
 
     /**
@@ -475,10 +516,11 @@ public final class CustomCommandEditorDialog extends JDialog {
         // Preserve the existing UUID on edit; generate a new one for new customCommands.
         String id = (originalId != null && !originalId.isBlank()) ? originalId : UUID.randomUUID().toString();
         idField.setText(id);
-        // The action key is always re-derived from the phrases (even on edit) so it keeps echoing
-        // what the commander says; the immutable UUID carries stable identity instead.
+        // The action key is authored by the "Generate" button (LLM-produced English key), read from the
+        // read-only label: the model output is not reproducible from the phrases and must stay stable across
+        // edits. Validation catches a blank/malformed/duplicate key. The immutable UUID carries identity.
         String phrases = normalizePhrases(phrasesArea.getText());
-        String actionKey = CustomCommandKeyDeriver.deriveUniqueKey(phrases, takenActionKeys());
+        String actionKey = keyLabel.getText().trim();
         return new CustomCommandDefinition(
                 id,
                 actionKey,
@@ -491,39 +533,19 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     /**
-     * Normalizes a phrases string entered in the editor: treats newlines as phrase separators
-     * so users can type one phrase per line instead of comma-separating them manually.
-     * The result is always a comma-separated string, matching the storage format.
-     * Commas within a single line are preserved as-is so parameter templates like
-     * {@code {lat:X, lon:Y}} are not broken.
+     * Normalizes a phrases string entered in the editor into the canonical comma-separated storage form.
+     * Users may separate phrases with newlines, commas, or both; either way the result never contains an
+     * empty phrase (no {@code ",,"}, no leading/trailing/stray comma). It does this by folding both
+     * separators into one and round-tripping through {@link AiActionLocalizations#splitPhraseGroup} - the
+     * same splitter the routing layer uses - so the stored string always matches how it will later be
+     * split, and commas inside parameter templates like {@code {lat:X, lon:Y}} are preserved.
+     * <p>
+     * Package-private for direct testing of the no-{@code ",,"} guarantee.
      */
-    private static String normalizePhrases(String raw) {
+    static String normalizePhrases(String raw) {
         if (raw == null) return "";
-        return Arrays.stream(raw.replace("\r\n", "\n").replace('\r', '\n').split("\n"))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.joining(", "));
-    }
-
-    /**
-     * Fires the same callback on any document change (insert/remove/attribute).
-     */
-    @FunctionalInterface
-    private interface SimpleDocumentListener extends javax.swing.event.DocumentListener {
-        void update();
-
-        @Override
-        default void insertUpdate(javax.swing.event.DocumentEvent e) {
-            update();
-        }
-
-        @Override
-        default void removeUpdate(javax.swing.event.DocumentEvent e) {
-            update();
-        }
-
-        @Override
-        default void changedUpdate(javax.swing.event.DocumentEvent e) { update(); }
+        String unified = raw.replace("\r\n", "\n").replace('\r', '\n').replace('\n', ',');
+        return String.join(", ", AiActionLocalizations.splitPhraseGroup(unified));
     }
 
     private void showErrors(List<String> errors) {
@@ -533,6 +555,17 @@ public final class CustomCommandEditorDialog extends JDialog {
             errorsScrollPane.setVisible(true);
         }
         pack();
+    }
+
+    /**
+     * Hides the errors block (e.g. after a successful key generation clears a prior warning).
+     */
+    private void hideErrors() {
+        errorsArea.setText("");
+        errorsArea.setVisible(false);
+        if (errorsScrollPane != null) {
+            errorsScrollPane.setVisible(false);
+        }
     }
 
     private static JTextArea textArea(int rows) {

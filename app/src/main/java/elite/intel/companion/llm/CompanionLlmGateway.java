@@ -1,12 +1,7 @@
 package elite.intel.companion.llm;
 
 import com.google.gson.JsonObject;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.llm.*;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -68,6 +64,19 @@ public final class CompanionLlmGateway implements LlmGateway {
     public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
         // Plain-text turn (request carries no tools): render -> send -> extract text; null on bad output.
         return CompletableFuture.supplyAsync(() -> adapter.parseText(transport.send(adapter.buildRequestBody(request))), executor);
+    }
+
+    /**
+     * Shuts down the owned executor so a short-lived gateway does not leak its thread. The long-lived
+     * companion-runtime gateway is never closed; only callers that build a throwaway gateway (e.g. custom
+     * command key generation) close it, after their single blocking call has returned. The injected-executor
+     * test seam passes a non-{@link ExecutorService} executor, for which this is a no-op.
+     */
+    @Override
+    public void close() {
+        if (executor instanceof ExecutorService service) {
+            service.shutdownNow();
+        }
     }
 
     /**
