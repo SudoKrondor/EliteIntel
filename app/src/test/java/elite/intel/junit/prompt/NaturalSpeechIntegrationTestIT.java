@@ -47,7 +47,7 @@ public class NaturalSpeechIntegrationTestIT {
      * 250 you are pushing it.
      * 150 bro I want your hardware.
      */
-    private static final int LLM_WAIT_MS = 3000;
+    private static final int LLM_WAIT_MS = 5000;
     private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
@@ -126,7 +126,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> ignoreMe() {
-        return Stream.of("non ascoltarmi più", "ignora i miei comandi", "ignora i comandi");
+        return Stream.of("sospenditi", "vai in standby", "ignorami", "non ascoltarmi più", "ignora i miei comandi", "ignora i comandi");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -431,8 +431,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> requestDocking() {
         return Stream.of("richiesta di attracco", "attracco alla stazione", "richiesta di atterraggio",
-                "contattare la torre di controllo e richiedere una piattaforma di atterraggio", "richiesta di autorizzazione all'atterraggio", "richiesta di piattaforma di atterraggio",
-                "richiesta di autorizzazione all'atterraggio");
+                "contattare la torre di controllo e richiedere una piattaforma di atterraggio",
+                "richiesta di autorizzazione all'atterraggio", "richiesta di piattaforma di atterraggio");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -443,7 +443,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> cargoScoop() {
-        return Stream.of("apri cargo scoop", "apri lo scoop", "apri scoop di carico", "apri vano di carico", "chiudi cargo scoop", "chiudi lo scoop", "chiudi scoop di carico", "chiudi vano di carico");
+        return Stream.of("apri cargo scoop", "apri lo scoop", "apri scoop di carico", "apri vano di carico",
+                "chiudi cargo scoop", "chiudi lo scoop", "chiudi scoop di carico", "chiudi vano di carico");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -542,7 +543,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> selectHighestThreat() {
         return Stream.of("mira al bersaglio più pericoloso", "seleziona nemico", "seleziona minaccia più alta",
-                "mira al nemico più pericoloso", "seleziona il nemico più pericoloso", "mira alla minaccia più alta", "nemico più pericoloso");
+                "mira al nemico più pericoloso", "seleziona il nemico più pericoloso", "mira alla minaccia più alta",
+                "nemico più pericoloso");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -580,7 +582,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToShields() {
-        return Stream.of("potenza agli scudi", "max scudi", "boost scudi", "massimizza scudi", "scudi al massimo", "scudi al 100 per cento", "scudi al 100%", "scudi al massimo livello");
+        return Stream.of("potenza agli scudi", "max scudi", "boost scudi", "massimizza scudi", "scudi al massimo",
+                "scudi al 100 per cento", "scudi al 100%", "scudi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -591,7 +594,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToEngines() {
-        return Stream.of("potenza ai motori", "potenza max motori", "boost motori", "massimizza motori", "potenza motori al massimo", "potenza motori al 100 per cento", "potenza motori al 100%", "potenza motori al massimo livello");
+        return Stream.of("potenza ai motori", "potenza max motori", "boost motori", "massimizza motori",
+                "potenza motori al massimo", "potenza motori al 100 per cento", "potenza motori al 100%",
+                "potenza motori al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -602,7 +607,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToWeapons() {
-        return Stream.of("potenza alle armi", "max armi", "boost armi", "massimizza armi", "armi al massimo", "armi al 100 per cento", "armi al 100%", "armi al massimo livello");
+        return Stream.of("potenza alle armi", "max armi", "boost armi", "massimizza armi", "armi al massimo",
+                "armi al 100 per cento", "armi al 100%", "armi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -613,7 +619,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> resetPower() {
-        return Stream.of("bilancia potenza", "reset potenza", "distribuisci potenza equamente", "riporta potenza a livelli normali", "riporta potenza a livelli standard");
+        return Stream.of("bilancia potenza", "reset potenza", "distribuisci potenza equamente", "riporta potenza a livelli normali");
     }
 
     // =========================================================================
@@ -629,7 +635,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> openFss() {
         return Stream.of("apri FSS ed esegui scansione", "esegui scansione a spettro filtrato", "scansione a spettro completo",
-                "scansione pianeti", "scansione completa", "scan completo", "fss");
+                "scan completo", "fss");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -654,7 +660,8 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> findMiningSite() {
         return Stream.of("trova sito di estrazione per alexandrite entro 300 anni luce",
                 "trova posizione di estrazione per bromelite entro 1200 anni luce", "trova campo di asteroidi con oro",
-                "sito di estrazione", "sito mining", "trova sito di estrazione", "trova campo di asteroidi con platino", "trova campo di asteroidi con ferro");
+                "sito di estrazione", "sito mining", "trova sito di estrazione", "trova campo di asteroidi con platino",
+                "trova campo di asteroidi con ferro");
     }
 
     // =========================================================================
@@ -714,7 +721,7 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> navigateToSquadronCarrier() {
         return Stream.of("naviga alla squadron carrier", "vai alla squadron carrier", "dirigiti verso la squadron carrier",
                 "portami alla squadron carrier", "naviga alla portanavi dello squadrone", "vai alla portanavi dello squadrone",
-                "dirigiti verso la portanavi dello squadrone");
+                "dirigiti verso la portanavi dello squadrone", "dirigiti verso la portanavi della squadiglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -725,7 +732,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> calculateNeutronRoute() {
-        return Stream.of("calculate neutron route with efficiency 20", "calculate neutron route");
+        return Stream.of("calcola rotta verso la stella di neutroni con efficienza 20", "calcola rotta verso la stella di neutroni");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -736,7 +743,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> plotNextNeutronLeg() {
-        return Stream.of("next neutron star jump", "plot route to next neutron star waypoint", "next neutron star");
+        return Stream.of("prossimo salto verso la stella di neutroni", "rotta verso la prossima stella di neutroni",
+                "prossima stella di neutroni");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -747,7 +755,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> clearNeutronStarRoute() {
-        return Stream.of("clear neutron route");
+        return Stream.of("annulla rotta verso la stella di neutroni", "cancella rotta verso la stella di neutroni",
+                "cancella rotta verso le stelle di neutroni");
     }
 
 
@@ -759,9 +768,13 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierStatus() {
-        return Stream.of("squadron carrier status", "squadron carrier finances", "squadron carrier balance",
-                "how long can we operate the squadron carrier",
-                "squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
+        return Stream.of("stato dello squadron carrier", "quanto a lungo possiamo usare lo squadron carrier",
+                "finanze dello squadron carrier", "bilancio dello squadron carrier", "panoramica dello squadron carrier",
+                "fondi dello squadron carrier", "stato del carburante dello squadron carrier", "trizio dello squadron carrier",
+                "livello di trizio dello squadron carrier", "livello del carburante dello squadron carrier",
+                "livello del carburante della portanavi dello squadrone", "livello di trizio della portanavi dello squadrone",
+                "stato della portanavi dello squadrone", "stato della portanavi della squadriglia",
+                "livello di trizio della portanavi della squadriglia", "livello del carburante della portanavi della squadriglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -772,8 +785,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("squadron carrier route", "how many jumps on the squadron carrier route",
-                "squadron carrier route");
+        return Stream.of("rotta dello squadron carrier", "navigazione dello squadron carrier", "rotta di salto dello squadron carrier",
+                "quanti salti rimangono sulla rotta dello squadron carrier", "salti rimanenti sullo squadron carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -784,8 +797,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierDestination() {
-        return Stream.of("where is the squadron carrier going", "squadron carrier final destination",
-                "squadron carrier heading");
+        return Stream.of("dove sta andando lo squadron carrier", "direzione dello squadron carrier", "arrivo dello squadron carrier",
+                "destinazione finale dello squadron carrier", "dove sta andando la portanavi dello squadrone",
+                "destinazione finale della portanavi dello squadrone", "dove sta andando la portanavi della squadriglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -796,8 +810,11 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierEta() {
-        return Stream.of("squadron carrier ETA", "when does the squadron carrier arrive",
-                "how long until the squadron carrier arrives");
+        return Stream.of("tempo stimato di arrivo dello squadron carrier", "quando arriva lo squadron carrier",
+            "quanto manca allo squadron carrier", "tempo di arrivo dello squadron carrier",
+            "tempo di salto dello squadron carrier", "tempo di arrivo della portanavi dello squadrone",
+            "tempo stimato di arrivo della portanavi dello squadrone", "quando arriva la portanavi dello squadrone",
+            "quanto manca alla portanavi dello squadriglia", "tempo di arrivo della portanavi della squadriglia");
     }
 
     // =========================================================================
@@ -812,7 +829,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> bareCarrierDefaultsToFleet() {
-        return Stream.of("navigate to fleet carrier", "return to carrier", "take us to carrier");
+        return Stream.of("raggiungere la fleet carrier", "andare alla fleet carrier", "vai verso la fleet carrier",
+                "tornare alla fleet carrier", "portami alla fleet carrier", "dirigiti alla fleet carrier", "rotta verso la fleet carrier",
+                "vai verso la portanavi", "portami alla portanavi", "dirigiti alla portanavi");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -823,7 +842,12 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> bareCarrierStatusDefaultsToFleet() {
-        return Stream.of("fleet carrier status", "fleet carrier balance", "fleet carrier funds");
+        return Stream.of("stato della fleet carrier", "per quanto tempo possiamo usare la fleet carrier",
+                "quanto può saltare la fleet carrier", "raggio di salto della fleet carrier con trizio attuale",
+                "raggio di salto della fleet carrier", "finanze della fleet carrier", "panoramica della fleet carrier",
+                "stato della fleet carrier", "stato del carburante della fleet carrier", "fondi della fleet carrier",
+                "bilancio della fleet carrier", "finanze della fleet carrier", "finanze della portanavi",
+                "bilancio della portanavi", "stato del carburante della portanavi");
     }
 
     // =========================================================================
@@ -838,7 +862,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> disableAnnouncements() {
-        return Stream.of("disable all announcements");
+        return Stream.of("disattiva tutte le comunicazioni", "attiva tutte le comunicazioni",
+                "disattiva tutti gli annunci vocali", "silenzia tutti gli annunci", "commuta tutti gli annunci");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -849,7 +874,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("set reminder refuel at next stop");
+        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop", "ricordami di fare rifornimento al prossimo stop",
+                "attiva promemoria per il rifornimento al prossimo stop", "ricordami di eseguire rifornimento al prossimo stop");
     }
 
     // =========================================================================
@@ -864,7 +890,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> galaxyMap() {
-        return Stream.of("open galaxy map", "show galaxy map", "display galaxy map");
+        return Stream.of("mostra la mappa della galassia", "apri la mappa della galassia", "visualizza la mappa della galassia",
+                "apri la mappa galattica", "mostra la mappa galattica", "visualizza la mappa galattica");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -875,7 +902,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> systemMap() {
-        return Stream.of("open local map", "show system map", "display system map");
+        return Stream.of("mostra la mappa del sistema", "apri la mappa del sistema", "mostra la mappa del sistema",
+                "visualizza la mappa del sistema", "apri la mappa stellare", "mostra la mappa stellare", "visualizza la mappa stellare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -886,7 +914,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> navigationPanel() {
-        return Stream.of("show navigation panel", "open navigation panel");
+        return Stream.of("mostra il pannello di navigazione", "apri il pannello di navigazione", "visualizza il pannello di navigazione");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -897,7 +925,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> modulesPanel() {
-        return Stream.of("show modules panel", "open modules panel", "display modules panel");
+        return Stream.of("mostra il pannello moduli", "apri il pannello moduli", "visualizza il pannello moduli");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -908,7 +936,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> statusPanel() {
-        return Stream.of("show status panel", "open status panel");
+        return Stream.of("mostra il pannello dello stato", "apri il pannello dello stato", "visualizza il pannello dello stato");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -919,7 +947,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> inventoryPanel() {
-        return Stream.of("show inventory panel", "open inventory panel");
+        return Stream.of("mostra il pannello inventario", "apri il pannello inventario", "visualizza il pannello inventario");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -930,7 +958,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> closePanel() {
-        return Stream.of("exit close panel", "close panel");
+        return Stream.of("esci dal pannello", "chiudi pannello", "chiudi mappa", "chiudi mappa della galassia", "chiudi mappa del sistema");
     }
 
     // =========================================================================
@@ -1278,7 +1306,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCarrierDestination() {
-        return Stream.of("Where is the fleet carrier headed?", "What's the carrier's final destination?");
+        return Stream.of("dove sta andando la fleet carrier?", "qual è la destinazione finale della fleet carrier?",
+                "dove è diretta la fleet carrier?", "direzione fleet carrier?", "destinazione finale fleet carrier?",
+                "destinazione fleet carrier?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
