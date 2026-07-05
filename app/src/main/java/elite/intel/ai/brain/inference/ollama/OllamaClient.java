@@ -8,6 +8,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.LlmUsageEvent;
 import elite.intel.util.json.GsonFactory;
+import elite.intel.util.json.LlmMetadata;
 import elite.intel.util.json.OllamaMetadata;
 
 import java.net.URI;
@@ -106,5 +107,46 @@ public class OllamaClient extends BaseAiClient implements Client {
                 .header("Content-Type", "application/json")
                 .timeout(Duration.ofSeconds(1_100))
                 .build();
+    }
+
+    /**
+     * Sends an OpenAI-compatible chat-completions body to Ollama's {@code /v1/chat/completions} endpoint and
+     * returns the raw OpenAI-shaped response. Companion mode uses this (not the native {@code /api/chat} path
+     * that {@link #sendJsonRequest}) because only the compatibility endpoint honours {@code tool_choice}.
+     * Usage is read from the OpenAI-style metadata, matching the LM Studio client's reporting.
+     */
+    public synchronized JsonObject sendOpenAiChatRequest(String request) {
+        long t0 = System.nanoTime();
+        JsonObject response = super.sendJsonRequest(buildOpenAiCompatibleRequest(request));
+        long elapsed = System.nanoTime() - t0;
+        LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
+        UiBus.publish(new AppLogEvent("Ollama: " + LlmMetadata.describe(meta)));
+        if (meta != null && meta.usage() != null) {
+            UiBus.publish(new LlmUsageEvent("Ollama",
+                    meta.model() != null ? meta.model() : "local",
+                    meta.usage().promptTokens(), meta.usage().completionTokens(), 0, 0,
+                    wallClockTps(elapsed, meta.usage().completionTokens())));
+        }
+        return response;
+    }
+
+    private HttpRequest buildOpenAiCompatibleRequest(String body) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(openAiCompatibleUrl(getBaseUrl())))
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .header("Content-Type", "application/json")
+                .timeout(Duration.ofSeconds(1_100))
+                .build();
+    }
+
+    /**
+     * Derives Ollama's OpenAI-compatible endpoint from the configured native address. Ollama serves both
+     * {@code /api/chat} (native) and {@code /v1/chat/completions} (OpenAI-compatible) off the same server
+     * root, so the compatibility URL is that root plus the OpenAI path. Deriving it from the configured
+     * host keeps a single Ollama address setting instead of adding a second one.
+     */
+    static String openAiCompatibleUrl(String configuredNativeUrl) {
+        URI uri = URI.create(configuredNativeUrl.trim());
+        return uri.getScheme() + "://" + uri.getAuthority() + "/v1/chat/completions";
     }
 }

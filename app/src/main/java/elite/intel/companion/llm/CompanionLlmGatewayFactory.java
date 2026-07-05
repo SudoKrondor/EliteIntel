@@ -8,6 +8,7 @@ import elite.intel.ai.brain.inference.deepseek.DeepSeekClient;
 import elite.intel.ai.brain.inference.gemini.GeminiClient;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
 import elite.intel.ai.brain.inference.mistral.MistralClient;
+import elite.intel.ai.brain.inference.ollama.OllamaClient;
 import elite.intel.ai.brain.inference.openai.OpenAiClient;
 import elite.intel.ai.brain.inference.xai.GrokClient;
 import elite.intel.session.SystemSession;
@@ -49,14 +50,18 @@ public final class CompanionLlmGatewayFactory {
                     new GeminiLlmAdapter(), body -> GeminiClient.getInstance().sendJsonRequest(body, GeminiClient.MODEL_FLASH))));
 
     /**
-     * Local providers with a wired companion adapter. Only LM Studio (OpenAI-compatible,
-     * {@code tool_choice=required}, no Mistral cache key) is wired; Ollama is not, because its native API is
-     * not OpenAI-compatible in the same way.
+     * Local providers with a wired companion adapter. Both ride the shared OpenAI-compatible protocol
+     * ({@code tool_choice=required}, no Mistral cache key) and serve the locally configured command model
+     * (e.g. Gemma 4): LM Studio natively, and Ollama via its OpenAI-compatible {@code /v1/chat/completions}
+     * endpoint ({@link OllamaLlmAdapter} + {@code OllamaClient#sendOpenAiChatRequest}).
      */
     private static final Map<LocalLlmProvider, WiredProvider> LOCAL_GATEWAYS = Map.of(
             LocalLlmProvider.LMSTUDIO, new WiredProvider("LM Studio (Gemma 4)", session -> new CompanionLlmGateway(
                     new LmStudioLlmAdapter(session.getLmStudioCommandModel().trim()),
-                    body -> LMStudioClient.getInstance().sendJsonRequest(body))));
+                    body -> LMStudioClient.getInstance().sendJsonRequest(body))),
+            LocalLlmProvider.OLLAMA, new WiredProvider("Ollama", session -> new CompanionLlmGateway(
+                    new OllamaLlmAdapter(session.getOllamaCommandModel().trim()),
+                    body -> OllamaClient.getInstance().sendOpenAiChatRequest(body))));
 
     private CompanionLlmGatewayFactory() {
     }

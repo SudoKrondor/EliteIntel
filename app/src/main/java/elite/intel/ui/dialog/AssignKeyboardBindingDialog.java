@@ -239,22 +239,23 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(8, 6, 0, 6);
-        HudBanner keyboardHint = HudBanner.multiline(getText("bindings.assign.keyboard.hint"), StatusBadge.State.INFO);
-        content.add(keyboardHint, gbc);
+        content.add(keyboardView, gbc);
+        gbc.anchor = GridBagConstraints.WEST;
 
+        // Hint below the keyboard: holding a modifier reveals that combo's availability, plus the colour legend.
         nextRow(gbc);
         gbc.gridx = 0;
         gbc.gridwidth = 2;
         gbc.weightx = 1.0;
-        gbc.weighty = 0;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(2, 6, 3, 6);
-        content.add(keyboardView, gbc);
+        HudBanner keyboardHint = HudBanner.multiline(getText("bindings.assign.keyboard.hint"), StatusBadge.State.INFO);
+        content.add(keyboardHint, gbc);
         gbc.gridwidth = 1;
-        gbc.anchor = GridBagConstraints.WEST;
         gbc.insets = new Insets(3, 6, 3, 6);
 
         // This binding already collides with another: state it inline, in red, rather than relying on

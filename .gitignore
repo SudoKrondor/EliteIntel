@@ -15,7 +15,6 @@
 ./build
 .gradle/
 ./distribution/elite_intel.jar
-/distribution/native/lwjgl/
 .gradle/*
 .gradle/*/*
 ./.gradle/file-system.probe

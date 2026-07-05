@@ -106,4 +106,45 @@ class CustomCommandKeyDeriverTest {
         assertFalse(key.isBlank());
         assertTrue(SAFE.matcher(key).matches());
     }
+
+    // --- toBaseKey (used by the LLM key generator to fold model output into key shape) ---
+
+    @Test
+    void toBaseKeySanitizesDedupesAndTruncates() {
+        assertEquals("select_suit_specific_tool",
+                CustomCommandKeyDeriver.toBaseKey("\"Select Suit Specific Tool\"."));
+        assertEquals("select_suit_specific_tool",
+                CustomCommandKeyDeriver.toBaseKey("select suit specific tool select suit tool"));
+        String key = CustomCommandKeyDeriver.toBaseKey("word_".repeat(40));
+        assertTrue(key.length() <= CustomCommandValidator.MAX_ACTION_KEY_LENGTH);
+        assertTrue(SAFE.matcher(key).matches());
+    }
+
+    @Test
+    void toBaseKeyOfBlankOrPunctuationIsEmpty() {
+        assertEquals("", CustomCommandKeyDeriver.toBaseKey("   "));
+        assertEquals("", CustomCommandKeyDeriver.toBaseKey("!!! ???"));
+        assertEquals("", CustomCommandKeyDeriver.toBaseKey(null));
+    }
+
+    // --- uniquify ---
+
+    @Test
+    void uniquifyReturnsBaseWhenFree() {
+        assertEquals("go_to_mission", CustomCommandKeyDeriver.uniquify("go_to_mission", List.of("something_else")));
+    }
+
+    @Test
+    void uniquifyAppendsSuffixOnCollisionCaseInsensitively() {
+        assertEquals("go_to_mission_2", CustomCommandKeyDeriver.uniquify("go_to_mission", List.of("GO_TO_MISSION")));
+        assertEquals("go_to_mission_3",
+                CustomCommandKeyDeriver.uniquify("go_to_mission", List.of("go_to_mission", "go_to_mission_2")));
+    }
+
+    @Test
+    void uniquifyFallsBackWhenBaseBlank() {
+        String key = CustomCommandKeyDeriver.uniquify("", List.of());
+        assertFalse(key.isBlank());
+        assertTrue(SAFE.matcher(key).matches());
+    }
 }
