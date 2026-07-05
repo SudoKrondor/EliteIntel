@@ -199,7 +199,9 @@ public class GoogleTTSImpl implements MouthInterface {
         if (event.isRadio()) return;
         canBeInterrupted.set(event.canBeInterrupted());
         log.debug("Received VoiceProcessEvent: text='{}', useRandom={}", event.getText(), event.useRandomVoice());
-        String text = StringUtls.sanitizeTts(event.getText());
+        // Google's neural voices use punctuation for intonation, so keep it (no espeak-ng hardening); GoogleSsml
+        // turns it into explicit SSML pauses at synthesis time (and normalizes "!" to ".").
+        String text = StringUtls.sanitizeTts(event.getText(), false);
         if (text.isEmpty()) {
             return;
         }
@@ -370,7 +372,9 @@ public class GoogleTTSImpl implements MouthInterface {
 
             log.debug("Calling Google TTS API");
             long apiStartTime = System.currentTimeMillis();
-            SynthesisInput input = SynthesisInput.newBuilder().setText(text).build();
+            // SSML lets the neural voice pause on the preserved punctuation; Chirp3-HD honors SSML on this
+            // synchronous synthesis path.
+            SynthesisInput input = SynthesisInput.newBuilder().setSsml(GoogleSsml.wrap(text)).build();
             AudioConfig config = AudioConfig.newBuilder()
                     .setAudioEncoding(AudioEncoding.LINEAR16)
                     .setSpeakingRate(speechRate)

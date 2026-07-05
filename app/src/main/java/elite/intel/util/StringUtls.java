@@ -227,11 +227,25 @@ public class StringUtls {
     }
 
     public static String sanitizeTts(String input) {
+        return sanitizeTts(input, true);
+    }
+
+    /**
+     * Cleans LLM text for speech synthesis.
+     * <p>
+     * When {@code hardenForEspeak} is true (the no-arg overload, used by the espeak-ng-based Kokoro engine),
+     * punctuation that crashes or misreads in espeak-ng is flattened ("!" → ". ", ":" → " - ", "..." → space).
+     * When false (the Google path), that punctuation is preserved so the neural voice can use it for intonation
+     * and {@code GoogleSsml} can turn it into explicit pauses ({@code GoogleSsml} then normalizes "!" to "."). All
+     * other cleanup is identical and the ordering is preserved, so the no-arg overload reproduces the previous
+     * output exactly.
+     */
+    public static String sanitizeTts(String input, boolean hardenForEspeak) {
         if (input == null) return "";
         // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
         // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
         // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
-        return Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
+        String s = Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain
                 .replaceAll("~~([^~\n]*?)~~", "$1")              // ~~strikethrough~~ → plain
@@ -240,23 +254,24 @@ public class StringUtls {
                 .replaceAll("(?m)^>\\s?", "")                   // > blockquotes → remove marker
                 .replace("\\n", " ").replace("\\r", " ")        // literal escape sequences from LLM
                 .replaceAll("[\\r\\n]+", " ")                    // actual newline characters → space
-                .replaceAll("(?<=\\S)-(?=\\S)", " ")             // "ninety-five" → "ninety five" (hyphen between chars)
-                .replace("!", ". ")                             // espeak-ng stof crash on exclamatory sentences
-                .replace("*", " ")                              // any stray asterisks
+                .replaceAll("(?<=\\S)-(?=\\S)", " ");            // "ninety-five" → "ninety five" (hyphen between chars)
+        if (hardenForEspeak) s = s.replace("!", ". ");          // espeak-ng stof crash on exclamatory sentences
+        s = s.replace("*", " ")                                 // any stray asterisks
                 .replace("`", "")                               // any stray backticks
                 .replace("\"", "")
                 .replace(". .", ".")
                 .replace("[", "").replace("]", "")
-                .replace("ETA", ". E.T.A.")
-                .replace(":", " - ")
-                .replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")      // drop controls, emojis, and standalone symbols
-                .replaceAll("\\p{M}+", "")                       // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
-                .replaceAll("\\.{2,}", " ")                     // "..." → space (espeak-ng stof crash on multi-dot sequences)
-                .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
+                .replace("ETA", ". E.T.A.");
+        if (hardenForEspeak) s = s.replace(":", " - ");
+        s = s.replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")         // drop controls, emojis, and standalone symbols
+                .replaceAll("\\p{M}+", "");                      // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
+        if (hardenForEspeak) s = s.replaceAll("\\.{2,}", " ");  // "..." → space (espeak-ng stof crash on multi-dot sequences)
+        s = s.replaceAll("\\s{2,}", " ")                        // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace(", Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace("Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .trim();
+        return s;
     }
 
     public static String normalizeVersion(String v) {

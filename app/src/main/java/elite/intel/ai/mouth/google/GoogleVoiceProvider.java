@@ -100,22 +100,6 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     }
 
     /**
-     * Retrieves the speech rate for a given GoogleVoices voice name.
-     *
-     * @param voiceName The GoogleVoices enum name (e.g., "Jennifer").
-     * @return The speech rate for the voice, or default (1.2) if not found.
-     */
-    @Override
-    public double getSpeechRate(String voiceName) {
-        for (GoogleVoices voice : GoogleVoices.values()) {
-            if (voice.getName().equals(voiceName)) {
-                return voice.getSpeechRate();
-            }
-        }
-        return 1.2; // Default speech rate
-    }
-
-    /**
      * Retrieves VoiceSelectionParams for a given GoogleVoices voice name.
      *
      * @param voiceName The GoogleVoices enum name (e.g., "Jennifer").
