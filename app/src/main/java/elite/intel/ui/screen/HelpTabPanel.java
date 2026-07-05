@@ -5,8 +5,12 @@ import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.IntelActionCategory;
+import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.GameToolCandidates;
+import elite.intel.companion.prompt.SemanticActionReducer;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -16,6 +20,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
+import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
@@ -26,6 +31,11 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +64,7 @@ public class HelpTabPanel extends JPanel {
     private final Status status = Status.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final CommandCatalog commandCatalog = new CommandCatalog();
+    private final CompanionActionReducer semanticFallbackReducer = new SemanticActionReducer();
 
     private JTextField locationField;
     private JTextField phraseField;
@@ -61,6 +72,7 @@ public class HelpTabPanel extends JPanel {
     private JTable rightTable;
     private DefaultTableModel leftModel;
     private DefaultTableModel rightModel;
+    private HudSection actionsSection;
     /** Last situation the action tables were built for; they rebuild only when it changes (EDT-only field). */
     private PlayerSituation lastSituation;
     /** Last status flags rendered; the frequent Status tick is skipped while these are unchanged (event-thread-only). */
@@ -68,6 +80,12 @@ public class HelpTabPanel extends JPanel {
     private long lastFlags2 = -1L;
     /** Guards GameEventBus register/unregister so a hide without a prior show cannot throw or double-subscribe. */
     private boolean subscribed;
+    /** Action ids selected by the semantic reducer for the current commander phrase (EDT-only). */
+    private Set<String> highlightedActionIds = Set.of();
+    /** Monotonic token used to ignore stale background semantic-selection results. */
+    private int highlightRequest;
+    /** Current available action rows before highlight ordering is applied (EDT-only). */
+    private List<ActionRow> visibleActionRows = List.of();
 
     public HelpTabPanel() {
         buildUi();
@@ -117,6 +135,10 @@ public class HelpTabPanel extends JPanel {
         rightTable = new JTable(rightModel);
         styleActionsTable(leftTable);
         styleActionsTable(rightTable);
+        installRowHover(leftTable);
+        installRowHover(rightTable);
+        installCommandDetailsOpen(leftTable);
+        installCommandDetailsOpen(rightTable);
 
         // Bodies and headers both use HudTwoColumns, so their halves (and the centre divider) line up.
         HudTwoColumns bodies = new HudTwoColumns(leftTable, rightTable);
@@ -129,9 +151,9 @@ public class HelpTabPanel extends JPanel {
         scroll.setBorder(hudDataPlaneBorder());
         scroll.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
 
-        HudSection actions = HudSection.flat(getText("location.section.availableActions"), new BorderLayout());
-        actions.body().add(scroll, BorderLayout.CENTER);
-        add(actions, BorderLayout.CENTER);
+        actionsSection = HudSection.flat(availableActionsTitle(0), new BorderLayout());
+        actionsSection.body().add(scroll, BorderLayout.CENTER);
+        add(actionsSection, BorderLayout.CENTER);
     }
 
     @Override
@@ -156,8 +178,78 @@ public class HelpTabPanel extends JPanel {
     /** Applies the shared HUD table look (canon 6): capsed value renderer, style locked against re-theming. */
     private void styleActionsTable(JTable table) {
         HudTable.style(table);
-        table.setDefaultRenderer(Object.class, new HudTable.ValueCellRenderer());
+        table.setDefaultRenderer(Object.class, new ActionHighlightRenderer());
         table.putClientProperty(HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
+    }
+
+    private void installCommandDetailsOpen(JTable table) {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (!SwingUtilities.isLeftMouseButton(event)) {
+                    return;
+                }
+                openCommandDetailsAt(table, table.rowAtPoint(event.getPoint()));
+            }
+        });
+        table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
+                .put(KeyStroke.getKeyStroke("ENTER"), "openHelpCommandDetails");
+        table.getActionMap().put("openHelpCommandDetails", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                openCommandDetailsAt(table, table.getSelectedRow());
+            }
+        });
+    }
+
+    private void installRowHover(JTable table) {
+        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, -1);
+        table.addMouseMotionListener(new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent event) {
+                setHoveredRow(table, rowUnderPoint(table, event.getPoint()));
+            }
+        });
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseExited(MouseEvent event) {
+                setHoveredRow(table, -1);
+            }
+        });
+    }
+
+    private int rowUnderPoint(JTable table, Point point) {
+        int row = table.rowAtPoint(point);
+        if (row >= 0) {
+            return row;
+        }
+        Point up = new Point(point.x, point.y - 2);
+        row = table.rowAtPoint(up);
+        if (row >= 0) {
+            return row;
+        }
+        Point down = new Point(point.x, point.y + 2);
+        return table.rowAtPoint(down);
+    }
+
+    private void setHoveredRow(JTable table, int row) {
+        Object current = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
+        int currentRow = current instanceof Integer value ? value : -1;
+        if (currentRow == row) {
+            return;
+        }
+        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, row);
+        repaintTableRow(table, currentRow);
+        repaintTableRow(table, row);
+    }
+
+    private void repaintTableRow(JTable table, int row) {
+        if (row < 0 || row >= table.getRowCount()) {
+            return;
+        }
+        Rectangle rect = table.getCellRect(row, 0, true);
+        rect.width = table.getWidth();
+        table.repaint(rect);
     }
 
     /**
@@ -220,7 +312,7 @@ public class HelpTabPanel extends JPanel {
             // runs the status snapshot is already persisted and GameToolCandidates sees the current context.
             if (situation != lastSituation) {
                 lastSituation = situation;
-                rebuildAvailableActions();
+                rebuildAvailableActions(situation, location);
             }
         });
     }
@@ -232,7 +324,10 @@ public class HelpTabPanel extends JPanel {
     @Subscribe
     public void onCommanderPhrase(NormalizedUserInputEvent event) {
         String text = event.getText() == null ? "" : event.getText();
-        SwingUtilities.invokeLater(() -> phraseField.setText(text));
+        SwingUtilities.invokeLater(() -> {
+            phraseField.setText(text);
+            updateSemanticHighlights(text);
+        });
     }
 
     /**
@@ -266,7 +361,7 @@ public class HelpTabPanel extends JPanel {
         PlayerSituation situation = status.getSituation(location);
         locationField.setText(describe(situation, location));
         lastSituation = situation;
-        rebuildAvailableActions();
+        rebuildAvailableActions(situation, location);
     }
 
     private LocationDto currentLocation() {
@@ -279,17 +374,57 @@ public class HelpTabPanel extends JPanel {
      * right table the rest, so both columns hold roughly the same number of rows.
      */
     private void rebuildAvailableActions() {
-        List<String> all = availableNames(
-                EnumSet.of(IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY));
-        int half = (all.size() + 1) / 2;
-        setRows(leftModel, all.subList(0, half));
-        setRows(rightModel, all.subList(half, all.size()));
+        LocationDto location = currentLocation();
+        rebuildAvailableActions(status.getSituation(location), location);
     }
 
-    private static void setRows(DefaultTableModel model, List<String> names) {
+    private void rebuildAvailableActions(PlayerSituation situation, LocationDto location) {
+        if (location == null || situation == PlayerSituation.UNKNOWN) {
+            clearAvailableActions();
+            return;
+        }
+        visibleActionRows = availableRows(
+                EnumSet.of(IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY));
+        updateAvailableActionsTitle();
+        applyActionRows();
+        updateSemanticHighlights(phraseField.getText());
+    }
+
+    private void clearAvailableActions() {
+        visibleActionRows = List.of();
+        updateAvailableActionsTitle();
+        leftModel.setRowCount(0);
+        rightModel.setRowCount(0);
+        highlightedActionIds = Set.of();
+        ++highlightRequest;
+        repaintActionTables();
+    }
+
+    private void applyActionRows() {
+        List<ActionRow> ordered = new ArrayList<>(visibleActionRows);
+        ordered.sort(Comparator
+                .comparing((ActionRow row) -> !highlightedActionIds.contains(row.id()))
+                .thenComparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
+        int half = (ordered.size() + 1) / 2;
+        setRows(leftModel, ordered.subList(0, half));
+        setRows(rightModel, ordered.subList(half, ordered.size()));
+    }
+
+    private void updateAvailableActionsTitle() {
+        if (actionsSection != null) {
+            actionsSection.setTitle(availableActionsTitle(visibleActionRows.size()));
+        }
+    }
+
+    private String availableActionsTitle(int count) {
+        String base = getText("location.section.availableActions");
+        return count <= 0 ? base : base + " (" + count + ")";
+    }
+
+    private static void setRows(DefaultTableModel model, List<ActionRow> rows) {
         model.setRowCount(0);
-        for (String name : names) {
-            model.addRow(new Object[]{name});
+        for (ActionRow row : rows) {
+            model.addRow(new Object[]{row});
         }
     }
 
@@ -298,12 +433,95 @@ public class HelpTabPanel extends JPanel {
      * given categories. {@link GameToolCandidates} owns "what is available now" (context visibility plus the
      * internal fallback-id exclusions); this only maps each surviving id to its localized name.
      */
-    private List<String> availableNames(Set<IntelActionCategory> categories) {
+    private List<ActionRow> availableRows(Set<IntelActionCategory> categories) {
         Map<String, String> nameById = nameIndex();
         return new GameToolCandidates().collect(categories).stream()
-                .map(candidate -> nameById.getOrDefault(candidate.id(), candidate.id()))
-                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .map(candidate -> new ActionRow(candidate.id(), nameById.getOrDefault(candidate.id(), candidate.id())))
+                .sorted((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name()))
                 .toList();
+    }
+
+    /** Recomputes semantic reducer hits for the current phrase without blocking the UI thread. */
+    private void updateSemanticHighlights(String phrase) {
+        int request = ++highlightRequest;
+        if (phrase == null || phrase.isBlank()) {
+            highlightedActionIds = Set.of();
+            applyActionRows();
+            return;
+        }
+        Set<IntelActionCategory> categories = EnumSet.of(
+                IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY);
+        new SwingWorker<Set<String>, Void>() {
+            @Override protected Set<String> doInBackground() {
+                List<LlmToolDefinition> tools = companionReducer().selectTools(categories, phrase);
+                Set<String> ids = new HashSet<>();
+                for (LlmToolDefinition tool : tools) {
+                    ids.add(tool.name());
+                }
+                return ids;
+            }
+
+            @Override protected void done() {
+                if (request != highlightRequest) {
+                    return;
+                }
+                try {
+                    highlightedActionIds = get();
+                } catch (Exception ignored) {
+                    highlightedActionIds = Set.of();
+                }
+                applyActionRows();
+            }
+        }.execute();
+    }
+
+    private CompanionActionReducer companionReducer() {
+        try {
+            return CompanionRuntime.reducer();
+        } catch (IllegalStateException notRunning) {
+            return semanticFallbackReducer;
+        }
+    }
+
+    private void repaintActionTables() {
+        leftTable.repaint();
+        rightTable.repaint();
+    }
+
+    private record ActionRow(String id, String name) {
+        @Override public String toString() {
+            return name;
+        }
+    }
+
+    private final class ActionHighlightRenderer extends HudTable.ValueCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            if (!isSelected && value instanceof ActionRow actionRow && highlightedActionIds.contains(actionRow.id())) {
+                component.setForeground(HUD_COLOR_ROLE_SUCCESS);
+            }
+            return component;
+        }
+    }
+
+    private void openCommandDetailsAt(JTable table, int viewRow) {
+        if (viewRow < 0) {
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        Object value = table.getModel().getValueAt(modelRow, 0);
+        if (!(value instanceof ActionRow actionRow)) {
+            return;
+        }
+        CommandCatalogEntry entry = commandEntryIndex().get(actionRow.id());
+        if (entry == null) {
+            return;
+        }
+        runWithModalScrim(
+                SwingUtilities.getWindowAncestor(this),
+                () -> new CommandDetailsDialog(this, entry).showDialog());
     }
 
     /** Maps every built-in command/query id (localized name from the catalog) and every macro id to a display name. */
@@ -314,6 +532,17 @@ public class HelpTabPanel extends JPanel {
         }
         for (CustomCommandDefinition macro : CustomCommandRegistry.getInstance().getCustomCommands()) {
             byId.put(macro.getActionKey(), macro.getName());
+        }
+        return byId;
+    }
+
+    private Map<String, CommandCatalogEntry> commandEntryIndex() {
+        Map<String, CommandCatalogEntry> byId = new HashMap<>();
+        for (CommandCatalogEntry entry : commandCatalog.builtInEntries()) {
+            byId.put(entry.id(), entry);
+        }
+        for (CommandCatalogEntry entry : commandCatalog.entries(CustomCommandRegistry.getInstance().getCustomCommands())) {
+            byId.put(entry.id(), entry);
         }
         return byId;
     }
