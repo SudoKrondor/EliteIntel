@@ -2,6 +2,7 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.ShipPersonality;
+import elite.intel.ai.mouth.google.GoogleVoiceProvider;
 import elite.intel.ai.mouth.google.GoogleVoices;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.AiVoxDemoEvent;
@@ -12,6 +13,7 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
+import elite.intel.i18n.Language;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -36,6 +38,7 @@ import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -66,12 +69,13 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * Maps a stored voice enum name to a readable "DisplayName - accent" label, resolved against the active
-     * TTS provider's voices. The accent disambiguates voices that share a display name (e.g. Spanish vs
-     * Portuguese "Dora"). Falls back to the raw name when the stored voice is not valid for the active
-     * provider (for example after a TTS provider switch).
+     * Maps a stored voice enum name to a readable "DisplayName - accent · quality" label, resolved against the
+     * active TTS provider's voices. The accent disambiguates voices that share a display name (e.g. Spanish vs
+     * Portuguese "Dora"); the quality tier (HD vs Standard) shows what the selected language actually delivers.
+     * Falls back to the raw name when the stored voice is not valid for the active provider (for example after
+     * a TTS provider switch).
      */
-    private static String voiceLabel(String enumName) {
+    private String voiceLabel(String enumName) {
         if (enumName == null) return "";
         try {
             if (SystemSession.getInstance().useLocalTTS()) {
@@ -79,10 +83,56 @@ public class CommanderTabPanel extends JPanel {
                 return v.getDisplayName() + " - " + v.getDescription();
             }
             GoogleVoices v = GoogleVoices.valueOf(enumName);
-            return v.getDisplayName() + " - " + v.getDescription();
+            String base = v.getDisplayName() + " - " + googleVoiceDescriptor(v);
+            // Quality is filled off the EDT (resolving a voice may query the provider); until then, no tier.
+            String quality = voiceQualityLabels.get(enumName);
+            return quality == null ? base : base + " · " + quality;
         } catch (IllegalArgumentException e) {
             return enumName;
         }
+    }
+
+    /**
+     * Fleet-label descriptor for a Google voice. In English the accent (American/British/Australian) tells the
+     * voices apart; in any other language every Google voice is synthesized in that language (its Chirp3-HD
+     * character), so only the localized gender is shown instead of a misleading English accent.
+     */
+    private static String googleVoiceDescriptor(GoogleVoices v) {
+        if (SystemSession.getInstance().getLanguage() == Language.EN) {
+            return v.getDescription();
+        }
+        return getText(v.isMale() ? "player.fleet.voice.male" : "player.fleet.voice.female");
+    }
+
+    /**
+     * Recomputes each Google voice's quality tier (HD vs Standard) for the current language off the EDT, since
+     * resolving a voice may query the TTS provider (a listVoices round-trip on first use), then repaints the
+     * fleet grid so the labels show the tier. Shown only for a non-English cloud voice once the TTS engine has
+     * wired its voice lookup: English is uniformly HD (no tier needed), the local (Kokoro) engine already has
+     * accurate accent labels, and before the lookup is wired resolution is optimistic (so no tier is shown).
+     */
+    private void refreshVoiceQualityLabels() {
+        voiceQualityLabels.clear();
+        if (SystemSession.getInstance().useLocalTTS()
+                || SystemSession.getInstance().getLanguage() == Language.EN
+                || !GoogleVoiceProvider.getInstance().hasVoiceLookup()) {
+            return;
+        }
+        Thread.ofVirtual().start(() -> {
+            GoogleVoiceProvider provider = GoogleVoiceProvider.getInstance();
+            for (GoogleVoices v : GoogleVoices.values()) {
+                voiceQualityLabels.put(v.name(), qualityLabel(provider.getVoiceParams(v.name()).getName()));
+            }
+            SwingUtilities.invokeLater(() -> {
+                if (fleetTable != null) fleetTable.repaint();
+            });
+        });
+    }
+
+    /** HD when the resolved Google voice is a Chirp voice (Chirp3-HD / Chirp-HD); Standard otherwise. */
+    private static String qualityLabel(String googleVoiceName) {
+        boolean hd = googleVoiceName != null && googleVoiceName.contains("Chirp");
+        return getText(hd ? "player.fleet.voice.hd" : "player.fleet.voice.standard");
     }
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -90,6 +140,8 @@ public class CommanderTabPanel extends JPanel {
     private JTextField playerAltNameField;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
+    /** Per-voice quality tier label (enum name -> localized "HD"/"Standard") for the current language, filled off-EDT. */
+    private final Map<String, String> voiceQualityLabels = new ConcurrentHashMap<>();
 
     public CommanderTabPanel() {
         buildUi();
@@ -225,7 +277,7 @@ public class CommanderTabPanel extends JPanel {
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::voiceLabel));
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(this::voiceLabel));
         fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
@@ -242,6 +294,8 @@ public class CommanderTabPanel extends JPanel {
 
         add(content, BorderLayout.NORTH);
         add(fleetSection, BorderLayout.CENTER);
+
+        refreshVoiceQualityLabels(); // initial HD/Standard tiers for the fleet voice list
     }
 
     public void initData() {
@@ -264,7 +318,7 @@ public class CommanderTabPanel extends JPanel {
                 : Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
-                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, CommanderTabPanel::voiceLabel)));
+                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
 
         String[] personalityOptions =
                 Arrays.stream(ShipPersonality.values()).map(Enum::name).toArray(String[]::new);
@@ -273,6 +327,7 @@ public class CommanderTabPanel extends JPanel {
                 .setCellEditor(new HudComboCellEditor(
                         new HudComboBox<>(personalityOptions, CommanderTabPanel::personalityLabel)));
 
+        refreshVoiceQualityLabels(); // provider/language may have changed; recompute the HD/Standard tiers
     }
 
     static String displayShipName(ShipDao.Ship ship) {

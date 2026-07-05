@@ -26,9 +26,11 @@ import javax.sound.sampled.*;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -53,6 +55,8 @@ public class GoogleTTSImpl implements MouthInterface {
     private Thread vocalizationProcessingThread;
     private volatile boolean running;
     private SourceDataLine persistentLine; // Add persistent line
+    /** Voices Google actually offers per BCP-47 language code, cached from listVoices; cleared on stop. */
+    private final Map<String, List<GoogleVoiceProvider.AvailableVoice>> voiceCache = new ConcurrentHashMap<>();
     private final SystemSession systemSession = SystemSession.getInstance();
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final AtomicBoolean canBeInterrupted = new AtomicBoolean(true);
@@ -82,6 +86,9 @@ public class GoogleTTSImpl implements MouthInterface {
             }
             TextToSpeechSettings settings = TextToSpeechSettings.newBuilder().setApiKey(apiKey).build();
             textToSpeechClient = TextToSpeechClient.create(settings);
+            // Let the voice provider validate a localized voice against what this language actually offers, so it
+            // never requests a Chirp3-HD character that does not exist in the selected locale.
+            googleVoiceProvider.setAvailableVoices(this::availableVoices);
             log.info("TextToSpeechClient initialized successfully with API key");
         } catch (Exception e) {
             log.error("Failed to initialize TextToSpeechClient: {}", e.getMessage(), e);
@@ -136,6 +143,7 @@ public class GoogleTTSImpl implements MouthInterface {
         ttsProcessingThread = null;
         vocalizationProcessingThread = null;
         textToSpeechClient = null;
+        voiceCache.clear(); // client is gone; re-enumerate voices on next start
     }
 
     /**
@@ -299,6 +307,33 @@ public class GoogleTTSImpl implements MouthInterface {
             } finally {
                 persistentLine = null;
             }
+        }
+    }
+
+    /**
+     * Voices Google offers for a BCP-47 language code (e.g. "ru-RU"), fetched once via listVoices and cached.
+     * Returns an empty list on lookup failure (the provider then falls back to a known-good voice) and does not
+     * cache the failure, so a transient error is retried next time.
+     */
+    private List<GoogleVoiceProvider.AvailableVoice> availableVoices(String languageCode) {
+        List<GoogleVoiceProvider.AvailableVoice> cached = voiceCache.get(languageCode);
+        if (cached != null) {
+            return cached;
+        }
+        TextToSpeechClient client = textToSpeechClient;
+        if (client == null) {
+            return List.of();
+        }
+        try {
+            List<GoogleVoiceProvider.AvailableVoice> voices = client.listVoices(languageCode).getVoicesList().stream()
+                    .map(v -> new GoogleVoiceProvider.AvailableVoice(
+                            v.getName(), v.getSsmlGender() == SsmlVoiceGender.MALE))
+                    .toList();
+            voiceCache.put(languageCode, voices);
+            return voices;
+        } catch (Exception e) {
+            log.warn("Could not list Google voices for {}: {}", languageCode, e.getMessage());
+            return List.of();
         }
     }
 
