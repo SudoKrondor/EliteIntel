@@ -12,10 +12,8 @@ import elite.intel.ui.theme.HudPalette;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
@@ -152,16 +150,7 @@ public class OBSOverlayWindow extends JFrame {
         OverlayPanel() {
             setOpaque(true);
             setBackground(OVERLAY_BACKGROUND);
-
-            Font loaded;
-            try {
-                loaded = Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
-                        getClass().getResourceAsStream("/fonts/Electrolize-Regular.ttf"))
-                ).deriveFont(HudPalette.HUD_FONT_OVERLAY);
-            } catch (FontFormatException | IOException e) {
-                loaded = new Font(Font.MONOSPACED, Font.PLAIN, (int) HudPalette.HUD_FONT_OVERLAY);
-            }
-            font = loaded;
+            font = new Font(Font.SANS_SERIF, Font.PLAIN, (int) HudPalette.HUD_FONT_UI_DEFAULT);
         }
 
         @Override
