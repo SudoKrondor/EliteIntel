@@ -21,6 +21,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
+import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
@@ -39,6 +40,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -304,7 +306,7 @@ public class HelpTabPanel extends JPanel {
         lastFlags2 = flags2;
         LocationDto location = currentLocation();
         PlayerSituation situation = status.getSituation(flags, flags2, location);
-        String text = describe(situation, location);
+        String text = caps(describe(situation, location));
         SwingUtilities.invokeLater(() -> {
             locationField.setText(text);
             // The available-actions tables are context-gated, so rebuild them only when the situation changes
@@ -324,6 +326,16 @@ public class HelpTabPanel extends JPanel {
     @Subscribe
     public void onCommanderPhrase(NormalizedUserInputEvent event) {
         String text = event.getText() == null ? "" : event.getText();
+        SwingUtilities.invokeLater(() -> {
+            phraseField.setText(text);
+            updateSemanticHighlights(text);
+        });
+    }
+
+    /** Live update from the companion path: this is the exact match input used by the companion reducer. */
+    @Subscribe
+    public void onCommanderMatchInputChanged(CommanderMatchInputChangedEvent event) {
+        String text = event.text() == null ? "" : event.text();
         SwingUtilities.invokeLater(() -> {
             phraseField.setText(text);
             updateSemanticHighlights(text);
@@ -359,13 +371,22 @@ public class HelpTabPanel extends JPanel {
     private void refresh() {
         LocationDto location = currentLocation();
         PlayerSituation situation = status.getSituation(location);
-        locationField.setText(describe(situation, location));
+        locationField.setText(caps(describe(situation, location)));
+        phraseField.setText(currentCommanderMatchInput());
         lastSituation = situation;
         rebuildAvailableActions(situation, location);
     }
 
     private LocationDto currentLocation() {
         return locationManager.findByLocationData(playerSession.getLocationData());
+    }
+
+    private String currentCommanderMatchInput() {
+        try {
+            return CompanionRuntime.state().lastCommanderMatchInput();
+        } catch (IllegalStateException ignored) {
+            return "";
+        }
     }
 
     /**
@@ -405,9 +426,17 @@ public class HelpTabPanel extends JPanel {
         ordered.sort(Comparator
                 .comparing((ActionRow row) -> !highlightedActionIds.contains(row.id()))
                 .thenComparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
-        int half = (ordered.size() + 1) / 2;
-        setRows(leftModel, ordered.subList(0, half));
-        setRows(rightModel, ordered.subList(half, ordered.size()));
+        List<ActionRow> left = new ArrayList<>();
+        List<ActionRow> right = new ArrayList<>();
+        for (ActionRow row : ordered) {
+            if (left.size() <= right.size()) {
+                left.add(row);
+            } else {
+                right.add(row);
+            }
+        }
+        setRows(leftModel, left);
+        setRows(rightModel, right);
     }
 
     private void updateAvailableActionsTitle() {
@@ -552,6 +581,10 @@ public class HelpTabPanel extends JPanel {
         String label = getText(situation.i18nKey());
         String place = placeName(situation, location);
         return place == null ? label : label + " · " + place;
+    }
+
+    private static String caps(String text) {
+        return text == null ? "" : text.toUpperCase(Locale.ROOT);
     }
 
     /**
