@@ -9,9 +9,11 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
+import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -143,6 +145,8 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
         // recorded from `input`, never from this normalized match text.
         String matchInput = inputNormalizer.apply(stripLeadingCompanionName(input));
+        ctx.state().setLastCommanderMatchInput(matchInput);
+        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
         Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
         Thought thought = reflexCommand
                 .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
