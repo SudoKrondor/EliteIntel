@@ -3,6 +3,7 @@ package elite.intel.util;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -16,38 +17,62 @@ import static elite.intel.gameapi.i18n.EventsTextProvider.getText;
  */
 public class Ranks {
 
-    private static final Map<String, String> RANK_I18N_KEY_MAP = Map.ofEntries(
-            // Imperial
-            Map.entry("Outsider",             "ranks.imperial.outsider"),
-            Map.entry("Serf",                 "ranks.imperial.serf"),
-            Map.entry("Master",               "ranks.imperial.master"),
-            Map.entry("Squire",               "ranks.imperial.squire"),
-            Map.entry("Knight",               "ranks.imperial.knight"),
-            Map.entry("Lord",                 "ranks.imperial.lord"),
-            Map.entry("Baron",                "ranks.imperial.baron"),
-            Map.entry("Viscount",             "ranks.imperial.viscount"),
-            Map.entry("Count",                "ranks.imperial.count"),
-            Map.entry("Earl",                 "ranks.imperial.earl"),
-            Map.entry("Marquis",              "ranks.imperial.marquis"),
-            Map.entry("Duke",                 "ranks.imperial.duke"),
-            Map.entry("Prince",               "ranks.imperial.prince"),
-            Map.entry("King",                 "ranks.imperial.king"),
-            // Federation
-            Map.entry("Recruit",              "ranks.federation.recruit"),
-            Map.entry("Cadet",                "ranks.federation.cadet"),
-            Map.entry("Midshipman",           "ranks.federation.midshipman"),
-            Map.entry("Petty Officer",        "ranks.federation.pettyOfficer"),
-            Map.entry("Chief Petty Officer",  "ranks.federation.chiefPettyOfficer"),
-            Map.entry("Warrant Officer",      "ranks.federation.warrantOfficer"),
-            Map.entry("Ensign",               "ranks.federation.ensign"),
-            Map.entry("Lieutenant",           "ranks.federation.lieutenant"),
-            Map.entry("Lieutenant Commander", "ranks.federation.lieutenantCommander"),
-            Map.entry("Post Commander",       "ranks.federation.postCommander"),
-            Map.entry("Post Captain",         "ranks.federation.postCaptain"),
-            Map.entry("Rear Admiral",         "ranks.federation.rearAdmiral"),
-            Map.entry("Vice Admiral",         "ranks.federation.viceAdmiral"),
-            Map.entry("Admiral",              "ranks.federation.admiral")
+    /**
+     * One rank tier: the English name the journal reports and its i18n key.
+     */
+    private record RankTier(String englishName, String i18nKey) {
+    }
+
+    /**
+     * Federation navy ranks ordered by journal rank number: the list index equals the number the
+     * journal reports for that rank (index 0 = unranked). Single source of truth for both the
+     * index-to-name lookup used by promotion announcements and the name-to-key lookup used by
+     * {@link #getLocalizedRankName}.
+     */
+    private static final List<RankTier> FEDERATION_RANKS = List.of(
+            new RankTier("none", "ranks.federation.none"),
+            new RankTier("Recruit", "ranks.federation.recruit"),
+            new RankTier("Cadet", "ranks.federation.cadet"),
+            new RankTier("Midshipman", "ranks.federation.midshipman"),
+            new RankTier("Petty Officer", "ranks.federation.pettyOfficer"),
+            new RankTier("Chief Petty Officer", "ranks.federation.chiefPettyOfficer"),
+            new RankTier("Warrant Officer", "ranks.federation.warrantOfficer"),
+            new RankTier("Ensign", "ranks.federation.ensign"),
+            new RankTier("Lieutenant", "ranks.federation.lieutenant"),
+            new RankTier("Lieutenant Commander", "ranks.federation.lieutenantCommander"),
+            new RankTier("Post Commander", "ranks.federation.postCommander"),
+            new RankTier("Post Captain", "ranks.federation.postCaptain"),
+            new RankTier("Rear Admiral", "ranks.federation.rearAdmiral"),
+            new RankTier("Vice Admiral", "ranks.federation.viceAdmiral"),
+            new RankTier("Admiral", "ranks.federation.admiral")
     );
+
+    /**
+     * Imperial navy ranks ordered by journal rank number: the list index equals the number the
+     * journal reports for that rank (index 0 = unranked).
+     */
+    private static final List<RankTier> IMPERIAL_RANKS = List.of(
+            new RankTier("none", "ranks.imperial.none"),
+            new RankTier("Outsider", "ranks.imperial.outsider"),
+            new RankTier("Serf", "ranks.imperial.serf"),
+            new RankTier("Master", "ranks.imperial.master"),
+            new RankTier("Squire", "ranks.imperial.squire"),
+            new RankTier("Knight", "ranks.imperial.knight"),
+            new RankTier("Lord", "ranks.imperial.lord"),
+            new RankTier("Baron", "ranks.imperial.baron"),
+            new RankTier("Viscount", "ranks.imperial.viscount"),
+            new RankTier("Count", "ranks.imperial.count"),
+            new RankTier("Earl", "ranks.imperial.earl"),
+            new RankTier("Marquis", "ranks.imperial.marquis"),
+            new RankTier("Duke", "ranks.imperial.duke"),
+            new RankTier("Prince", "ranks.imperial.prince"),
+            new RankTier("King", "ranks.imperial.king")
+    );
+
+    /**
+     * English rank name to i18n key, derived from the ordered rank lists (the "none" tier is excluded).
+     */
+    private static final Map<String, String> RANK_I18N_KEY_MAP = buildNameToKeyMap();
 
     private static final Map<String, String> LEGAL_STATUS_I18N_KEY_MAP = Map.ofEntries(
             Map.entry("Clean", "event.target.legal.clean"),
@@ -116,23 +141,7 @@ public class Ranks {
      *
      */
     public static HashMap<Integer, String> getImperialRankMap() {
-        HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, getText("ranks.imperial.none"));
-        rankMap.put(1, getText("ranks.imperial.outsider"));
-        rankMap.put(2, getText("ranks.imperial.serf"));
-        rankMap.put(3, getText("ranks.imperial.master"));
-        rankMap.put(4, getText("ranks.imperial.squire"));
-        rankMap.put(5, getText("ranks.imperial.knight"));
-        rankMap.put(6, getText("ranks.imperial.lord"));
-        rankMap.put(7, getText("ranks.imperial.baron"));
-        rankMap.put(8, getText("ranks.imperial.viscount"));
-        rankMap.put(9, getText("ranks.imperial.count"));
-        rankMap.put(10, getText("ranks.imperial.earl"));
-        rankMap.put(11, getText("ranks.imperial.marquis"));
-        rankMap.put(12, getText("ranks.imperial.duke"));
-        rankMap.put(13, getText("ranks.imperial.prince"));
-        rankMap.put(14, getText("ranks.imperial.king"));
-        return rankMap;
+        return buildIndexToLocalizedMap(IMPERIAL_RANKS);
     }
 
 
@@ -166,23 +175,7 @@ public class Ranks {
      *
      */
     public static HashMap<Integer, String> getFederationRankMap() {
-        HashMap<Integer, String> rankMap = new HashMap<>();
-        rankMap.put(0, getText("ranks.federation.none"));
-        rankMap.put(1, getText("ranks.federation.recruit"));
-        rankMap.put(2, getText("ranks.federation.cadet"));
-        rankMap.put(3, getText("ranks.federation.midshipman"));
-        rankMap.put(4, getText("ranks.federation.pettyOfficer"));
-        rankMap.put(5, getText("ranks.federation.chiefPettyOfficer"));
-        rankMap.put(6, getText("ranks.federation.warrant"));
-        rankMap.put(7, getText("ranks.federation.ensign"));
-        rankMap.put(8, getText("ranks.federation.lieutenant"));
-        rankMap.put(9, getText("ranks.federation.lieutenant"));
-        rankMap.put(10, getText("ranks.federation.postCommander"));
-        rankMap.put(11, getText("ranks.federation.postcaptain"));
-        rankMap.put(12, getText("ranks.federation.rearAdmiral"));
-        rankMap.put(13, getText("ranks.federation.viceAdmiral"));
-        rankMap.put(14, getText("ranks.federation.admiral"));
-        return rankMap;
+        return buildIndexToLocalizedMap(FEDERATION_RANKS);
     }
 
 
@@ -378,6 +371,32 @@ public class Ranks {
             return getImperialHonorificMap().get(getImperialRankMap().get(imperial));
         } else {
             return getFederationHonorificMap().get(getFederationRankMap().get(federation));
+        }
+    }
+
+    /**
+     * Builds an index-to-localized-name map from an ordered rank list, resolving each key against
+     * the active UI language at call time so the result tracks a mid-session language switch.
+     */
+    private static HashMap<Integer, String> buildIndexToLocalizedMap(List<RankTier> ranks) {
+        HashMap<Integer, String> rankMap = new HashMap<>();
+        for (int index = 0; index < ranks.size(); index++) {
+            rankMap.put(index, getText(ranks.get(index).i18nKey()));
+        }
+        return rankMap;
+    }
+
+    private static Map<String, String> buildNameToKeyMap() {
+        Map<String, String> map = new HashMap<>();
+        addNames(map, IMPERIAL_RANKS);
+        addNames(map, FEDERATION_RANKS);
+        return Map.copyOf(map);
+    }
+
+    private static void addNames(Map<String, String> map, List<RankTier> ranks) {
+        for (RankTier tier : ranks) {
+            if ("none".equals(tier.englishName())) continue; // the unranked tier has no journal rank name to localize
+            map.put(tier.englishName(), tier.i18nKey());
         }
     }
 
