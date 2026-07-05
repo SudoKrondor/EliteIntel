@@ -6,8 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -55,7 +54,6 @@ public class HudLogArea extends JPanel {
     private static final int MAX_MESSAGES = 20;
     /** Full-session transcript kept for export, independent of the 20-message render window; bounded so it cannot grow without limit. */
     private static final int MAX_TRANSCRIPT = 5000;
-    private static final DateTimeFormatter LOG_TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final int PAD_X = 10;
     private static final int PAD_Y = 6;
     private static final int LINE_GAP = 4;
@@ -149,17 +147,28 @@ public class HudLogArea extends JPanel {
     }
 
     /**
-     * Formats and appends a SYSTEM_LOG entry with a {@code HH:mm:ss} timestamp prefix.
-     * The timestamp is rendered in {@link HudPalette#HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT}.
+     * Formats and appends a SYSTEM_LOG entry. The panel shows the local {@code HH:mm:ss} time (rendered in
+     * {@link HudPalette#HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT}); the exported transcript uses the UTC
+     * {@code yyyy-MM-dd'T'HH:mm:ss'Z'} journal form so a saved log lines up with the running game journal.
      */
-    public void addSystemLogEntry(LocalTime timestamp, String message) {
-        String ts = timestamp.format(LOG_TIME_FMT);
-        addMessageInternal(ts + "  " + message, ts.length() + 2);
+    public void addSystemLogEntry(Instant timestamp, String message) {
+        String tsScreen = LogTimestampFormat.screen(timestamp);
+        String tsFile = LogTimestampFormat.file(timestamp);
+        addMessageInternal(tsScreen + "  " + message, tsScreen.length() + 2, tsFile + "  " + message);
     }
 
     private void addMessageInternal(String text, int prefixLen) {
+        addMessageInternal(text, prefixLen, text);
+    }
+
+    /**
+     * Appends a message. {@code renderText} is shown in the panel (its first {@code prefixLen} chars drawn in
+     * timestamp color); {@code transcriptText} is what {@link #exportText()} returns. The two differ only for
+     * SYSTEM_LOG entries, where the panel shows local time and the export uses a UTC journal timestamp.
+     */
+    private void addMessageInternal(String text, int prefixLen, String transcriptText) {
         if (text == null || text.isBlank()) return;
-        transcript.addLast(text);
+        transcript.addLast(transcriptText);
         while (transcript.size() > MAX_TRANSCRIPT) transcript.removeFirst();
         for (Message m : messages) {
             m.complete = true;

@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -371,8 +371,8 @@ public class AiTabPanel extends JPanel {
         SwingUtilities.invokeLater(() -> aiPanel.addMessage(text));
     }
 
-    /** Renders a structured SYSTEM_LOG entry; timestamp is formatted as {@code HH:mm:ss}. */
-    public void addSystemMessage(LocalTime timestamp, String text) {
+    /** Renders a structured SYSTEM_LOG entry; the panel shows local {@code HH:mm:ss}, the export uses UTC. */
+    public void addSystemMessage(Instant timestamp, String text) {
         SwingUtilities.invokeLater(() -> systemPanel.addSystemLogEntry(timestamp, text));
     }
 
