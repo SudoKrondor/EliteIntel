@@ -280,6 +280,21 @@ class ThoughtTest {
     }
 
     @Test
+    void narrationThoughtVoicesOnlyTheFirstSpeakWhenTheModelEmitsTwo() {
+        // A model that splits the callout into two speak invocations must be read once, not twice: only the
+        // first speak is voiced and remembered, the extra one is dropped.
+        llm.scripted.add(ok(
+                call(SpeakFunction.ID, text("Fuel is running low, Commander.")),
+                call(SpeakFunction.ID, text("Consider refuelling."))));
+
+        Thought.sensorNarration(Urgency.NORMAL, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
+
+        assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only the first speak is voiced");
+        assertEquals(1, memory.writes.size(), "only the first line is recorded - the extra speak is dropped");
+        assertEquals("Fuel is running low, Commander.", memory.writes.get(0).content());
+    }
+
+    @Test
     void verbatimNarrationRecordsThenVoicesTheLineWithoutLlm() {
         // A curated announcement already carries finished text: remember it, then voice it verbatim, no LLM.
         Thought.verbatimNarration(Urgency.URGENT, "Target material detected, Commander.",

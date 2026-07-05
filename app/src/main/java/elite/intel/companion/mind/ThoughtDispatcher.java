@@ -201,14 +201,15 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     /**
      * Accepts subscriber-prepared sensor narration, creates a NARRATION thought, and queues it on the
      * narration lane. SensorDataEvent is trusted output from gameplay subscribers: they already applied
-     * settings, filtering, and calculations, so the thought is born as urgent narration under the topic
-     * provided by that layer.
+     * settings, filtering, and calculations. The thought is queued at normal urgency under the topic
+     * provided by that layer, so a burst of sensor callouts plays in order instead of each one cutting off
+     * the line before it.
      */
     public void submitSensorData(SensorDataEvent event) {
         if (event == null) {
             return;
         }
-        Urgency urgency = Urgency.URGENT;
+        Urgency urgency = Urgency.NORMAL;
         ConversationTopic topic = sensorTopic(event);
         Thought thought = Thought.sensorNarration(urgency, SensorInputFormatter.format(event), topic, ctx);
         CompanionDiagnostics.debug(thought.trace(), "narration", "sensor topic=" + topic);
@@ -216,13 +217,16 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a curated announcement that already carries finished text (mining/discovery/route/radar/
-     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane. The line is
-     * remembered and voiced verbatim in the companion's voice - no LLM phrasing.
+     * Accepts a curated announcement that already carries finished text (mining/discovery/route/
+     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane at normal
+     * urgency, so a burst of announcements plays in order instead of each one cutting off the line before
+     * it. A caller that must preempt current speech (radar contact, mission-critical) uses the explicit
+     * urgency overload. The line is remembered and voiced verbatim in the companion's voice - no LLM
+     * phrasing.
      */
     @Override
     public void submitVerbatimNarration(String text, ConversationTopic topic) {
-        submitVerbatimNarration(text, topic, Urgency.URGENT, null);
+        submitVerbatimNarration(text, topic, Urgency.NORMAL, null);
     }
 
     /**

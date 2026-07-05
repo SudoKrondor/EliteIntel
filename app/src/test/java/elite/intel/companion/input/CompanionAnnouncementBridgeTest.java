@@ -1,7 +1,9 @@
 package elite.intel.companion.input;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.ai.mouth.subscribers.events.RadarContactAnnouncementEvent;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.mind.CompanionState;
@@ -9,6 +11,7 @@ import elite.intel.companion.mind.VerbatimNarrationSink;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.db.util.Database;
+import elite.intel.session.PlayerSession;
 import elite.intel.util.Cypher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,8 +28,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * The bridge that hands a command/macro's own narration ({@code AiVoxResponseEvent} /
  * {@code MissionCriticalAnnouncementEvent}) to the companion: it tags both with the current global topic,
  * voices a mission-critical line urgently and a normal AI response at normal urgency, and forwards a
- * synchronous emitter's completion future so it waits for playback. A capturing {@link VerbatimNarrationSink}
- * keeps this off the real lanes.
+ * synchronous emitter's completion future so it waits for playback. It also checks the curated-announcement
+ * routing: a radar contact preempts current speech (urgent) while a routine discovery callout queues at
+ * normal urgency. A capturing {@link VerbatimNarrationSink} keeps this off the real lanes.
  */
 class CompanionAnnouncementBridgeTest {
 
@@ -43,7 +47,9 @@ class CompanionAnnouncementBridgeTest {
     private final List<Submission> submissions = new ArrayList<>();
     private final VerbatimNarrationSink sink = new VerbatimNarrationSink() {
         @Override public void submitVerbatimNarration(String text, ConversationTopic topic) {
-            submissions.add(new Submission(text, topic, null, null, null));
+            // Mirror the real dispatcher default: routine announcements queue at NORMAL urgency, so tests can
+            // assert the resulting urgency instead of a null capture artifact.
+            submissions.add(new Submission(text, topic, Urgency.NORMAL, null, null));
         }
         @Override public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
                                                       CompletableFuture<Void> signal) {
@@ -93,6 +99,32 @@ class CompanionAnnouncementBridgeTest {
         assertSame(done, s.signal(),
                 "the synchronous emitter's completion future is forwarded so it waits for playback");
         assertNull(s.toolCallId(), "no tool-call active on this thread -> recorded as free-standing speech");
+    }
+
+    @Test
+    void radarContactPreemptsAtUrgentUrgency() {
+        PlayerSession.getInstance().setRadarContactAnnouncementOn(true);
+
+        new CompanionAnnouncementBridge(sink).onRadarContact(new RadarContactAnnouncementEvent("hostile contact"));
+
+        assertEquals(1, submissions.size());
+        Submission s = submissions.get(0);
+        assertEquals("hostile contact", s.text());
+        assertEquals(ConversationTopic.COMBAT, s.topic());
+        assertEquals(Urgency.URGENT, s.urgency(), "a radar contact preempts a routine callout in flight");
+    }
+
+    @Test
+    void discoveryNarrationQueuesAtNormalUrgency() {
+        PlayerSession.getInstance().setDiscoveryAnnouncementOn(true);
+
+        new CompanionAnnouncementBridge(sink).onDiscovery(new DiscoveryAnnouncementEvent("new water world"));
+
+        assertEquals(1, submissions.size());
+        Submission s = submissions.get(0);
+        assertEquals("new water world", s.text());
+        assertEquals(ConversationTopic.EXPLORATION, s.topic());
+        assertEquals(Urgency.NORMAL, s.urgency(), "a routine discovery callout queues instead of cutting off speech");
     }
 
     @Test

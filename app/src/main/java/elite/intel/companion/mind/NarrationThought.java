@@ -33,8 +33,9 @@ public final class NarrationThought extends Thought {
 
     /**
      * Single short round: compose the lean narration prompt, ask the LLM to phrase it once, then voice the
-     * {@code speak} line and record it as the companion's own words. Best-effort - a failed or interrupted
-     * round simply stays silent. Nothing else happens this turn (no second round, no raw-data record).
+     * first {@code speak} line and record it as the companion's own words. Best-effort - a failed or
+     * interrupted round simply stays silent. Nothing else happens this turn (no second round, no raw-data
+     * record).
      */
     @Override
     public void run() {
@@ -43,10 +44,14 @@ public final class NarrationThought extends Thought {
         if (result == null || !result.isValid()) {
             return;
         }
+        // Narration is one short callout, so only the first speak is voiced. A model that splits the line
+        // into more than one speak in a single round (small models sometimes do) would otherwise be read
+        // twice; the extra speak invocations are dropped.
         for (LlmToolInvocation inv : result.toolInvocations()) {
             if (SpeakFunction.ID.equals(inv.name())) {
                 execute(inv);                              // voice the phrased line through the speech gateway
                 recordCompanionSpeech(spokenTextOf(inv));  // remember what we said, not the raw sensor data
+                return;
             }
         }
     }
