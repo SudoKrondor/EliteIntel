@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -20,7 +21,19 @@ import java.util.stream.Collectors;
 public class LocationManager {
     private static LocationManager instance;
 
+    /**
+     * Striped locks that serialize read-modify-write of a single body across subscribers.
+     * Journal events for the same body (e.g. SAASignalsFound + Scan) fire on separate virtual
+     * threads within the same instant; without this they race and the later writer overwrites the
+     * earlier writer's fields (blind whole-JSON upsert). See {@link #updateBody}.
+     */
+    private static final int WRITE_LOCK_STRIPES = 64;
+    private final Object[] writeLocks = new Object[WRITE_LOCK_STRIPES];
+
     private LocationManager() {
+        for (int i = 0; i < writeLocks.length; i++) {
+            writeLocks[i] = new Object();
+        }
     }
 
     public static synchronized LocationManager getInstance() {
@@ -28,6 +41,26 @@ public class LocationManager {
             instance = new LocationManager();
         }
         return instance;
+    }
+
+    private Object lockFor(long systemAddress, long bodyId) {
+        int hash = Long.hashCode(systemAddress * 31 + bodyId);
+        return writeLocks[Math.floorMod(hash, WRITE_LOCK_STRIPES)];
+    }
+
+    /**
+     * Atomically read-modify-write the body identified by {@code (systemAddress, bodyId)}: reads the
+     * current record, applies {@code mutator}, and persists it, all under a per-body lock so a
+     * concurrent {@code updateBody} for the same body cannot interleave and clobber fields. Callers
+     * that must not lose fields to a racing subscriber should go through this instead of a bare
+     * find/save pair.
+     */
+    public void updateBody(long systemAddress, long bodyId, Consumer<LocationDto> mutator) {
+        synchronized (lockFor(systemAddress, bodyId)) {
+            LocationDto location = findBySystemAddress(systemAddress, bodyId);
+            mutator.accept(location);
+            save(location);
+        }
     }
 
     public void save(LocationDto location) {

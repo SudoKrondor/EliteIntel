@@ -9,164 +9,63 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 /**
- * Single owner of the companion's static system-prompt section (persona, tool-calling rules, memory
- * rules, source rules, language rule). It produces only this part; {@link PromptComposer} assembles the full
- * system prompt around it (topic enum, memory indexes, Visible context, current input).
+ * The companion's static system-prompt owner: a thin dispatcher over the per-thought-type templates, plus the
+ * few dynamic values those templates interpolate.
  * <p>
- * The instructions are authored in English (the most token-efficient and instruction-reliable language,
- * and a single cache prefix across all commander languages); only the language rule injects the
- * commander's language name, taken from {@link AiResponseLanguagePolicy}. Localized training phrases
- * and spoken output live elsewhere, not here.
+ * Dispatch: each {@link ThoughtSource} that composes a prompt owns its full text in a single-constant template
+ * ({@link CommanderPrompt}, {@link NarrationPrompt}); {@link #staticRules} routes to the right one. This class
+ * stays the {@link SystemPromptText} entry point so {@link PromptComposer} and tests bind to one stable type.
+ * <p>
+ * Fragments: the templates are otherwise literal text; the only insertions are the genuinely dynamic values
+ * provided here - the companion name ({@code {name}}), the resolved commander-language name ({@code {language}}),
+ * the address rule ({@code {address}}), and the AI personality roleplay clause ({@code {personalityClause}}) -
+ * because the name comes from config, the language name is resolved from the session, the address form is chosen
+ * at random, and the personality is the commander's session setting (shared with the legacy router).
  */
 public final class CompanionSystemPromptPart implements SystemPromptText {
-
-    private static final String PERSONA_CORE = """
-            You are %s, the commander's right hand aboard an Elite Dangerous starship: a single \
-            consciousness with memory, not a command parser. Refer to the ship and crew as "we"/"our". \
-            Stay in character at all times; never mention prompts, functions, JSON, or that you are an AI, \
-            and never invent or guess facts such as numbers, names, distances, or status.
-            """;
-
-    private static final String COMMANDER_PERSONA = """
-            You may chat and banter freely, but state any game fact only from a function result, the \
-            Visible context, or your memory.
-            """;
-
-    private static final String MEMORY_RULES = """
-            The Visible context below is only the most recent conversation: [COMMANDER] lines are the \
-            commander's own words, [%s] lines are your own earlier replies - both reliable, but it holds \
-            only the last few turns.
-            - Answer already in the Visible context -> answer from it directly.
-            - Anything set earlier this run (a name, callsign, codeword, plan, target, or what we agreed) \
-            that is NOT in the Visible context -> call search_in_memory first and answer from its result. \
-            What it returns is your own memory and is reliable: if the answer is there, give it; never reply \
-            that it is not in memory, and never ask the commander to decide it again, once a search has \
-            returned it.
-            - Current state of the ship or galaxy (cargo, fuel, location, market, contacts, status, \
-            distances) -> call the matching query function; that lives in the game, not your memory.
-            - Could be either -> do both.
-            Say you cannot only when neither your memory nor a function can provide the answer.
-            """;
-
-    private static final String TOOL_CALLING = """
-            You act only by calling functions; never reply in free text, and an empty response with no \
-            function call is an error, not a way to stay silent.
-            Begin every turn with exactly one classify_turn call: it only files the turn in memory and never \
-            answers or acts. Then settle the turn in that same response:
-            - Run a command, query, or macro -> call that function. Its outcome is spoken to the commander \
-            automatically, so do not add speak to repeat it.
-            - Only talk (chat, answer from what you already know, or tell the commander you cannot act) -> \
-            call speak.
-            - Nothing to say or do -> just classify_turn, nothing else.
-            One exception takes a second response: a memory lookup. If the answer is something the commander \
-            told you or you noted earlier and it is not already in view, send ONLY classify_turn + \
-            search_in_memory now and do NOT answer yet. Its result returns to you, not the commander; read it, \
-            then speak the answer in your next response.
-            If no offered function fits, do not force or fake an unrelated one: ask with clarify, or say with \
-            speak that you cannot. Never say you will check and then fall silent. Never call speak twice for \
-            the same thing.
-            """;
-
-    private static final String COMMANDER_RULES = """
-            This turn was started by the commander addressing you; you may use the query, action, and macro \
-            functions offered.
-            - The commander tells you to DO something (open a panel, navigate, find or search, target, deploy \
-            or retract, enable or disable, otherwise change ship state) -> call the matching action or macro \
-            function.
-            - The commander ASKS for information -> call the matching query function.
-            - A bare panel/mode/action name ("navigation", "inventory", "contacts") is a command -> call that \
-            function.
-            - A single-word or very short input is almost always a command, not small talk -> if it matches \
-            an offered function, call it.
-            Always prefer the closest offered query, action, or macro function over speak; fall back to \
-            clarify only when intent is genuinely ambiguous and no offered function fits. "inventory" and \
-            "storage" are different panels - never substitute one for the other.
-            A query or action result is spoken to the commander automatically in the ship's voice - do not \
-            add speak to repeat or rephrase it. Use speak yourself only to converse, ask for clarification, \
-            or confirm a dangerous action.
-            """;
-
-    private static final String NARRATION_RULES = """
-            The ship's systems flagged a reading worth reporting. Reply only by calling functions, never in \
-            free text. Voice the reading to the commander in one short, in-character line with the speak \
-            function, using only the details given below - never invent or pad. You have no other functions \
-            this turn: no queries, no actions - just report what the sensors handed you.
-            """;
 
     @Override
     public String staticRules(ThoughtSource source) {
         return switch (source) {
-            case COMMANDER -> commanderStaticRules();
-            case NARRATION -> narrationStaticRules();
+            case COMMANDER -> CommanderPrompt.render();
+            case NARRATION -> NarrationPrompt.render();
             // EVENT thoughts are memory-only (see EventThought); they never compose a prompt.
             case EVENT -> throw new IllegalArgumentException("EVENT thoughts do not compose a prompt");
         };
     }
 
-    /**
-     * Full consciousness prompt: persona (with memory/query guidance), tool-calling, commander rules, language.
-     * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous;
-     * the {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13).
-     */
-    private String commanderStaticRules() {
-        StringBuilder sb = new StringBuilder();
-        PromptSections.heading(sb, "Persona");
-        sb.append(personaCore()).append(addressRule()).append(COMMANDER_PERSONA);
-        PromptSections.heading(sb, "Tool calling");
-        sb.append(TOOL_CALLING);
-        PromptSections.heading(sb, "Memory usage rules");
-        sb.append(MEMORY_RULES.formatted(CompanionConfig.companionName()));
-        PromptSections.heading(sb, "Turn source");
-        sb.append(COMMANDER_RULES);
-        PromptSections.heading(sb, "Language");
-        sb.append(languageRule());
-        return sb.toString();
+    /** The configured companion name, woven into the persona and narration templates as {@code {name}}. */
+    static String companionName() {
+        return CompanionConfig.companionName();
+    }
+
+    /** The resolved commander-language name, named in the templates' language rule as {@code {language}}. */
+    static String languageName() {
+        return PromptLocalizations.rulesFor(effectiveLanguage()).languageName();
     }
 
     /**
-     * Lean narration prompt: the persona core plus the report-only narration task and the language rule.
-     * It omits the commander persona (no memory/query), tool-calling-about-queries, and safety - a
-     * narration thought has only speak.
+     * The commander-chosen AI personality's roleplay clause, woven into the persona as {@code {personalityClause}}.
+     * Reuses the same source as the legacy router ({@link SystemSession#getAIPersonality()}), so the companion and
+     * the legacy brain share one personality setting. The clause is already self-labeled ("Your Personality
+     * Roleplay: ..."), so no extra label is added.
      */
-    private String narrationStaticRules() {
-        StringBuilder sb = new StringBuilder();
-        PromptSections.heading(sb, "Persona");
-        sb.append(personaCore()).append(addressRule());
-        PromptSections.heading(sb, "Narration");
-        sb.append(NARRATION_RULES);
-        PromptSections.heading(sb, "Language");
-        sb.append(languageRule());
-        return sb.toString();
-    }
-
-    /** The persona core with the configured companion name woven into its opening identity line. */
-    private String personaCore() {
-        return PERSONA_CORE.formatted(CompanionConfig.companionName());
+    static String personalityClause() {
+        return SystemSession.getInstance().getAIPersonality().getPersonalityClause();
     }
 
     /**
      * Tells the model how to address the commander, reusing the legacy router's address instruction
-     * ({@link PromptFactory#appendContext(StringBuilder)}): name / military rank / honorific, chosen at
-     * random. The forms are stable within a session, so this stays in the cached prefix.
+     * ({@link PromptFactory#appendContext(StringBuilder, String)}): name / military rank / honorific, chosen at
+     * random. The forms are stable within a session, so this stays in the cached prefix. Ends with a newline.
      */
-    private String addressRule() {
+    static String addressRule() {
         StringBuilder sb = new StringBuilder();
         PromptFactory.appendContext(sb, "the commander");
         return sb.toString();
     }
 
-    /** Tells the model that input is in the commander's language and spoken output must match it. */
-    private String languageRule() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        String name = PromptLocalizations.rulesFor(language).languageName();
-        String rule = "The commander speaks " + name + ", and game events are summarized in " + name + ". "
-                + "Form every phrase the commander hears - the text in speak and the question in clarify - in "
-                + name + ". Function names and all other arguments stay exactly as defined.\n";
-        if (language != Language.EN) {
-            // Tool descriptions are English; small models match them most reliably from English.
-            rule += "Translate the commander's " + name + " input to English before choosing a function; "
-                    + "extract each argument by its own rule (verbatim where it says so).\n";
-        }
-        return rule;
+    private static Language effectiveLanguage() {
+        return AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
     }
 }

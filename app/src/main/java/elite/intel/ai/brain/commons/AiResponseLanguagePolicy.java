@@ -15,11 +15,12 @@ public final class AiResponseLanguagePolicy {
      * Resolves the effective AI response language based on the system session configuration
      * and available Text-to-Speech (TTS) settings.
      * <p>
-     * KOKORO Supports English, French, and Spanish.
+     * KOKORO Supports English, French, Spanish, Portuguese, and Italian.
      *
      * @param systemSession the session containing system language and TTS configuration details
      * @return the resolved language for AI responses; it will be the session's language if Google TTS
-     * is configured and usable, or defaults to English unless the session's language is French or Spanish
+     * is configured and usable, or defaults to English unless the session's language is French, Spanish,
+     * Portuguese, or Italian
      */
     public static Language resolveEffectiveAiResponseLanguage(SystemSession systemSession) {
         boolean isGoogle = isGoogleTtsConfiguredAndUsable(systemSession);
@@ -29,7 +30,7 @@ public final class AiResponseLanguagePolicy {
         }
 
         Language sessionLanguage = systemSession.getLanguage();
-        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES || sessionLanguage == Language.PT) {
+        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES || sessionLanguage == Language.PT || sessionLanguage == Language.IT) {
             return sessionLanguage;
         }
 

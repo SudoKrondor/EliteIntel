@@ -16,6 +16,16 @@ public final class HudGlyphs {
     }
 
     /**
+     * A flat vector glyph painter: draws a single glyph tinted {@code color} within the box {@code (x, y, w, h)},
+     * without disposing {@code g2}. Every {@code paintHud*Glyph} method matches this shape, so they can be passed
+     * as method references (e.g. to {@code HudGlyphButton}) instead of each caller hardcoding a glyph.
+     */
+    @FunctionalInterface
+    public interface Painter {
+        void paint(Graphics2D g2, int x, int y, int w, int h, Color color);
+    }
+
+    /**
      * Loads and scales an image resource relative to the supplied owner class.
      */
     public static ImageIcon scaledIcon(Class<?> owner, String resource, int size) {
@@ -216,6 +226,89 @@ public final class HudGlyphs {
         g2.setColor(color);
         g2.drawLine(x1, y1, x2, y2); // top-left -> bottom-right
         g2.drawLine(x1, y2, x2, y1); // bottom-left -> top-right
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws the flat "save to file" (download) glyph centred within (x, y, w, h): a downward arrow dropping into
+     * an open tray. All geometry is proportional so it scales with the box; caller chooses colour by state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour for the arrow and tray
+     */
+    public static void paintHudSaveGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 9f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(color);
+
+        int cx = x + w / 2;
+        int arrowTop = y + Math.round(h * 0.14f);
+        int arrowBottom = y + Math.round(h * 0.58f);
+        int headHalf = Math.round(w * 0.22f);
+        int headTop = arrowBottom - Math.round(h * 0.20f);
+        g2.drawLine(cx, arrowTop, cx, arrowBottom);                 // shaft
+        g2.drawLine(cx - headHalf, headTop, cx, arrowBottom);       // arrowhead left diagonal
+        g2.drawLine(cx + headHalf, headTop, cx, arrowBottom);       // arrowhead right diagonal
+
+        int trayY = y + Math.round(h * 0.82f);
+        int trayLeft = x + Math.round(w * 0.20f);
+        int trayRight = x + w - Math.round(w * 0.20f);
+        int trayTickTop = trayY - Math.round(h * 0.16f);
+        g2.drawLine(trayLeft, trayTickTop, trayLeft, trayY);        // tray left wall
+        g2.drawLine(trayLeft, trayY, trayRight, trayY);             // tray floor
+        g2.drawLine(trayRight, trayY, trayRight, trayTickTop);      // tray right wall
+
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
+     * Draws the flat "clear / delete" (trash can) glyph centred within (x, y, w, h): a lid with a small handle
+     * tab above a slightly tapered open can body (no fill slats, to keep the same light stroke weight as the
+     * neighbouring save glyph). All geometry is proportional so it scales with the box; caller chooses colour by
+     * state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour for the can
+     */
+    public static void paintHudTrashGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 9f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(color);
+
+        int cx = x + w / 2;
+        int lidY = y + Math.round(h * 0.30f);
+        g2.drawLine(x + Math.round(w * 0.18f), lidY, x + w - Math.round(w * 0.18f), lidY); // lid
+
+        int handleHalf = Math.round(w * 0.12f);
+        int handleTop = y + Math.round(h * 0.19f);
+        g2.drawLine(cx - handleHalf, handleTop, cx + handleHalf, handleTop);               // handle top
+        g2.drawLine(cx - handleHalf, handleTop, cx - handleHalf, lidY);                    // handle left
+        g2.drawLine(cx + handleHalf, handleTop, cx + handleHalf, lidY);                    // handle right
+
+        int bodyTop = lidY + Math.round(h * 0.05f);
+        int bodyBottom = y + Math.round(h * 0.82f);
+        int topInset = Math.round(w * 0.24f);
+        int botInset = Math.round(w * 0.30f);
+        g2.drawLine(x + topInset, bodyTop, x + botInset, bodyBottom);                       // left wall (tapered)
+        g2.drawLine(x + w - topInset, bodyTop, x + w - botInset, bodyBottom);               // right wall (tapered)
+        g2.drawLine(x + botInset, bodyBottom, x + w - botInset, bodyBottom);                // bottom
+
         g2.setStroke(oldStroke);
         if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
     }

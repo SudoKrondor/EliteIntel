@@ -3,17 +3,21 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
+import elite.intel.companion.prompt.MemoryFactCandidates;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -25,10 +29,10 @@ import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A unit of work of the consciousness: the parts shared by every kind of thought. It holds the source,
@@ -48,8 +52,13 @@ public abstract class Thought {
 
     private static final Logger log = LogManager.getLogger(Thought.class);
 
+    /** Monotonic sequence backing the short per-thought {@link #trace} id, so concurrent lanes are told apart in the log. */
+    private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
+
     private final ThoughtSource source;
     private final Urgency urgency;
+    /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
+    private final String trace;
     protected final String currentInput;
     /**
      * Canonical form of {@link #currentInput} used only for command matching (the reducer) and as the
@@ -76,6 +85,12 @@ public abstract class Thought {
         this.currentInput = currentInput;
         this.matchInput = matchInput;
         this.ctx = ctx;
+        this.trace = source + "#" + TRACE_SEQ.incrementAndGet();
+    }
+
+    /** The per-thought diagnostic tag ({@code SOURCE#n}); every {@link CompanionDiagnostics} line of this thought carries it. */
+    public final String trace() {
+        return trace;
     }
 
     // --- factories (the public construction API; each returns the matching concrete kind) ---
@@ -133,6 +148,17 @@ public abstract class Thought {
     }
 
     /**
+     * Verbatim narration that is the voiced outcome of a model tool-call: it is recorded as that call's tool
+     * result (linked by {@code toolCallId}), so the timeline replays it as the RESULT half of an
+     * {@code assistant(tool_calls) -> tool} pair rather than as free-standing companion speech.
+     */
+    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
+                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal,
+                                            String toolCallId) {
+        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal, toolCallId);
+    }
+
+    /**
      * Creates a reflex thought: a commander input the {@code ReflexResolver} matched verbatim to exactly one
      * safe, parameterless command. It runs on the commander lane like a {@link CommanderThought} but skips the
      * LLM entirely - it just records the input, executes the resolved command, and voices/remembers its
@@ -178,6 +204,7 @@ public abstract class Thought {
      * interrupt-driven cancellation (exceptional future) is treated as no usable result (§2.9/§2.7).
      */
     protected LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
+        CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
         CompletableFuture<LlmResult> future = ctx.llmGateway()
                 .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile));
         inFlight = future;
@@ -185,25 +212,66 @@ public abstract class Thought {
             future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
         }
         try {
-            return future.join();
+            LlmResult result = future.join();
+            CompanionDiagnostics.debug(trace, "llm", describeResult(result));
+            return result;
         } catch (RuntimeException llmFailure) {
             if (!interrupted) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
                 log.warn("Companion LLM round failed; treating as no usable result", llmFailure);
             }
+            CompanionDiagnostics.debug(trace, "llm", interrupted ? "response: cancelled" : "response: failed");
             return null;
         } finally {
             inFlight = null;
         }
     }
 
-    /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot. */
+    /**
+     * One-line diagnostic for an LLM result: the tool-calls (or {@code none}/{@code INVALID}), the provider
+     * finish reason, and the length + snippet of any free text the model returned alongside the tool-calls -
+     * which the consciousness turn discards. A non-zero {@code dropped-text} means the model "answered" as plain
+     * text instead of a {@code speak} call, which reads in the log as a silent turn (see LlmResult.droppedText).
+     */
+    private static String describeResult(LlmResult result) {
+        if (result == null) {
+            return "response: none";
+        }
+        StringBuilder sb = new StringBuilder(result.isValid()
+                ? "response: " + CompanionDiagnostics.calls(result.toolInvocations())
+                : "response: INVALID");
+        if (result.finishReason() != null) {
+            sb.append(" | finish=").append(result.finishReason());
+        }
+        String dropped = result.droppedText();
+        if (dropped != null && !dropped.isBlank()) {
+            sb.append(" | dropped-text=").append(dropped.length())
+                    .append(": \"").append(CompanionDiagnostics.truncate(dropped)).append("\"");
+        } else {
+            sb.append(" | dropped-text=0");
+        }
+        return sb.toString();
+    }
+
+    /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */
     protected ComposedPrompt composeInitialPrompt() {
-        return ctx.promptComposer().compose(
-                source, urgency, ctx.state().globalTopic(), matchInput,
-                selectedGameTools(), systemTools(),
-                ctx.memoryGateway().readShortTermTimeline(),
-                ctx.memoryGateway().indexes());
+        List<LlmToolDefinition> gameTools = selectedGameTools();
+        List<LlmToolDefinition> sysTools = systemTools();
+        List<MemoryEntry> timeline = ctx.memoryGateway().readShortTermTimeline();
+        List<MemoryFactCandidates.Fact> candidates = memoryCandidates();
+        CompanionDiagnostics.debug(trace, "compose",
+                "gameTools=" + CompanionDiagnostics.names(gameTools)
+                        + " sysTools=" + CompanionDiagnostics.names(sysTools)
+                        + " facts=" + candidates.size() + " timeline=" + timeline.size());
+        return ctx.promptComposer().compose(source, matchInput, gameTools, sysTools, timeline, candidates);
+    }
+
+    /**
+     * Pre-turn clean memory answer facts to inline in the prompt (see {@code MemoryFactCandidates}). Default
+     * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
+     */
+    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
+        return List.of();
     }
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
@@ -213,11 +281,27 @@ public abstract class Thought {
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
     protected JsonObject execute(LlmToolInvocation inv) {
+        return execute(inv, null);
+    }
+
+    /**
+     * As {@link #execute(LlmToolInvocation)}, but tags the run with the tool-call id, so a command handler's
+     * own narration (emitted during {@code handle()} on the lane thread) is recorded as this call's tool result
+     * (see {@link ActiveToolCall}). A {@code null} id runs with no pairing (system functions, plain reflexes).
+     */
+    protected JsonObject execute(LlmToolInvocation inv, String toolCallId) {
+        // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
+        // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
+        // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
+        if (ctx.actionTypeResolver().resolve(inv.name()).isGameAction()) {
+            CompanionDiagnostics.debug(trace, "exec", inv.name() + CompanionDiagnostics.args(inv.arguments()));
+        }
         try {
             return ctx.executionGateway()
-                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments()))
+                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), toolCallId))
                     .join();
         } catch (RuntimeException failed) {
+            CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
             return executionError(inv.name(), failed);
         }
     }
@@ -233,23 +317,42 @@ public abstract class Thought {
         return error;
     }
 
-    /** Records the current input under the resolved topic before tool-calls run (§2.6). */
+    /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
+        String canonical = memoryCanonicalFact();
+        CompanionDiagnostics.debug(trace, "memory",
+                "record input [" + memoryTopic() + "/" + memoryImportance() + "]: \"" + CompanionDiagnostics.truncate(currentInput) + "\"");
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance()));
+                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance(),
+                null, canonical == null || canonical.isBlank() ? null : canonical));
+    }
+
+    /**
+     * Optional clean one-line restatement of a durable fact stated this turn, used only as the memory
+     * candidate/embedding text (the verbatim input stays the ground truth). Empty by default; a COMMANDER
+     * thought supplies it from {@code classify_turn}.
+     */
+    protected String memoryCanonicalFact() {
+        return "";
     }
 
     /**
      * Records what the companion actually said as its own {@code COMPANION} timeline entry - the spoken text
      * itself, not a {@code {"status":"spoken"}} ack - so a future thought (which reads the past only through
      * memory) knows it already answered. A blank utterance is not recorded.
+     * <p>
+     * Stamped {@link MemoryImportance#LOW}, not the turn's importance: the companion's own words are never a
+     * durable fact (only the commander's statements and events are). It stays in the recent timeline for
+     * continuity but never surfaces as a memory candidate, so a fact turn's reply/acknowledgement ("understood,
+     * noted...") cannot pollute recall.
      */
     protected void recordCompanionSpeech(String text) {
         if (text == null || text.isBlank()) {
             return;
         }
+        CompanionDiagnostics.debug(trace, "memory", "record reply: \"" + CompanionDiagnostics.truncate(text) + "\"");
         ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, memoryImportance()));
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
@@ -258,30 +361,56 @@ public abstract class Thought {
     }
 
     /**
-     * Records a tool outcome by action type. Commands and macros are self-narrating: the handler voices its
-     * own outcome through the bridge, so we only remember that it ran (an {@code IntelCommand} returns no
-     * {@code text_to_speech_response}, so there is nothing to voice here). A query answer is self-narrating
-     * too: it is published as an {@link AiVoxResponseEvent} (mirroring the legacy router), so the companion's
-     * {@code CompanionAnnouncementBridge} voices and remembers it via a verbatim narration.
+     * Records a tool outcome by action type as the RESULT half of a replayed {@code assistant(tool_calls) ->
+     * tool} pair (its CALL half is written by {@link #recordCall} before the call runs). Commands and macros
+     * are self-narrating: the handler voices its own outcome, which the {@code CompanionAnnouncementBridge}
+     * records as this call's tool result via the active tool-call id the execution gateway set around
+     * {@code handle()} - so nothing is written here (a silent command leaves the call resultless; the composer
+     * synthesizes one so the pair stays valid). A query answer is self-narrating too: it is published as an
+     * {@link AiVoxResponseEvent} with the active id set, so the bridge records the answer as this call's tool
+     * result rather than free-standing companion speech.
      */
-    protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools) {
+    protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
+                                 String toolCallId) {
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND -> rememberAction("command " + inv.name() + " executed", memoryDescription(inv.name(), tools));
+            case COMMAND, MACRO -> { /* handler-voiced; recorded as this call's RESULT via ActiveToolCall */ }
             case QUERY -> {
-                // Self-narrating: the answer rides the AiVoxResponseEvent path and is owned by the bridge.
                 // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
                 // the single owner of verbatim narration (topic tagging + completion-future handling), so the
                 // answer converges with command/macro narration on one path, mirroring the legacy router.
-                // This relies on an implicit ordering: the bridge must be subscribed and the legacy
-                // VocalisationRouter silenced in companion mode - otherwise the answer is double-voiced or lost.
+                // The active tool-call id makes the bridge record it as this call's RESULT, not loose speech.
                 String answer = spokenTextOf(result);
                 if (!answer.isBlank()) {
-                    GameEventBus.publish(new AiVoxResponseEvent(answer));
+                    ActiveToolCall.runWith(toolCallId, () -> GameEventBus.publish(new AiVoxResponseEvent(answer)));
                 }
             }
-            case MACRO -> rememberAction("macro " + inv.name() + " executed", memoryDescription(inv.name(), tools));
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
+    }
+
+    /**
+     * Records the model's tool-call as a {@code COMPANION} entry carrying a {@link ToolLink.Kind#CALL} link, so
+     * the timeline replays as an {@code assistant(tool_calls)} message paired with its {@code tool} result.
+     * Written before the call runs (LOW importance: a call is bookkeeping, never a durable fact).
+     */
+    protected void recordCall(String toolCallId, LlmToolInvocation inv) {
+        String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
+        ctx.memoryGateway().write(new MemoryEntry(
+                Instant.now(), memoryTopic(), MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
+                null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
+    }
+
+    /**
+     * Records a tool result as a {@code TOOL_RESULT} entry linked to its call by {@code toolCallId} - the RESULT
+     * half of the replayed pair. A blank result is not recorded (the composer synthesizes one if the call has none).
+     */
+    protected void recordToolResult(String toolCallId, String text) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        ctx.memoryGateway().write(new MemoryEntry(
+                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
+                null, null, ToolLink.result(toolCallId)));
     }
 
     /** The handler-provided spoken text in a tool result, or empty when absent. */
@@ -294,31 +423,8 @@ public abstract class Thought {
         if (text == null || text.isBlank()) {
             return;
         }
+        CompanionDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + CompanionDiagnostics.truncate(text) + "\"");
         ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
-    }
-
-    /** The description shown to the LLM for a tool id (its {@code llmDescription} / fallback), or empty. */
-    protected static String description(String id, List<LlmToolDefinition> tools) {
-        return tools.stream().filter(tool -> id.equals(tool.name())).findFirst()
-                .map(LlmToolDefinition::description).orElse("");
-    }
-
-    /** The compact action description stored in memory; examples stay LLM-facing only. */
-    protected static String memoryDescription(String id, List<LlmToolDefinition> tools) {
-        String raw = description(id, tools);
-        if (raw == null || raw.isBlank()) {
-            return "";
-        }
-        String detail = raw.strip();
-        int exampleStart = detail.toLowerCase(Locale.ROOT).indexOf("example phrases");
-        return exampleStart < 0 ? detail : detail.substring(0, exampleStart).strip();
-    }
-
-    /** A compact timeline entry ("lead" + optional detail) as TOOL_RESULT - no raw {@code {data:...}}. */
-    protected void rememberAction(String lead, String detail) {
-        String content = detail == null || detail.isBlank() ? lead : lead + ": " + detail;
-        ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, content, memoryImportance()));
     }
 
     /**

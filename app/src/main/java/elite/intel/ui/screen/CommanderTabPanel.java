@@ -52,13 +52,37 @@ public class CommanderTabPanel extends JPanel {
     private static final int COL_PERSONALITY = 3;
     private static final int COL_GEAR = 4;
 
-    /** i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor. */
+    /**
+     * i18n key prefix for {@link ShipPersonality} labels; single owner for the cell renderer and the dropdown editor.
+     */
     private static final String PERSONALITY_I18N_PREFIX = "ship.personality.";
 
-    /** Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label. */
+    /**
+     * Maps a {@link ShipPersonality} enum name to its localized, HUD-cased display label.
+     */
     private static String personalityLabel(String enumName) {
         return getText(PERSONALITY_I18N_PREFIX + enumName.toLowerCase(Locale.ROOT))
                 .toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * Maps a stored voice enum name to a readable "DisplayName - accent" label, resolved against the active
+     * TTS provider's voices. The accent disambiguates voices that share a display name (e.g. Spanish vs
+     * Portuguese "Dora"). Falls back to the raw name when the stored voice is not valid for the active
+     * provider (for example after a TTS provider switch).
+     */
+    private static String voiceLabel(String enumName) {
+        if (enumName == null) return "";
+        try {
+            if (SystemSession.getInstance().useLocalTTS()) {
+                KokoroVoices v = KokoroVoices.valueOf(enumName);
+                return v.getDisplayName() + " - " + v.getDescription();
+            }
+            GoogleVoices v = GoogleVoices.valueOf(enumName);
+            return v.getDisplayName() + " - " + v.getDescription();
+        } catch (IllegalArgumentException e) {
+            return enumName;
+        }
     }
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -201,7 +225,7 @@ public class CommanderTabPanel extends JPanel {
 
         fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
         fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(null));
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::voiceLabel));
         fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
         fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
@@ -238,8 +262,9 @@ public class CommanderTabPanel extends JPanel {
         String[] voiceOptions = useLocal
                 ? Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new)
                 : Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
+        // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
-                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions)));
+                .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, CommanderTabPanel::voiceLabel)));
 
         String[] personalityOptions =
                 Arrays.stream(ShipPersonality.values()).map(Enum::name).toArray(String[]::new);
@@ -392,7 +417,9 @@ public class CommanderTabPanel extends JPanel {
 
     // -------------------------------------------------------------------------
 
-    /** Combo cell editor that keeps HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND background regardless of row selection. */
+    /**
+     * Combo cell editor that keeps HUD_COLOR_ROLE_TABLE_CELL_BACKGROUND background regardless of row selection.
+     */
     private static final class HudComboCellEditor extends DefaultCellEditor {
         HudComboCellEditor(HudComboBox<String> combo) {
             super(combo);

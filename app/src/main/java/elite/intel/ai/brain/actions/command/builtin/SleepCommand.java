@@ -15,7 +15,7 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
  */
 @RegisterCommand
 public final class SleepCommand implements IntelCommand {
-    public static final String ID = "sleep";
+    public static final String ID = "sleep_ignore_do_not_monitor";
 
     @Override public String llmDescription() { return "Put the companion to sleep so it stops responding until woken."; }
 

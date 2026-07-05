@@ -118,6 +118,42 @@ class MistralLlmAdapterTest {
     }
 
     @Test
+    void capturesFinishReasonAndFreeTextAlongsideToolCall() {
+        JsonObject function = new JsonObject();
+        function.addProperty("name", "classify_turn");
+        function.addProperty("arguments", "{}");
+        JsonObject call = new JsonObject();
+        call.addProperty("id", "call-1");
+        call.add("function", function);
+        JsonArray calls = new JsonArray();
+        calls.add(call);
+        JsonObject message = new JsonObject();
+        message.add("tool_calls", calls);
+        message.addProperty("content", "answered as text"); // the free text a consciousness turn discards
+        JsonObject choice = new JsonObject();
+        choice.add("message", message);
+        choice.addProperty("finish_reason", "stop");
+        JsonArray choices = new JsonArray();
+        choices.add(choice);
+        JsonObject response = new JsonObject();
+        response.add("choices", choices);
+
+        LlmResult result = adapter.parse(response);
+        assertTrue(result.isValid());
+        assertEquals("stop", result.finishReason());
+        assertEquals("answered as text", result.droppedText());
+    }
+
+    @Test
+    void malformedChoicesDegradeToInvalidWithoutThrowing() {
+        // "choices" present but the wrong shape (a string, not an array): must yield INVALID, never throw out
+        // of parse() - otherwise the gateway's repair/retry path is bypassed.
+        JsonObject response = new JsonObject();
+        response.addProperty("choices", "not-an-array");
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(response).status());
+    }
+
+    @Test
     void parsesTextContentForCompression() {
         assertEquals("a compact summary", adapter.parseText(responseWithText("  a compact summary  ")));
     }

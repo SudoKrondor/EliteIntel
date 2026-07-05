@@ -14,6 +14,8 @@ package elite.intel.ai.mouth.kokoro;
  *   pf_ = Portuguese Female pm_ = Portuguese Male
  *   zf_ = Chinese Female    zm_ = Chinese Male
  * <p>
+ * The fleet grid renders each voice by its raw enum name; voices are not localized.
+ * <p>
  * Source: https://k2-fsa.github.io/sherpa/onnx/tts/pretrained_models/kokoro.html
  */
 public enum KokoroVoices {

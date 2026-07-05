@@ -6,6 +6,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.DataDirectoryValidator;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.dialog.AssignKeyboardBindingDialog;
+import elite.intel.ui.dialog.ClearKeyboardBindingDialog;
 import elite.intel.ui.event.BindingsSummaryChangedEvent;
 import elite.intel.ui.event.BindingsUpdatedEvent;
 import elite.intel.ui.event.KeymapSyncStateChangedEvent;
@@ -99,6 +100,7 @@ public class BindingProfilePanel extends JPanel {
         selectionController = new BindingsSelectionController();
         tableFactory = new BindingsGroupTableFactory(
                 selectionController, this::openAssignKeyboardBindingDialog, this::autoFixSingleBinding,
+                this::openClearKeyboardBindingDialog,
                 // Lambda (not a bound method ref) so it reads the field live: the map is
                 // reassigned on each load, and a bound method ref would pin the initial empty map.
                 id -> conflictsByBinding.containsKey(id),
@@ -315,8 +317,8 @@ public class BindingProfilePanel extends JPanel {
             clearLoadedBindingsSnapshot();
             profileField.setText(getText("bindings.notAvailable"));
             filePathField.setText(getText("bindings.notAvailable"));
-            renderGroupedTables(usedBindingsPanel, Map.of(), getText("bindings.column.action"));
-            renderGroupedTables(missingBindingsPanel, Map.of(), getText("bindings.column.action"));
+            renderGroupedTables(usedBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
+            renderGroupedTables(missingBindingsPanel, Map.of(), BindingsGroupTableFactory.RowAction.NONE, getText("bindings.column.action"));
             tabs.setTitleAt(0, getText("bindings.usedBindings", 0));
             tabs.setTitleAt(1, getText("bindings.missingBindings", 0));
             fixAllButton.setEnabled(false);
@@ -648,16 +650,18 @@ public class BindingProfilePanel extends JPanel {
     private Map<BindingGroup, List<Object[]>> groupedBindings(
             List<String> bindingIds,
             Map<String, KeyBindingsParser.ReadOnlyBindingSlots> slots,
-            boolean withAutoFix
+            BindingsGroupTableFactory.RowAction rowAction
     ) {
         Map<BindingGroup, List<Object[]>> grouped = groupedRows();
         for (String bindingId : bindingIds) {
             KeyBindingsParser.ReadOnlyBindingSlots bindingSlots = slots.get(bindingId);
             String primary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.primary());
             String secondary = slotFormatter.formatSlot(bindingSlots == null ? null : bindingSlots.secondary());
-            Object[] row = withAutoFix
-                    ? new Object[]{bindingId, primary, secondary, getText("bindings.column.autofix.action")}
-                    : new Object[]{bindingId, primary, secondary};
+            Object[] row = switch (rowAction) {
+                case AUTO_FIX -> new Object[]{bindingId, primary, secondary, getText("bindings.column.autofix.action")};
+                case CLEAR -> new Object[]{bindingId, primary, secondary, getText("bindings.column.clear.action")};
+                case NONE -> new Object[]{bindingId, primary, secondary};
+            };
             grouped.get(BindingGroupClassifier.classify(bindingId)).add(row);
         }
         return grouped;
@@ -743,15 +747,18 @@ public class BindingProfilePanel extends JPanel {
 
         renderGroupedTables(
                 usedBindingsPanel,
-                groupedBindings(filterConflictsOnly(usedBindings), currentSlots, false),
+                groupedBindings(filterConflictsOnly(usedBindings), currentSlots, BindingsGroupTableFactory.RowAction.CLEAR),
+                BindingsGroupTableFactory.RowAction.CLEAR,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
-                getText("bindings.column.secondary"));
+                getText("bindings.column.secondary"),
+                getText("bindings.column.clear"));
         tabs.setTitleAt(0, getText("bindings.usedBindings", usedBindings.size()));
 
         renderGroupedTables(
                 missingBindingsPanel,
-                groupedBindings(filterConflictsOnly(missingBindings), currentSlots, true),
+                groupedBindings(filterConflictsOnly(missingBindings), currentSlots, BindingsGroupTableFactory.RowAction.AUTO_FIX),
+                BindingsGroupTableFactory.RowAction.AUTO_FIX,
                 getText("bindings.column.action"),
                 getText("bindings.column.primary"),
                 getText("bindings.column.secondary"),
@@ -882,7 +889,7 @@ public class BindingProfilePanel extends JPanel {
     }
 
     private void renderGroupedTables(JPanel targetPanel, Map<BindingGroup, List<Object[]>> grouped,
-            String... columnNames) {
+                                     BindingsGroupTableFactory.RowAction rowAction, String... columnNames) {
         targetPanel.removeAll();
         for (BindingGroup group : BindingGroup.values()) {
             List<Object[]> rows = grouped.getOrDefault(group, List.of()).stream()
@@ -892,7 +899,7 @@ public class BindingProfilePanel extends JPanel {
                 continue;
 
             targetPanel.add(sectionHeader(group));
-            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), columnNames));
+            targetPanel.add(tableFactory.groupTable(rows, outerScrollPaneFor(targetPanel), rowAction, columnNames));
             targetPanel.add(Box.createVerticalStrut(6));
         }
         targetPanel.add(Box.createVerticalGlue());
@@ -979,6 +986,53 @@ public class BindingProfilePanel extends JPanel {
         return modifiers == null || modifiers.isEmpty()
                 ? bindingsWriter.assignKeyboardKey(edit)
                 : bindingsWriter.assignKeyboardKeyWithModifiers(edit, modifiers);
+    }
+
+    /**
+     * Opens the per-row "clear keyboard binding" dialog for the Used view. The dialog offers to clear
+     * the Primary and/or Secondary <em>keyboard</em> slot while leaving any Controller/HOTAS binding in
+     * the other slot untouched. The actual edit + reload is delegated back via {@link #clearKeyboardSlot}.
+     */
+    private void openClearKeyboardBindingDialog(String bindingId) {
+        if (bindingId == null || bindingId.isBlank() || activeBindingsFile == null) {
+            return;
+        }
+        // Opened from a row click - no mouseExited fires, so drop the hover callout explicitly.
+        tableFactory.hideConflictPopup();
+
+        KeyBindingsParser.ReadOnlyBindingSlots slots = currentSlots.get(bindingId);
+        if (slots == null) {
+            return;
+        }
+        ClearKeyboardBindingDialog dialog = new ClearKeyboardBindingDialog(
+                this, bindingId, slots, slotType -> clearKeyboardSlot(bindingId, slotType));
+        dialog.showDialog();
+    }
+
+    /**
+     * Clears one slot's keyboard binding in the working copy, reloads, and returns the row's refreshed
+     * slots so the dialog can re-evaluate what is left to clear. Clearing writes Elite's empty-slot
+     * marker for that slot only; the other slot (and any HOTAS binding on it) is not touched.
+     */
+    private ClearKeyboardBindingDialog.ClearOutcome clearKeyboardSlot(String bindingId, BindingSlotType slotType) {
+        if (activeBindingsFile == null || activeBindingsLastModified == null || activeBindingsFileSize < 0) {
+            return new ClearKeyboardBindingDialog.ClearOutcome(false, currentSlots.get(bindingId));
+        }
+        KeyboardBindingEdit edit = new KeyboardBindingEdit(
+                activeBindingsFile.toPath(),
+                bindingId,
+                slotType,
+                null, // null key clears the slot
+                activeBindingsLastModified,
+                activeBindingsFileSize
+        );
+        BindingSaveResult result = bindingsWriter.assignKeyboardKey(edit);
+        boolean success = result == BindingSaveResult.SAVED || result == BindingSaveResult.NO_CHANGE;
+        if (success || result == BindingSaveResult.STALE_FILE) {
+            // Reload so the tables and snapshot re-sync; a stale file also needs a reload before retry.
+            initData();
+        }
+        return new ClearKeyboardBindingDialog.ClearOutcome(success, currentSlots.get(bindingId));
     }
 
     private boolean isBasicEditableSlot(KeyBindingsParser.ReadOnlyBindingSlot slot) {

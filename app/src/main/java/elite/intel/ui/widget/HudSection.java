@@ -18,6 +18,8 @@ public class HudSection extends HudPanel {
     private final JPanel body;
     private final Variant sectionVariant;
     private final JLabel headerLabel;
+    private final JPanel header;
+    private JComponent headerAction;
     private JComponent footer;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
 
@@ -77,7 +79,7 @@ public class HudSection extends HudPanel {
                 borderColor == null ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : borderColor);
 
         headerLabel = AppTheme.hudSectionLabel(title == null ? "" : title.toUpperCase());
-        JPanel header = AppTheme.transparentPanel(new BorderLayout());
+        header = AppTheme.transparentPanel(new BorderLayout());
         header.setBorder(BorderFactory.createEmptyBorder(3, HEADER_H_INSET, 4, HEADER_H_INSET));
         header.add(headerLabel, BorderLayout.WEST);
         add(header, BorderLayout.NORTH);
@@ -116,6 +118,40 @@ public class HudSection extends HudPanel {
      */
     public JPanel body() {
         return body;
+    }
+
+    /**
+     * Places one or more icon-only actions (typically {@link HudGlyphButton}s) at the right edge of the section
+     * header strip, opposite the title, laid out left-to-right in the given order (so the last argument sits
+     * flush at the right inset). Replaces any previous header actions; pass no arguments to clear them.
+     * <p>
+     * The actions sit in a {@link GridLayout} strip whose height is pinned to the title-row height, so the header
+     * never grows to the full compact-control footprint of the buttons. {@code GridLayout} stretches each action
+     * to the strip's full height (like a single action in {@code BorderLayout.EAST}), so each button's own paint
+     * keeps its glyph vertically centred rather than clipped at the top.
+     *
+     * @param actions header action components in left-to-right order (empty to clear)
+     */
+    public void setHeaderActions(JComponent... actions) {
+        if (headerAction != null) {
+            header.remove(headerAction);
+            headerAction = null;
+        }
+        if (actions != null && actions.length > 0) {
+            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_TIGHT, 0));
+            for (JComponent action : actions) {
+                strip.add(action);
+            }
+            // Pin the strip (not the buttons) to the title-row height: the header grows only to that height, while
+            // GridLayout stretches each button to it so the glyph stays centred.
+            Dimension pinned = new Dimension(strip.getPreferredSize().width, headerLabel.getPreferredSize().height);
+            strip.setPreferredSize(pinned);
+            strip.setMaximumSize(pinned);
+            headerAction = strip;
+            header.add(strip, BorderLayout.EAST);
+        }
+        header.revalidate();
+        header.repaint();
     }
 
     /**

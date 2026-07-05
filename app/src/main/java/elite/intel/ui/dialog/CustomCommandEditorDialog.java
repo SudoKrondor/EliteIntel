@@ -103,10 +103,18 @@ public final class CustomCommandEditorDialog extends JDialog {
                 getText("actions.customCommands.editor.section.identity"), new BorderLayout());
         identitySection.body().add(form(), BorderLayout.CENTER);
 
-        // Two columns: left = identity (top) + parameters (fills); right = steps (fills).
-        JPanel leftColumn = AppTheme.transparentPanel(new BorderLayout(0, HudPalette.HUD_GAP));
-        leftColumn.add(identitySection, BorderLayout.NORTH);
-        leftColumn.add(paramsPanel(), BorderLayout.CENTER);
+        JPanel leftColumn = AppTheme.transparentPanel(new GridBagLayout());
+        GridBagConstraints lc = new GridBagConstraints();
+        lc.gridx = 0;
+        lc.gridy = 0;
+        lc.weightx = 1;
+        lc.weighty = 0.6;             // identity + phrases get the larger share of the flexible height
+        lc.fill = GridBagConstraints.BOTH;
+        leftColumn.add(identitySection, lc);
+        lc.gridy = 1;
+        lc.weighty = 0.4;            // parameters keep a fair share on top of their guaranteed minimum
+        lc.insets = new Insets(HudPalette.HUD_GAP, 0, 0, 0);
+        leftColumn.add(paramsPanel(), lc);
 
         JPanel columns = new HudTwoColumns(leftColumn, stepsPanel());
 
@@ -138,12 +146,16 @@ public final class CustomCommandEditorDialog extends JDialog {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         getRootPane().setDefaultButton(save);
         pack();
-        setMinimumSize(new Dimension(1000, 560));
+        setMinimumSize(new Dimension(1000, 640));
         // Match the main window width so the full-width table toolbars have room (no label clipping);
         // force the final size before centering so the window doesn't drift.
         Window owner = getOwner();
         int targetWidth = owner != null && owner.getWidth() > 0 ? owner.getWidth() : 1000;
-        setSize(Math.max(targetWidth, 1000), Math.max(getHeight(), 560));
+        int targetHeight = Math.max(getHeight(), 720);
+        if (owner != null && owner.getHeight() > 0) {
+            targetHeight = Math.min(targetHeight, owner.getHeight());
+        }
+        setSize(Math.max(targetWidth, 1000), Math.max(targetHeight, 640));
         setLocationRelativeTo(owner);
     }
 
@@ -245,7 +257,9 @@ public final class CustomCommandEditorDialog extends JDialog {
             }
         });
         JScrollPane scroll = HudTable.scrollPane(paramsTable);
-        scroll.setPreferredSize(new Dimension(0, 130));
+        int paramRows = paramsTable.getRowHeight() * 3 + paramsTable.getTableHeader().getPreferredSize().height;
+        scroll.setMinimumSize(new Dimension(0, paramRows));
+        scroll.setPreferredSize(new Dimension(0, paramRows));
         panel.body().add(scroll, BorderLayout.CENTER);
 
         // Table toolbar: buttons stretch evenly across the full table width.

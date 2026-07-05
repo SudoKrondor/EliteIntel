@@ -26,10 +26,19 @@ public final class IntelActionTypeResolver {
         QUERY,
         /** User-defined macro (custom command). */
         MACRO,
-        /** Companion system function (speak, classify_turn, clarify, search_in_memory). */
+        /** Companion system function (speak, classify_turn, memory_search). */
         SYSTEM,
         /** Id not found in any registry. */
-        UNKNOWN
+        UNKNOWN;
+
+        /**
+         * Whether this is a game action the LLM invoked - a command, query or macro - as opposed to a companion
+         * system function or an unknown id. Game actions get a tool-call id (for pair replay), withhold the LLM's
+         * own {@code speak} for the turn, and are the turn's settling headline. The single owner of that grouping.
+         */
+        public boolean isGameAction() {
+            return this == COMMAND || this == QUERY || this == MACRO;
+        }
     }
 
     private final Function<String, IntelActionType> resolver;

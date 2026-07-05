@@ -2,6 +2,7 @@ package elite.intel.companion.prompt;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -73,15 +75,22 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
         if (candidates.isEmpty()) {
+            // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
+            // selection outcome, so it needs no line; a non-empty set that yielded nothing is worth surfacing.
+            if (!allowedCategories.isEmpty()) {
+                CompanionDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);
+            }
             return List.of();
         }
         // A blank input has no meaning to embed; the word-overlap fallback owns the "offer all" blank-input rule.
         if (currentInput == null || currentInput.isBlank()) {
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             // Embedding model unavailable: degrade to word-overlap for the rest of the session (documented contract).
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
         try {
@@ -89,6 +98,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         } catch (RuntimeException embedFailure) {
             // WHY: a transient embed failure must not drop the turn's tools; degrade to word-overlap for this turn.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
     }
@@ -109,6 +119,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             best = Math.max(best, scores[i]);
         }
         if (best < SEM_FLOOR) {
+            CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+                    "semantic: candidates=%d best=%.3f < floor %.2f -> no game tools (conversation/recall)",
+                    candidates.size(), best, SEM_FLOOR));
             return List.of();
         }
 
@@ -133,6 +146,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 result.add(candidate.tool());
             }
         }
+        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+                "semantic: candidates=%d best=%.3f cutoff=%.3f kept=%d -> %s",
+                candidates.size(), best, cutoff, result.size(), CompanionDiagnostics.names(result)));
         return result;
     }
 }

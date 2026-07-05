@@ -65,9 +65,9 @@ public class AnalyzeFleetCarrierDataQueryCommand extends BaseQueryAnalyzer imple
                     new AiDataStruct(
                             instructions,
                             new DataDto(
-                                    stats.getReserveBalance(),
-                                    stats.getTotalBalance(),
-                                    stats.getMarketBalance(),
+                                    Math.abs(stats.getReserveBalance()),
+                                    Math.abs(stats.getTotalBalance()),
+                                    Math.abs(stats.getMarketBalance()),
                                     stats.getFuelLevel(),
                                     stats.getFuelReserve(),
                                     (stats.getFuelLevel() + stats.getFuelReserve()),

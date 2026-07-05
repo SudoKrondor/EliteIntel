@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestFR {
 
-    private static final int LLM_WAIT_MS = 8000;
+    private static final int LLM_WAIT_MS = 3000;
     private static final int LLM_POLL_MS = 100;
 
     private HandlerCapture capture;
@@ -58,6 +58,7 @@ public class NaturalSpeechIntegrationTestFR {
     void bootstrap() throws InterruptedException {
         SystemSession systemSession = SystemSession.getInstance();
         systemSession.setConversationalMode(false);
+        systemSession.setCompanionMode(true);
         systemSession.setLanguage(Language.FR);
         HeadlessBootstrap.start();
         WebSocketBroadcaster.getInstance().start();

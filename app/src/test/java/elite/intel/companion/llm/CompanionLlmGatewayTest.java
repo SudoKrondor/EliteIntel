@@ -11,6 +11,7 @@ import elite.intel.companion.model.llm.PromptCacheProfile;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,9 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class CompanionLlmGatewayTest {
 
-    /** Adapter stub: renders nothing, returns scripted parse results in order. */
+    /** Adapter stub: renders nothing (but records each request's messages), returns scripted parse results in order. */
     private static final class ScriptedAdapter implements LlmProviderAdapter {
         private final Deque<LlmResult> results = new ArrayDeque<>();
+        private LlmRequest lastRequest;
 
         ScriptedAdapter(LlmResult... scripted) {
             for (LlmResult r : scripted) {
@@ -37,6 +39,7 @@ class CompanionLlmGatewayTest {
 
         @Override
         public String buildRequestBody(LlmRequest request) {
+            lastRequest = request;
             return "{}";
         }
 
@@ -58,14 +61,28 @@ class CompanionLlmGatewayTest {
     };
 
     private static LlmRequest request() {
+        return requestOffering("speak");
+    }
+
+    /** A request offering exactly the given tools; offering "classify_turn" makes it a classifying turn. */
+    private static LlmRequest requestOffering(String... toolNames) {
+        List<LlmToolDefinition> tools = new ArrayList<>();
+        for (String name : toolNames) {
+            tools.add(new LlmToolDefinition(name, "d", "", List.of()));
+        }
         return new LlmRequest("req-1",
                 List.of(LlmMessage.of(LlmMessageRole.SYSTEM, "rules")),
-                List.of(new LlmToolDefinition("speak", "d", "", List.of())),
+                List.copyOf(tools),
                 PromptCacheProfile.COMMANDER);
     }
 
-    private static LlmResult ok(String toolName) {
-        return new LlmResult(LlmResult.Status.OK, List.of(new LlmToolInvocation("c1", toolName, new JsonObject())));
+    private static LlmResult ok(String... toolNames) {
+        List<LlmToolInvocation> calls = new ArrayList<>();
+        int id = 1;
+        for (String name : toolNames) {
+            calls.add(new LlmToolInvocation("c" + id++, name, new JsonObject()));
+        }
+        return new LlmResult(LlmResult.Status.OK, List.copyOf(calls));
     }
 
     private static LlmResult invalid() {
@@ -73,7 +90,11 @@ class CompanionLlmGatewayTest {
     }
 
     private LlmResult run(LlmProviderAdapter adapter) throws Exception {
-        return new CompanionLlmGateway(adapter, countingTransport, Runnable::run).submit(request()).get();
+        return run(adapter, request());
+    }
+
+    private LlmResult run(LlmProviderAdapter adapter, LlmRequest request) throws Exception {
+        return new CompanionLlmGateway(adapter, countingTransport, Runnable::run).submit(request).get();
     }
 
     @Test
@@ -105,5 +126,49 @@ class CompanionLlmGatewayTest {
         LlmResult result = run(new ScriptedAdapter(ok("jump"), ok("jump")));
         assertFalse(result.isValid());
         assertEquals(2, sends.get());
+    }
+
+    @Test
+    void missingClassifyTurnIsRepairedWithATargetedNudge() throws Exception {
+        // A classifying turn (classify_turn offered): a speak-only response draws one retry whose nudge
+        // names classify_turn; the repaired response is returned.
+        ScriptedAdapter adapter = new ScriptedAdapter(ok("speak"), ok("classify_turn", "speak"));
+        LlmResult result = run(adapter, requestOffering("speak", "classify_turn"));
+
+        assertTrue(result.isValid());
+        assertEquals(2, sends.get());
+        assertEquals(2, result.toolInvocations().size());
+        String nudge = adapter.lastRequest.messages().get(adapter.lastRequest.messages().size() - 1).content();
+        assertTrue(nudge.contains("classify_turn"), "the repair nudge must name the omitted call, was: " + nudge);
+    }
+
+    @Test
+    void classifyStillMissingAfterRetryDegradesGracefullyToTheValidResponse() throws Exception {
+        // Both responses lack classify_turn but are otherwise valid: the turn must still settle with the
+        // model's answer (memory stamping degrades), never fall to the INVALID service phrase.
+        LlmResult result = run(new ScriptedAdapter(ok("speak"), ok("speak")),
+                requestOffering("speak", "classify_turn"));
+
+        assertTrue(result.isValid());
+        assertEquals("speak", result.toolInvocations().get(0).name());
+        assertEquals(2, sends.get());
+    }
+
+    @Test
+    void bareClassifyTurnAloneIsAcceptedWithoutRetry() throws Exception {
+        // A pure-ack turn legitimately ends with classify_turn alone; the protocol check must not retry it.
+        LlmResult result = run(new ScriptedAdapter(ok("classify_turn")), requestOffering("speak", "classify_turn"));
+
+        assertTrue(result.isValid());
+        assertEquals(1, sends.get());
+    }
+
+    @Test
+    void turnWithoutClassifyOfferedNeverRequiresIt() throws Exception {
+        // A narration-style turn does not offer classify_turn, so a speak-only response is fine as-is.
+        LlmResult result = run(new ScriptedAdapter(ok("speak")), requestOffering("speak"));
+
+        assertTrue(result.isValid());
+        assertEquals(1, sends.get());
     }
 }

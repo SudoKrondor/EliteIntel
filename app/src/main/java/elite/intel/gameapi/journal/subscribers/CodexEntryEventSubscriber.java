@@ -106,7 +106,7 @@ public class CodexEntryEventSubscriber {
                                 Database updated. 
                                 Provide essential summary.
                         - Only facts, no speculation.
-                                - IF entry is about organics: List Genus, projected payment and minimum distance between samples required if provided.
+                                - IF entry is about organics: List Genus, projected payment to us for collecting 3 samples and minimum distance between samples required if provided.
                                 - IF there is a warning announce it, else do not mention that there are no warnings.
                         - Do not append any extra data.
                         - Express credit amounts using K (thousands) or M (millions) shorthand as appropriate (e.g. 50K, 1.2M).

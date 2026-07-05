@@ -5,7 +5,6 @@ import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
@@ -75,8 +74,11 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("set speed to 50");
         dispatcher.stop();
 
-        assertEquals(1, memory.writes.size());
+        // The bare classify_turn settles with no speak and no action, so the turn records the commander input
+        // and then a <no_reply/> boundary marker (see CommanderThought.recordSystemNote).
+        assertEquals(2, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals(MemorySource.SYSTEM, memory.writes.get(1).source());
     }
 
     @Test
@@ -109,8 +111,8 @@ class ThoughtDispatcherTest {
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("navigation", memory.writes.get(0).content());
         MemoryEntry outcome = memory.writes.get(1);
-        assertEquals(MemorySource.TOOL_RESULT, outcome.source());
-        assertEquals("command open_nav executed", outcome.content());
+        assertEquals(MemorySource.COMPANION, outcome.source(), "the reflex command is recorded as its call for pair replay");
+        assertEquals("open_nav", outcome.toolLink().toolName());
     }
 
     @Test
@@ -143,7 +145,7 @@ class ThoughtDispatcherTest {
         assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("combat mode", memory.writes.get(0).content(), "memory keeps the raw words, not the canonical form");
-        assertEquals("command switch_combat executed", memory.writes.get(1).content());
+        assertEquals("switch_combat", memory.writes.get(1).toolLink().toolName());
     }
 
     @Test
@@ -176,7 +178,7 @@ class ThoughtDispatcherTest {
         assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals(input, memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-        assertEquals("command stop_ship executed", memory.writes.get(1).content());
+        assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
     }
 
     @Test
@@ -211,7 +213,7 @@ class ThoughtDispatcherTest {
 
             assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
             assertEquals("Вега, all stop", memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-            assertEquals("command stop_ship executed", memory.writes.get(1).content());
+            assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
         } finally {
             SystemSession.getInstance().setLanguage(previousLanguage);
         }
@@ -387,9 +389,41 @@ class ThoughtDispatcherTest {
         dispatcher.submitEvent(new FakeEvent("MarketSell"));
         dispatcher.stop();
 
-        assertEquals(2, memory.writes.size());
+        // Commander turn: the input plus a <no_reply/> marker (bare classify_turn settles with no reply);
+        // event lane: one write. The separate-lane check is the two source kinds both being present.
+        assertEquals(3, memory.writes.size());
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.EVENT));
+    }
+
+    @Test
+    void interruptAfterInputRecordedWritesACutOffMarker() throws InterruptedException {
+        // An interrupt landing after the LLM round but before the turn replies (raised here while the
+        // classify_turn pre-execution runs on the lane) must leave the recorded input followed by a
+        // <cut_off/> SYSTEM boundary marker, not end silently (see CommanderThought.safeFlush). The turn is
+        // awaited BEFORE stop(): stop() nulls the lanes first, which would make the barge-in a no-op.
+        ThoughtDispatcher[] holder = new ThoughtDispatcher[1];
+        ExecutionGateway interruptingExecution = request -> {
+            holder[0].interruptLiveThoughts();
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
+        ThoughtContext ctx = new ThoughtContext(
+                new TerminatingLlm(), new FakeSpeech(), interruptingExecution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator());
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        holder[0] = dispatcher;
+        dispatcher.start();
+        dispatcher.submitCommanderInput("set speed to 50");
+        waitUntil(() -> memory.writes.size() >= 2);
+        dispatcher.stop();
+
+        assertEquals(2, memory.writes.size());
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        MemoryEntry marker = memory.writes.get(1);
+        assertEquals(MemorySource.SYSTEM, marker.source());
+        assertEquals("<cut_off/>", marker.content());
     }
 
     @Test
@@ -583,7 +617,7 @@ class ThoughtDispatcherTest {
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public MemoryAvailabilitySnapshot indexes() { return new MemoryAvailabilitySnapshot(List.of()); }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
         @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }

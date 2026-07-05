@@ -425,7 +425,7 @@ public class AiServicesSettingsPanel extends JPanel {
             if (!confirmed) {
                 return false; // abort entire save, stay in editing state
             }
-            String defaultVoice = newTtsLocal ? KokoroVoices.BELLA.name() : GoogleVoices.EMMA.name();
+            String defaultVoice = newTtsLocal ? KokoroVoices.BELLA.name() : GoogleVoices.STEVE.name();
             ShipManager.getInstance().resetAllVoicesToDefault(defaultVoice);
         }
 

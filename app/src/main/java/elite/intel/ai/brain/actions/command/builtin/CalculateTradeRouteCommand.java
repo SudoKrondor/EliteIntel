@@ -44,11 +44,12 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
-
+        // getCriteria returns null when no starting station could be resolved (it already voiced why); guard
+        // before dereferencing it, otherwise criteria.getStation() below throws an NPE.
         if (criteria == null) {
             return;
         }
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();

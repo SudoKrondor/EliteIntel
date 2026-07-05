@@ -1,5 +1,6 @@
 package elite.intel.companion.mind;
 
+import elite.intel.companion.diag.CompanionDiagnostics;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -75,6 +76,8 @@ final class ThoughtLane {
         long now = System.currentTimeMillis();
         live.forEach((thought, start) -> {
             if (now - start > millis) {
+                CompanionDiagnostics.debug(thought.trace(), "watchdog",
+                        "force-interrupt after " + (now - start) + " ms (>" + millis + ")");
                 thought.interrupt();
             }
         });
@@ -101,13 +104,19 @@ final class ThoughtLane {
             long startMillis = System.currentTimeMillis();
             live.put(thought, startMillis);
             log.info("Lane {}: {} ({}) thought started", Thread.currentThread().getName(), thought.source(), thought.urgency());
+            CompanionDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + Thread.currentThread().getName());
+            // Bind this thought's trace to the lane thread so leaf components it calls (reducer, memory recall)
+            // tag their own diagnostic lines with it (see CompanionDiagnostics.enterThought).
+            CompanionDiagnostics.enterThought(thought.trace());
             try {
                 thought.run();
             } finally {
+                CompanionDiagnostics.exitThought();
                 live.remove(thought);
                 pending.decrementAndGet(); // mark idle only after the thought has fully finished
                 log.info("Lane {}: {} thought finished in {} ms",
                         Thread.currentThread().getName(), thought.source(), System.currentTimeMillis() - startMillis);
+                CompanionDiagnostics.debug(thought.trace(), "done", (System.currentTimeMillis() - startMillis) + " ms");
             }
         };
     }

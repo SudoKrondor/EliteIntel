@@ -3,18 +3,17 @@ package elite.intel.companion.input;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioClient;
+import elite.intel.ai.brain.inference.mistral.MistralClient;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.execution.ExecutionGateway;
-import elite.intel.companion.llm.CompanionLlmGateway;
-import elite.intel.companion.llm.LlmGateway;
-import elite.intel.companion.llm.LlmTransport;
-import elite.intel.companion.llm.LmStudioLlmAdapter;
+import elite.intel.companion.llm.*;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
@@ -23,6 +22,8 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.db.dao.ShipDao;
+import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
@@ -75,6 +76,13 @@ public final class CompanionEvalHarness {
     private final AtomicLong rounds = new AtomicLong();
     // Identities of short-term entries already reported, so each memoryDeltaBlock() shows only new writes.
     private final Set<String> seenMemory = new HashSet<>();
+    // The raw body of the last LLM request this turn, so recall scoring can read the injected candidate block.
+    private volatile String lastRequestBody;
+
+    /** The LLM backend the eval drives: the local LM Studio endpoint (default) or the Mistral cloud endpoint. */
+    public enum Backend { LMSTUDIO, MISTRAL }
+
+    private final Backend backend;
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -82,19 +90,27 @@ public final class CompanionEvalHarness {
     private CompanionState state;
     private String model;
     private Language previousLanguage;
+    private ShipPersonality previousPersonality;
 
     /** @param traceFileName the file name written under {@code build/} for this eval's trace. */
     public CompanionEvalHarness(String traceFileName) {
-        this(traceFileName, Language.EN);
+        this(traceFileName, Language.EN, Backend.LMSTUDIO);
+    }
+
+    /** Creates an eval harness pinned to the requested UI/AI language on the default LM Studio backend. */
+    public CompanionEvalHarness(String traceFileName, Language language) {
+        this(traceFileName, language, Backend.LMSTUDIO);
     }
 
     /**
-     * Creates an eval harness pinned to the requested UI/AI language. The language is set before the
-     * companion graph boots, so the system prompt and localized tool aliases match the scripted input.
+     * Creates an eval harness pinned to the requested UI/AI language and LLM backend. The language is set
+     * before the companion graph boots, so the system prompt and localized tool aliases match the scripted
+     * input; the backend selects which provider's adapter and client the traced transport drives.
      */
-    public CompanionEvalHarness(String traceFileName, Language language) {
+    public CompanionEvalHarness(String traceFileName, Language language, Backend backend) {
         this.traceFile = Paths.get("build", traceFileName).toAbsolutePath();
         this.language = language;
+        this.backend = backend;
     }
 
     /** Boots the full companion subsystem and starts a fresh trace file. */
@@ -113,13 +129,31 @@ public final class CompanionEvalHarness {
         // Queries are read-only (they press no keys), so the eval runs them for real - see recordingExecution.
         Map<String, IntelQuery> queryHandlers = QueryHandlerFactory.getInstance().registerQueryHandlers();
 
-        model = SystemSession.getInstance().getLmStudioCommandModel().trim();
+        previousPersonality = SystemSession.getInstance().getAIPersonality();
+
+        // Provider wiring by backend: the adapter plus the raw transport to that provider's client (mirrors
+        // CompanionLlmGatewayFactory). The tracing transport wraps the raw send, so every backend is traced.
+        LlmProviderAdapter adapter;
+        LlmTransport rawSend;
+        switch (backend) {
+            case MISTRAL -> {
+                model = "mistral (cloud)";
+                adapter = new MistralLlmAdapter();
+                rawSend = body -> MistralClient.getInstance().sendJsonRequest(body);
+            }
+            default -> {
+                model = SystemSession.getInstance().getLmStudioCommandModel().trim();
+                adapter = new LmStudioLlmAdapter(model);
+                rawSend = body -> LMStudioClient.getInstance().sendJsonRequest(body);
+            }
+        }
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
+            lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
-                JsonObject response = LMStudioClient.getInstance().sendJsonRequest(body);
+                JsonObject response = rawSend.send(body);
                 latenciesMs.add((System.nanoTime() - t0) / 1_000_000);
                 traceRaw("\n======== LLM RESPONSE #" + round + " ========\n" + TRACE_JSON.toJson(response) + "\n");
                 return response;
@@ -128,10 +162,10 @@ public final class CompanionEvalHarness {
                 throw failure;
             }
         };
-        LlmGateway llm = new CompanionLlmGateway(new LmStudioLlmAdapter(model), tracing);
+        LlmGateway llm = new CompanionLlmGateway(adapter, tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, search_in_memory,
+        // executed (they would press keys); QUERIES and system functions (speak, memory_search,
         // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
         // topic/verbosity/speech state evolves the production way.
         ExecutionGateway recordingExecution = request -> {
@@ -179,6 +213,26 @@ public final class CompanionEvalHarness {
             SystemSession.getInstance().setLanguage(previousLanguage);
             previousLanguage = null;
         }
+        if (previousPersonality != null) {
+            applyPersonality(previousPersonality);
+            previousPersonality = null;
+        }
+    }
+
+    /** Switches the commander-chosen AI personality for the following turns (the prompt reads it live per render). */
+    public void setPersonality(ShipPersonality personality) {
+        applyPersonality(personality);
+    }
+
+    /**
+     * Writes the personality onto the active ship (personality is per-ship). {@link SystemSession#getAIPersonality()}
+     * reads it back from the same ship, so this is how the harness drives the setting production reads.
+     */
+    private static void applyPersonality(ShipPersonality personality) {
+        ShipDao.Ship ship = ShipManager.getInstance().getShip();
+        if (ship == null) return;
+        ship.setPersonality(personality.name());
+        ShipManager.getInstance().saveShip(ship);
     }
 
     // --- driving the real system over the bus ---
@@ -234,6 +288,7 @@ public final class CompanionEvalHarness {
     /** Clears the per-turn capture; call before driving input that should be scored in isolation. */
     public void beginTurn() {
         turnCalls.clear();
+        lastRequestBody = null;
     }
 
     /** Blocks until both lanes are idle (the real turn-boundary signal) or the per-turn timeout elapses. */
@@ -266,12 +321,25 @@ public final class CompanionEvalHarness {
         return !callsNamed(tool).isEmpty();
     }
 
-    /** The text passed to every speak call this turn. */
+    /**
+     * Everything the commander actually hears this turn: the LLM's own {@code speak} calls plus the spoken
+     * answer of any self-narrating query/command (a query voices its {@code text_to_speech_response} through the
+     * announcement path, not a speak call), so scoring reflects what was said regardless of which tool said it.
+     */
     public List<String> spokenTexts() {
-        return callsNamed("speak").stream()
-                .filter(c -> c.args().has("text") && !c.args().get("text").isJsonNull())
-                .map(c -> c.args().get("text").getAsString())
-                .toList();
+        List<String> spoken = new ArrayList<>();
+        for (Executed c : callsNamed("speak")) {
+            if (c.args().has("text") && !c.args().get("text").isJsonNull()) {
+                spoken.add(c.args().get("text").getAsString());
+            }
+        }
+        for (Executed c : turnCalls) {
+            String tts = str(c.result(), "text_to_speech_response");
+            if (!tts.isBlank()) {
+                spoken.add(tts);
+            }
+        }
+        return spoken;
     }
 
     /** Whether any spoken phrase this turn contains the token (case-insensitive). */
@@ -303,7 +371,7 @@ public final class CompanionEvalHarness {
     /** The mid-term topic id (lowercase enum name) whose memory holds the token, or null. */
     public String midTermTopic(String token) {
         String tok = token.toLowerCase(Locale.ROOT);
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             if (memory.recallTopicMemory(topic, null, 100).stream().anyMatch(e -> contains(e.content(), tok))) {
                 return topic.name().toLowerCase(Locale.ROOT);
             }
@@ -311,15 +379,14 @@ public final class CompanionEvalHarness {
         return null;
     }
 
-    /** Whether the model called search_in_memory this turn. */
-    public boolean recalled() {
-        return called("search_in_memory");
+    /** The raw body of the last LLM request this turn (for inspecting what the prompt carried: context + candidates). */
+    public String lastRequestBody() {
+        return lastRequestBody == null ? "" : lastRequestBody;
     }
 
-    /** The query passed to the first search_in_memory call this turn, or empty when it was not called. */
-    public String recalledQuery() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        return recalls.isEmpty() ? "" : str(recalls.get(0).args(), "query");
+    /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
+    public boolean recalled() {
+        return lastRequestBody != null && lastRequestBody.contains("<facts>");
     }
 
     /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
@@ -334,15 +401,27 @@ public final class CompanionEvalHarness {
         return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
     }
 
-    /** The items returned by the first search_in_memory call this turn (the recall result), or empty. */
+    /** The answer-fact candidates inlined into this turn's prompt (the two-tier "Relevant remembered facts"), or empty. */
     public List<String> recallResult() {
-        List<Executed> recalls = callsNamed("search_in_memory");
-        if (recalls.isEmpty() || !recalls.get(0).result().has("items")) {
+        if (lastRequestBody == null) {
             return List.of();
         }
-        List<String> items = new ArrayList<>();
-        recalls.get(0).result().getAsJsonArray("items").forEach(e -> items.add(e.getAsString()));
-        return items;
+        int start = lastRequestBody.indexOf("<facts>");
+        if (start < 0) {
+            return List.of();
+        }
+        int end = lastRequestBody.indexOf("</facts>", start);
+        String block = lastRequestBody.substring(start, end < 0 ? lastRequestBody.length() : end);
+        List<String> facts = new ArrayList<>();
+        // Facts are XML elements <fact ... >text</fact>; pull the text between each element's tags.
+        for (String part : block.split("<fact")) {
+            int gt = part.indexOf('>');
+            int close = part.indexOf("</fact>");
+            if (gt >= 0 && close > gt) {
+                facts.add(part.substring(gt + 1, close).strip());
+            }
+        }
+        return facts;
     }
 
     private static String str(JsonObject o, String key) {
@@ -481,7 +560,7 @@ public final class CompanionEvalHarness {
     /** Every stored entry across short-term, mid-term (all topics) and pinned long-term facts. */
     public List<MemoryEntry> allEntries() {
         List<MemoryEntry> all = new ArrayList<>(memory.readShortTermTimeline());
-        for (ConversationTopic topic : memory.indexes().topicsWithMemory()) {
+        for (ConversationTopic topic : ConversationTopic.values()) {
             all.addAll(memory.recallTopicMemory(topic, null, 1000));
         }
         all.addAll(memory.longTermPinnedFacts());

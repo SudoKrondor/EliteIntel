@@ -10,6 +10,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -18,10 +19,21 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Phase 2 memory spine: short-term timeline, count/token eviction into mid-term by topic, and the
- * index snapshot. A fixed-cost token estimator makes the budget eviction deterministic.
+ * Phase 2 memory spine: short-term timeline and count/token eviction into mid-term by topic. A
+ * fixed-cost token estimator makes the budget eviction deterministic.
  */
 class SessionMemoryGatewayTest {
+
+    /** Topics that currently hold mid-term entries, in enum order (observed via the public per-topic recall). */
+    private static List<ConversationTopic> midTermTopics(SessionMemoryGateway gateway) {
+        List<ConversationTopic> topics = new ArrayList<>();
+        for (ConversationTopic topic : ConversationTopic.values()) {
+            if (!gateway.recallTopicMemory(topic, null, 1000).isEmpty()) {
+                topics.add(topic);
+            }
+        }
+        return topics;
+    }
 
     /** Every entry costs a constant number of tokens, independent of content length. */
     private static final class FixedTokenEstimator implements TokenEstimator {
@@ -57,7 +69,7 @@ class SessionMemoryGatewayTest {
         assertEquals("first", timeline.get(0).content());
         assertEquals("second", timeline.get(1).content());
         // Nothing evicted yet, so mid-term has no topics.
-        assertTrue(gateway.indexes().topicsWithMemory().isEmpty());
+        assertTrue(midTermTopics(gateway).isEmpty());
     }
 
     @Test
@@ -75,7 +87,7 @@ class SessionMemoryGatewayTest {
         // The three oldest (MINING) were evicted; the newest entry is still the last one written.
         assertEquals("entry-" + (CompanionConfig.shortTermMemorySize() + 2), timeline.get(timeline.size() - 1).content());
 
-        List<ConversationTopic> topics = gateway.indexes().topicsWithMemory();
+        List<ConversationTopic> topics = midTermTopics(gateway);
         assertTrue(topics.contains(ConversationTopic.MINING));
         assertFalse(topics.contains(ConversationTopic.TRADE));
     }
@@ -99,7 +111,7 @@ class SessionMemoryGatewayTest {
         // Both topics filled mid-term, reported once each in enum order.
         assertEquals(
                 List.of(ConversationTopic.NAVIGATION, ConversationTopic.COMBAT),
-                gateway.indexes().topicsWithMemory());
+                midTermTopics(gateway));
     }
 
     @Test
@@ -114,7 +126,7 @@ class SessionMemoryGatewayTest {
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
         assertEquals(1, timeline.size());
         assertEquals("b", timeline.get(0).content());
-        assertTrue(gateway.indexes().topicsWithMemory().contains(ConversationTopic.EXPLORATION));
+        assertTrue(midTermTopics(gateway).contains(ConversationTopic.EXPLORATION));
     }
 
     @Test
@@ -131,7 +143,7 @@ class SessionMemoryGatewayTest {
         SessionMemoryGateway gateway = new SessionMemoryGateway();
         gateway.replaceLongTermSummary("commander has been mining in Borann for hours");
 
-        // The summary is no longer inlined into every prompt; search_in_memory must reach it, labelled [SYSTEM].
+        // The summary is no longer inlined into every prompt; memory_search must reach it, labelled [SYSTEM].
         assertEquals(List.of("[SYSTEM] commander has been mining in Borann for hours"),
                 gateway.recallMatching("Borann", 10));
     }
@@ -180,6 +192,22 @@ class SessionMemoryGatewayTest {
         assertEquals(
                 List.of("[COMMANDER] returning to borann now", "[COMMANDER] mining hotspot is borann"),
                 recalled);
+    }
+
+    @Test
+    void lowEntriesAreDroppedOnEvictionNotPromotedToMidTerm() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        // A LOW entry (idle banter / companion speech) and a NORMAL fact, both the oldest so both leave short-term.
+        gateway.write(entry(ConversationTopic.SOCIAL, "болтовня которую не храним", MemoryImportance.LOW));
+        gateway.write(entry(ConversationTopic.MINING, "цель по добыче низкотемпературные алмазы", MemoryImportance.NORMAL));
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
+            gateway.write(entry(ConversationTopic.TRADE, "filler-" + i));
+        }
+
+        // The NORMAL fact was promoted to mid-term; the LOW entry was dropped on eviction, not promoted.
+        assertEquals(List.of("[COMMANDER] цель по добыче низкотемпературные алмазы"),
+                gateway.recallMatching("алмазы", 10));
+        assertTrue(gateway.recallMatching("болтовня", 10).isEmpty(), "a LOW entry must not reach mid-term");
     }
 
     @Test
@@ -316,9 +344,9 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
-    void writeCollapsesANearIdenticalFactKeepingTheMostImportantWording() {
-        // The same fact restated more strongly (near-identical meaning, 2 degrees apart) must not pile up two
-        // entries: write de-duplication keeps one - the MAX wording - so the routine copy does not survive.
+    void writeKeepsNearIdenticalFactsInShortTermVerbatim() {
+        // Short-term is no longer de-duplicated: a fact restated more strongly stays as its own entry in the
+        // hot window (fact de-duplication happens in mid-term, not here). Both copies survive, in order.
         SessionMemoryGateway gateway = semanticGateway(Map.of(
                 "docking code is sierra", 10.0,
                 "remember docking code sierra nine four", 12.0));
@@ -326,9 +354,55 @@ class SessionMemoryGatewayTest {
         gateway.write(entry(ConversationTopic.NAVIGATION, "remember docking code sierra nine four", MemoryImportance.MAX));
 
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
-        assertEquals(1, timeline.size());
-        assertEquals("remember docking code sierra nine four", timeline.get(0).content());
-        assertEquals(MemoryImportance.MAX, timeline.get(0).importance());
+        assertEquals(2, timeline.size());
+        assertEquals("docking code is sierra", timeline.get(0).content());
+        assertEquals("remember docking code sierra nine four", timeline.get(1).content());
+    }
+
+    @Test
+    void evictionCollapsesNearIdenticalCopiesIntoOneMidTermEntry() {
+        // Two near-identical copies ride the verbatim hot window together; as they age out, the eviction
+        // hand-off must collapse them into ONE mid-term entry keeping the most important wording, so they
+        // never crowd the <facts> candidates as duplicates.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "docking code is sierra", 10.0,
+                "remember docking code sierra nine four", 12.0,
+                "filler", 90.0));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "docking code is sierra"));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "remember docking code sierra nine four", MemoryImportance.MAX));
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
+            gateway.write(entry(ConversationTopic.SOCIAL, "filler")); // pushes both facts out of the window
+        }
+
+        List<MemoryEntry> nav = gateway.recallTopicMemory(ConversationTopic.NAVIGATION, null, 100);
+        assertEquals(1, nav.size(), "the two near-identical copies must merge at the eviction hand-off");
+        assertEquals("remember docking code sierra nine four", nav.get(0).content());
+        assertEquals(MemoryImportance.MAX, nav.get(0).importance());
+    }
+
+    @Test
+    void writeCollapsesAMidTermDuplicateKeepingTheMostImportantWording() {
+        // A fact already evicted into mid-term is restated: the mid-term copy is removed and the survivor
+        // (the more important wording, freshest mention) is stored as the one short-term copy.
+        SessionMemoryGateway gateway = semanticGateway(Map.of(
+                "docking code is sierra", 10.0,
+                "remember docking code sierra nine four", 12.0,
+                "filler", 90.0));
+        gateway.write(entry(ConversationTopic.NAVIGATION, "docking code is sierra", MemoryImportance.MAX));
+        for (int i = 0; i < CompanionConfig.shortTermMemorySize(); i++) {
+            gateway.write(entry(ConversationTopic.SOCIAL, "filler")); // pushes the fact into mid-term
+        }
+        assertFalse(gateway.recallTopicMemory(ConversationTopic.NAVIGATION, null, 100).isEmpty());
+
+        gateway.write(entry(ConversationTopic.NAVIGATION, "remember docking code sierra nine four"));
+
+        // The mid-term copy collapsed into the surviving short-term one; the MAX wording won over NORMAL.
+        assertTrue(gateway.recallTopicMemory(ConversationTopic.NAVIGATION, null, 100).isEmpty());
+        List<MemoryEntry> sierra = gateway.readShortTermTimeline().stream()
+                .filter(e -> e.content().contains("sierra")).toList();
+        assertEquals(1, sierra.size());
+        assertEquals("docking code is sierra", sierra.get(0).content());
+        assertEquals(MemoryImportance.MAX, sierra.get(0).importance());
     }
 
     @Test

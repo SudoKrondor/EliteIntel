@@ -3,6 +3,8 @@ package elite.intel.ai.mouth.google;
 /**
  * If you implement another TTS, map these voices in your class to the
  * voices available in your TTS provider.
+ * <p>
+ * The fleet grid renders each voice by its raw enum name; voices are not localized.
  */
 public enum GoogleVoices {
 

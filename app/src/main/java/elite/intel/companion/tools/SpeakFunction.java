@@ -34,7 +34,7 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Speak a phrase aloud to the commander through the ship's voice. Use this whenever you want the commander to hear something.";
+        return "Speak a phrase aloud to the commander - to tell or answer something, or to ask a question (their reply comes as their next message). Use whenever you want the commander to hear something.";
     }
 
     @Override

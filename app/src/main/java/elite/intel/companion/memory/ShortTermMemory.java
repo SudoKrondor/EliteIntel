@@ -22,35 +22,15 @@ class ShortTermMemory {
     }
 
     /**
-     * Appends an entry, collapsing an exact duplicate already in the timeline: if the same author, topic, and
-     * (normalized) content is already present, the older copy is removed first so only the most recent stays.
-     * This keeps a command cycled during combat ("target drive" ... "target power plant" ... "target drive")
-     * from filling the hot timeline, while the surviving copy reflects the current state. The dropped copy is
-     * discarded, not evicted to mid-term - a duplicate carries no new information.
+     * Appends an entry to the hot timeline verbatim - the short-term window is not de-duplicated. Every turn is
+     * kept as its own entry until it ages out by the count/token bounds, so repeated commands and, crucially,
+     * repeated structural boundary markers survive (a second {@code <no_reply/>} never deletes an earlier one,
+     * which would re-merge the two commander turns it separated). Fact de-duplication happens only in mid-term
+     * (see {@code SessionMemoryGateway.mergeDuplicate}), where near-duplicates would otherwise crowd out recall.
      */
     void add(MemoryEntry entry) {
-        removeDuplicate(entry);
         entries.add(entry);
         estimatedTokens += cost(entry);
-    }
-
-    /** Removes an entry already in the timeline that duplicates {@code entry} (same source, topic, content). */
-    private void removeDuplicate(MemoryEntry entry) {
-        for (int i = 0; i < entries.size(); i++) {
-            MemoryEntry existing = entries.get(i);
-            if (existing.source() == entry.source()
-                    && existing.topic() == entry.topic()
-                    && normalize(existing.content()).equals(normalize(entry.content()))) {
-                estimatedTokens -= cost(existing);
-                entries.remove(i);
-                return; // every add dedups, so at most one prior copy can exist
-            }
-        }
-    }
-
-    /** Dedup key: trimmed, internal whitespace collapsed (content is already lower-cased on write). */
-    private static String normalize(String content) {
-        return content == null ? "" : content.trim().replaceAll("\\s+", " ");
     }
 
     /** Current timeline, oldest-to-newest. */

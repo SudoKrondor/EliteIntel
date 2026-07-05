@@ -99,6 +99,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;
 
     public static final int HUD_GAP = 8;
+    /** Tight gap between adjacent compact controls (e.g. icon actions in a section header). */
+    public static final int HUD_GAP_TIGHT = HUD_GAP / 2; // =4
     /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
     public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;
@@ -206,6 +208,7 @@ public final class HudPalette {
     public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
     public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 - banner message text
+    public static final float HUD_FONT_TOOLTIP        = HUD_FONT_SM;   // 12 - hover tooltip text (global ToolTip.font)
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
     public static final float HUD_FONT_STAT_LG        = 16f;

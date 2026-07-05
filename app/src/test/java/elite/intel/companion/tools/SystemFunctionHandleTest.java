@@ -2,7 +2,6 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.memory.MemoryAvailabilitySnapshot;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.ConversationTopic;
@@ -22,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
- * via {@link CompanionRuntime}: speak/clarify submit speech, remember/recall go through the memory gateway,
+ * via {@link CompanionRuntime}: speak submits speech, remember/recall go through the memory gateway,
  * find_action queries the reducer, and classify_turn moves the global topic and stamps the turn's
  * importance. Fakes back the services so everything is unit-testable.
  */
@@ -68,13 +67,6 @@ class SystemFunctionHandleTest {
     }
 
     @Test
-    void clarifySpeaksTheQuestion() {
-        new ClarifyFunction().handle("clarify", params("question", "which target?"), "");
-
-        assertEquals("which target?", spoken.get(0).text());
-    }
-
-    @Test
     void classifyTurnSetsTopicAndStampsImportance() {
         JsonObject p = params("topic", "navigation");
         p.addProperty("importance", "high");
@@ -93,17 +85,6 @@ class SystemFunctionHandleTest {
         JsonObject result = new ClassifyTurnFunction().handle("classify_turn", p, "");
 
         assertEquals("normal", result.get("importance").getAsString());
-    }
-
-    @Test
-    void recallSearchesAllMemoryWithASingleQuery() {
-        memory.matchingItems = List.of("painite in cargo rack seven", "rendezvous at Maia");
-
-        JsonObject result = new SearchInMemoryFunction().handle("search_in_memory", params("query", "painite"), "");
-
-        assertEquals("painite", memory.recalledQuery);
-        assertEquals(2, result.getAsJsonArray("items").size());
-        assertEquals("painite in cargo rack seven", result.getAsJsonArray("items").get(0).getAsString());
     }
 
     @Test
@@ -140,7 +121,7 @@ class SystemFunctionHandleTest {
             recalledQuery = query;
             return matchingItems;
         }
-        @Override public MemoryAvailabilitySnapshot indexes() { throw new UnsupportedOperationException(); }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
         @Override public String longTermSummary() { throw new UnsupportedOperationException(); }
         @Override public void replaceLongTermSummary(String summary) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> longTermPinnedFacts() { throw new UnsupportedOperationException(); }

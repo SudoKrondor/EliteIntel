@@ -4,12 +4,14 @@ import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
+import elite.intel.ai.brain.commons.ResponseRouter;
 import elite.intel.ai.ears.AudioCalibrator;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
 import elite.intel.ai.ears.EarsInterface;
 import elite.intel.ai.hands.HandsService;
 import elite.intel.ai.hands.KeyBindCheck;
+import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.companion.CompanionConfig;
@@ -35,6 +37,8 @@ import javax.swing.*;
 import javax.swing.Timer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -44,12 +48,25 @@ public class AppController implements Runnable {
 
     private static final Logger log = LogManager.getLogger(AppController.class);
 
+    // WHY: intentionally process-lifetime and never shut down. Connection checks run on every service
+    // start (and on brain restart), so the executor must outlive stopServices()/restart cycles. Its single
+    // worker is a daemon thread, so it never blocks JVM exit and needs no explicit teardown.
+    private final ExecutorService bgExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "ConnectionCheck-Worker");
+        t.setDaemon(true);
+        return t;
+    });
+
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
 
     /// NOTE Order of services is important
     private final Map<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+    private Timer retryConnectionTimer;
+    // Written on the EDT (retry Timer callback, stopRetryTimer), read on the ConnectionCheck-Worker
+    // thread in onLlmConnectionStatus; volatile to make that cross-thread read safe.
+    private volatile int retryAttemptNumber = 0;
 
     public AppController() {
         UiBus.register(this);
@@ -168,14 +185,47 @@ public class AppController implements Runnable {
         new Thread(this::restartBrainService, "BrainRestart-Thread").start();
     }
 
+    @Subscribe
+    void onRestartServicesEvent(RestartServicesEvent event) {
+        new Thread(this::restartAllServices, "ServicesRestart-Thread").start();
+    }
+
+    /**
+     * Full stop/start of every service. Used when a setting change alters the service registry
+     * itself rather than the config of an existing service - e.g. toggling companion mode, which
+     * swaps {@code BRAIN} for {@code COMPANION} in {@link #buildServices(boolean)}. A granular
+     * {@link RestartBrainEvent} cannot do that swap, so the whole set is rebuilt. No-op when
+     * services are stopped (the toggle takes effect on the next Start).
+     */
+    private void restartAllServices() {
+        if (!isRunning.get()) return;
+        stopServices();
+        try {
+            startServices();
+        } catch (Exception e) {
+            // WHY: broad catch at the worker-thread boundary - a startup failure must be surfaced to the
+            // user (console log) and leave services cleanly stopped, not kill the thread half-running.
+            log.error("Failed to restart services", e);
+            appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+            stopServices();
+            UiBus.publish(new ServicesStateEvent(false));
+        }
+    }
+
     private void restartBrainService() {
         if (!isRunning.get()) return;
+        // In companion mode the running LLM service is COMPANION, not BRAIN; restart whichever is active
+        // so an LLM source (local/cloud) change is picked up regardless of mode.
         ServiceHolder brain = services.get(ServiceType.BRAIN);
+        if (brain == null) brain = services.get(ServiceType.COMPANION);
         if (brain == null) return;
         appendToLog("Restarting LLM service...");
         brain.stop();
         brain.start();
         appendToLog("LLM service restarted");
+        Timer checkTimer = new Timer(2000, e -> connectionCheck());
+        checkTimer.setRepeats(false);
+        checkTimer.start();
     }
 
     @Subscribe
@@ -198,6 +248,11 @@ public class AppController implements Runnable {
         new Thread(this::restartMouthService, "MouthRestart-Thread").start();
     }
 
+    @Subscribe
+    void onRestartEarsEvent(RestartEarsEvent event) {
+        new Thread(this::restartEarsService, "EarsRestart-Thread").start();
+    }
+
     private void restartEarsService() {
         if (!isRunning.get()) return;
         ServiceHolder ears = services.get(ServiceType.EARS);
@@ -218,8 +273,33 @@ public class AppController implements Runnable {
         ServiceHolder mouth = services.get(ServiceType.MOUTH);
         if (mouth == null) return;
         appendToLog("Restarting TTS service...");
+
+        // Radio is always voiced by Kokoro, so a dedicated radio engine is needed only when the main
+        // mouth is not Kokoro. The radio engine and a Kokoro main mouth share the Kokoro singleton, so
+        // ordering matters: retire an unneeded radio engine BEFORE (re)starting the main mouth, and
+        // leave an already-running radio engine untouched on a main-mouth-only change (no model reload).
+        boolean needRadio = !systemSession.useLocalTTS();
+        ServiceHolder radio = services.get(ServiceType.RADIO_MOUTH);
+        if (radio != null && !needRadio) {
+            radio.stop();
+            services.remove(ServiceType.RADIO_MOUTH);
+            radio = null;
+        }
+
         mouth.stop();
         mouth.start();
+
+        if (needRadio) {
+            if (radio == null) {
+                radio = new ServiceHolder(() -> {
+                    KokoroTTS r = KokoroTTS.getInstance();
+                    r.setRole(KokoroTTS.Role.RADIO);
+                    return r;
+                });
+                services.put(ServiceType.RADIO_MOUTH, radio);
+            }
+            radio.start(); // no-op if the radio engine is already running (Kokoro.start() guards on running)
+        }
         appendToLog("TTS service restarted");
     }
 
@@ -256,10 +336,7 @@ public class AppController implements Runnable {
 
         Timer connectionCheckTimer = new Timer(2000, e -> {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-            JsonObject direct = new JsonObject();
-            direct.addProperty("action", CONNECTION_CHECK_COMMAND);
-            direct.add("params", new JsonObject());
-            ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
+            connectionCheck();
         });
         connectionCheckTimer.setRepeats(false);
         connectionCheckTimer.start();
@@ -268,8 +345,53 @@ public class AppController implements Runnable {
         CustomCommandLoadAnnouncement.getInstance().announce();
     }
 
+    @Subscribe
+    public void onLlmConnectionStatus(LlmConnectionStatusEvent event) {
+        ResponseRouter.getInstance().setSuppressConnectionFailSpeech(!event.connected() && retryAttemptNumber > 0);
+        SwingUtilities.invokeLater(() -> {
+            if (event.connected()) {
+                stopRetryTimer();
+            } else if (isRunning.get()) {
+                startRetryTimer();
+            }
+        });
+    }
+
+    private void connectionCheck() {
+        bgExecutor.submit(() -> {
+            try {
+                JsonObject direct = new JsonObject();
+                direct.addProperty("action", CONNECTION_CHECK_COMMAND);
+                direct.add("params", new JsonObject());
+                ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
+            } catch (Exception e) {
+                log.warn("Connection check failed", e);
+            }
+        });
+    }
+
+    private void startRetryTimer() {
+        if (retryConnectionTimer != null && retryConnectionTimer.isRunning()) return;
+        retryConnectionTimer = new Timer(30_000, e -> {
+            retryAttemptNumber++;
+            connectionCheck();
+        });
+        retryConnectionTimer.setRepeats(true);
+        retryConnectionTimer.start();
+        log.info("LLM connection retry timer started (30s interval)");
+    }
+
+    private void stopRetryTimer() {
+        retryAttemptNumber = 0;
+        if (retryConnectionTimer != null) {
+            retryConnectionTimer.stop();
+            retryConnectionTimer = null;
+        }
+    }
+
     private void stopServices() {
         if (!isRunning.get()) return;
+        stopRetryTimer();
         List<ServiceType> reverseOrder = new ArrayList<>(services.keySet());
         Collections.reverse(reverseOrder);
         for (ServiceType type : reverseOrder) {
@@ -288,7 +410,7 @@ public class AppController implements Runnable {
     private void initServices() {
         stopServices();
         this.services.clear();
-        this.services.putAll(buildServices(CompanionConfig.companionModeOn()));
+        this.services.putAll(buildServices(CompanionConfig.companionModeOn(), systemSession.useLocalTTS()));
     }
 
     /**
@@ -296,10 +418,22 @@ public class AppController implements Runnable {
      * nothing is started here) so the registration can be verified in tests without standing up the
      * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
      * is registered per {@code companionModeOn} (§0).
+     * <p>
+     * Radio transmissions are always voiced by Kokoro. When Kokoro is also the main mouth
+     * ({@code useLocalTts}) it handles radio through its own queue and no extra service is needed.
+     * When the main mouth is a cloud provider, a dedicated {@link ServiceType#RADIO_MOUTH} runs the
+     * Kokoro engine in {@link KokoroTTS.Role#RADIO} alongside it.
      */
-    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn) {
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn, boolean useLocalTts) {
         LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
+        if (!useLocalTts) {
+            services.put(ServiceType.RADIO_MOUTH, new ServiceHolder(() -> {
+                KokoroTTS radio = KokoroTTS.getInstance();
+                radio.setRole(KokoroTTS.Role.RADIO);
+                return radio;
+            }));
+        }
         services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
         services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
         services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
@@ -352,7 +486,7 @@ public class AppController implements Runnable {
     }
 
     enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, EARS, BRAIN, COMPANION,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, RADIO_MOUTH, EARS, BRAIN, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

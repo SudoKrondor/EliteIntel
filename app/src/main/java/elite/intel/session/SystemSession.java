@@ -40,8 +40,13 @@ public class SystemSession {
     }
 
 
+    // Voice and personality are per-ship: each ship carries one voice (ship.voice, interpreted against the
+    // active TTS provider's enum) and one personality (ship.personality). Switching TTS provider reinterprets
+    // the stored voice name and falls back to the provider's default when it isn't a valid voice there. The
+    // companion and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
+
     public GoogleVoices getGoogleVoice() {
-        ShipDao.Ship ship = ShipManager.getInstance().getShip();
+        ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) return GoogleVoices.STEVE;
         String voice = ship.getVoice();
         if (voice == null) return GoogleVoices.STEVE;
@@ -54,7 +59,7 @@ public class SystemSession {
 
 
     public KokoroVoices getKokoroVoice() {
-        ShipDao.Ship ship = ShipManager.getInstance().getShip();
+        ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) return KokoroVoices.BELLA;
         String voice = ship.getVoice();
         if (voice == null) return KokoroVoices.BELLA;
@@ -65,21 +70,18 @@ public class SystemSession {
         }
     }
 
-    private void setShipVoice(String voice) {
-        ShipManager shipManager = ShipManager.getInstance();
-        ShipDao.Ship ship = shipManager.getShip();
-        if (ship == null) return;
-        ship.setVoice(voice);
-        shipManager.saveShip(ship);
-    }
-
 
     public ShipPersonality getAIPersonality() {
         ShipDao.Ship ship = shipManager.getShip();
         if (ship == null) return ShipPersonality.CASUAL;
-        return ShipPersonality.valueOf(ship.getPersonality());
+        String personality = ship.getPersonality();
+        if (personality == null) return ShipPersonality.CASUAL;
+        try {
+            return ShipPersonality.valueOf(personality);
+        } catch (IllegalArgumentException e) {
+            return ShipPersonality.CASUAL;
+        }
     }
-
 
 
     public boolean isSleepingModeOn() {
@@ -159,7 +161,6 @@ public class SystemSession {
         if (ttsApiKey == null || ttsApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
-                session.setTtsApiKey(null);
                 session.setEncryptedTTSKey(null);
                 dao.save(session);
                 return Void.class;
@@ -186,7 +187,6 @@ public class SystemSession {
         if (aiApiKey == null || aiApiKey.isBlank()) {
             Database.withDao(GameSessionDao.class, dao -> {
                 GameSessionDao.GameSession session = dao.get();
-                session.setAiApiKey(null);
                 session.setEncryptedLLMKey(null);
                 dao.save(session);
                 return Void.class;

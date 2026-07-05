@@ -40,6 +40,17 @@ public class ApproachBodyEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: entering orbital cruise near a body. Recorded unconditionally, regardless of narration toggles. */
+    @Override
+    public String memorySummary() {
+        if (body == null || body.isBlank()) {
+            return "";
+        }
+        return starSystem == null || starSystem.isBlank()
+                ? "approaching " + body
+                : "approaching " + body + " in " + starSystem;
+    }
+
     @Override
     public String llmDescription() {
         return "Entered orbital cruise approaching a planetary body in supercruise; carries the star system and body name.";

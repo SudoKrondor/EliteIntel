@@ -3,8 +3,10 @@ package elite.intel.companion.memory;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +18,7 @@ import java.util.function.Supplier;
 /**
  * Default {@link MemoryGateway} implementation. Composes the session memory areas
  * (short-term, mid-term topic, long-term summary), owns the eviction transitions between them, and embeds and
- * de-duplicates entries on write. The recall ranking ({@code search_in_memory}) lives in {@link MemorySearch};
+ * de-duplicates entries on write. The recall ranking ({@code memory_search}) lives in {@link MemorySearch};
  * the internal stores are package-private; nothing outside this package touches them.
  * <p>
  * Session-only: nothing is persisted to disk.
@@ -91,9 +93,13 @@ public final class SessionMemoryGateway implements MemoryGateway {
         // count/token bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
         MemoryEntry stored = entry;
         if (entry.content() != null) {
-            String lower = entry.content().toLowerCase(Locale.ROOT);
-            stored = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lower,
-                    entry.importance(), embed(lower));
+            // Store both texts lower-cased (case carries no recall signal), then embed the clean candidate text
+            // (MemoryEntry.embeddingText: the canonical fact when present, else the verbatim content).
+            String lowerContent = entry.content().toLowerCase(Locale.ROOT);
+            String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
+            MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
+                    entry.importance(), null, lowerCanonical);
+            stored = lowered.withEmbedding(embed(lowered.embeddingText()));
         }
         // Collapse a fact that is already in memory under near-identical meaning into one fresh copy, so a
         // re-stated or re-asked fact (commander fact + the companion's echo, repeated questions, repeated
@@ -101,7 +107,14 @@ public final class SessionMemoryGateway implements MemoryGateway {
         stored = mergeDuplicate(stored);
         shortTerm.add(stored);
         for (MemoryEntry evicted : shortTerm.evictOverflow()) {
-            midTerm.add(evicted);
+            // LOW entries (idle banter and the companion's own speech) exist only for hot-timeline continuity;
+            // they are dropped when they age out of short-term, never promoted to mid-term.
+            if (evicted.importance() != MemoryImportance.LOW) {
+                // Collapse against mid-term duplicates at the hand-off: the hot window is verbatim, so two
+                // near-identical copies can ride it together - merging here keeps mid-term (and thus the
+                // <facts> candidates) free of duplicates instead of waiting for a future matching write.
+                midTerm.add(mergeDuplicate(evicted));
+            }
         }
         // Per-topic mid-term overflow is handed to the consolidator (long-term summary lives behind the LLM).
         for (MemoryEntry overflow : midTerm.evictOverflow()) {
@@ -120,11 +133,36 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public synchronized List<String> recallMatching(String query, int limit) {
+    public List<String> recallMatching(String query, int limit) {
+        // Diagnostic emitted outside the lock: UiBus is synchronous, so a subscriber runs on this thread and
+        // must not execute while the memory monitor is held (a future subscriber touching memory would deadlock).
+        List<String> hits = recallMatchingLocked(query, limit);
+        CompanionDiagnostics.debugAmbient("memory-search",
+                "\"" + CompanionDiagnostics.truncate(query) + "\" -> " + hits.size() + " hit(s)");
+        return hits;
+    }
+
+    private synchronized List<String> recallMatchingLocked(String query, int limit) {
         // Ranking and de-duplication live in MemorySearch; the gateway only supplies the current memory areas
         // and the shared matcher. A given entry lives in exactly one of short-term / mid-term, so no double-count.
         // The long-term summary is no longer inlined into every prompt - it is reached here, as a searchable entry.
         return MemorySearch.recall(query, limit, shortTerm.timeline(), midTerm.allEntries(),
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
+    }
+
+    @Override
+    public List<MemoryEntry> recallCandidates(String query, int limit) {
+        // Diagnostic emitted outside the lock, for the same reason as recallMatching.
+        List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
+        CompanionDiagnostics.debugAmbient("recall",
+                "\"" + CompanionDiagnostics.truncate(query) + "\" -> " + hits.size() + " candidate(s)");
+        return hits;
+    }
+
+    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit) {
+        // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
+        // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
+        return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
                 longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
     }
 
@@ -139,11 +177,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
             return List.of();
         }
         return List.of(new MemoryEntry(Instant.EPOCH, ConversationTopic.SYSTEM, MemorySource.SYSTEM, summary.strip()));
-    }
-
-    @Override
-    public synchronized MemoryAvailabilitySnapshot indexes() {
-        return new MemoryAvailabilitySnapshot(midTerm.topicsWithMemory());
     }
 
     @Override
@@ -172,21 +205,28 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     /**
-     * Collapses every entry already in short-term/mid-term that means the same thing as {@code incoming}
+     * Collapses every entry already in <em>mid-term</em> that means the same thing as {@code incoming}
      * (cosine &ge; {@link CompanionConfig#semanticDedupFloor()}) into a single surviving copy: the most
      * important wording (the newest when importance ties), stamped with the newest mention so a re-confirmed
-     * fact is fresh again. The superseded copies are removed from their stores; the survivor is returned to be
-     * stored as the one short-term copy. A no-op when {@code incoming} has no vector (semantic search off).
+     * fact is fresh again. The superseded copies are removed from their store; the survivor is returned to be
+     * stored by the caller - as the one short-term copy on a write, or as the one mid-term copy at the
+     * eviction hand-off. Short-term itself is never scanned - the hot window is kept verbatim
+     * (see {@link ShortTermMemory#add}). A no-op when {@code incoming} has no vector (semantic search off).
      */
     private MemoryEntry mergeDuplicate(MemoryEntry incoming) {
-        if (incoming.embedding() == null) {
-            return incoming;
+        // An event is a discrete occurrence, not a restatement of a fact: "docked at A" and "docked at B" are
+        // near-identical in meaning (they differ only in a name), so vector dedup would collapse them and make an
+        // enumeration ("which stations did we dock at") impossible. An event therefore dedups only against a
+        // LITERAL repeat (identical content, e.g. the same station twice); every other entry dedups by meaning.
+        boolean literal = incoming.source() == MemorySource.EVENT;
+        if (!literal && incoming.embedding() == null) {
+            return incoming; // meaning dedup needs a vector; with none (semantic search off) there is nothing to do
         }
         double floor = CompanionConfig.semanticDedupFloor();
         MemoryEntry keep = incoming;
         Instant freshest = incoming.timestamp();
         boolean merged = false;
-        for (MemoryEntry existing : sameByMeaning(incoming, floor)) {
+        for (MemoryEntry existing : duplicatesOf(incoming, floor)) {
             removeStored(existing);
             merged = true;
             if (existing.importance().compareTo(keep.importance()) > 0) {
@@ -199,21 +239,34 @@ public final class SessionMemoryGateway implements MemoryGateway {
         return merged ? keep.withTimestamp(freshest) : incoming;
     }
 
-    /** Every stored short-term/mid-term entry whose meaning matches {@code probe} (the MAX archive is left intact). */
-    private List<MemoryEntry> sameByMeaning(MemoryEntry probe, double floor) {
+    /** Every stored mid-term entry that is a duplicate of {@code probe} (short-term is kept verbatim; the MAX archive is left intact). */
+    private List<MemoryEntry> duplicatesOf(MemoryEntry probe, double floor) {
         List<MemoryEntry> out = new ArrayList<>();
-        collectSameByMeaning(out, shortTerm.timeline(), probe, floor);
-        collectSameByMeaning(out, midTerm.allEntries(), probe, floor);
+        // Short-term is intentionally not scanned: the hot window keeps every entry, including repeated
+        // boundary markers, so only durable mid-term facts are collapsed by meaning.
+        collectDuplicates(out, midTerm.allEntries(), probe, floor);
         return out;
     }
 
-    private static void collectSameByMeaning(List<MemoryEntry> out, List<MemoryEntry> entries,
-                                             MemoryEntry probe, double floor) {
+    private static void collectDuplicates(List<MemoryEntry> out, List<MemoryEntry> entries,
+                                          MemoryEntry probe, double floor) {
         for (MemoryEntry entry : entries) {
-            if (MemorySearch.sameMeaning(probe, entry, floor)) {
+            if (isDuplicate(probe, entry, floor)) {
                 out.add(entry);
             }
         }
+    }
+
+    /**
+     * Whether {@code entry} duplicates {@code probe}. Anything involving an event uses LITERAL equality
+     * (identical content) - a discrete occurrence is only a duplicate of an exact repeat, never of a
+     * merely similar-meaning line; every other pair dedups by meaning (cosine &ge; {@code floor}).
+     */
+    private static boolean isDuplicate(MemoryEntry probe, MemoryEntry entry, double floor) {
+        if (probe.source() == MemorySource.EVENT || entry.source() == MemorySource.EVENT) {
+            return Objects.equals(probe.content(), entry.content());
+        }
+        return MemorySearch.sameMeaning(probe, entry, floor);
     }
 
     /** Removes a superseded entry from whichever store holds it (short-term first, then mid-term). */

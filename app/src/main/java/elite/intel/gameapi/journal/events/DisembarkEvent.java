@@ -64,6 +64,20 @@ public class DisembarkEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: stepping out on foot. No subscriber narrates this, so it is remembered here. */
+    @Override
+    public String memorySummary() {
+        if (onStation) {
+            return starSystem == null || starSystem.isBlank()
+                    ? "disembarked at the station"
+                    : "disembarked at the station in " + starSystem;
+        }
+        if (onPlanet && body != null && !body.isBlank()) {
+            return "disembarked onto " + body;
+        }
+        return "disembarked";
+    }
+
     @Override
     public String llmDescription() {
         return "Disembarked on foot from the ship or SRV; carries whether it is at a station, settlement, or on a planet surface.";

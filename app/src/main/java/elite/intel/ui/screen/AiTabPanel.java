@@ -9,16 +9,25 @@ import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
 import elite.intel.util.SleepNoThrow;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -67,8 +76,11 @@ public class AiTabPanel extends JPanel {
     private final Timer summaryClockTimer;
     private final Font monoFont;
 
-    public AiTabPanel(Font monoFont) {
+    private final AiUiState uiState;
+
+    public AiTabPanel(Font monoFont, AiUiState uiState) {
         this.monoFont = monoFont;
+        this.uiState = uiState; // stores the LLM connection status
         LlmSessionStatsTracker.getInstance(); // ensure tracker is registered before events flow
         sleeping = SystemSession.getInstance().isSleepingModeOn();
         UiBus.register(this);
@@ -140,10 +152,12 @@ public class AiTabPanel extends JPanel {
         );
         topSplit.setResizeWeight(0.38);
 
+        HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
+        systemSection.setHeaderActions(buildSaveLogButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 topSplit,
-                logSection(getText("ai.section.systemMessages"), systemPanel)
+                systemSection
         );
         mainSplit.setResizeWeight(0.65);
 
@@ -240,6 +254,56 @@ public class AiTabPanel extends JPanel {
         return section;
     }
 
+    /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
+    private HudGlyphButton buildClearLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudTrashGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear);
+    }
+
+    /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */
+    private HudGlyphButton buildSaveLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog);
+    }
+
+    /**
+     * Writes the full SYSTEM LOG transcript to a user-chosen {@code .log} file. Runs on the EDT (button click).
+     * The outcome (saved file, empty log, or write error) is reported back as a SYSTEM LOG line, so feedback
+     * stays inside the HUD instead of a native popup.
+     */
+    private void saveSystemLog() {
+        String content = systemPanel.exportText();
+        if (content.isBlank()) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.empty")));
+            return;
+        }
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(getText("ai.section.systemMessages.save.title"));
+        chooser.setSelectedFile(new File(defaultLogFileName()));
+        chooser.setFileFilter(new FileNameExtensionFilter("Log (*.log)", "log"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".log")) {
+            file = new File(file.getAbsolutePath() + ".log");
+        }
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.success", file.getName())));
+        } catch (IOException e) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.error", String.valueOf(e.getMessage()))));
+        }
+    }
+
+    /** Timestamped default file name, e.g. {@code companion_diagnostics_20260704_132155.log}. */
+    private static String defaultLogFileName() {
+        return "companion_diagnostics_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".log";
+    }
+
     public void initData(boolean sleepingModeOn, boolean servicesRunning) {
         this.sleeping = sleepingModeOn;
         wakeWordButton.setText(wakeWordText());
@@ -273,6 +337,9 @@ public class AiTabPanel extends JPanel {
     }
 
     private void applyServiceState(boolean running) {
+        if (!running) {
+            uiState.setLlmConnected(null);
+        }
         isServiceRunning.set(running);
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
         startStopServicesButton.setEnabled(true);
@@ -435,11 +502,34 @@ public class AiTabPanel extends JPanel {
         boolean running = isServiceRunning.get();
         if (!running) {
             llmBadge.setValue(getText("hud.state.standby"), StatusBadge.State.IDLE);
-        } else if (lastLlmProvider != null && !lastLlmProvider.isBlank()) {
-            llmBadge.setValue(lastLlmProvider, StatusBadge.State.OK);
         } else {
-            llmBadge.setValue(getText("hud.state.active"), StatusBadge.State.OK);
+            Boolean conn = uiState.getLlmConnected();
+            if (conn == null) {
+                llmBadge.setValue(getText("hud.state.standby"), StatusBadge.State.STANDBY);
+            } else if (!conn) {
+                llmBadge.setValue(getText("hud.state.offline"), StatusBadge.State.OFFLINE);
+            } else if (lastLlmProvider != null && !lastLlmProvider.isBlank()) {
+                llmBadge.setValue(lastLlmProvider, StatusBadge.State.OK);
+            } else {
+                llmBadge.setValue(getText("hud.state.active"), StatusBadge.State.OK);
+            }
         }
+    }
+
+    @Subscribe
+    public void onLlmConnectionStatus(LlmConnectionStatusEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            uiState.setLlmConnected(event.connected());
+            refreshLlmBadge();
+        });
+    }
+
+    @Subscribe
+    public void onRestartBrain(RestartBrainEvent event) {
+        SwingUtilities.invokeLater(() -> {
+            uiState.setLlmConnected(null);
+            refreshLlmBadge();
+        });
     }
 
     private void refreshTtsBadge() {

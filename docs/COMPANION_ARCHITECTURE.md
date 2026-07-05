@@ -4,10 +4,15 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.17**.
+Версия **v0.18**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.18 (2026-07-03).** Контекстное окно переведено на **нативные роли** вместо плоского `system`-блока «Visible context».
+> - **История диалога — сообщения `user`/`assistant`/`tool`** (`PromptComposer.buildHistoryMessages`): реплики командира → `user`, ответы компаньона → `assistant`, а вызов инструмента модели → `assistant(tool_calls)` + парный `tool`-результат (реплей по `tool_call_id`, пары матчатся по id даже при несоседстве). Подряд идущие одинаковые роли истории коалесятся; текущий ход — отдельное лёгкое `user`-сообщение (обёртка `## Current input` и инъекция `current topic` убраны). `CompanionSystemPromptPart` описывает роли, а не «Visible context».
+> - **Пары вызов/результат в памяти.** `MemoryEntry` получил `ToolLink` (CALL/RESULT); `CommanderThought`/`ReflexThought` пишут CALL и прокидывают `tool_call_id` через `ExecutionRequest`; `CompanionExecutionGateway` ставит thread-scoped `ActiveToolCall` вокруг хендлера (шина синхронная — тот же поток), а `CompanionAnnouncementBridge`/`VerbatimNarrationThought` пишут озвученный исход как RESULT этого вызова. Маркер «command X executed» и хелперы `description`/`rememberAction` удалены (исход = связанный RESULT).
+> - **Каждый ход командира записывается** (чтобы история чередовалась `user`/`assistant`); вопрос (`is_question`) принудительно `LOW`, поэтому не всплывает как факт-кандидат. Тему всегда возвращает `classify_turn` (по фразе + видимой истории); явная подсказка темы больше не подаётся.
 
 > **v0.17 (2026-06-26).** Добавлен **рефлекс** — детерминированный fast-path для прямых команд, минующий ЛЛМ.
 > - **`ReflexResolver`** (пакет `companion.prompt`) — гейт перед рождением мысли: даёт `id` команды, только если ввод **дословно** совпал с тренировочной фразой И нашлась **ровно одна** команда, **без параметров**, **видимая** сейчас и **не опасная**. Всё прочее (неоднозначное, параметризованное, опасное, не-дословное, не команда) → пусто и идёт обычным путём. Переиспользует `GameToolCandidates` (видимые команды + фразы + параметры), `AiActionLocalizations.splitPhraseGroup`, `DangerousActionPolicy` — без второй классификации.
@@ -201,7 +206,7 @@
 
 **`EventThought` — чистый «knowing»-канал.** Он не строит промпт, не зовёт ЛЛМ, не говорит и не вызывает никаких tools. Его единственное действие: при `importance() == HIGH` записать событие в память под статической темой (`NORMAL`/`LOW` — не пишет; см. §2.2.1). Спонтанную речь по событиям он не производит вовсе.
 
-**`NarrationThought` (ЛЛМ-фразировка).** Источник — курируемые сенсорные данные (`SensorDataEvent`). Получает **нулевой** набор game-tools (ни команд, ни query) и системную функцию только `speak` (решение «озвучить» уже принято subscriber-слоем). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`. Не вызывает `search_in_memory`/`clarify`/`classify_turn` и не двигает глобальную тему.
+**`NarrationThought` (ЛЛМ-фразировка).** Источник — курируемые сенсорные данные (`SensorDataEvent`). Получает **нулевой** набор game-tools (ни команд, ни query) и системную функцию только `speak` (решение «озвучить» уже принято subscriber-слоем). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`. Не вызывает `search_in_memory`/`classify_turn` и не двигает глобальную тему.
 
 **`VerbatimNarrationThought` (дословно).** Источник — готовый announcement-текст. Не зовёт ЛЛМ и не получает tools вообще: пишет фразу как `[COMPANION]` и озвучивает её дословно.
 
@@ -560,7 +565,7 @@ Cross-cutting операции (start/stop, interrupt, watchdog, idle) итер�
 
 ### §2.4. Thought — база и виды
 
-`Thought` — **абстрактная база**, общая для всех видов: держит `source`/`urgency`/`currentInput`/`ctx`, interrupt-механику (`interrupted` + `inFlight` + `interrupt()`), и строительные блоки — `composeInitialPrompt`, `submitRound` (один interruptible ЛЛМ-раунд), `execute`, `recordCurrentInput`, `recordCompanionSpeech`, а также озвучку/память исхода по типу действия `recordOutcome` (+ `voice`/`description`/`rememberAction`) — общую для исполнителей командирского lane (`CommanderThought` и `ReflexThought`). **Цикла мышления база не содержит**: его несёт `run()` каждого вида.
+`Thought` — **абстрактная база**, общая для всех видов: держит `source`/`urgency`/`currentInput`/`ctx`, interrupt-механику (`interrupted` + `inFlight` + `interrupt()`), и строительные блоки — `composeInitialPrompt`, `submitRound` (один interruptible ЛЛМ-раунд), `execute`, `recordCurrentInput`, `recordCompanionSpeech`, а также озвучку/память исхода по типу действия `recordOutcome` (+ `voice`/`recordCall`/`recordToolResult`) — общую для исполнителей командирского lane (`CommanderThought` и `ReflexThought`). **Цикла мышления база не содержит**: его несёт `run()` каждого вида.
 
 ```text
 Thought (abstract)
@@ -949,7 +954,6 @@ COMMANDER system tools:
 
 ```text
 speak
-clarify
 search_in_memory
 classify_turn
 ```
@@ -1533,14 +1537,13 @@ COMMANDER thought получает:
 
 ```text
 speak
-clarify
 search_in_memory
 classify_turn
 ```
 
 #### `speak`
 
-Озвучить текст через SpeechGateway.
+Озвучить текст через SpeechGateway — сообщить/ответить или **задать вопрос** командиру (его ответ приходит следующей репликой). Отдельной функции `clarify` больше нет: уточнение — это `speak` с вопросом; ожидание ответа (suspend хода до реплики командира) — будущая фича уровня thought/dispatcher, а не отдельный tool.
 
 Может иметь marker:
 
@@ -1549,10 +1552,6 @@ confirmation_request
 ```
 
 Только такой speak проходит сразу при frozen dangerous set.
-
-#### `clarify`
-
-Задать уточнение командиру.
 
 #### `search_in_memory`
 
@@ -1583,7 +1582,7 @@ turn importance   = importance   # важность хода: штампует �
 speak            # без гейта: решение «озвучить» принял subscriber-слой
 ```
 
-Курируемый слой уже решил, что фраза достойна озвучки (прежний `EventSpeechPolicy` удалён). ЛЛМ за один раунд формулирует фразу → `speak`, и ход завершается. `search_in_memory`/`clarify`/`classify_turn` ему недоступны.
+Курируемый слой уже решил, что фраза достойна озвучки (прежний `EventSpeechPolicy` удалён). ЛЛМ за один раунд формулирует фразу → `speak`, и ход завершается. `search_in_memory`/`classify_turn` ему недоступны.
 
 `VerbatimNarrationThought` ЛЛМ и tools не получает вовсе — он детерминированно пишет `[COMPANION]` и озвучивает готовый текст.
 
@@ -1610,10 +1609,10 @@ UserInputEvent
      SYSTEM   → no speech, no timeline (result only feeds the flow)
      speak    → suppressed if game action this turn; else voice + [COMPANION]
 → search_in_memory issued? -> replay assistant tool_calls + result into flow, one more LLM round to speak the answer
-→ else turn ends (single-round: command/query/macro, speak/clarify, or bare classify_turn)
+→ else turn ends (single-round: command/query/macro, speak, or bare classify_turn)
 ```
 
-Ход **одношаговый по умолчанию**: команда/запрос/макрос, `speak`/`clarify` — или голый `classify_turn` — завершают его в своём раунде. Единственное продолжение — `search_in_memory`: его найденные записи возвращаются модели (не командиру), поэтому цикл делает ещё один раунд, чтобы озвучить ответ (`speak`), который и завершает ход. Явного терминатора (`end_turn`) больше нет — маркер завершения не нужен, отсутствие продолжения и есть завершение; пустой ответ без вызовов по-прежнему = ошибка. Потолок `MAX_TOOL_ROUNDS` + watchdog — страховка от зацикленного lookup.
+Ход **одношаговый по умолчанию**: команда/запрос/макрос, `speak` — или голый `classify_turn` — завершают его в своём раунде. Единственное продолжение — `search_in_memory`: его найденные записи возвращаются модели (не командиру), поэтому цикл делает ещё один раунд, чтобы озвучить ответ (`speak`), который и завершает ход. Явного терминатора (`end_turn`) больше нет — маркер завершения не нужен, отсутствие продолжения и есть завершение; пустой ответ без вызовов по-прежнему = ошибка. Потолок `MAX_TOOL_ROUNDS` + watchdog — страховка от зацикленного lookup.
 (Тот же `recordOutcome` исполняет и подтверждённый dangerous-набор, §5.3.)
 
 ---
@@ -2022,12 +2021,12 @@ elite.intel.companion
 │                       CompanionActionReducer, WordOverlapActionReducer, GameToolCandidates, ReflexResolver
 ├─ tools                SystemFunction, RegisterSystemFunction, SystemFunctionRegistry, SystemFunctionProvider,
 │                       IntelActionTypeResolver (id → COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN),
-│                       + the 4 system functions (speak, classify_turn, clarify,
+│                       + the 3 system functions (speak, classify_turn,
 │                         search_in_memory), each an IntelAction (FindActionFunction retired, unregistered)
 ├─ llm                  LlmGateway, CompanionLlmGateway, ...
 ├─ speech               SpeechGateway, CompanionSpeechGateway
 ├─ execution            ExecutionGateway, CompanionExecutionGateway
-├─ memory               MemoryGateway, MemoryAvailabilitySnapshot, SessionMemoryGateway,
+├─ memory               MemoryGateway, SessionMemoryGateway,
 │                       ShortTermMemory, MidTermTopicMemory, LongTermMemory, LlmMemory, MidTermToLongTermConsolidator
 └─ confirm              DangerousActionConfirmedEvent
 ```
@@ -2040,12 +2039,12 @@ elite.intel.companion
 * **Один класс мысли на источник.** `Thought` — тонкая общая база (`composeInitialPrompt`/`submitRound`/`execute`/`recordCurrentInput`/`recordCompanionSpeech`/interrupt), **без цикла мышления**. `CommanderThought` владеет полным tool-calling-циклом и dangerous-confirmation; `NarrationThought` — один короткий ЛЛМ-раунд (фразирует `SensorDataEvent`); `VerbatimNarrationThought` — дословная озвучка announcement-текста без ЛЛМ; `EventThought` — memory-only (`HIGH` пишет в память, `NORMAL`/`LOW` — нет), ЛЛМ не зовёт и промпт не строит. Слова компаньона пишутся источником памяти `COMPANION` (сам текст, не `{status:spoken}`). `ThoughtDispatcher` держит lane на каждый `ThoughtSource` в `EnumMap`; командирский lane — bounded-пул на `MAX_LIVE_COMMANDER_THOUGHTS` (v0.16), event/narration — одиночные.
 * **`mode` → `PromptCacheProfile`** {COMMANDER, NARRATION, COMPRESSION}. У каждого стабильный `cacheKey()` → Mistral `prompt_cache_key` (свой кэш-префикс на профиль). `EVENT` промпт не строит (memory-only), поэтому своего профиля не имеет; `NARRATION` несёт собственный лаконичный промпт (без topic enum / memory / safety). Признак «ждём tool-calls vs текст» выводится (consciousness vs COMPRESSION / `tools.isEmpty()`), отдельного флага нет.
 * **`LlmRequest` = `(requestId, messages, tools, profile)`.** Список `tools` и есть immutable snapshot; `urgency` на запросе не нужен — приоритет/преемпция реализуются через interrupt на уровне `ThoughtDispatcher`.
-* **`ExecutionRequest` = `(requestId, toolName, arguments)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся.
+* **`ExecutionRequest` = `(requestId, toolName, arguments, toolCallId)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся. `toolCallId` (nullable) — id вызова модели: gateway ставит его thread-scoped (`ActiveToolCall`) вокруг хендлера, чтобы озвученный исход команды записался как RESULT этой tool-пары.
 * **`SpeechRequest` = `(requestId, text, urgency)`.** Различие conscious / system-notification — забота вызывающей стороны, поля `source` нет.
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. В набор tools попадает любой action с `isVisibleForLLM(status) == true` — это автоматически отсекает неуместный в текущем контексте набор (например, on-foot команды, когда командир в корабле). Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
-  * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английские нарочно: схема английская, не-английский ввод модель сперва переводит на английский (см. language rule), и английское описание одинаково для всех языков → единый кэш-префикс. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в `clarify`). Синтетический префикс «Game action `<id>`» убран.
-* **System-prompt steering (`CompanionSystemPromptPart`).** Помимо контракта tool-calling, статический промпт несёт поведенческие правила (steering, не hard-enforcement): (1) **граундинг** — говорить только из результатов функций и памяти, не выдумывать факты (числа/имена/дистанции/статус); для того, что командир сообщил или что ты запомнил, — `search_in_memory`, для текущего состояния корабля/галактики — `query`-функция, при неоднозначности можно дёрнуть оба; (2) **no-fit** — если ни один offered-tool не подходит, не форсировать неуместный и **не делать вид, что выполнил** несуществующее действие, а `clarify` или честно сказать «не могу»; (3) **вежливое закрытие** — если после проверки ответа/действия всё-таки нет, сказать об этом до конца хода, не «обещать проверить и замолчать»; (4) **язык** (`languageRule`) — если командир говорит не по-английски, понять запрос по-английски перед выбором функции (схема инструментов и фразы английские), извлекая аргументы по правилу каждого параметра (verbatim, где указано). Замер на отдельном пробнике подтвердил выигрыш на терсовых фразах (`цель двигатели`). Покрыто `CompanionSystemPromptPartTest`.
+  * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английские нарочно: схема английская, не-английский ввод модель сперва переводит на английский (см. language rule), и английское описание одинаково для всех языков → единый кэш-префикс. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в уточняющий вопрос вместо команды). Синтетический префикс «Game action `<id>`» убран.
+* **System-prompt steering (`CompanionSystemPromptPart`).** `Tool calling` несёт только механику (только вызовы функций; ход начинается с одного `classify_turn`; одношаговость + memory-lookup как единственное продолжение; пустой ответ = ошибка). Само **решение — единая упорядоченная if-else лестница в `Turn source`**, по которой модель идёт сверху вниз и берёт **первый** подходящий пункт (memory-ветки свёрнуты сюда, отдельной секции «Memory usage rules» больше нет): (1) командир хочет действие (в т.ч. голое/односложное имя панели/режима — «navigation», «inventory», «contacts») → **ровно один** offered-инструмент подходит → вызвать его; **несколько** подходят и не ясно, какой именно → `speak` с уточняющим вопросом, **не угадывать** (выполнить не ту команду хуже вопроса); **ни один** → не подделывать чужой, сказать через `speak`, что не может; (2) спрашивает текущее состояние корабля/галактики → matching `query` (те же ветки один/несколько/ни один); (3) спрашивает про сказанное/запомненное ранее и этого нет в видимой истории диалога → `classify_turn` + `search_in_memory` в этом ответе, ответ озвучить следующим; (4) ответ уже в видимой истории диалога / болтовня / уже знаешь → `speak`; (5) ничего из перечисленного (пустое подтверждение, шум) → один `classify_turn`. Плюс сквозные правила: **граундинг** (факты только из функций/памяти, не выдумывать числа/имена/дистанции), **язык** (`languageRule` — не-английский ввод понять по-английски перед выбором функции, аргументы по правилу параметра). Замер на отдельном пробнике подтвердил выигрыш на терсовых фразах (`цель силовая установка`). Покрыто `CompanionSystemPromptPartTest`.
 * **`CompanionActionReducer` → `WordOverlapActionReducer` (собственный отбор, не легаси `Reducer`).** Берёт actions из реестров через `GameToolCandidates`, получает `allowedToolCategories` (из `IntelActionAccessPolicy` по origin: `COMMANDER` → `QUERY/ACTION/MACRO`, `EVENT` → `QUERY` (memory-only, промпт не строит), `NARRATION` → пусто) и `currentInput`, отбирает по совпадению значимых слов реплики с локализованными тренировочными фразами кандидата (`phraseKey`) и возвращает `List<LlmToolDefinition>`. Алгоритм отбора:
   * **Сопоставление слов** — `CompanionWordMatch`: для флективных языков терпит окончания (одно слово — начало другого / общая основа / 1–2 правки Левенштейна, бюджет растёт с длиной), для аналитических (английский) — точное равенство; выбор по языку сессии (`ANALYTIC = {EN}`, всё прочее — fuzzy). Это чинит русские склонения (`навігація`/`навигации`, `ведомого`/`ведомый`), которые точное совпадение прячет.
   * **Стоп-слова** — служебные слова языка (`InputNormalizerLocalizations.stopWords()`, теперь заполнены для всех языков) и слова короче 3 букв отбрасываются.

@@ -8,7 +8,9 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 /**
@@ -51,6 +53,8 @@ public class HudLogArea extends JPanel {
     }
 
     private static final int MAX_MESSAGES = 20;
+    /** Full-session transcript kept for export, independent of the 20-message render window; bounded so it cannot grow without limit. */
+    private static final int MAX_TRANSCRIPT = 5000;
     private static final DateTimeFormatter LOG_TIME_FMT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final int PAD_X = 10;
     private static final int PAD_Y = 6;
@@ -60,6 +64,8 @@ public class HudLogArea extends JPanel {
 
     private final Style style;
     private final List<Message> messages = new ArrayList<>();
+    /** Every line ever added this session (capped at {@link #MAX_TRANSCRIPT}), for {@link #exportText()}. */
+    private final Deque<String> transcript = new ArrayDeque<>();
     private BufferedImage offscreen;
     private final Timer typewriterTimer;
     /**
@@ -153,6 +159,8 @@ public class HudLogArea extends JPanel {
 
     private void addMessageInternal(String text, int prefixLen) {
         if (text == null || text.isBlank()) return;
+        transcript.addLast(text);
+        while (transcript.size() > MAX_TRANSCRIPT) transcript.removeFirst();
         for (Message m : messages) {
             m.complete = true;
             m.visibleText = m.fullText;
@@ -174,8 +182,17 @@ public class HudLogArea extends JPanel {
         typewriterTimer.stop();
         removeAllTimerListeners();
         messages.clear();
+        transcript.clear();
         offscreen = null;
         repaint();
+    }
+
+    /**
+     * The full retained transcript (up to {@link #MAX_TRANSCRIPT} lines, beyond the 20-message render window),
+     * one entry per line, for saving the log to a file. Empty string when nothing has been logged.
+     */
+    public String exportText() {
+        return String.join(System.lineSeparator(), transcript);
     }
 
     private Font hudFont() {

@@ -4,6 +4,7 @@ import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputComman
 import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
@@ -79,14 +80,22 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
         if (candidates.isEmpty()) {
+            // An empty allowed-category set is intent (no game tools requested), not a selection outcome, so it
+            // needs no line; a non-empty set that yielded nothing is worth surfacing.
+            if (!allowedCategories.isEmpty()) {
+                CompanionDiagnostics.debugAmbient("reduce", "word-overlap: no candidates for " + allowedCategories);
+            }
             return List.of();
         }
         // A blank input has no signal to narrow on - offer everything, mirroring the legacy "offer all".
         if (currentInput == null || currentInput.isBlank()) {
-            return allTools(candidates);
+            List<LlmToolDefinition> all = allTools(candidates);
+            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: blank input -> offer all (" + all.size() + ")");
+            return all;
         }
         List<String> inputWords = List.copyOf(significantWords(currentInput));
         if (inputWords.isEmpty()) {
+            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: only stop/short words -> no game tools");
             return List.of(); // only stop/short words: no signal to match on
         }
 
@@ -115,6 +124,8 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
             }
         }
         if (matched.isEmpty()) {
+            CompanionDiagnostics.debugAmbient("reduce", "word-overlap: candidates=" + candidates.size()
+                    + " matched=0 -> no game tools");
             return List.of();
         }
 
@@ -156,6 +167,9 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
                 result.add(s.candidate().tool());
             }
         }
+        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+                "word-overlap: candidates=%d matched=%d top=%.2f -> %s",
+                candidates.size(), matched.size(), scored.get(0).score(), CompanionDiagnostics.names(result)));
         return result;
     }
 

@@ -109,33 +109,28 @@ class ShortTermMemoryTest {
     }
 
     @Test
-    void repeatedCommandsCollapseKeepingTheLatestOccurrence() {
-        // A subsystem-targeting cycle during combat: the same command recurs, interleaved with another.
+    void repeatedCommandsAreKeptVerbatimNotCollapsed() {
+        // The short-term window is not de-duplicated: a subsystem-targeting cycle keeps every occurrence, in
+        // order, so the hot timeline is a faithful record of the turns (fact dedup happens only in mid-term).
         ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
-        for (String c : List.of("target drive", "target drive", "target power plant",
-                "target drive", "target power plant", "target power plant")) {
+        List<String> commands = List.of("target drive", "target drive", "target power plant",
+                "target drive", "target power plant", "target power plant");
+        for (String c : commands) {
             memory.add(entry(c));
         }
 
-        // Each distinct command survives once, in order of its most recent use - so the current target is last.
-        assertEquals(List.of("target drive", "target power plant"), contents(memory.timeline()));
+        assertEquals(commands, contents(memory.timeline()));
     }
 
     @Test
-    void dedupSubtractsTokensSoCollapsedDuplicatesDoNotMisfireEviction() {
-        // Per-entry cost is half the budget, so two distinct entries sit exactly at the budget and nothing
-        // evicts - but only if each collapsed duplicate's tokens were subtracted on removal. A broken
-        // subtraction would inflate the estimate past the budget and wrongly evict the older "alpha".
-        int perEntryEstimate = CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET / 2
-                - CompanionMemoryLimits.SHORT_TERM_ENTRY_FRAMING_OVERHEAD_TOKENS;
-        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(perEntryEstimate));
-        memory.add(entry("alpha"));
-        memory.add(entry("repeat"));
-        memory.add(entry("repeat"));
-        memory.add(entry("repeat"));
+    void identicalEntriesFromTheSameSourceBothSurvive() {
+        // Why short-term dedup was removed: a repeated structural boundary marker must persist. Two identical
+        // <no_reply/> notes are both kept, so neither erases the turn boundary the other separates.
+        ShortTermMemory memory = new ShortTermMemory(new FixedTokenEstimator(1));
+        memory.add(entry(MemorySource.SYSTEM, "<no_reply/>"));
+        memory.add(entry(MemorySource.SYSTEM, "<no_reply/>"));
 
-        assertTrue(memory.evictOverflow().isEmpty());
-        assertEquals(List.of("alpha", "repeat"), contents(memory.timeline()));
+        assertEquals(2, memory.timeline().size());
     }
 
     @Test

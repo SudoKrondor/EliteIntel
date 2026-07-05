@@ -40,9 +40,11 @@ public class SAASignalsFoundSubscriber {
     @Subscribe
     public void onSAASignalsFound(SAASignalsFoundEvent event) {
         Thread.ofVirtual().start(() -> {
+            // Read-modify-write under a per-body lock so a concurrent Scan for the same body can't
+            // interleave and overwrite these signals/materials/classification (blind whole-JSON upsert).
+            locationManager.updateBody(event.getSystemAddress(), event.getBodyID(), location -> {
             StringBuilder sb = new StringBuilder();
             LocationDto primaryStarLocation = locationManager.findBySystemAddress(event.getSystemAddress());
-            LocationDto location = LocationManager.getInstance().findBySystemAddress(event.getSystemAddress(), event.getBodyID());
             location.setPlanetName(event.getBodyName());
             location.setBodyId(event.getBodyID());
             location.setStarName(primaryStarLocation.getStarName());
@@ -51,7 +53,6 @@ public class SAASignalsFoundSubscriber {
             location.setZ(primaryStarLocation.getZ());
 
             location.addSaaSignals(event.getSignals());
-            locationManager.save(location);
 
             List<SAASignalsFoundEvent.Signal> signals = event.getSignals();
             int signalsFound = signals != null ? signals.size() : 0;
@@ -93,17 +94,13 @@ public class SAASignalsFoundSubscriber {
                     }
 
                 } else if (event.getBodyName().contains("Ring")) {
-                    //Rings are bodies
-                    LocationDto ring = new LocationDto(event.getBodyID());
-                    ring.setSystemAddress(event.getSystemAddress());
-                    ring.setBodyId(event.getBodyID());
-                    ring.setPlanetName(event.getBodyName());
-                    ring.setStarName(primaryStarLocation.getStarName());
-                    ring.setMaterials(toMaterials(event.getSignals()));
-                    ring.setLocationType(PLANETARY_RING);
+                    // Rings are bodies. Classify and enrich the same `location` we save below - do NOT
+                    // build a second DTO with the same name, or the trailing save(location) overwrites it.
+                    location.setLocationType(PLANETARY_RING);
+                    location.setMaterials(toMaterials(event.getSignals()));
 
                     String parentBodyName = event.getBodyName().replaceAll(" [A-Z] Ring$", "");
-                    ring.setParentBodyName(parentBodyName);
+                    location.setParentBodyName(parentBodyName);
                     LocationDto parent = locationManager.getLocation(
                             playerSession.getPrimaryStarName(),
                             findParentId(
@@ -112,14 +109,10 @@ public class SAASignalsFoundSubscriber {
                                     )
                             )
                     );
-                    if (parent != null) parent.setHasRings(true);
-                    if (event.getSignals() != null) {
-                        ring.setSaaSignals(event.getSignals());
-                        ring.setGeoSignals(event.getSignals().size());
-                        if (parent != null) parent.setSaaSignals(event.getSignals());
+                    if (parent != null) {
+                        parent.setHasRings(true);
+                        locationManager.save(parent);
                     }
-                    locationManager.save(ring);
-                    if (parent != null) locationManager.save(parent);
                 }
 
                 if (playerSession.isDiscoveryAnnouncementOn()) {
@@ -130,8 +123,7 @@ public class SAASignalsFoundSubscriber {
                     announce(localizedEvent("event.signals.none"));
                 }
             }
-
-            locationManager.save(location);
+            });
         });
     }
 
