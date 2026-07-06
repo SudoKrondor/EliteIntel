@@ -18,7 +18,19 @@ public class ItalianInputNormalizerRules implements InputNormalizerProvider {
     @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
-        // Add Italian synonym rules here as they are identified during testing.
+        m.put("carrier di squadriglia", "squadron carrier");
+        m.put("carrier della squadriglia", "squadron carrier");
+        m.put("portanavi di squadriglia", "squadron carrier");
+        m.put("portanavi della squadriglia", "squadron carrier");
+        m.put("carrier di squadrone", "squadron carrier");
+        m.put("carrier dello squadrone", "squadron carrier");
+        m.put("portanavi di squadrone", "squadron carrier");
+        m.put("portanavi dello squadrone", "squadron carrier");
+        m.put("portanavi", "fleet carrier");
+        m.put("carrier", "fleet carrier");
+        m.put("mappa galattica", "mappa della galassia");
+        m.put("mappa stellare", "mappa del sistema");
+
         return m;
     }
 }

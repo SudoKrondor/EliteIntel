@@ -34,14 +34,20 @@ public class ItalianPromptRules implements PromptLanguageRules {
         sb.append("- Classify Italian as INTENT + SUBJECT + COMPLEMENT; never use one keyword alone.\n");
         sb.append("- INFO: rapporto/stato/informazioni/quanti/dove/trova/cerca. ACTION: apri/attiva/disattiva/naviga/traccia/punta/seleziona/blocca/regola/schiera.\n");
         sb.append("- Require explicit destructive intent for ").append(ClearActiveMissionsCommand.ID).append(".\n");
+
         sb.append("- COPY ACTION NAMES EXACTLY. Never invent synonyms or rename actions. Fleet carrier status is exactly ");
         sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
         sb.append(". Fighter focus is exactly ");
         sb.append(FighterAttackTargetCommand.ID);
         sb.append(".\n");
 
+        sb.append("- stai zitto/chiudi la bocca/silenzio/smettila di parlare → ");
+        sb.append(InterruptCommand.ID);
+        sb.append(".\n");
+
         sb.append("- estrai/abbassa/schiera + carrello → ");
         sb.append(DeployLandingGearCommand.ID);
+
         sb.append("; ritira/alza/rientra + carrello → ");
         sb.append(RetractLandingGearCommand.ID);
         sb.append(". \"estrai\" never retracts.\n");
@@ -64,15 +70,15 @@ public class ItalianPromptRules implements PromptLanguageRules {
         sb.append(DeployFighterCommand.ID);
         sb.append(".\n");
 
-        sb.append("- Carrier: \"dello squadrone\" means squadron carrier; without \"squadrone\", portanavi/fleet carrier = player fleet carrier.\n");
         sb.append("- fleet carrier + stato/rapporto/finanze/autonomia/portata → ");
         sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
-        sb.append(". squadron carrier + stato/rapporto/carburante/tritio → ");
+        sb.append(". squadron carrier + stato/rapporto/finanze/carburante/trizio → ");
         sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
         sb.append("; rotta/itinerario required for ");
         sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
         sb.append(".\n");
-        sb.append("- trova/cerca portanavi più vicina → ").append(FindNearestFleetCarrierCommand.ID).append(".\n");
+        sb.append("- ").append(FindNearestFleetCarrierCommand.ID).append(" requires explicit \"più vicina\"/\"nearest\" or trova/cerca; e.g. \"trova/cerca portanavi più vicina\". ");
+        sb.append("Any other reference to the fleet carrier (rotta verso, vai verso, raggiungi, torna, dirigiti, portami alla fleet carrier/portanavi) → ").append(NavigateToFleetCarrierCommand.ID).append(".\n");
 
         sb.append("- attiva alone → ").append(ActivateUiControlCommand.ID);
         sb.append("; attiva pilota automatico/taxi → ").append(TaxiToLandingPadCommand.ID);
@@ -103,6 +109,13 @@ public class ItalianPromptRules implements PromptLanguageRules {
 
         sb.append("- Any \"scoop\"/\"vano di carico\" → ").append(ToggleCargoScoopCommand.ID);
         sb.append("; pannello/inventario/cargo → ").append(ShowInventoryPanelCommand.ID).append(".\n");
+
+        sb.append("- HARD RULE: generic scan-the-system commands honk, esplora il sistema, esegui una scansione del sistema → ");
+        sb.append(HonkCommand.ID);
+        sb.append(" ONLY. Use ");
+        sb.append(OpenFssScanSystemCommand.ID);
+        sb.append(" ONLY for explicit full-spectrum terms: apri FSS, scansione a spettro completo, FSS.\n");
+
         sb.append("- INFO noun phrase \"inventario/lista/scorta dei materiali\" without apri/mostra/visualizza and without pannello → ");
         sb.append(AnalyseMaterialsQueryCommand.ID);
         sb.append(". Only ACTION apri/mostra/visualizza + pannello/inventario della nave/cargo → ");
