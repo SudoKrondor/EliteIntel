@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -49,6 +50,7 @@ public class GoogleTTSImpl implements MouthInterface {
     private final BlockingQueue<VocalizationRequest> vocalizationQueue;
     private final GoogleVoiceProvider googleVoiceProvider;
     private final AtomicBoolean interruptRequested = new AtomicBoolean(false);
+    private final AtomicLong interruptGeneration = new AtomicLong(0);
     private final AtomicReference<SourceDataLine> currentLine = new AtomicReference<>();
     private TextToSpeechClient textToSpeechClient;
     private Thread ttsProcessingThread;
@@ -147,16 +149,17 @@ public class GoogleTTSImpl implements MouthInterface {
     }
 
     /**
-     * Interrupts any ongoing voice synthesis operation, clears the voice request queue,
-     * and resets the state of the text-to-speech (TTS) system to allow for future operations.
+     * Interrupts any ongoing voice synthesis and playback, and clears both queues.
      * <p>
-     * This method ensures the following:
-     * - Any pending requests in the voice queue are cleared.
-     * - The `interruptRequested` flag is set to prevent further processing of requests momentarily.
-     * - The currently active audio playback `SourceDataLine` (if any) is stopped, closed, and removed.
-     * - The `interruptRequested` flag is reset to indicate that the system is ready for new voice requests.
-     * - Logs the interruption and state of the system.
-     * - Verifies if the processing thread is running; if it has stopped unexpectedly, the method restarts the thread.
+     * Fencing is done by bumping {@code interruptGeneration}: every queued request carries the generation
+     * captured at enqueue time, so after the bump all in-flight and queued requests are stale and get dropped
+     * at each pipeline stage (their completion futures are completed so callers do not wait out the timeout).
+     * A fresh request enqueued after this call captures the new generation and proceeds normally.
+     * <p>
+     * The {@code interruptRequested} flag is set separately to break the currently-playing write loop
+     * mid-stream; it is reset by the playback thread when it next handles a live request, not here.
+     * The active {@code SourceDataLine} (if any) is stopped and flushed to discard buffered audio at once.
+     * If the processing thread has died unexpectedly, it is restarted.
      * <p>
      * This method is synchronized to ensure thread-safe modifications to shared resources.
      */
@@ -173,15 +176,14 @@ public class GoogleTTSImpl implements MouthInterface {
         vocalizationQueue.drainTo(drainedVox);
         drainedVox.stream().map(VocalizationRequest::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
 
+        interruptGeneration.incrementAndGet();
         interruptRequested.set(true);
         SourceDataLine line = currentLine.get();
         if (line != null) {
             line.stop();
             line.flush(); // Flush instead of close
             line.start();
-            currentLine.set(line);
         }
-        interruptRequested.set(false);
         log.info("TTS interrupted and queue cleared, thread alive={}, interruptRequested={}", ttsProcessingThread != null && ttsProcessingThread.isAlive(), interruptRequested.get());
         if (ttsProcessingThread == null || !ttsProcessingThread.isAlive()) {
             log.warn("Processing thread stopped unexpectedly, restarting");
@@ -216,10 +218,12 @@ public class GoogleTTSImpl implements MouthInterface {
 
             String[] sentences = text.split("(?<=[.!?])\\s+(?=\\S)");
             CompletableFuture<Void> completionFuture = event.getCompletionFuture();
+            long generation = interruptGeneration.get();
             for (int i = 0; i < sentences.length; i++) {
                 // Only the last sentence carries the future; earlier sentences pass null
                 boolean isLast = (i == sentences.length - 1);
-                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()), event.getOriginType(), event.isRadio(), isLast ? completionFuture : null));
+                ttsQueue.put(new VoiceRequest(sentences[i], voiceName, (1f + systemSession.getSpeechSpeed()),
+                        event.getOriginType(), event.isRadio(), generation, isLast ? completionFuture : null));
             }
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
@@ -250,12 +254,17 @@ public class GoogleTTSImpl implements MouthInterface {
                     }
                     continue;
                 }
+                if (request.generation() != interruptGeneration.get()) {
+                    if (request.completionFuture() != null) request.completionFuture().complete(null);
+                    continue;
+                }
                 processVoiceRequest(
                         request.text().replace("present", "detected").replace("_", " ").replace("*", ""),
                         request.voiceName(),
                         request.speechRate(),
                         request.originType(),
                         request.isRadio(),
+                        request.generation(),
                         request.completionFuture()
                 );
             } catch (InterruptedException e) {
@@ -339,7 +348,8 @@ public class GoogleTTSImpl implements MouthInterface {
         }
     }
 
-    private void processVoiceRequest(String text, String voiceName, double speechRate, Class<? extends BaseVoxEvent> originType, boolean isRadio, @Nullable CompletableFuture<Void> completionFuture) {
+    private void processVoiceRequest(String text, String voiceName, double speechRate, Class<? extends BaseVoxEvent> originType,
+                                     boolean isRadio, long generation, @Nullable CompletableFuture<Void> completionFuture) {
         if (text == null || text.isEmpty()) {
             return;
         }
@@ -365,7 +375,7 @@ public class GoogleTTSImpl implements MouthInterface {
                 voice = googleVoiceProvider.getVoiceParams(GoogleVoices.JENNIFER.getName());
             }
 
-            if (interruptRequested.get()) {
+            if (generation != interruptGeneration.get()) {
                 log.debug("Request interrupted before synthesis, skipping: {}", text);
                 return;
             }
@@ -382,6 +392,10 @@ public class GoogleTTSImpl implements MouthInterface {
             SynthesizeSpeechResponse response = textToSpeechClient.synthesizeSpeech(input, voice, config);
             long apiEndTime = System.currentTimeMillis();
             log.debug("Google TTS API call completed in {}ms", apiEndTime - apiStartTime);
+            if (generation != interruptGeneration.get()) {
+                if (completionFuture != null) completionFuture.complete(null);
+                return;
+            }
 
             byte[] audioData = response.getAudioContent().toByteArray();
             AudioDeClicker.sanitize(audioData, 6);
@@ -395,19 +409,15 @@ public class GoogleTTSImpl implements MouthInterface {
                     return;
                 }
             }
-            currentLine.set(persistentLine);
             ///NOTE: Can be null if the user stops the service
             if (vocalizationQueue != null)
-                vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, completionFuture));
+                vocalizationQueue.put(new VocalizationRequest(text, voiceName, originType, audioData, generation, completionFuture));
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.debug("TTS request interrupted mid-flight (service stopping), skipping: {}", text);
         } catch (Exception e) {
             log.error("Text-to-speech error: {}", e.getMessage(), e);
-        } finally {
-            currentLine.set(null);
-            interruptRequested.set(false);
         }
         log.debug("VoiceRequest processing completed in {}ms", System.currentTimeMillis() - startTime);
     }
@@ -417,6 +427,11 @@ public class GoogleTTSImpl implements MouthInterface {
             try {
                 VocalizationRequest request = vocalizationQueue.poll(1, TimeUnit.SECONDS);
                 if (request == null) continue;
+                if (request.generation() != interruptGeneration.get()) {
+                    if (request.completionFuture() != null) request.completionFuture().complete(null);
+                    continue;
+                }
+                interruptRequested.set(false);
                 vocalize(request.text(), request.voiceName(), request.originType(), request.audioData(), request.completionFuture());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -435,6 +450,7 @@ public class GoogleTTSImpl implements MouthInterface {
         // Bracket main-voice playback so the always-on Kokoro radio engine can duck behind it.
         MainVoicePlaybackGate.begin();
         try {
+            currentLine.set(persistentLine);
             persistentLine.write(silenceBuffer, 0, silenceBuffer.length);
             log.info("Spoke with voice {}: {}", voiceName, text);
             long writeStartTime = System.currentTimeMillis();
@@ -454,6 +470,8 @@ public class GoogleTTSImpl implements MouthInterface {
             }
             log.debug("Audio playback completed in {}ms", System.currentTimeMillis() - writeStartTime);
         } finally {
+            currentLine.set(null);
+            interruptRequested.set(false);
             MainVoicePlaybackGate.end();
         }
         publishCompletionEvent(originType);
@@ -476,10 +494,11 @@ public class GoogleTTSImpl implements MouthInterface {
 
     private record VoiceRequest(String text, String voiceName, double speechRate,
                                 Class<? extends BaseVoxEvent> originType, boolean isRadio,
+                                long generation,
                                 @Nullable CompletableFuture<Void> completionFuture) {
     }
 
     private record VocalizationRequest(String text, String voiceName, Class<? extends BaseVoxEvent> originType,
-                                       byte[] audioData, @Nullable CompletableFuture<Void> completionFuture) {
+                                       byte[] audioData, long generation, @Nullable CompletableFuture<Void> completionFuture) {
     }
 }
