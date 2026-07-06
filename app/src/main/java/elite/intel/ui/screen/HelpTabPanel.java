@@ -1,6 +1,8 @@
 package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
@@ -23,12 +25,16 @@ import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
+import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.HudTwoColumns;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -37,12 +43,12 @@ import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
@@ -51,16 +57,22 @@ import static elite.intel.ui.theme.HudPalette.*;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 /**
- * The "Help" tab. At the top of the page it shows two read-only fields: the commander's current physical
- * situation together with the concrete place (in ship / SRV / fighter / taxi / on foot; docked, landed,
- * supercruise, ring, orbit, deep space, station, planet surface), and below it the commander's current
- * spoken phrase. Below those, an "Available commands and queries" section splits (canon 9) into two
- * single-column read-only tables (canon 6): one combined, alphabetically sorted list of the commands (built-in
- * actions plus custom-command macros) and queries available in the current game context, divided evenly by
- * count between the left and right tables. All of it updates live off game events while the tab is showing
- * (the tables rebuild when the situation changes).
+ * The "Help" tab. At the top of the page a two-column row (canon 9, equal halves + centred divider) pairs a
+ * situation picker (an editable combo of every physical situation - in ship / SRV / fighter / taxi / on foot;
+ * docked, landed, supercruise, ring, orbit, deep space; UNKNOWN when undetermined) with the concrete place for
+ * it (read-only: station / body / system); below it sits the commander's current spoken phrase in an editable
+ * field. The picker auto-follows the live game situation
+ * but can be changed by hand, and the selected situation - not the live game - is what gates the list below; a
+ * phrase edit re-runs the reducer over the field's text and re-highlights the matching actions (reducer-only,
+ * no LLM turn, so both filters work with no LLM connected). Below those, an "Available commands and queries"
+ * section (canon 9) holds one combined, alphabetically sorted list of the commands (built-in actions plus
+ * custom-command macros) and queries available in the selected situation, laid out row-major across three
+ * equal, header-less columns of a single read-only HUD table (canon 6). All of it updates live off game events
+ * while the tab is showing (the table rebuilds when the selected situation changes).
  */
 public class HelpTabPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(HelpTabPanel.class);
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final Status status = Status.getInstance();
@@ -68,14 +80,19 @@ public class HelpTabPanel extends JPanel {
     private final CommandCatalog commandCatalog = new CommandCatalog();
     private final CompanionActionReducer semanticFallbackReducer = new SemanticActionReducer();
 
+    /** Number of equal columns the available-actions list is laid out across (row-major fill). */
+    private static final int COLUMN_COUNT = 3;
+    /** The action categories the Help tab lists and highlights: built-in commands, macros, and queries. */
+    private static final Set<IntelActionCategory> ACTION_CATEGORIES =
+            Set.of(IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY);
+
+    private JComboBox<PlayerSituation> situationCombo;
     private JTextField locationField;
     private JTextField phraseField;
-    private JTable leftTable;
-    private JTable rightTable;
-    private DefaultTableModel leftModel;
-    private DefaultTableModel rightModel;
+    private JTable actionsTable;
+    private DefaultTableModel actionsModel;
     private HudSection actionsSection;
-    /** Last situation the action tables were built for; they rebuild only when it changes (EDT-only field). */
+    /** Last situation the action table was built for; it rebuilds only when this changes (EDT-only field). */
     private PlayerSituation lastSituation;
     /** Last status flags rendered; the frequent Status tick is skipped while these are unchanged (event-thread-only). */
     private long lastFlags = -1L;
@@ -88,6 +105,13 @@ public class HelpTabPanel extends JPanel {
     private int highlightRequest;
     /** Current available action rows before highlight ordering is applied (EDT-only). */
     private List<ActionRow> visibleActionRows = List.of();
+    /** True while we set the phrase field ourselves, so its edit listener skips our echo (EDT-only). */
+    private boolean settingPhraseText;
+    /** True while we sync the situation picker to the live game situation, so its listener skips it (EDT-only). */
+    private boolean syncingSituation;
+    /** Cell currently under the mouse in the actions table (row/col), or -1/-1 for none (EDT-only). */
+    private int hoverRow = -1;
+    private int hoverCol = -1;
 
     public HelpTabPanel() {
         buildUi();
@@ -109,46 +133,83 @@ public class HelpTabPanel extends JPanel {
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(hudScreenBorder());
 
-        // Two read-only rows directly at the top of the page (no framed section), stacked: location, then phrase.
+        // Top of the page (no framed section): a two-column row splitting situation | place down the middle
+        // (canon 9, HudTwoColumns), then the commander phrase full-width below.
         JPanel top = new JPanel(new GridBagLayout());
         top.setOpaque(false);
         GridBagConstraints gbc = baseGbc();
 
-        addLabel(top, getText("location.field.label"), gbc);
+        // Left column - situation picker: selectable list of every PlayerSituation (localized, capsed),
+        // UNKNOWN = "unknown". It auto-follows the live game situation, but a manual pick re-filters the
+        // available actions below for that what-if context - the selected situation, not the live game, drives
+        // the filter (see availableRows).
+        JPanel situationCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints sgc = baseGbc();
+        addLabel(situationCol, getText("location.field.label"), sgc);
+        situationCombo = new HudComboBox<>(PlayerSituation.values(), s -> caps(getText(s.i18nKey())));
+        situationCombo.setSelectedItem(PlayerSituation.UNKNOWN); // no context known until the first refresh/sync
+        situationCombo.addActionListener(e -> {
+            if (syncingSituation) {
+                return; // our own live-sync; it re-filters explicitly, so skip the duplicate here
+            }
+            rebuildAvailableActionsForSelection();
+        });
+        addField(situationCol, situationCombo, sgc, 1, 1.0);
+
+        // Right column - the concrete place for that situation (read-only). Tight label (width 0): the place
+        // field is unpaired (nothing below it to line up with), so it hugs its short label instead of leaving
+        // the wide fixed-width gap the aligned left column needs.
+        JPanel placeCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints pgc = baseGbc();
+        addLabel(placeCol, getText("location.field.place"), pgc, 0);
         locationField = makeTextField();
         locationField.setEditable(false); // read-only readout: a bounded surface, not an input (HUD canon 5.1)
-        addField(top, locationField, gbc, 1, 1.0);
+        addField(placeCol, locationField, pgc, 1, 1.0);
 
+        // Equal halves + centred divider (canon 9); each column top-aligned via a NORTH wrap.
+        JPanel situationWrap = transparentPanel(new BorderLayout());
+        situationWrap.add(situationCol, BorderLayout.NORTH);
+        JPanel placeWrap = transparentPanel(new BorderLayout());
+        placeWrap.add(placeCol, BorderLayout.NORTH);
+        addSpanComponent(top, new HudTwoColumns(situationWrap, placeWrap), gbc);
+
+        // Phrase row - the same nested label+field column as the two above, added full-width, so its input's
+        // left edge lines up exactly with the situation combo's (identical label width and nesting insets).
         nextRow(gbc);
-        addLabel(top, getText("location.field.phrase"), gbc);
+        JPanel phraseCol = transparentPanel(new GridBagLayout());
+        GridBagConstraints fgc = baseGbc();
+        addLabel(phraseCol, getText("location.field.phrase"), fgc);
         phraseField = makeTextField();
-        phraseField.setEditable(false);
-        addField(top, phraseField, gbc, 1, 1.0);
+        // Editable input, not a read-out: every edit re-runs the reducer over the field's current text and
+        // re-highlights the matching available actions below - the same filtering a spoken phrase drives, but
+        // reducer-only (no LLM turn), so it works even with no LLM connected. Guarded against our own
+        // programmatic echo (see setPhraseText) so an incoming phrase written back into the field does not run
+        // the reducer twice.
+        phraseField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { onPhraseEdited(); }
+            @Override public void removeUpdate(DocumentEvent e) { onPhraseEdited(); }
+            @Override public void changedUpdate(DocumentEvent e) { onPhraseEdited(); }
+        });
+        addField(phraseCol, phraseField, fgc, 1, 1.0);
+        addSpanComponent(top, phraseCol, gbc);
 
         add(top, BorderLayout.NORTH);
 
-        // "Available commands and queries": one combined list, divided evenly by count into a left and a right
-        // single-column read-only HUD table (canon 6). The two columns share ONE vertical scrollbar (canon 8):
-        // their bodies scroll together in a single viewport while the two headers ride in the shared
-        // column-header row and stay put.
-        leftModel = readOnlyModel(getText("location.column.commandName"));
-        rightModel = readOnlyModel(getText("location.column.commandName"));
-        leftTable = new JTable(leftModel);
-        rightTable = new JTable(rightModel);
-        styleActionsTable(leftTable);
-        styleActionsTable(rightTable);
-        installRowHover(leftTable);
-        installRowHover(rightTable);
-        installCommandDetailsOpen(leftTable);
-        installCommandDetailsOpen(rightTable);
+        // "Available commands and queries": one combined list laid out across COLUMN_COUNT equal, header-less
+        // read-only columns of a single HUD table (canon 6), filled row-major so reading left-to-right,
+        // top-to-bottom follows the sorted order. One vertical scrollbar drives the whole table (canon 8).
+        actionsModel = readOnlyModel();
+        actionsTable = new JTable(actionsModel);
+        actionsTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS); // keep the columns equal as the table resizes
+        actionsTable.setCellSelectionEnabled(true);                     // selection/open is per cell, not per row
+        actionsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        styleActionsTable(actionsTable);
+        installCellHover(actionsTable);
+        installCommandDetailsOpen(actionsTable);
 
-        // Bodies and headers both use HudTwoColumns, so their halves (and the centre divider) line up.
-        HudTwoColumns bodies = new HudTwoColumns(leftTable, rightTable);
-        HudTwoColumns headers = new HudTwoColumns(leftTable.getTableHeader(), rightTable.getTableHeader());
-        JScrollPane scroll = hudScrollPane(new WidthTrackingScrollContent(bodies));
-        scroll.setColumnHeaderView(headers);
+        JScrollPane scroll = hudScrollPane(actionsTable);
         scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        // Data-plane treatment (canon 8): the tables float on the app background, no frame around the scroll.
+        // Data-plane treatment (canon 8): the table floats on the app background, no frame around the scroll.
         scroll.getViewport().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         scroll.setBorder(hudDataPlaneBorder());
         scroll.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
@@ -162,26 +223,32 @@ public class HelpTabPanel extends JPanel {
     public void addNotify() {
         super.addNotify();
         // Re-assert table styling after applyDarkPalette has walked the tree (mirrors CommandCatalogTablePanel).
-        SwingUtilities.invokeLater(() -> {
-            styleActionsTable(leftTable);
-            styleActionsTable(rightTable);
-        });
+        SwingUtilities.invokeLater(() -> styleActionsTable(actionsTable));
     }
 
-    /** Single-column, read-only table model whose one column carries the given header title. */
-    private static DefaultTableModel readOnlyModel(String columnTitle) {
-        return new DefaultTableModel(new Object[]{columnTitle}, 0) {
+    /** Read-only table model with {@link #COLUMN_COUNT} untitled columns (this tab shows no column headers). */
+    private static DefaultTableModel readOnlyModel() {
+        return new DefaultTableModel(new Object[COLUMN_COUNT], 0) {
             @Override public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
     }
 
-    /** Applies the shared HUD table look (canon 6): capsed value renderer, style locked against re-theming. */
+    /**
+     * Applies the shared HUD table look (canon 6): capsed value renderer, style locked against re-theming.
+     * {@link HudTable#style} configures the column header, but this tab shows none, so a throwaway header is
+     * lent for styling and then dropped (recreated each call because {@code addNotify} re-styles after the
+     * palette walk).
+     */
     private void styleActionsTable(JTable table) {
+        if (table.getTableHeader() == null) {
+            table.setTableHeader(new JTableHeader(table.getColumnModel()));
+        }
         HudTable.style(table);
         table.setDefaultRenderer(Object.class, new ActionHighlightRenderer());
         table.putClientProperty(HUD_TABLE_STYLE_LOCKED, Boolean.TRUE);
+        table.setTableHeader(null); // no column names on this tab
     }
 
     private void installCommandDetailsOpen(JTable table) {
@@ -191,7 +258,7 @@ public class HelpTabPanel extends JPanel {
                 if (!SwingUtilities.isLeftMouseButton(event)) {
                     return;
                 }
-                openCommandDetailsAt(table, table.rowAtPoint(event.getPoint()));
+                openCommandDetailsAt(table, table.rowAtPoint(event.getPoint()), table.columnAtPoint(event.getPoint()));
             }
         });
         table.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
@@ -199,84 +266,48 @@ public class HelpTabPanel extends JPanel {
         table.getActionMap().put("openHelpCommandDetails", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent event) {
-                openCommandDetailsAt(table, table.getSelectedRow());
+                openCommandDetailsAt(table, table.getSelectedRow(), table.getSelectedColumn());
             }
         });
     }
 
-    private void installRowHover(JTable table) {
-        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, -1);
+    /** Tracks the cell under the mouse so the renderer can hover-highlight just that cell (not the whole row). */
+    private void installCellHover(JTable table) {
         table.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent event) {
-                setHoveredRow(table, rowUnderPoint(table, event.getPoint()));
+                setHoveredCell(table, table.rowAtPoint(event.getPoint()), table.columnAtPoint(event.getPoint()));
             }
         });
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseExited(MouseEvent event) {
-                setHoveredRow(table, -1);
+                setHoveredCell(table, -1, -1);
             }
         });
     }
 
-    private int rowUnderPoint(JTable table, Point point) {
-        int row = table.rowAtPoint(point);
-        if (row >= 0) {
-            return row;
-        }
-        Point up = new Point(point.x, point.y - 2);
-        row = table.rowAtPoint(up);
-        if (row >= 0) {
-            return row;
-        }
-        Point down = new Point(point.x, point.y + 2);
-        return table.rowAtPoint(down);
-    }
-
-    private void setHoveredRow(JTable table, int row) {
-        Object current = table.getClientProperty(HudTable.HOVER_ROW_PROPERTY);
-        int currentRow = current instanceof Integer value ? value : -1;
-        if (currentRow == row) {
+    private void setHoveredCell(JTable table, int row, int col) {
+        // Only a cell holding an action hovers; empty filler cells (short last row) do not.
+        boolean real = row >= 0 && col >= 0 && table.getValueAt(row, col) instanceof ActionRow;
+        int newRow = real ? row : -1;
+        int newCol = real ? col : -1;
+        if (newRow == hoverRow && newCol == hoverCol) {
             return;
         }
-        table.putClientProperty(HudTable.HOVER_ROW_PROPERTY, row);
-        repaintTableRow(table, currentRow);
-        repaintTableRow(table, row);
+        int prevRow = hoverRow;
+        int prevCol = hoverCol;
+        hoverRow = newRow;
+        hoverCol = newCol;
+        repaintCell(table, prevRow, prevCol);
+        repaintCell(table, newRow, newCol);
     }
 
-    private void repaintTableRow(JTable table, int row) {
-        if (row < 0 || row >= table.getRowCount()) {
+    private void repaintCell(JTable table, int row, int col) {
+        if (row < 0 || col < 0 || row >= table.getRowCount() || col >= table.getColumnCount()) {
             return;
         }
-        Rectangle rect = table.getCellRect(row, 0, true);
-        rect.width = table.getWidth();
-        table.repaint(rect);
-    }
-
-    /**
-     * Scroll viewport host that stretches its content to the viewport width (so the side-by-side tables fill
-     * the row, no horizontal scroll) while letting it grow taller than the viewport, so a single vertical
-     * scrollbar drives both tables at once.
-     */
-    private static final class WidthTrackingScrollContent extends JPanel implements Scrollable {
-        WidthTrackingScrollContent(Component view) {
-            super(new BorderLayout());
-            setOpaque(false);
-            add(view, BorderLayout.CENTER);
-        }
-
-        @Override public Dimension getPreferredScrollableViewportSize() { return getPreferredSize(); }
-
-        @Override public int getScrollableUnitIncrement(Rectangle visible, int orientation, int direction) { return 16; }
-
-        @Override public int getScrollableBlockIncrement(Rectangle visible, int orientation, int direction) {
-            return orientation == SwingConstants.VERTICAL ? visible.height : visible.width;
-        }
-
-        @Override public boolean getScrollableTracksViewportWidth() { return true; }
-
-        @Override public boolean getScrollableTracksViewportHeight() { return false; }
+        table.repaint(table.getCellRect(row, col, false));
     }
 
     /** Reads the persisted situation + location once. Called by {@link AppView} at startup and on tab show. */
@@ -306,15 +337,15 @@ public class HelpTabPanel extends JPanel {
         lastFlags2 = flags2;
         LocationDto location = currentLocation();
         PlayerSituation situation = status.getSituation(flags, flags2, location);
-        String text = caps(describe(situation, location));
+        String place = caps(placeName(situation, location));
         SwingUtilities.invokeLater(() -> {
-            locationField.setText(text);
-            // The available-actions tables are context-gated, so rebuild them only when the situation changes
-            // (cheap), not on every status change. The event bus is synchronous, so by the time this EDT runnable
-            // runs the status snapshot is already persisted and GameToolCandidates sees the current context.
+            locationField.setText(place);
+            // The available-actions table is context-gated, so re-sync (and rebuild) only when the situation
+            // changes (cheap), not on every status change. Syncing the picker to the live situation is what
+            // drives the rebuild - the selected situation, not the live game, is the filter's source of truth.
             if (situation != lastSituation) {
                 lastSituation = situation;
-                rebuildAvailableActions(situation, location);
+                syncSituationToLive(situation);
             }
         });
     }
@@ -327,9 +358,40 @@ public class HelpTabPanel extends JPanel {
     public void onCommanderPhrase(NormalizedUserInputEvent event) {
         String text = event.getText() == null ? "" : event.getText();
         SwingUtilities.invokeLater(() -> {
-            phraseField.setText(text);
+            setPhraseText(text);
             updateSemanticHighlights(text);
         });
+    }
+
+    /**
+     * Runs on every edit of the phrase field: re-runs the reducer over the field's current text to re-highlight
+     * the matching available actions (reducer-only, no LLM turn). Our own programmatic echo of an incoming
+     * phrase (see {@link #setPhraseText}) is skipped so the reducer does not run twice for it.
+     */
+    private void onPhraseEdited() {
+        if (settingPhraseText) {
+            return; // our echo of an incoming phrase; the phrase handler already ran the reducer for it
+        }
+        updateSemanticHighlights(phraseField.getText());
+    }
+
+    /**
+     * Sets the phrase field from an incoming (voice / companion) phrase without tripping the edit listener that
+     * would re-submit it: the flag makes {@link #onPhraseEdited} treat the change as an echo, and we only write
+     * when the text actually differs so a matching echo does not churn the document or jump the caret while the
+     * commander is typing. EDT-only.
+     */
+    private void setPhraseText(String text) {
+        String value = text == null ? "" : text;
+        if (value.equals(phraseField.getText())) {
+            return;
+        }
+        settingPhraseText = true;
+        try {
+            phraseField.setText(value);
+        } finally {
+            settingPhraseText = false;
+        }
     }
 
     /** Live update from the companion path: this is the exact match input used by the companion reducer. */
@@ -337,19 +399,19 @@ public class HelpTabPanel extends JPanel {
     public void onCommanderMatchInputChanged(CommanderMatchInputChangedEvent event) {
         String text = event.text() == null ? "" : event.text();
         SwingUtilities.invokeLater(() -> {
-            phraseField.setText(text);
+            setPhraseText(text);
             updateSemanticHighlights(text);
         });
     }
 
     /**
-     * Rebuilds the available-actions tables when the set of custom-command macros changes (added, removed, or
+     * Rebuilds the available-actions table when the set of custom-command macros changes (added, removed, or
      * reloaded, including a macro created by voice while this tab is open), so the list stays current without a
      * situation change or a tab switch.
      */
     @Subscribe
     public void onCustomCommandsChanged(CustomCommandsSummaryChangedEvent event) {
-        SwingUtilities.invokeLater(this::rebuildAvailableActions);
+        SwingUtilities.invokeLater(this::rebuildAvailableActionsForSelection);
     }
 
     private void subscribe() {
@@ -371,10 +433,31 @@ public class HelpTabPanel extends JPanel {
     private void refresh() {
         LocationDto location = currentLocation();
         PlayerSituation situation = status.getSituation(location);
-        locationField.setText(caps(describe(situation, location)));
-        phraseField.setText(currentCommanderMatchInput());
+        locationField.setText(caps(placeName(situation, location)));
+        setPhraseText(currentCommanderMatchInput());
         lastSituation = situation;
-        rebuildAvailableActions(situation, location);
+        syncSituationToLive(situation);
+    }
+
+    /**
+     * Selects the picker to the live game situation without firing its listener (which would rebuild once more),
+     * then rebuilds the available actions for that selection. The programmatic-select guard mirrors the phrase
+     * field's echo guard; the explicit rebuild covers the case where the selection is unchanged (a no-op select
+     * fires no event) yet the list still needs a refresh (e.g. on tab show or a macro-set change).
+     */
+    private void syncSituationToLive(PlayerSituation situation) {
+        syncingSituation = true;
+        try {
+            situationCombo.setSelectedItem(situation);
+        } finally {
+            syncingSituation = false;
+        }
+        rebuildAvailableActionsForSelection();
+    }
+
+    /** Rebuilds the available actions for the situation currently chosen in the picker (the filter's context). */
+    private void rebuildAvailableActionsForSelection() {
+        rebuildAvailableActions((PlayerSituation) situationCombo.getSelectedItem());
     }
 
     private LocationDto currentLocation() {
@@ -385,27 +468,22 @@ public class HelpTabPanel extends JPanel {
         try {
             return CompanionRuntime.state().lastCommanderMatchInput();
         } catch (IllegalStateException ignored) {
+            // WHY: companion runtime not installed yet (e.g. before services start); no match input to show.
             return "";
         }
     }
 
     /**
-     * Rebuilds the two tables from one combined list of everything available now (commands, macros, queries),
-     * divided evenly by count: the left table gets the first half (the extra row when the count is odd), the
-     * right table the rest, so both columns hold roughly the same number of rows.
+     * Rebuilds the actions table from one combined list of everything available in the given situation
+     * (commands, macros, queries), laid out row-major across the {@link #COLUMN_COUNT} columns (see
+     * {@link #applyActionRows}). UNKNOWN clears the table.
      */
-    private void rebuildAvailableActions() {
-        LocationDto location = currentLocation();
-        rebuildAvailableActions(status.getSituation(location), location);
-    }
-
-    private void rebuildAvailableActions(PlayerSituation situation, LocationDto location) {
-        if (location == null || situation == PlayerSituation.UNKNOWN) {
+    private void rebuildAvailableActions(PlayerSituation situation) {
+        if (situation == null || situation == PlayerSituation.UNKNOWN) {
             clearAvailableActions();
             return;
         }
-        visibleActionRows = availableRows(
-                EnumSet.of(IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY));
+        visibleActionRows = availableRows(ACTION_CATEGORIES, situation);
         updateAvailableActionsTitle();
         applyActionRows();
         updateSemanticHighlights(phraseField.getText());
@@ -414,29 +492,33 @@ public class HelpTabPanel extends JPanel {
     private void clearAvailableActions() {
         visibleActionRows = List.of();
         updateAvailableActionsTitle();
-        leftModel.setRowCount(0);
-        rightModel.setRowCount(0);
+        actionsModel.setRowCount(0);
         highlightedActionIds = Set.of();
         ++highlightRequest;
-        repaintActionTables();
+        actionsTable.repaint();
     }
 
+    /**
+     * Sorts the visible actions (highlighted first, then alphabetically) and lays them out row-major across the
+     * {@link #COLUMN_COUNT} columns: cell (r, c) holds item {@code r * COLUMN_COUNT + c}, so reading
+     * left-to-right, top-to-bottom follows the sorted order and the columns stay balanced (the short last row
+     * trails empty cells).
+     */
     private void applyActionRows() {
         List<ActionRow> ordered = new ArrayList<>(visibleActionRows);
         ordered.sort(Comparator
                 .comparing((ActionRow row) -> !highlightedActionIds.contains(row.id()))
                 .thenComparing(ActionRow::name, String.CASE_INSENSITIVE_ORDER));
-        List<ActionRow> left = new ArrayList<>();
-        List<ActionRow> right = new ArrayList<>();
-        for (ActionRow row : ordered) {
-            if (left.size() <= right.size()) {
-                left.add(row);
-            } else {
-                right.add(row);
+        int rowCount = (ordered.size() + COLUMN_COUNT - 1) / COLUMN_COUNT;
+        actionsModel.setRowCount(0);
+        for (int r = 0; r < rowCount; r++) {
+            Object[] cells = new Object[COLUMN_COUNT];
+            for (int c = 0; c < COLUMN_COUNT; c++) {
+                int index = r * COLUMN_COUNT + c;
+                cells[c] = index < ordered.size() ? ordered.get(index) : null;
             }
+            actionsModel.addRow(cells);
         }
-        setRows(leftModel, left);
-        setRows(rightModel, right);
     }
 
     private void updateAvailableActionsTitle() {
@@ -450,21 +532,17 @@ public class HelpTabPanel extends JPanel {
         return count <= 0 ? base : base + " (" + count + ")";
     }
 
-    private static void setRows(DefaultTableModel model, List<ActionRow> rows) {
-        model.setRowCount(0);
-        for (ActionRow row : rows) {
-            model.addRow(new Object[]{row});
-        }
-    }
-
     /**
-     * Localized, alphabetically sorted display names of the actions currently offered to the companion for the
-     * given categories. {@link GameToolCandidates} owns "what is available now" (context visibility plus the
-     * internal fallback-id exclusions); this only maps each surviving id to its localized name.
+     * Localized, alphabetically sorted display names of the actions offered for the given categories in the
+     * given situation. {@link GameToolCandidates} owns "what is available" (context visibility plus the internal
+     * fallback-id exclusions); we gate it against a {@link Status#detached} status standing in for the chosen
+     * situation, so the list reflects the picked context rather than the live game. This only maps each
+     * surviving id to its localized name.
      */
-    private List<ActionRow> availableRows(Set<IntelActionCategory> categories) {
+    private List<ActionRow> availableRows(Set<IntelActionCategory> categories, PlayerSituation situation) {
+        Status situationStatus = Status.detached(situation);
         Map<String, String> nameById = nameIndex();
-        return new GameToolCandidates().collect(categories).stream()
+        return new GameToolCandidates(situationStatus).collect(categories).stream()
                 .map(candidate -> new ActionRow(candidate.id(), nameById.getOrDefault(candidate.id(), candidate.id())))
                 .sorted((left, right) -> String.CASE_INSENSITIVE_ORDER.compare(left.name(), right.name()))
                 .toList();
@@ -478,11 +556,9 @@ public class HelpTabPanel extends JPanel {
             applyActionRows();
             return;
         }
-        Set<IntelActionCategory> categories = EnumSet.of(
-                IntelActionCategory.ACTION, IntelActionCategory.MACRO, IntelActionCategory.QUERY);
         new SwingWorker<Set<String>, Void>() {
             @Override protected Set<String> doInBackground() {
-                List<LlmToolDefinition> tools = companionReducer().selectTools(categories, phrase);
+                List<LlmToolDefinition> tools = companionReducer().selectTools(ACTION_CATEGORIES, phrase);
                 Set<String> ids = new HashSet<>();
                 for (LlmToolDefinition tool : tools) {
                     ids.add(tool.name());
@@ -496,7 +572,11 @@ public class HelpTabPanel extends JPanel {
                 }
                 try {
                     highlightedActionIds = get();
-                } catch (Exception ignored) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    highlightedActionIds = Set.of();
+                } catch (ExecutionException e) {
+                    log.debug("Reducer highlight computation failed", e.getCause());
                     highlightedActionIds = Set.of();
                 }
                 applyActionRows();
@@ -512,35 +592,46 @@ public class HelpTabPanel extends JPanel {
         }
     }
 
-    private void repaintActionTables() {
-        leftTable.repaint();
-        rightTable.repaint();
-    }
-
     private record ActionRow(String id, String name) {
         @Override public String toString() {
             return name;
         }
     }
 
+    /**
+     * Per-cell renderer: an empty filler cell blends into the app background (no tile); a hovered action cell
+     * gets the hover tile; an action selected by the reducer gets the success foreground. Selection styling is
+     * left to the shared {@link HudTable.CellRenderer}.
+     */
     private final class ActionHighlightRenderer extends HudTable.ValueCellRenderer {
         @Override
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component component = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            if (!isSelected && value instanceof ActionRow actionRow && highlightedActionIds.contains(actionRow.id())) {
+            if (isSelected) {
+                return component;
+            }
+            if (!(value instanceof ActionRow actionRow)) {
+                component.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND); // empty slot, not a data tile
+                return component;
+            }
+            if (row == hoverRow && column == hoverCol) {
+                component.setBackground(HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND);
+            }
+            if (highlightedActionIds.contains(actionRow.id())) {
                 component.setForeground(HUD_COLOR_ROLE_SUCCESS);
             }
             return component;
         }
     }
 
-    private void openCommandDetailsAt(JTable table, int viewRow) {
-        if (viewRow < 0) {
+    private void openCommandDetailsAt(JTable table, int viewRow, int viewColumn) {
+        if (viewRow < 0 || viewColumn < 0) {
             return;
         }
         int modelRow = table.convertRowIndexToModel(viewRow);
-        Object value = table.getModel().getValueAt(modelRow, 0);
+        int modelColumn = table.convertColumnIndexToModel(viewColumn);
+        Object value = table.getModel().getValueAt(modelRow, modelColumn);
         if (!(value instanceof ActionRow actionRow)) {
             return;
         }
@@ -574,13 +665,6 @@ public class HelpTabPanel extends JPanel {
             byId.put(entry.id(), entry);
         }
         return byId;
-    }
-
-    /** Builds "situation - place", where the place is the most specific known name for the situation. */
-    private String describe(PlayerSituation situation, LocationDto location) {
-        String label = getText(situation.i18nKey());
-        String place = placeName(situation, location);
-        return place == null ? label : label + " · " + place;
     }
 
     private static String caps(String text) {

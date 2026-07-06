@@ -4,6 +4,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Guards {@link Status#getSituation(long, long, LocationDto)}: the flag-only overload is pure bit decoding,
@@ -120,5 +121,27 @@ class PlayerSituationTest {
     @Test
     void unknownWhenNothingSet() {
         assertEquals(PlayerSituation.UNKNOWN, classify(0, 0, null));
+    }
+
+    @Test
+    void flagsForSituationRoundTripsThroughClassifier() {
+        for (PlayerSituation situation : PlayerSituation.values()) {
+            long[] flags = StatusFlags.flagsForSituation(situation);
+            // IN_SHIP_RING is location-derived, not a flag, so its flags classify as deep space (documented
+            // approximation in flagsForSituation); every other situation round-trips exactly.
+            PlayerSituation expected = situation == PlayerSituation.IN_SHIP_RING
+                    ? PlayerSituation.IN_SHIP_DEEP_SPACE
+                    : situation;
+            assertEquals(expected, classify(flags[0], flags[1], null),
+                    "flagsForSituation round-trip for " + situation);
+        }
+    }
+
+    @Test
+    void detachedStatusReportsSituationFlags() {
+        Status docked = Status.detached(PlayerSituation.IN_SHIP_DOCKED);
+        assertTrue(docked.isDocked());
+        assertTrue(docked.isInMainShip());
+        assertEquals(PlayerSituation.IN_SHIP_DOCKED, docked.getSituation(null));
     }
 }

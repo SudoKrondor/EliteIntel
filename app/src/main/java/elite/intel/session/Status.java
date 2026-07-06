@@ -579,4 +579,32 @@ public class Status extends StatusFlags {
         GameEvents.StatusEvent status = getStatus();
         return getSituation(status.getFlags(), status.getFlags2(), location);
     }
+
+    /**
+     * A detached Status whose flag decoding reflects the given raw flags instead of the live game snapshot,
+     * with no database access and no effect on the singleton. Every flag-derived getter routes through
+     * {@link #getStatus()}, which this overrides to return the fixed flags, so context-gated visibility checks
+     * ({@code isVisibleForLLM}) can be evaluated for a what-if situation - see {@link StatusFlags#flagsForSituation}.
+     * Only flag-derived getters are meaningful; non-flag fields (balance, cargo, ...) are empty.
+     */
+    public static Status detached(long flags, long flags2) {
+        GameEvents.StatusEvent snapshot = new GameEvents.StatusEvent();
+        snapshot.setFlags(flags);
+        snapshot.setFlags2(flags2);
+        return new Status() {
+            @Override public GameEvents.StatusEvent getStatus() {
+                return snapshot;
+            }
+        };
+    }
+
+    /**
+     * A {@link #detached(long, long)} Status standing in for the given what-if situation, so context-gated
+     * visibility can be evaluated for it without actually being in that situation. Composes
+     * {@link StatusFlags#flagsForSituation} with {@link #detached(long, long)}.
+     */
+    public static Status detached(PlayerSituation situation) {
+        long[] flags = flagsForSituation(situation);
+        return detached(flags[0], flags[1]);
+    }
 }

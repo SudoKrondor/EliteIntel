@@ -64,10 +64,19 @@ public final class GameToolCandidates {
 
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */
     public GameToolCandidates() {
+        this(Status.getInstance());
+    }
+
+    /**
+     * Pulls the self-describing registries and the configured language, but gates visibility against the given
+     * status instead of the live one - e.g. a {@link Status#detached} status standing in for a what-if
+     * situation, so the offered tools reflect that context, not the live game.
+     */
+    public GameToolCandidates(Status status) {
         this(CommandRegistry.getInstance().byId(),
                 QueryRegistry.getInstance().byId(),
                 CustomCommandRegistry.getInstance().getCustomCommands(),
-                Status.getInstance(),
+                status,
                 SystemSession.getInstance().getLanguage());
     }
 
