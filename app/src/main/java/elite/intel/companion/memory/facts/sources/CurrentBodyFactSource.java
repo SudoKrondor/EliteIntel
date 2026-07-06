@@ -8,6 +8,7 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
+import elite.intel.util.SolarDayCalculator;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -58,7 +59,7 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
         }
         String fact = format(name, body.getPlanetClass(), body.isLandable(), body.getGravity(), body.getAtmosphere(),
                 body.getSurfaceTemperature(), body.getBioSignals(), body.getGeoSignals(),
-                body.isTerraformable(), body.isHasRings());
+                body.isTerraformable(), body.isHasRings(), body.isTidalLocked(), SolarDayCalculator.solarDaySeconds(body));
         return fact.isBlank() ? List.of() : List.of(fact);
     }
 
@@ -70,7 +71,7 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
      */
     static String format(String name, String planetClass, boolean landable, double gravityG, String atmosphere,
                          double temperatureKelvin, int bioSignals, int geoSignals,
-                         boolean terraformable, boolean hasRings) {
+                         boolean terraformable, boolean hasRings, boolean tidalLocked, double solarDaySeconds) {
         List<String> parts = new ArrayList<>();
         addIf(parts, FactLine.value(planetClass));
         if (landable) {
@@ -79,6 +80,7 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
         addIf(parts, gravity(gravityG));
         addIf(parts, prefix("atmosphere", FactLine.value(atmosphere)));
         addIf(parts, celsius(temperatureKelvin));
+        addIf(parts, dayLength(solarDaySeconds));
         if (bioSignals > 0) {
             parts.add(signals(bioSignals, "bio"));
         }
@@ -90,6 +92,9 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
         }
         if (hasRings) {
             parts.add("rings");
+        }
+        if (tidalLocked) {
+            parts.add("tidally locked");
         }
 
         boolean hasName = name != null && !name.isBlank();
@@ -130,5 +135,32 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
     /** Surface temperature in Celsius (the journal stores Kelvin), or null when unknown. */
     private static String celsius(double kelvin) {
         return kelvin > 0 ? Math.round(kelvin - 273) + "°C" : null;
+    }
+
+    /**
+     * Compact solar-day rendering, e.g. "day 18h" or "day 6h 40m" (minutes only when non-zero), or null when the
+     * length is unknown ({@code seconds <= 0}). The full value comes from {@link SolarDayCalculator}.
+     */
+    private static String dayLength(double seconds) {
+        if (seconds <= 0) {
+            return null;
+        }
+        long totalMinutes = Math.round(seconds / 60.0);
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
+        if (hours <= 0 && minutes <= 0) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder("day ");
+        if (hours > 0) {
+            sb.append(hours).append('h');
+        }
+        if (minutes > 0) {
+            if (hours > 0) {
+                sb.append(' ');
+            }
+            sb.append(minutes).append('m');
+        }
+        return sb.toString();
     }
 }
