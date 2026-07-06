@@ -713,8 +713,9 @@ public class LocationDto implements ToJsonConvertible {
     }
 
     public void setGeoSignals(int geoSignals) {
-        if (geoSignals > 0) return; //do not overridde
-        this.geoSignals = geoSignals;
+        if (geoSignals > 0) { // do not override to 0 on bad data (mirrors setBioSignals).
+            this.geoSignals = geoSignals;
+        }
     }
 
     public boolean isHasRings() {

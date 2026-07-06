@@ -3,13 +3,14 @@ package elite.intel.companion.memory.facts;
 import java.util.List;
 
 /**
- * A pluggable source of pre-turn answer facts for the commander prompt's {@code <facts>} block, discovered by
- * annotation ({@link RegisterMemoryFactSource}) exactly like commands and queries. Given the {@link MemoryFactContext}
- * for the turn, it returns the facts it deems relevant as plain text lines; the aggregator ({@link FactCandidates})
- * tags each with this source's {@link #id()} as its provenance, so a source cannot spoof another's origin.
- * <p>
- * Implementations must be stateless and cheap: {@link #factsFor} runs on the prompt-composition path of every
- * commander turn. Return an empty list to contribute nothing this turn.
+ * A pluggable source of facts for the companion, discovered by annotation ({@link RegisterMemoryFactSource}) exactly
+ * like commands and queries. A source has two independent roles, and the aggregator tags each returned line with this
+ * source's {@link #id()} as its provenance, so a source cannot spoof another's origin:
+ * <ul>
+ *   <li>{@link #factsFor} - ambient current-state facts inlined into the per-turn {@code <facts>} block;</li>
+ *   <li>{@link #searchFacts} - facts relevant to an explicit {@code memory_search}, keyed off the query.</li>
+ * </ul>
+ * Implementations must be stateless and cheap: both run on hot paths (prompt composition / a query round).
  */
 public interface MemoryFactSource {
 
@@ -17,8 +18,17 @@ public interface MemoryFactSource {
     String id();
 
     /**
-     * The facts this source offers for the given turn, most relevant first, already bounded by the source. Plain
-     * text lines; provenance is assigned by the aggregator from {@link #id()}. Never {@code null}; empty means none.
+     * Ambient current-state facts for the per-turn {@code <facts>} block, most relevant first, already bounded by the
+     * source. An always-on or context-gated source may ignore the query. Never {@code null}; empty means none.
      */
     List<String> factsFor(MemoryFactContext context);
+
+    /**
+     * Facts relevant to an explicit {@code memory_search}, given the search query in {@code context}. Defaults to none:
+     * an ambient/state source (current system, current body) has nothing to recall <em>by query</em>, so it opts out
+     * here until a source implements query relevance. Never {@code null}; empty means none.
+     */
+    default List<String> searchFacts(MemoryFactContext context) {
+        return List.of();
+    }
 }

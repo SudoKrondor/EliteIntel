@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
  * Read-only. Like the other queries it does not hand-format its own line: it hands the matches plus an
  * instruction to {@link BaseQueryAnalyzer#process}, so the analysis model composes the enumeration/count in
  * character and in the commander's language (the retrieval is deterministic; the wording is voiced the same
- * way cargo/biome results are). The registered {@code MemoryFactSource} plugins contribute their live facts to the
- * recalled set too, the same ones they add to the per-turn block. Companion-mode only - it reads
- * {@link CompanionRuntime#memory()}.
+ * way cargo/biome results are). A registered {@code MemoryFactSource} may contribute query-relevant facts to the
+ * recalled set through its search role ({@code searchFacts}); the current ambient/state sources opt out, so none add
+ * anything here yet. Companion-mode only - it reads {@link CompanionRuntime#memory()}.
  */
 @RegisterQuery
 public final class MemorySearchQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
@@ -80,7 +80,7 @@ public final class MemorySearchQueryCommand extends BaseQueryAnalyzer implements
         List<String> remembered;
         try {
             List<String> recalled = strip(CompanionRuntime.memory().recallMatching(query, RECALL_LIMIT));
-            remembered = merge(recalled, MemoryFactGatherer.gather(MemoryFactContext.forQuery(query)));
+            remembered = merge(recalled, MemoryFactGatherer.gatherForSearch(MemoryFactContext.forQuery(query)));
         } catch (IllegalStateException companionNotInstalled) {
             // WHY: this query is companion-only; in the legacy router CompanionRuntime.memory() is not
             // installed and throws. Degrade to an empty result there (no source facts either). Any other
