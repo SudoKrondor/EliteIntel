@@ -19,4 +19,13 @@ import elite.intel.companion.model.Urgency;
  * @param urgency whether the turn was born urgent
  */
 public record MemoryFactContext(String query, ThoughtSource source, Urgency urgency) {
+
+    /**
+     * Context for a query-time source lookup (e.g. the {@code memory_search} query) where the thought's own signals
+     * are not threaded through: it is a COMMANDER turn and urgency is treated as NORMAL. Use when only the query
+     * text is known.
+     */
+    public static MemoryFactContext forQuery(String query) {
+        return new MemoryFactContext(query, ThoughtSource.COMMANDER, Urgency.NORMAL);
+    }
 }

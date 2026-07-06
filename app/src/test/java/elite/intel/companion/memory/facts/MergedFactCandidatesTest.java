@@ -3,8 +3,6 @@ package elite.intel.companion.memory.facts;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.ThoughtSource;
-import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
@@ -20,33 +18,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MergedFactCandidatesTest {
 
     @Test
-    void mergesMemoryCoreFirstThenPluginFactsTaggedBySource() {
+    void mergesMemoryCoreFirstThenPluginFacts() {
         MemoryGateway memory = new FakeMemory(List.of(commander("mem fact")));
-        List<MemoryFactSource> sources = List.of(source("ship", "ship a", "ship b"));
+        List<Fact> plugins = List.of(new Fact("ship a", "ship"), new Fact("ship b", "ship"));
 
         assertEquals(
                 List.of(new Fact("mem fact", "commander"),
                         new Fact("ship a", "ship"),
                         new Fact("ship b", "ship")),
-                MergedFactCandidates.forInput(memory, ctx("q"), sources));
+                MergedFactCandidates.forInput(memory, ctx("q"), plugins));
     }
 
     @Test
     void capsEachSourceAtTwo() {
         MemoryGateway memory = new FakeMemory(List.of());
-        List<MemoryFactSource> sources = List.of(source("s", "a", "b", "c", "d", "e"));
+        List<Fact> plugins = List.of(
+                new Fact("a", "s"), new Fact("b", "s"), new Fact("c", "s"),
+                new Fact("d", "s"), new Fact("e", "s"));
 
-        assertEquals(
-                List.of(new Fact("a", "s"), new Fact("b", "s")),
-                MergedFactCandidates.forInput(memory, ctx(""), sources));
+        assertEquals(List.of(new Fact("a", "s"), new Fact("b", "s")),
+                MergedFactCandidates.forInput(memory, ctx(""), plugins));
     }
 
     @Test
     void capsTotalAtSixAcrossMemoryAndPlugins() {
         MemoryGateway memory = new FakeMemory(List.of(commander("m1"), commander("m2"), commander("m3")));
-        List<MemoryFactSource> sources = List.of(source("a", "a1", "a2"), source("b", "b1", "b2"));
+        List<Fact> plugins = List.of(
+                new Fact("a1", "a"), new Fact("a2", "a"),
+                new Fact("b1", "b"), new Fact("b2", "b"));
 
-        List<Fact> result = MergedFactCandidates.forInput(memory, ctx("q"), sources);
+        List<Fact> result = MergedFactCandidates.forInput(memory, ctx("q"), plugins);
 
         // memory (3) + source a (2) fills 5, leaving room for only the first fact of source b.
         assertEquals(6, result.size());
@@ -57,59 +58,25 @@ class MergedFactCandidatesTest {
     @Test
     void dropsAPluginFactAlreadyPresentInMemoryCaseInsensitive() {
         MemoryGateway memory = new FakeMemory(List.of(commander("field is bedlam")));
-        List<MemoryFactSource> sources = List.of(source("p", "Field Is Bedlam"));
+        List<Fact> plugins = List.of(new Fact("Field Is Bedlam", "p"));
 
-        assertEquals(
-                List.of(new Fact("field is bedlam", "commander")),
-                MergedFactCandidates.forInput(memory, ctx("q"), sources));
+        assertEquals(List.of(new Fact("field is bedlam", "commander")),
+                MergedFactCandidates.forInput(memory, ctx("q"), plugins));
     }
 
     @Test
-    void skipsAFailingSourceInsteadOfFailingTheTurn() {
-        MemoryGateway memory = new FakeMemory(List.of(commander("mem fact")));
-        MemoryFactSource boom = new MemoryFactSource() {
-            @Override public String id() { return "boom"; }
-            @Override public List<String> factsFor(MemoryFactContext context) { throw new IllegalStateException("boom"); }
-        };
-        List<MemoryFactSource> sources = List.of(boom, source("ok", "ok fact"));
-
-        // The throwing source is skipped; memory and the healthy source still contribute.
-        assertEquals(
-                List.of(new Fact("mem fact", "commander"), new Fact("ok fact", "ok")),
-                MergedFactCandidates.forInput(memory, ctx("q"), sources));
-    }
-
-    @Test
-    void treatsANullReturningSourceAsNoFacts() {
-        MemoryFactSource nully = new MemoryFactSource() {
-            @Override public String id() { return "nully"; }
-            @Override public List<String> factsFor(MemoryFactContext context) { return null; }
-        };
-
-        assertTrue(MergedFactCandidates.forInput(new FakeMemory(List.of()), ctx(""), List.of(nully)).isEmpty());
-    }
-
-    @Test
-    void emptyWhenNoMemoryAndNoSources() {
+    void emptyWhenNoMemoryAndNoPluginFacts() {
         assertTrue(MergedFactCandidates.forInput(new FakeMemory(List.of()), ctx(""), List.of()).isEmpty());
     }
 
     private static MemoryFactContext ctx(String query) {
-        return new MemoryFactContext(query, ThoughtSource.COMMANDER, Urgency.NORMAL);
+        return MemoryFactContext.forQuery(query);
     }
 
     /** A stated commander fact (survives the tier-2 filter of the memory core). */
     private static MemoryEntry commander(String content) {
         return new MemoryEntry(Instant.now(), ConversationTopic.SOCIAL, MemorySource.COMMANDER,
                 content, MemoryImportance.HIGH, null, null);
-    }
-
-    /** A fact source returning fixed lines under a fixed id. */
-    private static MemoryFactSource source(String id, String... facts) {
-        return new MemoryFactSource() {
-            @Override public String id() { return id; }
-            @Override public List<String> factsFor(MemoryFactContext context) { return List.of(facts); }
-        };
     }
 
     /** Minimal gateway returning a fixed candidate list; the other operations are unused by these tests. */

@@ -6,11 +6,18 @@ import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.memory.facts.MemoryFactContext;
+import elite.intel.companion.memory.facts.MemoryFactGatherer;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.util.json.JsonUtils;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -23,7 +30,9 @@ import java.util.stream.Collectors;
  * Read-only. Like the other queries it does not hand-format its own line: it hands the matches plus an
  * instruction to {@link BaseQueryAnalyzer#process}, so the analysis model composes the enumeration/count in
  * character and in the commander's language (the retrieval is deterministic; the wording is voiced the same
- * way cargo/biome results are). Companion-mode only - it reads {@link CompanionRuntime#memory()}.
+ * way cargo/biome results are). The registered {@code MemoryFactSource} plugins contribute their live facts to the
+ * recalled set too, the same ones they add to the per-turn block. Companion-mode only - it reads
+ * {@link CompanionRuntime#memory()}.
  */
 @RegisterQuery
 public final class MemorySearchQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
@@ -68,15 +77,36 @@ public final class MemorySearchQueryCommand extends BaseQueryAnalyzer implements
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) {
         String query = JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY);
-        List<String> matches;
+        List<String> remembered;
         try {
-            matches = CompanionRuntime.memory().recallMatching(query, RECALL_LIMIT);
+            List<String> recalled = strip(CompanionRuntime.memory().recallMatching(query, RECALL_LIMIT));
+            remembered = merge(recalled, MemoryFactGatherer.gather(MemoryFactContext.forQuery(query)));
         } catch (IllegalStateException companionNotInstalled) {
             // WHY: this query is companion-only; in the legacy router CompanionRuntime.memory() is not
-            // installed and throws. Degrade to an empty result there. Any other failure must propagate.
-            matches = List.of();
+            // installed and throws. Degrade to an empty result there (no source facts either). Any other
+            // failure must propagate.
+            remembered = List.of();
         }
-        return process(new AiDataStruct(INSTRUCTIONS, new Remembered(strip(matches))), originalUserInput);
+        return process(new AiDataStruct(INSTRUCTIONS, new Remembered(remembered)), originalUserInput);
+    }
+
+    /**
+     * Combines the recalled entries with the fact-source facts for one lookup: the source facts (the same ones the
+     * per-turn block gets) are appended after the recalled entries and de-duplicated case-insensitively, so a fact a
+     * recalled entry already covers, or that two sources both offer, is reported once. Package-visible for tests.
+     */
+    static List<String> merge(List<String> recalled, List<Fact> sourceFacts) {
+        List<String> remembered = new ArrayList<>(recalled);
+        Set<String> seen = new HashSet<>();
+        for (String entry : recalled) {
+            seen.add(entry.toLowerCase(Locale.ROOT));
+        }
+        for (Fact fact : sourceFacts) {
+            if (seen.add(fact.text().toLowerCase(Locale.ROOT))) {
+                remembered.add(fact.text());
+            }
+        }
+        return remembered;
     }
 
     /** Strips the leading {@code [SOURCE]} label from each recalled entry so the model sees clean facts. */
