@@ -70,12 +70,17 @@ public class ItalianPromptRules implements PromptLanguageRules {
         sb.append(DeployFighterCommand.ID);
         sb.append(".\n");
 
-        sb.append("- fleet carrier + stato/rapporto/finanze/autonomia/portata → ");
+        sb.append("- fleet carrier + stato/rapporto/finanze/fondi/autonomia/portata → ");
         sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
-        sb.append(". squadron carrier + stato/rapporto/finanze/carburante/trizio → ");
+        sb.append(". squadron carrier + stato/rapporto/finanze/fondi/carburante/trizio → ");
         sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
         sb.append("; rotta/itinerario required for ");
         sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        sb.append(".\n");
+        sb.append("- HARD RULE: if the words squadron/squadrone appear anywhere in a carrier request (e.g. fondi dello squadron carrier, stato dello squadron carrier), use the squadron carrier action → ");
+        sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
+        sb.append(", NEVER the fleet carrier action ");
+        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
         sb.append(".\n");
         sb.append("- ").append(FindNearestFleetCarrierCommand.ID).append(" requires explicit \"più vicina\"/\"nearest\" or trova/cerca; e.g. \"trova/cerca portanavi più vicina\". ");
         sb.append("Any other reference to the fleet carrier (rotta verso, vai verso, raggiungi, torna, dirigiti, portami alla fleet carrier/portanavi) → ").append(NavigateToFleetCarrierCommand.ID).append(".\n");

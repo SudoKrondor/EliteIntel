@@ -76,6 +76,12 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append(JumpToHyperspaceCommand.ID);
         sb.append("\n");
 
+        sb.append(" - classify выйти из суперкруиза, выйти из суперкруиза здесь, сбросить суперкруиз, выйти из сверхсвета, дроп, выход as ");
+        sb.append(DropFromSuperCruiseCommand.ID);
+        sb.append(" never as ");
+        sb.append(EnterSuperCruiseCommand.ID);
+        sb.append("\n");
+
         sb.append(" - classify прыжок в гиперпространство, прыгай, гиперпрыжок, войти в гиперпространство, поехали, следующий маршрутный пункт as ");
         sb.append(JumpToHyperspaceCommand.ID);
         sb.append("\n");

@@ -1,9 +1,9 @@
 package elite.intel.ai.brain.actions.handlers.query;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.StringUtls;
@@ -18,7 +18,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeSquadronCarrierDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_squadron_carrier_status_fuel_credit_finance";
 
-    @Override public String llmDescription() { return "Report the squadron carrier's status, fuel, and finances."; }
+    @Override
+    public String llmDescription() {
+        return "Report the SQUADRON carrier's status, fuel, and finances. Use whenever the request mentions the squadron carrier - NOT the player's personal fleet carrier (for that use query_fleet_carrier_status_fuel_credit_finance).";
+    }
 
 
     @Override public String id() { return ID; }

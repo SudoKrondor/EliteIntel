@@ -96,6 +96,12 @@ public class PortuguesePromptRules implements PromptLanguageRules {
         sb.append(JumpToHyperspaceCommand.ID);
         sb.append("\n");
 
+        sb.append(" - classify dispensar nave, mandar a nave embora, nave para a órbita as ");
+        sb.append(DismissShipToOrbitCommand.ID);
+        sb.append(" never as ");
+        sb.append(JumpToHyperspaceCommand.ID);
+        sb.append("\n");
+
         sb.append(" - classify questions about combustível, trítio do carrier as ");
         sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
         sb.append("\n");
