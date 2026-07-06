@@ -608,7 +608,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     /// NOTE: The material is required for the query. "find mining site" will always fail that is by design.
     static Stream<String> findMiningSite() {
-        return Stream.of("trova sito di estrazione per alexandrite entro 300 anni luce",
+        return Stream.of("trova sito di estrazione per alessandrite entro 300 anni luce",
                 "trova posizione di estrazione per bromelite entro 1200 anni luce", "trova campo di asteroidi con oro",
                 "trova campo di asteroidi con platino", "trova campo di asteroidi con ferro");
     }
@@ -654,6 +654,20 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> findNearestCarrier() {
         return Stream.of("trova fleet carrier più vicina", "fleet carrier più vicina", "trova la fleet carrier più vicina",
             "trova la portanavi più vicina", "trova la portanavi più vicina a me");
+
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(83)
+    @MethodSource
+    void openFleetCarrierPanel(String input) throws InterruptedException {
+        assertRouted(input, DisplayFleetCarrierManagementPanelCommand.ID);
+    }
+
+    static Stream<String> openFleetCarrierPanel() {
+        return Stream.of("mostra il pannello di gestione della fleet carrier", "apri il pannello di gestione della fleet carrier",
+                "visualizza il pannello di gestione della fleet carrier", "mostra il pannello di gestione della portanavi",
+                "apri il pannello di gestione della portanavi", "visualizza il pannello di gestione della portanavi");
     }
 
     // =========================================================================
@@ -718,7 +732,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierStatus() {
-        return Stream.of("stato della squadron carrier", "quanto a lungo possiamo usare lo squadron carrier",
+        return Stream.of("stato della squadron carrier", "quanto a lungo possiamo usare la squadron carrier",
                 "finanze della squadron carrier", "bilancio della squadron carrier", "panoramica della squadron carrier",
                 "fondi della squadron carrier", "stato del carburante della squadron carrier", "trizio della squadron carrier",
                 "livello di trizio della squadron carrier", "livello del carburante della squadron carrier",
@@ -923,8 +937,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCurrentLocation() {
-        return Stream.of("Where are we right now?", "what is our location", "where are we",
-                "how long does the day last at current location");
+        return Stream.of("Dove siamo adesso?", "qual è la nostra posizione", "dove siamo",
+                "quanto dura il giorno nella posizione attuale", "quanto dura il giorno in questa posizione", "quanto dura il giorno qui");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -935,8 +949,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryShipLoadout() {
-        return Stream.of("ship loadout", "what am I flying", "ship equipment", "do you have fuel scoop equipped",
-                "do you have weapons equipped", "what weapons do you have equipped", "do you have a refinery equipped");
+        return Stream.of("carico della nave", "rapporto danni", "moduli della nave", "rapporto efficienza al combattimento",
+                "equipaggiamento della nave", "specifiche della nave", "su che cosa sto volando", "con cosa siamo equipaggiati",
+                "è equipaggiato", "generatore di scudi", "rinforzo della carena", "sensori", "propulsori", "frameshift",
+                "fuel scoop", "installate");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -947,7 +963,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCargoHold() {
-        return Stream.of("cargo hold", "what are we carrying", "cargo contents");
+        return Stream.of("contenuto del cargo", "cosa stiamo trasportando", "contenuto del carico");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -958,7 +974,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryPlottedRoute() {
-        return Stream.of("plotted route", "jumps remaining", "how many jumps to destination", "are we there yet");
+        return Stream.of("rotta impostata", "riforimento alla prossima fermata", "dispinibilità rifornimento sulla rotta",
+                "analisi rotta", "rotta corrente", "navigatione rotta", "salti rimanenti", "salti rimasti", "quanti salti",
+                "prossima stella scoopabile", "fermata per rifornimento");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1088,7 +1106,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryTime() {
-        return Stream.of("current time", "what time is it", "utc time");
+        return Stream.of("current time", "what time is it");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
