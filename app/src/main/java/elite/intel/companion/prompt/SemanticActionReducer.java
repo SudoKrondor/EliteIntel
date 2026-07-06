@@ -36,8 +36,17 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     private static final Logger log = LogManager.getLogger(SemanticActionReducer.class);
 
-    /** Below this best cosine, nothing is close enough in meaning: offer no game tools. (Legacy semantic floor.) */
-    private static final double SEM_FLOOR = 0.80;
+    /**
+     * Below this best cosine, nothing is close enough in meaning: offer no game tools. Calibrated for
+     * multilingual-e5-small against the live-LLM natural-speech routing suite (EN + RU), the recall authority:
+     * 0.85 matches 0.80's routing exactly for EN/RU (no real commands dropped) while rejecting more sub-0.85
+     * junk, whereas 0.87+ starts dropping EN commands. Conversational noise embeds ~0.87-0.92, so this floor
+     * does not reject it without also costing recall - a known limit of this model's compressed band, not fixed
+     * by any single global floor. IT aliases embed lower and regress even at 0.85 (deprioritized for now); a
+     * per-language floor or stronger IT aliases would be the real fix. Recalibrate after any model change (see
+     * {@code SemanticReducerProbe#dumpsFloorCalibration}).
+     */
+    private static final double SEM_FLOOR = 0.85;
     /**
      * Keep candidates scoring within this margin of the best match (legacy semantic margin). Deliberately
      * inclusive: the correct tool is not always the single top match (a noun like "двигатели" can pull a
