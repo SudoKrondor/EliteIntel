@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatLightLaf;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
@@ -36,6 +37,7 @@ public class App {
         CustomCommandRegistry.getInstance().load();
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
+        MemoryFactSourceRegistry.getInstance().load();
         // Warm the ship-make cache off the EDT so the fleet table never triggers the first DB read while painting.
         ShipMakeManager.getInstance();
 

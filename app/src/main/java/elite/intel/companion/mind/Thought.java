@@ -17,7 +17,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.MemoryFactCandidates;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -258,7 +258,7 @@ public abstract class Thought {
         List<LlmToolDefinition> gameTools = selectedGameTools();
         List<LlmToolDefinition> sysTools = systemTools();
         List<MemoryEntry> timeline = ctx.memoryGateway().readShortTermTimeline();
-        List<MemoryFactCandidates.Fact> candidates = memoryCandidates();
+        List<Fact> candidates = memoryCandidates();
         CompanionDiagnostics.debug(trace, "compose",
                 "gameTools=" + CompanionDiagnostics.names(gameTools)
                         + " sysTools=" + CompanionDiagnostics.names(sysTools)
@@ -267,10 +267,10 @@ public abstract class Thought {
     }
 
     /**
-     * Pre-turn clean memory answer facts to inline in the prompt (see {@code MemoryFactCandidates}). Default
+     * Pre-turn clean answer facts to inline in the prompt (see {@code MergedFactCandidates}). Default
      * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
      */
-    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
+    protected List<Fact> memoryCandidates() {
         return List.of();
     }
 

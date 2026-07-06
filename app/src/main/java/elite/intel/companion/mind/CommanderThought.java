@@ -18,8 +18,10 @@ import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.companion.memory.facts.MergedFactCandidates;
+import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.MemoryFactCandidates;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.SpeakFunction;
@@ -183,10 +185,10 @@ public final class CommanderThought extends Thought {
         return ctx.systemFunctionProvider().systemFunctions(source());
     }
 
-    /** Pre-turn clean answer facts for this commander input, inlined in the prompt as a {@code <facts>} block. */
+    /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
     @Override
-    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
-        return MemoryFactCandidates.forInput(ctx.memoryGateway(), matchInput);
+    protected List<Fact> memoryCandidates() {
+        return MergedFactCandidates.forInput(ctx.memoryGateway(), new MemoryFactContext(matchInput, source(), urgency()));
     }
 
     /** The canonical fact classify_turn stated this turn (empty when none), for the recorded entry. */
@@ -217,7 +219,7 @@ public final class CommanderThought extends Thought {
                         JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
                 if (turnIsQuestion) {
                     // A question carries no durable fact; stamp it LOW so its recorded input never surfaces as a
-                    // fact-recall candidate (the MemoryFactCandidates filter drops LOW commander lines).
+                    // fact-recall candidate (the MemoryMergedFactCandidates filter drops LOW commander lines).
                     turnImportance = MemoryImportance.LOW;
                 }
                 turnCanonicalFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
