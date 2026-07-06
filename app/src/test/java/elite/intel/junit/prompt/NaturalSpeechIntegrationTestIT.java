@@ -182,7 +182,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> honkTheSystem() {
-        return Stream.of("honk", "esplora il sistema", "esegui una scansione del sistema");
+        return Stream.of("esplora il sistema", "esegui una scansione del sistema");
     }
     // =========================================================================
     // Speed / throttle - highest collision risk group

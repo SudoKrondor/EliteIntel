@@ -14,9 +14,12 @@ import elite.intel.session.PlayerSession;
  */
 @RegisterCommand
 public final class HonkCommand implements IntelCommand {
-    public static final String ID = "discovery_scan_honk";
+    public static final String ID = "run_discovery_scan";
 
-    @Override public String llmDescription() { return "Fire the discovery scanner (honk) to map the system."; }
+    @Override
+    public String llmDescription() {
+        return "Fire the discovery scanner for a quick system-wide discovery scan (the 'honk') that reveals the number of bodies and signal sources. This is the preliminary scan, NOT the detailed FSS - use open_fss_scan_system to open the full-spectrum scanner tool.";
+    }
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipSettingsManager shipSettingsManager = ShipSettingsManager.getInstance();

@@ -55,7 +55,7 @@ class ReflexAliasFormsTest {
             Map.entry("night vision", "toggle_night_vision_on_off"),
             Map.entry("drive assist", "drive_assist"),
             Map.entry("disembark", "disembark"),
-            Map.entry("honk", "discovery_scan_honk"));
+            Map.entry("honk", "run_discovery_scan"));
 
     @Test
     void shortShipCommandsCarryAUniqueBareReflexForm() throws Exception {

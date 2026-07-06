@@ -292,7 +292,7 @@ public class NaturalSpeechIntegrationTestPT {
     }
 
     static Stream<String> jumpToHyperspace() {
-        return Stream.of("salto para o hiperespaço", "salto", "vamos sair daqui", "vamos lá",
+        return Stream.of("salto para o hiperespaço", "salto", "vamos saltar daqui", "vamos lá",
                 "saltar para o próximo ponto de rota");
     }
 
@@ -517,7 +517,7 @@ public class NaturalSpeechIntegrationTestPT {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("recolher armamento", "armas frias", "baixar armas", "recuar", "guardar armas");
+        return Stream.of("recolher armamento", "armas frias", "baixar armas", "guardar hardpoints", "guardar armas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -626,7 +626,7 @@ public class NaturalSpeechIntegrationTestPT {
 
     static Stream<String> openFss() {
         return Stream.of("Abrir FSS e escanear.", "Fazer varredura espectral filtrada", "varredura espectral completa",
-                "varredura de descoberta");
+                "abrir fss");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

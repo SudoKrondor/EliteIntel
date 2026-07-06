@@ -167,7 +167,7 @@
     "stow the landing struts",
     "raise the gear"
   ],
-  "discovery_scan_honk": [
+  "run_discovery_scan": [
     "honk the system",
     "run discovery scan",
     "scan the system",
