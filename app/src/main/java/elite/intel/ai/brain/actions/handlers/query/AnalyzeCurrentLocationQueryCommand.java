@@ -16,7 +16,7 @@ import elite.intel.session.Status;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-@RegisterQuery
+//@RegisterQuery
 public class AnalyzeCurrentLocationQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_current_location";
 

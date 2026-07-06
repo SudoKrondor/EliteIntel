@@ -3,6 +3,7 @@ package elite.intel.companion.diag;
 import com.google.gson.JsonObject;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.prompt.Fact;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -16,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class CompanionDiagnosticsTest {
 
-    private static final int MAX_TEXT = 160; // mirrors CompanionDiagnostics.MAX_TEXT
+    private static final int MAX_TEXT = 400; // mirrors CompanionDiagnostics.MAX_TEXT
     private static final int MAX_ARGS = 300; // mirrors CompanionDiagnostics.MAX_ARGS
 
     private static LlmToolDefinition tool(String name) {
@@ -68,6 +69,12 @@ class CompanionDiagnosticsTest {
         String rendered = CompanionDiagnostics.args(argsOf("k", longValue));
         assertEquals(MAX_ARGS, rendered.length());
         assertTrue(rendered.endsWith("…"));
+    }
+
+    @Test
+    void factRendersProvenanceTaggedText() {
+        assertEquals("[system] current system Sol",
+                CompanionDiagnostics.fact(new Fact("current system Sol", "system")));
     }
 
     @Test

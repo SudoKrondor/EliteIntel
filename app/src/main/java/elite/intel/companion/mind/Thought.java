@@ -263,6 +263,11 @@ public abstract class Thought {
                 "gameTools=" + CompanionDiagnostics.names(gameTools)
                         + " sysTools=" + CompanionDiagnostics.names(sysTools)
                         + " facts=" + candidates.size() + " timeline=" + timeline.size());
+        // Show the actual inlined facts (memory core plus source-tagged live facts), one per line as in the prompt,
+        // so the log reveals what grounded the turn, not just the count.
+        for (Fact fact : candidates) {
+            CompanionDiagnostics.debug(trace, "facts", CompanionDiagnostics.fact(fact));
+        }
         return ctx.promptComposer().compose(source, matchInput, gameTools, sysTools, timeline, candidates);
     }
 

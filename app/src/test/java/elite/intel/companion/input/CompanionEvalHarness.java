@@ -25,6 +25,7 @@ import elite.intel.companion.tools.SystemFunctionRegistry;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
+import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
@@ -121,6 +122,7 @@ public final class CompanionEvalHarness {
         SystemSession.getInstance().setLanguage(language);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
+        MemoryFactSourceRegistry.getInstance().load(); // so the <facts> block sees the fact sources, as in App.main
         SystemFunctionRegistry registry = SystemFunctionRegistry.getInstance();
         if (registry.byId().isEmpty()) {
             registry.load();

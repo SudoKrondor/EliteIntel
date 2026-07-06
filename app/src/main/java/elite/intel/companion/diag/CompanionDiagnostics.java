@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.ui.event.AppLogEvent;
@@ -28,10 +29,11 @@ import java.util.stream.Collectors;
 public final class CompanionDiagnostics {
 
     /**
-     * Longest inlined free text (input, spoken line, canonical fact) before it is elided. The SYSTEM LOG panel
-     * word-wraps, so this only bounds runaway text; it is generous enough that a normal sentence is never cut.
+     * Longest inlined free text (input, spoken line, canonical fact, injected fact) before it is elided. The SYSTEM
+     * LOG panel word-wraps, so this only bounds runaway text; it is generous enough that a normal companion sentence
+     * or a full injected fact is never cut.
      */
-    private static final int MAX_TEXT = 160;
+    private static final int MAX_TEXT = 400;
     /**
      * Longest rendered tool-call argument JSON before it is elided. Larger than {@link #MAX_TEXT} so a normal
      * tool call (e.g. {@code classify_turn}) shows every field instead of being cut mid-field; the panel wraps
@@ -96,6 +98,14 @@ public final class CompanionDiagnostics {
     /** Compact tool-name list for a compose line, e.g. {@code [find_action, set_reminder]} (empty -> {@code []}). */
     public static String names(List<LlmToolDefinition> tools) {
         return tools.stream().map(LlmToolDefinition::name).collect(Collectors.joining(", ", "[", "]"));
+    }
+
+    /**
+     * Provenance-tagged rendering of one injected {@code <facts>} candidate, e.g. {@code [system] current system
+     * Sol...}, so the log can show each grounding fact on its own line, mirroring the prompt's per-fact block.
+     */
+    public static String fact(Fact fact) {
+        return "[" + fact.source() + "] " + truncate(fact.text());
     }
 
     /** Compact rendering of the LLM's tool-calls, e.g. {@code classify_turn{...}, speak{...}} ({@code none} when empty). */

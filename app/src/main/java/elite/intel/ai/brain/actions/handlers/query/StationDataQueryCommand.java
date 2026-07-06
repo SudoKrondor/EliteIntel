@@ -13,7 +13,7 @@ import elite.intel.util.yaml.YamlFactory;
 import java.util.List;
 
 
-@RegisterQuery
+//@RegisterQuery
 public class StationDataQueryCommand extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_station_details";
 
