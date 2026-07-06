@@ -9,6 +9,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
+import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -64,6 +65,21 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     private final ThoughtContext ctx;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
+    /**
+     * The semantic reflex gate, tried after the exact-alias {@link #reflexResolver}: a confident, unambiguous
+     * embedding match dispatches directly (command or query), so a weak command model is never asked to pick a
+     * tool the embedder already identified. A no-op when the embedding model is unavailable. Package-private and
+     * replaceable so a test exercising the LLM/preemption path can pin it to {@link SemanticReflexResolver#disabled()}.
+     */
+    private volatile SemanticReflexResolver semanticReflexResolver = new SemanticReflexResolver();
+
+    /**
+     * Test seam: disable (or pin) the semantic reflex so a preemption/LLM-path test is not intercepted by it.
+     */
+    void setSemanticReflexResolver(SemanticReflexResolver resolver) {
+        this.semanticReflexResolver = resolver;
+    }
+
     /**
      * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
      * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
@@ -144,12 +160,25 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
         // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
         // recorded from `input`, never from this normalized match text.
-        String matchInput = inputNormalizer.apply(stripLeadingCompanionName(input));
+        String rawStripped = stripLeadingCompanionName(input);
+        String matchInput = inputNormalizer.apply(rawStripped);
         ctx.state().setLastCommanderMatchInput(matchInput);
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
-        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
+        // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
+        // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
+        // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
+        // deterministic reflex for a phrase the commander said verbatim.
+        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped);
+        if (reflexCommand.isEmpty()) {
+            reflexCommand = reflexResolver.resolve(matchInput);
+        }
+        if (reflexCommand.isEmpty()) {
+            // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
+            // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
+            reflexCommand = semanticReflexResolver.resolve(matchInput);
+        }
         Thought thought = reflexCommand
-                .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
+                .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + reflexCommand.map(id -> "reflex " + id).orElse("think"));

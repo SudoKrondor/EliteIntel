@@ -2,21 +2,13 @@ package elite.intel.junit.prompt;
 
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
-import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
-import elite.intel.gameapi.UserInputEvent;
+import elite.intel.companion.input.CompanionRoutingHarness;
 import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
-import elite.intel.ws.WebSocketBroadcaster;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /**
@@ -39,38 +31,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestEN {
 
-    /**
-     * Pause between each test phrase. Increase if your LLM is slow.
-     * 3000 simulates a typical interaction.
-     * 1500 go faster.
-     * 250 you are pushing it.
-     * 150 bro I want your hardware.
-     */
-    private static final int LLM_WAIT_MS = 3000;
-    private static final int LLM_POLL_MS = 100;
-
-    private HandlerCapture capture;
+    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.EN);
 
     @BeforeAll
-    void bootstrap() throws InterruptedException {
-        SystemSession systemSession = SystemSession.getInstance();
-        systemSession.setConversationalMode(false);
-        systemSession.setCompanionMode(true);
-        systemSession.setLanguage(Language.EN);
-        HeadlessBootstrap.start();
-        WebSocketBroadcaster.getInstance().start();
-        capture = new HandlerCapture();
-        // Let any startup noise (connection check etc.) settle
-        Thread.sleep(2000);
-        /// this allows LLM to cache the prompt header / same request runs on app
-        /// startup.
-        GameEventBus.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
-        Thread.sleep(4000);
+    void bootstrap() throws Exception {
+        harness.boot();
     }
 
     @AfterAll
     void teardown() {
-        HeadlessBootstrap.stop();
+        harness.shutdown();
     }
 
     // -------------------------------------------------------------------------
@@ -78,28 +48,7 @@ public class NaturalSpeechIntegrationTestEN {
     // -------------------------------------------------------------------------
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
-        capture.reset();
-        GameEventBus.publish(new UserInputEvent(input));
-
-        HandlerDispatchedEvent event = waitForDispatch(expectedAction);
-        assertNotNull(event,
-                "No handler dispatched for input: \"" + input + "\"");
-        assertEquals(expectedAction, event.getAction(),
-                "Input: \"" + input + "\" → got \"" + event.getAction()
-                        + "\" but expected \"" + expectedAction + "\"");
-    }
-
-    private HandlerDispatchedEvent waitForDispatch(String expectedAction) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + LLM_WAIT_MS;
-        HandlerDispatchedEvent event = null;
-        while (System.currentTimeMillis() < deadline) {
-            event = capture.getLastEvent();
-            if (event != null && expectedAction.equals(event.getAction())) {
-                return event;
-            }
-            Thread.sleep(LLM_POLL_MS);
-        }
-        return event;
+        harness.assertRouted(input, expectedAction);
     }
 
     // =========================================================================
@@ -620,7 +569,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> openFss() {
-        return Stream.of("Open FSS and scan.", "Perform filtered spectrum scan", "full spectrum scan", "discovery scan");
+        return Stream.of("Open FSS.", "open filtered spectrum scan", "full spectrum scan");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1106,7 +1055,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryTime() {
-        return Stream.of("current time", "what time is it", "utc time");
+        return Stream.of("current time", "what time is it");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

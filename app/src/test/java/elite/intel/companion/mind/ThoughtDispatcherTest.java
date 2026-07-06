@@ -19,9 +19,10 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.prompt.ReflexResolver;
+import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
-import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.ClassifyTurnFunction;
+import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.SensorDataEvent;
@@ -499,6 +500,7 @@ class ThoughtDispatcherTest {
             }
         };
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), policy);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/preemption path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // runs, blocks on the LLM
@@ -515,6 +517,7 @@ class ThoughtDispatcherTest {
     void interruptLiveThoughtsPreemptsTheLiveThought() throws InterruptedException {
         BlockFirstLlm llm = new BlockFirstLlm();
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/barge-in path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // blocks on the LLM

@@ -85,6 +85,33 @@ final class CommanderPrompt {
             If the commander speaks a language other than English, translate their input to English before choosing a function, and extract each argument by its own rule (verbatim where it says so).
             </language>
 
+                    <disambiguation>
+                    Game logic applies regardless of language. When more than one offered function could fit, choose by these rules:
+                    - FLEET vs SQUADRON CARRIER: if the words "squadron carrier" (or "squadron") appear, use the squadron functions
+                      (query_squadron_carrier_status_fuel_credit_finance, query_squadron_carrier_route, query_squadron_carrier_eta,
+                      query_squadron_carrier_final_destination, navigate_to_squadron_carrier). Otherwise "carrier" means the personal
+                      FLEET carrier - use the fleet functions (query_fleet_carrier_status_fuel_credit_finance, query_fleet_carrier_route,
+                      query_fleet_carrier_eta, query_fleet_carrier_final_destination, navigate_to_fleet_carrier). Example: "take us to the
+                      carrier" -> navigate_to_fleet_carrier; "route of the squadron carrier" -> query_squadron_carrier_route.
+                    - CARRIER vs SHIP route: if "carrier" is NOT in the input, route / jump / remaining-jumps questions are about the SHIP
+                      -> query_ship_route_remaining_jumps, never a carrier route. "how many jumps on the squadron carrier route" ->
+                      query_squadron_carrier_route (a carrier is named); "how many jumps left" -> query_ship_route_remaining_jumps.
+                    - discovery scan / honk (fire the discovery scanner, map the system) -> run_discovery_scan. The detailed full-spectrum
+                      scanner (fss, full/filtered spectrum scan) -> open_fss_scan_system.
+                    - signals in a system / what signals do you see -> query_signals_in_star_system; geological or volcanic activity ->
+                      query_geo_signals; organisms / biology here on this planet -> query_exobiology_samples; which planets still need bio
+                      or organic scanning -> query_bio_scans_and_samples_in_star_system. Never confuse signal types with stellar objects.
+                    - profit from bounties -> query_total_bounties; from missions -> query_missions_and_rewards; from exploration or
+                      discovery -> query_exploration_profits.
+                    - the ship's modules / loadout / specs / what are you equipped with -> query_ship_loadout. The player's profile or ranks
+                      (the input begins with "player profile") -> query_player_profile_rank_progress.
+                    - the length / duration of the DAY (planet rotation period) at the current location -> query_current_location, never
+                      query_time (which is the galactic / UTC clock time, not a day's length).
+                    - a navigation verb (navigate, go to, take us to, plot course to, head to, fly to) MUST map to a navigation COMMAND,
+                      never to a distance or route query. A distance question (how far, how close, distance to) MUST map to a distance
+                      QUERY, never to a navigation command.
+                    </disambiguation>
+                    
             <function_calling>
             You respond only with function calls, never free text.
 
@@ -114,14 +141,25 @@ final class CommanderPrompt {
                     "target that", "optimal speed", "galaxy map", "hardpoints") are direct orders - execute them.
                     Never answer an order with conversation, and never fall through to 'speak' just because a request
                     was terse, could also be chatted about, or you would have phrased it differently.
+                            A QUESTION is also an order to act whenever an offered query function answers it: a data question
+                            (location, distance, status, inventory, route, station, system, materials, missions, signals,
+                            bodies, carrier, ship, time, security, bounties, ...) is answered by CALLING the matching query
+                            function to fetch real data - NEVER by guessing, inventing, or recalling the answer in words.
+                            This holds even when the request is NOT phrased as a question: a bare topic or noun the commander
+                            names that an offered query answers ("dominant faction", "utc time", "total bounties", "system
+                            security", "geological signals") is a request for that data - call that query, exactly as a
+                            blunt command phrase is an order; do not merely chat about the topic.
                     
             Choose the settling call by taking the FIRST rule that applies:
-            1. a <fact> in the <facts> block answers the question -> call 'speak' function with the answer from that fact;
-                    2. an offered function matches, names, or paraphrases what the commander wants -> CALL THAT FUNCTION.
-                       Prefer acting over talking; do not call 'speak' in addition;
+                    1. an offered function matches, names, or paraphrases what the commander wants -> CALL THAT FUNCTION.
+                       For a data question the matching query function IS that match, so you MUST call it to retrieve the
+                       real answer. Prefer acting over talking; do not call 'speak' in addition;
+                    2. a <fact> in the <facts> block already answers the question AND no offered function can retrieve it
+                       -> call 'speak' function with the answer from that fact;
             3. 'memory_search' function, if offered: the commander explicitly asks to search in your memory;
                     4. 'speak' function: ONLY chat, opinions, jokes, explanations, or a genuinely unclear request where
-                       NO offered function fits. If an offered function fits, this rule does not apply.
+                       NO offered function fits. If an offered function fits, this rule does not apply - never fall through
+                       to 'speak' just because the input is phrased as a question.
 
             A 'speak' reply is words only, never an action: never say you did, started, enabled, or
             changed something unless you called its function this turn. When no offered function matches
