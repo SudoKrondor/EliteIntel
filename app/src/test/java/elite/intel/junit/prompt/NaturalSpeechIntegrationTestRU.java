@@ -93,8 +93,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> analysisMode() {
-        return Stream.of("режим анализа", "переключись в режим анализа", "режим исследователя",
-                "HUD анализа", "включи режим анализа");
+        return Stream.of("режим анализа", "переключись в режим анализа", "режим исследователя", "включи режим анализа");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

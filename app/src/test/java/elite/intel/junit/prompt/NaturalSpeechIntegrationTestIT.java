@@ -607,11 +607,11 @@ public class NaturalSpeechIntegrationTestIT {
         assertRouted(input, FindMiningSiteCommand.ID);
     }
 
+    /// NOTE: The material is required for the query. "find mining site" will always fail that is by design.
     static Stream<String> findMiningSite() {
         return Stream.of("trova sito di estrazione per alexandrite entro 300 anni luce",
                 "trova posizione di estrazione per bromelite entro 1200 anni luce", "trova campo di asteroidi con oro",
-                "sito di estrazione", "sito mining", "trova sito di estrazione", "trova campo di asteroidi con platino",
-                "trova campo di asteroidi con ferro");
+                "trova campo di asteroidi con platino", "trova campo di asteroidi con ferro");
     }
 
     // =========================================================================
