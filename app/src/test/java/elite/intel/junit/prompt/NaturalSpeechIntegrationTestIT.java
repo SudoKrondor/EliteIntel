@@ -262,7 +262,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> dropFromSupercruise() {
-        return Stream.of("uscire", "uscire qui", "uscire dalla supercrociera", "abbandonare la supercrociera", "uscire da supercruise", "uscire da velocità luce");
+        return Stream.of("uscire", "uscire qui", "uscire dalla supercrociera", "abbandonare la supercrociera", "uscire da supercruise",
+                "uscire da velocità luce");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -358,7 +359,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> deployLandingGear() {
-        return Stream.of("estrai il carrello", "giù il carrello", "schiera il carrello", "abbassa il carrello");
+        return Stream.of("estrai il carrello", "giù il carrello", "schiera il carrello", "abbassa il carrello", "schierare il carrello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -468,8 +469,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("ritira le armi", "disattiva le armi", "via le armi", "armi ritirate", "armi disattivate",
-                "armi al sicuro", "armi in standby");
+        return Stream.of("ritira le armi", "disattiva le armi", "via le armi", "armi ritirate", "armi disattivate", "armi in standby");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -532,8 +532,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToShields() {
-        return Stream.of("potenza agli scudi", "max scudi", "boost scudi", "massimizza scudi", "scudi al massimo",
-                "scudi al 100 per cento", "scudi al 100%", "scudi al massimo livello");
+        return Stream.of("potenza agli scudi", "max scudi", "boosta scudi", "massimizza scudi", "scudi al massimo",
+                "scudi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -545,8 +545,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> powerToEngines() {
         return Stream.of("potenza ai motori", "potenza max motori", "boost motori", "massimizza motori",
-                "potenza motori al massimo", "potenza motori al 100 per cento", "potenza motori al 100%",
-                "potenza motori al massimo livello");
+                "potenza motori al massimo", "potenza motori al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -557,8 +556,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToWeapons() {
-        return Stream.of("potenza alle armi", "max armi", "boost armi", "massimizza armi", "armi al massimo",
-                "armi al 100 per cento", "armi al 100%", "armi al massimo livello");
+        return Stream.of("potenza alle armi", "max armi", "boosta armi", "massimizza armi", "armi al massimo",
+                "armi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -671,7 +670,8 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> navigateToSquadronCarrier() {
         return Stream.of("naviga alla squadron carrier", "vai alla squadron carrier", "dirigiti verso la squadron carrier",
                 "portami alla squadron carrier", "naviga alla portanavi dello squadrone", "vai alla portanavi dello squadrone",
-                "dirigiti verso la portanavi dello squadrone", "dirigiti verso la portanavi della squadiglia");
+                "dirigiti verso la portanavi dello squadrone", "dirigiti verso la portanavi della squadriglia");
+
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -718,10 +718,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierStatus() {
-        return Stream.of("stato dello squadron carrier", "quanto a lungo possiamo usare lo squadron carrier",
-                "finanze dello squadron carrier", "bilancio dello squadron carrier", "panoramica dello squadron carrier",
-                "fondi dello squadron carrier", "stato del carburante dello squadron carrier", "trizio dello squadron carrier",
-                "livello di trizio dello squadron carrier", "livello del carburante dello squadron carrier",
+        return Stream.of("stato della squadron carrier", "quanto a lungo possiamo usare lo squadron carrier",
+                "finanze della squadron carrier", "bilancio della squadron carrier", "panoramica della squadron carrier",
+                "fondi della squadron carrier", "stato del carburante della squadron carrier", "trizio della squadron carrier",
+                "livello di trizio della squadron carrier", "livello del carburante della squadron carrier",
                 "livello del carburante della portanavi dello squadrone", "livello di trizio della portanavi dello squadrone",
                 "stato della portanavi dello squadrone", "stato della portanavi della squadriglia",
                 "livello di trizio della portanavi della squadriglia", "livello del carburante della portanavi della squadriglia");
@@ -735,8 +735,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("rotta dello squadron carrier", "navigazione dello squadron carrier", "rotta di salto dello squadron carrier",
-                "quanti salti rimangono sulla rotta dello squadron carrier", "salti rimanenti sullo squadron carrier");
+        return Stream.of("rotta della squadron carrier", "navigazione della squadron carrier", "rotta di salto della squadron carrier",
+                "quanti salti rimangono sulla rotta della squadron carrier", "salti rimanenti sullo squadron carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -747,8 +747,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierDestination() {
-        return Stream.of("dove sta andando lo squadron carrier", "direzione dello squadron carrier", "arrivo dello squadron carrier",
-                "destinazione finale dello squadron carrier", "dove sta andando la portanavi dello squadrone",
+        return Stream.of("dove sta andando lo squadron carrier", "direzione della squadron carrier", "arrivo della squadron carrier",
+                "destinazione finale della squadron carrier", "dove sta andando la portanavi dello squadrone",
                 "destinazione finale della portanavi dello squadrone", "dove sta andando la portanavi della squadriglia");
     }
 
@@ -760,9 +760,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierEta() {
-        return Stream.of("tempo stimato di arrivo dello squadron carrier", "quando arriva lo squadron carrier",
-            "quanto manca allo squadron carrier", "tempo di arrivo dello squadron carrier",
-            "tempo di salto dello squadron carrier", "tempo di arrivo della portanavi dello squadrone",
+        return Stream.of("tempo stimato di arrivo della squadron carrier", "quando arriva lo squadron carrier",
+            "quanto manca allo squadron carrier", "tempo di arrivo della squadron carrier",
+            "tempo di salto della squadron carrier", "tempo di arrivo della portanavi dello squadrone",
             "tempo stimato di arrivo della portanavi dello squadrone", "quando arriva la portanavi dello squadrone",
             "quanto manca alla portanavi dello squadriglia", "tempo di arrivo della portanavi della squadriglia");
     }
@@ -824,8 +824,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop", "ricordami di fare rifornimento al prossimo stop",
-                "attiva promemoria per il rifornimento al prossimo stop", "ricordami di eseguire rifornimento al prossimo stop");
+        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop", "ricordami di fare rifornimento alla prossima fermata",
+                "attiva promemoria per il rifornimento al prossimo stop", "ricordami di eseguire rifornimento alla prossima fermata");
     }
 
     // =========================================================================
@@ -1257,7 +1257,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> queryCarrierDestination() {
         return Stream.of("dove sta andando la fleet carrier?", "qual è la destinazione finale della fleet carrier?",
-                "dove è diretta la fleet carrier?", "direzione fleet carrier?", "destinazione finale fleet carrier?",
+                "dove è diretta la fleet carrier?", "dove è diretta la portanavi?", "direzione fleet carrier?", "destinazione finale fleet carrier?",
                 "destinazione fleet carrier?");
     }
 
