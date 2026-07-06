@@ -43,6 +43,12 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         return ID;
     }
 
+    /** Surface exobiology navigation: needs a planetary surface reference (in ship/SRV near the body, or on foot). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.hasLatLong() || status.isOnFootOnPlanet() || status.isOnFootExterior();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();

@@ -32,9 +32,13 @@ public final class DisembarkCommand implements IntelCommand {
         return ID;
     }
 
+    /**
+     * You can only step out of the main ship when it is stationary - docked or landed; from the SRV you can
+     * disembark any time (it is already on the surface).
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return status.isInSrv() || (status.isInMainShip() && (status.isDocked() || status.isLanded()));
     }
 
     @Override

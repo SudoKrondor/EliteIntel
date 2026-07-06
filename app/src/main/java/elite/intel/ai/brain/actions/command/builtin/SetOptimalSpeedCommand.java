@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.session.Status;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED75;
 
@@ -22,6 +23,12 @@ public final class SetOptimalSpeedCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
     }
 
     @Override

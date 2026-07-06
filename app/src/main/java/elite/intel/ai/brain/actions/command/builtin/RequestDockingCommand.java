@@ -30,6 +30,12 @@ public final class RequestDockingCommand implements IntelCommand {
         return ID;
     }
 
+    /** Docking request: while flying the main ship approaching a station; not already docked or landed. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         if(status.isInMainShip()){

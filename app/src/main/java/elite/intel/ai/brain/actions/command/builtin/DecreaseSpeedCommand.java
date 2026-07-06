@@ -11,6 +11,7 @@ import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
@@ -49,6 +50,12 @@ public final class DecreaseSpeedCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
     }
 
     @Override

@@ -30,9 +30,10 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
         return ID;
     }
 
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return status.isInMainShip();
     }
 
     @Override

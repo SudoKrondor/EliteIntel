@@ -32,7 +32,7 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
+        return status.isInMainShip() || status.isInSrv();
     }
 
     /// not a sure fire. assumes default UI selection. will fail often.

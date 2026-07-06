@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 
 /**
  * Stage-4b self-describing command for "interrupt speech".
@@ -21,6 +22,12 @@ public final class InterruptCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Companion-side control (interrupts TTS); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

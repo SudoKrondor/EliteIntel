@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.gameapi.inputs.UiNavCommon;
+import elite.intel.session.Status;
 
 /**
  * Self-describing "exit close panel" command.
@@ -20,6 +21,12 @@ public final class ExitCloseCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Generic back/close UI tap: usable in any interactive context; only a hyperspace jump locks out input. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return !status.isFsdJump();
     }
 
     @Override

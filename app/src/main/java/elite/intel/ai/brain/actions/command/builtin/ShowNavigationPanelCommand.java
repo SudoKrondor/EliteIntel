@@ -33,7 +33,7 @@ public final class ShowNavigationPanelCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
     }
 
     @Override

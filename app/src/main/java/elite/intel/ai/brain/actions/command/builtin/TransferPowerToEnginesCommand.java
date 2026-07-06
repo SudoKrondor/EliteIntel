@@ -31,9 +31,10 @@ public final class TransferPowerToEnginesCommand implements IntelCommand {
         return ID;
     }
 
+    /** Pip distribution is disabled while docked; available in flight and in the SRV. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked();
     }
 
     @Override

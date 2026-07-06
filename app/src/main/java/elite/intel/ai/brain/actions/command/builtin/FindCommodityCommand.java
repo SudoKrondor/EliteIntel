@@ -15,6 +15,7 @@ import elite.intel.search.edsm.commodity.CommoditySearchResult;
 import elite.intel.search.edsm.commodity.EdsmCommoditySearch;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -68,6 +69,12 @@ public final class FindCommodityCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
     }
 
     @Override

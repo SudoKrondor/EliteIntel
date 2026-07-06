@@ -10,6 +10,7 @@ import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.session.Status;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 
@@ -30,6 +31,12 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Types the next system into the carrier-route search field; that entry field lives on the galaxy map. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isGalaxyMapOpen();
     }
 
     @Override

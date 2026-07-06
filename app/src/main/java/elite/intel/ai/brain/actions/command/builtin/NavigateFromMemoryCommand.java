@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.session.Status;
 import elite.intel.util.ClipboardUtils;
 
 /**
@@ -21,6 +22,12 @@ public final class NavigateFromMemoryCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
     }
 
     @Override

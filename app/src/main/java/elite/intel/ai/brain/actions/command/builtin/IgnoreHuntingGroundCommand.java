@@ -9,6 +9,7 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
@@ -30,6 +31,16 @@ public final class IgnoreHuntingGroundCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /**
+     * Recon verdict (twin of confirm_hunting_ground): dismisses the current system as a hunting ground
+     * after the commander has flown there and judged it. Evaluating a hunting ground is only possible while
+     * piloting the main ship in that system, so it is offered only there.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
     }
 
     @Override

@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.db.managers.SubSystemsManager;
+import elite.intel.session.Status;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,6 +43,13 @@ public final class TargetSubsystemCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Combat targeting: in a combat vehicle (ship/fighter) flying in normal space. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return (status.isInMainShip() || status.isInFighter())
+                && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
     }
 
     @Override

@@ -38,9 +38,10 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
         return ID;
     }
 
+    /** Cannot engage supercruise while docked (mass-locked by the station); allowed once undocked or lifted off. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return status.isInMainShip() && !status.isDocked();
     }
 
     @Override

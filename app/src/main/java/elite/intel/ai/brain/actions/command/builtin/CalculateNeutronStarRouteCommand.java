@@ -16,6 +16,7 @@ import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
 import elite.intel.search.spansh.neutronroute.NeutronStarRouteCalculatorCriteria;
 import elite.intel.search.spansh.neutronroute.NeutronStarRouteClient;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.ClipboardUtils;
 import elite.intel.util.StringUtls;
 
@@ -56,6 +57,12 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side route calculation (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

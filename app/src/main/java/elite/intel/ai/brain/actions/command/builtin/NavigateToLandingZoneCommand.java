@@ -9,6 +9,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
@@ -29,6 +30,12 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Surface navigation to a landing zone: needs a planetary surface reference (in ship/SRV near the body, or on foot). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.hasLatLong() || status.isOnFootOnPlanet() || status.isOnFootExterior();
     }
 
     @Override

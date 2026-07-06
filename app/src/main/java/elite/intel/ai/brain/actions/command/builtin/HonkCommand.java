@@ -7,6 +7,7 @@ import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.gameapi.DiscoveryScanner;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 
 /**
  * Stage-4b self-describing command for "honk the system". Delegates to {@link DiscoveryScanner},
@@ -27,6 +28,12 @@ public final class HonkCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Discovery scanner: fired while flying the main ship (normal space or supercruise); not docked/landed. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
     }
 
     @Override

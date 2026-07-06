@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.db.managers.MissionManager;
+import elite.intel.session.Status;
 
 /**
  * Owns its own execution: body migrated 1:1 from the legacy ClearActiveMissionHandler,
@@ -21,6 +22,12 @@ public final class ClearActiveMissionsCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side bookkeeping (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

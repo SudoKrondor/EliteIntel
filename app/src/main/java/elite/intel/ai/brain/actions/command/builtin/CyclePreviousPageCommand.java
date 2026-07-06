@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.command.SimpleTapCommand;
 import elite.intel.ai.hands.Bindings;
+import elite.intel.session.Status;
 
 @RegisterCommand
 public final class CyclePreviousPageCommand extends SimpleTapCommand {
@@ -12,5 +13,11 @@ public final class CyclePreviousPageCommand extends SimpleTapCommand {
 
     public CyclePreviousPageCommand() {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_PREVIOUS_PAGE.getGameBinding());
+    }
+
+    /** Cockpit-panel UI tap: only while piloting the ship/SRV/fighter (no cockpit panels on foot). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
     }
 }

@@ -28,9 +28,10 @@ public final class RetractLandingGearCommand implements IntelCommand {
         return ID;
     }
 
+    /** Landing gear belongs to the main ship in normal space: not in the SRV, supercruise, docked or landed. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return !(status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter());
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
     }
 
     @Override
