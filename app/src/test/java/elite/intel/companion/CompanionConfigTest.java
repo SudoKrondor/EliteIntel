@@ -11,9 +11,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CompanionConfigTest {
 
     @Test
-    void companionModeDefaultsOff() {
-        // DB-backed flag (parallel to conversation mode); the seeded game_session row defaults it off.
-        assertFalse(CompanionConfig.companionModeOn());
+    void companionModeForcedOn() {
+        // Companion mode is hardcoded ON in SystemSession.companionModeOn() (which CompanionConfig
+        // delegates to): testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline. Restore the DB-backed read there to make this user-selectable again.
+        assertTrue(CompanionConfig.companionModeOn());
     }
 
     @Test

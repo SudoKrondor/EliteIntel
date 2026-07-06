@@ -121,13 +121,18 @@ public class AiServicesSettingsPanel extends JPanel {
 
         commandModelField = makeTextField();
         nextRow(gc);
-        addLabel(localCol, getText("settings.ai.commandModel"), gc, 0);
+        addLabel(localCol, getText("settings.ai.model"), gc, 0);
         addField(localCol, commandModelField, gc, 1, 1.0);
 
+        // Query (analysis) model field hidden: the companion runs a single model, so only one model
+        // field is shown. The field object and all its plumbing are intentionally kept (it still
+        // round-trips through the working copy and save), so this is a pure UI hide - uncomment the
+        // three layout lines below and relabel the field above to restore the split.
+        // Hidden pending the final decision to completely remove the legacy dual-model pipeline.
         queryModelField = makeTextField();
-        nextRow(gc);
-        addLabel(localCol, getText("settings.ai.queryModel"), gc, 0);
-        addField(localCol, queryModelField, gc, 1, 1.0);
+        // nextRow(gc);
+        // addLabel(localCol, getText("settings.ai.queryModel"), gc, 0);
+        // addField(localCol, queryModelField, gc, 1, 1.0);
 
         // Right column - CLOUD SETUP.
         rightCol = transparentPanel(new GridBagLayout());

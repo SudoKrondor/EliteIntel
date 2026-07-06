@@ -439,7 +439,12 @@ public class SystemSession {
     }
 
     public boolean conversationalModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
+        // HARDCODED OFF: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline, so conversation mode (a legacy-pipeline flag) is unconditionally off. The
+        // setter still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus
+        // the DB read below can be restored together when the modes become user-selectable again.
+        return false;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
 
     public void setCompanionMode(boolean b) {
@@ -452,7 +457,12 @@ public class SystemSession {
     }
 
     public boolean companionModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
+        // HARDCODED ON: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline (the legacy command/query path is kept dormant but inaccessible). The setter
+        // still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus the DB
+        // read below can be restored together when the modes become user-selectable again.
+        return true;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
     }
 
     public boolean isPushToTalkEnabled() {

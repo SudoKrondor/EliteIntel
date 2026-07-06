@@ -3,6 +3,7 @@ package elite.intel.ui.controller;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
+import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
 import elite.intel.ai.brain.commons.ResponseRouter;
 import elite.intel.ai.ears.AudioCalibrator;
@@ -343,6 +344,7 @@ public class AppController implements Runnable {
 
         KeyBindCheck.getInstance().check();
         CustomCommandLoadAnnouncement.getInstance().announce();
+        LocalLlmModelCheck.getInstance().check();
     }
 
     @Subscribe
