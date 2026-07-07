@@ -12,26 +12,13 @@ public class ItalianInputNormalizerRules implements InputNormalizerProvider {
                 "il", "lo", "la", "gli", "le", "un", "uno", "una", "di", "del", "della", "dei", "delle",
                 "dello", "degli", "da", "in", "con", "per", "su", "tra", "fra", "che",
                 "mio", "mia", "nostro", "nostra", "suo", "sua", "questo", "questa", "questi", "queste",
-                "sono", "io", "lui", "lei", "noi");
+                "sullo", "sulla", "sugli", "sulle", "quello", "quella", "quelli", "quelle", "sono",
+                "io", "lui", "lei", "noi");
     }
 
     @Override
     public LinkedHashMap<String, String> buildSynonymMap() {
         LinkedHashMap<String, String> m = new LinkedHashMap<>();
-        m.put("squadron carrier", "squadron");
-        m.put("squadron fleet carrier", "squadron");
-        m.put("fleet carrier", "carrier");
-        m.put("carrier di squadriglia", "squadron");
-        m.put("carrier della squadriglia", "squadron");
-        m.put("portanavi di squadriglia", "squadron");
-        m.put("portanavi della squadriglia", "squadron");
-        m.put("carrier di squadrone", "squadron");
-        m.put("carrier dello squadrone", "squadron");
-        m.put("portanavi di squadrone", "squadron");
-        m.put("portanavi dello squadrone", "squadron");
-        m.put("portanavi", "carrier");
-        m.put("carrier", "fleet carrier");
-        m.put("squadron", "squadron carrier");
 
         m.put("mappa galattica", "mappa della galassia");
         m.put("mappa stellare", "mappa del sistema");
