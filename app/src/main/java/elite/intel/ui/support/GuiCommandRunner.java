@@ -2,11 +2,17 @@ package elite.intel.ui.support;
 
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.commons.ResponseRouter;
+import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
+import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.eventbus.GameEventBus;
+import elite.intel.util.StringUtls;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import javax.swing.Timer;
-import java.awt.Frame;
-import java.awt.Window;
+import javax.swing.*;
+import java.awt.*;
 import java.util.Objects;
 
 /**
@@ -14,6 +20,7 @@ import java.util.Objects;
  */
 public final class GuiCommandRunner {
 
+    private static final Logger log = LogManager.getLogger(GuiCommandRunner.class);
     private static final int GUI_COMMAND_DISPATCH_DELAY_MS = 3000;
 
     private GuiCommandRunner() {
@@ -44,10 +51,36 @@ public final class GuiCommandRunner {
 
         Timer dispatchTimer = new Timer(
                 GUI_COMMAND_DISPATCH_DELAY_MS,
-                event -> ResponseRouter.getInstance().executeCommandFromGUI(action, safeParams, speakAffirmation)
+                event -> dispatchCommand(action, safeParams, speakAffirmation)
         );
         dispatchTimer.setRepeats(false);
         dispatchTimer.start();
+    }
+
+    /**
+     * Dispatches a GUI-selected command straight to its handler, bypassing STT/LLM classification: the UI
+     * already resolved the action id and any params. Uses the same shared handler map as the companion
+     * execution gateway ({@link CommandHandlerFactory}, built-ins + custom commands), so it is independent
+     * of the companion runtime lifecycle (the button can fire while services are stopped). Built-in commands
+     * speak an affirmative preamble; custom commands do not (see {@code CommandDetailsDialog#runCommand}).
+     */
+    private static void dispatchCommand(String action, JsonObject params, boolean speakAffirmation) {
+        IntelAction handler = CommandHandlerFactory.getInstance().registerCommandHandlers().get(action);
+        if (handler == null) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent("command not found"));
+            return;
+        }
+        if (speakAffirmation) {
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.affirmative()));
+        }
+        new Thread(() -> {
+            try {
+                handler.handle(action, params, "");
+            } catch (Exception e) {
+                GameEventBus.publish(new AiVoxResponseEvent("Error processing command for action " + action + " see logs."));
+                log.error("GUI command dispatch failed for action {}: {}", action, e.getMessage(), e);
+            }
+        }, "GuiCommandDispatch").start();
     }
 
     private static void moveOwnerOutOfForeground(Window owner) {
