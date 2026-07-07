@@ -13,6 +13,7 @@ public class ItalianInputNormalizerRules implements InputNormalizerProvider {
                 "il", "lo", "la", "gli", "le", "un", "uno", "una", "di", "del", "della", "dei", "delle",
                 "dello", "degli", "da", "in", "con", "per", "su", "tra", "fra", "che",
                 "mio", "mia", "nostro", "nostra", "suo", "sua", "questo", "questa", "questi", "queste",
-                "sono", "io", "lui", "lei", "noi");
+                "sullo", "sulla", "sugli", "sulle", "quello", "quella", "quelli", "quelle", "sono",
+                "io", "lui", "lei", "noi");
     }
 }
