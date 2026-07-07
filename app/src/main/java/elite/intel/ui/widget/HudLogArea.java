@@ -51,8 +51,8 @@ public class HudLogArea extends JPanel {
         }
     }
 
-    private static final int MAX_MESSAGES = 20;
-    /** Full-session transcript kept for export, independent of the 20-message render window; bounded so it cannot grow without limit. */
+    private static final int MAX_MESSAGES = 40;
+    /** Full-session transcript kept for export, independent of the {@link #MAX_MESSAGES}-message render window; bounded so it cannot grow without limit. */
     private static final int MAX_TRANSCRIPT = 5000;
     private static final int PAD_X = 10;
     private static final int PAD_Y = 6;
@@ -197,7 +197,7 @@ public class HudLogArea extends JPanel {
     }
 
     /**
-     * The full retained transcript (up to {@link #MAX_TRANSCRIPT} lines, beyond the 20-message render window),
+     * The full retained transcript (up to {@link #MAX_TRANSCRIPT} lines, beyond the {@link #MAX_MESSAGES}-message render window),
      * one entry per line, for saving the log to a file. Empty string when nothing has been logged.
      */
     public String exportText() {
