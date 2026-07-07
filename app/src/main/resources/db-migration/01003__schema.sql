@@ -20,7 +20,7 @@ SET materialType = 'Raw',
     name_de      = 'Antimon',
     name_es      = 'Antimonio',
     name_fr      = 'Antimoine',
-    name_ru      = 'Сурьма'
+    name_ru = 'Сурьма'
 WHERE LOWER(name) = LOWER('Antimony');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Arsenic', 'Raw');
@@ -29,7 +29,7 @@ SET materialType = 'Raw',
     name_de      = 'Arsen',
     name_es      = 'Arsénico',
     name_fr      = 'Arsenic',
-    name_ru      = 'Мышьяк'
+    name_ru = 'Мышьяк'
 WHERE LOWER(name) = LOWER('Arsenic');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Boron', 'Raw');
@@ -38,7 +38,7 @@ SET materialType = 'Raw',
     name_de      = 'Bor',
     name_es      = 'Boro',
     name_fr      = 'Bore',
-    name_ru      = 'Бор'
+    name_ru = 'Бор'
 WHERE LOWER(name) = LOWER('Boron');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Cadmium', 'Raw');
@@ -47,7 +47,7 @@ SET materialType = 'Raw',
     name_de      = 'Kadmium',
     name_es      = 'Cadmio',
     name_fr      = 'Cadmium',
-    name_ru      = 'Кадмий'
+    name_ru = 'Кадмий'
 WHERE LOWER(name) = LOWER('Cadmium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Carbon', 'Raw');
@@ -56,7 +56,7 @@ SET materialType = 'Raw',
     name_de      = 'Kohlenstoff',
     name_es      = 'Carbono',
     name_fr      = 'Carbone',
-    name_ru      = 'Углерод'
+    name_ru = 'Углерод'
 WHERE LOWER(name) = LOWER('Carbon');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chromium', 'Raw');
@@ -65,7 +65,7 @@ SET materialType = 'Raw',
     name_de      = 'Chrom',
     name_es      = 'Cromo',
     name_fr      = 'Chrome',
-    name_ru      = 'Хром'
+    name_ru = 'Хром'
 WHERE LOWER(name) = LOWER('Chromium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Germanium', 'Raw');
@@ -73,7 +73,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Germanio',
     name_fr      = 'Germanium',
-    name_ru      = 'Германий'
+    name_ru = 'Германий'
 WHERE LOWER(name) = LOWER('Germanium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Iron', 'Raw');
@@ -82,7 +82,7 @@ SET materialType = 'Raw',
     name_de      = 'Eisen',
     name_es      = 'Hierro',
     name_fr      = 'Fer',
-    name_ru      = 'Железо'
+    name_ru = 'Железо'
 WHERE LOWER(name) = LOWER('Iron');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Lead', 'Raw');
@@ -91,7 +91,7 @@ SET materialType = 'Raw',
     name_de      = 'Blei',
     name_es      = 'Plomo',
     name_fr      = 'Plomb',
-    name_ru      = 'Свинец'
+    name_ru = 'Свинец'
 WHERE LOWER(name) = LOWER('Lead');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Manganese', 'Raw');
@@ -100,7 +100,7 @@ SET materialType = 'Raw',
     name_de      = 'Mangan',
     name_es      = 'Manganeso',
     name_fr      = 'Manganèse',
-    name_ru      = 'Марганец'
+    name_ru = 'Марганец'
 WHERE LOWER(name) = LOWER('Manganese');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Mercury', 'Raw');
@@ -109,7 +109,7 @@ SET materialType = 'Raw',
     name_de      = 'Quecksilber',
     name_es      = 'Mercurio',
     name_fr      = 'Mercure',
-    name_ru      = 'Ртуть'
+    name_ru = 'Ртуть'
 WHERE LOWER(name) = LOWER('Mercury');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Molybdenum', 'Raw');
@@ -118,7 +118,7 @@ SET materialType = 'Raw',
     name_de      = 'Molibdän',
     name_es      = 'Molibdeno',
     name_fr      = 'Molybdène',
-    name_ru      = 'Молибден'
+    name_ru = 'Молибден'
 WHERE LOWER(name) = LOWER('Molybdenum');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Nickel', 'Raw');
@@ -126,7 +126,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Níquel',
     name_fr      = 'Nickel',
-    name_ru      = 'Никель'
+    name_ru = 'Никель'
 WHERE LOWER(name) = LOWER('Nickel');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Niobium', 'Raw');
@@ -134,7 +134,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Niobio',
     name_fr      = 'Niobium',
-    name_ru      = 'Ниобий'
+    name_ru = 'Ниобий'
 WHERE LOWER(name) = LOWER('Niobium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Phosphorus', 'Raw');
@@ -143,7 +143,7 @@ SET materialType = 'Raw',
     name_de      = 'Phosphor',
     name_es      = 'Fósforo',
     name_fr      = 'Phosphore',
-    name_ru      = 'Фосфор'
+    name_ru = 'Фосфор'
 WHERE LOWER(name) = LOWER('Phosphorus');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Polonium', 'Raw');
@@ -151,7 +151,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Polonio',
     name_fr      = 'Polonium',
-    name_ru      = 'Полоний'
+    name_ru = 'Полоний'
 WHERE LOWER(name) = LOWER('Polonium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Rhenium', 'Raw');
@@ -159,7 +159,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Renio',
     name_fr      = 'Rhénium',
-    name_ru      = 'Рений'
+    name_ru = 'Рений'
 WHERE LOWER(name) = LOWER('Rhenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Ruthenium', 'Raw');
@@ -167,7 +167,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Rutenio',
     name_fr      = 'Ruthénium',
-    name_ru      = 'Рутений'
+    name_ru = 'Рутений'
 WHERE LOWER(name) = LOWER('Ruthenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Selenium', 'Raw');
@@ -176,7 +176,7 @@ SET materialType = 'Raw',
     name_de      = 'Selen',
     name_es      = 'Selenio',
     name_fr      = 'Sélénium',
-    name_ru      = 'Селен'
+    name_ru = 'Селен'
 WHERE LOWER(name) = LOWER('Selenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Sulphur', 'Raw');
@@ -185,7 +185,7 @@ SET materialType = 'Raw',
     name_de      = 'Schwefel',
     name_es      = 'Azufre',
     name_fr      = 'Soufre',
-    name_ru      = 'Сера'
+    name_ru = 'Сера'
 WHERE LOWER(name) = LOWER('Sulphur');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Technetium', 'Raw');
@@ -193,7 +193,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Tecnecio',
     name_fr      = 'Technétium',
-    name_ru      = 'Технеций'
+    name_ru = 'Технеций'
 WHERE LOWER(name) = LOWER('Technetium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tellurium', 'Raw');
@@ -202,7 +202,7 @@ SET materialType = 'Raw',
     name_de      = 'Tellur',
     name_es      = 'Teluro',
     name_fr      = 'Tellure',
-    name_ru      = 'Теллур'
+    name_ru = 'Теллур'
 WHERE LOWER(name) = LOWER('Tellurium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tin', 'Raw');
@@ -211,7 +211,7 @@ SET materialType = 'Raw',
     name_de      = 'Zinn',
     name_es      = 'Estaño',
     name_fr      = 'Étain',
-    name_ru      = 'Олово'
+    name_ru = 'Олово'
 WHERE LOWER(name) = LOWER('Tin');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tungsten', 'Raw');
@@ -220,7 +220,7 @@ SET materialType = 'Raw',
     name_de      = 'Wolfram',
     name_es      = 'Tungsteno',
     name_fr      = 'Tungstène',
-    name_ru      = 'Вольфрам'
+    name_ru = 'Вольфрам'
 WHERE LOWER(name) = LOWER('Tungsten');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Unknown', 'Raw');
@@ -229,7 +229,7 @@ SET materialType = 'Raw',
     name_de      = 'Unbekannt',
     name_es      = 'Desconocido',
     name_fr      = 'Inconnu',
-    name_ru      = 'Неизвестно'
+    name_ru = 'Неизвестно'
 WHERE LOWER(name) = LOWER('Unknown');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Vanadium', 'Raw');
@@ -237,7 +237,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Vanadio',
     name_fr      = 'Vanadium',
-    name_ru      = 'Ванадий'
+    name_ru = 'Ванадий'
 WHERE LOWER(name) = LOWER('Vanadium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Yttrium', 'Raw');
@@ -245,7 +245,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Ytrio',
     name_fr      = 'Yttrium',
-    name_ru      = 'Иттрий'
+    name_ru = 'Иттрий'
 WHERE LOWER(name) = LOWER('Yttrium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Zinc', 'Raw');
@@ -254,7 +254,7 @@ SET materialType = 'Raw',
     name_de      = 'Zink',
     name_es      = 'Zinc',
     name_fr      = 'Zinc',
-    name_ru      = 'Цинк'
+    name_ru = 'Цинк'
 WHERE LOWER(name) = LOWER('Zinc');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Zirconium', 'Raw');
@@ -262,7 +262,7 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Circonio',
     name_fr      = 'Zirconium',
-    name_ru      = 'Цирконий'
+    name_ru = 'Цирконий'
 WHERE LOWER(name) = LOWER('Zirconium');
 
 -- encoded.csv
@@ -721,7 +721,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemiedestillerie',
     name_es      = 'Destilería química',
     name_fr      = 'Distillerie chimique',
-    name_ru      = 'Оборудование для перегонки химикатов'
+    name_ru = 'Оборудование для перегонки химикатов'
 WHERE LOWER(name) = LOWER('Chemical Distillery');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Manipulators', 'Manufactured');
@@ -730,7 +730,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemische Manipulatoren',
     name_es      = 'Manipuladores químicos',
     name_fr      = 'Manipulateurs chimiques',
-    name_ru      = 'Манипуляторы для работы с химикатами'
+    name_ru = 'Манипуляторы для работы с химикатами'
 WHERE LOWER(name) = LOWER('Chemical Manipulators');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Processors', 'Manufactured');
@@ -739,7 +739,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemische Prozessoren',
     name_es      = 'Procesadores químicos',
     name_fr      = 'Processeurs chimiques',
-    name_ru      = 'Оборудование для химобработки'
+    name_ru = 'Оборудование для химобработки'
 WHERE LOWER(name) = LOWER('Chemical Processors');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Storage Units', 'Manufactured');
@@ -748,7 +748,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Lagerungseinheiten für Chemiestoffe',
     name_es      = 'Unidades de almacenamiento químico',
     name_fr      = 'Unités de stockage chimique',
-    name_ru      = 'Контейнеры для химикатов'
+    name_ru = 'Контейнеры для химикатов'
 WHERE LOWER(name) = LOWER('Chemical Storage Units');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Compact Composites', 'Manufactured');
@@ -757,7 +757,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Kompaktkomposite',
     name_es      = 'Compuestos compactos',
     name_fr      = 'Composites compacts',
-    name_ru      = 'Спрессованные композиты'
+    name_ru = 'Спрессованные композиты'
 WHERE LOWER(name) = LOWER('Compact Composites');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Compound Shielding', 'Manufactured');
@@ -775,7 +775,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Elektrokeramiken',
     name_es      = 'Cerámicas conductivas',
     name_fr      = 'Conducteurs en céramique',
-    name_ru      = 'Проводящая керамика'
+    name_ru = 'Проводящая керамика'
 WHERE LOWER(name) = LOWER('Conductive Ceramics');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Conductive Components', 'Manufactured');
@@ -784,7 +784,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Leitfähige Komponenten',
     name_es      = 'Componentes conductivos',
     name_fr      = 'Composants conducteurs',
-    name_ru      = 'Проводящие компоненты'
+    name_ru = 'Проводящие компоненты'
 WHERE LOWER(name) = LOWER('Conductive Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Conductive Polymers', 'Manufactured');
@@ -793,7 +793,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Leitfähige Polymere',
     name_es      = 'Polímeros conductivos',
     name_fr      = 'Conducteurs en polymères',
-    name_ru      = 'Проводящие полимеры'
+    name_ru = 'Проводящие полимеры'
 WHERE LOWER(name) = LOWER('Conductive Polymers');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Configurable Components', 'Manufactured');
@@ -802,7 +802,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Konfigurierbare Komponenten',
     name_es      = 'Componentes configurables',
     name_fr      = 'Composants paramétrables',
-    name_ru      = 'Настраиваемые компоненты'
+    name_ru = 'Настраиваемые компоненты'
 WHERE LOWER(name) = LOWER('Configurable Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Crystal Shards', 'Manufactured');
@@ -811,7 +811,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Kristallscherben',
     name_es      = 'Piedras de cristal',
     name_fr      = 'Éclats de cristal',
-    name_ru      = 'Осколки кристаллов'
+    name_ru = 'Осколки кристаллов'
 WHERE LOWER(name) = LOWER('Crystal Shards');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Electrochemical Arrays', 'Manufactured');
@@ -1081,7 +1081,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Polymerkondensatoren',
     name_es      = 'Capacitadores de polímeros',
     name_fr      = 'Condensateurs en polymères',
-    name_ru      = 'Полимерные конденсаторы'
+    name_ru = 'Полимерные конденсаторы'
 WHERE LOWER(name) = LOWER('Polymer Capacitors');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Precipitated Alloys', 'Manufactured');
@@ -1198,7 +1198,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Thargoiden-Krustenschale',
     name_es      = 'Caparazón Thargoide',
     name_fr      = 'Carapace thargoid',
-    name_ru      = 'Таргоидский панцирь'
+    name_ru = 'Таргоидский панцирь'
 WHERE LOWER(name) = LOWER('Thargoid Carapace');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Energy Cell', 'Manufactured');
@@ -1207,7 +1207,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Thargoiden-Energiezelle',
     name_es      = 'Célula de energía Thargoide',
     name_fr      = 'Cellule d’énergie thargoid',
-    name_ru      = 'Таргоидская энергоячейка'
+    name_ru = 'Таргоидская энергоячейка'
 WHERE LOWER(name) = LOWER('Thargoid Energy Cell');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Sensor Fragment', 'Manufactured');
@@ -1216,7 +1216,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Sensorenfragment',
     name_es      = 'Fragmento de sensor',
     name_fr      = 'Fragment de capteur',
-    name_ru      = 'Обломок сенсора'
+    name_ru = 'Обломок сенсора'
 WHERE LOWER(name) = LOWER('Sensor Fragment');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Organic Circuitry', 'Manufactured');
@@ -1225,7 +1225,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Organischer Schaltkreis der Thargoiden',
     name_es      = 'Circuitería orgánica Thargoide',
     name_fr      = 'Circuits organiques thargoids',
-    name_ru      = 'Таргоидская органическая схема'
+    name_ru = 'Таргоидская органическая схема'
 WHERE LOWER(name) = LOWER('Thargoid Organic Circuitry');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Technological Components', 'Manufactured');
@@ -1234,7 +1234,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Technologiekomponenten der Thargoiden',
     name_es      = 'Componentes tecnológicos Thargoides',
     name_fr      = 'Composants technologiques thargoids',
-    name_ru      = 'Компоненты таргоидской техники'
+    name_ru = 'Компоненты таргоидской техники'
 WHERE LOWER(name) = LOWER('Thargoid Technological Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Worn Shield Emitters', 'Manufactured');
@@ -1261,7 +1261,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Schubantriebelemente',
     name_es      = 'Elementos de propulsión',
     name_fr      = 'Éléments de propulsion',
-    name_ru      = 'Реактивные элементы'
+    name_ru = 'Реактивные элементы'
 WHERE LOWER(name) = LOWER('Propulsion Elements (Thargoid)');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Weapon Parts (Thargoid)', 'Manufactured');
@@ -1270,7 +1270,7 @@ SET materialType = 'Manufactured',
     name_de      = 'Waffenteile',
     name_es      = 'Piezas de armamento',
     name_fr      = 'Pièces d’armement',
-    name_ru      = 'Детали вооружения'
+    name_ru = 'Детали вооружения'
 WHERE LOWER(name) = LOWER('Weapon Parts (Thargoid)');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Wreckage Components (Thargoid)', 'Manufactured');
@@ -1684,8 +1684,7 @@ VALUES ('Assault Plans');
 UPDATE commodities
 SET commodity_de = 'Angriffspläne',
     commodity_es = 'Planes de asalto',
-    commodity_fr = 'Plans d’assaut',
-    commodity_ru = 'Планы атак'
+    commodity_fr = 'Plans d’assaut'
 WHERE LOWER(commodity) = LOWER('Assault Plans');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Atmospheric Processors');
@@ -1795,8 +1794,7 @@ VALUES ('Benitoite');
 UPDATE commodities
 SET commodity_de = 'Benitoit',
     commodity_es = 'Benitoíta',
-    commodity_fr = 'Bénitoïte',
-    commodity_ru = 'Бенитоит'
+    commodity_fr = 'Bénitoïte'
 WHERE LOWER(commodity) = LOWER('Benitoite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bertrandite');
