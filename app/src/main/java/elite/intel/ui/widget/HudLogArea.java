@@ -52,15 +52,13 @@ public class HudLogArea extends JPanel {
     }
 
     private static final int MAX_MESSAGES = 40;
-    /** Full-session transcript kept for export, independent of the {@link #MAX_MESSAGES}-message render window; bounded so it cannot grow without limit. */
     /**
      * Per-message horizontal alignment, used by the chat panel to put commander lines on the left and
      * AI lines on the right. Non-chat panels always use {@link #LEFT}.
      */
     public enum Align {LEFT, RIGHT}
 
-    private static final int MAX_MESSAGES = 20;
-    /** Full-session transcript kept for export, independent of the 20-message render window; bounded so it cannot grow without limit. */
+    /** Full-session transcript kept for export, independent of the {@link #MAX_MESSAGES}-message render window; bounded so it cannot grow without limit. */
     private static final int MAX_TRANSCRIPT = 5000;
     private static final int PAD_X = 10;
     private static final int PAD_Y = 6;
