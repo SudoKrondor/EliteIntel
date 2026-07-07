@@ -93,7 +93,10 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SLIDER_VALUE_TRACK = HUD_COLOR_FF2E00;
     /** Warm brown plaque behind a HudSlider track, on which the rail and value fill are drawn. */
     public static final Color HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND = HUD_COLOR_151519;
-    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_FF7100;
+    /** Commander chat lane text (left cards + input caret). Green, distinct from the AI (blue) lane. */
+    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_4FC56B;
+    /** Commander chat lane marker/rail (left rail + bottom prompt glyph); own role so it can diverge from text. */
+    public static final Color HUD_COLOR_ROLE_COMMANDER_MARKER = HUD_COLOR_4FC56B;
     public static final Color HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT = HUD_COLOR_72A2B4;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TEXT = HUD_COLOR_5A6368;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;

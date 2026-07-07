@@ -52,8 +52,7 @@ public class AiTabPanel extends JPanel {
     private HudCommanderBlock commanderBlock;
     private final AtomicBoolean isServiceRunning = new AtomicBoolean(false);
 
-    private HudLogArea userPanel;
-    private HudLogArea aiPanel;
+    private HudLogArea chatPanel;
     private HudLogArea systemPanel;
 
     // QUICK STATUS readouts
@@ -141,25 +140,19 @@ public class AiTabPanel extends JPanel {
         updateAppButton = new HudUpdateButton(false);
 
         // --- Log panels ---
-        userPanel = new HudLogArea(30, HudLogArea.Style.USER_INPUT);
-
-        aiPanel = new HudLogArea(25, HudLogArea.Style.AI_RESPONSE);
+        // Single chat stream: commander lines left (USER_INPUT), AI lines right (AI_RESPONSE).
+        chatPanel = HudLogArea.chat(25);
 
         systemPanel = new HudLogArea(12, HudLogArea.Style.SYSTEM_LOG);
 
-        // --- Main log area (user/ai top, system below) ---
-        HudSplitPane topSplit = new HudSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                logSection(getText("ai.section.userInput"), userPanel),
-                logSection(getText("ai.section.aiResponse"), aiPanel)
-        );
-        topSplit.setResizeWeight(0.38);
+        // --- Main log area (conversation top, system below) ---
+        HudSection chatSection = logSection(getText("ai.section.conversation"), chatPanel);
 
         HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
         systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                topSplit,
+                chatSection,
                 systemSection
         );
         mainSplit.setResizeWeight(0.65);
@@ -364,11 +357,13 @@ public class AiTabPanel extends JPanel {
     }
 
     public void addUserMessage(String text) {
-        SwingUtilities.invokeLater(() -> userPanel.addMessage(text));
+        SwingUtilities.invokeLater(() ->
+                chatPanel.addMessage(text, HudLogArea.Style.USER_INPUT, HudLogArea.Align.LEFT));
     }
 
     public void addAiMessage(String text) {
-        SwingUtilities.invokeLater(() -> aiPanel.addMessage(text));
+        SwingUtilities.invokeLater(() ->
+                chatPanel.addMessage(text, HudLogArea.Style.AI_RESPONSE, HudLogArea.Align.RIGHT));
     }
 
     /** Renders a structured SYSTEM_LOG entry; the panel shows local {@code HH:mm:ss}, the export uses UTC. */
@@ -635,8 +630,7 @@ public class AiTabPanel extends JPanel {
     @Subscribe
     public void onClearConsoleEvent(ClearConsoleEvent event) {
         SwingUtilities.invokeLater(() -> {
-            userPanel.clear();
-            aiPanel.clear();
+            chatPanel.clear();
             systemPanel.clear();
         });
     }
