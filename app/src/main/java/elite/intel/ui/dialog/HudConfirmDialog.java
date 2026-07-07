@@ -10,8 +10,9 @@ import java.awt.event.KeyEvent;
 
 /**
  * Reusable HUD modal confirm dialog (section 10/section 10.1) - the canon replacement for raw
- * {@code JOptionPane} confirms. Shows a title, a wrapped message and 2-3 buttons
- * (primary right, optional extra left of primary, dismiss left) and reports which the user chose.
+ * {@code JOptionPane} confirms and message popups. Shows a title, a wrapped message and 1-3 buttons
+ * (primary right, optional extra left of primary, optional dismiss left) and reports which the user
+ * chose; {@link #info} is the single-button message variant.
  * Built on {@link AppTheme#hudModalScaffold(HudModalSpec)}; ESC and the close glyph map to DISMISS.
  */
 public final class HudConfirmDialog extends JDialog {
@@ -45,21 +46,30 @@ public final class HudConfirmDialog extends JDialog {
         msg.setFont(base.deriveFont(HudPalette.HUD_FONT_FIELD_VALUE));
         msg.putClientProperty(AppTheme.HUD_LOCKED_FOREGROUND, Boolean.TRUE);
         msg.setBorder(null);
+        // A line-wrapping JTextArea reports a single-line preferred height until it has a width, so
+        // pack() would clip a long message. Fix the width to the columns, then let it report the real
+        // wrapped height at that width.
+        int wrapWidth = msg.getPreferredSize().width;
+        msg.setSize(wrapWidth, Short.MAX_VALUE);
+        msg.setPreferredSize(new Dimension(wrapWidth, msg.getPreferredSize().height));
 
         JPanel body = AppTheme.transparentPanel(new BorderLayout());
         body.add(msg, BorderLayout.CENTER);
 
         JButton primary = AppTheme.makeButton(primaryLabel);
         primary.addActionListener(e -> finish(Result.PRIMARY));
-        JButton dismiss = AppTheme.makeButtonSubtle(dismissLabel);
-        dismiss.addActionListener(e -> finish(Result.DISMISS));
 
         HudModalSpec.Builder b = HudModalSpec.builder()
                 .title(title)
                 .onClose(() -> finish(Result.DISMISS))
                 .body(body)
-                .primary(primary)
-                .dismiss(dismiss);
+                .primary(primary);
+        // A single-button info popup passes no dismiss label; skip the BACK button then.
+        if (dismissLabel != null) {
+            JButton dismiss = AppTheme.makeButtonSubtle(dismissLabel);
+            dismiss.addActionListener(e -> finish(Result.DISMISS));
+            b.dismiss(dismiss);
+        }
         if (extraLabel != null) {
             JButton extra = AppTheme.makeButtonSubtle(extraLabel);
             extra.addActionListener(e -> finish(Result.EXTRA));
@@ -92,7 +102,8 @@ public final class HudConfirmDialog extends JDialog {
                               String primaryLabel, String extraLabel, String dismissLabel) {
         HudConfirmDialog dlg = new HudConfirmDialog(parent, title, message,
                 primaryLabel, extraLabel, dismissLabel);
-        dlg.setVisible(true);
+        // Dim the parent for the modal's lifetime (canon 10 / 10.1); the scrim is removed on close.
+        AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(parent), () -> dlg.setVisible(true));
         return dlg.result;
     }
 
@@ -100,5 +111,13 @@ public final class HudConfirmDialog extends JDialog {
     public static boolean confirm(Component parent, String title, String message,
                                   String primaryLabel, String dismissLabel) {
         return show(parent, title, message, primaryLabel, null, dismissLabel) == Result.PRIMARY;
+    }
+
+    /**
+     * Shows a modal, single-button information popup (HUD section 10) - the canon replacement for
+     * {@code JOptionPane.showMessageDialog}. The one button and ESC/close glyph just dismiss it.
+     */
+    public static void info(Component parent, String title, String message, String buttonLabel) {
+        show(parent, title, message, buttonLabel, null, null);
     }
 }

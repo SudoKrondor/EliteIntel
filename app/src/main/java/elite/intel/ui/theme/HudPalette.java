@@ -193,7 +193,7 @@ public final class HudPalette {
      */
     public static final float HUD_FONT_TABLE_ROW      = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_TABLE_HEADER   = HUD_FONT_SM;   // 12
-    public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_SM;   // 12
+    public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_FIELD_LABEL    = HUD_FONT_SM + 1f; // 13 - form/readout key labels (section 5.1)
     public static final float HUD_FONT_READOUT_KEY    = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
@@ -207,7 +207,7 @@ public final class HudPalette {
     public static final float HUD_FONT_BADGE_ROLE     = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
-    public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 - banner message text
+    public static final float HUD_FONT_BANNER         = HUD_FONT_MD;   // 14 - banner message text
     public static final float HUD_FONT_TOOLTIP        = HUD_FONT_SM;   // 12 - hover tooltip text (global ToolTip.font)
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;
