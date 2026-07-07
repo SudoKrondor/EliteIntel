@@ -27,6 +27,12 @@ import java.util.stream.Collectors;
  * the structurally valid response is returned anyway (the turn settles; only the memory stamping degrades
  * to defaults), never downgraded to INVALID.
  * <p>
+ * Symmetrically, a classifying turn must also carry a settling call: a response that calls
+ * {@code classify_turn} and nothing else has classified the turn but neither answered nor acted, so it
+ * falls silent. That draws the same single repair/retry (a nudge to speak or act) and the same graceful
+ * degradation - if the retry still adds nothing, the classify-only response is accepted (the turn settles
+ * silently) rather than downgraded to INVALID.
+ * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future.
  */
@@ -80,50 +86,65 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * What is wrong with a parsed response; drives the repair nudge and the fallback. NONE means no defect;
-     * MALFORMED (not offered tool-calls at all) is more severe than MISSING_CLASSIFY (usable but unclassified).
+     * What is wrong with a parsed response; drives the repair nudge and the fallback. A {@code fatal} defect
+     * (only {@link #MALFORMED} - not offered tool-calls at all) is unusable and downgrades to INVALID; the
+     * non-fatal defects ({@link #MISSING_CLASSIFY} - usable but unclassified, {@link #MISSING_SETTLING} -
+     * classified but silent) still leave a response that settles the turn, so after one failed repair they are
+     * accepted as-is. {@link #NONE} means no defect.
      */
-    private enum Defect { NONE, MALFORMED, MISSING_CLASSIFY }
+    private enum Defect {
+        NONE(false), MISSING_CLASSIFY(false), MISSING_SETTLING(false), MALFORMED(true);
+        final boolean fatal;
+        Defect(boolean fatal) {
+            this.fatal = fatal;
+        }
+    }
+
+    /** A single send/parse round paired with the defect it was found to have. */
+    private record Attempt(LlmResult result, Defect defect) {}
 
     private LlmResult process(LlmRequest request) {
-        LlmResult first = attempt(request);
-        Defect firstDefect = defectOf(first, request);
-        if (firstDefect == Defect.NONE) {
-            return first;
+        Attempt first = attempt(request);
+        if (first.defect() == Defect.NONE) {
+            return first.result();
         }
-        // Single repair/retry with a defect-targeted nudge.
-        log.warn("LLM response not usable ({}, status={}, tool-calls={}); retrying once",
-                firstDefect, first.status(), first.toolInvocations().size());
-        LlmResult second = attempt(repair(request, firstDefect));
-        Defect secondDefect = defectOf(second, request);
-        if (secondDefect == Defect.NONE) {
-            return second;
+        // One repair/retry with a defect-targeted nudge.
+        log.warn("LLM response has defect {} (status={}, tool-calls={}); repairing and retrying once",
+                first.defect(), first.result().status(), first.result().toolInvocations().size());
+        Attempt second = attempt(repair(request, first.defect()));
+
+        // Prefer a clean retry; otherwise keep the best usable (non-fatal) response - a missing classify_turn
+        // or a classify-only silent turn still settles the turn for the commander, better than the INVALID
+        // service phrase. Prefer the original answer over the nudged retry. Only a fatal defect is unusable.
+        if (second.defect() == Defect.NONE) {
+            return second.result();
         }
-        // Graceful degradation: a response that only lacks classify_turn still settles the turn for the
-        // commander (memory stamping falls back to defaults) - better than a service-phrase INVALID.
-        if (firstDefect == Defect.MISSING_CLASSIFY) {
-            log.warn("classify_turn still missing after retry; accepting the response without it");
-            return first;
+        if (!first.defect().fatal) {
+            log.warn("accepting original response despite {}", first.defect());
+            return first.result();
         }
-        if (secondDefect == Defect.MISSING_CLASSIFY) {
-            log.warn("classify_turn missing in the repaired response; accepting it without classification");
-            return second;
+        if (!second.defect().fatal) {
+            log.warn("accepting repaired response despite {}", second.defect());
+            return second.result();
         }
-        log.warn("LLM response still invalid after retry; returning INVALID_RESPONSE");
+        log.warn("LLM response still malformed after retry; returning INVALID_RESPONSE");
         return INVALID;
     }
 
-    private LlmResult attempt(LlmRequest request) {
+    private Attempt attempt(LlmRequest request) {
         String body = adapter.buildRequestBody(request);
         JsonObject response = transport.send(body);
-        return adapter.parse(response);
+        LlmResult result = adapter.parse(response);
+        return new Attempt(result, defectOf(result, request));
     }
 
     /**
      * Classifies a parsed response: {@link Defect#MALFORMED} when it is not one-or-more offered tool-calls;
      * {@link Defect#MISSING_CLASSIFY} when the turn offered {@code classify_turn} (a classifying turn) but the
-     * response does not call it; {@link Defect#NONE} otherwise. A bare {@code classify_turn} alone is NONE here -
-     * whether that settles the turn is the thought's business, not the protocol's.
+     * response does not call it; {@link Defect#MISSING_SETTLING} when it calls {@code classify_turn} and nothing
+     * else (the turn is classified but neither answered nor acted, so it would fall silent); {@link Defect#NONE}
+     * otherwise. A classifying turn that called {@code classify_turn} is either NONE (a settling call is also
+     * present) or MISSING_SETTLING (classify-only); the two cannot both hold.
      */
     private Defect defectOf(LlmResult result, LlmRequest request) {
         if (!result.isValid() || result.toolInvocations().isEmpty()) {
@@ -138,17 +159,29 @@ public final class CompanionLlmGateway implements LlmGateway {
         if (!allOffered) {
             return Defect.MALFORMED;
         }
-        boolean classifyRequired = offered.contains(ClassifyTurnFunction.ID);
+        if (!offered.contains(ClassifyTurnFunction.ID)) {
+            return Defect.NONE; // not a classifying turn (e.g. narration): no classify/settling protocol
+        }
         boolean classifyCalled = result.toolInvocations().stream()
                 .anyMatch(inv -> ClassifyTurnFunction.ID.equals(inv.name()));
-        return classifyRequired && !classifyCalled ? Defect.MISSING_CLASSIFY : Defect.NONE;
+        if (!classifyCalled) {
+            return Defect.MISSING_CLASSIFY;
+        }
+        // A settling call is any invocation other than classify_turn (speak, or an action command/query).
+        boolean settlingCalled = result.toolInvocations().stream()
+                .anyMatch(inv -> !ClassifyTurnFunction.ID.equals(inv.name()));
+        return settlingCalled ? Defect.NONE : Defect.MISSING_SETTLING;
     }
 
     private LlmRequest repair(LlmRequest request, Defect defect) {
-        String nudge = defect == Defect.MISSING_CLASSIFY
-                ? "Your previous response omitted the mandatory 'classify_turn' call. Resend it: call"
-                + " 'classify_turn' first, then the same settling function call."
-                : "Your previous response was not a valid function call. Respond only by calling one of the provided functions.";
+        String nudge = switch (defect) {
+            case MISSING_CLASSIFY -> "Your previous response omitted the mandatory 'classify_turn' call. Resend it: call"
+                    + " 'classify_turn' first, then the same settling function call.";
+            case MISSING_SETTLING -> "Your previous response called only 'classify_turn' and did nothing else. You must also"
+                    + " act on this turn: call 'speak' to answer the commander, or the appropriate function to carry out"
+                    + " their request. Resend 'classify_turn' together with that call.";
+            default -> "Your previous response was not a valid function call. Respond only by calling one of the provided functions.";
+        };
         List<LlmMessage> messages = new ArrayList<>(request.messages());
         messages.add(LlmMessage.of(LlmMessageRole.USER, nudge));
         return new LlmRequest(request.requestId(), messages, request.tools(), request.profile());
