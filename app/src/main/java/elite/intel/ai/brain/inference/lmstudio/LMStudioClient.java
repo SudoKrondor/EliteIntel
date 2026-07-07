@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.inference.lmstudio;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -39,9 +40,7 @@ public class LMStudioClient extends BaseAiClient implements Client {
         boolean isQueryModel = model == MODEL_QUERIES;
 
         JsonObject request = new JsonObject();
-        request.addProperty("model", isQueryModel
-                ? systemSession.getLmStudioQueryModel().trim()
-                : systemSession.getLmStudioCommandModel().trim());
+        request.addProperty("model", systemSession.getLmStudioCommandModel().trim());
         request.addProperty("temperature", temp);
         request.addProperty("max_tokens", isQueryModel ? 1024 : 512);
         request.addProperty("stream", false);
@@ -64,6 +63,9 @@ public class LMStudioClient extends BaseAiClient implements Client {
     @Override
     public synchronized JsonObject sendJsonRequest(String request) {
         long t0 = System.nanoTime();
+        // Diagnostic: surface the model we actually put on the wire (LM Studio silently serves the loaded
+        // model when the requested name is unknown, so the response's model name alone can't confirm this).
+        UiBus.publish(new AppLogEvent("LM Studio request -> model: " + requestedModel(request)));
         JsonObject response = super.sendJsonRequest(buildRequest(request));
         long elapsed = System.nanoTime() - t0;
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
@@ -75,6 +77,18 @@ public class LMStudioClient extends BaseAiClient implements Client {
                     wallClockTps(elapsed, meta.usage().completionTokens())));
         }
         return response;
+    }
+
+    /**
+     * Reads the {@code model} field from an outgoing request body for the diagnostic log; tolerant of a malformed body.
+     */
+    private static String requestedModel(String body) {
+        try {
+            JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+            return json.has("model") && !json.get("model").isJsonNull() ? json.get("model").getAsString() : "<none>";
+        } catch (RuntimeException malformed) {
+            return "<unparseable>";
+        }
     }
 
     private HttpRequest buildRequest(String body) {

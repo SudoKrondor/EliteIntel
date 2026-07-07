@@ -442,16 +442,14 @@ public class AiServicesSettingsPanel extends JPanel {
         boolean providerCfgChanged =
                 !Objects.equals(systemSession.getOllamaAddress(), ollamaAddress)
                         || !Objects.equals(systemSession.getOllamaCommandModel(), ollamaCommand)
-                        || !Objects.equals(systemSession.getOllamaQueryModel(), ollamaQuery)
                         || !Objects.equals(systemSession.getLmStudioAddress(), lmAddress)
-                        || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand)
-                        || !Objects.equals(systemSession.getLmStudioQueryModel(), lmQuery);
+                        || !Objects.equals(systemSession.getLmStudioCommandModel(), lmCommand);
         boolean brainChanged = newLocal != oldLocal || newProvider != oldProvider
                 || providerCfgChanged || !Objects.equals(oldAiKey, newAiKey);
         boolean mouthChanged = newTtsLocal != oldTtsLocal || !Objects.equals(oldTtsKey, newTtsKey);
 
-        systemSession.setOllamaSettings(ollamaAddress, ollamaCommand, ollamaQuery);
-        systemSession.setLmStudioSettings(lmAddress, lmCommand, lmQuery);
+        systemSession.setOllamaSettings(ollamaAddress, ollamaCommand);
+        systemSession.setLmStudioSettings(lmAddress, lmCommand);
         systemSession.setLocalLlmProvider(newProvider);
         systemSession.setUseLocalCommandLlm(newLocal);
         systemSession.setUseLocalQueryLlm(newLocal);
