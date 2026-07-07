@@ -132,8 +132,8 @@ public class PromptFactory implements AiPromptFactory {
                 - EXCEPTION  select_fire_group_by_nato: key = NATO word verbatim (lowercase). Never convert to a letter. "fire group bravo" → {"action": "select_fire_group_by_nato", "params": {"key": "bravo"}}
                 
                 """);
-        String hints = lang.disambiguationHints();
-        if (hints != null) sb.append(hints);
+//        String hints = lang.disambiguationHints();
+//        if (hints != null) sb.append(hints);
 
         sb.append("""
                 COMMAND RULES:

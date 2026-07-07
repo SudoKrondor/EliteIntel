@@ -86,36 +86,6 @@ final class CommanderPrompt {
                     The commander speaks {inputLanguage}. Game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names are fixed identifiers - keep them exactly as defined, never translated.
                     The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, using the {inputLanguage} triggers in <disambiguation> to map what he says to the exact function. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
             </language>
-
-                    <disambiguation>
-                    Game logic applies regardless of language. When more than one offered function could fit, choose by these rules:
-                    - FLEET vs SQUADRON CARRIER: if the words "squadron carrier" (or "squadron") appear, use the squadron functions
-                      (query_squadron_carrier_status_fuel_credit_finance, query_squadron_carrier_route, query_squadron_carrier_eta,
-                      query_squadron_carrier_final_destination, navigate_to_squadron_carrier). Otherwise "carrier" means the personal
-                      FLEET carrier - use the fleet functions (query_fleet_carrier_status_fuel_credit_finance, query_fleet_carrier_route,
-                      query_fleet_carrier_eta, query_fleet_carrier_final_destination, navigate_to_fleet_carrier). Example: "take us to the
-                      carrier" -> navigate_to_fleet_carrier; "route of the squadron carrier" -> query_squadron_carrier_route.
-                    - CARRIER vs SHIP route: if "carrier" is NOT in the input, route / jump / remaining-jumps questions are about the SHIP
-                      -> query_ship_route_remaining_jumps, never a carrier route. "how many jumps on the squadron carrier route" ->
-                      query_squadron_carrier_route (a carrier is named); "how many jumps left" -> query_ship_route_remaining_jumps.
-                    - discovery scan / honk (fire the discovery scanner, map the system) -> run_discovery_scan. The detailed full-spectrum
-                      scanner (fss, full/filtered spectrum scan) -> open_fss_scan_system.
-                    - signals in a system / what signals do you see -> query_signals_in_star_system; geological or volcanic activity ->
-                      query_geo_signals; organisms / biology here on this planet -> query_exobiology_samples; which planets still need bio
-                      or organic scanning -> query_bio_scans_and_samples_in_star_system. Never confuse signal types with stellar objects.
-                    - profit from bounties -> query_total_bounties; from missions -> query_missions_and_rewards; from exploration or
-                      discovery -> query_exploration_profits.
-                    - the ship's modules / loadout / specs / what are you equipped with -> query_ship_loadout. The player's profile or ranks
-                      (the input begins with "player profile") -> query_player_profile_rank_progress.
-                    - the length / duration of the DAY (planet rotation period) at the current location -> query_current_location, never
-                      query_time (which is the galactic / UTC clock time, not a day's length).
-                    - a navigation verb (navigate, go to, take us to, plot course to, head to, fly to) MUST map to a navigation COMMAND,
-                      never to a distance or route query. A distance question (how far, how close, distance to) MUST map to a distance
-                      QUERY, never to a navigation command.
-                    
-                            {inputLanguage} triggers - tested phrasings a {inputLanguage} speaker actually uses, each mapped to the exact function to call. Match the commander's words against these directly; the game logic above still holds:
-                            {disambiguationHints}
-                    </disambiguation>
                     
             <function_calling>
             You respond only with function calls, never free text.
