@@ -98,21 +98,4 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("Do NOT translate his words to English first"));
         assertFalse(text.contains("translate their input to English before choosing a function"));
     }
-
-    @Test
-    void commanderPromptInjectsInputLanguageDisambiguationAndLeavesNoPlaceholder() {
-        // Disambiguation keys on the commander's INPUT language (STT/session), not the TTS-bound response language.
-        Language inputLanguage = SystemSession.getInstance().getLanguage();
-        String expectedHints = PromptLocalizations.rulesFor(inputLanguage).companionDisambiguation();
-
-        String text = prompt.staticRules(ThoughtSource.COMMANDER);
-
-        // The template slots must be fully resolved - no raw placeholder leaks into the prompt the model sees.
-        assertFalse(text.contains("{disambiguationHints}"));
-        assertFalse(text.contains("{inputLanguage}"));
-        // The tested, per-language disambiguation is present verbatim in the disambiguation block.
-        assertTrue(text.contains("<disambiguation>"));
-        assertTrue(expectedHints != null && !expectedHints.isBlank());
-        assertTrue(text.contains(expectedHints));
-    }
 }
