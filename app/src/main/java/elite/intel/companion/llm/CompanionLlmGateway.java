@@ -1,6 +1,7 @@
 package elite.intel.companion.llm;
 
 import com.google.gson.JsonObject;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import org.apache.logging.log4j.LogManager;
@@ -108,7 +109,11 @@ public final class CompanionLlmGateway implements LlmGateway {
         if (first.defect() == Defect.NONE) {
             return first.result();
         }
-        // One repair/retry with a defect-targeted nudge.
+        // One repair/retry with a defect-targeted nudge. Surface it on the diagnostics surface (attributed to the
+        // owning thought's trace) so this second physical call - otherwise only an unattributed token line - is
+        // visible as part of the round.
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + first.defect() + " -> retry");
         log.warn("LLM response has defect {} (status={}, tool-calls={}); repairing and retrying once",
                 first.defect(), first.result().status(), first.result().toolInvocations().size());
         Attempt second = attempt(repair(request, first.defect()));
@@ -117,16 +122,20 @@ public final class CompanionLlmGateway implements LlmGateway {
         // or a classify-only silent turn still settles the turn for the commander, better than the INVALID
         // service phrase. Prefer the original answer over the nudged retry. Only a fatal defect is unusable.
         if (second.defect() == Defect.NONE) {
+            CompanionDiagnostics.debug(trace, "llm", "attempt#2 ok");
             return second.result();
         }
         if (!first.defect().fatal) {
+            CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + second.defect() + "; kept original");
             log.warn("accepting original response despite {}", first.defect());
             return first.result();
         }
         if (!second.defect().fatal) {
+            CompanionDiagnostics.debug(trace, "llm", "attempt#2 kept repaired despite " + second.defect());
             log.warn("accepting repaired response despite {}", second.defect());
             return second.result();
         }
+        CompanionDiagnostics.debug(trace, "llm", "attempt#2 still MALFORMED -> INVALID");
         log.warn("LLM response still malformed after retry; returning INVALID_RESPONSE");
         return INVALID;
     }
@@ -184,6 +193,6 @@ public final class CompanionLlmGateway implements LlmGateway {
         };
         List<LlmMessage> messages = new ArrayList<>(request.messages());
         messages.add(LlmMessage.of(LlmMessageRole.USER, nudge));
-        return new LlmRequest(request.requestId(), messages, request.tools(), request.profile());
+        return new LlmRequest(request.requestId(), messages, request.tools(), request.profile(), request.trace());
     }
 }

@@ -299,7 +299,8 @@ class ThoughtDispatcherTest {
 
     @Test
     void eventWithoutSummaryIsDroppedWithoutEngagingLlm() {
-        // An event that provides no memory summary is dropped inside the thought: nothing recorded, no LLM call.
+        // An event that provides no memory summary is dropped at the dispatcher, before any thought is queued:
+        // nothing recorded, no LLM call.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("an unremembered event must not engage the LLM");

@@ -5,7 +5,6 @@ import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.DangerousActionPolicy;
-import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
@@ -112,8 +111,6 @@ public final class SemanticReflexResolver {
         if (!best.tool().parameters().isEmpty() || isDangerous(best.id())) {
             return Optional.empty(); // parameters need the LLM; dangerous keeps its confirmation flow
         }
-        CompanionDiagnostics.debugAmbient("reflex", String.format(Locale.ROOT,
-                "semantic reflex: %s best=%.3f second=%.3f", best.id(), bestScore, secondScore));
         return Optional.of(best.id());
     }
 

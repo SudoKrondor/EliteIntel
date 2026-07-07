@@ -172,16 +172,26 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         if (reflexCommand.isEmpty()) {
             reflexCommand = reflexResolver.resolve(matchInput);
         }
+        // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
+        // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
+        // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
+        String reflexKind = reflexCommand.isPresent() ? "exact" : null;
         if (reflexCommand.isEmpty()) {
             // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
             reflexCommand = semanticReflexResolver.resolve(matchInput);
+            if (reflexCommand.isPresent()) {
+                reflexKind = "semantic";
+            }
         }
         Thought thought = reflexCommand
                 .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+        String route = reflexCommand.isPresent()
+                ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
+                : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
-                "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + reflexCommand.map(id -> "reflex " + id).orElse("think"));
+                "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
             CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
@@ -214,20 +224,27 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. The EVENT
-     * thought is memory-only: it records the event's readable {@link BaseEvent#memorySummary()} when non-blank
-     * (an event with no summary writes nothing), and the LLM is never engaged (see {@code EventThought}).
+     * Accepts a filtered game event. An event with a readable {@link BaseEvent#memorySummary()} becomes a
+     * memory-only EVENT thought queued on the event lane (it records that summary; the LLM is never engaged, see
+     * {@code EventThought}). An event with no summary is a no-op: it is logged and dropped here without queuing.
      */
     public void submitEvent(BaseEvent event) {
         if (event == null) {
             return;
         }
-        Urgency urgency = urgencyPolicy.forEvent(event);
         ConversationTopic topic = EventTopicMap.topicFor(event);
-        Thought thought = Thought.event(urgency, event.memorySummary(), topic, ctx);
+        String summary = event.memorySummary();
+        // A no-summary event is a pure no-op for the memory-only EventThought (it would record nothing): log one
+        // line and drop it here, instead of spawning a lane thought that would only log start/done for no effect.
+        if (summary == null || summary.isBlank()) {
+            CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "event",
+                    "no-op (no summary) type=" + event.getEventType() + " topic=" + topic);
+            return;
+        }
+        Urgency urgency = urgencyPolicy.forEvent(event);
+        Thought thought = Thought.event(urgency, summary, topic, ctx);
         CompanionDiagnostics.debug(thought.trace(), "event",
-                "\"" + CompanionDiagnostics.truncate(event.memorySummary()) + "\" type=" + event.getEventType()
-                        + " topic=" + topic);
+                "\"" + CompanionDiagnostics.truncate(summary) + "\" type=" + event.getEventType() + " topic=" + topic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 

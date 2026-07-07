@@ -89,9 +89,9 @@ public final class CompanionDiagnostics {
         debug(trace == null ? SYSTEM : trace, stage, detail);
     }
 
-    /** {@code companion <tag> <stage>: <detail>} - the one line format every companion diagnostic shares. */
+    /** {@code Companion <tag> <stage>: <detail>} - the one line format every companion diagnostic shares. */
     private static String format(String tag, String stage, String detail) {
-        String head = "companion " + tag + " " + stage;
+        String head = "Companion " + tag + " " + stage;
         return (detail == null || detail.isBlank()) ? head : head + ": " + detail;
     }
 

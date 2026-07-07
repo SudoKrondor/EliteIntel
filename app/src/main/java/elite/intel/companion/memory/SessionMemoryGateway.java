@@ -154,8 +154,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
     public List<MemoryEntry> recallCandidates(String query, int limit) {
         // Diagnostic emitted outside the lock, for the same reason as recallMatching.
         List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
-        CompanionDiagnostics.debugAmbient("recall",
-                "\"" + CompanionDiagnostics.truncate(query) + "\" -> " + hits.size() + " candidate(s)");
+        // The query here is the turn's input, already echoed by the intake line; log only the outcome, spelled out
+        // so it reads on its own: how many remembered facts were pulled in to ground this turn's answer. Grouped
+        // under the "memory" stage with the record lines. The facts themselves appear as the compose "facts:" lines.
+        CompanionDiagnostics.debugAmbient("memory", "recalled " + hits.size() + " fact candidate(s) for grounding");
         return hits;
     }
 
