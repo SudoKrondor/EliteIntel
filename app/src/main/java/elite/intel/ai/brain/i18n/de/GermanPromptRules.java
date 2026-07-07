@@ -36,15 +36,15 @@ public class GermanPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- classify queries about location like wie lange dauert ein tag hier to action → ");
-        sb.append(AnalyzeCurrentLocationQueryCommand.ID);
+        sb.append(AnalyzeCurrentLocationQuery.ID);
         sb.append("\n");
 
         sb.append("- classify bio signals: Welche Planeten / müssen noch biologisch oder organisch gescannt werden? / sind landbar / haben Biosignale usw. → ");
-        sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
+        sb.append(AnalyzeBioScansStarSystemQuery.ID);
         sb.append("\n");
 
         sb.append("- classify DISTANCE QUERIES about bio sample: entfernung zur letzten bio probe, wie weit zur probe usw. → ");
-        sb.append(AnalyzeDistanceFromLastBioSampleQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromLastBioSampleQuery.ID);
         sb.append(" ONLY when asking HOW FAR. NEVER when navigating.\n");
         sb.append("- HARD RULE: navigation / fliege zu / gehe zu / zum nächsten bio sample / codex → ");
         sb.append(NavigateToBioSampleCodexEntryCommand.ID);
@@ -55,7 +55,7 @@ public class GermanPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- HARD RULE: generic scan-the-system commands erkunde das system, scanne das system, system erkunden, system abtasten, system scannen → ");
-        sb.append(HonkCommand.ID);
+        sb.append(RunSystemScanCommand.ID);
         sb.append(" ONLY. Use ");
         sb.append(OpenFssScanSystemCommand.ID);
         sb.append(" ONLY for explicit full-spectrum terms: fss, vollständiger spektralscan, spektralscan, vollständiger scan, systemscan.\n");
@@ -81,9 +81,9 @@ public class GermanPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- classify squadron carrier kurs → ");
-        sb.append(AnalyzeSquadronCarrierFinalDestinationQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierFinalDestinationQuery.ID);
         sb.append(" with squadron carrier route → ");
-        sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierRouteQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify in supercruise gehen, supercruise, supercruise einschalten, lichtgeschwindigkeit, überlichtflug as ");
@@ -97,17 +97,17 @@ public class GermanPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append(" - classify questions about treibstoff, tritium des carriers as ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify carrier reichweite / sprungreichweite (the carrier's JUMP RANGE) as ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append(", NOT ");
-        sb.append(AnalyzeDistanceFromFleetCarrierQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromFleetCarrierQuery.ID);
         sb.append(" (which is only how far the carrier is away)\n");
 
         sb.append(" - classify questions about Entfernung zur Erde, wie weit zur Erde, wie weit zur Zivilisation as ");
-        sb.append(AnalyzeDistanceFromTheBubbleQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromTheBubbleQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify automatisches andocken as ");
@@ -115,14 +115,30 @@ public class GermanPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- HARD RULE: a carrier question WITHOUT the word 'squadron' is about the FLEET carrier → ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("; ONLY when 'squadron' is present use the squadron action → ");
-        sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierDataQuery.ID);
         sb.append("\n");
 
         sb.append("- require very high probability match for action → ");
         sb.append(ClearActiveMissionsCommand.ID);
         sb.append("\n");
+
+        sb.append("- classify NAVIGATION to the active mission: zur aktiven mission, navigiere zur mission, kurs zur mission, zum missionsziel → ");
+        sb.append(NavigateToMissionTargetCommand.ID);
+        sb.append(" (a navigation COMMAND, NEVER the missions query ");
+        sb.append(AnalyzeMissionQuery.ID);
+        sb.append(")\n");
+
+        sb.append("- classify the carrier's FINAL DESTINATION: endziel des carriers, was ist das endziel des carriers, wohin fährt der carrier → ");
+        sb.append(AnalyzeFleetCarrierFinalDestinationQuery.ID);
+        sb.append(" (a carrier without 'squadron' is the FLEET carrier)\n");
+
+        sb.append("- classify a plain reminder: erinnere mich am nächsten stopp zu tanken, erinnere mich zu tanken, denk daran → ");
+        sb.append(SetReminderCommand.ID);
+        sb.append(" (use ");
+        sb.append(SetTimedReminderCommand.ID);
+        sb.append(" ONLY when a specific time or countdown is stated)\n");
 
         return sb.toString();
     }

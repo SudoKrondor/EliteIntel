@@ -34,56 +34,51 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         return ID;
     }
 
+    /// route plotting is accessible anywhere in the game
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
 
 
-        Status status = Status.getInstance();
-        if(status.isInSrv() || status.isInMainShip()) {
+        Number range = GetNumberFromParam.extractRangeParameter(params, 500);
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue())));
 
-            Number range = GetNumberFromParam.extractRangeParameter(params, 500);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue())));
+        PlayerSession playerSession = PlayerSession.getInstance();
+        FleetCarrierSearchResultsDto fleetCarriers = FleetCarrierSearch.getInstance()
+                .findFleetCarrier(
+                        range.intValue(),
+                        CarrierAccess.ALL,
+                        LocationManager.getInstance().getGalacticCoordinates()
+                );
 
-            PlayerSession playerSession = PlayerSession.getInstance();
-            FleetCarrierSearchResultsDto fleetCarriers = FleetCarrierSearch.getInstance()
-                    .findFleetCarrier(
-                            range.intValue(),
-                            CarrierAccess.ALL,
-                            LocationManager.getInstance().getGalacticCoordinates()
-                    );
-
-            String playerCarrierCallSign = null;
-            CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-            if (carrierData != null) {
-                playerCarrierCallSign = carrierData.getCallSign();
-            }
-
-            if (fleetCarriers == null) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable")));
-                return;
-            }
-
-            final String finalPlayerCarrierCallSign = playerCarrierCallSign;
-            fleetCarriers.getResults().stream()
-                    .filter(carrier -> finalPlayerCarrierCallSign == null || !finalPlayerCarrierCallSign.equals(carrier.getCallSign()))
-                    .findFirst()
-                    .ifPresentOrElse(
-                            result -> {
-                                RoutePlotter routePlotter = new RoutePlotter();
-                                String dateAsString = result.getUpdatedAt();
-                                String timeAgo = TimeUtils.transformToYMDHtimeAgo(dateAsString, TimeUtils.LOCAL_DATE_TIME);
-                                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo)));
-                                routePlotter.plotRoute(result.getSystemName());
-                            },
-                            () -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.notFound")))
-                    );
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+        String playerCarrierCallSign = null;
+        CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+        if (carrierData != null) {
+            playerCarrierCallSign = carrierData.getCallSign();
         }
+
+        if (fleetCarriers == null) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable")));
+            return;
+        }
+
+        final String finalPlayerCarrierCallSign = playerCarrierCallSign;
+        fleetCarriers.getResults().stream()
+                .filter(carrier -> finalPlayerCarrierCallSign == null || !finalPlayerCarrierCallSign.equals(carrier.getCallSign()))
+                .findFirst()
+                .ifPresentOrElse(
+                        result -> {
+                            RoutePlotter routePlotter = new RoutePlotter();
+                            String dateAsString = result.getUpdatedAt();
+                            String timeAgo = TimeUtils.transformToYMDHtimeAgo(dateAsString, TimeUtils.LOCAL_DATE_TIME);
+                            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo)));
+                            routePlotter.plotRoute(result.getSystemName());
+                        },
+                        () -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.notFound")))
+                );
     }
 }

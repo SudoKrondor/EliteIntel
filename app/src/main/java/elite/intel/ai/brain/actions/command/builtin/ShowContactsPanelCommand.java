@@ -33,7 +33,7 @@ public final class ShowContactsPanelCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
     }
 
     @Override

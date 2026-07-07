@@ -37,52 +37,46 @@ public final class FindTritiumMiningSiteCommand implements IntelCommand {
         return ID;
     }
 
-    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    /// Maps and Routes are available anywhere in the game
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if (status.isInSrv() || status.isInMainShip()) {
-            Number range = GetNumberFromParam.extractRangeParameter(params, 1000);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
+        Number range = GetNumberFromParam.extractRangeParameter(params, 1000);
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
 
-            ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
-            shipRouteManager.clearRoute();
-            LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
-            StellarObjectSearchResultDto tritiumLocations = StellarObjectSearch.getInstance()
-                    .findRings(
-                            "Tritium",
-                            ReserveLevel.PRISTINE,
-                            coordinates,
-                            range.intValue()
-                    );
+        ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
+        shipRouteManager.clearRoute();
+        LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
+        StellarObjectSearchResultDto tritiumLocations = StellarObjectSearch.getInstance()
+                .findRings(
+                        "Tritium",
+                        ReserveLevel.PRISTINE,
+                        coordinates,
+                        range.intValue()
+                );
 
-            if (tritiumLocations == null || tritiumLocations.getResults().isEmpty()) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
-                return;
-            }
-
-            Optional<StellarObjectSearchResultDto.Result> result = tritiumLocations.getResults().stream().findFirst();
-            double distance = NavigationUtils.calculateGalacticDistance(result.get().getX(), result.get().getY(), result.get().getZ(), coordinates.x(), coordinates.y(), coordinates.z());
-            if(distance > range.intValue()){
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
-                return;
-            }
-
-
-            String reminder = StringUtls.localizedLlm("handler.carrierFuel.headTo", result.get().getSystemName());
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
-            ReminderManager reminderManager = ReminderManager.getInstance();
-            reminderManager.setReminder(reminder, result.get().getSystemName());
-            RoutePlotter routePlotter = new RoutePlotter();
-            routePlotter.plotRoute(result.get().getSystemName());
-
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.mustBeInShipOrSrv")));
+        if (tritiumLocations == null || tritiumLocations.getResults().isEmpty()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
+            return;
         }
+
+        Optional<StellarObjectSearchResultDto.Result> result = tritiumLocations.getResults().stream().findFirst();
+        double distance = NavigationUtils.calculateGalacticDistance(result.get().getX(), result.get().getY(), result.get().getZ(), coordinates.x(), coordinates.y(), coordinates.z());
+        if (distance > range.intValue()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
+            return;
+        }
+
+
+        String reminder = StringUtls.localizedLlm("handler.carrierFuel.headTo", result.get().getSystemName());
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
+        ReminderManager reminderManager = ReminderManager.getInstance();
+        reminderManager.setReminder(reminder, result.get().getSystemName());
+        RoutePlotter routePlotter = new RoutePlotter();
+        routePlotter.plotRoute(result.get().getSystemName());
     }
 }

@@ -5,8 +5,10 @@ package elite.intel.companion.prompt;
  * function-calling protocol (the classify_turn contract plus the ordered settling ladder). Each section is
  * wrapped in its own XML tag ({@code <persona>}, {@code <language>}, {@code <function_calling>}) - tags delimit
  * the blocks for the model while the logic inside stays a flat rule ladder. The only insertions are the
- * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}}, and
- * the AI personality clause {@code {personalityClause}}.
+ * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}} (the
+ * language the companion speaks, TTS-bound), {@code {inputLanguage}} (the language the commander gives orders in,
+ * driving action selection), the per-language action triggers {@code {disambiguationHints}}, and the AI
+ * personality clause {@code {personalityClause}}.
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
@@ -81,8 +83,8 @@ final class CommanderPrompt {
             </communication_rules>
             
             <language>
-            The commander speaks {language}, and game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names and all other arguments stay exactly as defined.
-            If the commander speaks a language other than English, translate their input to English before choosing a function, and extract each argument by its own rule (verbatim where it says so).
+                    The commander speaks {inputLanguage}. Game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names are fixed identifiers - keep them exactly as defined, never translated.
+                    The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, using the {inputLanguage} triggers in <disambiguation> to map what he says to the exact function. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
             </language>
 
                     <disambiguation>
@@ -110,6 +112,9 @@ final class CommanderPrompt {
                     - a navigation verb (navigate, go to, take us to, plot course to, head to, fly to) MUST map to a navigation COMMAND,
                       never to a distance or route query. A distance question (how far, how close, distance to) MUST map to a distance
                       QUERY, never to a navigation command.
+                    
+                            {inputLanguage} triggers - tested phrasings a {inputLanguage} speaker actually uses, each mapped to the exact function to call. Match the commander's words against these directly; the game logic above still holds:
+                            {disambiguationHints}
                     </disambiguation>
                     
             <function_calling>
@@ -173,10 +178,16 @@ final class CommanderPrompt {
             </function_calling>
             """;
 
-    /** The commander template with its {@code {name}}, {@code {language}}, and {@code {personalityClause}} insertions filled in. */
+    /**
+     * The commander template with its {@code {name}}, {@code {disambiguationHints}}, {@code {inputLanguage}},
+     * {@code {language}}, and {@code {personalityClause}} insertions filled in. The injected per-language
+     * {@code {disambiguationHints}} block carries no template tokens itself, so replacement order is immaterial.
+     */
     static String render() {
         return TEXT
                 .replace("{name}", CompanionSystemPromptPart.companionName())
+                .replace("{disambiguationHints}", CompanionSystemPromptPart.disambiguationHints())
+                .replace("{inputLanguage}", CompanionSystemPromptPart.inputLanguageName())
                 .replace("{language}", CompanionSystemPromptPart.languageName())
                 .replace("{personalityClause}", CompanionSystemPromptPart.personalityClause());
     }

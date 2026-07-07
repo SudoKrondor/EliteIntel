@@ -36,15 +36,15 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append("- classify queries about location like как долго длится день здесь to action → ");
-        sb.append(AnalyzeCurrentLocationQueryCommand.ID);
+        sb.append(AnalyzeCurrentLocationQuery.ID);
         sb.append("\n");
 
         sb.append("- classify bio signals: Какие планеты / ещё нуждаются в биологическом или органическом сканировании? / позволяют приземлится / имеют био сигналы итд. → ");
-        sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
+        sb.append(AnalyzeBioScansStarSystemQuery.ID);
         sb.append("\n");
 
         sb.append("- classify DISTANCE QUERIES about bio sample: расстояние до последнего биообразца, как далеко до образца, сколько метров до организма итд. → ");
-        sb.append(AnalyzeDistanceFromLastBioSampleQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromLastBioSampleQuery.ID);
         sb.append(" ONLY when asking HOW FAR. NEVER when navigating.\n");
         sb.append("- HARD RULE: навигация / лети к / перейди к / найди ближайший биообразец / кодекс → ");
         sb.append(NavigateToBioSampleCodexEntryCommand.ID);
@@ -64,9 +64,9 @@ public class RussianPromptRules implements PromptLanguageRules {
         //переключись в боевой режим
 
         sb.append("- classify курс авианосца эскадрильи → ");
-        sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierRouteQuery.ID);
         sb.append(" with пункт назначения авианосца эскадрильи → ");
-        sb.append(AnalyzeSquadronCarrierFinalDestinationQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierFinalDestinationQuery.ID);
         sb.append("\n");
 
 
@@ -87,24 +87,24 @@ public class RussianPromptRules implements PromptLanguageRules {
         sb.append("\n");
 
         sb.append(" - classify questions about авианосец as ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify questions about тритий авианосца, топливо авианосца, сколько трития на авианосце, уровень трития, уровень топлива авианосца as ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify questions about Расстояние до Земли, Как далеко Земля ");
-        sb.append(AnalyzeDistanceFromTheBubbleQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromTheBubbleQuery.ID);
         sb.append("\n");
 
 
         sb.append(" - classify questions about авианосец эскадрона as ");
-        sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierDataQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify questions about курс авианосца эскадрильи as ");
-        sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierRouteQuery.ID);
         sb.append("\n");
 
         sb.append(" - classify автоматическая стыковка as ");
@@ -113,6 +113,22 @@ public class RussianPromptRules implements PromptLanguageRules {
 
         sb.append("- require very high probability match for action →");
         sb.append(ClearActiveMissionsCommand.ID);
+        sb.append("\n");
+
+        sb.append("- classify открыть/закрыть/выпусти/убери грузовой отсек, грузовой захват, грузовой ковш (the ACTION on the cargo scoop) → ");
+        sb.append(ToggleCargoScoopCommand.ID);
+        sb.append("; NEVER the cargo-contents query ");
+        sb.append(AnalyzeCargoHoldQuery.ID);
+        sb.append(" when the verb is открыть/закрыть/выпусти/убери.\n");
+
+        sb.append("- classify NAVIGATION to the squadron carrier: проложи маршрут к авианосцу эскадрильи, лети к авианосцу эскадрильи, направляйся к авианосцу эскадрильи → ");
+        sb.append(NavigateToSquadronCarrierCommand.ID);
+        sb.append(" (a navigation COMMAND, NEVER the route query ");
+        sb.append(AnalyzeSquadronCarrierRouteQuery.ID);
+        sb.append(")\n");
+
+        sb.append("- classify carrier upkeep/finance questions: как долго мы можем работать на текущих средствах, на сколько хватит средств, сколько продержимся на текущем балансе → ");
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
 
 

@@ -11,14 +11,14 @@ public final class TargetHostileHighestThreatCommand extends SimpleTapCommand {
 
     @Override public String llmDescription() { return "Target the highest-threat hostile."; }
 
-    public TargetHostileHighestThreatCommand() {
-        super(ID, Bindings.GameCommand.BINDING_SELECT_HIGHEST_THREAT.getGameBinding());
-    }
-
     /** Combat targeting: in a combat vehicle (ship/fighter) flying in normal space. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInFighter())
-                && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return (status.isInMainShip() || status.isInFighter()) && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+    }
+
+
+    public TargetHostileHighestThreatCommand() {
+        super(ID, Bindings.GameCommand.BINDING_SELECT_HIGHEST_THREAT.getGameBinding());
     }
 }

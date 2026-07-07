@@ -40,6 +40,19 @@ class ReflexResolverTest {
     }
 
     @Test
+    void trailingSentencePunctuationIsIgnored() {
+        ReflexResolver resolver = resolver(List.of(new CommandPhrase(
+                        "query_fleet_carrier_final_destination", "qual è la destinazione finale della fleet carrier", true)),
+                NOTHING_DANGEROUS);
+
+        // A spoken question keeps its '?', but the alias is stored plain - the reflex must still match.
+        assertEquals(Optional.of("query_fleet_carrier_final_destination"),
+                resolver.resolve("qual è la destinazione finale della fleet carrier?"));
+        assertEquals(Optional.of("query_fleet_carrier_final_destination"),
+                resolver.resolve("Qual è la destinazione finale della fleet carrier!"));
+    }
+
+    @Test
     void nonVerbatimInputIsNotAReflex() {
         ReflexResolver resolver = resolver(
                 List.of(new CommandPhrase("open_nav", "open navigation", true)), NOTHING_DANGEROUS);

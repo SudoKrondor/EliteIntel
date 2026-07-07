@@ -52,10 +52,12 @@ public final class DecreaseSpeedCommand implements IntelCommand {
         return ID;
     }
 
-    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    /**
+     * vehicle throttle
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
     }
 
     @Override

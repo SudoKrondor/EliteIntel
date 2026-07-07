@@ -5,7 +5,7 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
@@ -16,9 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifies candidate building (step 1): category gating (EVENT gets only QUERY), {@code isVisibleForLLM}
@@ -79,7 +77,7 @@ class GameToolCandidatesTest {
     void legacyFallbackIdsAreNeverOffered() {
         GameToolCandidates c = candidates(
                 Map.of(IgnoreNonsensicalInputCommand.ID, action(IgnoreNonsensicalInputCommand.ID, true)),
-                Map.of(GeneralConversationQueryCommand.ID, action(GeneralConversationQueryCommand.ID, true),
+                Map.of(GeneralConversationQuery.ID, action(GeneralConversationQuery.ID, true),
                         "real_query", action("real_query", true)),
                 List.of());
 

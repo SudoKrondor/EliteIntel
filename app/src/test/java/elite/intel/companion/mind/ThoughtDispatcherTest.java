@@ -240,6 +240,7 @@ class ThoughtDispatcherTest {
         CapturingLlm llm = new CapturingLlm();
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), UrgencyPolicy.normalOnly(), noReflex);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("how is the ship");
         dispatcher.stop();
@@ -257,6 +258,7 @@ class ThoughtDispatcherTest {
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
         Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), noReflex, normalizer);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("combat mode");
         dispatcher.stop();

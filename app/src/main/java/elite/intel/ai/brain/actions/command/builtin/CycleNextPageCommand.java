@@ -15,9 +15,11 @@ public final class CycleNextPageCommand extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_NEXT_PAGE.getGameBinding());
     }
 
-    /** Cockpit-panel UI tap: only while piloting the ship/SRV/fighter (no cockpit panels on foot). */
+    /**
+     * Available anywhere. The game interface can be opened in any state
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+        return true;
     }
 }

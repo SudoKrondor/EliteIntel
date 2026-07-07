@@ -39,9 +39,35 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         return CompanionConfig.companionName();
     }
 
-    /** The resolved commander-language name, named in the templates' language rule as {@code {language}}. */
+    /**
+     * The language the companion SPEAKS, named in the templates' language rule as {@code {language}}. This is the
+     * TTS-bound effective response language, which can differ from what the commander speaks (e.g. local Kokoro
+     * cannot voice ru/uk/de, so those downgrade to English output) - see {@link AiResponseLanguagePolicy}.
+     */
     static String languageName() {
         return PromptLocalizations.rulesFor(effectiveLanguage()).languageName();
+    }
+
+    /**
+     * The language the commander gives ORDERS in, named in the template as {@code {inputLanguage}}. This is the
+     * session/STT language ({@link SystemSession#getLanguage()}) - the language of the text the model must match
+     * to a function - NOT the effective response language, which can downgrade to English for TTS reasons while
+     * the commander still speaks his own language.
+     */
+    static String inputLanguageName() {
+        return PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).languageName();
+    }
+
+    /**
+     * The per-language action-disambiguation triggers for the commander template's {@code {disambiguationHints}}
+     * slot, pulled from the same tested {@link elite.intel.ai.brain.i18n.PromptLanguageRules#companionDisambiguation()
+     * *PromptRules} the legacy pipeline used. Keyed on the commander's INPUT language ({@link SystemSession#getLanguage()}),
+     * not the effective response language: the triggers must match the words the commander actually speaks, even when
+     * TTS forces the spoken reply into another language. Returns "" when a language supplies none, so the template renders cleanly.
+     */
+    static String disambiguationHints() {
+        String hints = PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).companionDisambiguation();
+        return hints == null ? "" : hints;
     }
 
     /**

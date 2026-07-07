@@ -34,10 +34,6 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
         return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
     }
 
-    @Override
-    public String bindingName() {
-        return Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding();
-    }
 
     @Override
     public void execute(JsonObject params, String responseText) {

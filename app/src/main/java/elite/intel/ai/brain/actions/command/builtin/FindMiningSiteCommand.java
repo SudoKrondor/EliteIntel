@@ -68,19 +68,16 @@ public final class FindMiningSiteCommand implements IntelCommand {
         return PARAMETERS;
     }
 
+    /**
+     * Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if (!status.isInMainShip()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.boardShip")));
-            return;
-        }
-
         JsonElement mat = params.get(PARAM_KEY);
         JsonElement distance = params.get(PARAM_MAX_DISTANCE);
         if (mat == null) {

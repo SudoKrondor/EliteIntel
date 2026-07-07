@@ -36,10 +36,10 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         return ID;
     }
 
-    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    /// Route plotting available anywhere in the game
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override

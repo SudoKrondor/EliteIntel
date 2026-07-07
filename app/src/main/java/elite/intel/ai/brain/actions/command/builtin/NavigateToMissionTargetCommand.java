@@ -22,7 +22,7 @@ import java.util.List;
  */
 @RegisterCommand
 public final class NavigateToMissionTargetCommand implements IntelCommand {
-    public static final String ID = "navigate_to_mission_target";
+    public static final String ID = "navigate_to_active_mission";
 
     @Override public String llmDescription() { return "Plot a route to the active mission target."; }
 

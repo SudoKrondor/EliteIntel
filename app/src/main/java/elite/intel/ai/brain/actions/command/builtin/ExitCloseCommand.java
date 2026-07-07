@@ -23,10 +23,12 @@ public final class ExitCloseCommand implements IntelCommand {
         return ID;
     }
 
-    /** Generic back/close UI tap: usable in any interactive context; only a hyperspace jump locks out input. */
+    /**
+     * Available anywhere, including during hyperspace jump
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return !status.isFsdJump();
+        return true;
     }
 
     @Override

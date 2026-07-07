@@ -3,11 +3,7 @@ package elite.intel.companion.input.en;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.CompanionEvalHarness;
 import elite.intel.companion.input.CompanionEvalHarness.Executed;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
@@ -69,7 +65,7 @@ class CommandExecutionEvalTest {
             new Case("find brain trees", "find_brain_trees", null, false),
             new Case("find nearest interstellar factor", "find_interstellar_factor", null, true),
             new Case("find hunting grounds within 50 light years", "find_hunting_grounds", "50", false),
-            new Case("navigate to active mission", "navigate_to_mission_target", null, false),
+            new Case("navigate to active mission", "navigate_to_active_mission", null, false),
             new Case("calculate neutron star route at 60 efficiency", "calculate_neutron_star_route", "60", false),
             // Regression: companion refused "display carrier management" on first request ("Sorry, I can't do
             // that right now.") and only opened the panel on a follow-up. Must execute on the first request.

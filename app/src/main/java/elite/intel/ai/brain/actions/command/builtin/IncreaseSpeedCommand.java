@@ -55,7 +55,7 @@ public final class IncreaseSpeedCommand implements IntelCommand {
     /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+        return (status.isInMainShip() || status.isInFighter() || status.isInSrv()) && (!status.isDocked() && !status.isOnFoot());
     }
 
     @Override

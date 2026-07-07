@@ -28,7 +28,7 @@ public final class SetOptimalSpeedCommand implements IntelCommand {
     /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
     }
 
     @Override

@@ -17,7 +17,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXIT_SUPERCRUISE
 public final class DropFromSuperCruiseCommand implements IntelCommand {
     public static final String ID = "drop_from_super_cruise";
 
-    @Override public String llmDescription() { return "Drop out of supercruise."; }
+    @Override
+    public String llmDescription() {
+        return "Drop out of supercruise.";
+    }
 
 
     @Override
@@ -32,10 +35,10 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-
-        if (status.isInSupercruise()) {
-            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())));
-        }
+        GameControllerBus.publish(
+                GameInputSequenceEvent.single(
+                        GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())
+                )
+        );
     }
 }

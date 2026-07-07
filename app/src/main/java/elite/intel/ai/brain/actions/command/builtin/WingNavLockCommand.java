@@ -15,9 +15,9 @@ public final class WingNavLockCommand extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_WING_NAV_LOCK.getGameBinding());
     }
 
-    /** Wing nav lock is a main-ship FSD function and needs a wing to lock onto. */
+    /// selects
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && status.isInWing();
+        return status.isInWing();
     }
 }

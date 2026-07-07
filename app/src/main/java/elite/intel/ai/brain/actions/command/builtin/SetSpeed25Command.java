@@ -15,9 +15,9 @@ public final class SetSpeed25Command extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED25.getGameBinding());
     }
 
-    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    /// in vehicle only
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
     }
 }

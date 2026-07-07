@@ -5,8 +5,8 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.PromptLocalizations;
@@ -41,8 +41,8 @@ public final class GameToolCandidates {
 
     /** Legacy-path fallback ids the companion never offers; it has its own speak. */
     private static final Set<String> EXCLUDED_IDS = Set.of(
-            GeneralConversationQueryCommand.ID,
-            ConnectionCheckQueryCommand.ID,
+            GeneralConversationQuery.ID,
+            ConnectionCheckQuery.ID,
             IgnoreNonsensicalInputCommand.ID);
 
     /**

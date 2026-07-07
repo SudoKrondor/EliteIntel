@@ -27,9 +27,10 @@ public final class EqualizePowerCommand implements IntelCommand {
     }
 
     /** Pip distribution is disabled while docked; available in flight and in the SRV. */
+    ///DO NOT block pip setting in docked mode!!!
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked();
+        return (status.isInMainShip() || status.isInSrv());
     }
 
     @Override

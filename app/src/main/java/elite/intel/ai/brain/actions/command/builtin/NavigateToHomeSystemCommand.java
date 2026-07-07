@@ -38,18 +38,13 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if(status.isInSrv() || status.isInMainShip()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.plottingHome")));
-            LocationDto location = playerSession.getHomeSystem();
-            if (location.getBodyId() == -1) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.homeNotSet")));
-                return;
-            }
-            RoutePlotter plotter = new RoutePlotter();
-            plotter.plotRoute(location.getStarName());
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.plottingHome")));
+        LocationDto location = playerSession.getHomeSystem();
+        if (location.getBodyId() == -1) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.homeNotSet")));
+            return;
         }
+        RoutePlotter plotter = new RoutePlotter();
+        plotter.plotRoute(location.getStarName());
     }
 }

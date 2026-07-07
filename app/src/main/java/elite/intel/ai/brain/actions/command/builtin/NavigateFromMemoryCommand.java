@@ -24,10 +24,10 @@ public final class NavigateFromMemoryCommand implements IntelCommand {
         return ID;
     }
 
-    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    /// Navigation is avialable anywhere in the game
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override

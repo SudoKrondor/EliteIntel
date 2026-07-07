@@ -32,10 +32,14 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         return ID;
     }
 
-    /** Surface navigation to a landing zone: needs a planetary surface reference (in ship/SRV near the body, or on foot). */
+    /**
+     * Navigates to the landing-zone coordinates the app already remembers for the current location - it infers no
+     * parameters from the commander, so it is offered in any control mode (ship, SRV, fighter, on foot). When no
+     * landing coordinates are known, {@link #execute} says so rather than the command being hidden.
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.hasLatLong() || status.isOnFootOnPlanet() || status.isOnFootExterior();
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
     }
 
     @Override

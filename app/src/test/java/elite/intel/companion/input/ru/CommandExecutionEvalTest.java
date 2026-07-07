@@ -3,11 +3,7 @@ package elite.intel.companion.input.ru;
 import elite.intel.companion.input.CompanionEvalHarness;
 import elite.intel.companion.input.CompanionEvalHarness.Executed;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
@@ -53,7 +49,7 @@ class CommandExecutionEvalTest {
             new Case("найди место добычи платины", "find_mining_site", "platinum", false),
             new Case("найди мозговые деревья", "find_brain_trees", null, false),
             new Case("найди охотничьи угодья в радиусе 50 световых лет", "find_hunting_grounds", "50", false),
-            new Case("навигация к активной миссии", "navigate_to_mission_target", null, false),
+            new Case("навигация к активной миссии", "navigate_to_active_mission", null, false),
             new Case("рассчитать нейтронный маршрут с эффективностью 60", "calculate_neutron_star_route", "60", false),
             // Toggle commands: state:boolean param. Must execute with the correct on/off state.
             new Case("выключи объявления добычи", "toggle_mining_announcements", "false", false),

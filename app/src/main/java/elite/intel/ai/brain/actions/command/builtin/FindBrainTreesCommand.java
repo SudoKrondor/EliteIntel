@@ -56,10 +56,11 @@ public final class FindBrainTreesCommand implements IntelCommand {
         return ID;
     }
 
-    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+
     @Override
+    ///Plotting routes are available anywhere in the game
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return true;
     }
 
     @Override

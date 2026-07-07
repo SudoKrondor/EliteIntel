@@ -15,14 +15,9 @@ public final class TaxiToLandingPadCommand extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED_ZERO.getGameBinding());
     }
 
-    /**
-     * Setting speed to zero lets the Docking Computer auto-taxi to the pad, so this only applies while
-     * flying the main ship in normal space near the station - not docked, landed, or in supercruise.
-     * (Requires docking authorization and a docking-computer module, which are runtime conditions not
-     * derivable from Status, so they are not gated here.)
-     */
+    ///
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return status.isInMainShip() && status.isInSupercruise();
     }
 }

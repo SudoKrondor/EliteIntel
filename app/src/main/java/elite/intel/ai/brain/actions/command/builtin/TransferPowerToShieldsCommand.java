@@ -31,10 +31,10 @@ public final class TransferPowerToShieldsCommand implements IntelCommand {
         return ID;
     }
 
-    /** Pip distribution is disabled while docked; available in flight and in the SRV. */
+    /// Never block pips when in a vehicle (any vehicle)
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked();
+        return !status.isOnFoot();
     }
 
     @Override

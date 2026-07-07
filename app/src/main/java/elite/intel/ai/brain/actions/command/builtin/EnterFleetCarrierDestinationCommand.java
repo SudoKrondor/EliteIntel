@@ -33,10 +33,12 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
         return ID;
     }
 
-    /** Types the next system into the carrier-route search field; that entry field lives on the galaxy map. */
+    /**
+     * available anywhere. Used on fleet carrier management map which is available in any state
+     */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isGalaxyMapOpen();
+        return true;
     }
 
     @Override

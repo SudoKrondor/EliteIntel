@@ -11,13 +11,13 @@ public final class TargetDestinationCommand extends SimpleTapCommand {
 
     @Override public String llmDescription() { return "Target the current navigation destination."; }
 
-    public TargetDestinationCommand() {
-        super(ID, Bindings.GameCommand.BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding());
-    }
-
     /** Route-target selection is a main-ship cockpit function. */
     @Override
     public boolean isVisibleForLLM(Status status) {
         return status.isInMainShip();
+    }
+
+    public TargetDestinationCommand() {
+        super(ID, Bindings.GameCommand.BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding());
     }
 }
