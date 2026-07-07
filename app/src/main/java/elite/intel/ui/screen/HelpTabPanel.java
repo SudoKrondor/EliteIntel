@@ -355,13 +355,20 @@ public class HelpTabPanel extends JPanel {
     /**
      * Live update of the commander's current spoken phrase (the normalized voice input), fired off the game
      * event thread; the field update is marshaled onto the EDT.
+     * <p>
+     * In companion mode the authoritative {@link CommanderMatchInputChangedEvent} follows this for the same
+     * utterance and drives the reducer highlight on the exact match input, so re-running the reducer here would
+     * recompute (and log) the same reduce twice. Legacy command mode never fires that event, so this remains the
+     * only highlight trigger there - hence the reducer runs here only when the companion runtime is absent.
      */
     @Subscribe
     public void onCommanderPhrase(NormalizedUserInputEvent event) {
         String text = event.getText() == null ? "" : event.getText();
         SwingUtilities.invokeLater(() -> {
             setPhraseText(text);
-            updateSemanticHighlights(text);
+            if (!companionRunning()) {
+                updateSemanticHighlights(text);
+            }
         });
     }
 
@@ -600,6 +607,16 @@ public class HelpTabPanel extends JPanel {
             return CompanionRuntime.reducer();
         } catch (IllegalStateException notRunning) {
             return semanticFallbackReducer;
+        }
+    }
+
+    /** True while the companion runtime is installed (companion mode); false in legacy command mode. */
+    private boolean companionRunning() {
+        try {
+            CompanionRuntime.reducer();
+            return true;
+        } catch (IllegalStateException notRunning) {
+            return false;
         }
     }
 
