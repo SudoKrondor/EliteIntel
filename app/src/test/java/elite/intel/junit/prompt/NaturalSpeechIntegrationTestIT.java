@@ -1059,7 +1059,7 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> queryCarrierStatus() {
         return Stream.of("What is our fleet carrier range?", "What's my fleet carrier fuel status",
                 "How long can we operate on current funds?", "How far can carrier we jump with current tritium?",
-                "carrier tritium", "carrier fuel", "tritium level");
+                "carrier tritium status", "carrier fuel status", "tritium level");
     }
 
 
