@@ -42,9 +42,10 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         return ID;
     }
 
+    /** A hyperspace jump needs open space: not while docked or landed. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
     }
 
     @Override

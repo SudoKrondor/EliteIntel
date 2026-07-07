@@ -3,8 +3,8 @@ package elite.intel.ai.brain.actions.customcommand;
 import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 
 import java.util.*;
@@ -288,9 +288,9 @@ public final class CustomCommandValidator {
     private static Set<String> builtInPhrases() {
         var full = AiActionsMap.getInstance().actionMap(true);
         Set<String> floating = Set.of(
-                GeneralConversationQueryCommand.ID,
+                GeneralConversationQuery.ID,
                 IgnoreNonsensicalInputCommand.ID,
-                ConnectionCheckQueryCommand.ID);
+                ConnectionCheckQuery.ID);
         Set<String> customKeys = new HashSet<>();
         for (CustomCommandDefinition def : CustomCommandRegistry.getInstance().getCustomCommands()) {
             customKeys.add(def.getActionKey());

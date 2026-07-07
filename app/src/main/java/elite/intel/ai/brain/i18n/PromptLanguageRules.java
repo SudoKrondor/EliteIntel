@@ -51,4 +51,21 @@ public interface PromptLanguageRules {
     default String disambiguationHints() {
         return null;
     }
+
+    /**
+     * Per-language action disambiguation for the <b>companion</b> LLM path (the {@code CommanderPrompt}),
+     * the counterpart to how the legacy command prompt appends {@link #disambiguationHints()}. The companion
+     * selects the function from the commander's own words in this language rather than translating to English
+     * first (LLM translation proved unreliable, cloud and local alike), so it needs the same native
+     * phrase&rarr;action mappings the legacy pipeline was tested with.
+     * <p>
+     * Defaults to the tested {@link #disambiguationHints()} strings - the action ids they reference are exactly
+     * the companion tool names, so they transfer verbatim. Override per language only if the companion needs
+     * wording that must differ from the tested legacy hints.
+     *
+     * @return the per-language disambiguation block for the companion prompt, or {@code null} if none.
+     */
+    default String companionDisambiguation() {
+        return disambiguationHints();
+    }
 }

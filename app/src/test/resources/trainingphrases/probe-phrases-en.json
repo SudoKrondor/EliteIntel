@@ -1727,7 +1727,7 @@
     "use fire group delta",
     "select weapons group alpha"
   ],
-  "navigate_to_mission_target": [
+  "navigate_to_active_mission": [
     "navigate to active mission",
     "please navigate to active mission",
     "can you navigate to active mission",

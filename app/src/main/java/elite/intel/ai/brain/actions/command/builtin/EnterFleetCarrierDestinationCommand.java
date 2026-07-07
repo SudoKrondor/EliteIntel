@@ -10,6 +10,7 @@ import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.session.Status;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 
@@ -30,6 +31,14 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /**
+     * available anywhere. Used on fleet carrier management map which is available in any state
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

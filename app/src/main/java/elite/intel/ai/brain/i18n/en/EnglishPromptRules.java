@@ -36,13 +36,13 @@ public class EnglishPromptRules implements PromptLanguageRules {
 
         sb.append(" - HARD RULE: 'fleet carrier' and 'squadron carrier' are COMPLETELY DIFFERENT things. NEVER mix them up.");
         sb.append("\n");
-        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + AnalyzeFleetCarrierDataQueryCommand.ID + "; 'squadron carrier' → " + AnalyzeSquadronCarrierDataQueryCommand.ID);
+        sb.append("   - status/finance: 'fleet carrier' or bare 'carrier' → " + AnalyzeFleetCarrierDataQuery.ID + "; 'squadron carrier' → " + AnalyzeSquadronCarrierDataQuery.ID);
         sb.append("\n");
         sb.append("   - navigate/go/head: 'squadron carrier' → " + NavigateToSquadronCarrierCommand.ID + " ONLY; 'fleet carrier' or bare 'carrier' → " + NavigateToFleetCarrierCommand.ID);
         sb.append("\n");
-        sb.append("   - 'fleet carrier funds/balance/finances' → " + AnalyzeFleetCarrierDataQueryCommand.ID + " ONLY. NEVER " + AnalyzeSquadronCarrierDataQueryCommand.ID + ".");
+        sb.append("   - 'fleet carrier funds/balance/finances' → " + AnalyzeFleetCarrierDataQuery.ID + " ONLY. NEVER " + AnalyzeSquadronCarrierDataQuery.ID + ".");
         sb.append("\n");
-        sb.append("   - 'squadron carrier funds/balance/finances' → " + AnalyzeSquadronCarrierDataQueryCommand.ID + " ONLY. NEVER " + AnalyzeFleetCarrierDataQueryCommand.ID + ".");
+        sb.append("   - 'squadron carrier funds/balance/finances' → " + AnalyzeSquadronCarrierDataQuery.ID + " ONLY. NEVER " + AnalyzeFleetCarrierDataQuery.ID + ".");
         sb.append("\n");
         sb.append(" ______________________________________________________________ ");
         sb.append("\n");
@@ -115,7 +115,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("- Never confuse 'in system' or 'which planets' (system-wide) with 'here / on this planet / at this location / still have to scan' (planet surface)\n");
         sb.append("- Never confuse 'honk' with 'open fss'\n");
         sb.append("- carrier full status (fuel + credits + operations): 'carrier status / carrier fuel status / how far can carrier jump / fleet carrier fuel status / how long can carrier operate' → ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
 
         //sb.append("- carrier tritium level only: 'how much tritium / tritium supply / tritium level / tritium reserve' → ");
@@ -123,19 +123,19 @@ public class EnglishPromptRules implements PromptLanguageRules {
         //sb.append("\n");
 
         sb.append("- bio signals: 'which planets have bio signals / bio signals in system / organics in system / biological signals / how many planets have bio' → ");
-        sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
+        sb.append(AnalyzeBioScansStarSystemQuery.ID);
         sb.append("\n");
 
         sb.append("- bio scans: 'what organisms are here / exobiology samples / organics on this planet / organics still to scan / organics left to scan' → ");
-        sb.append(AnalyzeBioSamplesPlanetSurfaceQueryCommand.ID);
+        sb.append(AnalyzeBioSamplesPlanetSurfaceQuery.ID);
         sb.append("\n");
 
         sb.append("- For EXPLICIT 'player profile' (these two words, in this order, optionally followed by additional context words like 'summarize ranks', 'summarize progress') → '");
-        sb.append(AnalyzePlayerProfileQueryCommand.ID);
+        sb.append(AnalyzePlayerProfileQuery.ID);
         sb.append("'. Any other phrasing that does NOT begin with 'player profile', including rank, stats, progress, name, or commander - return ");
         sb.append(IgnoreNonsensicalInputCommand.ID);
         sb.append(" or ");
-        sb.append(GeneralConversationQueryCommand.ID);
+        sb.append(GeneralConversationQuery.ID);
         sb.append(". This is an instant fail if triggered by anything else.");
         sb.append("\n");
 
@@ -154,7 +154,7 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append("- 'navigate to active mission' / 'go to mission' / 'plot route to mission' → ");
         sb.append(NavigateToMissionTargetCommand.ID);
         sb.append(" (NOT ");
-        sb.append(AnalyzeMissionQueryCommand.ID);
+        sb.append(AnalyzeMissionQuery.ID);
         sb.append(" - navigation, not a query)");
         sb.append("\n");
 
@@ -235,36 +235,36 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(")\n");
 
         sb.append("- 'player profile' (input starts with 'player', NOT 'trade') → ");
-        sb.append(AnalyzePlayerProfileQueryCommand.ID);
+        sb.append(AnalyzePlayerProfileQuery.ID);
         sb.append("; NEVER any trade_profile action for this input\n");
 
         sb.append("- 'distance to bubble' → ");
-        sb.append(AnalyzeDistanceFromTheBubbleQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromTheBubbleQuery.ID);
         sb.append(" (sol, earth, civilization all normalize to bubble; NOT ");
-        sb.append(AnalyzeDistanceToStellarObjectQueryCommand.ID);
+        sb.append(AnalyzeDistanceToStellarObjectQuery.ID);
         sb.append(" or ");
-        sb.append(AnalyzeDistanceFromFleetCarrierQueryCommand.ID);
+        sb.append(AnalyzeDistanceFromFleetCarrierQuery.ID);
         sb.append(")\n");
 
         sb.append("- 'What's my fleet carrier fuel status', 'What is our fleet carrier range' → ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append("\n");
         sb.append("- organics / biology / exobiology on a planet or here → ");
-        sb.append(AnalyzeBioSamplesPlanetSurfaceQueryCommand.ID);
+        sb.append(AnalyzeBioSamplesPlanetSurfaceQuery.ID);
         sb.append(", NOT geo/materials\n");
         sb.append("- organics / bio signals in a system or which planets → ");
-        sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
+        sb.append(AnalyzeBioScansStarSystemQuery.ID);
         sb.append("\n");
 
         sb.append("- 'how much X do we have' / 'do we have any X' (specific item) → ");
-        sb.append(AnalyseMaterialsQueryCommand.ID);
+        sb.append(AnalyseMaterialsQuery.ID);
         sb.append(" (handles both engineering materials AND cargo commodities)\n");
         sb.append("- 'what are we carrying' / 'list cargo' / 'cargo contents' (no specific item) → ");
-        sb.append(AnalyzeCargoHoldQueryCommand.ID);
+        sb.append(AnalyzeCargoHoldQuery.ID);
         sb.append("\n");
 
         sb.append("- 'geo signals / geological' → ");
-        sb.append(AnalyzeGeologyInStarSystemQueryCommand.ID);
+        sb.append(AnalyzeGeologyInStarSystemQuery.ID);
         sb.append(" (NOT ");
         sb.append(FindBrainTreesCommand.ID);
         sb.append(")\n");
@@ -273,20 +273,36 @@ public class EnglishPromptRules implements PromptLanguageRules {
         sb.append(FindHuntingGroundsCommand.ID);
         sb.append(" (NOT fleet carrier)\n");
         sb.append("- profit from bounties is not profit from missions for bounties → '");
-        sb.append(AnalyzeBountiesCollectedQueryCommand.ID);
+        sb.append(AnalyzeBountiesCollectedQuery.ID);
         sb.append("'\n");
 
         sb.append("- profit from missions is not profit from bounties for missions → '");
-        sb.append(AnalyzeMissionQueryCommand.ID);
+        sb.append(AnalyzeMissionQuery.ID);
         sb.append("'\n");
 
         sb.append("- profit from discovery is not profit from bounties or missions → '");
-        sb.append(AnalyzeExplorationProfitsQueryCommand.ID);
+        sb.append(AnalyzeExplorationProfitsQuery.ID);
         sb.append("'\n");
 
         sb.append("- HARD RULE: if the word 'honk' appears anywhere in the input, the ONLY valid action is '");
-        sb.append(HonkCommand.ID);
+        sb.append(RunSystemScanCommand.ID);
         sb.append("'. No other action is permitted when 'honk' is present.\n");
+
+        sb.append("- entering carrier destination ");
+        sb.append(EnterFleetCarrierDestinationCommand.ID);
+        sb.append("\n");
+
+        sb.append("- questions about loadout / equipment map to ");
+        sb.append(AnalyzeShipLoadoutQuery.ID);
+        sb.append("\n");
+
+        sb.append("- questions about fleet carrier status (fuel, finances, range etc) ");
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
+        sb.append("\n");
+
+        sb.append("- questions about fleet carrier route / destination ");
+        sb.append(AnalyzeFleetCarrierFinalDestinationQuery.ID);
+        sb.append("\n");
 
         sb.append("- require very high probability match for action");
         sb.append(ClearActiveMissionsCommand.ID);

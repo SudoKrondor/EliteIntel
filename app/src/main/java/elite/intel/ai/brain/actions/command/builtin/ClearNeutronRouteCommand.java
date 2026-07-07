@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
@@ -24,6 +25,12 @@ public final class ClearNeutronRouteCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side bookkeeping (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

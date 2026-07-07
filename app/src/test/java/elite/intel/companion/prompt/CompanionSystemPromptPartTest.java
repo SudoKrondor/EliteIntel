@@ -24,6 +24,10 @@ class CompanionSystemPromptPartTest {
         return PromptLocalizations.rulesFor(language).languageName();
     }
 
+    private static String inputLanguageName() {
+        return PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).languageName();
+    }
+
     @Test
     void alwaysCarriesPersonaAndFunctionCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
@@ -81,9 +85,34 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
 
         assertTrue(text.contains("<language>"));
-        // The commander's language is named, and spoken output is bound to that same language.
-        assertTrue(text.contains("The commander speaks " + name));
-        // The spoken surface (speak) is bound to the commander's language.
+        // The commander is named as speaking his INPUT language (what he says / what STT produces).
+        assertTrue(text.contains("The commander speaks " + inputLanguageName()));
+        // The spoken surface (speak) is bound to the effective (TTS) response language.
         assertTrue(text.contains("the text in speak - in " + name));
+    }
+
+    @Test
+    void commanderPromptSelectsFunctionsFromNativeWordsNotTranslation() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+        // Action derivation is native, driven by the per-language triggers - not by translating to English first.
+        assertTrue(text.contains("Do NOT translate his words to English first"));
+        assertFalse(text.contains("translate their input to English before choosing a function"));
+    }
+
+    @Test
+    void commanderPromptInjectsInputLanguageDisambiguationAndLeavesNoPlaceholder() {
+        // Disambiguation keys on the commander's INPUT language (STT/session), not the TTS-bound response language.
+        Language inputLanguage = SystemSession.getInstance().getLanguage();
+        String expectedHints = PromptLocalizations.rulesFor(inputLanguage).companionDisambiguation();
+
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+
+        // The template slots must be fully resolved - no raw placeholder leaks into the prompt the model sees.
+        assertFalse(text.contains("{disambiguationHints}"));
+        assertFalse(text.contains("{inputLanguage}"));
+        // The tested, per-language disambiguation is present verbatim in the disambiguation block.
+        assertTrue(text.contains("<disambiguation>"));
+        assertTrue(expectedHints != null && !expectedHints.isBlank());
+        assertTrue(text.contains(expectedHints));
     }
 }

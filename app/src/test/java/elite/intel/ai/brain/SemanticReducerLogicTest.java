@@ -1,7 +1,7 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.TextEmbedder;
@@ -46,7 +46,7 @@ class SemanticReducerLogicTest {
         map.put("alpha", "act_alpha");
         Map<String, String> result = Reducer.semanticReduce(
                 matcher(Map.of("alpha", 40.0)), QUERY, map, true);
-        assertTrue(result.containsKey(GeneralConversationQueryCommand.ID));
+        assertTrue(result.containsKey(GeneralConversationQuery.ID));
     }
 
     @Test

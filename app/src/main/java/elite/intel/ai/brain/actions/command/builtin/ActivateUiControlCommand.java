@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.command.SimpleTapCommand;
 import elite.intel.ai.hands.Bindings;
+import elite.intel.session.Status;
 
 /**
  * Self-describing tap command. Binding sourced from Bindings.GameCommand.
@@ -17,5 +18,11 @@ public final class ActivateUiControlCommand extends SimpleTapCommand {
 
     public ActivateUiControlCommand() {
         super(ID, Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding());
+    }
+
+    /** UI-navigation tap: usable in any interactive context; only a hyperspace jump locks out input. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return !status.isFsdJump();
     }
 }

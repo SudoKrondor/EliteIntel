@@ -36,7 +36,7 @@ public final class ShowChatCommsPanelCommand implements IntelCommand {
 
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInFighter() || status.isOnFoot();
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
     }
 
     @Override

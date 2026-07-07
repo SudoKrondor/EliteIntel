@@ -65,7 +65,7 @@ public final class ReflexResolver {
         if (input == null || input.isBlank()) {
             return Optional.empty();
         }
-        String needle = input.trim().toLowerCase(Locale.ROOT);
+        String needle = canonicalizeForMatch(input);
         List<CommandPhrase> matches = commandSource.get().stream()
                 .filter(command -> matchesVerbatim(command.phraseGroup(), needle))
                 .toList();
@@ -79,14 +79,35 @@ public final class ReflexResolver {
         return Optional.of(only.id());
     }
 
-    /** Whether any phrase in the group equals the input verbatim (case-insensitive). */
+    /**
+     * Whether any phrase in the group equals the input verbatim (case-insensitive, ignoring trailing punctuation).
+     */
     private static boolean matchesVerbatim(String phraseGroup, String needle) {
         for (String phrase : AiActionLocalizations.splitPhraseGroup(phraseGroup)) {
-            if (phrase.trim().toLowerCase(Locale.ROOT).equals(needle)) {
+            if (canonicalizeForMatch(phrase).equals(needle)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Lower-cases, trims, and drops trailing sentence punctuation so a spoken question ("... carrier?") matches a
+     * plain alias ("... carrier"). Only ever loosens matching (aliases never end in punctuation), so it can add a
+     * match but never remove one - the "exactly one" guard in {@link #resolve} still protects against ambiguity.
+     */
+    private static String canonicalizeForMatch(String s) {
+        String lower = s.trim().toLowerCase(Locale.ROOT);
+        int end = lower.length();
+        while (end > 0 && isTrailingPunctuation(lower.charAt(end - 1))) {
+            end--;
+        }
+        return lower.substring(0, end).trim();
+    }
+
+    private static boolean isTrailingPunctuation(char c) {
+        return c == '?' || c == '!' || c == '.' || c == ',' || c == ';' || c == ':'
+                || c == '？' || c == '！' || c == '。' || c == '，';
     }
 
     /** The per-command danger flag via the shared owner (args are ignored; the flag is per-command). */

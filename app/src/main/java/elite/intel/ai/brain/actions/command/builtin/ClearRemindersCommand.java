@@ -8,6 +8,7 @@ import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TimedReminderManager;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
@@ -27,6 +28,12 @@ public final class ClearRemindersCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side bookkeeping (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

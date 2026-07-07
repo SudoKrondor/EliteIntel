@@ -17,11 +17,13 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowStoragePanelCommand implements IntelCommand {
     public static final String ID = "show_storage_panel";
 
-    @Override public String llmDescription() { return "Open the ship storage panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the ship storage panel.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
-    private final Status status = Status.getInstance();
 
     @Override
     public String id() {
@@ -35,8 +37,6 @@ public final class ShowStoragePanelCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        if (status.isInMainShip() || status.isInSrv()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STORAGE);
-        }
+        navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STORAGE);
     }
 }

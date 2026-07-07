@@ -1,43 +1,8 @@
 package elite.intel.ai.brain.i18n.fr;
 
+import elite.intel.ai.brain.actions.command.builtin.*;
+import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.ai.brain.i18n.PromptLanguageRules;
-import elite.intel.ai.brain.actions.command.builtin.FindNearestFleetCarrierCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployLandingGearCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleDiscoveryAnnouncementsCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetDestinationCommand;
-import elite.intel.ai.brain.actions.command.builtin.TaxiToLandingPadCommand;
-import elite.intel.ai.brain.actions.command.builtin.TargetSubsystemCommand;
-import elite.intel.ai.brain.actions.command.builtin.RetractLandingGearCommand;
-import elite.intel.ai.brain.actions.command.builtin.SetSpeedZeroCommand;
-import elite.intel.ai.brain.actions.command.builtin.EqualizePowerCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierRouteQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowStatusPanelCommand;
-import elite.intel.ai.brain.actions.command.builtin.FighterAttackTargetCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToWeaponsCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleAllAnnouncementsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeMarketsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeCargoHoldQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyseMaterialsQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ClearActiveMissionsCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToShieldsCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeSquadronCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.JumpToHyperspaceCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeShipLoadoutQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.TransferPowerToEnginesCommand;
-import elite.intel.ai.brain.actions.command.builtin.SelectFireGroupByNatoCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioScansStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeStationsQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeGeologyInStarSystemQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.DeployFighterCommand;
-import elite.intel.ai.brain.actions.command.builtin.ActivateUiControlCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFsdTargetQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeBioSamplesPlanetSurfaceQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowInventoryPanelCommand;
-import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeFleetCarrierDataQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ShowFighterPanelCommand;
-import elite.intel.ai.brain.actions.handlers.query.AnalyzeRouterQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.ToggleCargoScoopCommand;
 
 
 public class FrenchPromptRules implements PromptLanguageRules {
@@ -70,7 +35,7 @@ public class FrenchPromptRules implements PromptLanguageRules {
         sb.append("- INFO: rapport/statut/état/informations/combien/où/trouve/cherche. ACTION: ouvre/active/désactive/navigue/trace/cible/sélectionne/verrouille/règle/déploie.\n");
         sb.append("- Require explicit destructive intent for ").append(ClearActiveMissionsCommand.ID).append(".\n");
         sb.append("- COPY ACTION NAMES EXACTLY. Never invent synonyms or rename actions. Fleet status is exactly ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append(" (never query_fleet_carrier_status_fuel_credit_balance). Fighter focus is exactly ");
         sb.append(FighterAttackTargetCommand.ID);
         sb.append(" (never fighter_focus_on_target).\n");
@@ -101,11 +66,11 @@ public class FrenchPromptRules implements PromptLanguageRules {
 
         sb.append("- Carrier: \"d'escadron\" means squadron carrier; without \"escadron\", porte-vaisseau(x)=player fleet carrier.\n");
         sb.append("- fleet carrier + statut/rapport/état/finances/autonomie/portée → ");
-        sb.append(AnalyzeFleetCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeFleetCarrierDataQuery.ID);
         sb.append(". squadron carrier + statut/rapport/carburant/tritium → ");
-        sb.append(AnalyzeSquadronCarrierDataQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierDataQuery.ID);
         sb.append("; route/itinéraire required for ");
-        sb.append(AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        sb.append(AnalyzeSquadronCarrierRouteQuery.ID);
         sb.append(".\n");
         sb.append("- trouve/cherche porte-vaisseau le plus proche → ").append(FindNearestFleetCarrierCommand.ID).append(".\n");
 
@@ -114,13 +79,13 @@ public class FrenchPromptRules implements PromptLanguageRules {
         sb.append("; active/lance saut or réacteur FSD → ").append(JumpToHyperspaceCommand.ID).append(".\n");
         sb.append("- stop alone → ").append(SetSpeedZeroCommand.ID);
         sb.append("; stop voix/silence/arrête de parler → ").append(InterruptCommand.ID).append(".\n");
-        sb.append("- INFO + itinéraire/sauts → ").append(AnalyzeRouterQueryCommand.ID);
+        sb.append("- INFO + itinéraire/sauts → ").append(AnalyzeRouterQuery.ID);
         sb.append("; ACTION trace/navigue/établis/définis uses the matching navigation action.\n");
 
         sb.append("- cible/sélectionne/verrouille + destination/prochaine étape → ");
         sb.append(TargetDestinationCommand.ID);
         sb.append("; INFO about cible FSD/prochaine destination → ");
-        sb.append(AnalyzeFsdTargetQueryCommand.ID);
+        sb.append(AnalyzeFsdTargetQuery.ID);
         sb.append(". \"cible\" alone has no action.\n");
         sb.append("- ");
         sb.append(SelectFireGroupByNatoCommand.ID);
@@ -129,31 +94,47 @@ public class FrenchPromptRules implements PromptLanguageRules {
         sb.append("; chasseur attaque ma cible → fighter-focus action.\n");
 
         sb.append("- bio dans le système/quelles planètes → ");
-        sb.append(AnalyzeBioScansStarSystemQueryCommand.ID);
+        sb.append(AnalyzeBioScansStarSystemQuery.ID);
         sb.append("; bio ici/sur cette planète → ");
-        sb.append(AnalyzeBioSamplesPlanetSurfaceQueryCommand.ID);
-        sb.append("; géologie/signaux géologiques → ").append(AnalyzeGeologyInStarSystemQueryCommand.ID).append(".\n");
-        sb.append("- où se poser/stations → ").append(AnalyzeStationsQueryCommand.ID);
-        sb.append("; marchés/commerce without commodity → ").append(AnalyzeMarketsQueryCommand.ID).append(".\n");
+        sb.append(AnalyzeBioSamplesPlanetSurfaceQuery.ID);
+        sb.append("; géologie/signaux géologiques → ").append(AnalyzeGeologyInStarSystemQuery.ID).append(".\n");
+        sb.append("- où se poser/stations → ").append(AnalyzeStationsQuery.ID);
+        sb.append("; marchés/commerce without commodity → ").append(AnalyzeMarketsQuery.ID).append(".\n");
 
         sb.append("- Any \"trappe\" → ").append(ToggleCargoScoopCommand.ID);
         sb.append("; panneau/affichage/inventaire cargo → ").append(ShowInventoryPanelCommand.ID).append(".\n");
         sb.append("- INFO noun phrase \"inventaire/liste/stock des matériaux\" without ouvre/montre/affiche and without panneau → ");
-        sb.append(AnalyseMaterialsQueryCommand.ID);
+        sb.append(AnalyseMaterialsQuery.ID);
         sb.append(". Only ACTION ouvre/montre/affiche + panneau/inventaire du vaisseau/cargo → ");
         sb.append(ShowInventoryPanelCommand.ID);
         sb.append(". Never open the inventory panel for \"inventaire des matériaux\".\n");
         sb.append("- ouvre/montre/affiche + état/statut du vaisseau → ");
         sb.append(ShowStatusPanelCommand.ID);
-        sb.append("; INFO modules/equipment/damage/specifications → ").append(AnalyzeShipLoadoutQueryCommand.ID).append(".\n");
-        sb.append("- full cargo list → ").append(AnalyzeCargoHoldQueryCommand.ID);
-        sb.append("; specific cargo commodity or engineering material → ").append(AnalyseMaterialsQueryCommand.ID).append(".\n");
+        sb.append("; INFO modules/equipment/damage/specifications → ").append(AnalyzeShipLoadoutQuery.ID).append(".\n");
+        sb.append("- full cargo list → ").append(AnalyzeCargoHoldQuery.ID);
+        sb.append("; specific cargo commodity or engineering material → ").append(AnalyseMaterialsQuery.ID).append(".\n");
         sb.append("- avons-nous/as-tu/est-ce équipé + installed ship module (collecteur de carburant, bouclier, capteurs, propulseurs, etc.) → ");
-        sb.append(AnalyzeShipLoadoutQueryCommand.ID);
-        sb.append("; never ").append(AnalyseMaterialsQueryCommand.ID).append(".\n");
+        sb.append(AnalyzeShipLoadoutQuery.ID);
+        sb.append("; never ").append(AnalyseMaterialsQuery.ID).append(".\n");
         sb.append("- concentre-toi sur ma cible/focus sur la cible/chasseur attaque ma cible → ");
         sb.append(FighterAttackTargetCommand.ID);
         sb.append(".\n");
+
+        sb.append("- écoute commande vocale, écoute, réveille-toi, réveil (the wake phrase, alone) → ");
+        sb.append(WakeupCommand.ID);
+        sb.append("; but écoute + an instruction is a normal command/query.\n");
+
+        sb.append("- rapport sur le commandant, donne-moi le rapport sur le commandant, profil du commandant, profil joueur, rangs/progression du commandant → ");
+        sb.append(AnalyzePlayerProfileQuery.ID);
+        sb.append(".\n");
+
+        sb.append("- ouvre le détecteur ACS, détecteur ACS, scanner ACS, analyse à spectre complet, ouvre le FSS → ");
+        sb.append(OpenFssScanSystemCommand.ID);
+        sb.append(".\n");
+
+        sb.append("- proximité/distance de mon porte-vaisseaux, à quelle distance est mon porte-vaisseaux → ");
+        sb.append(AnalyzeDistanceFromFleetCarrierQuery.ID);
+        sb.append(" (how far the carrier is), NOT its status/finances.\n");
         return sb.toString();
     }
 }

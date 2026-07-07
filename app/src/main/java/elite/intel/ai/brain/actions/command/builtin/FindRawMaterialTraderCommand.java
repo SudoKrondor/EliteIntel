@@ -31,22 +31,18 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
         return ID;
     }
 
+    /// route plotting is accessible anywhere in the game
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isOnFoot();
+        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if(status.isInSrv() || status.isInMainShip() || status.isOnFoot()) {
-            Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
-            TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
-            RoutePlotter routePlotter = new RoutePlotter();
-            routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipSrvOrFoot")));
-        }
+        Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType())));
+        TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
+        RoutePlotter routePlotter = new RoutePlotter();
+        routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));
     }
 }

@@ -28,9 +28,10 @@ public final class DeployHardpointsCommand implements IntelCommand {
         return ID;
     }
 
+    /** Hardpoints stay locked in a station's no-fire zone: not while docked. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip();
+        return status.isInMainShip() && !status.isDocked();
     }
 
     @Override

@@ -31,9 +31,10 @@ public final class TransferPowerToEnginesCommand implements IntelCommand {
         return ID;
     }
 
+    /// Never block pips when in a vehicle (any vehicle)
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return !status.isOnFoot();
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
@@ -23,6 +24,12 @@ public final class WakeupCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Companion-side control that must stay reachable everywhere (it wakes the companion from sleep). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

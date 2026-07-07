@@ -31,22 +31,18 @@ public final class FindManufacturedMaterialTraderCommand implements IntelCommand
         return ID;
     }
 
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return true;
     }
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if(status.isInSrv() || status.isInMainShip()) {
-            Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType())));
-            TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
-            RoutePlotter routePlotter = new RoutePlotter();
-            routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
-        }
+        Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType())));
+        TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
+        RoutePlotter routePlotter = new RoutePlotter();
+        routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
     }
 }

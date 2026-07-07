@@ -29,8 +29,9 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     }
 
     @Override
+    ///available anywhere
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
+        return true;
     }
 
     @Override

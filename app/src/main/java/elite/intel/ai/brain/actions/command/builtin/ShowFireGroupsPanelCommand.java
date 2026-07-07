@@ -15,7 +15,10 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowFireGroupsPanelCommand implements IntelCommand {
     public static final String ID = "show_fire_groups_panel";
 
-    @Override public String llmDescription() { return "Open the fire groups panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the fire groups panel.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -33,8 +36,6 @@ public final class ShowFireGroupsPanelCommand implements IntelCommand {
 
     @Override
     public void execute(JsonObject params, String responseText) {
-        if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.FIRE_GROUPS);
-        }
+        navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.FIRE_GROUPS);
     }
 }

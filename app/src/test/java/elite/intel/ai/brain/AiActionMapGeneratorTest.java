@@ -4,8 +4,8 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -119,7 +119,7 @@ class AiActionMapGeneratorTest {
             "navigate_to_home_system",
             "navigate_to_landing_zone",
             "navigate_to_mission_provider",
-            "navigate_to_mission_target",
+            "navigate_to_active_mission",
             "navigate_to_next_trade_stop",
             "navigate_to_pirate_mission_provider",
             "navigate_to_pirate_mission_target",
@@ -249,9 +249,9 @@ class AiActionMapGeneratorTest {
 
         // Floating additions vary by session mode / are machine-only - excluded from the built-in snapshot.
         Set<String> floating = new HashSet<>(Arrays.asList(
-                GeneralConversationQueryCommand.ID,
+                GeneralConversationQuery.ID,
                 IgnoreNonsensicalInputCommand.ID,
-                ConnectionCheckQueryCommand.ID));
+                ConnectionCheckQuery.ID));
         // Custom-command ids come from the local custom_commands.json - excluded for portability.
         Set<String> custom =
                 CustomCommandRegistry.getInstance().getCustomCommands().stream()

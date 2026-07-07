@@ -36,6 +36,12 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
         return ID;
     }
 
+    /** App-side route calculation (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {

@@ -10,6 +10,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -21,7 +22,7 @@ import java.util.List;
  */
 @RegisterCommand
 public final class NavigateToMissionTargetCommand implements IntelCommand {
-    public static final String ID = "navigate_to_mission_target";
+    public static final String ID = "navigate_to_active_mission";
 
     @Override public String llmDescription() { return "Plot a route to the active mission target."; }
 
@@ -46,6 +47,12 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
     }
 
     @Override

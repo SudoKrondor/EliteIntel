@@ -26,9 +26,10 @@ public final class ToggleCargoScoopCommand implements IntelCommand {
         return ID;
     }
 
+    /** The cargo scoop cannot be deployed while docked; available in flight and in the SRV. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() || status.isInSrv();
+        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked();
     }
 
     @Override

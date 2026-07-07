@@ -9,6 +9,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.edsm.monetize.MonetizeRoute;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 /**
@@ -28,6 +29,12 @@ public final class MonetizeRouteCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side trade optimization (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

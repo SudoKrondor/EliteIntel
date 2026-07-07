@@ -12,6 +12,7 @@ import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.vista.VistaGenomicsLocationDto;
 import elite.intel.search.spansh.station.vista.VistaGenomicsSearch;
 import elite.intel.search.spansh.station.vista.VistaSearchCriteria;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
@@ -33,6 +34,12 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override
