@@ -285,8 +285,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> navigateToCarrier() {
-        return Stream.of("raggiungere la fleet carrier", "andare alla portanavi", "vai verso la fleet carrier", "tornare alla fleetcarrier",
-                "portami alla portanavi", "portami alla fleet carrier", "dirigiti alla portanavi", "rotta verso la fleet carrier");
+        return Stream.of("raggiungere la fleet carrier", "andare alla portanavi", "vai verso la fleet carrier",
+                "tornare alla fleetcarrier", "portami alla portanavi", "portami alla fleet carrier",
+                "dirigiti alla portanavi", "rotta verso la fleet carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -697,7 +698,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> calculateNeutronRoute() {
-        return Stream.of("calcola rotta verso la stella di neutroni con efficienza 20", "calcola rotta verso la stella di neutroni");
+        return Stream.of("calcola la rotta verso la stella di neutroni con efficienza 20",
+            "qual è la rotta verso la stella di neutroni con efficienza 60?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -750,8 +752,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("rotta della squadron carrier", "navigazione della squadron carrier", "rotta di salto della squadron carrier",
-                "quanti salti rimangono sulla rotta della squadron carrier", "salti rimanenti sullo squadron carrier");
+        return Stream.of("rotta della squadron carrier", "navigazione della squadron carrier",
+                "rotta di salto della squadron carrier", "quanti salti rimangono sulla rotta della squadron carrier",
+                "salti rimanenti sullo squadron carrier", "rotta della portanavi dello squadrone",
+                "rotta della portanavi della squadriglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -841,8 +845,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop", "ricordami di fare rifornimento alla prossima fermata",
-                "attiva promemoria per il rifornimento al prossimo stop", "ricordami di eseguire rifornimento alla prossima fermata");
+        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop",
+                "ricordami di fare rifornimento alla prossima fermata",
+                "attiva promemoria per il rifornimento al prossimo stop",
+                "ricordami di eseguire rifornimento alla prossima fermata");
     }
 
     // =========================================================================
@@ -858,7 +864,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> galaxyMap() {
         return Stream.of("mostra la mappa della galassia", "apri la mappa della galassia", "visualizza la mappa della galassia",
-                "apri la mappa galattica", "mostra la mappa galattica", "visualizza la mappa galattica");
+                "apri la mappa galattica", "mostra la mappa galattica", "visualizza la mappa galattica",
+                "apri la mappa stellare", "mostra la mappa stellare", "visualizza la mappa stellare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -870,7 +877,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> systemMap() {
         return Stream.of("mostra la mappa del sistema", "apri la mappa del sistema", "mostra la mappa del sistema",
-                "visualizza la mappa del sistema", "apri la mappa stellare", "mostra la mappa stellare", "visualizza la mappa stellare");
+                "visualizza la mappa del sistema", "apri la mappa del sistema solare", "mostra la mappa del sistema solare",
+                "visualizza la mappa del sistema solare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -990,8 +998,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryStationsInSystem() {
-        return Stream.of("stations in system", "what stations", "nearby stations",
-                "are there any stations or ports here", "any ports in this star system");
+        return Stream.of("stazioni nel sistema", "quali stazioni", "stazioni vicine",
+                "ci sono stazioni o porti qui", "ci sono porti in questo sistema stellare",
+                "dove si può attraccare in questo sistema", "quali stazioni sono disponibili in questo sistema",
+                "dove si può atterrare in questo sistema");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1002,8 +1012,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryStellarObjects() {
-        return Stream.of("What landable planets or moons are in this system?",
-                "Are there any ice rings this star system");
+        return Stream.of("che oggetti stellari ci sono nel sistema", "quali pianeti nel sistema", "ci sono pianeti atterrabili",
+                "si può atterrare su un pianeta o una luna", "quali corpi sono presenti nel sistema",
+                "ci sono anelli di ghiaccio", "ci sono anelli planetari", "il sistema sistema ha anelli");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1014,8 +1025,11 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryStellarSignals() {
-        return Stream.of("What signals are in this system?", "What signals do you see?", "Any interesting signals?",
-                "System signals?", "What's in this system?");
+        return Stream.of("quali segnali ci sono nel sistema", "cosa c'è in questo sistema", "cosa è stato rilevato nel sistema",
+                "quali segnali ci sono qui", "quali segnali vedi", "quali segnali rilevi", "quali segnali puoi vedere",
+                "quali segnali FSS trovi", "ci sono hotspot minerari", "rilevi siti di estrazione delle risorse",
+                "vedi zone di conflitto", "ci sono emissioni", "hai trobvato segnali non identificati", "ci sono segnali rilevati",
+                "ci sono segnali anomali");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1026,7 +1040,12 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryBioScanProgress() {
-        return Stream.of("Which planets still need bio or organic scans?");
+        return Stream.of("quali segnali biologici sono già stati scoperti nel sistema stellare",
+                "quanti campioni biologici ci sono nel sistema stellare", "quali segnali biologici trovi nel sistema",
+                "vedi segnali biologici nel sistema stellare", "quali pianeti hanno segnali biologici",
+                "quali pianeti necessitano ancora di scansioni biologiche", "quali pianeti necessitano di scansioni organiche",
+                "quali pianeti necessitano ancora di scansioni", "ci sono pianeti con segnali biologici non scansionati",
+                "dimmi il progresso della scansione biologica", "progresso della scansione biologica");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1037,8 +1056,17 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryExobiologySamples() {
-        return Stream.of("What bio scans have we completed?", "What organics do we still have to scan?",
-                "What organics or biology is on this planet");
+        return Stream.of( "quali campioni di esobiologia ci sono", "c'e materiale biologico su questo pianeta", "quali materiali organici ci sono",
+            "cosa resta da scansionare", "quali sono gli organici rimanenti", "ci sono campioni rimanenti",
+            "ci sono materiali organici rimanenti", "dimmi il progresso dell'esobiologia",
+            "cosa rimane da scansionare", "quali scansioni biologiche sono state completate",
+            "quali scansioni biologiche abbiamo completato", "scansioni biologiche completate", "ci sono organici su questo pianeta",
+            "qual è il materiale biologico su questo pianeta", "quali materiali organici ci sono qui",
+            "quali materiali organici ci sono su questo pianeta", "qual è il progresso dei campioni biologici sul pianeta",
+            "cosa è stato scansionato qui", "quali materiali organici sono ancora da scansionare",
+            "materiali organici ancora da scansionare", "organici rimanenti da scansionare",
+            "organici rimasti da scansionare", "quali organici rimangono",
+            "campioni biologici ancora da scansionare", "quale materiale biologico rimane", "cosa dobbiamo ancora scansionare qui");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1049,7 +1077,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryPlayerProfile() {
-        return Stream.of("player profile", "player profile summarize ranks", "player profile summarize progress");
+        return Stream.of("profilo del giocatore", "analisi del profilo del giocatore", "progresso del profilo del giocatore");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1060,9 +1088,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("Qual è l'autonomia della nostra portaerei?", "Qual è lo stato del carburante della mia portaerei",
-                "Per quanto tempo possiamo operare con i fondi attuali?", "Quanto lontano possiamo saltare con l'attuale trizio?",
-                "vettore trizio", "vettore carburante", "livello di trizio");
+        return Stream.of("Qual è l'autonomia della nostra portanavi", "Qual è lo stato del carburante della mia portanavi?",
+                "Per quanto tempo possiamo operare con i fondi attuali?", "quanto lontano possiamo saltare con l'attuale trizio?",
+                "stato trizio fleet carrier", "stato carburante fleet carrier", "livello di trizio", "per quanto tempo possiamo usare la fleet carrier?",
+                "quanto può saltare la fleet carrier?", "raggio di salto della fleet carrier con trizio attuale");
     }
 
 
@@ -1074,8 +1103,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryDistanceToCarrier() {
-        return Stream.of("How far are we from the carrier?", "Distance from the fleet carrier?",
-                "How far is the fleet carrier?");
+        return Stream.of("distanza dalla fleet carrier", "dov'è la nostra fleet carrier?",
+                "quanto è lontana la nostra fleet carrier", "prossimità della fleet carrier",
+                "quanto è lontana la fleet carrier", "dov'è la nostra portanavi?", "quanto è lontana la portanavi?",
+                "prossimità della portanavi", "quanto è lontana la nostra portanavi?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1086,7 +1117,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryFsdTarget() {
-        return Stream.of("Obiettivo FSD", "quale stella stiamo prendendo di mira", "informazioni sul prossimo salto");
+        return Stream.of("mi dai info sull'obbiettivo FSD?", "analizza la destinazione",
+                "a che stella stiamo puntando?", "analizza obbiettivo fsd",
+                "recupera informazioni su obbiettivo fsd", "informazioni su target fsd", "analizza target fsd");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1097,8 +1130,11 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryExplorationProfits() {
-        return Stream.of("Exploration profit potential in this system.",
-                "What is the exploration profit potential in this system?");
+        return Stream.of("Guadagni potenziali da esplorazione in questo sistema.",
+                "Qual è il potenziale di guadagno dall'esplorazione in questo sistema?",
+                "Quanto vale questa esplorazione?", "Quanto vale la scansione di questo sistema?",
+                "Quanto vale la scansione biologica di questo sistema?", "Quali scansioni sono più redditizie?",
+                "Quali scansioni è meglio fare in questo sistema?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1109,7 +1145,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryTime() {
-        return Stream.of("current time", "what time is it");
+        return Stream.of("ora corrente", "che ore sono", "ora sulla Terra", "ora galattica", "ora UTC", "che ora è", "ora reale");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1120,7 +1156,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySystemSecurity() {
-        return Stream.of("system security", "who controls this system", "dominant faction");
+        return Stream.of("il sistema è sicuro?", "chi controlla questo sistema?", "lotta per il potere", "livello di sicurezza", "chi possiede questo sistema", "qual è la fazione dominante", "potere di controllo");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1131,8 +1167,10 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryStationDetails() {
-        return Stream.of("station details", "what station services are at this station", "what services here",
-                "station info");
+        return Stream.of("dammi i dettagli della stazione", "quali servizi sono disponibili su questa stazione?",
+            "quali servizi ci sono sulla stazione?", "servizi disponibili", "quali servizi ha questa stazione?",
+            "cosa offre la stazione?", "informazioni sulla stazione", "strutture della stazione", "cosa c'è in questa stazione",
+            "servizi disponibili", "cosa posso trovare su questa stazione?", "quali servizi posso trovare su questa stazione?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1143,7 +1181,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryMaterials() {
-        return Stream.of("material inventory iron", "how many iron do we have", "how much vanadium do we have");
+        return Stream.of("quanti water purifiers ho nella stiva", "quanto ferro abbiamo?", "quanto stagno c'è?", "quanti propulsori Guardian abbiamo?",
+                "che scorta di molibdeno abbiamo?", "abbiamo del tungsteno?", "ce l'abbiamo il materiale osmio?",
+                "quanto osmio ci rimane?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1154,7 +1194,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryPlanetMaterials() {
-        return Stream.of("What materials are available on this planet?");
+        return Stream.of("Quali materiali ci sono su questo pianeta?", "Quali materiali ci sono qui?", "Quali minerali ci sono su questo pianeta?",
+                "Quali depositi di materiali ci sono qui?", "Quali materiali ci sono sulla superficie del pianeta?",
+                "Quali materiali ci sono in questo posto?", "Quali minerali ci sono sul pianeta?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1165,8 +1207,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryDistanceToBubble() {
-        return Stream.of("How far are we from the Bubble?", "Distance to earth", "How far is earth",
-                "how far to civilization", "how far to earth");
+        return Stream.of("a che distanza siamo dalla bolla?", "distanza dal Sole?", "mi dici la distanza dalla Terra?",
+                "quanto siamo lontani dal Sole?", "quanto è lontana la bolla", "quanto siamo lontani dallo spazio abitato",
+                "distanza dallo spazio abitato", "vorrei sapere quanto siamo lontani dalla civiltà");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1177,7 +1220,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryLastScan() {
-        return Stream.of("Analyze the most recent scan?");
+        return Stream.of("qual è l'ultima scansione fatta", "mi dici l'ultima scan", "cosa abbiamo scannato di recente",
+            "qual è l'ultimo oggetto scansionato", "vorrei sapere la scansione più recente",
+            "scansione recente del pianeta", "cosa ho scansionato per ultimo");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1188,7 +1233,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryReminder() {
-        return Stream.of("reminder", "what was the reminder", "any reminders");
+        return Stream.of("promemoria", "quali erano i promemoria?", "mi dici il promemoria destinazione",
+                "c'è qualche promemoria", "cosa abbiamo impostato come promemoria");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1199,7 +1245,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCarrierEta() {
-        return Stream.of("What's the ETA for our fleet carrier jump?");
+        return Stream.of("qual è il tempo previsto di arrivo della portanavi", "quando arriva la fleet carrier",
+            "quanto manca all'arrivo della portanavi", "mi dici l'ora di arrivo della portanavi", "quando arriva la portanavi");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1210,7 +1257,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryGeoSignals() {
-        return Stream.of("geo signals", "geological signals", "volcanic activity");
+        return Stream.of("quali sono i segnali geologici?", "ci sono segnali geologici?",
+                "vedi dei segnali vulcanici?", "c'è attività geologica", "ci sono attività vulcaniche",
+                "com'è la geologia nel sistema");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1221,7 +1270,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryLocalStations() {
-        return Stream.of("local markets", "markets at stations and settlements", "markets at outposts in system");
+        return Stream.of("quali sono i mercati locali?", "ci sono mercati presso stazioni e insediamenti",
+                "mi dici i mercati presso avamposti nel sistema", "quali sono i mercati nelle stazioni e insediamenti");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1232,7 +1282,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryTotalBounties() {
-        return Stream.of("bounties", "total bounties", "how much in bounties");
+        return Stream.of("taglie", "bounty", "quali sono le taglie totali?", "quali taglie ho riscosso?",
+                "quali taglie ho cacciato?", "ho preso delle taglie?", "quanto abbiamo in taglie", "qual è il guadagno da taglie",
+                "crediti da taglie", "crediti da bounty");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1243,7 +1295,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryBiomeAnalysis() {
-        return Stream.of("Analyze the biome for this star system", "Biome analysis for planet a 1");
+        return Stream.of("analizza bioma del pianeta", "mi fai l'analisi del bioma", "quale bioma ha il pianeta A1",
+                "bioma planetario", "analisi dell'atmosfera", "quali tipi di vita ci sono qui?", "che tipi di bioma ci sono?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1254,7 +1307,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryLastBioSample() {
-        return Stream.of("Last bio-sample location and distance.", "How far are we from the last bio-sample?");
+        return Stream.of("distanza all'ultimo campione biologico", "quanto lontano è il campione",
+                "quanto lontano è l'ultimo materiale organico", "portata al campione biologico",
+                "quanto lontano è il materiale organico precedente");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1265,8 +1320,11 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCarrierRoute() {
-        return Stream.of("What's on the carrier route?", "What's the route for our fleet carrier?",
-                "How many jump on the carrier route?");
+        // carrier route, carrier navigation, how many jumps on carrier route, jumps remaining on carrier, carrier route jump count, jumps left on carrier, carrier trip, carrier journey, carrier travel plan, carrier next jump
+        return Stream.of("qual è la rotta della fleet carrier", "mi dici la rotta della portanavi",
+                "navigazione della fleet carrier", "quanti salti rimangono sulla rotta della della portanavi",
+                "quanti sono i salti rimanenti sulla fleet carrier", "vorrei sapere ilnumero di salti nella rotta della fleet carrier",
+                "quanti salti rimangono sulla fleet carrier", "mostra il piano di viaggio della fleet carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1290,8 +1348,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> querySetCarrierFuelReserve() {
-        return Stream.of("Set fuel reserve level to 5000", "Set fuel reserve to 10000", "Fuel reserve 15000",
-                "Set fuel reserve to fifteen thousand");
+        return Stream.of("imposta la riserva di carburante della fleet carrier a 5000",
+                "imposta la riserva di carburante della fleet carrier a 10000", "riserva di carburante 15000",
+                "imposta la riserva di carburante della fleet carrier a quindicimila", "riserva di trizio della fleet carrier a 5000");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1302,7 +1361,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> disembark() {
-        return Stream.of("sbarcare");
+        return Stream.of("sbarcare", "sbarca", "sbarco", "sbarco dalla nave", "voglio scendere dalla nave");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1313,7 +1372,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openCentralPanel() {
-        return Stream.of("Pannello comandante aperto", "pannello centrale aperto", "pannello ruolo aperto", "pannello ginocchio aperto");
+        // pannello del comandante, pannello comandante, pannello centrale, mostra il pannello del comandante, apri il pannello del comandante
+        return Stream.of("pannello comandante aperto", "apri pannello comandante", "puoi aprire il pannello comandante",
+                "mostra il pannello comandate", "apri il pannello del comandante", "mostra il pannello del comandante");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1324,7 +1385,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openFighterPanel() {
-        return Stream.of("mostra pannello combattente", "apri pannello combattente");
+        return Stream.of("pannello caccia", "mostra il pannello del caccia", "apri il pannello del caccia",
+                "visualizza il pannello del caccia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1335,7 +1397,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> fighterOpenOrders() {
-        return Stream.of("fighter open orders", "fire at will");
+        return Stream.of("caccia fuoco a volontà", "apri il fuoco caccia", "attacca liberamente");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1346,7 +1408,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> fighterAttackTarget() {
-        return Stream.of("fighter attack my target", "attack", "focus my target");
+        return Stream.of("caccia attacca il mio bersaglio", "caccia attacca il bersaglio", "caccia sul bersaglio", "concentrati sul mio bersaglio");
     }
 
     /*

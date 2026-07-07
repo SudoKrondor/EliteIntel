@@ -105,6 +105,7 @@ public class FuzzySearch {
             case ES -> "name_es";
             case RU -> "name_ru";
             case UK -> "name_uk";
+            case IT -> "name_it";
             default -> "name";
         };
     }
@@ -116,6 +117,7 @@ public class FuzzySearch {
             case ES -> "commodity_es";
             case RU -> "commodity_ru";
             case UK -> "commodity_uk";
+            case IT -> "commodity_it";
             default -> "commodity";
         };
     }
