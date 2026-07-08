@@ -115,7 +115,10 @@ public final class CompanionSubsystemGate implements ManagedService {
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
+        if (dispatcher != null) {
+            return;
+        }
         if (!isCompanionModeOn()) {
             return; // companion mode off: the legacy command mode serves input instead
         }
@@ -154,7 +157,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (dispatcher == null) {
             return; // never started (companion mode was off)
         }

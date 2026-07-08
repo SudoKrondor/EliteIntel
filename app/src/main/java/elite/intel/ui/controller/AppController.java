@@ -42,10 +42,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-public class AppController implements Runnable {
+public class AppController {
 
     private static final Logger log = LogManager.getLogger(AppController.class);
 
@@ -58,7 +57,10 @@ public class AppController implements Runnable {
         return t;
     });
 
-    private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final Object lifecycleLock = new Object();
+    // Written only under lifecycleLock; volatile so the off-lock reads (e.g. onLlmConnectionStatus on the
+    // EDT) observe the latest transition.
+    private volatile ServicesStateEvent.State serviceState = ServicesStateEvent.State.STOPPED;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final SystemSession systemSession = SystemSession.getInstance();
 
@@ -74,7 +76,6 @@ public class AppController implements Runnable {
 
     public AppController() {
         UiBus.register(this);
-        this.isRunning.set(false);
         startIfWeHaveCredentials();
     }
 
@@ -176,7 +177,6 @@ public class AppController implements Runnable {
                     // Surface the reason to the user (e.g. an unsupported LLM provider), not just the log file.
                     appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
                     stopServices();
-                    UiBus.publish(new ServicesStateEvent(false));
                 }
             } else {
                 stopServices();
@@ -201,33 +201,36 @@ public class AppController implements Runnable {
      * rebuilt. No-op when services are stopped (the change takes effect on the next Start).
      */
     private void restartAllServices() {
-        if (!isRunning.get()) return;
-        stopServices();
-        try {
-            startServices();
-        } catch (Exception e) {
-            // WHY: broad catch at the worker-thread boundary - a startup failure must be surfaced to the
-            // user (console log) and leave services cleanly stopped, not kill the thread half-running.
-            log.error("Failed to restart services", e);
-            appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
             stopServices();
-            UiBus.publish(new ServicesStateEvent(false));
+            try {
+                startServices();
+            } catch (Exception e) {
+                // WHY: broad catch at the worker-thread boundary - a startup failure must be surfaced to the
+                // user (console log) and leave services cleanly stopped, not kill the thread half-running.
+                log.error("Failed to restart services", e);
+                appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+                stopServices();
+            }
         }
     }
 
     private void restartBrainService() {
-        if (!isRunning.get()) return;
-        // The companion subsystem is the LLM service; restart it so an LLM source (local/cloud) change is
-        // picked up.
-        ServiceHolder brain = services.get(ServiceType.COMPANION);
-        if (brain == null) return;
-        appendToLog("Restarting LLM service...");
-        brain.stop();
-        brain.start();
-        appendToLog("LLM service restarted");
-        Timer checkTimer = new Timer(2000, e -> connectionCheck());
-        checkTimer.setRepeats(false);
-        checkTimer.start();
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
+            // The companion subsystem is the LLM service; restart it so an LLM source (local/cloud) change is
+            // picked up.
+            ServiceHolder brain = services.get(ServiceType.COMPANION);
+            if (brain == null) return;
+            appendToLog("Restarting LLM service...");
+            brain.stop();
+            brain.start();
+            appendToLog("LLM service restarted");
+            Timer checkTimer = new Timer(2000, e -> connectionCheck());
+            checkTimer.setRepeats(false);
+            checkTimer.start();
+        }
     }
 
     @Subscribe
@@ -256,96 +259,99 @@ public class AppController implements Runnable {
     }
 
     private void restartEarsService() {
-        if (!isRunning.get()) return;
-        ServiceHolder ears = services.get(ServiceType.EARS);
-        if (ears == null) return;
-        appendToLog("Restarting STT service...");
-        ears.stop();
-        try {
-            ears.start();
-            appendToLog("STT service restarted");
-        } catch (Exception e) {
-            log.error("Failed to restart STT service", e);
-            appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
+            ServiceHolder ears = services.get(ServiceType.EARS);
+            if (ears == null) return;
+            appendToLog("Restarting STT service...");
+            ears.stop();
+            try {
+                ears.start();
+                appendToLog("STT service restarted");
+            } catch (Exception e) {
+                log.error("Failed to restart STT service", e);
+                appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+            }
         }
     }
 
     private void restartMouthService() {
-        if (!isRunning.get()) return;
-        ServiceHolder mouth = services.get(ServiceType.MOUTH);
-        if (mouth == null) return;
-        appendToLog("Restarting TTS service...");
+        synchronized (lifecycleLock) {
+            if (!isServiceRunning()) return;
+            ServiceHolder mouth = services.get(ServiceType.MOUTH);
+            if (mouth == null) return;
+            appendToLog("Restarting TTS service...");
 
-        // Radio is always voiced by Kokoro, so a dedicated radio engine is needed only when the main
-        // mouth is not Kokoro. The radio engine and a Kokoro main mouth share the Kokoro singleton, so
-        // ordering matters: retire an unneeded radio engine BEFORE (re)starting the main mouth, and
-        // leave an already-running radio engine untouched on a main-mouth-only change (no model reload).
-        boolean needRadio = !systemSession.useLocalTTS();
-        ServiceHolder radio = services.get(ServiceType.RADIO_MOUTH);
-        if (radio != null && !needRadio) {
-            radio.stop();
-            services.remove(ServiceType.RADIO_MOUTH);
-            radio = null;
-        }
-
-        mouth.stop();
-        mouth.start();
-
-        if (needRadio) {
-            if (radio == null) {
-                radio = new ServiceHolder(() -> {
-                    KokoroTTS r = KokoroTTS.getInstance();
-                    r.setRole(KokoroTTS.Role.RADIO);
-                    return r;
-                });
-                services.put(ServiceType.RADIO_MOUTH, radio);
+            // Radio is always voiced by Kokoro, so a dedicated radio engine is needed only when the main
+            // mouth is not Kokoro. The radio engine and a Kokoro main mouth share the Kokoro singleton, so
+            // ordering matters: retire an unneeded radio engine BEFORE (re)starting the main mouth, and
+            // leave an already-running radio engine untouched on a main-mouth-only change (no model reload).
+            boolean needRadio = !systemSession.useLocalTTS();
+            ServiceHolder radio = services.get(ServiceType.RADIO_MOUTH);
+            if (radio != null && !needRadio) {
+                radio.stop();
+                services.remove(ServiceType.RADIO_MOUTH);
+                radio = null;
             }
-            radio.start(); // no-op if the radio engine is already running (Kokoro.start() guards on running)
+
+            mouth.stop();
+            mouth.start();
+
+            if (needRadio) {
+                if (radio == null) {
+                    radio = new ServiceHolder(() -> {
+                        KokoroTTS r = KokoroTTS.getInstance();
+                        r.setRole(KokoroTTS.Role.RADIO);
+                        return r;
+                    });
+                    services.put(ServiceType.RADIO_MOUTH, radio);
+                }
+                radio.start(); // no-op if the radio engine is already running
+            }
+            appendToLog("TTS service restarted");
         }
-        appendToLog("TTS service restarted");
     }
 
     private void appendToLog(String data) {
         UiBus.publish(new AppLogEvent(data));
     }
 
-    @Override
-    public void run() {
-        while (isRunning.get()) {
+    private void startServices() {
+        synchronized (lifecycleLock) {
+            if (serviceState != ServicesStateEvent.State.STOPPED) {
+                log.info("Ignoring service start request while lifecycle state is {}", serviceState);
+                return;
+            }
+            transitionTo(ServicesStateEvent.State.STARTING);
+
             try {
-                //noinspection BusyWait
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                checkForUpdates();
+                UiBus.publish(new ClearConsoleEvent());
+                initServices();
+
+                for (ServiceHolder service : services.values()) {
+                    service.start();
+                }
+
+                transitionTo(ServicesStateEvent.State.RUNNING);
+
+                Timer connectionCheckTimer = new Timer(2000, e -> {
+                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
+                    connectionCheck();
+                });
+                connectionCheckTimer.setRepeats(false);
+                connectionCheckTimer.start();
+
+                KeyBindCheck.getInstance().check();
+                CustomCommandLoadAnnouncement.getInstance().announce();
+                LocalLlmModelCheck.getInstance().check();
+            } catch (RuntimeException | Error e) {
+                log.error("Service startup failed while lifecycle was STARTING", e);
+                stopServiceRegistry();
+                transitionTo(ServicesStateEvent.State.STOPPED);
+                throw e;
             }
         }
-    }
-
-    private void startServices() {
-        if (isRunning.get()) return;
-        checkForUpdates();
-        UiBus.publish(new ClearConsoleEvent());
-        initServices();
-
-        for (ServiceType type : ServiceType.values()) {
-            ServiceHolder service = services.get(type);
-            if (service != null) service.start();
-        }
-
-        isRunning.set(true);
-        UiBus.publish(new ServicesStateEvent(true));
-
-        Timer connectionCheckTimer = new Timer(2000, e -> {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.connectingToLlm")));
-            connectionCheck();
-        });
-        connectionCheckTimer.setRepeats(false);
-        connectionCheckTimer.start();
-
-        KeyBindCheck.getInstance().check();
-        CustomCommandLoadAnnouncement.getInstance().announce();
-        LocalLlmModelCheck.getInstance().check();
     }
 
     @Subscribe
@@ -354,7 +360,7 @@ public class AppController implements Runnable {
         SwingUtilities.invokeLater(() -> {
             if (event.connected()) {
                 stopRetryTimer();
-            } else if (isRunning.get()) {
+            } else if (isServiceRunning()) {
                 startRetryTimer();
             }
         });
@@ -398,34 +404,55 @@ public class AppController implements Runnable {
     }
 
     private void stopServices() {
-        if (!isRunning.get()) return;
-        stopRetryTimer();
+        synchronized (lifecycleLock) {
+            if (serviceState == ServicesStateEvent.State.STOPPED
+                    || serviceState == ServicesStateEvent.State.STOPPING) {
+                return;
+            }
+            transitionTo(ServicesStateEvent.State.STOPPING);
+            stopRetryTimer();
+            stopServiceRegistry();
+            transitionTo(ServicesStateEvent.State.STOPPED);
+            UiBus.publish(new AppLogEvent("All services are stopped\n\n"));
+        }
+    }
+
+    private void initServices() {
+        this.services.clear();
+        this.services.putAll(buildServices(systemSession.useLocalTTS()));
+    }
+
+    private void stopServiceRegistry() {
         List<ServiceType> reverseOrder = new ArrayList<>(services.keySet());
         Collections.reverse(reverseOrder);
         for (ServiceType type : reverseOrder) {
             ServiceHolder holder = services.get(type);
             if (holder != null) {
                 holder.stop();
-                services.remove(type);
             }
         }
-        this.services.clear();
-        UiBus.publish(new ServicesStateEvent(false));
-        isRunning.set(false);
-        UiBus.publish(new AppLogEvent("All services are stopped\n\n"));
+        services.clear();
     }
 
-    private void initServices() {
-        stopServices();
-        this.services.clear();
-        this.services.putAll(buildServices(systemSession.useLocalTTS()));
+    private boolean isServiceRunning() {
+        return serviceState == ServicesStateEvent.State.RUNNING;
+    }
+
+    // WHY: transitions are published while lifecycleLock is held so a state change and the work it guards
+    // cannot interleave with another lifecycle call. UiBus delivery is synchronous, so ServicesStateEvent
+    // subscribers must not block or synchronously re-enter a lifecycle method; current ones only
+    // invokeLater or spawn their own threads.
+    private void transitionTo(ServicesStateEvent.State target) {
+        serviceState = target;
+        UiBus.publish(new ServicesStateEvent(target));
     }
 
     /**
      * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
      * nothing is started here) so the registration can be verified in tests without standing up the
-     * controller. Order matters: audio (Mouth/Ears) comes up first, then the COMPANION subsystem (the
-     * sole LLM service since the legacy command pipeline was removed).
+     * controller. Order matters: audio and command execution come up first, then the COMPANION subsystem
+     * (the sole LLM service since the legacy command pipeline was removed). Live game-file monitors start
+     * last so journal/status subscriber cascades cannot publish into a half-started speech/companion layer.
      * <p>
      * Radio transmissions are always voiced by Kokoro. When Kokoro is also the main mouth
      * ({@code useLocalTts}) it handles radio through its own queue and no extra service is needed.
@@ -449,14 +476,6 @@ public class AppController implements Runnable {
         }
         services.put(ServiceType.EARS, new ServiceHolder(
                 diagnostics ? DiagnosticsEars::new : ApiFactory.getInstance()::getEarsImpl));
-        // Diagnostics also stubs the live game-file monitors: AuxiliaryFilesMonitor re-reads the game's stale
-        // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
-        // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control
-        // and silently dropping any command gated on isVisibleForLLM. The harness owns game state instead.
-        services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(
-                diagnostics ? NoOpService::new : JournalParser::new));
-        services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
-                diagnostics ? NoOpService::new : AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
         services.put(ServiceType.DEVICE, new ServiceHolder(() -> new ManagedService() {
             public void start() {
@@ -477,6 +496,14 @@ public class AppController implements Runnable {
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
+        // Diagnostics also stubs the live game-file monitors: AuxiliaryFilesMonitor re-reads the game's stale
+        // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
+        // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control
+        // and silently dropping any command gated on isVisibleForLLM. The harness owns game state instead.
+        services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(
+                diagnostics ? NoOpService::new : JournalParser::new));
+        services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
+                diagnostics ? NoOpService::new : AuxiliaryFilesMonitor::new));
         return services;
     }
 
@@ -488,12 +515,25 @@ public class AppController implements Runnable {
             this.creator = Objects.requireNonNull(creator);
         }
 
-        void start() {
-            if (instance == null) instance = creator.get();
-            if (instance != null) instance.start();
+        synchronized void start() {
+            if (instance != null) return;
+            ManagedService created = creator.get();
+            if (created == null) return;
+            instance = created;
+            try {
+                created.start();
+            } catch (RuntimeException | Error e) {
+                instance = null;
+                try {
+                    created.stop();
+                } catch (RuntimeException | Error stopFailure) {
+                    e.addSuppressed(stopFailure);
+                }
+                throw e;
+            }
         }
 
-        void stop() {
+        synchronized void stop() {
             if (instance != null) {
                 instance.stop();
                 instance = null;
@@ -507,7 +547,7 @@ public class AppController implements Runnable {
     }
 
     enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, RADIO_MOUTH, EARS, COMPANION,
-        NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
+        MOUTH, RADIO_MOUTH, EARS, HANDS, DEVICE, COMPANION, NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR,
+        WEB_SOCKET, JOURNAL_PARSER, AUXILIARY_FILES_MONITOR
     }
 }

@@ -350,10 +350,10 @@ public class AiTabPanel extends JPanel {
                 + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
     }
 
-    public void initData(boolean sleepingModeOn, boolean servicesRunning) {
+    public void initData(boolean sleepingModeOn, ServicesStateEvent.State serviceState) {
         this.sleeping = sleepingModeOn;
         wakeWordButton.setText(wakeWordText());
-        applyServiceState(servicesRunning);
+        applyServiceState(serviceState);
     }
 
     public void addUserMessage(String text) {
@@ -374,8 +374,10 @@ public class AiTabPanel extends JPanel {
     @Subscribe
     public void onServiceStatusEvent(ServicesStateEvent event) {
         SwingUtilities.invokeLater(() -> {
-            SleepNoThrow.sleep(1000);
-            applyServiceState(event.isRunning());
+            if (event.isRunning()) {
+                SleepNoThrow.sleep(1000);
+            }
+            applyServiceState(event.state());
         });
     }
 
@@ -384,13 +386,16 @@ public class AiTabPanel extends JPanel {
         SwingUtilities.invokeLater(() -> refreshSummary(event.snapshot()));
     }
 
-    private void applyServiceState(boolean running) {
+    private void applyServiceState(ServicesStateEvent.State state) {
+        boolean running = state == ServicesStateEvent.State.RUNNING;
+        boolean transitioning = state == ServicesStateEvent.State.STARTING
+                || state == ServicesStateEvent.State.STOPPING;
         if (!running) {
             uiState.setLlmConnected(null);
         }
         isServiceRunning.set(running);
         startStopServicesButton.setText(running ? getText("button.stopServices") : getText("button.startServices"));
-        startStopServicesButton.setEnabled(true);
+        startStopServicesButton.setEnabled(!transitioning);
         recalibrateAudioButton.setEnabled(running);
         wakeWordButton.setEnabled(running && !pttModeActive);
         refreshSttBadge();
