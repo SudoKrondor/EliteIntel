@@ -22,7 +22,7 @@ public final class RetractLandingGearCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Fold / Retract the landing gear.";
+        return "Raise/retract the landing gear after take-off.";
     }
 
 

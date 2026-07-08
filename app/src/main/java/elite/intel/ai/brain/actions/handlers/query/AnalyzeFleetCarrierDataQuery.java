@@ -28,7 +28,7 @@ public class AnalyzeFleetCarrierDataQuery extends BaseQueryAnalyzer implements I
 
     @Override
     public String llmDescription() {
-        return "Use this for reporting the personal FLEET carrier's status, fuel, and finances. Do not use this function for the squadron carrier.";
+        return "Report the commander's personal fleet carrier status: tritium fuel, jump range, balance and finances. Not the squadron carrier.";
     }
 
 

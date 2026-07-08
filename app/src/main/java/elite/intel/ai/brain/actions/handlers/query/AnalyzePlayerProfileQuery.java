@@ -15,11 +15,7 @@ public class AnalyzePlayerProfileQuery extends BaseQueryAnalyzer implements Inte
 
     @Override
     public String llmDescription() {
-        return """
-                    - Report the commander's ranks and progress.
-                    - Commander profile analysis
-                    - Analyse player profile
-                """;
+        return "Report the commander's ranks and progress toward the next rank (combat, trade, exploration, etc.).";
     }
 
 

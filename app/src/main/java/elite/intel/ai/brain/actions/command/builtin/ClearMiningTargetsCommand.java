@@ -17,7 +17,10 @@ import elite.intel.util.StringUtls;
 public final class ClearMiningTargetsCommand implements IntelCommand {
     public static final String ID = "clear_mining_targets";
 
-    @Override public String llmDescription() { return "Clear the mining target list."; }
+    @Override
+    public String llmDescription() {
+        return "Clear all commodities from the mining prospector target list.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

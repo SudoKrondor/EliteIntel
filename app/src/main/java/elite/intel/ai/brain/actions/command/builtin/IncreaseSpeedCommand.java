@@ -29,10 +29,7 @@ public final class IncreaseSpeedCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return """
-                    - Increase the speed.
-                    - Increase the speed by X
-                """;
+        return "Increase the ship throttle by the number of notches given in 'key'.";
     }
 
 

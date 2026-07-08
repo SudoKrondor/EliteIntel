@@ -19,7 +19,7 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Use this for switching the ship to combat mode.";
+        return "Switch the ship/SRV HUD to combat mode.";
     }
 
 

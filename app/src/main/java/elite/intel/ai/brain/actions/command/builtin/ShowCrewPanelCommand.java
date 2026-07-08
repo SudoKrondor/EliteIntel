@@ -15,7 +15,10 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowCrewPanelCommand implements IntelCommand {
     public static final String ID = "show_crew_panel";
 
-    @Override public String llmDescription() { return "Open the crew panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the crew panel (NPC/multicrew management).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

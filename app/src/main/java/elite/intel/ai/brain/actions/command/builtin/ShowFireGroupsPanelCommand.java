@@ -17,7 +17,7 @@ public final class ShowFireGroupsPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the fire groups panel.";
+        return "Open the fire groups configuration panel.";
     }
 
 

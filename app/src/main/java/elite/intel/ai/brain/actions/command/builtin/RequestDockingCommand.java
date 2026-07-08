@@ -19,7 +19,10 @@ import elite.intel.session.ui.UINavigator;
 public final class RequestDockingCommand implements IntelCommand {
     public static final String ID = "request_docking";
 
-    @Override public String llmDescription() { return "Request docking permission at the current station."; }
+    @Override
+    public String llmDescription() {
+        return "Request docking permission at the nearby station or outpost (contact traffic control for a landing pad).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

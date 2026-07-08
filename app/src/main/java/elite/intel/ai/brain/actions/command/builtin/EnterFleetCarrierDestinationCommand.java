@@ -27,7 +27,7 @@ public final class EnterFleetCarrierDestinationCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Set the fleet carrier's destination on the map. paste the destination system for fleet carrier route";
+        return "Type the next fleet-carrier route leg's destination system into the carrier navigation field and confirm it (used after calculating a carrier route with the carrier/galaxy map open).";
     }
 
 

@@ -32,7 +32,10 @@ import java.util.Map;
 public final class NavigateToMissionProviderCommand implements IntelCommand {
     public static final String ID = "navigate_to_mission_provider";
 
-    @Override public String llmDescription() { return "Plot a route to the mission provider."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the mission-provider system for the active pirate-massacre missions.";
+    }
 
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();

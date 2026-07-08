@@ -16,7 +16,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeSystemSecurityQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_system_security";
 
-    @Override public String llmDescription() { return "Report the security level of the current system."; }
+    @Override
+    public String llmDescription() {
+        return "Report the current system's security level, controlling faction, allegiance and power-play control.";
+    }
 
 
     @Override public String id() { return ID; }

@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HEAD_LOOK_RESET;
 public final class ResetHeadLookAheadCommand implements IntelCommand {
     public static final String ID = "reset_head_look_ahead";
 
-    @Override public String llmDescription() { return "Reset the head-look camera to face forward."; }
+    @Override
+    public String llmDescription() {
+        return "Recenter the head-look / free-look camera to face straight forward.";
+    }
 
 
     private final Status status = Status.getInstance();

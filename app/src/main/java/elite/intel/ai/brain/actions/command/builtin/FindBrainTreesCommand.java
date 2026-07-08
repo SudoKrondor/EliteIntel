@@ -31,7 +31,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class FindBrainTreesCommand implements IntelCommand {
     public static final String ID = "find_brain_trees";
 
-    @Override public String llmDescription() { return "Find nearby Brain Tree biological sites."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Brain Trees biological site that yields the raw material named in 'key'.";
+    }
 
 
     private final BrainTreeManager brainTreeManager = BrainTreeManager.getInstance();

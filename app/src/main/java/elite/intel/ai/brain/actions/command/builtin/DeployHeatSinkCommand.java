@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class DeployHeatSinkCommand extends SimpleTapCommand {
     public static final String ID = "deploy_heat_sink";
 
-    @Override public String llmDescription() { return "Deploy a heat sink."; }
+    @Override
+    public String llmDescription() {
+        return "Launch a heat sink to dump heat (cool the ship or drop off heat-seeking sensors).";
+    }
 
     public DeployHeatSinkCommand() {
         super(ID, Bindings.GameCommand.BINDING_DEPLOY_HEAT_SINK.getGameBinding());

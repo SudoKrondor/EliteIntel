@@ -23,10 +23,7 @@ public final class SetReminderCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return """
-                        Set a reminder.
-                        Reminder may have specifics or may be just general reminder.
-                """;
+        return "Save a free-text spoken reminder note (in 'key') to recall later; no timer.";
     }
 
 

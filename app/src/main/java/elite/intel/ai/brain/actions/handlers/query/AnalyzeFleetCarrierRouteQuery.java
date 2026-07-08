@@ -24,7 +24,7 @@ public class AnalyzeFleetCarrierRouteQuery extends BaseQueryAnalyzer implements 
 
     @Override
     public String llmDescription() {
-        return "Report the fleet carrier's planned route. Analyze fleet carrier route, what is on the fleet carrier route";
+        return "Report the commander's personal fleet carrier's planned jump route and how many jumps remain.";
     }
 
 

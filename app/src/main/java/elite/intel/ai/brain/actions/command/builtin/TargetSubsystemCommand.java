@@ -21,7 +21,10 @@ import java.util.Locale;
 public final class TargetSubsystemCommand implements IntelCommand {
     public static final String ID = "target_subsystem";
 
-    @Override public String llmDescription() { return "Target a subsystem on the current target."; }
+    @Override
+    public String llmDescription() {
+        return "Target a specific subsystem on the current enemy ship (e.g. power plant, FSD, drives, shield generator, life support); the subsystem name is in 'key'.";
+    }
 
 
     private static final Logger log = LogManager.getLogger(TargetSubsystemCommand.class);

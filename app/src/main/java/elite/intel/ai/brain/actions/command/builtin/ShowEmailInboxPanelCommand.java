@@ -23,7 +23,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowEmailInboxPanelCommand implements IntelCommand {
     public static final String ID = "show_email_inbox_panel";
 
-    @Override public String llmDescription() { return "Open the inbox (email / messages) panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the inbox / messages (email) panel in comms.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

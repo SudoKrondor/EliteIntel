@@ -26,7 +26,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindNearestFleetCarrierCommand implements IntelCommand {
     public static final String ID = "find_nearest_fleet_carrier";
 
-    @Override public String llmDescription() { return "Find and report the nearest fleet carrier."; }
+    @Override
+    public String llmDescription() {
+        return "Find and report the nearest fleet carrier other than the commander's own, within range.";
+    }
 
 
     @Override

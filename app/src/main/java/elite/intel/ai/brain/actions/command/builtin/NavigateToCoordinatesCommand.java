@@ -24,7 +24,10 @@ import java.util.List;
 public final class NavigateToCoordinatesCommand implements IntelCommand {
     public static final String ID = "navigate_to_coordinates";
 
-    @Override public String llmDescription() { return "Plot navigation to surface coordinates on the targeted body."; }
+    @Override
+    public String llmDescription() {
+        return "Start surface navigation guidance to the latitude 'lat' and longitude 'lon' on the current planetary body.";
+    }
 
 
     private static final Logger log = LogManager.getLogger(NavigateToCoordinatesCommand.class);

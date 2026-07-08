@@ -20,7 +20,10 @@ import java.util.List;
 public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_max_distance";
 
-    @Override public String llmDescription() { return "Set the trade-route maximum distance."; }
+    @Override
+    public String llmDescription() {
+        return "Set the trade-route profile's maximum acceptable station distance from arrival (light seconds) to 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";

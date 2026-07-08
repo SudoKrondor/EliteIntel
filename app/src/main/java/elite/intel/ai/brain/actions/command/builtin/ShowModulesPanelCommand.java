@@ -17,7 +17,7 @@ public final class ShowModulesPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the modules panel.";
+        return "Open the modules panel (installed ship modules and their power priority).";
     }
 
 

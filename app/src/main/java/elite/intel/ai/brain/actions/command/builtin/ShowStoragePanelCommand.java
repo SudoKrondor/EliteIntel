@@ -19,7 +19,7 @@ public final class ShowStoragePanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the ship storage panel.";
+        return "Open the ship storage panel (stored modules and ships at this station).";
     }
 
 

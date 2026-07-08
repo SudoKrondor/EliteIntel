@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HARDPOINTS_TOGGL
 public final class RetractHardpointsCommand implements IntelCommand {
     public static final String ID = "retract_hardpoints";
 
-    @Override public String llmDescription() { return "Retract the weapon hardpoints."; }
+    @Override
+    public String llmDescription() {
+        return "Retract and stow the weapon hardpoints, standing down from combat.";
+    }
 
 
     @Override

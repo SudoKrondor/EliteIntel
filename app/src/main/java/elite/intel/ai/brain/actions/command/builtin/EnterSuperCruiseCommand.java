@@ -26,7 +26,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class EnterSuperCruiseCommand implements IntelCommand {
     public static final String ID = "enter_super_cruise";
 
-    @Override public String llmDescription() { return "Engage supercruise."; }
+    @Override
+    public String llmDescription() {
+        return "Engage supercruise to travel faster-than-light within the current system. If already in supercruise, instead target the next route system and jump.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

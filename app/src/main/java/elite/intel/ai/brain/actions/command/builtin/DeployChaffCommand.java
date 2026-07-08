@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class DeployChaffCommand extends SimpleTapCommand {
     public static final String ID = "deploy_chaff";
 
-    @Override public String llmDescription() { return "Deploy chaff."; }
+    @Override
+    public String llmDescription() {
+        return "Launch chaff to break incoming missile and gimballed-weapon locks.";
+    }
 
     public DeployChaffCommand() {
         super(ID, Bindings.GameCommand.BINDING_FIRE_CHAFF_LAUNCHER.getGameBinding());

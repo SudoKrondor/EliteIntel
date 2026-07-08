@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DisplayFleetCarrierManagementPanelCommand implements IntelCommand {
     public static final String ID = "display_fleet_carrier_management_panel";
 
-    @Override public String llmDescription() { return "Open the fleet carrier management panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the fleet-carrier management/administration panel.";
+    }
 
 
     private final Status status = Status.getInstance();

@@ -19,7 +19,10 @@ import java.util.List;
 public class AnalyzeMarketsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_markets";
 
-    @Override public String llmDescription() { return "Report commodity markets and prices."; }
+    @Override
+    public String llmDescription() {
+        return "List the stations, outposts and settlements in the current star system and which facilities each has (market, shipyard, outfitting), from external data. Does not report commodity prices.";
+    }
 
 
     @Override public String id() { return ID; }

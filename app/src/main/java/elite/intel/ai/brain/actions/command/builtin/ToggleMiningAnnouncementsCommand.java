@@ -19,7 +19,10 @@ import java.util.List;
 public final class ToggleMiningAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_mining_announcements";
 
-    @Override public String llmDescription() { return "Toggle mining announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn mining prospector/target announcements on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

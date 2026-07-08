@@ -25,7 +25,10 @@ import java.util.List;
 public final class FindInterstellarFactorCommand implements IntelCommand {
     public static final String ID = "find_interstellar_factor";
 
-    @Override public String llmDescription() { return "Find the nearest interstellar factor to clear bounties and fines."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Interstellar Factors contact to pay off bounties and fines.";
+    }
 
 
     private final LocationManager locationManager = LocationManager.getInstance();

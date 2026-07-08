@@ -18,7 +18,7 @@ public class LauchNomadCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Deploy the Nomad aerial scout from the ship while flying low in the air over a planet surface. Not an undock/launch of the ship, and not the ground-based SRV.";
+        return "Deploy the Nomad aerial scout from the ship while flying low over a planet surface; not a ship undock, SRV, or fighter.";
     }
 
     private final UINavigator navigator = new UINavigator();

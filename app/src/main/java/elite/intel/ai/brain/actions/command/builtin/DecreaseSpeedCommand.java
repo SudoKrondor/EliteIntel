@@ -27,7 +27,10 @@ import java.util.List;
 public final class DecreaseSpeedCommand implements IntelCommand {
     public static final String ID = "decrease_speed";
 
-    @Override public String llmDescription() { return "Decrease the throttle."; }
+    @Override
+    public String llmDescription() {
+        return "Decrease the ship throttle by the number of notches given in 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";

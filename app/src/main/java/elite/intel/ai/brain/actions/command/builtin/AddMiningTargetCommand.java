@@ -25,7 +25,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class AddMiningTargetCommand implements IntelCommand {
     public static final String ID = "add_mining_target";
 
-    @Override public String llmDescription() { return "Add a commodity to the mining target list."; }
+    @Override
+    public String llmDescription() {
+        return "Add a mineable commodity (in 'key', e.g. Platinum, Painite) to the mining prospector target list so it is called out while prospecting.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

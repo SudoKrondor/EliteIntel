@@ -19,7 +19,10 @@ import java.util.List;
 public final class ToggleRouteAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_route_announcements";
 
-    @Override public String llmDescription() { return "Toggle route and jump announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn route and jump announcements on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

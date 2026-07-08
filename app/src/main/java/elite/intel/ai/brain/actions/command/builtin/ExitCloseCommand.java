@@ -15,7 +15,10 @@ import elite.intel.session.Status;
 public final class ExitCloseCommand implements IntelCommand {
     public static final String ID = "exit_close";
 
-    @Override public String llmDescription() { return "Back out of or close the current menu, panel, or map (galaxy map / system map)."; }
+    @Override
+    public String llmDescription() {
+        return "Close or back out of the currently open panel, menu, or map (galaxy/system map).";
+    }
 
 
     @Override

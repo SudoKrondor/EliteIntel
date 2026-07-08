@@ -20,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class MonetizeRouteCommand implements IntelCommand {
     public static final String ID = "monetize_route";
 
-    @Override public String llmDescription() { return "Optimize the current route for trade profit."; }
+    @Override
+    public String llmDescription() {
+        return "Find a profitable buy/sell commodity pair along the currently plotted route and save it as a reminder, to earn credits while travelling.";
+    }
 
 
     private final MonetizeRouteManager monetizeRouteManager = MonetizeRouteManager.getInstance();

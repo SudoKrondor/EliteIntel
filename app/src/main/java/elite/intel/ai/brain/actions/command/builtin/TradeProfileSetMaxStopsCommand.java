@@ -20,7 +20,10 @@ import java.util.List;
 public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_max_stops";
 
-    @Override public String llmDescription() { return "Set the trade-route maximum number of stops."; }
+    @Override
+    public String llmDescription() {
+        return "Set the trade-route profile's maximum number of stops to the value in 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";

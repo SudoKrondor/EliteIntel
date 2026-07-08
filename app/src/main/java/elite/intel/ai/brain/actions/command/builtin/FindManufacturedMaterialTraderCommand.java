@@ -21,7 +21,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindManufacturedMaterialTraderCommand implements IntelCommand {
     public static final String ID = "find_manufactured_material_trader";
 
-    @Override public String llmDescription() { return "Find the nearest manufactured material trader."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Manufactured material trader.";
+    }
 
 
     private static final int DEFAULT_RANGE = 250;

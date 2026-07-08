@@ -17,7 +17,10 @@ import java.util.List;
 public class AnalyzeLastScanQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_last_scan";
 
-    @Override public String llmDescription() { return "Report the most recent scan result."; }
+    @Override
+    public String llmDescription() {
+        return "Report the most recently scanned stellar body and its details.";
+    }
 
 
     @Override public String id() { return ID; }

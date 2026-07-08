@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class CyclePreviousPanelCommand extends SimpleTapCommand {
     public static final String ID = "cycle_previous_panel";
 
-    @Override public String llmDescription() { return "Cycle to the previous UI panel."; }
+    @Override
+    public String llmDescription() {
+        return "Cycle to the previous panel/tab-group in the currently open in-game UI.";
+    }
 
     public CyclePreviousPanelCommand() {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_PREVIOUS_PANEL.getGameBinding());

@@ -30,7 +30,10 @@ import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
 public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand {
     public static final String ID = "navigate_to_bio_sample_codex_entry";
 
-    @Override public String llmDescription() { return "Plot a route to a saved biological sample codex entry."; }
+    @Override
+    public String llmDescription() {
+        return "Plot surface navigation to the nearest saved biological-sample / codex location on the current planet (guides to the next organism to scan).";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

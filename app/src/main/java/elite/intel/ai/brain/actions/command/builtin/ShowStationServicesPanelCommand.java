@@ -19,7 +19,10 @@ import elite.intel.session.Status;
 public final class ShowStationServicesPanelCommand implements IntelCommand {
     public static final String ID = "show_station_services_panel";
 
-    @Override public String llmDescription() { return "Open the station services panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the station services menu (available while docked).";
+    }
 
 
     @Override

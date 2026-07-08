@@ -21,7 +21,7 @@ public final class LaunchShipDetachFromStationCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Undock: launch the main ship and detach it from the station pad. Only for leaving a dock - never for deploying an SRV, fighter, or Nomad scout.";
+        return "Undock: launch the main ship and detach it from the station landing pad. Only for leaving a dock, never for deploying an SRV, fighter, or Nomad.";
     }
 
     /**

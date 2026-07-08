@@ -23,7 +23,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowHistoryPanelCommand implements IntelCommand {
     public static final String ID = "show_history_panel";
 
-    @Override public String llmDescription() { return "Open the history panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the comms history panel (previously received messages).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

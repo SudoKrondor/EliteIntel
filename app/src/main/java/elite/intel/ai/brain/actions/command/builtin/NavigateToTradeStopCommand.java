@@ -29,7 +29,10 @@ import java.util.stream.Collectors;
 public final class NavigateToTradeStopCommand implements IntelCommand {
     public static final String ID = "navigate_to_next_trade_stop";
 
-    @Override public String llmDescription() { return "Plot a route to the next trade-route stop."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the next stop on the active trade route (buy or sell leg depending on current cargo).";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

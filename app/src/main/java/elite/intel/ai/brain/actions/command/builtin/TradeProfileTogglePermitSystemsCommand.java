@@ -20,7 +20,10 @@ import java.util.List;
 public final class TradeProfileTogglePermitSystemsCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_permit_systems";
 
-    @Override public String llmDescription() { return "Toggle whether trade routes may include permit-locked systems."; }
+    @Override
+    public String llmDescription() {
+        return "Toggle whether the trade-route search may include permit-locked systems ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

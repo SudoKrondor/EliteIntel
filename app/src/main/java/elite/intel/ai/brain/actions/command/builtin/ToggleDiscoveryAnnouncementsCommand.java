@@ -19,7 +19,10 @@ import java.util.List;
 public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_discovery_announcements";
 
-    @Override public String llmDescription() { return "Toggle exploration discovery announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn exploration/discovery-scan announcements on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

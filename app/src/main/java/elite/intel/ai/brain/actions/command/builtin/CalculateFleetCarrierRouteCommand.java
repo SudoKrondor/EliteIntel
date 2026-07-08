@@ -14,7 +14,10 @@ import elite.intel.util.FleetCarrierRouteCalculator;
 public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     public static final String ID = "calculate_fleet_carrier_route";
 
-    @Override public String llmDescription() { return "Calculate a jump route for the fleet carrier."; }
+    @Override
+    public String llmDescription() {
+        return "Calculate a multi-jump tritium route for the commander's own personal fleet carrier.";
+    }
 
 
     @Override

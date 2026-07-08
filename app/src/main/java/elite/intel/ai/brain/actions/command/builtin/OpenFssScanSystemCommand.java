@@ -23,7 +23,7 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the Full-Spectrum System (FSS) scanner tool to resolve individual bodies in detail. This is the detailed scanner, NOT the preliminary discovery-scan 'honk' - use run_discovery_scan to fire the discovery scanner and map the system first.";
+        return "Open the Full-Spectrum System (FSS) scanner to resolve bodies in detail; requires supercruise. This is the detailed scanner, not the discovery-scan 'honk'.";
     }
 
 

@@ -23,7 +23,10 @@ import java.util.Objects;
 public final class SetTimedReminderCommand implements IntelCommand {
     public static final String ID = "set_timed_reminder";
 
-    @Override public String llmDescription() { return "Set a reminder that triggers after a specified time."; }
+    @Override
+    public String llmDescription() {
+        return "Schedule a reminder (text in 'key') to be announced after the number of minutes in 'minutes' (a countdown timer).";
+    }
 
 
     private static final String PARAM_KEY = "key";

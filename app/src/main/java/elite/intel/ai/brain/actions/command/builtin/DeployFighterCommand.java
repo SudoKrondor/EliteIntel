@@ -21,7 +21,7 @@ public final class DeployFighterCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Launch a ship-launched fighter from the fighter bay while flying in normal space. Not an undock of the ship and not an SRV/Nomad surface vehicle.";
+        return "Launch a ship-launched fighter (SLF) from the fighter bay while flying the main ship; not an SRV, Nomad, or ship undock.";
     }
 
 

@@ -21,7 +21,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToEnginesCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_engines";
 
-    @Override public String llmDescription() { return "Divert power to engines."; }
+    @Override
+    public String llmDescription() {
+        return "Divert maximum power pips to engines (ENG) for speed and boost.";
+    }
 
 
     private static final Logger log = LogManager.getLogger(TransferPowerToEnginesCommand.class);

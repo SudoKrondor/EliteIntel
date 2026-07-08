@@ -19,7 +19,7 @@ public final class ShowInventoryPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the inventory panel.";
+        return "Open the inventory panel (ship's stored materials and consumables).";
     }
 
 

@@ -17,7 +17,7 @@ public final class ShowInternalPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the internal / modules panel.";
+        return "Open the internal (right-hand modules) panel, main tab.";
     }
 
 

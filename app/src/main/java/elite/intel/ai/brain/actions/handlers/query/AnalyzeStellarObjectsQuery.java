@@ -19,7 +19,10 @@ import java.util.regex.Pattern;
 public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_stellar_objects";
 
-    @Override public String llmDescription() { return "Report the stellar bodies in the current system."; }
+    @Override
+    public String llmDescription() {
+        return "Report the stellar bodies in the current system, or details of one named body: type, landability, gravity, atmosphere, temperature, rings, bio signals, and discovery/mapping status. Also answers whole-system counts (how many planets/moons/landable).";
+    }
 
 
     @Override public String id() { return ID; }

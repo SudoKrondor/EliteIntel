@@ -21,7 +21,10 @@ import java.util.List;
 public final class ToggleAllAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_all_announcements";
 
-    @Override public String llmDescription() { return "Toggle all spoken announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn all spoken announcement categories (discovery, route, radar, mining, navigation) on or off together; 'state' true = on.";
+    }
 
 
     private static final String PARAM_STATE = "state";

@@ -19,7 +19,10 @@ import elite.intel.util.StringUtls;
 public final class NavigateToFleetCarrierCommand implements IntelCommand {
     public static final String ID = "navigate_to_fleet_carrier";
 
-    @Override public String llmDescription() { return "Plot a route to the fleet carrier."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the commander's fleet carrier's last known location (falls back to the home system if no carrier is known).";
+    }
 
 
     @Override

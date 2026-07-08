@@ -21,7 +21,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindEncodedMaterialTraderCommand implements IntelCommand {
     public static final String ID = "find_encoded_material_trader";
 
-    @Override public String llmDescription() { return "Find the nearest encoded material trader."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Encoded material trader (trades encoded/data engineering materials).";
+    }
 
 
     private static final int DEFAULT_RANGE = 250;

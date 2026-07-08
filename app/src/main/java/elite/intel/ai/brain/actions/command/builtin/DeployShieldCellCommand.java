@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class DeployShieldCellCommand extends SimpleTapCommand {
     public static final String ID = "deploy_shield_cell";
 
-    @Override public String llmDescription() { return "Activate a shield cell bank."; }
+    @Override
+    public String llmDescription() {
+        return "Activate a shield cell bank (SCB) to recharge the ship's shields.";
+    }
 
     public DeployShieldCellCommand() {
         super(ID, Bindings.GameCommand.BINDING_USE_SHIELD_CELL.getGameBinding());

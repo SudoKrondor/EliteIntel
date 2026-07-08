@@ -20,12 +20,7 @@ public final class SwitchToAnalysisModeCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return """
-                    Switch the ship to analysis mode.
-                    Change HUD to analysis mode.
-                    Analysis mode.
-                    Exploration mode.
-                """;
+        return "Switch the ship/SRV HUD to analysis (exploration) mode, enabling scanners.";
     }
 
 

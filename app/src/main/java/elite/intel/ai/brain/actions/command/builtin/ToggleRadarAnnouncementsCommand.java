@@ -18,7 +18,10 @@ import java.util.List;
 public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_radar_announcements";
 
-    @Override public String llmDescription() { return "Toggle radar contact announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn radar-contact announcements on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

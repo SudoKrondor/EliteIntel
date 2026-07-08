@@ -20,7 +20,10 @@ import java.util.List;
 public final class TradeProfileToggleStrongholdsCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_strongholds";
 
-    @Override public String llmDescription() { return "Toggle whether trade routes may include stronghold systems."; }
+    @Override
+    public String llmDescription() {
+        return "Toggle whether the trade-route search may include power-play stronghold systems ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

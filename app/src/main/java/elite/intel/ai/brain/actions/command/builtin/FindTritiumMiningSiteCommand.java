@@ -29,7 +29,10 @@ import java.util.Optional;
 public final class FindTritiumMiningSiteCommand implements IntelCommand {
     public static final String ID = "find_tritium_mining_site";
 
-    @Override public String llmDescription() { return "Find a nearby tritium mining site."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest pristine Tritium mining site (Tritium is fleet-carrier fuel).";
+    }
 
 
     @Override

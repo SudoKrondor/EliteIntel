@@ -19,7 +19,10 @@ import java.util.List;
 public final class ToggleRadioCommand implements IntelCommand {
     public static final String ID = "toggle_radio";
 
-    @Override public String llmDescription() { return "Toggle radio playback on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn radio-transmission (ambient comms chatter) playback on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";

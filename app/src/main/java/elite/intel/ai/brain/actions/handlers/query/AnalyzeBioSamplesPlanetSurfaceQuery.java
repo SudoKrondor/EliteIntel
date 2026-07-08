@@ -23,7 +23,10 @@ import static elite.intel.util.ExoBio.completedScansForPlanet;
 public class AnalyzeBioSamplesPlanetSurfaceQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_exobiology_samples";
 
-    @Override public String llmDescription() { return "Report the biological samples scanned on the current planet surface."; }
+    @Override
+    public String llmDescription() {
+        return "Report exobiology / organic scans on the CURRENT planet: which species have been sampled and what remains to scan here.";
+    }
 
 
     @Override public String id() { return ID; }

@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class TaxiToLandingPadCommand extends SimpleTapCommand {
     public static final String ID = "taxi_to_landing_pad";
 
-    @Override public String llmDescription() { return "Taxi the ship to the assigned landing pad."; }
+    @Override
+    public String llmDescription() {
+        return "Engage the docking computer to automatically taxi/dock the ship to the assigned landing pad.";
+    }
 
     public TaxiToLandingPadCommand() {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED_ZERO.getGameBinding());

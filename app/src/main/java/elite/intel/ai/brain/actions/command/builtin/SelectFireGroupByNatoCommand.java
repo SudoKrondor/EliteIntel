@@ -2,9 +2,9 @@ package elite.intel.ai.brain.actions.command.builtin;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.gameapi.FireGroups;
 import elite.intel.session.Status;
 
@@ -20,7 +20,10 @@ import static elite.intel.gameapi.FireGroups.fireGroupByNato;
 public final class SelectFireGroupByNatoCommand implements IntelCommand {
     public static final String ID = "select_fire_group_by_nato";
 
-    @Override public String llmDescription() { return "Select a fire group by its NATO-letter name."; }
+    @Override
+    public String llmDescription() {
+        return "Switch to the weapon fire group named by the NATO-alphabet letter in 'key' (Alpha = first group, Bravo = second, etc.).";
+    }
 
 
     private static final String PARAM_KEY = "key";

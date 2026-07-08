@@ -17,7 +17,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED75;
 public final class SetOptimalSpeedCommand implements IntelCommand {
     public static final String ID = "set_optimal_speed";
 
-    @Override public String llmDescription() { return "Set the throttle to the optimal speed for the current maneuver."; }
+    @Override
+    public String llmDescription() {
+        return "Set the throttle to 75%, the optimal approach speed (the supercruise 'blue zone' sweet spot for decelerating on approach).";
+    }
 
 
     @Override

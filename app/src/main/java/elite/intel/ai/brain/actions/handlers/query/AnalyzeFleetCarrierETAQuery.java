@@ -17,7 +17,10 @@ import java.time.temporal.ChronoUnit;
 public class AnalyzeFleetCarrierETAQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_fleet_carrier_eta";
 
-    @Override public String llmDescription() { return "Report the fleet carrier's estimated time of arrival."; }
+    @Override
+    public String llmDescription() {
+        return "Report the estimated time until the commander's fleet carrier's next jump/arrival.";
+    }
 
 
     @Override public String id() { return ID; }

@@ -32,7 +32,10 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class FindCommodityCommand implements IntelCommand {
     public static final String ID = "find_commodity";
 
-    @Override public String llmDescription() { return "Find where a commodity can be bought or sold nearby."; }
+    @Override
+    public String llmDescription() {
+        return "Find where to buy the commodity in 'key' within 'max_distance' ly and plot a route to it; 'state' true = nearest market, false = best-price market.";
+    }
 
 
     private static final String PARAM_KEY = "key";

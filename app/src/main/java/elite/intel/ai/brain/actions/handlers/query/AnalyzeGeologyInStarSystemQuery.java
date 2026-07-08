@@ -23,7 +23,10 @@ import java.util.Map;
 public class AnalyzeGeologyInStarSystemQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_geo_signals";
 
-    @Override public String llmDescription() { return "Report the geological signals in the current star system."; }
+    @Override
+    public String llmDescription() {
+        return "Report the geological/volcanic signal sites detected on bodies in the current star system.";
+    }
 
 
     @Override public String id() { return ID; }

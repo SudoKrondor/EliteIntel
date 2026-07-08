@@ -20,7 +20,10 @@ import java.util.List;
 public final class TradeProfileSetBudgetCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_budget";
 
-    @Override public String llmDescription() { return "Set the trade-route search budget."; }
+    @Override
+    public String llmDescription() {
+        return "Set the trade-route search starting budget (available credits) to the amount in 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";

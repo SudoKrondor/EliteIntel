@@ -21,7 +21,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToShieldsCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_shields";
 
-    @Override public String llmDescription() { return "Divert power to shields (systems)."; }
+    @Override
+    public String llmDescription() {
+        return "Divert maximum power pips to systems (SYS), boosting shield strength.";
+    }
 
 
     private static final Logger log = LogManager.getLogger(TransferPowerToShieldsCommand.class);

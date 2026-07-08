@@ -24,7 +24,10 @@ public final class
 ShowSocialPanelCommand implements IntelCommand {
     public static final String ID = "show_social_panel";
 
-    @Override public String llmDescription() { return "Open the social panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the social / friends panel in comms.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

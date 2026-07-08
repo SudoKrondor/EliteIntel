@@ -17,7 +17,10 @@ import elite.intel.util.StringUtls;
 public final class CancelTradeRouteCommand implements IntelCommand {
     public static final String ID = "cancel_trade_route";
 
-    @Override public String llmDescription() { return "Cancel the current trade route."; }
+    @Override
+    public String llmDescription() {
+        return "Clear and abort the currently planned commodity trade route.";
+    }
 
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();

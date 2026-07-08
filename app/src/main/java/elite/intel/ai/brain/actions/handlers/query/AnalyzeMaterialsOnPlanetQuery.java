@@ -19,7 +19,10 @@ import java.util.List;
 public class AnalyzeMaterialsOnPlanetQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_planet_materials";
 
-    @Override public String llmDescription() { return "Report the raw materials available on the targeted planet."; }
+    @Override
+    public String llmDescription() {
+        return "Report the raw surface materials and their percentages available on the targeted/current planet.";
+    }
 
 
     @Override public String id() { return ID; }

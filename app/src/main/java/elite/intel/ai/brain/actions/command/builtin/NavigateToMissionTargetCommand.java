@@ -24,7 +24,10 @@ import java.util.List;
 public final class NavigateToMissionTargetCommand implements IntelCommand {
     public static final String ID = "navigate_to_active_mission";
 
-    @Override public String llmDescription() { return "Plot a route to the active mission target."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to an active mission's destination; the optional 'key' matches a specific mission by keyword, otherwise the first active mission is used.";
+    }
 
 
     private final MissionManager missionManager = MissionManager.getInstance();

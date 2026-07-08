@@ -20,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class NavigateToHomeSystemCommand implements IntelCommand {
     public static final String ID = "navigate_to_home_system";
 
-    @Override public String llmDescription() { return "Plot a route to the home system."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the commander's saved home system.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

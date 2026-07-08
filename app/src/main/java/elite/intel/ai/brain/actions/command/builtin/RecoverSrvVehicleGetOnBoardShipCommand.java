@@ -18,7 +18,10 @@ import elite.intel.session.ui.UINavigator;
 public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelCommand {
     public static final String ID = "recover_srv_vehicle_get_on_board_ship";
 
-    @Override public String llmDescription() { return "Recall the SRV and board the ship."; }
+    @Override
+    public String llmDescription() {
+        return "Recall the SRV to the ship and board it (return the buggy to the ship's vehicle hangar).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

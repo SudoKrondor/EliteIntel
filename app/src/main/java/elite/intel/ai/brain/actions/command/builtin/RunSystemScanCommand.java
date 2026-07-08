@@ -19,7 +19,7 @@ public final class RunSystemScanCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Fire the discovery scanner for a quick system-wide discovery scan (the 'honk') that reveals the number of bodies and signal sources. This is the preliminary scan, NOT the detailed FSS - use open_fss_scan_system to open the full-spectrum scanner tool.";
+        return "Fire the discovery scanner for a quick system-wide 'honk' revealing the number of bodies and signal sources. Preliminary scan, not the detailed FSS.";
     }
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

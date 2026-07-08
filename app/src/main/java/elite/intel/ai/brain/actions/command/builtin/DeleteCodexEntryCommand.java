@@ -19,7 +19,10 @@ import elite.intel.util.StringUtls;
 public final class DeleteCodexEntryCommand implements IntelCommand {
     public static final String ID = "delete_codex_entry";
 
-    @Override public String llmDescription() { return "Delete a saved codex/navigation entry."; }
+    @Override
+    public String llmDescription() {
+        return "Delete the currently tracked codex / bio-sample navigation entry and stop tracking it.";
+    }
 
 
     private final CodexEntryManager codexEntryManager = CodexEntryManager.getInstance();

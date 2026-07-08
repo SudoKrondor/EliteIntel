@@ -24,9 +24,7 @@ public class AnalyzeSquadronCarrierRouteQuery extends BaseQueryAnalyzer implemen
 
     @Override
     public String llmDescription() {
-        return """
-               Use this when the commander asks about the squadron carrier's planned route, final destination, travel time, fuel status, or refuel opportunities.
-               """;
+        return "Report the squadron carrier's planned jump route and remaining jumps (not the commander's personal fleet carrier).";
     }
 
 

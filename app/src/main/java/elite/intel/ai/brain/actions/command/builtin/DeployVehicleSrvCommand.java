@@ -20,7 +20,7 @@ public final class DeployVehicleSrvCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Deploy the SRV surface vehicle from the ship's vehicle bay. Only when the ship is landed on a planet surface - not an undock/launch of the ship itself.";
+        return "Deploy the SRV surface buggy from the ship's vehicle hangar; only while the main ship is landed on a planet surface. Not a ship undock, fighter, or Nomad.";
     }
 
 

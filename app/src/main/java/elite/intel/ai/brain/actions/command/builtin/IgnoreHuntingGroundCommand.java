@@ -21,7 +21,10 @@ import elite.intel.util.StringUtls;
 public final class IgnoreHuntingGroundCommand implements IntelCommand {
     public static final String ID = "ignore_hunting_ground";
 
-    @Override public String llmDescription() { return "Mark the current location to be ignored as a hunting ground."; }
+    @Override
+    public String llmDescription() {
+        return "Mark the current star system to be ignored/excluded as a pirate-massacre hunting ground.";
+    }
 
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();

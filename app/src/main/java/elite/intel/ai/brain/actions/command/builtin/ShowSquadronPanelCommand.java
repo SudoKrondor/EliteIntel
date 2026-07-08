@@ -20,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class ShowSquadronPanelCommand implements IntelCommand {
     public static final String ID = "show_squadron_panel";
 
-    @Override public String llmDescription() { return "Open the squadron panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the squadron panel in comms.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();

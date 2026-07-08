@@ -21,7 +21,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindGuardianTechnologyBrokerCommand implements IntelCommand {
     public static final String ID = "find_guardian_technology_broker";
 
-    @Override public String llmDescription() { return "Find the nearest guardian technology broker."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Guardian technology broker (unlocks Guardian modules and weapons).";
+    }
 
 
     private static final int DEFAULT_RANGE = 250;

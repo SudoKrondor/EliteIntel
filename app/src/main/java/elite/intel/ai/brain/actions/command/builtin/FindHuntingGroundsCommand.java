@@ -26,7 +26,10 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class FindHuntingGroundsCommand implements IntelCommand {
     public static final String ID = "find_hunting_grounds";
 
-    @Override public String llmDescription() { return "Find nearby resource extraction / hunting grounds."; }
+    @Override
+    public String llmDescription() {
+        return "Search for pirate-massacre hunting grounds (resource extraction sites and their mission providers) within the range in ly given by 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";

@@ -1017,7 +1017,7 @@ public class NaturalSpeechIntegrationTestEN {
         return Stream.of(
                 "What is our fleet carrier range?",
                 "What's my fleet carrier fuel status",
-                "How long can we operate on current funds?",
+                "How long can fleet carrier operate on current funds?",
                 "How far can carrier we jump with current tritium?",
                 "what is carrier tritium status",
                 "what is carrier fuel status",

@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_HARDPOINTS_TOGGL
 public final class DeployHardpointsCommand implements IntelCommand {
     public static final String ID = "deploy_hardpoints";
 
-    @Override public String llmDescription() { return "Deploy the weapon hardpoints."; }
+    @Override
+    public String llmDescription() {
+        return "Deploy (run out) the weapon hardpoints, arming weapons for combat.";
+    }
 
 
     @Override

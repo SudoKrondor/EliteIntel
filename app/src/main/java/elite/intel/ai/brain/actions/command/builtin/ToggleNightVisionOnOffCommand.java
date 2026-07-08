@@ -19,7 +19,10 @@ import elite.intel.session.Status;
 public final class ToggleNightVisionOnOffCommand implements IntelCommand {
     public static final String ID = "toggle_night_vision_on_off";
 
-    @Override public String llmDescription() { return "Toggle night vision on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Toggle night vision on or off (ship, SRV, or on foot).";
+    }
 
     private final Status status = Status.getInstance();
 

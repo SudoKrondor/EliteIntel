@@ -17,7 +17,10 @@ import elite.intel.util.StringUtls;
 public final class CancelNavigationCommand implements IntelCommand {
     public static final String ID = "cancel_navigation";
 
-    @Override public String llmDescription() { return "Cancel the current navigation route."; }
+    @Override
+    public String llmDescription() {
+        return "Cancel and turn off the active navigation / surface-target tracking guidance.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();

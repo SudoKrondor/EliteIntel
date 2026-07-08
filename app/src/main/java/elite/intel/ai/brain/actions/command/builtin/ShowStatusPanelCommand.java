@@ -17,7 +17,7 @@ public final class ShowStatusPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the status panel.";
+        return "Open the status panel (ranks, reputation and commander status).";
     }
 
 
