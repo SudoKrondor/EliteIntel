@@ -182,17 +182,21 @@ public final class CompanionLlmGateway implements LlmGateway {
         return settlingCalled ? Defect.NONE : Defect.MISSING_SETTLING;
     }
 
+    /**
+     * Appends a terse, defect-targeted format correction and returns the amended request. The nudge is a
+     * {@link LlmMessageRole#SYSTEM} message, not USER: a USER-role nudge reads to the model as a new commander
+     * turn, so a chatty model burns the retry reasoning <em>about</em> the error instead of just re-emitting the
+     * call. As a system-level instruction it stays terse and out of the dialogue. Kept short for the same reason
+     * - only the correction, no prose.
+     */
     private LlmRequest repair(LlmRequest request, Defect defect) {
         String nudge = switch (defect) {
-            case MISSING_CLASSIFY -> "Your previous response omitted the mandatory 'classify_turn' call. Resend it: call"
-                    + " 'classify_turn' first, then the same settling function call.";
-            case MISSING_SETTLING -> "Your previous response called only 'classify_turn' and did nothing else. You must also"
-                    + " act on this turn: call 'speak' to answer the commander, or the appropriate function to carry out"
-                    + " their request. Resend 'classify_turn' together with that call.";
-            default -> "Your previous response was not a valid function call. Respond only by calling one of the provided functions.";
+            case MISSING_CLASSIFY -> "Format correction: also call 'classify_turn' (first), then the settling call. Tool calls only.";
+            case MISSING_SETTLING -> "Format correction: after 'classify_turn' also act - call 'speak' or the matching function. Tool calls only.";
+            default -> "Format correction: reply only with tool calls - 'classify_turn' plus a settling call ('speak' or an action). No prose.";
         };
         List<LlmMessage> messages = new ArrayList<>(request.messages());
-        messages.add(LlmMessage.of(LlmMessageRole.USER, nudge));
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, nudge));
         return new LlmRequest(request.requestId(), messages, request.tools(), request.profile(), request.trace());
     }
 }
