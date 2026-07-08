@@ -121,6 +121,17 @@ public class HudSection extends HudPanel {
     }
 
     /**
+     * Updates the section header title while preserving the HUD header styling and uppercase convention.
+     *
+     * @param title localized section title
+     */
+    public void setTitle(String title) {
+        headerLabel.setText(title == null ? "" : title.toUpperCase());
+        header.revalidate();
+        header.repaint();
+    }
+
+    /**
      * Places one or more icon-only actions (typically {@link HudGlyphButton}s) at the right edge of the section
      * header strip, opposite the title, laid out left-to-right in the given order (so the last argument sits
      * flush at the right inset). Replaces any previous header actions; pass no arguments to clear them.

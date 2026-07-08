@@ -18,8 +18,10 @@ import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.companion.memory.facts.MergedFactCandidates;
+import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.MemoryFactCandidates;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.SpeakFunction;
@@ -42,8 +44,8 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A thought born from a commander reply. It owns the tool-calling turn: compose -> LLM round -> apply
- * {@code classify_turn} and record the input -> dangerous-action confirmation -> execute tool-calls, then the
- * turn ends. It is single-round by design - a command/query/macro or speak settles it (memory is retrieved
+ * {@code classify_turn} and file the input (a command / custom command turn is a side effect and files nothing)
+ * -> dangerous-action confirmation -> execute tool-calls, then the turn ends. It is single-round by design - a command/query/macro or speak settles it (memory is retrieved
  * before the turn as inlined answer facts, so no in-turn lookup round is needed) - or an unrecoverable
  * response stops it (§2.5/§2.6/§2.8/§5.1).
  * <p>
@@ -125,19 +127,24 @@ public final class CommanderThought extends Thought {
 
             List<LlmToolInvocation> invocations = result.toolInvocations();
 
-            // Classify the turn (topic + importance + is_question) and record the input before any tool runs
-            // (§2.6). The turn is marked recorded once filed so it is not re-filed on interrupt/error.
+            // Classify the turn (topic + importance + is_question) before any tool runs (§2.6).
             Map<LlmToolInvocation, JsonObject> preExecuted = applyClassification(invocations);
-            // Record every commander turn so the dialogue history alternates user/assistant (needed for the
-            // model to follow the conversation). A question carries no durable fact, so it is stamped LOW in
-            // applyClassification and filtered out of fact-recall candidates (see MemoryFactCandidates); a
-            // statement keeps its rated importance. Commands/macros often carry a fact worth keeping
-            // (add_mining_target "diamonds", set_reminder "Hutton").
-            recordCurrentInput();
+            // A command / custom command turn is a side effect, not dialogue: its imperative ("optimal speed",
+            // "request docking") carries nothing worth recalling and would only clutter the short-term timeline
+            // and the prompt, so it is not filed (its call echo is dropped too - see gameToolCallId). A query,
+            // statement, or pure-conversation turn is still recorded so the dialogue history keeps its
+            // user/assistant alternation: a question is stamped LOW in applyClassification and filtered out of
+            // fact-recall candidates, a statement keeps its rated importance.
+            if (!isPureCommandTurn(invocations)) {
+                recordCurrentInput();
+            }
+            // Mark the input handled either way - filed, or deliberately skipped for a command turn - so an
+            // interrupt/error does not fall back to re-filing it as unresolved input.
             inputRecorded = true;
 
-            // An interrupt landing after the input was filed but before the turn replies is a cut-off turn:
-            // route it through safeFlush so it drops a <cut_off/> boundary marker instead of ending silently.
+            // An interrupt landing after the input was handled (filed, or skipped for a command turn) but before
+            // the turn replies is a cut-off turn: route it through safeFlush so it drops a <cut_off/> boundary
+            // marker instead of ending silently.
             if (interrupted) {
                 safeFlush(inputRecorded);
                 return;
@@ -178,10 +185,10 @@ public final class CommanderThought extends Thought {
         return ctx.systemFunctionProvider().systemFunctions(source());
     }
 
-    /** Pre-turn clean answer facts for this commander input, inlined in the prompt as a {@code <facts>} block. */
+    /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
     @Override
-    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
-        return MemoryFactCandidates.forInput(ctx.memoryGateway(), matchInput);
+    protected List<Fact> memoryCandidates() {
+        return MergedFactCandidates.forInput(ctx.memoryGateway(), new MemoryFactContext(matchInput, source(), urgency()));
     }
 
     /** The canonical fact classify_turn stated this turn (empty when none), for the recorded entry. */
@@ -212,7 +219,7 @@ public final class CommanderThought extends Thought {
                         JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
                 if (turnIsQuestion) {
                     // A question carries no durable fact; stamp it LOW so its recorded input never surfaces as a
-                    // fact-recall candidate (the MemoryFactCandidates filter drops LOW commander lines).
+                    // fact-recall candidate (the MemoryMergedFactCandidates filter drops LOW commander lines).
                     turnImportance = MemoryImportance.LOW;
                 }
                 turnCanonicalFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
@@ -332,11 +339,36 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * A fresh tool-call id for a game tool (command/query/macro), so its recorded call pairs with its result on
-     * replay; {@code null} for a system function (classify_turn), which needs no pairing.
+     * A fresh tool-call id for a QUERY, so its recorded call pairs with its answer on replay; {@code null} for a
+     * COMMAND / custom command and for a system function (classify_turn). A command turn is a side effect, not
+     * dialogue - its call echo is not recorded - so it gets no id; with none, any handler-voiced outcome is
+     * remembered as a plain companion line rather than a linked tool result, leaving nothing orphaned in the
+     * replayed timeline.
      */
     private String gameToolCallId(LlmToolInvocation inv) {
-        return ctx.actionTypeResolver().resolve(inv.name()).isGameAction() ? newId() : null;
+        return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY ? newId() : null;
+    }
+
+    /**
+     * Whether this turn is a pure command / custom command (MACRO) turn - a side effect, not dialogue - whose
+     * imperative and call echo are not filed to memory (they carry nothing worth recalling and would only
+     * clutter the short-term timeline and the prompt). True when the turn runs a command or custom command and
+     * no QUERY. A co-occurring QUERY vetoes the suppression: a query records a call/result pair that must keep
+     * its preceding user turn (else the pair replays as an {@code assistant(tool_calls)} with no user before it),
+     * so the input is filed. A query, statement, or pure-conversation turn is recorded normally.
+     */
+    private boolean isPureCommandTurn(List<LlmToolInvocation> invocations) {
+        boolean hasCommand = false;
+        for (LlmToolInvocation inv : invocations) {
+            IntelActionType type = ctx.actionTypeResolver().resolve(inv.name());
+            if (type == IntelActionType.QUERY) {
+                return false; // a query records a pair needing its preceding user turn, so keep the input
+            }
+            if (type == IntelActionType.COMMAND || type == IntelActionType.MACRO) {
+                hasCommand = true;
+            }
+        }
+        return hasCommand;
     }
 
     /**

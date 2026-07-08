@@ -17,12 +17,24 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_COMBAT_
 public final class SwitchToCombatModeCommand implements IntelCommand {
     public static final String ID = "switch_to_combat_mode";
 
-    @Override public String llmDescription() { return "Switch the ship to combat mode."; }
+    @Override
+    public String llmDescription() {
+        return """
+                        Switch the ship to combat mode.
+                        Hud to combat.
+                        Prepare for Combat.
+                """;
+    }
 
 
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
     }
 
     @Override

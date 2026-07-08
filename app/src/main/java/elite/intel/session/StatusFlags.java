@@ -309,4 +309,35 @@ public abstract class StatusFlags {
     public boolean isFsdHyperdriveCharging(long flags2) {
         return (flags2 & FSD_HYPERDRIVE_CHARGING) != 0;
     }
+
+    /**
+     * The inverse of {@link Status#getSituation}: a minimal {@code {flags, flags2}} pair that classifies as the
+     * given situation. Lets a caller evaluate context-gated action visibility for a what-if situation by feeding
+     * a {@link Status#detached} status to the existing {@code isVisibleForLLM} checks, instead of duplicating
+     * each action's rule. Only the bits the classifier
+     * and the visibility predicates read are set; {@code IN_SHIP_RING} is location-derived (not a flag) so it is
+     * approximated as in-ship normal space, and {@code UNKNOWN} maps to all-zero flags.
+     */
+    public static long[] flagsForSituation(PlayerSituation situation) {
+        long flags = 0L;
+        long flags2 = 0L;
+        switch (situation) {
+            case ON_FOOT_STATION -> flags2 = ON_FOOT | ON_FOOT_IN_STATION;
+            case ON_FOOT_HANGAR -> flags2 = ON_FOOT | ON_FOOT_IN_HANGAR;
+            case ON_FOOT_SOCIAL -> flags2 = ON_FOOT | ON_FOOT_SOCIAL_SPACE;
+            case ON_FOOT_PLANET -> flags2 = ON_FOOT | ON_FOOT_ON_PLANET;
+            case ON_FOOT -> flags2 = ON_FOOT;
+            case IN_TAXI -> flags2 = IN_TAXI;
+            case IN_SRV -> flags = IN_SRV;
+            case IN_FIGHTER -> flags = IN_FIGHTER;
+            case IN_SHIP_DOCKED -> flags = IN_MAIN_SHIP | DOCKED;
+            case IN_SHIP_LANDED -> flags = IN_MAIN_SHIP | LANDED;
+            case IN_SHIP_GLIDE -> { flags = IN_MAIN_SHIP; flags2 = GLIDE_MODE_F2; }
+            case IN_SHIP_SUPERCRUISE -> flags = IN_MAIN_SHIP | SUPERCRUISE;
+            case IN_SHIP_ORBIT -> flags = IN_MAIN_SHIP | HAS_LAT_LONG;
+            case IN_SHIP_RING, IN_SHIP_DEEP_SPACE -> flags = IN_MAIN_SHIP;
+            case UNKNOWN -> { /* no flags set: nothing is known about the context */ }
+        }
+        return new long[]{flags, flags2};
+    }
 }

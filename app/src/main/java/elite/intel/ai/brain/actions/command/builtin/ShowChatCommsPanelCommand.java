@@ -35,6 +35,11 @@ public final class ShowChatCommsPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.CHAT);

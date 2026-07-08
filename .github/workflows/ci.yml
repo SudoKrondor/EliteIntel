@@ -30,6 +30,26 @@ jobs:
       - name: Build project
         run: ./gradlew --no-daemon clean build
 
+      - name: Verify all distribution assets are committed
+        run: |
+          # The update ZIP is packaged from distribution/ (see "Copy distribution to release" below).
+          # A fresh CI checkout only contains committed files, so any asset present here but not tracked
+          # by git is silently omitted from the release and breaks auto-update for everyone. This runs
+          # after the build so build-extracted assets (e.g. the LWJGL natives) are present. `git ls-files
+          # -o` lists every untracked file under distribution/ INCLUDING gitignored ones - that is exactly
+          # how the LWJGL natives slipped through. The only allowed exceptions are the two jars the build
+          # itself regenerates into distribution/ here.
+          untracked=$(git ls-files -o -- distribution/ \
+            | grep -vE '^distribution/(elite_intel\.jar|elite_intel_updater\.jar)$' || true)
+          if [ -n "$untracked" ]; then
+            echo "::error::Untracked files in distribution/ would be missing from the update ZIP:"
+            echo "$untracked" | sed 's/^/  - /'
+            echo "Commit them with 'git add' (large binaries go through Git LFS per .gitattributes)."
+            echo "If a file is a build output that CI regenerates, add it to the allow-list in this step."
+            exit 1
+          fi
+          echo "distribution/ asset check passed: every asset is tracked."
+
       - name: Extract tar
         run: tar -xf app/build/distributions/app-shadow.tar
 

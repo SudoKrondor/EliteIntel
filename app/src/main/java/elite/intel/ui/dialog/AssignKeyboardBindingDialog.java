@@ -20,7 +20,6 @@ import java.util.List;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
 import static elite.intel.ui.theme.HudForms.*;
-import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_DANGER;
 import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT;
 
 /**
@@ -47,10 +46,11 @@ public class AssignKeyboardBindingDialog extends JDialog {
     private final KeyChordCaptureField captureField;
     private final JButton clearButton;
     private final JButton saveButton;
-    private final JLabel invalidKeyLabel;
-    private final JLabel alreadyInUseLabel;
-    private final JLabel conflictLabel;
-    private final JLabel reservedLabel;
+    private final HudBanner invalidKeyBanner;
+    private final HudBanner alreadyInUseBanner;
+    /** Holder for the candidate-conflict banner: its text names the colliding binding, so the banner is rebuilt on change. */
+    private final JPanel conflictSlot;
+    private final HudBanner reservedBanner;
     private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
     /**
      * Bindings this one already collides with on load (its current chord), shown as a red banner. Empty if none.
@@ -108,10 +108,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
         );
         this.clearButton = makeButtonSubtle(getText("bindings.assign.capture.clear"));
         this.saveButton = makeButton(getText("button.save"));
-        this.invalidKeyLabel = new JLabel(getText("bindings.assign.unknownKey"));
-        this.alreadyInUseLabel = new JLabel(getText("bindings.assign.alreadyInUse"));
-        this.conflictLabel = new JLabel(getText("bindings.assign.conflict"));
-        this.reservedLabel = new JLabel(getText("bindings.assign.reserved"));
+        this.invalidKeyBanner = HudBanner.multiline(getText("bindings.assign.unknownKey"), StatusBadge.State.OFFLINE);
+        this.alreadyInUseBanner = HudBanner.multiline(getText("bindings.assign.alreadyInUse"), StatusBadge.State.OFFLINE);
+        this.conflictSlot = transparentPanel(new BorderLayout());
+        this.reservedBanner = HudBanner.multiline(getText("bindings.assign.reserved"), StatusBadge.State.OFFLINE);
         this.keyboardView = new KeyboardAvailabilityView(bindingId, this.existingBindings);
         this.keyboardView.setCurrentKey(originalKey);
         buildUi();
@@ -205,45 +205,31 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        invalidKeyLabel.setForeground(HUD_COLOR_ROLE_DANGER);
-        invalidKeyLabel.setVisible(false);
-        content.add(invalidKeyLabel, gbc);
+        invalidKeyBanner.setVisible(false);
+        content.add(invalidKeyBanner, gbc);
 
         nextRow(gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        alreadyInUseLabel.setForeground(HUD_COLOR_ROLE_DANGER);
-        alreadyInUseLabel.setFont(alreadyInUseLabel.getFont().deriveFont(Font.BOLD));
-        alreadyInUseLabel.setVisible(false);
-        content.add(alreadyInUseLabel, gbc);
+        alreadyInUseBanner.setVisible(false);
+        content.add(alreadyInUseBanner, gbc);
 
         nextRow(gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        conflictLabel.setVisible(false);
-        content.add(conflictLabel, gbc);
+        conflictSlot.setVisible(false);
+        content.add(conflictSlot, gbc);
 
         nextRow(gbc);
         gbc.gridx = 1;
         gbc.weightx = 1.0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        reservedLabel.setForeground(HUD_COLOR_ROLE_DANGER);
-        reservedLabel.setFont(reservedLabel.getFont().deriveFont(Font.BOLD));
-        reservedLabel.setVisible(false);
-        content.add(reservedLabel, gbc);
+        reservedBanner.setVisible(false);
+        content.add(reservedBanner, gbc);
 
         // Live QWERTY availability map: spans both columns, recolors as modifiers are held.
-        nextRow(gbc);
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 1.0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(8, 6, 0, 6);
-        HudBanner keyboardHint = HudBanner.multiline(getText("bindings.assign.keyboard.hint"), StatusBadge.State.INFO);
-        content.add(keyboardHint, gbc);
-
         nextRow(gbc);
         gbc.gridx = 0;
         gbc.gridwidth = 2;
@@ -251,10 +237,20 @@ public class AssignKeyboardBindingDialog extends JDialog {
         gbc.weighty = 0;
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(2, 6, 3, 6);
+        gbc.insets = new Insets(8, 6, 0, 6);
         content.add(keyboardView, gbc);
-        gbc.gridwidth = 1;
         gbc.anchor = GridBagConstraints.WEST;
+
+        // Hint below the keyboard: holding a modifier reveals that combo's availability, plus the colour legend.
+        nextRow(gbc);
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(10, 6, 3, 6);
+        HudBanner keyboardHint = HudBanner.multiline(getText("bindings.assign.keyboard.hint"), StatusBadge.State.INFO);
+        content.add(keyboardHint, gbc);
+        gbc.gridwidth = 1;
         gbc.insets = new Insets(3, 6, 3, 6);
 
         // This binding already collides with another: state it inline, in red, rather than relying on
@@ -361,10 +357,10 @@ public class AssignKeyboardBindingDialog extends JDialog {
         // Suppress the lesser warnings when a higher-priority one already explains the block.
         boolean occupied = !reserved && !cleared && selectedKey != null && isSelectedCombinationOccupied();
         BindingConflictScanner.CandidateConflict conflict = (reserved || occupied) ? null : selectedConflict();
-        invalidKeyLabel.setVisible(invalidKey);
-        reservedLabel.setVisible(reserved);
-        alreadyInUseLabel.setVisible(occupied);
-        updateConflictLabel(conflict);
+        invalidKeyBanner.setVisible(invalidKey);
+        reservedBanner.setVisible(reserved);
+        alreadyInUseBanner.setVisible(occupied);
+        updateConflictBanner(conflict);
         saveButton.setEnabled(isChanged() && isValidKey() && !reserved && !occupied && conflict == null);
     }
 
@@ -379,16 +375,23 @@ public class AssignKeyboardBindingDialog extends JDialog {
         return ReservedKeyChords.isReserved(selectedKey, modifierKeys);
     }
 
-    private void updateConflictLabel(BindingConflictScanner.CandidateConflict conflict) {
+    private void updateConflictBanner(BindingConflictScanner.CandidateConflict conflict) {
+        conflictSlot.removeAll();
         if (conflict == null) {
-            conflictLabel.setVisible(false);
+            conflictSlot.setVisible(false);
+            conflictSlot.revalidate();
+            conflictSlot.repaint();
             return;
         }
-        // Name the binding it collides with so the user knows what the conflict is.
-        conflictLabel.setText(getText("bindings.assign.conflict",
-                StringUtls.humanizeBindingName(conflict.otherBinding())));
-        conflictLabel.setForeground(HUD_COLOR_ROLE_DANGER);
-        conflictLabel.setVisible(true);
+        // Name the binding it collides with so the user knows what the conflict is; the banner is
+        // rebuilt (not mutated) because its text is dynamic.
+        HudBanner banner = HudBanner.multiline(
+                getText("bindings.assign.conflict", StringUtls.humanizeBindingName(conflict.otherBinding())),
+                StatusBadge.State.OFFLINE);
+        conflictSlot.add(banner, BorderLayout.CENTER);
+        conflictSlot.setVisible(true);
+        conflictSlot.revalidate();
+        conflictSlot.repaint();
     }
 
     /**

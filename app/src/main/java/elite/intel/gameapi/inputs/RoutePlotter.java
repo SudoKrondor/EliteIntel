@@ -7,6 +7,7 @@ import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 import elite.intel.session.ui.UINavigator;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
@@ -18,6 +19,7 @@ public class RoutePlotter {
 
 
     private final UINavigator navigator = new UINavigator();
+    private final Status status = Status.getInstance();
 
     public RoutePlotter() {
     }
@@ -34,8 +36,18 @@ public class RoutePlotter {
             return;
         }
 
+
+        GameInputStep gameInputStep;
+        if (status.isOnFoot()) {
+            gameInputStep = GameInputStep.bindingTap(BINDING_GALAXY_MAP_HUMANOID.getGameBinding());
+        } else if (status.isInSrv()) {
+            gameInputStep = GameInputStep.bindingTap(BINDING_GALAXY_MAP_BUGGY.getGameBinding());
+        } else {
+            gameInputStep = GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding());
+        }
+
         GameControllerBus.publish(GameInputSequenceEvent.of(
-                GameInputStep.bindingTap(BINDING_GALAXY_MAP.getGameBinding()),
+                gameInputStep,
                 GameInputStep.delay(3000),
                 GameInputStep.bindingHold(BINDING_CAM_ZOOM_IN.getGameBinding(), 500),
                 GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),

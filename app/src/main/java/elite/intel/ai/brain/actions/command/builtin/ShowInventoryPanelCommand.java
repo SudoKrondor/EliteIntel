@@ -17,11 +17,13 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowInventoryPanelCommand implements IntelCommand {
     public static final String ID = "show_inventory_panel";
 
-    @Override public String llmDescription() { return "Open the inventory panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the inventory panel.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
-    private final Status status = Status.getInstance();
 
     @Override
     public String id() {
@@ -29,9 +31,12 @@ public final class ShowInventoryPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
-        if (status.isInMainShip() || status.isInSrv()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.INVENTORY);
-        }
+        navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.INVENTORY);
     }
 }

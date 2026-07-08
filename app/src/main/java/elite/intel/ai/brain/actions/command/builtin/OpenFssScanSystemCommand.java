@@ -21,7 +21,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_SET_SPEED_ZERO;
 public final class OpenFssScanSystemCommand implements IntelCommand {
     public static final String ID = "open_fss_scan_system";
 
-    @Override public String llmDescription() { return "Open the full-spectrum system scanner."; }
+    @Override
+    public String llmDescription() {
+        return "Open the Full-Spectrum System (FSS) scanner tool to resolve individual bodies in detail. This is the detailed scanner, NOT the preliminary discovery-scan 'honk' - use run_discovery_scan to fire the discovery scanner and map the system first.";
+    }
 
 
     private final Status status = Status.getInstance();
@@ -29,6 +32,11 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSupercruise();
     }
 
     @Override

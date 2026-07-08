@@ -32,6 +32,11 @@ public final class ShowSquadronPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInFighter();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.SQUADRON);

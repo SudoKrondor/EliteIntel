@@ -17,7 +17,7 @@ import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.MemoryFactCandidates;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.BaseEvent;
@@ -206,14 +206,18 @@ public abstract class Thought {
     protected LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
         CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
         CompletableFuture<LlmResult> future = ctx.llmGateway()
-                .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile));
+                .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace));
         inFlight = future;
         if (interrupted) {
             future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
         }
+        // Time the whole round: the gateway runs its repair/retry synchronously within this one future, so the
+        // elapsed covers every physical call, separating LLM latency from the turn's exec/confirmation time.
+        long startedMillis = System.currentTimeMillis();
         try {
             LlmResult result = future.join();
-            CompanionDiagnostics.debug(trace, "llm", describeResult(result));
+            CompanionDiagnostics.debug(trace, "llm",
+                    describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
             if (!interrupted) {
@@ -243,12 +247,12 @@ public abstract class Thought {
         if (result.finishReason() != null) {
             sb.append(" | finish=").append(result.finishReason());
         }
+        // Only surface dropped free text when there is some: a silent turn (model "answered" as plain text
+        // instead of a speak call) is the anomaly worth seeing; the common zero case is noise.
         String dropped = result.droppedText();
         if (dropped != null && !dropped.isBlank()) {
             sb.append(" | dropped-text=").append(dropped.length())
                     .append(": \"").append(CompanionDiagnostics.truncate(dropped)).append("\"");
-        } else {
-            sb.append(" | dropped-text=0");
         }
         return sb.toString();
     }
@@ -258,19 +262,28 @@ public abstract class Thought {
         List<LlmToolDefinition> gameTools = selectedGameTools();
         List<LlmToolDefinition> sysTools = systemTools();
         List<MemoryEntry> timeline = ctx.memoryGateway().readShortTermTimeline();
-        List<MemoryFactCandidates.Fact> candidates = memoryCandidates();
+        List<Fact> candidates = memoryCandidates();
+        // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
+        // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
+        // tools, the grounding facts, and the recalled timeline depth - so no tool count is repeated across lines.
         CompanionDiagnostics.debug(trace, "compose",
-                "gameTools=" + CompanionDiagnostics.names(gameTools)
-                        + " sysTools=" + CompanionDiagnostics.names(sysTools)
+                "sysTools=" + CompanionDiagnostics.names(sysTools)
                         + " facts=" + candidates.size() + " timeline=" + timeline.size());
+        // Show the actual inlined facts (memory core plus source-tagged live facts), one per line as in the prompt,
+        // numbered i/total so multiple grounding facts are easy to count and reference.
+        int factNo = 0;
+        for (Fact fact : candidates) {
+            CompanionDiagnostics.debug(trace, "facts",
+                    (++factNo) + "/" + candidates.size() + " " + CompanionDiagnostics.fact(fact));
+        }
         return ctx.promptComposer().compose(source, matchInput, gameTools, sysTools, timeline, candidates);
     }
 
     /**
-     * Pre-turn clean memory answer facts to inline in the prompt (see {@code MemoryFactCandidates}). Default
+     * Pre-turn clean answer facts to inline in the prompt (see {@code MergedFactCandidates}). Default
      * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
      */
-    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
+    protected List<Fact> memoryCandidates() {
         return List.of();
     }
 
@@ -320,8 +333,9 @@ public abstract class Thought {
     /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         String canonical = memoryCanonicalFact();
+        // The verbatim input is already shown by the intake line; log only that it was filed and under which stamp.
         CompanionDiagnostics.debug(trace, "memory",
-                "record input [" + memoryTopic() + "/" + memoryImportance() + "]: \"" + CompanionDiagnostics.truncate(currentInput) + "\"");
+                "record input [" + memoryTopic() + "/" + memoryImportance() + "]");
         ctx.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
@@ -350,7 +364,8 @@ public abstract class Thought {
         if (text == null || text.isBlank()) {
             return;
         }
-        CompanionDiagnostics.debug(trace, "memory", "record reply: \"" + CompanionDiagnostics.truncate(text) + "\"");
+        // The spoken text is already shown by the settle line; log only that the reply was filed to memory.
+        CompanionDiagnostics.debug(trace, "memory", "record reply");
         ctx.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }

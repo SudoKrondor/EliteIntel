@@ -21,14 +21,6 @@ public interface VoiceProvider<T> {
     GoogleVoices getRandomVoice();
 
     /**
-     * Retrieves the speech rate for a given AiVoices voice name.
-     *
-     * @param voiceName The AiVoices enum name (e.g., "Jennifer").
-     * @return The speech rate for the voice, or default if not found.
-     */
-    double getSpeechRate(String voiceName);
-
-    /**
      * Retrieves the provider-specific voice parameters for a given AiVoices voice name.
      *
      * @param voiceName The AiVoices enum name (e.g., "Jennifer").

@@ -9,9 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Single owner of the pre-turn memory answer-candidate selection: given the commander's current input, it
- * pulls the top ranked memory matches (the same unified recall path as {@code memory_search}) and filters
- * them down to a few clean, durable answer facts to inline in the prompt as a {@code <facts>} block.
+ * Owner of the <b>memory</b> contribution to the pre-turn {@code <facts>} block: given the commander's current
+ * input, it pulls the top ranked memory matches (the same unified recall path as {@code memory_search}) and filters
+ * them down to a few clean, durable answer facts. {@code MergedFactCandidates} combines these with any pluggable
+ * {@code MemoryFactSource} facts into the final block.
  * <p>
  * Only <b>tier-2</b> facts qualify - the durable, safe subset of the raw timeline (tier-1). The raw history
  * (repeated action logs, the companion's own paraphrases/echoes/hallucinations, "I'm not sure" fillers) is
@@ -36,14 +37,6 @@ public final class MemoryFactCandidates {
 
     private MemoryFactCandidates() {
     }
-
-    /**
-     * One inlined answer fact: the recalled text plus its provenance ({@code source}), so the prompt can tag
-     * each fact with where it came from - {@code "event"} (a past ship/game occurrence) or {@code "commander"}
-     * (something the commander stated). The provenance lets the model tell a remembered past fact from live
-     * state and answer from it instead of re-querying (OpenAI long-context guidance: metadata in attributes).
-     */
-    public record Fact(String text, String source) {}
 
     /**
      * The clean answer facts to inline for the current commander input, most relevant first, at most

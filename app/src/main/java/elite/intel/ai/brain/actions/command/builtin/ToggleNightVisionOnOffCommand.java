@@ -28,10 +28,12 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
         return ID;
     }
 
+    /** Night vision is a HUD toggle available in any controllable view: ship, SRV, fighter, or on foot. */
     @Override
-    public String bindingName() {
-        return Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding();
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
     }
+
 
     @Override
     public void execute(JsonObject params, String responseText) {

@@ -63,7 +63,7 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<MemoryFactCandidates.Fact> memoryCandidates
+            List<Fact> memoryCandidates
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
@@ -83,7 +83,7 @@ public final class PromptComposer {
             ThoughtSource source, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<MemoryFactCandidates.Fact> memoryCandidates) {
+            List<Fact> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
         messages.addAll(coalesceHistory(buildHistoryMessages(shortTerm)));
@@ -249,11 +249,11 @@ public final class PromptComposer {
      * for delineating provided context (OpenAI long-context guidance). Kept out of the cached prefix (it changes
      * every turn); only built when non-empty.
      */
-    private String buildCandidatesBlock(List<MemoryFactCandidates.Fact> memoryCandidates) {
+    private String buildCandidatesBlock(List<Fact> memoryCandidates) {
         StringBuilder sb = new StringBuilder();
         sb.append("<facts>\n");
         int id = 1;
-        for (MemoryFactCandidates.Fact fact : memoryCandidates) {
+        for (Fact fact : memoryCandidates) {
             sb.append("  <fact id=\"").append(id++).append("\" source=\"").append(fact.source()).append("\">")
                     .append(fact.text()).append("</fact>\n");
         }

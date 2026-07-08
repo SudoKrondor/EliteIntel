@@ -42,6 +42,12 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         return ID;
     }
 
+    /** A hyperspace jump needs open space: not while docked or landed. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));

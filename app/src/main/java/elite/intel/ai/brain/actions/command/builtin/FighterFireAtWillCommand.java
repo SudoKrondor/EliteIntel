@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.command.SimpleTapCommand;
 import elite.intel.ai.hands.Bindings;
+import elite.intel.session.Status;
 
 @RegisterCommand
 public final class FighterFireAtWillCommand extends SimpleTapCommand {
@@ -12,5 +13,10 @@ public final class FighterFireAtWillCommand extends SimpleTapCommand {
 
     public FighterFireAtWillCommand() {
         super(ID, Bindings.GameCommand.OPEN_ORDERS.getGameBinding());
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isFighterOut();
     }
 }

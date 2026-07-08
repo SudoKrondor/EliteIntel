@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.session.Status;
 import elite.intel.util.FleetCarrierRouteCalculator;
 
 /**
@@ -19,6 +20,12 @@ public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side bookkeeping (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

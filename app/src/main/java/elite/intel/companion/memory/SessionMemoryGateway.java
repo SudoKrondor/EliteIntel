@@ -154,8 +154,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
     public List<MemoryEntry> recallCandidates(String query, int limit) {
         // Diagnostic emitted outside the lock, for the same reason as recallMatching.
         List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
-        CompanionDiagnostics.debugAmbient("recall",
-                "\"" + CompanionDiagnostics.truncate(query) + "\" -> " + hits.size() + " candidate(s)");
+        // The query here is the turn's input, already echoed by the intake line; log only the outcome, spelled out
+        // so it reads on its own: how many remembered facts were pulled in to ground this turn's answer. Grouped
+        // under the "memory" stage with the record lines. The facts themselves appear as the compose "facts:" lines.
+        CompanionDiagnostics.debugAmbient("memory", "recalled " + hits.size() + " fact candidate(s) for grounding");
         return hits;
     }
 
@@ -192,6 +194,20 @@ public final class SessionMemoryGateway implements MemoryGateway {
     @Override
     public synchronized List<MemoryEntry> longTermPinnedFacts() {
         return longTerm.pinnedFacts();
+    }
+
+    @Override
+    public synchronized MemorySnapshot snapshot() {
+        // Regroup the flat mid-term view by topic for the dump; each entry already carries its topic, and an
+        // EnumMap keeps the natural topic order. Everything handed to the snapshot is an unmodifiable copy detached
+        // from the live stores (short-term/pinned are already List.copyOf), so the snapshot is truly immutable.
+        Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
+        for (MemoryEntry entry : midTerm.allEntries()) {
+            byTopic.computeIfAbsent(entry.topic(), t -> new ArrayList<>()).add(entry);
+        }
+        byTopic.replaceAll((topic, entries) -> List.copyOf(entries));
+        return new MemorySnapshot(shortTerm.timeline(), Collections.unmodifiableMap(byTopic),
+                longTerm.get(), longTerm.pinnedFacts());
     }
 
     @Override

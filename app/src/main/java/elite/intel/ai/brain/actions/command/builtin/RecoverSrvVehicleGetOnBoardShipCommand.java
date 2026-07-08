@@ -7,6 +7,7 @@ import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
+import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.UINavigator;
 
@@ -25,6 +26,11 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSrv();
     }
 
     @Override

@@ -30,6 +30,12 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
         return ID;
     }
 
+    @Override
+    /// available everywhere
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     /// not a sure fire. assumes default UI selection. will fail often.
     @Override
     public void execute(JsonObject params, String responseText) {

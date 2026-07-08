@@ -7,11 +7,7 @@ import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -21,9 +17,10 @@ import java.util.function.Supplier;
  * falls through to the full {@link elite.intel.companion.mind.CommanderThought}.
  * <p>
  * Deliberately strict, so a reflex never misfires. It requires all of: a verbatim phrase match (not word
- * overlap), exactly one matching command, no parameters (the LLM is needed to extract arguments), the command
- * currently visible, and not dangerous (a dangerous command must keep its confirmation flow). A reflex covers
- * commands only - never queries or macros.
+ * overlap), exactly one matching action, no parameters (the LLM is needed to extract arguments), the action
+ * currently visible, and not dangerous (a dangerous command must keep its confirmation flow). It covers
+ * parameterless COMMANDS and QUERIES (a verbatim query alias like "squadron carrier route" resolves it directly;
+ * {@link elite.intel.companion.mind.ReflexThought} voices a query reflex from the query's own data), never macros.
  * <p>
  * It introduces no new classification, reusing the existing owners: {@link GameToolCandidates} for the visible
  * commands and their localized phrases/parameters, {@link AiActionLocalizations#splitPhraseGroup} for phrase
@@ -68,7 +65,7 @@ public final class ReflexResolver {
         if (input == null || input.isBlank()) {
             return Optional.empty();
         }
-        String needle = input.trim().toLowerCase(Locale.ROOT);
+        String needle = canonicalizeForMatch(input);
         List<CommandPhrase> matches = commandSource.get().stream()
                 .filter(command -> matchesVerbatim(command.phraseGroup(), needle))
                 .toList();
@@ -82,14 +79,35 @@ public final class ReflexResolver {
         return Optional.of(only.id());
     }
 
-    /** Whether any phrase in the group equals the input verbatim (case-insensitive). */
+    /**
+     * Whether any phrase in the group equals the input verbatim (case-insensitive, ignoring trailing punctuation).
+     */
     private static boolean matchesVerbatim(String phraseGroup, String needle) {
         for (String phrase : AiActionLocalizations.splitPhraseGroup(phraseGroup)) {
-            if (phrase.trim().toLowerCase(Locale.ROOT).equals(needle)) {
+            if (canonicalizeForMatch(phrase).equals(needle)) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Lower-cases, trims, and drops trailing sentence punctuation so a spoken question ("... carrier?") matches a
+     * plain alias ("... carrier"). Only ever loosens matching (aliases never end in punctuation), so it can add a
+     * match but never remove one - the "exactly one" guard in {@link #resolve} still protects against ambiguity.
+     */
+    private static String canonicalizeForMatch(String s) {
+        String lower = s.trim().toLowerCase(Locale.ROOT);
+        int end = lower.length();
+        while (end > 0 && isTrailingPunctuation(lower.charAt(end - 1))) {
+            end--;
+        }
+        return lower.substring(0, end).trim();
+    }
+
+    private static boolean isTrailingPunctuation(char c) {
+        return c == '?' || c == '!' || c == '.' || c == ',' || c == ';' || c == ':'
+                || c == '？' || c == '！' || c == '。' || c == '，';
     }
 
     /** The per-command danger flag via the shared owner (args are ignored; the flag is per-command). */
@@ -98,9 +116,11 @@ public final class ReflexResolver {
                 new LlmToolInvocation(UUID.randomUUID().toString(), commandId, new JsonObject()));
     }
 
-    /** Visible commands (only) from the live registries, projected onto the reflex matching surface. */
+    /**
+     * Visible commands AND queries from the live registries, projected onto the reflex matching surface.
+     */
     private static List<CommandPhrase> collectVisibleCommands() {
-        return new GameToolCandidates().collect(Set.of(IntelActionCategory.ACTION)).stream()
+        return new GameToolCandidates().collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
                 .map(candidate -> new CommandPhrase(
                         candidate.id(), candidate.phraseKey(), candidate.tool().parameters().isEmpty()))
                 .toList();

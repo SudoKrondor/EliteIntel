@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.command.builtin;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.command.SimpleTapCommand;
 import elite.intel.ai.hands.Bindings;
+import elite.intel.session.Status;
 
 @RegisterCommand
 public final class DeployChaffCommand extends SimpleTapCommand {
@@ -12,5 +13,11 @@ public final class DeployChaffCommand extends SimpleTapCommand {
 
     public DeployChaffCommand() {
         super(ID, Bindings.GameCommand.BINDING_FIRE_CHAFF_LAUNCHER.getGameBinding());
+    }
+
+    /** Countermeasure fired only while flying the main ship in normal space (not docked/landed/supercruise). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
     }
 }

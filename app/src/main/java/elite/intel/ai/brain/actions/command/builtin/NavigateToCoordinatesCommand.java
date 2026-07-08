@@ -8,6 +8,7 @@ import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,6 +59,12 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Surface navigation to lat/long: needs a planetary surface reference (in ship/SRV near the body, or on foot). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.hasLatLong() || status.isOnFootOnPlanet() || status.isOnFootExterior();
     }
 
     @Override

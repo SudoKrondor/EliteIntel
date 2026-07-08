@@ -8,6 +8,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
 import elite.intel.search.spansh.station.traderandbroker.BrokerType;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
@@ -28,6 +29,12 @@ public final class FindGuardianTechnologyBrokerCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /// Route plotting available anywhere in the game
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

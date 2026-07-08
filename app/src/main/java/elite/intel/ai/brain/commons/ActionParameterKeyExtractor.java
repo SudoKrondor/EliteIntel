@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiActionsMap;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +29,23 @@ public final class ActionParameterKeyExtractor {
     );
     private static final Pattern JSON_PARAM = Pattern.compile("\"([A-Za-z0-9_]+)\"\\s*:\\s*(\"[^\"]*\"|-?\\d+(?:\\.\\d+)?|true|false)");
     private static final Pattern VALID_PARAM_NAME = Pattern.compile("[A-Za-z0-9_]+");
+    // Inline JSON action+params examples formerly embedded in the (now-removed) command-classification prompt.
+    // This extractor was their only consumer: it mines them for typed parameter hints (state -> boolean, key ->
+    // string, etc.). Illustrative seeds, not an exhaustive list.
+    private static final String PARAM_EXAMPLE_HINTS = """
+            {"action": "target_subsystem", "params": {"key": "drive"}}
+            {"action": "find_mining_site", "params": {"key": "low temperature diamonds"}}
+            {"action": "toggle_night_vision_on_off", "params": {"state": true}}
+            {"action": "toggle_night_vision_on_off", "params": {"state": false}}
+            {"action": "toggle_lights_on_off", "params": {"state": true}}
+            {"action": "find_commodity", "params": {"key": "gold", "max_distance": "80"}}
+            {"action": "find_commodity", "params": {"key": "gold", "state": true}}
+            {"action": "find_commodity", "params": {"key": "gold", "state": false}}
+            {"action": "find_commodity", "params": {"key": "cmm composites", "state": false}}
+            {"action": "find_commodity", "params": {"key": "low temperature diamonds", "state": false}}
+            {"action": "select_fire_group_by_nato", "params": {"key": "charlie"}}
+            {"action": "select_fire_group_by_nato", "params": {"key": "bravo"}}
+            """;
 
     private ActionParameterKeyExtractor() {
     }
@@ -101,13 +118,12 @@ public final class ActionParameterKeyExtractor {
         });
     }
 
-    /** Parses the command-rules section of the LLM prompt for inline JSON examples like
-     *  {@code {"action":"target_subsystem","params":{"key":"drive"}}} to extract typed param hints. */
+    /**
+     * Parses the inline JSON examples like {@code {"action":"target_subsystem","params":{"key":"drive"}}}
+     * in {@link #PARAM_EXAMPLE_HINTS} to extract typed param hints.
+     */
     private void extractPromptJsonExamples(Map<String, Map<String, ActionParameterHint>> hintsByAction) {
-        StringBuilder prompt = new StringBuilder();
-        PromptFactory.getInstance().buildCommandRules(prompt);
-
-        Matcher matcher = JSON_ACTION_WITH_PARAMS.matcher(prompt);
+        Matcher matcher = JSON_ACTION_WITH_PARAMS.matcher(PARAM_EXAMPLE_HINTS);
         while (matcher.find()) {
             String actionId = matcher.group(1);
             Matcher paramMatcher = JSON_PARAM.matcher(matcher.group(2));

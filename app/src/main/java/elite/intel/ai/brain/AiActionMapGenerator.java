@@ -3,7 +3,10 @@ package elite.intel.ai.brain;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
@@ -13,18 +16,9 @@ import elite.intel.util.StringUtls;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.*;
 
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
 
 /**
  * Builds the LLM action map (phrase-group -> action id) from the self-describing
@@ -90,11 +84,11 @@ public class AiActionMapGenerator {
 
         // e) non-action additions, appended after the ordered actions (as in actionMap)
         if (conversationalMode) {
-            map.put("general conversation", GeneralConversationQueryCommand.ID);
+            map.put("general conversation", GeneralConversationQuery.ID);
         } else {
             map.put("ignore_nonsensical_input", IgnoreNonsensicalInputCommand.ID);
         }
-        map.put(CONNECTION_CHECK_COMMAND, ConnectionCheckQueryCommand.ID);
+        map.put(CONNECTION_CHECK_COMMAND, ConnectionCheckQuery.ID);
         CustomCommandRegistry.getInstance().contributeToActionMap(map);
 
         return map;

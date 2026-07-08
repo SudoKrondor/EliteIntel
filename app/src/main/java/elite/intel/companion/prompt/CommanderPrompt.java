@@ -5,8 +5,10 @@ package elite.intel.companion.prompt;
  * function-calling protocol (the classify_turn contract plus the ordered settling ladder). Each section is
  * wrapped in its own XML tag ({@code <persona>}, {@code <language>}, {@code <function_calling>}) - tags delimit
  * the blocks for the model while the logic inside stays a flat rule ladder. The only insertions are the
- * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}}, and
- * the AI personality clause {@code {personalityClause}}.
+ * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}} (the
+ * language the companion speaks, TTS-bound), {@code {inputLanguage}} (the language the commander gives orders in,
+ * driving action selection), the per-language action triggers {@code {disambiguationHints}}, and the AI
+ * personality clause {@code {personalityClause}}.
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
@@ -62,10 +64,7 @@ final class CommanderPrompt {
             
             <personality>   
             Your personality below governs HOW you speak: it overrides your default tone and MUST shape the wording, length, and humor of every reply.
-            Your loyalty is to carry out the commander's orders, not to mute your own voice - express your personality fully (blunt, playful, irreverent, or chaotic as it dictates) while still doing what he commands.
-                    Voice any doubt, warning, sarcasm, or disagreement in your WORDS only - never by refusing, stalling, or replacing the action. When he gives an order an offered function can carry out, you carry it out THIS turn; arguing is never a substitute for obeying.
-
-            {personalityClause}
+                        {personalityClause}
             </personality>
             </persona>
             
@@ -81,10 +80,11 @@ final class CommanderPrompt {
             </communication_rules>
             
             <language>
-            The commander speaks {language}, and game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names and all other arguments stay exactly as defined.
-            If the commander speaks a language other than English, translate their input to English before choosing a function, and extract each argument by its own rule (verbatim where it says so).
+                    The commander speaks {inputLanguage}. Game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names are fixed identifiers - keep them exactly as defined, never translated.
+                    The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, using the {inputLanguage} triggers in <disambiguation> to map what he says to the exact function. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
             </language>
-
+                    
+                    
             <function_calling>
             You respond only with function calls, never free text.
 
@@ -114,14 +114,25 @@ final class CommanderPrompt {
                     "target that", "optimal speed", "galaxy map", "hardpoints") are direct orders - execute them.
                     Never answer an order with conversation, and never fall through to 'speak' just because a request
                     was terse, could also be chatted about, or you would have phrased it differently.
+                            A QUESTION is also an order to act whenever an offered query function answers it: a data question
+                            (location, distance, status, inventory, route, station, system, materials, missions, signals,
+                            bodies, carrier, ship, time, security, bounties, ...) is answered by CALLING the matching query
+                            function to fetch real data - NEVER by guessing, inventing, or recalling the answer in words.
+                            This holds even when the request is NOT phrased as a question: a bare topic or noun the commander
+                            names that an offered query answers ("dominant faction", "utc time", "total bounties", "system
+                            security", "geological signals") is a request for that data - call that query, exactly as a
+                            blunt command phrase is an order; do not merely chat about the topic.
                     
             Choose the settling call by taking the FIRST rule that applies:
-            1. a <fact> in the <facts> block answers the question -> call 'speak' function with the answer from that fact;
-                    2. an offered function matches, names, or paraphrases what the commander wants -> CALL THAT FUNCTION.
-                       Prefer acting over talking; do not call 'speak' in addition;
+                    1. an offered function matches, names, or paraphrases what the commander wants -> CALL THAT FUNCTION.
+                       For a data question the matching query function IS that match, so you MUST call it to retrieve the
+                       real answer. Prefer acting over talking; do not call 'speak' in addition;
+                    2. a <fact> in the <facts> block already answers the question AND no offered function can retrieve it
+                       -> call 'speak' function with the answer from that fact;
             3. 'memory_search' function, if offered: the commander explicitly asks to search in your memory;
                     4. 'speak' function: ONLY chat, opinions, jokes, explanations, or a genuinely unclear request where
-                       NO offered function fits. If an offered function fits, this rule does not apply.
+                       NO offered function fits. If an offered function fits, this rule does not apply - never fall through
+                       to 'speak' just because the input is phrased as a question.
 
             A 'speak' reply is words only, never an action: never say you did, started, enabled, or
             changed something unless you called its function this turn. When no offered function matches
@@ -135,10 +146,15 @@ final class CommanderPrompt {
             </function_calling>
             """;
 
-    /** The commander template with its {@code {name}}, {@code {language}}, and {@code {personalityClause}} insertions filled in. */
+    /**
+     * The commander template with its {@code {name}}, {@code {disambiguationHints}}, {@code {inputLanguage}},
+     * {@code {language}}, and {@code {personalityClause}} insertions filled in. The injected per-language
+     * {@code {disambiguationHints}} block carries no template tokens itself, so replacement order is immaterial.
+     */
     static String render() {
         return TEXT
                 .replace("{name}", CompanionSystemPromptPart.companionName())
+                .replace("{inputLanguage}", CompanionSystemPromptPart.inputLanguageName())
                 .replace("{language}", CompanionSystemPromptPart.languageName())
                 .replace("{personalityClause}", CompanionSystemPromptPart.personalityClause());
     }

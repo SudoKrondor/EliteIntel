@@ -1,8 +1,8 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
@@ -10,12 +10,7 @@ import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,8 +29,8 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
 
     /** Fallback ids the companion never offers; it has its own speak. */
     private static final Set<String> FALLBACK_IDS = Set.of(
-            GeneralConversationQueryCommand.ID,
-            ConnectionCheckQueryCommand.ID,
+            GeneralConversationQuery.ID,
+            ConnectionCheckQuery.ID,
             IgnoreNonsensicalInputCommand.ID);
 
     /** Words shorter than this carry no selection signal (mirrors the legacy tokenizer's length filter). */

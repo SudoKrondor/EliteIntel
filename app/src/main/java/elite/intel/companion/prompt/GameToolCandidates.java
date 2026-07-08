@@ -5,11 +5,10 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQueryCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
@@ -41,8 +40,8 @@ public final class GameToolCandidates {
 
     /** Legacy-path fallback ids the companion never offers; it has its own speak. */
     private static final Set<String> EXCLUDED_IDS = Set.of(
-            GeneralConversationQueryCommand.ID,
-            ConnectionCheckQueryCommand.ID,
+            GeneralConversationQuery.ID,
+            ConnectionCheckQuery.ID,
             IgnoreNonsensicalInputCommand.ID);
 
     /**
@@ -64,10 +63,19 @@ public final class GameToolCandidates {
 
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */
     public GameToolCandidates() {
+        this(Status.getInstance());
+    }
+
+    /**
+     * Pulls the self-describing registries and the configured language, but gates visibility against the given
+     * status instead of the live one - e.g. a {@link Status#detached} status standing in for a what-if
+     * situation, so the offered tools reflect that context, not the live game.
+     */
+    public GameToolCandidates(Status status) {
         this(CommandRegistry.getInstance().byId(),
                 QueryRegistry.getInstance().byId(),
                 CustomCommandRegistry.getInstance().getCustomCommands(),
-                Status.getInstance(),
+                status,
                 SystemSession.getInstance().getLanguage());
     }
 
@@ -82,7 +90,7 @@ public final class GameToolCandidates {
         this.macros = macros;
         this.status = status;
         this.language = language;
-        this.languageName = PromptLocalizations.rulesFor(language).languageName();
+        this.languageName = language.displayName();
     }
 
     /** Visible game tools in the allowed categories, ordered commands, then queries, then macros. */

@@ -1,7 +1,7 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
@@ -176,7 +176,7 @@ public class Reducer {
         }
         if (result.isEmpty()) {
             String fallback = isConversationMode
-                    ? GeneralConversationQueryCommand.ID
+                    ? GeneralConversationQuery.ID
                     : IgnoreNonsensicalInputCommand.ID;
             result.put(fallback, fallback);
         }

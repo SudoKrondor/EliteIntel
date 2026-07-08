@@ -35,7 +35,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private static final String ICON_SETTINGS = "/images/settings.png";
     private static final String ICON_STATS = "/images/stats.png";
     private static final String CREDITS_ICON = "/images/release.png";
-    private static final String MANUAL_ICON = "/images/manual.png";
+    private static final String HELP_ICON = "/images/manual.png";
 
     private final SystemSession systemSession = SystemSession.getInstance();
     private Font monoFont;
@@ -47,7 +47,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private SettingsTabPanel settingsTabPanel;
     private UsageStatsTabPanel usageStatsTabPanel;
     private MarkdownViewPanel creditsPanel;
-    private MarkdownViewPanel userManualPanel;
+    private HelpTabPanel helpTabPanel;
     private StarVizionTabPanel starVizionTabPanel;
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
@@ -100,7 +100,7 @@ public class AppView extends JFrame implements AppViewInterface {
         ImageIcon settingsIcon = scaledIcon(ICON_SETTINGS);
         ImageIcon statsIcon = scaledIcon(ICON_STATS);
         ImageIcon creditsIcon = scaledIcon(CREDITS_ICON);
-        ImageIcon manualIcon = scaledIcon(MANUAL_ICON);
+        ImageIcon helpIcon = scaledIcon(HELP_ICON);
         if (uiState == null) {
             uiState = new AiUiState();
         }
@@ -111,7 +111,7 @@ public class AppView extends JFrame implements AppViewInterface {
         settingsTabPanel = new SettingsTabPanel();
         usageStatsTabPanel = new UsageStatsTabPanel();
         creditsPanel = new MarkdownViewPanel("credits.md");
-        userManualPanel = new MarkdownViewPanel("user-manual.md");
+        helpTabPanel = new HelpTabPanel();
         starVizionTabPanel = new StarVizionTabPanel();
 
         tabs.addTab(getText("tab.ai"), aiIcon, aiTabPanel);
@@ -120,7 +120,7 @@ public class AppView extends JFrame implements AppViewInterface {
         tabs.addTab(getText("tab.bindForge"), bindForgeIcon, bindForgeTabPanel);
         tabs.addTab(getText("tab.settings"), settingsIcon, settingsTabPanel);
         tabs.addTab(getText("tab.stats"), statsIcon, usageStatsTabPanel);
-        tabs.addTab(getText("tab.manual"), manualIcon, userManualPanel);
+        tabs.addTab(getText("tab.help"), helpIcon, helpTabPanel);
         //tabs.addTab("Credits", creditsIcon, creditsPanel);
 
         topStatusBar = new TopStatusBar(
@@ -152,6 +152,7 @@ public class AppView extends JFrame implements AppViewInterface {
         commanderTabPanel.initData();
         actionsTabPanel.initData();
         bindForgeTabPanel.initData();
+        helpTabPanel.initData();
         aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesRunning);
     }
 
@@ -181,6 +182,7 @@ public class AppView extends JFrame implements AppViewInterface {
         if (settingsTabPanel != null) settingsTabPanel.dispose();
         if (usageStatsTabPanel != null) usageStatsTabPanel.dispose();
         if (starVizionTabPanel != null) starVizionTabPanel.dispose();
+        if (helpTabPanel != null) helpTabPanel.dispose();
         buildUi();
         initData();
         revalidate();

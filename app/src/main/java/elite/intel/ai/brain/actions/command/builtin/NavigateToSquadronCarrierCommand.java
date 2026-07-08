@@ -28,22 +28,23 @@ public final class NavigateToSquadronCarrierCommand implements IntelCommand {
         return ID;
     }
 
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if (status.isInSrv() || status.isInMainShip()) {
-            PlayerSession playerSession = PlayerSession.getInstance();
-            CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
+        PlayerSession playerSession = PlayerSession.getInstance();
+        CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
-            if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
-                return;
-            }
-
-            RoutePlotter plotter = new RoutePlotter();
-            plotter.plotRoute(squadronCarrier.getStarName());
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
+        if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
+            return;
         }
+
+        RoutePlotter plotter = new RoutePlotter();
+        plotter.plotRoute(squadronCarrier.getStarName());
     }
 }

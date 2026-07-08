@@ -11,6 +11,7 @@ import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.Status;
 import elite.intel.util.AudioPlayer;
 import elite.intel.util.PlayBeepEvent;
 import elite.intel.util.StringUtls;
@@ -26,7 +27,13 @@ import java.util.List;
 public final class IncreaseSpeedCommand implements IntelCommand {
     public static final String ID = "increase_speed";
 
-    @Override public String llmDescription() { return "Increase the throttle."; }
+    @Override
+    public String llmDescription() {
+        return """
+                    - Increase the speed.
+                    - Increase the speed by X
+                """;
+    }
 
 
     private static final String PARAM_KEY = "key";
@@ -49,6 +56,12 @@ public final class IncreaseSpeedCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Ship throttle: only while piloting the main ship and not docked/landed (no throttle when stationary). */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return (status.isInMainShip() || status.isInFighter() || status.isInSrv()) && (!status.isDocked() && !status.isOnFoot());
     }
 
     @Override

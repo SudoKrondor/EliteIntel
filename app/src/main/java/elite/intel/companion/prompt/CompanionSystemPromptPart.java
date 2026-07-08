@@ -2,7 +2,6 @@ package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
@@ -39,10 +38,25 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
         return CompanionConfig.companionName();
     }
 
-    /** The resolved commander-language name, named in the templates' language rule as {@code {language}}. */
+    /**
+     * The language the companion SPEAKS, named in the templates' language rule as {@code {language}}. This is the
+     * TTS-bound effective response language, which can differ from what the commander speaks (e.g. local Kokoro
+     * cannot voice ru/uk/de, so those downgrade to English output) - see {@link AiResponseLanguagePolicy}.
+     */
     static String languageName() {
-        return PromptLocalizations.rulesFor(effectiveLanguage()).languageName();
+        return effectiveLanguage().displayName();
     }
+
+    /**
+     * The language the commander gives ORDERS in, named in the template as {@code {inputLanguage}}. This is the
+     * session/STT language ({@link SystemSession#getLanguage()}) - the language of the text the model must match
+     * to a function - NOT the effective response language, which can downgrade to English for TTS reasons while
+     * the commander still speaks his own language.
+     */
+    static String inputLanguageName() {
+        return SystemSession.getInstance().getLanguage().displayName();
+    }
+
 
     /**
      * The commander-chosen AI personality's roleplay clause, woven into the persona as {@code {personalityClause}}.

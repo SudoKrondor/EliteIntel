@@ -101,19 +101,24 @@ public class CodexEntryEventSubscriber {
                 }
             }
 
+            boolean isOrganic = "$Codex_SubCategory_Organic_Structures;".equalsIgnoreCase(event.getSubCategory());
+
             if (playerSession.isDiscoveryAnnouncementOn()) {
+                String organicGuidance = isOrganic
+                        ? "- List Genus, projected payment for collecting 3 samples, and minimum distance between samples ONLY if those values appear in the data above; otherwise omit them."
+                        : "- This is NOT a biological/organic entry. Do NOT mention genus, species, sample counts, sample payments, or minimum sample distances - those concepts do not apply here.";
                 String instructions = """
-                                Database updated. 
+                                Database updated.
                                 Provide essential summary.
-                        - Only facts, no speculation.
-                                - IF entry is about organics: List Genus, projected payment to us for collecting 3 samples and minimum distance between samples required if provided.
+                        - Only facts, no speculation. Do not invent, estimate, or default any value that is not present in the data above.
+                        %s
                                 - IF there is a warning announce it, else do not mention that there are no warnings.
                         - Do not append any extra data.
                         - Express credit amounts using K (thousands) or M (millions) shorthand as appropriate (e.g. 50K, 1.2M).
-                        """;
+                        """.formatted(organicGuidance);
                 GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }
-            if ("$Codex_SubCategory_Organic_Structures;".equalsIgnoreCase(event.getSubCategory())) {
+            if (isOrganic) {
                 codexEntryManager.save(event);
             }
             locationManager.save(currentLocation);

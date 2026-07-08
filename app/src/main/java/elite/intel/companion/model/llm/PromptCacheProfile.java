@@ -17,7 +17,14 @@ public enum PromptCacheProfile {
     /** Subscriber-prepared narration turn (its own lean prompt prefix). */
     NARRATION("companion-narration", 0.3),
     /** Mid-term -> long-term memory compression. */
-    COMPRESSION("companion-compression", 0.3);
+    COMPRESSION("companion-compression", 0.3),
+    /**
+     * Custom-command action-key generation: a short plain-text turn that maps trigger phrases (any
+     * language) to an English snake_case routing identifier. Runs cold (its own low temperature) for a
+     * stable, deterministic identifier and keeps its own cache key so it never pollutes the conversation
+     * profiles' cached prefixes.
+     */
+    KEY_GENERATION("companion-keygen", 0.2);
 
     private final String cacheKey;
     private final double temperature;

@@ -1,7 +1,6 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -21,7 +20,11 @@ class CompanionSystemPromptPartTest {
 
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return PromptLocalizations.rulesFor(language).languageName();
+        return language.displayName();
+    }
+
+    private static String inputLanguageName() {
+        return SystemSession.getInstance().getLanguage().displayName();
     }
 
     @Test
@@ -81,9 +84,17 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
 
         assertTrue(text.contains("<language>"));
-        // The commander's language is named, and spoken output is bound to that same language.
-        assertTrue(text.contains("The commander speaks " + name));
-        // The spoken surface (speak) is bound to the commander's language.
+        // The commander is named as speaking his INPUT language (what he says / what STT produces).
+        assertTrue(text.contains("The commander speaks " + inputLanguageName()));
+        // The spoken surface (speak) is bound to the effective (TTS) response language.
         assertTrue(text.contains("the text in speak - in " + name));
+    }
+
+    @Test
+    void commanderPromptSelectsFunctionsFromNativeWordsNotTranslation() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+        // Action derivation is native, driven by the per-language triggers - not by translating to English first.
+        assertTrue(text.contains("Do NOT translate his words to English first"));
+        assertFalse(text.contains("translate their input to English before choosing a function"));
     }
 }

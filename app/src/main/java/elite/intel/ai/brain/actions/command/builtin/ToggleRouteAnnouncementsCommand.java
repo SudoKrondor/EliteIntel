@@ -7,6 +7,7 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -38,6 +39,12 @@ public final class ToggleRouteAnnouncementsCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side announcement setting (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

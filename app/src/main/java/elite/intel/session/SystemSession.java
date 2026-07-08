@@ -338,23 +338,23 @@ public class SystemSession {
         });
     }
 
-    public void setOllamaSettings(String address, String commandModel, String queryModel) {
+    public void setOllamaSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setOllamaAddress(address);
             session.setOllamaCommandModel(commandModel);
-            session.setOllamaQueryModel(queryModel);
+            session.setOllamaQueryModel(commandModel); //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
     }
 
-    public void setLmStudioSettings(String address, String commandModel, String queryModel) {
+    public void setLmStudioSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setLmStudioAddress(address);
             session.setLmStudioCommandModel(commandModel);
-            session.setLmStudioQueryModel(queryModel);
+            session.setLmStudioQueryModel(commandModel);  //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
@@ -368,6 +368,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaCommandModel());
     }
 
+    @Deprecated
     public String getOllamaQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaQueryModel());
     }
@@ -380,6 +381,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioCommandModel());
     }
 
+    @Deprecated
     public String getLmStudioQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioQueryModel());
     }
@@ -439,7 +441,12 @@ public class SystemSession {
     }
 
     public boolean conversationalModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
+        // HARDCODED OFF: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline, so conversation mode (a legacy-pipeline flag) is unconditionally off. The
+        // setter still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus
+        // the DB read below can be restored together when the modes become user-selectable again.
+        return false;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
 
     public void setCompanionMode(boolean b) {
@@ -452,7 +459,12 @@ public class SystemSession {
     }
 
     public boolean companionModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
+        // HARDCODED ON: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline (the legacy command/query path is kept dormant but inaccessible). The setter
+        // still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus the DB
+        // read below can be restored together when the modes become user-selectable again.
+        return true;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
     }
 
     public boolean isPushToTalkEnabled() {

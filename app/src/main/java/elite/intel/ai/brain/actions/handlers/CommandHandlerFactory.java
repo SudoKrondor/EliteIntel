@@ -26,7 +26,18 @@ public class CommandHandlerFactory {
         return instance;
     }
 
+    /**
+     * Builds the shared command-handler map once and caches it, so every caller (execution gateway, danger
+     * policy, response router, reflex resolvers) shares the same instance instead of re-running registration.
+     * Relies on boot ordering: {@code App.main} loads {@code CommandRegistry} before any caller is constructed,
+     * so the first call always sees the built-in commands. The empty-map guard only covers the degenerate case
+     * where nothing has been registered yet. Custom-command edits are applied via
+     * {@link #refreshCustomCommandHandlers()}.
+     */
     public Map<String, IntelAction> registerCommandHandlers() {
+        if (!commandHandlers.isEmpty()) {
+            return commandHandlers; // built once; all callers share the same map
+        }
         for (Map.Entry<String, IntelCommand> entry : CommandRegistry.getInstance().byId().entrySet()) {
             commandHandlers.put(entry.getKey(), entry.getValue());
         }

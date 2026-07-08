@@ -15,7 +15,10 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowStatusPanelCommand implements IntelCommand {
     public static final String ID = "show_status_panel";
 
-    @Override public String llmDescription() { return "Open the status panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the status panel.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -27,9 +30,12 @@ public final class ShowStatusPanelCommand implements IntelCommand {
     }
 
     @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter();
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
-        if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STATUS);
-        }
+        navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STATUS);
     }
 }

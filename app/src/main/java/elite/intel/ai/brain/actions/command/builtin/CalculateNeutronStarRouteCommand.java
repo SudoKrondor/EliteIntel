@@ -16,6 +16,7 @@ import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
 import elite.intel.search.spansh.neutronroute.NeutronStarRouteCalculatorCriteria;
 import elite.intel.search.spansh.neutronroute.NeutronStarRouteClient;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 import elite.intel.util.ClipboardUtils;
 import elite.intel.util.StringUtls;
 
@@ -58,6 +59,12 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
         return ID;
     }
 
+    /** App-side route calculation (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     @Override
     public List<ActionParameterSpec> parameters() {
         return PARAMETERS;
@@ -72,8 +79,8 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
             return;
         }
 
-        int efficiency = getIntSafely(key.getAsString());
-        if (efficiency < 1 || efficiency > 100) {
+        Integer efficiency = getIntSafely(key.getAsString());
+        if (efficiency != null && efficiency < 1 || efficiency > 100) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }

@@ -8,6 +8,7 @@ import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.BargeInEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -515,6 +516,10 @@ public class ParakeetSTTImpl implements EarsInterface {
                 GameEventBus.publish(new TTSInterruptEvent());
                 GameEventBus.publish(new BargeInEvent());
                 return;
+            } else if (!CompanionConfig.dropHotMicTranscriptsWhileCompanionSpeaks()) {
+                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
+                GameEventBus.publish(new TTSInterruptEvent());
+                GameEventBus.publish(new BargeInEvent());
             } else {
                 log.debug("Ignoring transcript while TTS is speaking: {}", transcript);
                 return;

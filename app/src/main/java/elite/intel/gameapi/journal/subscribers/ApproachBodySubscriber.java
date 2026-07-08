@@ -89,6 +89,7 @@ public class ApproachBodySubscriber {
                             We are approaching planet/moon. Warn/Notify user with this data.
                             Temperature data is provided in C (Celsius)
                             Gravity around equal to or less than 1G is safe. Issue a gravity warning if gravity is higher than 1G.
+                            If there is no atmosphere report as "Atmosphere: none".
                         """;
                 GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
             }

@@ -8,6 +8,7 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.inputs.UiNavCommon;
+import elite.intel.session.Status;
 
 /**
  * Self-describing "show station services panel" command.
@@ -24,6 +25,11 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isDocked();
     }
 
     @Override

@@ -271,6 +271,46 @@ public final class HudGlyphs {
     }
 
     /**
+     * Draws the flat "memory dump" glyph centred within (x, y, w, h): a database cylinder (a top rim ellipse, two
+     * front band arcs, and the two side walls). It reads as "export the stored data", distinct from the save
+     * glyph's arrow-into-tray, so the two header actions are not confused. All geometry is proportional so it
+     * scales with the box; caller chooses colour by state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour for the cylinder
+     */
+    public static void paintHudMemoryGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 9f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(color);
+
+        int ovalW = Math.round(w * 0.60f);
+        int ovalH = Math.round(h * 0.20f);
+        int left = x + (w - ovalW) / 2;
+        int right = left + ovalW;
+        int topRimY = y + Math.round(h * 0.16f);    // top of the top rim ellipse
+        int midBandY = y + Math.round(h * 0.40f);   // top of the middle band ellipse
+        int botBandY = y + Math.round(h * 0.62f);   // top of the bottom band ellipse
+        int half = ovalH / 2;
+
+        g2.drawOval(left, topRimY, ovalW, ovalH);                 // top rim (full ellipse)
+        g2.drawArc(left, midBandY, ovalW, ovalH, 180, 180);       // middle band: front half only
+        g2.drawArc(left, botBandY, ovalW, ovalH, 180, 180);       // bottom band: front half only
+        g2.drawLine(left, topRimY + half, left, botBandY + half); // left wall
+        g2.drawLine(right, topRimY + half, right, botBandY + half); // right wall
+
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
      * Draws the flat "clear / delete" (trash can) glyph centred within (x, y, w, h): a lid with a small handle
      * tab above a slightly tapered open can body (no fill slats, to keep the same light stroke weight as the
      * neighbouring save glyph). All geometry is proportional so it scales with the box; caller chooses colour by

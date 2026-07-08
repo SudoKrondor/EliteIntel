@@ -112,8 +112,8 @@ public class MarkdownViewPanel extends JPanel {
     }
 
     private String readFile() {
-        // Prefer the variant for the active language (e.g. user-manual-ru.md); fall back to the base
-        // file when no localized variant exists (English, or docs like credits.md that aren't translated).
+        // Prefer the variant for the active language (e.g. credits-ru.md); fall back to the base
+        // file when no localized variant exists (English, or docs that aren't translated).
         for (String name : candidateFileNames()) {
             String content = readNamed(name);
             if (content != null) {
@@ -134,7 +134,7 @@ public class MarkdownViewPanel extends JPanel {
 
     /**
      * Inserts a {@code -<tag>} language suffix before the file extension, e.g.
-     * {@code ("user-manual.md", "ru")} -> {@code "user-manual-ru.md"}. The English base tag and a
+     * {@code ("credits.md", "ru")} -> {@code "credits-ru.md"}. The English base tag and a
      * blank tag return the base name unchanged.
      */
     private static String localizedName(String base, String tag) {

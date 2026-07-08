@@ -321,21 +321,21 @@ Default voice: `GEORGE` (sid=26).
 
 ### `GoogleVoices` (11 voices)
 
-| Name | Language | Model | Gender | speechRate |
-|---|---|---|---|---|
-| ANNA | en-GB | Chirp-HD-F | Female | (see enum) |
-| EMMA | en-US | Chirp3-HD-Despina | Female | (see enum) |
-| JAKE | en-US | Chirp3-HD-Iapetus | Male | (see enum) |
-| JAMES | en-AU | Chirp3-HD-Algieba | Male | (see enum) |
-| JENNIFER | en-US | Chirp3-HD-Sulafat | Female | 1.2 (default) |
-| JOSEPH | en-US | Chirp3-HD-Sadachbia | Male | (see enum) |
-| MARY | en-US | Chirp3-HD-Zephyr | Female | (see enum) |
-| MICHAEL | en-US | Chirp3-HD-Charon | Male | (see enum) |
-| OLIVIA | en-GB | Chirp3-HD-Aoede | Female | (see enum) |
-| RACHEL | en-US | Chirp3-HD-Zephyr | Female | (see enum) |
-| STEVE | en-US | Chirp3-HD-Algenib | Male | (see enum) |
+| Name | Language | Model | Gender |
+|---|---|---|---|
+| ANNA | en-GB | Chirp-HD-F | Female |
+| EMMA | en-US | Chirp3-HD-Despina | Female |
+| JAKE | en-US | Chirp3-HD-Iapetus | Male |
+| JAMES | en-AU | Chirp3-HD-Algieba | Male |
+| JENNIFER | en-US | Chirp3-HD-Sulafat | Female |
+| JOSEPH | en-US | Chirp3-HD-Sadachbia | Male |
+| MARY | en-US | Chirp3-HD-Zephyr | Female |
+| MICHAEL | en-US | Chirp3-HD-Charon | Male |
+| OLIVIA | en-GB | Chirp3-HD-Aoede | Female |
+| RACHEL | en-US | Chirp3-HD-Zephyr | Female |
+| STEVE | en-US | Chirp3-HD-Algenib | Male |
 
-Default: `JENNIFER`. `GoogleVoiceProvider.getSpeechRate()` returns 1.2 if the voice is not found.
+Default: `JENNIFER`.
 
 ### `GoogleVoiceProvider`
 
@@ -393,7 +393,7 @@ If `AiVoxResponseEvent` carries no future, `VocalisationRouter` creates one and 
 | `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
 | `google/GoogleTTSImpl` | Cloud backend; Google Cloud TTS API |
-| `google/GoogleVoices` | 11 Google voice enum with speechRate and gender |
+| `google/GoogleVoices` | 11 Google voice enum with gender and Chirp3-HD character |
 | `google/GoogleVoiceProvider` | Voice selection + non-EN language override |
 | `google/VoiceProvider<T>` | Interface for voice provider implementations |
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
@@ -410,7 +410,6 @@ If `AiVoxResponseEvent` carries no future, `VocalisationRouter` creates one and 
 | `SAMPLE_RATE` | `24000` Hz | `KokoroTTS`, `GoogleTTSImpl`, `AudioDeClicker` |
 | Default Kokoro voice | `GEORGE` (sid=26) | `KokoroTTS` |
 | Default Google voice | `JENNIFER` | `GoogleVoiceProvider` |
-| Default Google speechRate | `1.2` | `GoogleVoiceProvider` |
 | `NOISE_AMPLITUDE` | `50f` (~0.15% full scale) | `RadioFilter` |
 | `GAIN` | `1.4f` | `RadioFilter` |
 | HP cutoff | `300 Hz` | `RadioFilter` |
