@@ -36,23 +36,19 @@ public class PromptFactory implements AiPromptFactory {
 
     @Override
     public String generateAnalysisPrompt() {
-        PromptLanguageRules lang = PromptLocalizations.rules();
         StringBuilder sb = new StringBuilder();
         sb.append(responseLanguageRule());
         youAre(sb);
-
-        ///Locale-specific rules for numbers, measurements, time, distances, etc.
-        sb.append(lang.localeSpecificFormattingRules());
-
         if (!systemSession.useLocalQueryLlm()) {
             sb.append(getSessionValues());
-            sb.append(appendCloudBehavior());
+            sb.append(appendBehavior());
         } else {
             sb.append(appendLocalBehavior());
         }
         sb.append("Respond with JSON only. Set \"text_to_speech_response\" to your answer.\n\n");
         sb.append(ttsResponseRules());
         sb.append("""
+                - Spell out numerals (e.g., twenty-three, not 23).
                 - Concise and direct. Answer only what the user asked.
                 - All numeric values in the provided data are pre-computed. Do not perform arithmetic.
                 - If data is missing, state that clearly.
@@ -76,7 +72,7 @@ public class PromptFactory implements AiPromptFactory {
 
     @Override
     /// Cloud LLM
-    public String appendCloudBehavior() {
+    public String appendBehavior() {
         StringBuilder sb = new StringBuilder();
         sb.append(" Behavior: ");
         sb.append(" Refer to your self as 'I', your loadout and sensor data as 'my' ");
@@ -114,6 +110,7 @@ public class PromptFactory implements AiPromptFactory {
                 - NEVER use future/intention verbs: no will, going to, have to, need to, should, must.
                 - NEVER mention the user, notification, reporting, telling, or any communication act.
                 - NEVER write meta-statements like "this is", "here is", "notifying about", "detected and will inform".
+                - Spell out all numerals (twenty-one, not 21).
                 - DO NOT invent, guess or estimate any values not explicitly present in the YAML. Absence of data is intel.
                 - Be concise. Only state observable facts that matter.
                 - Do not mention the data format or where it came from.
@@ -122,9 +119,11 @@ public class PromptFactory implements AiPromptFactory {
                 - "Fuel is low, notifying user" → wrong
                 - "The following happened:" → wrong
                 
-                Correct style:
-                - State the concrete fact directly in the mandatory output language.
-                - Use digits for every numeric value.
+                Correct style examples:
+                - "Fuel level is critical."
+                - "Mission objective achieved."
+                - "High-grade emissions detected within twelve kilometers."
+                - "Connection successful."
                 
                 Respond with ONLY the JSON object.
                 """);
@@ -181,28 +180,21 @@ public class PromptFactory implements AiPromptFactory {
     }
 
     public static String ttsResponseRules() {
-        return """
-                text_to_speech_response must be plain spoken sentences. No markdown, no lists, no symbols.
-                - Use digits 0-9, never spelled-out numbers.
-                - Write proper names and domain identifiers in UPPERCASE.
-                """;
+        return "text_to_speech_response must be plain spoken sentences. No markdown, no lists, no symbols.\n";
     }
 
     private String responseLanguageRule() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(systemSession);
         String name = languageDisplayName(language);
         return "MANDATORY LANGUAGE RULE: text_to_speech_response MUST be written in " + name + " ONLY. " +
-                "Translate all prose, including English source data and instructions. " +
-                "Responding in any other language is a critical failure. This rule overrides all other instructions.\n";
+                "Responding in any other language is a critical failure that violates the user's settings. " +
+                "This rule overrides all other instructions.\n";
     }
 
-    /**
-     * Repeats the language constraint after English data, examples, and personality text.
-     */
     private String closingLanguageReinforcement() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(systemSession);
-        return "FINAL RULE: Your text_to_speech_response MUST be in " +
-                languageDisplayName(language) + ". No exceptions.\n";
+        String name = languageDisplayName(language);
+        return "FINAL RULE: Your text_to_speech_response MUST be in " + name + ". No exceptions.\n";
     }
 
     private static String languageDisplayName(Language language) {
