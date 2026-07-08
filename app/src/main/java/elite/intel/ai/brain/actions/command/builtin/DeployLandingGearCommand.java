@@ -28,11 +28,11 @@ public final class DeployLandingGearCommand implements IntelCommand {
         return ID;
     }
 
-    /** Landing gear belongs to the main ship in normal space: not in the SRV, supercruise, docked or landed. */
-    ///NOTE Game bug. Nobad is a flying vehicle with landing gear. It repors as SRV
+    /// due to bug in FDev impl of the Status.json we can't rely on the status
+    /// ALWAYS RETURN TRUE HERE
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return true;
     }
 
     @Override
