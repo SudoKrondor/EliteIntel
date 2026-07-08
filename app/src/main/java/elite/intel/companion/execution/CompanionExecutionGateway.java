@@ -119,7 +119,9 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
 
     /** Single execution path: a non-null handle result is the payload; null means a side-effect dispatch. */
     private JsonObject execute(IntelAction tool, ExecutionRequest request) throws Exception {
-        JsonObject result = tool.handle(request.toolName(), request.arguments(), "");
+        // Pass the commander's raw utterance as originalUserInput so handlers that match a spoken name
+        // (e.g. AnalyzeStellarObjectsQuery resolving "is B 1 landable") receive it instead of "".
+        JsonObject result = tool.handle(request.toolName(), request.arguments(), request.commanderInput());
         if (result != null) {
             return result;
         }

@@ -9,18 +9,13 @@ import elite.intel.companion.tools.SystemFunction;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifies tool-call routing and result shaping with fake handler maps and a synchronous executor:
@@ -36,10 +31,12 @@ class CompanionExecutionGatewayTest {
     private static final class RecordingCommand implements IntelAction {
         volatile boolean invoked;
         volatile JsonObject seenArgs;
+        volatile String seenText;
         @Override public String id() { return "nav"; }
         @Override public JsonObject handle(String action, JsonObject params, String text) {
             invoked = true;
             seenArgs = params;
+            seenText = text;
             return null; // commands are side-effect only
         }
     }
@@ -95,6 +92,19 @@ class CompanionExecutionGatewayTest {
                 Map.of(), Map.of(), Map.of("speak", systemFunction("speak", payload)), SYNC, SYNC);
 
         assertEquals(payload, gateway.submit(new ExecutionRequest("r1", "speak", new JsonObject())).get());
+    }
+
+    @Test
+    void commanderUtteranceReachesHandleAsOriginalUserInput() throws Exception {
+        // Regression: the gateway used to pass "" as originalUserInput, so handlers that match a spoken
+        // body name (e.g. "is B 1 landable") never saw the words and fell back to a whole-system answer.
+        RecordingCommand command = new RecordingCommand();
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("nav", command), Map.of(), Map.of(), SYNC, SYNC);
+
+        gateway.submit(new ExecutionRequest("r1", "nav", new JsonObject(), "call-1", "is planet b one landable")).get();
+
+        assertEquals("is planet b one landable", command.seenText);
     }
 
     @Test

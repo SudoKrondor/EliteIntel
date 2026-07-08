@@ -4,11 +4,11 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.diag.CompanionDiagnostics;
+import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
-import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -20,8 +20,6 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.journal.events.BaseEvent;
-import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -311,7 +309,7 @@ public abstract class Thought {
         }
         try {
             return ctx.executionGateway()
-                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), toolCallId))
+                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), toolCallId, currentInput))
                     .join();
         } catch (RuntimeException failed) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
