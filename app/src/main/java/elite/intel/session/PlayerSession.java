@@ -168,7 +168,13 @@ public class PlayerSession {
     }
 
     public void setCurrentLocationId(long bodyId, long systemAddress) {
-        if (bodyId == 0 || systemAddress == 0) {
+        // systemAddress is the reliable, unique id of the star system and is the only field
+        // that may gate this write. BodyID is NOT reliable: the journal frequently reports
+        // BodyID 0 on arrival even when that body is not the primary star. Letting an
+        // unreliable bodyId==0 veto the write froze the current-system pointer at the last
+        // jump whose arrival body happened to be non-zero, so "where am I" reported a stale
+        // system while current_primary_star had already advanced.
+        if (systemAddress == 0) {
             return;
         }
         Database.withDao(PlayerDao.class, dao -> {

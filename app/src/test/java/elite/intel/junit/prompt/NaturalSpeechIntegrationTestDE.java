@@ -725,7 +725,7 @@ public class NaturalSpeechIntegrationTestDE {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("erinnere mich am nächsten stopp zu tanken");
+        return Stream.of("Erinnerung einstellen: Beim nächsten Halt tanken.");
     }
 
     // =========================================================================
