@@ -830,8 +830,8 @@ public class NaturalSpeechIntegrationTestRU {
 
     static Stream<String> queryShipLoadout() {
         return Stream.of("снаряжение корабля", "на чём я лечу", "оборудование корабля",
-                "есть ли на борту топливный захват", "есть ли на борту оружие",
-                "какое оружие установлено", "есть ли на борту переработчик");
+                "есть ли на борту топливный захват?", "есть ли на борту оружие?",
+                "какое оружие установлено?", "есть ли на борту переработчик?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1062,7 +1062,7 @@ public class NaturalSpeechIntegrationTestRU {
     }
 
     static Stream<String> queryReminder() {
-        return Stream.of("напоминание", "какое было напоминание", "есть напоминания");
+        return Stream.of("напоминание", "какое было напоминание", "есть напоминания?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

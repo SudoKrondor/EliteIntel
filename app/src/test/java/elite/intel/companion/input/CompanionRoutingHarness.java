@@ -6,10 +6,16 @@ import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.mind.ThoughtDispatcher;
+import elite.intel.companion.model.ThoughtSource;
+import elite.intel.companion.prompt.IntelActionAccessPolicy;
+import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.util.json.JsonUtils;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
@@ -25,7 +31,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Boots the real companion subsystem the production way and drives commander input over the bus, so the
@@ -70,6 +76,9 @@ public final class CompanionRoutingHarness {
 
     private final Language language;
     private final List<String> turnTools = new CopyOnWriteArrayList<>();
+    // The phrases the companion LLM spoke this turn (speak.text), captured so a failed assertion can show the
+    // model's actual answer, not just the dispatched tool names.
+    private final List<String> turnSpeech = new CopyOnWriteArrayList<>();
     private final Map<String, IntelAction> actionsById = new HashMap<>();
 
     private CompanionSubsystemGate gate;
@@ -112,6 +121,12 @@ public final class CompanionRoutingHarness {
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
             turnTools.add(toolName);
+            if (SpeakFunction.ID.equals(toolName)) {
+                String spoken = JsonUtils.getAsStringOrEmpty(request.arguments(), SpeakFunction.PARAM_TEXT);
+                if (!spoken.isBlank()) {
+                    turnSpeech.add(spoken);
+                }
+            }
             SystemFunction fn = systemFunctions.get(toolName);
             if (fn != null) {
                 try {
@@ -168,6 +183,7 @@ public final class CompanionRoutingHarness {
      */
     public List<String> route(String input) throws InterruptedException {
         turnTools.clear();
+        turnSpeech.clear();
         GameEventBus.publish(new UserInputEvent(input));
         // Wait for the turn to start: the dispatcher goes busy, or a tool is already recorded (a fast reflex may
         // finish before we observe "busy"). The grace tolerates a slow LLM first token; exiting on a recorded
@@ -198,13 +214,36 @@ public final class CompanionRoutingHarness {
         try {
             applyStateFor(expectedAction, status, snapshot);
             List<String> tools = route(input);
-            assertTrue(tools.contains(expectedAction),
-                    "Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction + "\"");
+            if (!tools.contains(expectedAction)) {
+                // On failure also surface what the semantic reducer offered for this input, so a miss can be told
+                // apart at a glance: the reducer never proposed the target (reducer/alias problem) vs. it proposed
+                // it but the companion LLM did not pick it (prompt/model problem).
+                fail("Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction
+                        + "\"; reducer selected " + reducerSelection()
+                        + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech)));
+            }
         } finally {
             snapshot.setFlags(savedFlags);
             snapshot.setFlags2(savedFlags2);
             status.setStatus(snapshot);
             status.setFighterOut(false);
+        }
+    }
+
+    /**
+     * Re-runs the semantic reducer for the turn that just failed and renders the tool names it selected. The
+     * reducer is deterministic on {@code (allowedCategories, matchInput)}, so replaying it with the commander
+     * categories over {@link elite.intel.companion.mind.CompanionState#lastCommanderMatchInput() the last
+     * commander match input} (the exact normalized phrase the turn's reducer saw) reproduces that turn's
+     * selection. Best-effort: never masks the routing assertion, so any lookup failure renders as a note.
+     */
+    private String reducerSelection() {
+        try {
+            String matchInput = CompanionRuntime.state().lastCommanderMatchInput();
+            return CompanionDiagnostics.names(CompanionRuntime.reducer().selectTools(
+                    new IntelActionAccessPolicy().allowedCategories(ThoughtSource.COMMANDER), matchInput));
+        } catch (RuntimeException unavailable) {
+            return "<reducer unavailable: " + unavailable.getMessage() + ">";
         }
     }
 

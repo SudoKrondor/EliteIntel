@@ -20,7 +20,7 @@ import java.util.*;
 public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_signals_in_star_system";
 
-    @Override public String llmDescription() { return "Report the signal sources detected in the current star system."; }
+    @Override public String llmDescription() { return "Use this when the commander asks about interesting signals, notable signals, or signal sources detected in the current star system."; }
 
 
     @Override public String id() { return ID; }

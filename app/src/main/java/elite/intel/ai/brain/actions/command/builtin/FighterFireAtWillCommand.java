@@ -9,7 +9,7 @@ import elite.intel.session.Status;
 public final class FighterFireAtWillCommand extends SimpleTapCommand {
     public static final String ID = "fighter_fire_at_will";
 
-    @Override public String llmDescription() { return "Order the ship-launched fighter to fire at will."; }
+    @Override public String llmDescription() { return "Use this when the commander orders the ship-launched fighter to fire at will or attack targets freely."; }
 
     public FighterFireAtWillCommand() {
         super(ID, Bindings.GameCommand.OPEN_ORDERS.getGameBinding());

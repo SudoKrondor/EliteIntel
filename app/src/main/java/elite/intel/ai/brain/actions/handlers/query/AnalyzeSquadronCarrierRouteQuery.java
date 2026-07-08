@@ -25,17 +25,8 @@ public class AnalyzeSquadronCarrierRouteQuery extends BaseQueryAnalyzer implemen
     @Override
     public String llmDescription() {
         return """
-                        Report the squadron carrier's planned route.
-                        Number of jump on carrier route.
-                        ordered jump stops (leg = jump number, systemName, hasIcyRing = can refuel here, isPristine = pristine ring)
-                        total jumps to final destination
-                        total travel time (twenty minutes per jump, pre-computed)
-                        tritium available in tons
-                        tritium needed to complete the full route in tons
-                        additional tritium needed (zero means fuel is sufficient)
-                        jumps to the nearest icy ring system (zero if none on route)
-                        name of the nearest icy ring system
-                """;
+               Use this when the commander asks about the squadron carrier's planned route, final destination, travel time, fuel status, or refuel opportunities.
+               """;
     }
 
 
