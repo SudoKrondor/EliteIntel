@@ -1,0 +1,400 @@
+{
+  "language": "RU",
+  "count": 3,
+  "mode": "full",
+  "timestamp": "2026-07-08T18:04:00Z",
+  "notes": "Full RU generalization audit, 98 intents x3. App speech restored (audible TTS + chat panel) before run. No intent 0/3; all failures are flaky.",
+  "records": [
+    {"intent":"interrupt","expectedId":"interrupt","utterance":"хватит болтать","dispatched":"interrupt","pass":true},
+    {"intent":"interrupt","expectedId":"interrupt","utterance":"да помолчи ты","dispatched":"speak","pass":false},
+    {"intent":"interrupt","expectedId":"interrupt","utterance":"стоп, замолкни","dispatched":"speak","pass":false},
+
+    {"intent":"switch_to_combat_mode","expectedId":"switch_to_combat_mode","utterance":"переходим в боевой режим","dispatched":"switch_to_combat_mode","pass":true},
+    {"intent":"switch_to_combat_mode","expectedId":"switch_to_combat_mode","utterance":"готовь корабль к бою, боевой режим","dispatched":"switch_to_combat_mode","pass":true},
+    {"intent":"switch_to_combat_mode","expectedId":"switch_to_combat_mode","utterance":"давай в режим боя","dispatched":"switch_to_combat_mode","pass":true},
+
+    {"intent":"switch_to_analysis_mode","expectedId":"switch_to_analysis_mode","utterance":"переходим в режим анализа","dispatched":"switch_to_analysis_mode","pass":true},
+    {"intent":"switch_to_analysis_mode","expectedId":"switch_to_analysis_mode","utterance":"переключись в аналитический режим","dispatched":"switch_to_analysis_mode","pass":true},
+    {"intent":"switch_to_analysis_mode","expectedId":"switch_to_analysis_mode","utterance":"включи режим исследователя","dispatched":"switch_to_analysis_mode","pass":true},
+
+    {"intent":"reset_head_look_ahead","expectedId":"reset_head_look_ahead","utterance":"смотри прямо по курсу","dispatched":"reset_head_look_ahead","pass":true},
+    {"intent":"reset_head_look_ahead","expectedId":"reset_head_look_ahead","utterance":"верни взгляд вперёд","dispatched":"reset_head_look_ahead","pass":true},
+    {"intent":"reset_head_look_ahead","expectedId":"reset_head_look_ahead","utterance":"сбрось обзор в центр","dispatched":"reset_head_look_ahead","pass":true},
+
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"сделай хонк","dispatched":"retract_hardpoints","pass":false},
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"просканируй всю систему обзорным сканером","dispatched":"run_discovery_scan","pass":true},
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"дай гудок по системе","dispatched":"run_discovery_scan","pass":true},
+
+    {"intent":"set_speed_to_zero_0_stop_ship","expectedId":"set_speed_to_zero_0_stop_ship","utterance":"полная остановка","dispatched":"set_speed_to_zero_0_stop_ship","pass":true},
+    {"intent":"set_speed_to_zero_0_stop_ship","expectedId":"set_speed_to_zero_0_stop_ship","utterance":"заглуши ход полностью","dispatched":"set_speed_to_zero_0_stop_ship","pass":true},
+    {"intent":"set_speed_to_zero_0_stop_ship","expectedId":"set_speed_to_zero_0_stop_ship","utterance":"сбрось тягу в ноль","dispatched":"set_speed_to_zero_0_stop_ship","pass":true},
+
+    {"intent":"set_speed_25","expectedId":"set_speed_25","utterance":"выставь четверть хода","dispatched":"set_speed_25","pass":true},
+    {"intent":"set_speed_25","expectedId":"set_speed_25","utterance":"тяга на 25 процентов","dispatched":"set_speed_25","pass":true},
+    {"intent":"set_speed_25","expectedId":"set_speed_25","utterance":"дай малый ход в четверть","dispatched":"set_speed_25","pass":true},
+
+    {"intent":"set_speed_50","expectedId":"set_speed_50","utterance":"тяга на половину","dispatched":"set_speed_50","pass":true},
+    {"intent":"set_speed_50","expectedId":"set_speed_50","utterance":"50 процентов хода","dispatched":"set_speed_50","pass":true},
+    {"intent":"set_speed_50","expectedId":"set_speed_50","utterance":"давай в полскорости","dispatched":"set_speed_50","pass":true},
+
+    {"intent":"set_speed_75","expectedId":"set_speed_75","utterance":"тяга на три четверти","dispatched":"set_speed_75","pass":true},
+    {"intent":"set_speed_75","expectedId":"set_speed_75","utterance":"75 процентов хода","dispatched":"set_speed_75","pass":true},
+    {"intent":"set_speed_75","expectedId":"set_speed_75","utterance":"разгони до трёх четвертей","dispatched":"set_speed_75","pass":true},
+
+    {"intent":"set_speed_100","expectedId":"set_speed_100","utterance":"полный ход","dispatched":"set_speed_100","pass":true},
+    {"intent":"set_speed_100","expectedId":"set_speed_100","utterance":"тяга на сто процентов","dispatched":"set_speed_100","pass":true},
+    {"intent":"set_speed_100","expectedId":"set_speed_100","utterance":"жми на всю катушку","dispatched":"set_speed_75","pass":false},
+
+    {"intent":"increase_speed","expectedId":"increase_speed","utterance":"прибавь тяги на 10","dispatched":"increase_speed","pass":true},
+    {"intent":"increase_speed","expectedId":"increase_speed","utterance":"накинь скорость на 5","dispatched":"decrease_speed","pass":false},
+    {"intent":"increase_speed","expectedId":"increase_speed","utterance":"чуть добавь ходу, процентов на десять","dispatched":"increase_speed","pass":true},
+
+    {"intent":"decrease_speed","expectedId":"decrease_speed","utterance":"сбавь скорость на 10","dispatched":"decrease_speed","pass":true},
+    {"intent":"decrease_speed","expectedId":"decrease_speed","utterance":"убери тяги процентов на 5","dispatched":"decrease_speed","pass":true},
+    {"intent":"decrease_speed","expectedId":"decrease_speed","utterance":"притормози на десять процентов","dispatched":"decrease_speed","pass":true},
+
+    {"intent":"set_optimal_speed","expectedId":"set_optimal_speed","utterance":"выстави оптимальную скорость захода","dispatched":"set_optimal_speed","pass":true},
+    {"intent":"set_optimal_speed","expectedId":"set_optimal_speed","utterance":"дай оптимальную тягу для подхода","dispatched":"set_optimal_speed","pass":true},
+    {"intent":"set_optimal_speed","expectedId":"set_optimal_speed","utterance":"скорость на синюю зону","dispatched":"set_optimal_speed","pass":true},
+
+    {"intent":"jump_to_hyperspace","expectedId":"jump_to_hyperspace","utterance":"делай гиперпрыжок","dispatched":"jump_to_hyperspace","pass":true},
+    {"intent":"jump_to_hyperspace","expectedId":"jump_to_hyperspace","utterance":"прыгай в следующую систему","dispatched":"jump_to_hyperspace","pass":true},
+    {"intent":"jump_to_hyperspace","expectedId":"jump_to_hyperspace","utterance":"готовь прыжок и уходим","dispatched":"jump_to_hyperspace","pass":true},
+
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"уходим в суперкруиз","dispatched":"jump_to_hyperspace","pass":false},
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"разгоняй до сверхсвета","dispatched":"set_speed_50","pass":false},
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"врубай суперкруиз","dispatched":"enter_super_cruise","pass":true},
+
+    {"intent":"drop_from_super_cruise","expectedId":"drop_from_super_cruise","utterance":"выходим из суперкруиза здесь","dispatched":"drop_from_super_cruise","pass":true},
+    {"intent":"drop_from_super_cruise","expectedId":"drop_from_super_cruise","utterance":"дропаемся из сверхсвета","dispatched":"drop_from_super_cruise","pass":true},
+    {"intent":"drop_from_super_cruise","expectedId":"drop_from_super_cruise","utterance":"сбрось суперкруиз","dispatched":"enter_super_cruise","pass":false},
+
+    {"intent":"navigate_to_active_mission","expectedId":"navigate_to_active_mission","utterance":"проложи курс к активной миссии","dispatched":"navigate_to_active_mission","pass":true},
+    {"intent":"navigate_to_active_mission","expectedId":"navigate_to_active_mission","utterance":"веди к цели текущего задания","dispatched":"navigate_to_active_mission","pass":true},
+    {"intent":"navigate_to_active_mission","expectedId":"navigate_to_active_mission","utterance":"навигация на активную миссию","dispatched":"navigate_to_active_mission","pass":true},
+
+    {"intent":"navigate_to_fleet_carrier","expectedId":"navigate_to_fleet_carrier","utterance":"проложи курс на флотоносец","dispatched":"navigate_to_fleet_carrier","pass":true},
+    {"intent":"navigate_to_fleet_carrier","expectedId":"navigate_to_fleet_carrier","utterance":"веди нас к носителю","dispatched":"navigate_to_fleet_carrier","pass":true},
+    {"intent":"navigate_to_fleet_carrier","expectedId":"navigate_to_fleet_carrier","utterance":"летим к карриеру","dispatched":"navigate_to_fleet_carrier","pass":true},
+
+    {"intent":"cancel_navigation","expectedId":"cancel_navigation","utterance":"сбрось проложенный маршрут","dispatched":"cancel_trade_route","pass":false},
+    {"intent":"cancel_navigation","expectedId":"cancel_navigation","utterance":"отмени навигацию","dispatched":"cancel_navigation","pass":true},
+    {"intent":"cancel_navigation","expectedId":"cancel_navigation","utterance":"убери курс","dispatched":"retract_hardpoints","pass":false},
+
+    {"intent":"navigate_to_landing_zone","expectedId":"navigate_to_landing_zone","utterance":"проложи курс к зоне посадки","dispatched":"navigate_to_landing_zone","pass":true},
+    {"intent":"navigate_to_landing_zone","expectedId":"navigate_to_landing_zone","utterance":"веди к посадочной зоне","dispatched":"navigate_to_landing_zone","pass":true},
+    {"intent":"navigate_to_landing_zone","expectedId":"navigate_to_landing_zone","utterance":"веди меня обратно к зоне посадки","dispatched":"navigate_to_landing_zone","pass":true},
+
+    {"intent":"target_destination","expectedId":"target_destination","utterance":"выбери пункт назначения целью","dispatched":"target_destination","pass":true},
+    {"intent":"target_destination","expectedId":"target_destination","utterance":"захвати цель назначения","dispatched":"target_destination","pass":true},
+    {"intent":"target_destination","expectedId":"target_destination","utterance":"нацелься на точку назначения","dispatched":"target_destination","pass":true},
+
+    {"intent":"clear_active_missions","expectedId":"clear_active_missions","utterance":"очисти список активных заданий","dispatched":"clear_active_missions","pass":true},
+    {"intent":"clear_active_missions","expectedId":"clear_active_missions","utterance":"удали все текущие миссии","dispatched":"clear_active_missions","pass":true},
+    {"intent":"clear_active_missions","expectedId":"clear_active_missions","utterance":"сбрось все задания","dispatched":"clear_active_missions","pass":true},
+
+    {"intent":"navigate_to_next_trade_stop","expectedId":"navigate_to_next_trade_stop","utterance":"проложи курс к следующей торговой остановке","dispatched":"navigate_to_next_trade_stop","pass":true},
+    {"intent":"navigate_to_next_trade_stop","expectedId":"navigate_to_next_trade_stop","utterance":"веди к следующему пункту торгового маршрута","dispatched":"navigate_to_next_trade_stop","pass":true},
+    {"intent":"navigate_to_next_trade_stop","expectedId":"navigate_to_next_trade_stop","utterance":"летим на следующую торговую точку","dispatched":"navigate_to_next_trade_stop","pass":true},
+
+    {"intent":"deploy_landing_gear","expectedId":"deploy_landing_gear","utterance":"выпусти шасси","dispatched":"deploy_landing_gear","pass":true},
+    {"intent":"deploy_landing_gear","expectedId":"deploy_landing_gear","utterance":"дай шасси","dispatched":"deploy_landing_gear","pass":true},
+    {"intent":"deploy_landing_gear","expectedId":"deploy_landing_gear","utterance":"опусти стойки шасси","dispatched":"deploy_landing_gear","pass":true},
+
+    {"intent":"retract_landing_gear","expectedId":"retract_landing_gear","utterance":"убери шасси","dispatched":"retract_landing_gear","pass":true},
+    {"intent":"retract_landing_gear","expectedId":"retract_landing_gear","utterance":"подними шасси","dispatched":"retract_landing_gear","pass":true},
+    {"intent":"retract_landing_gear","expectedId":"retract_landing_gear","utterance":"сложи стойки шасси","dispatched":"retract_landing_gear","pass":true},
+
+    {"intent":"request_docking","expectedId":"request_docking","utterance":"запроси стыковку","dispatched":"request_docking","pass":true},
+    {"intent":"request_docking","expectedId":"request_docking","utterance":"свяжись с башней и запроси площадку","dispatched":"request_docking","pass":true},
+    {"intent":"request_docking","expectedId":"request_docking","utterance":"запрос разрешения на посадку","dispatched":"request_docking","pass":true},
+
+    {"intent":"toggle_cargo_scoop","expectedId":"toggle_cargo_scoop","utterance":"открой грузовой люк","dispatched":"toggle_cargo_scoop","pass":true},
+    {"intent":"toggle_cargo_scoop","expectedId":"toggle_cargo_scoop","utterance":"выдвинь грузовой ковш","dispatched":"toggle_cargo_scoop","pass":true},
+    {"intent":"toggle_cargo_scoop","expectedId":"toggle_cargo_scoop","utterance":"открой ковш для сбора груза","dispatched":"toggle_cargo_scoop","pass":true},
+
+    {"intent":"toggle_night_vision_on_off","expectedId":"toggle_night_vision_on_off","utterance":"включи ночное видение","dispatched":"toggle_night_vision_on_off","pass":true},
+    {"intent":"toggle_night_vision_on_off","expectedId":"toggle_night_vision_on_off","utterance":"врубай ночник","dispatched":"toggle_night_vision_on_off","pass":true},
+    {"intent":"toggle_night_vision_on_off","expectedId":"toggle_night_vision_on_off","utterance":"давай ночное зрение","dispatched":"toggle_night_vision_on_off","pass":true},
+
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"включи фары","dispatched":"toggle_lights_on_off","pass":true},
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"зажги внешние огни","dispatched":"speak","pass":false},
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"врубай свет корабля","dispatched":"toggle_lights_on_off","pass":true},
+
+    {"intent":"dismiss_ship_to_orbit","expectedId":"dismiss_ship_to_orbit","utterance":"отзови корабль на орбиту","dispatched":"dismiss_ship_to_orbit","pass":true},
+    {"intent":"dismiss_ship_to_orbit","expectedId":"dismiss_ship_to_orbit","utterance":"убери корабль в космос","dispatched":"dismiss_ship_to_orbit","pass":true},
+    {"intent":"dismiss_ship_to_orbit","expectedId":"dismiss_ship_to_orbit","utterance":"отправь корабль на орбиту","dispatched":"dismiss_ship_to_orbit","pass":true},
+
+    {"intent":"taxi_to_landing_pad","expectedId":"taxi_to_landing_pad","utterance":"врубай автостыковку","dispatched":"request_docking","pass":false},
+    {"intent":"taxi_to_landing_pad","expectedId":"taxi_to_landing_pad","utterance":"давай на автопилот до площадки","dispatched":"taxi_to_landing_pad","pass":true},
+    {"intent":"taxi_to_landing_pad","expectedId":"taxi_to_landing_pad","utterance":"автодок, посади нас","dispatched":"taxi_to_landing_pad","pass":true},
+
+    {"intent":"deploy_hardpoints","expectedId":"deploy_hardpoints","utterance":"выпусти оружие","dispatched":"deploy_hardpoints","pass":true},
+    {"intent":"deploy_hardpoints","expectedId":"deploy_hardpoints","utterance":"раскрой пилоны","dispatched":"deploy_hardpoints","pass":true},
+    {"intent":"deploy_hardpoints","expectedId":"deploy_hardpoints","utterance":"доставай орудия, к бою","dispatched":"deploy_hardpoints","pass":true},
+
+    {"intent":"retract_hardpoints","expectedId":"retract_hardpoints","utterance":"убери оружие","dispatched":"retract_hardpoints","pass":true},
+    {"intent":"retract_hardpoints","expectedId":"retract_hardpoints","utterance":"спрячь орудия","dispatched":"retract_hardpoints","pass":true},
+    {"intent":"retract_hardpoints","expectedId":"retract_hardpoints","utterance":"сложи пилоны, отбой","dispatched":"retract_hardpoints","pass":true},
+
+    {"intent":"deploy_heat_sink","expectedId":"deploy_heat_sink","utterance":"сбрось тепло","dispatched":"deploy_heat_sink","pass":true},
+    {"intent":"deploy_heat_sink","expectedId":"deploy_heat_sink","utterance":"кинь теплоотвод","dispatched":"deploy_heat_sink","pass":true},
+    {"intent":"deploy_heat_sink","expectedId":"deploy_heat_sink","utterance":"выброси хитсинк","dispatched":"deploy_heat_sink","pass":true},
+
+    {"intent":"target_hostile_highest_threat","expectedId":"target_hostile_highest_threat","utterance":"возьми на прицел самую опасную цель","dispatched":"target_hostile_highest_threat","pass":true},
+    {"intent":"target_hostile_highest_threat","expectedId":"target_hostile_highest_threat","utterance":"цель — наибольшая угроза","dispatched":"target_hostile_highest_threat","pass":true},
+    {"intent":"target_hostile_highest_threat","expectedId":"target_hostile_highest_threat","utterance":"наведись на приоритетного врага","dispatched":"target_hostile_highest_threat","pass":true},
+
+    {"intent":"deploy_shield_cell","expectedId":"deploy_shield_cell","utterance":"активируй банку щита","dispatched":"deploy_shield_cell","pass":true},
+    {"intent":"deploy_shield_cell","expectedId":"deploy_shield_cell","utterance":"врубай энергоячейку щита","dispatched":"deploy_shield_cell","pass":true},
+    {"intent":"deploy_shield_cell","expectedId":"deploy_shield_cell","utterance":"используй ячейку восстановления щита","dispatched":"deploy_shield_cell","pass":true},
+
+    {"intent":"deploy_chaff","expectedId":"deploy_chaff","utterance":"отстрели диполи","dispatched":"deploy_chaff","pass":true},
+    {"intent":"deploy_chaff","expectedId":"deploy_chaff","utterance":"дай чафф","dispatched":"deploy_chaff","pass":true},
+    {"intent":"deploy_chaff","expectedId":"deploy_chaff","utterance":"раскидай дипольные отражатели","dispatched":"deploy_chaff","pass":true},
+
+    {"intent":"transfer_power_to_shields","expectedId":"transfer_power_to_shields","utterance":"все пипсы в щиты","dispatched":"transfer_power_to_shields","pass":true},
+    {"intent":"transfer_power_to_shields","expectedId":"transfer_power_to_shields","utterance":"энергию в щиты","dispatched":"transfer_power_to_shields","pass":true},
+    {"intent":"transfer_power_to_shields","expectedId":"transfer_power_to_shields","utterance":"максимум питания на щиты","dispatched":"transfer_power_to_shields","pass":true},
+
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"пипсы в движки","dispatched":"transfer_power_to_ship_systems","pass":false},
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"энергию в двигатели","dispatched":"transfer_power_to_engines","pass":true},
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"максимум в моторы","dispatched":"transfer_power_to_engines","pass":true},
+
+    {"intent":"transfer_power_to_weapons","expectedId":"transfer_power_to_weapons","utterance":"пипсы в оружие","dispatched":"transfer_power_to_weapons","pass":true},
+    {"intent":"transfer_power_to_weapons","expectedId":"transfer_power_to_weapons","utterance":"энергию на пушки","dispatched":"transfer_power_to_weapons","pass":true},
+    {"intent":"transfer_power_to_weapons","expectedId":"transfer_power_to_weapons","utterance":"максимум питания в оружие","dispatched":"transfer_power_to_weapons","pass":true},
+
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"выровняй пипсы","dispatched":"speak","pass":false},
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"сбрось распределение питания","dispatched":"equalize_power","pass":true},
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"разбей энергию поровну","dispatched":"equalize_power","pass":true},
+
+    {"intent":"open_fss_scan_system","expectedId":"open_fss_scan_system","utterance":"открой FSS и сканируй","dispatched":"open_fss_scan_system","pass":true},
+    {"intent":"open_fss_scan_system","expectedId":"open_fss_scan_system","utterance":"запусти полное спектральное сканирование","dispatched":"open_fss_scan_system","pass":true},
+    {"intent":"open_fss_scan_system","expectedId":"open_fss_scan_system","utterance":"врубай ПСС","dispatched":"open_fss_scan_system","pass":true},
+
+    {"intent":"navigate_to_bio_sample_codex_entry","expectedId":"navigate_to_bio_sample_codex_entry","utterance":"проложи курс к следующему биообразцу","dispatched":"navigate_to_bio_sample_codex_entry","pass":true},
+    {"intent":"navigate_to_bio_sample_codex_entry","expectedId":"navigate_to_bio_sample_codex_entry","utterance":"веди к следующей записи кодекса по органике","dispatched":"navigate_to_bio_sample_codex_entry","pass":true},
+    {"intent":"navigate_to_bio_sample_codex_entry","expectedId":"navigate_to_bio_sample_codex_entry","utterance":"навигация к ближайшему органическому образцу","dispatched":"navigate_to_bio_sample_codex_entry","pass":true},
+
+    {"intent":"find_mining_site","expectedId":"find_mining_site","utterance":"найди место добычи александрита в радиусе 300 световых лет","dispatched":"find_mining_site","pass":true},
+    {"intent":"find_mining_site","expectedId":"find_mining_site","utterance":"поищи хотспот бромеллита в пределах 500 световых лет","dispatched":"find_mining_site","pass":true},
+    {"intent":"find_mining_site","expectedId":"find_mining_site","utterance":"найди астероидное кольцо с золотом поблизости","dispatched":"find_mining_site","pass":true},
+
+    {"intent":"enter_fleet_carrier_destination","expectedId":"enter_fleet_carrier_destination","utterance":"введи пункт назначения авианосца","dispatched":"enter_fleet_carrier_destination","pass":true},
+    {"intent":"enter_fleet_carrier_destination","expectedId":"enter_fleet_carrier_destination","utterance":"задай следующую точку назначения носителя","dispatched":"target_destination","pass":false},
+    {"intent":"enter_fleet_carrier_destination","expectedId":"enter_fleet_carrier_destination","utterance":"установи курс назначения для карриера","dispatched":"enter_fleet_carrier_destination","pass":true},
+
+    {"intent":"find_nearest_fleet_carrier","expectedId":"find_nearest_fleet_carrier","utterance":"найди ближайший флотский авианосец","dispatched":"find_nearest_fleet_carrier","pass":true},
+    {"intent":"find_nearest_fleet_carrier","expectedId":"find_nearest_fleet_carrier","utterance":"где ближайший карриер","dispatched":"find_nearest_fleet_carrier","pass":true},
+    {"intent":"find_nearest_fleet_carrier","expectedId":"find_nearest_fleet_carrier","utterance":"покажи ближайший носитель","dispatched":"find_nearest_fleet_carrier","pass":true},
+
+    {"intent":"navigate_to_squadron_carrier","expectedId":"navigate_to_squadron_carrier","utterance":"проложи курс к авианосцу эскадрильи","dispatched":"navigate_to_squadron_carrier","pass":true},
+    {"intent":"navigate_to_squadron_carrier","expectedId":"navigate_to_squadron_carrier","utterance":"веди к носителю эскадрильи","dispatched":"navigate_to_squadron_carrier","pass":true},
+    {"intent":"navigate_to_squadron_carrier","expectedId":"navigate_to_squadron_carrier","utterance":"летим к карриеру эскадры","dispatched":"navigate_to_squadron_carrier","pass":true},
+
+    {"intent":"query_squadron_carrier_status_fuel_credit_finance","expectedId":"query_squadron_carrier_status_fuel_credit_finance","utterance":"статус авианосца эскадрильи","dispatched":"query_squadron_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_squadron_carrier_status_fuel_credit_finance","expectedId":"query_squadron_carrier_status_fuel_credit_finance","utterance":"сколько трития на авианосце эскадрильи","dispatched":"query_squadron_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_squadron_carrier_status_fuel_credit_finance","expectedId":"query_squadron_carrier_status_fuel_credit_finance","utterance":"финансы носителя эскадрильи","dispatched":"query_squadron_carrier_status_fuel_credit_finance","pass":true},
+
+    {"intent":"query_squadron_carrier_route","expectedId":"query_squadron_carrier_route","utterance":"маршрут авианосца эскадрильи","dispatched":"query_squadron_carrier_route","pass":true},
+    {"intent":"query_squadron_carrier_route","expectedId":"query_squadron_carrier_route","utterance":"сколько прыжков на маршруте носителя эскадрильи","dispatched":"query_fleet_carrier_route","pass":false},
+    {"intent":"query_squadron_carrier_route","expectedId":"query_squadron_carrier_route","utterance":"какой курс проложен у авианосца эскадрильи","dispatched":"speak","pass":false},
+
+    {"intent":"query_squadron_carrier_final_destination","expectedId":"query_squadron_carrier_final_destination","utterance":"куда летит авианосец эскадрильи","dispatched":"query_squadron_carrier_final_destination","pass":true},
+    {"intent":"query_squadron_carrier_final_destination","expectedId":"query_squadron_carrier_final_destination","utterance":"конечный пункт назначения носителя эскадрильи","dispatched":"query_squadron_carrier_final_destination","pass":true},
+    {"intent":"query_squadron_carrier_final_destination","expectedId":"query_squadron_carrier_final_destination","utterance":"финальная точка авианосца эскадрильи","dispatched":"query_squadron_carrier_final_destination","pass":true},
+
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"когда прибудет авианосец эскадрильи","dispatched":"query_squadron_carrier_eta","pass":true},
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"время прибытия носителя эскадрильи","dispatched":"query_squadron_carrier_eta","pass":true},
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"сколько ждать авианосец эскадрильи","dispatched":"speak","pass":false},
+
+    {"intent":"navigate_to_fleet_carrier_bare","expectedId":"navigate_to_fleet_carrier","utterance":"летим к авианосцу","dispatched":"navigate_to_squadron_carrier","pass":false},
+    {"intent":"navigate_to_fleet_carrier_bare","expectedId":"navigate_to_fleet_carrier","utterance":"веди нас к носителю","dispatched":"navigate_to_fleet_carrier","pass":true},
+    {"intent":"navigate_to_fleet_carrier_bare","expectedId":"navigate_to_fleet_carrier","utterance":"проложи курс на карриер","dispatched":"navigate_to_fleet_carrier","pass":true},
+
+    {"intent":"query_fleet_carrier_status_bare","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"статус авианосца","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_fleet_carrier_status_bare","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"баланс носителя","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_fleet_carrier_status_bare","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"средства карриера","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+
+    {"intent":"toggle_all_announcements","expectedId":"toggle_all_announcements","utterance":"отключи все объявления","dispatched":"toggle_all_announcements","pass":true},
+    {"intent":"toggle_all_announcements","expectedId":"toggle_all_announcements","utterance":"выключи все оповещения","dispatched":"toggle_all_announcements","pass":true},
+    {"intent":"toggle_all_announcements","expectedId":"toggle_all_announcements","utterance":"заглуши все анонсы","dispatched":"toggle_all_announcements","pass":true},
+
+    {"intent":"set_reminder","expectedId":"set_reminder","utterance":"поставь напоминание дозаправиться на следующей остановке","dispatched":"set_reminder","pass":true},
+    {"intent":"set_reminder","expectedId":"set_reminder","utterance":"напомни купить тритий на станции","dispatched":"speak","pass":false},
+    {"intent":"set_reminder","expectedId":"set_reminder","utterance":"напоминание проверить топливо перед прыжком","dispatched":"set_reminder","pass":true},
+
+    {"intent":"display_open_galaxy_map","expectedId":"display_open_galaxy_map","utterance":"открой карту галактики","dispatched":"display_open_galaxy_map","pass":true},
+    {"intent":"display_open_galaxy_map","expectedId":"display_open_galaxy_map","utterance":"покажи галкарту","dispatched":"display_open_galaxy_map","pass":true},
+    {"intent":"display_open_galaxy_map","expectedId":"display_open_galaxy_map","utterance":"выведи карту галактики","dispatched":"display_open_galaxy_map","pass":true},
+
+    {"intent":"display_open_system_map","expectedId":"display_open_system_map","utterance":"открой карту системы","dispatched":"display_open_system_map","pass":true},
+    {"intent":"display_open_system_map","expectedId":"display_open_system_map","utterance":"покажи локальную карту","dispatched":"display_open_system_map","pass":true},
+    {"intent":"display_open_system_map","expectedId":"display_open_system_map","utterance":"выведи системную карту","dispatched":"display_open_system_map","pass":true},
+
+    {"intent":"show_navigation_panel","expectedId":"show_navigation_panel","utterance":"открой панель навигации","dispatched":"show_navigation_panel","pass":true},
+    {"intent":"show_navigation_panel","expectedId":"show_navigation_panel","utterance":"покажи навпанель","dispatched":"show_navigation_panel","pass":true},
+    {"intent":"show_navigation_panel","expectedId":"show_navigation_panel","utterance":"выведи навигационную панель","dispatched":"show_navigation_panel","pass":true},
+
+    {"intent":"show_modules_panel","expectedId":"show_modules_panel","utterance":"открой панель модулей","dispatched":"show_modules_panel","pass":true},
+    {"intent":"show_modules_panel","expectedId":"show_modules_panel","utterance":"покажи вкладку модулей","dispatched":"show_modules_panel","pass":true},
+    {"intent":"show_modules_panel","expectedId":"show_modules_panel","utterance":"выведи панель оборудования","dispatched":"show_modules_panel","pass":true},
+
+    {"intent":"show_status_panel","expectedId":"show_status_panel","utterance":"открой панель статуса","dispatched":"show_status_panel","pass":true},
+    {"intent":"show_status_panel","expectedId":"show_status_panel","utterance":"покажи панель состояния","dispatched":"show_status_panel","pass":true},
+    {"intent":"show_status_panel","expectedId":"show_status_panel","utterance":"выведи статусную панель","dispatched":"show_status_panel","pass":true},
+
+    {"intent":"show_inventory_panel","expectedId":"show_inventory_panel","utterance":"открой инвентарь","dispatched":"show_inventory_panel","pass":true},
+    {"intent":"show_inventory_panel","expectedId":"show_inventory_panel","utterance":"покажи панель инвентаря","dispatched":"show_inventory_panel","pass":true},
+    {"intent":"show_inventory_panel","expectedId":"show_inventory_panel","utterance":"выведи вкладку инвентаря","dispatched":"show_inventory_panel","pass":true},
+
+    {"intent":"exit_close","expectedId":"exit_close","utterance":"закрой панель","dispatched":"exit_close","pass":true},
+    {"intent":"exit_close","expectedId":"exit_close","utterance":"выйди из панели","dispatched":"exit_close","pass":true},
+    {"intent":"exit_close","expectedId":"exit_close","utterance":"закрой это меню","dispatched":"exit_close","pass":true},
+
+    {"intent":"query_current_location","expectedId":"query_current_location","utterance":"где мы сейчас находимся","dispatched":"query_current_location","pass":true},
+    {"intent":"query_current_location","expectedId":"query_current_location","utterance":"какое наше текущее местоположение","dispatched":"query_current_location","pass":true},
+    {"intent":"query_current_location","expectedId":"query_current_location","utterance":"в какой мы системе","dispatched":"query_current_location","pass":true},
+
+    {"intent":"query_ship_loadout","expectedId":"query_ship_loadout","utterance":"какая у меня сборка корабля","dispatched":"query_ship_loadout","pass":true},
+    {"intent":"query_ship_loadout","expectedId":"query_ship_loadout","utterance":"какие модули установлены на борту","dispatched":"query_ship_loadout","pass":true},
+    {"intent":"query_ship_loadout","expectedId":"query_ship_loadout","utterance":"есть ли на корабле топливозаборник","dispatched":"query_ship_loadout","pass":true},
+
+    {"intent":"query_cargo_hold_contents","expectedId":"query_cargo_hold_contents","utterance":"что у нас в трюме","dispatched":"query_cargo_hold_contents","pass":true},
+    {"intent":"query_cargo_hold_contents","expectedId":"query_cargo_hold_contents","utterance":"покажи содержимое грузового отсека","dispatched":"query_cargo_hold_contents","pass":true},
+    {"intent":"query_cargo_hold_contents","expectedId":"query_cargo_hold_contents","utterance":"что мы везём в карго","dispatched":"query_cargo_hold_contents","pass":true},
+
+    {"intent":"query_ship_route_remaining_jumps","expectedId":"query_ship_route_remaining_jumps","utterance":"сколько прыжков осталось до цели","dispatched":"query_ship_route_remaining_jumps","pass":true},
+    {"intent":"query_ship_route_remaining_jumps","expectedId":"query_ship_route_remaining_jumps","utterance":"какой маршрут проложен","dispatched":"query_ship_route_remaining_jumps","pass":true},
+    {"intent":"query_ship_route_remaining_jumps","expectedId":"query_ship_route_remaining_jumps","utterance":"сколько ещё прыжков по курсу","dispatched":"query_ship_route_remaining_jumps","pass":true},
+
+    {"intent":"query_stations","expectedId":"query_stations","utterance":"какие станции есть в системе","dispatched":"query_stations","pass":true},
+    {"intent":"query_stations","expectedId":"query_stations","utterance":"есть ли тут порты","dispatched":"query_stations","pass":true},
+    {"intent":"query_stations","expectedId":"query_stations","utterance":"перечисли станции в этой системе","dispatched":"query_stations","pass":true},
+
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"какие тут планеты с посадкой","dispatched":"query_stellar_objects","pass":true},
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"есть ли в системе ледяные кольца","dispatched":"speak","pass":false},
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"какие небесные тела в этой системе","dispatched":"query_stellar_objects","pass":true},
+
+    {"intent":"query_signals_in_star_system","expectedId":"query_signals_in_star_system","utterance":"какие сигналы в этой системе","dispatched":"query_signals_in_star_system","pass":true},
+    {"intent":"query_signals_in_star_system","expectedId":"query_signals_in_star_system","utterance":"что за источники сигналов вокруг","dispatched":"query_signals_in_star_system","pass":true},
+    {"intent":"query_signals_in_star_system","expectedId":"query_signals_in_star_system","utterance":"есть ли интересные сигналы в системе","dispatched":"query_signals_in_star_system","pass":true},
+
+    {"intent":"query_bio_scans_and_samples_in_star_system","expectedId":"query_bio_scans_and_samples_in_star_system","utterance":"какие планеты в системе ещё надо просканировать на биологию","dispatched":"query_bio_scans_and_samples_in_star_system","pass":true},
+    {"intent":"query_bio_scans_and_samples_in_star_system","expectedId":"query_bio_scans_and_samples_in_star_system","utterance":"где в системе остались несканированные биосигналы","dispatched":"query_bio_scans_and_samples_in_star_system","pass":true},
+    {"intent":"query_bio_scans_and_samples_in_star_system","expectedId":"query_bio_scans_and_samples_in_star_system","utterance":"по каким телам системы не завершено био сканирование","dispatched":"query_bio_scans_and_samples_in_star_system","pass":true},
+
+    {"intent":"query_exobiology_samples","expectedId":"query_exobiology_samples","utterance":"какие биообразцы мы собрали на этой планете","dispatched":"query_exobiology_samples","pass":true},
+    {"intent":"query_exobiology_samples","expectedId":"query_exobiology_samples","utterance":"какая органика осталась на этой планете","dispatched":"query_exobiology_samples","pass":true},
+    {"intent":"query_exobiology_samples","expectedId":"query_exobiology_samples","utterance":"сколько экзобио образцов взято на этой планете","dispatched":"query_exobiology_samples","pass":true},
+
+    {"intent":"query_player_profile_rank_progress","expectedId":"query_player_profile_rank_progress","utterance":"покажи профиль командира","dispatched":"query_player_profile_rank_progress","pass":true},
+    {"intent":"query_player_profile_rank_progress","expectedId":"query_player_profile_rank_progress","utterance":"какой у меня прогресс по рангам","dispatched":"query_player_profile_rank_progress","pass":true},
+    {"intent":"query_player_profile_rank_progress","expectedId":"query_player_profile_rank_progress","utterance":"мой профиль и звания","dispatched":"query_player_profile_rank_progress","pass":true},
+
+    {"intent":"query_fleet_carrier_status_fuel_credit_finance","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"сколько трития на авианосце","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_fleet_carrier_status_fuel_credit_finance","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"какой уровень топлива у носителя","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+    {"intent":"query_fleet_carrier_status_fuel_credit_finance","expectedId":"query_fleet_carrier_status_fuel_credit_finance","utterance":"статус топлива флотского авианосца","dispatched":"query_fleet_carrier_status_fuel_credit_finance","pass":true},
+
+    {"intent":"query_distance_to_carrier","expectedId":"query_distance_to_carrier","utterance":"как далеко мы от авианосца","dispatched":"query_distance_to_carrier","pass":true},
+    {"intent":"query_distance_to_carrier","expectedId":"query_distance_to_carrier","utterance":"какое расстояние до флотского носителя","dispatched":"query_distance_to_carrier","pass":true},
+    {"intent":"query_distance_to_carrier","expectedId":"query_distance_to_carrier","utterance":"сколько до карриера","dispatched":"none","pass":false},
+
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"какая цель фсд","dispatched":"query_fsd_target","pass":true},
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"что за следующий прыжок","dispatched":"query_fsd_target","pass":true},
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"информация о цели рамочно-сместительного двигателя","dispatched":"speak","pass":false},
+
+    {"intent":"query_exploration_profits","expectedId":"query_exploration_profits","utterance":"какой потенциал исследовательской прибыли в этой системе","dispatched":"query_exploration_profits","pass":true},
+    {"intent":"query_exploration_profits","expectedId":"query_exploration_profits","utterance":"сколько можно заработать на разведке этой системы","dispatched":"query_exploration_profits","pass":true},
+    {"intent":"query_exploration_profits","expectedId":"query_exploration_profits","utterance":"какова ценность данных разведки здесь","dispatched":"query_exploration_profits","pass":true},
+
+    {"intent":"query_time","expectedId":"query_time","utterance":"который час","dispatched":"query_time","pass":true},
+    {"intent":"query_time","expectedId":"query_time","utterance":"текущее время по UTC","dispatched":"query_time","pass":true},
+    {"intent":"query_time","expectedId":"query_time","utterance":"сколько сейчас времени","dispatched":"query_time","pass":true},
+
+    {"intent":"query_system_security","expectedId":"query_system_security","utterance":"какой уровень безопасности в системе","dispatched":"query_system_security","pass":true},
+    {"intent":"query_system_security","expectedId":"query_system_security","utterance":"кто контролирует эту систему","dispatched":"query_system_security","pass":true},
+    {"intent":"query_system_security","expectedId":"query_system_security","utterance":"какая фракция тут доминирует","dispatched":"query_system_security","pass":true},
+
+    {"intent":"query_station_details","expectedId":"query_station_details","utterance":"расскажи о станции","dispatched":"query_station_details","pass":true},
+    {"intent":"query_station_details","expectedId":"query_station_details","utterance":"какие услуги на этой станции","dispatched":"query_station_details","pass":true},
+    {"intent":"query_station_details","expectedId":"query_station_details","utterance":"детали текущей станции","dispatched":"query_station_details","pass":true},
+
+    {"intent":"query_material_inventory","expectedId":"query_material_inventory","utterance":"сколько у нас железа в материалах","dispatched":"query_material_inventory","pass":true},
+    {"intent":"query_material_inventory","expectedId":"query_material_inventory","utterance":"запас ванадия","dispatched":"query_material_inventory","pass":true},
+    {"intent":"query_material_inventory","expectedId":"query_material_inventory","utterance":"сколько накоплено серы в инвентаре материалов","dispatched":"query_material_inventory","pass":true},
+
+    {"intent":"query_planet_materials","expectedId":"query_planet_materials","utterance":"какие материалы есть на этой планете","dispatched":"query_planet_materials","pass":true},
+    {"intent":"query_planet_materials","expectedId":"query_planet_materials","utterance":"что можно добыть на поверхности этой планеты","dispatched":"query_planet_materials","pass":true},
+    {"intent":"query_planet_materials","expectedId":"query_planet_materials","utterance":"перечисли материалы этой планеты","dispatched":"query_planet_materials","pass":true},
+
+    {"intent":"query_distance_to_bubble_earth_sol_civilization","expectedId":"query_distance_to_bubble_earth_sol_civilization","utterance":"как далеко мы от Пузыря","dispatched":"query_distance_to_bubble_earth_sol_civilization","pass":true},
+    {"intent":"query_distance_to_bubble_earth_sol_civilization","expectedId":"query_distance_to_bubble_earth_sol_civilization","utterance":"сколько до Земли","dispatched":"query_distance_to_bubble_earth_sol_civilization","pass":true},
+    {"intent":"query_distance_to_bubble_earth_sol_civilization","expectedId":"query_distance_to_bubble_earth_sol_civilization","utterance":"какое расстояние до цивилизации","dispatched":"query_distance_to_bubble_earth_sol_civilization","pass":true},
+
+    {"intent":"query_last_scan","expectedId":"query_last_scan","utterance":"проанализируй последнее сканирование","dispatched":"query_last_scan","pass":true},
+    {"intent":"query_last_scan","expectedId":"query_last_scan","utterance":"что показал последний скан","dispatched":"query_last_scan","pass":true},
+    {"intent":"query_last_scan","expectedId":"query_last_scan","utterance":"разбери данные последнего сканирования","dispatched":"query_last_scan","pass":true},
+
+    {"intent":"query_reminder","expectedId":"query_reminder","utterance":"какое у меня напоминание","dispatched":"query_reminder","pass":true},
+    {"intent":"query_reminder","expectedId":"query_reminder","utterance":"есть ли напоминания","dispatched":"query_reminder","pass":true},
+    {"intent":"query_reminder","expectedId":"query_reminder","utterance":"напомни, что я просил","dispatched":"speak","pass":false},
+
+    {"intent":"query_fleet_carrier_eta","expectedId":"query_fleet_carrier_eta","utterance":"когда прибудет наш флотский авианосец","dispatched":"query_fleet_carrier_eta","pass":true},
+    {"intent":"query_fleet_carrier_eta","expectedId":"query_fleet_carrier_eta","utterance":"время прибытия флотоносца","dispatched":"query_fleet_carrier_eta","pass":true},
+    {"intent":"query_fleet_carrier_eta","expectedId":"query_fleet_carrier_eta","utterance":"через сколько долетит наш флотский карриер","dispatched":"query_fleet_carrier_eta","pass":true},
+
+    {"intent":"query_geo_signals","expectedId":"query_geo_signals","utterance":"какие геосигналы в системе","dispatched":"query_geo_signals","pass":true},
+    {"intent":"query_geo_signals","expectedId":"query_geo_signals","utterance":"есть ли геологическая активность","dispatched":"query_geo_signals","pass":true},
+    {"intent":"query_geo_signals","expectedId":"query_geo_signals","utterance":"где вулканическая активность в системе","dispatched":"query_geo_signals","pass":true},
+
+    {"intent":"query_markets","expectedId":"query_markets","utterance":"покажи местные рынки","dispatched":"query_markets","pass":true},
+    {"intent":"query_markets","expectedId":"query_markets","utterance":"какие товары на рынках в системе","dispatched":"query_markets","pass":true},
+    {"intent":"query_markets","expectedId":"query_markets","utterance":"рынки на станциях системы","dispatched":"query_markets","pass":true},
+
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"сколько я собрал наград","dispatched":"query_total_bounties","pass":true},
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"общая сумма баунти","dispatched":"speak","pass":false},
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"сколько всего премий за поимку","dispatched":"speak","pass":false},
+
+    {"intent":"query_biome_analysis","expectedId":"query_biome_analysis","utterance":"проанализируй биом этой системы","dispatched":"query_biome_analysis","pass":true},
+    {"intent":"query_biome_analysis","expectedId":"query_biome_analysis","utterance":"разбери биом планеты A1","dispatched":"query_biome_analysis","pass":true},
+    {"intent":"query_biome_analysis","expectedId":"query_biome_analysis","utterance":"дай анализ биома этой звёздной системы","dispatched":"query_biome_analysis","pass":true},
+
+    {"intent":"query_distance_to_bio_sample","expectedId":"query_distance_to_bio_sample","utterance":"как далеко до последнего биообразца","dispatched":"query_distance_to_bio_sample","pass":true},
+    {"intent":"query_distance_to_bio_sample","expectedId":"query_distance_to_bio_sample","utterance":"расстояние до последнего органического образца","dispatched":"query_distance_to_bio_sample","pass":true},
+    {"intent":"query_distance_to_bio_sample","expectedId":"query_distance_to_bio_sample","utterance":"сколько до места последнего био сэмпла","dispatched":"query_distance_to_bio_sample","pass":true},
+
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"что на маршруте авианосца","dispatched":"query_fleet_carrier_route","pass":true},
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"какой курс проложен у флотоносца","dispatched":"speak","pass":false},
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"сколько прыжков на маршруте носителя","dispatched":"query_squadron_carrier_route","pass":false},
+
+    {"intent":"query_fleet_carrier_final_destination","expectedId":"query_fleet_carrier_final_destination","utterance":"куда летит наш авианосец","dispatched":"query_fleet_carrier_final_destination","pass":true},
+    {"intent":"query_fleet_carrier_final_destination","expectedId":"query_fleet_carrier_final_destination","utterance":"конечный пункт назначения флотоносца","dispatched":"query_fleet_carrier_final_destination","pass":true},
+    {"intent":"query_fleet_carrier_final_destination","expectedId":"query_fleet_carrier_final_destination","utterance":"какая финальная точка носителя","dispatched":"query_squadron_carrier_final_destination","pass":false},
+
+    {"intent":"set_carrier_fuel_reserve","expectedId":"set_carrier_fuel_reserve","utterance":"установи резерв топлива на 5000","dispatched":"set_carrier_fuel_reserve","pass":true},
+    {"intent":"set_carrier_fuel_reserve","expectedId":"set_carrier_fuel_reserve","utterance":"задай резерв трития 10000","dispatched":"set_carrier_fuel_reserve","pass":true},
+    {"intent":"set_carrier_fuel_reserve","expectedId":"set_carrier_fuel_reserve","utterance":"поставь топливный резерв авианосца на пятнадцать тысяч","dispatched":"set_carrier_fuel_reserve","pass":true},
+
+    {"intent":"disembark","expectedId":"disembark","utterance":"высаживаюсь","dispatched":"speak","pass":false},
+    {"intent":"disembark","expectedId":"disembark","utterance":"выхожу из корабля","dispatched":"disembark","pass":true},
+    {"intent":"disembark","expectedId":"disembark","utterance":"покидаю корабль пешком","dispatched":"disembark","pass":true},
+
+    {"intent":"show_commander_panel","expectedId":"show_commander_panel","utterance":"открой панель командира","dispatched":"show_commander_panel","pass":true},
+    {"intent":"show_commander_panel","expectedId":"show_commander_panel","utterance":"покажи наколенный планшет","dispatched":"show_commander_panel","pass":true},
+    {"intent":"show_commander_panel","expectedId":"show_commander_panel","utterance":"выведи центральную панель роли","dispatched":"show_commander_panel","pass":true},
+
+    {"intent":"show_fighter_panel","expectedId":"show_fighter_panel","utterance":"открой панель истребителя","dispatched":"show_fighter_panel","pass":true},
+    {"intent":"show_fighter_panel","expectedId":"show_fighter_panel","utterance":"покажи панель файтера","dispatched":"show_fighter_panel","pass":true},
+    {"intent":"show_fighter_panel","expectedId":"show_fighter_panel","utterance":"выведи вкладку истребителя","dispatched":"show_fighter_panel","pass":true},
+
+    {"intent":"fighter_fire_at_will","expectedId":"fighter_fire_at_will","utterance":"истребитель, открыть огонь по готовности","dispatched":"fighter_fire_at_will","pass":true},
+    {"intent":"fighter_fire_at_will","expectedId":"fighter_fire_at_will","utterance":"файтер, свободный огонь","dispatched":"fighter_fire_at_will","pass":true},
+    {"intent":"fighter_fire_at_will","expectedId":"fighter_fire_at_will","utterance":"истребитель, огонь по всем","dispatched":"fighter_fire_at_will","pass":true},
+
+    {"intent":"fighter_attack_target","expectedId":"fighter_attack_target","utterance":"истребитель, атакуй мою цель","dispatched":"fighter_attack_target","pass":true},
+    {"intent":"fighter_attack_target","expectedId":"fighter_attack_target","utterance":"файтер, сосредоточься на моей цели","dispatched":"fighter_attack_target","pass":true},
+    {"intent":"fighter_attack_target","expectedId":"fighter_attack_target","utterance":"истребитель, огонь по моей цели","dispatched":"fighter_attack_target","pass":true}
+  ]
+}

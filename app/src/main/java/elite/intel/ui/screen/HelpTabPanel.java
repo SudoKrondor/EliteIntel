@@ -10,7 +10,6 @@ import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.GameToolCandidates;
 import elite.intel.companion.prompt.SemanticActionReducer;
 import elite.intel.db.managers.LocationManager;
@@ -79,7 +78,16 @@ public class HelpTabPanel extends JPanel {
     private final Status status = Status.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final CommandCatalog commandCatalog = new CommandCatalog();
-    private final CompanionActionReducer semanticFallbackReducer = new SemanticActionReducer();
+    /** Situation the highlight reducer's candidates are gated by (read off the EDT by the background worker). */
+    private volatile PlayerSituation highlightSituation = PlayerSituation.UNKNOWN;
+    /**
+     * Reducer that highlights the actions matching the typed phrase. Its candidate visibility is gated by the
+     * PICKED situation ({@link #highlightSituation}) and the CURRENT language, so the highlight follows the
+     * "where I am" picker exactly like the available-actions list — unlike the running companion reducer, whose
+     * candidates are frozen to the live game status and to the companion-start language.
+     */
+    private final SemanticActionReducer highlightReducer =
+            SemanticActionReducer.withCandidateSource(this::highlightCandidates);
 
     /** Number of equal columns the available-actions list is laid out across (row-major fill). */
     private static final int COLUMN_COUNT = 3;
@@ -497,6 +505,8 @@ public class HelpTabPanel extends JPanel {
      * {@link #applyActionRows}). UNKNOWN clears the table.
      */
     private void rebuildAvailableActions(PlayerSituation situation) {
+        // Gate the highlight reducer by the same picked situation that gates the list below (see highlightReducer).
+        highlightSituation = situation;
         if (situation == null || situation == PlayerSituation.UNKNOWN) {
             clearAvailableActions();
             return;
@@ -576,7 +586,7 @@ public class HelpTabPanel extends JPanel {
         }
         new SwingWorker<Set<String>, Void>() {
             @Override protected Set<String> doInBackground() {
-                List<LlmToolDefinition> tools = companionReducer().selectTools(ACTION_CATEGORIES, phrase);
+                List<LlmToolDefinition> tools = highlightReducer.selectTools(ACTION_CATEGORIES, phrase);
                 Set<String> ids = new HashSet<>();
                 for (LlmToolDefinition tool : tools) {
                     ids.add(tool.name());
@@ -602,12 +612,17 @@ public class HelpTabPanel extends JPanel {
         }.execute();
     }
 
-    private CompanionActionReducer companionReducer() {
-        try {
-            return CompanionRuntime.reducer();
-        } catch (IllegalStateException notRunning) {
-            return semanticFallbackReducer;
+    /**
+     * Candidates for {@link #highlightReducer}: gated by the picked situation (a what-if {@link Status#detached}
+     * context, so the highlight matches the available-actions list) and built fresh each call, so it reads the
+     * current command language rather than a frozen one. Empty for UNKNOWN. Runs off the EDT (background worker).
+     */
+    private List<GameToolCandidates.Candidate> highlightCandidates(Set<IntelActionCategory> categories) {
+        PlayerSituation situation = highlightSituation;
+        if (situation == null || situation == PlayerSituation.UNKNOWN) {
+            return List.of();
         }
+        return new GameToolCandidates(Status.detached(situation)).collect(categories);
     }
 
     /** True while the companion runtime is installed (companion mode); false in legacy command mode. */

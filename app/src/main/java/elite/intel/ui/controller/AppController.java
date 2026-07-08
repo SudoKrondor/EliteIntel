@@ -14,6 +14,11 @@ import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.companion.input.CompanionSubsystemGate;
+import elite.intel.diagnostics.DiagnosticsEars;
+import elite.intel.diagnostics.DiagnosticsExecutionGateway;
+import elite.intel.diagnostics.DiagnosticsMode;
+import elite.intel.diagnostics.DiagnosticsSpeechGateway;
+import elite.intel.diagnostics.NoOpService;
 import elite.intel.devices.DeviceService;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -429,6 +434,11 @@ public class AppController implements Runnable {
      */
     static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean useLocalTts) {
         LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
+        // Diagnostics swaps in a no-op EARS: the microphone/STT is never used (input comes from the file), and
+        // skipping the heavy STT model load is a large startup win with no effect on the run. TTS is NOT
+        // suppressed - the DiagnosticsSpeechGateway (wired below) delegates to the real speech path, so the
+        // companion voice stays audible and the chat panel shows replies, matching a live session.
+        boolean diagnostics = DiagnosticsMode.isEnabled();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         if (!useLocalTts) {
             services.put(ServiceType.RADIO_MOUTH, new ServiceHolder(() -> {
@@ -437,9 +447,16 @@ public class AppController implements Runnable {
                 return radio;
             }));
         }
-        services.put(ServiceType.EARS, new ServiceHolder(ApiFactory.getInstance()::getEarsImpl));
-        services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(JournalParser::new));
-        services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(AuxiliaryFilesMonitor::new));
+        services.put(ServiceType.EARS, new ServiceHolder(
+                diagnostics ? DiagnosticsEars::new : ApiFactory.getInstance()::getEarsImpl));
+        // Diagnostics also stubs the live game-file monitors: AuxiliaryFilesMonitor re-reads the game's stale
+        // Status.json every 120 ms and JournalParser tails the real journal, both of which would overwrite the
+        // Status/session the harness sets via @visible/@status/@event - defeating deterministic context control
+        // and silently dropping any command gated on isVisibleForLLM. The harness owns game state instead.
+        services.put(ServiceType.JOURNAL_PARSER, new ServiceHolder(
+                diagnostics ? NoOpService::new : JournalParser::new));
+        services.put(ServiceType.AUXILIARY_FILES_MONITOR, new ServiceHolder(
+                diagnostics ? NoOpService::new : AuxiliaryFilesMonitor::new));
         services.put(ServiceType.HANDS, new ServiceHolder(HandsService::new));
         services.put(ServiceType.DEVICE, new ServiceHolder(() -> new ManagedService() {
             public void start() {
@@ -450,8 +467,13 @@ public class AppController implements Runnable {
                 DeviceService.getInstance().stop();
             }
         }));
-        // The companion subsystem is the LLM service (the legacy command pipeline was removed).
-        services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
+        // The companion subsystem is the LLM service (the legacy command pipeline was removed). In diagnostics
+        // mode it is wired with a recording execution gateway (file-fed phrases exercise the real routing path
+        // without pressing keys into the game or calling third-party REST APIs) and a speech gateway that
+        // delegates to the real TTS path (audible voice + chat-panel replies, indistinguishable from normal).
+        services.put(ServiceType.COMPANION, new ServiceHolder(diagnostics
+                ? () -> new CompanionSubsystemGate(null, new DiagnosticsExecutionGateway(), new DiagnosticsSpeechGateway())
+                : CompanionSubsystemGate::new));
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));

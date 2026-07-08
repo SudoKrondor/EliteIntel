@@ -51,6 +51,7 @@ public final class CompanionSubsystemGate implements ManagedService {
 
     private final LlmGateway llmOverride;
     private final ExecutionGateway executionOverride;
+    private final SpeechGateway speechOverride;
 
     public CompanionSubsystemGate() {
         this(null, null);
@@ -58,8 +59,18 @@ public final class CompanionSubsystemGate implements ManagedService {
 
     /** Test seam: inject a recording execution gateway and/or a tracing LLM gateway for the local eval. */
     public CompanionSubsystemGate(LlmGateway llmOverride, ExecutionGateway executionOverride) {
+        this(llmOverride, executionOverride, null);
+    }
+
+    /**
+     * As above, plus a speech-gateway override. Diagnostics mode injects a speech gateway that delegates to the
+     * real TTS path, so the companion voice stays audible and the chat panel shows replies exactly as in
+     * production; only the microphone (EARS) is stubbed.
+     */
+    public CompanionSubsystemGate(LlmGateway llmOverride, ExecutionGateway executionOverride, SpeechGateway speechOverride) {
         this.llmOverride = llmOverride;
         this.executionOverride = executionOverride;
+        this.speechOverride = speechOverride;
     }
 
     /** Commander voice input gate. A spoken confirmation code word confirms a frozen dangerous action. */
@@ -113,7 +124,7 @@ public final class CompanionSubsystemGate implements ManagedService {
         CompanionState state = new CompanionState();
         CompanionActionReducer reducer = new SemanticActionReducer();
         LlmGateway llm = llmOverride != null ? llmOverride : CompanionLlmGatewayFactory.create();
-        SpeechGateway speech = new CompanionSpeechGateway();
+        SpeechGateway speech = speechOverride != null ? speechOverride : new CompanionSpeechGateway();
         ExecutionGateway execution = executionOverride != null ? executionOverride : new CompanionExecutionGateway();
         SessionMemoryGateway memory = new SessionMemoryGateway();
         // Long-term consolidation: hand mid-term overflow to the LLM-backed consolidator (§3.7/§10.3).

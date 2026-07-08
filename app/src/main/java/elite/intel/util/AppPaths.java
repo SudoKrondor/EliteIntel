@@ -72,6 +72,35 @@ public final class AppPaths {
         return dir;
     }
 
+    /**
+     * Root of the file-driven diagnostics harness (LOCALAPPDATA/elite-intel/diagnostics). Unlike the other
+     * data-dir helpers this deliberately does NOT create the directory: {@code DiagnosticsMode} decides
+     * whether diagnostics mode is on by whether the input file exists, and creating the tree as a side
+     * effect of that check would defeat the gate. Writers create the directory when they open their files.
+     */
+    public static Path getDiagnosticsDir() throws IOException {
+        return getAppDataBase().resolve("elite-intel/diagnostics");
+    }
+
+    /** Phrase input file an automated tester appends to; its presence at startup enables diagnostics mode. */
+    public static Path getDiagnosticsInputFile() throws IOException {
+        return getDiagnosticsDir().resolve("input.txt");
+    }
+
+    /** Session log mirroring the SYSTEM LOG plus DIAG turn markers, written only while in diagnostics mode. */
+    public static Path getDiagnosticsLogFile() throws IOException {
+        return getDiagnosticsDir().resolve("session.log");
+    }
+
+    /**
+     * Optional file holding a language code (e.g. {@code RU}) the tester writes before launch. The command
+     * language must be set at startup, before the companion is built: its semantic reducer freezes the language
+     * at construction, so switching afterwards would not reach it.
+     */
+    public static Path getDiagnosticsLanguageFile() throws IOException {
+        return getDiagnosticsDir().resolve("language.txt");
+    }
+
     private static Path getAppDataBase() throws IOException {
         if (OsDetector.getOs() == OsDetector.OS.LINUX || OsDetector.getOs() == OsDetector.OS.MAC) {
             String dataHome = System.getenv("XDG_DATA_HOME");

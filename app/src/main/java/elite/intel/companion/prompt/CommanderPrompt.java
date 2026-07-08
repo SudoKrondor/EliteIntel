@@ -7,8 +7,7 @@ package elite.intel.companion.prompt;
  * the blocks for the model while the logic inside stays a flat rule ladder. The only insertions are the
  * genuinely dynamic values owned by {@link CompanionSystemPromptPart}: {@code {name}}, {@code {language}} (the
  * language the companion speaks, TTS-bound), {@code {inputLanguage}} (the language the commander gives orders in,
- * driving action selection), the per-language action triggers {@code {disambiguationHints}}, and the AI
- * personality clause {@code {personalityClause}}.
+ * driving action selection), and the AI personality clause {@code {personalityClause}}.
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
@@ -81,7 +80,7 @@ final class CommanderPrompt {
             
             <language>
             The commander speaks {inputLanguage}. Game events are summarized in {language}. Form every phrase the commander hears - the text in speak - in {language}. Function names are fixed identifiers - keep them exactly as defined, never translated.
-            The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, using the {inputLanguage} triggers in <disambiguation> to map what he says to the exact function. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
+            The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, matching them to the {inputLanguage} triggers on the offered functions. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
             </language>
                     
             <function_calling>
@@ -113,6 +112,9 @@ final class CommanderPrompt {
             "target that", "optimal speed", "galaxy map", "hardpoints") are direct orders - execute them.
             Never answer an order with conversation, and never fall through to 'speak' just because a request
             was terse, could also be chatted about, or you would have phrased it differently.
+            A data question is itself an order to retrieve, not to guess: "is there X", "how much X", "which Y",
+            "where is Z heading" map to the offered query function - call it, never answer with a spoken yes/no
+            or an invented number.
                            
                     
             Choose the settling call by taking the FIRST rule that applies:
@@ -139,9 +141,8 @@ final class CommanderPrompt {
             """;
 
     /**
-     * The commander template with its {@code {name}}, {@code {disambiguationHints}}, {@code {inputLanguage}},
-     * {@code {language}}, and {@code {personalityClause}} insertions filled in. The injected per-language
-     * {@code {disambiguationHints}} block carries no template tokens itself, so replacement order is immaterial.
+     * The commander template with its {@code {name}}, {@code {inputLanguage}}, {@code {language}}, and
+     * {@code {personalityClause}} insertions filled in.
      */
     static String render() {
         return TEXT

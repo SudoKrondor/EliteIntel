@@ -36,6 +36,17 @@ public class InputNormalizer {
         for (Map.Entry<String, String> entry : InputNormalizerLocalizations.synonymMap().entrySet()) {
             String synonym = entry.getKey();
             String canonical = entry.getValue();
+            // Idempotency guard: skip when the canonical form is already present. Many rules expand a synonym
+            // into a canonical that CONTAINS that synonym (e.g. "режим анализа" -> "переключись в режим анализа",
+            // "боевой" -> "боевой режим"). Without this guard a blind substring replace duplicates text the input
+            // already carries ("переключись в переключись в режим анализа", "боевой режим режим"), which corrupts
+            // the match text fed to the semantic reducer and the LLM and defeats the exact-alias match. If the
+            // canonical is already there, the concept is normalized - do nothing. Substring (not word-boundary)
+            // matching is deliberate: it mirrors the substring replacement just below, so the guard covers
+            // exactly the cases that replacement would otherwise double.
+            if (canonical != null && lower.contains(canonical.toLowerCase())) {
+                continue;
+            }
             int idx = lower.indexOf(synonym);
             if (idx >= 0) {
                 input = input.substring(0, idx) + canonical + input.substring(idx + synonym.length());

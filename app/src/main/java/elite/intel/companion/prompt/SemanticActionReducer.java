@@ -5,6 +5,8 @@ import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.diagnostics.DiagnosticsLog;
+import elite.intel.diagnostics.DiagnosticsMode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -68,7 +70,21 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     /** Production: live candidates, the shared process-wide embedder, and a word-overlap reducer for degradation. */
     public SemanticActionReducer() {
-        this(new GameToolCandidates()::collect, SemanticSearchProvider::matcher, new WordOverlapActionReducer());
+        // Build the candidates fresh every turn (not once) so the reducer always reflects the CURRENT command
+        // language, game status and custom-command set. GameToolCandidates freezes those in its constructor, so
+        // capturing one instance would pin the language to companion-start time - a later language change (e.g.
+        // in Settings) would never reach the reducer and it would keep matching the old language's aliases.
+        this(cats -> new GameToolCandidates().collect(cats), SemanticSearchProvider::matcher, new WordOverlapActionReducer());
+    }
+
+    /**
+     * A reducer that scores with the shared embedder but takes candidate visibility from the given source
+     * instead of the live game. Used by the Help tab to preview routing for a picked what-if situation and the
+     * current language, rather than the running companion reducer's frozen live-game context.
+     */
+    public static SemanticActionReducer withCandidateSource(
+            Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource) {
+        return new SemanticActionReducer(candidateSource, SemanticSearchProvider::matcher, new WordOverlapActionReducer());
     }
 
     /** Test seam: inject a fixed candidate source, a matcher supplier (may return {@code null}), and the fallback. */
@@ -82,6 +98,19 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     @Override
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
+        List<LlmToolDefinition> selected = doSelect(allowedCategories, currentInput);
+        // Diagnostics harness: surface the reducer's shortlist as a structured marker so the skill can tell a
+        // recall miss (expected id ABSENT here - fix the aliases) from a selection miss (expected id present but
+        // the LLM dispatched another - fix the llmDescription), without scraping the prose DBG/LOG lines. The
+        // names are the same runtime ids DIAG dispatch uses, in the reducer's ranking order. Only for a real
+        // game-tool reduction (non-empty categories); a NARRATION turn offers no game tools by intent, so no line.
+        if (DiagnosticsMode.isEnabled() && !allowedCategories.isEmpty()) {
+            DiagnosticsLog.write("DIAG reducer-candidates=" + CompanionDiagnostics.names(selected));
+        }
+        return selected;
+    }
+
+    private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
         if (candidates.isEmpty()) {
             // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
