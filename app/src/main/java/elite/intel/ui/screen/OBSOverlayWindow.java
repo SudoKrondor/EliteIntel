@@ -20,10 +20,13 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 public class OBSOverlayWindow extends JFrame {
 
     private static final Color OVERLAY_BACKGROUND = HudPalette.HUD_COLOR_ROLE_STREAM_OVERLAY_BACKGROUND;
-    private static final Color OVERLAY_TEXT = HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION;
+    // Match the conversation view (AI tab) chat colors: commander in green, AI reply in blue.
+    private static final Color COMMANDER_TEXT = HudPalette.HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT;
+    private static final Color AI_TEXT = HudPalette.HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT;
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
-    private static final int TYPEWRITER_DELAY_MS = 50;
+    // Match the conversation view's typewriter cadence (AiTabPanel uses HudLogArea.chat(25)).
+    private static final int TYPEWRITER_DELAY_MS = 25;
     private static final int MAX_MESSAGES = 7;
 
     /// cached buffered image
@@ -34,13 +37,17 @@ public class OBSOverlayWindow extends JFrame {
     private static final class OverlayMessage {
         final String prefix;   // "User: " or "AI: "
         final String fullText;
+        final Color color;     // commander green / AI blue, matching the conversation view
+        final boolean ai;      // AI replies get the sliding highlight panel while typing
         String visibleText = "";
         boolean complete = false;
 
 
-        OverlayMessage(String prefix, String fullText) {
+        OverlayMessage(String prefix, String fullText, Color color, boolean ai) {
             this.prefix = prefix;
             this.fullText = fullText;
+            this.color = color;
+            this.ai = ai;
         }
     }
 
@@ -84,26 +91,26 @@ public class OBSOverlayWindow extends JFrame {
     @Subscribe
     public void onUserInputEvent(NormalizedUserInputEvent event) {
         if (event.getText() == null || event.getText().isBlank()) return;
-        SwingUtilities.invokeLater(() -> addMessage(playerSession.getPlayerName() + ": ", event.getText()));
+        SwingUtilities.invokeLater(() -> addMessage(playerSession.getPlayerName() + ": ", event.getText(), COMMANDER_TEXT, false));
     }
 
     @Subscribe
     public void onAiResponseLogEvent(AiResponseLogEvent event) {
         if (event.getData() == null || event.getData().isBlank()) return;
         String shipName = shipManager.getShip() == null ? "AI" : shipManager.getShip().getShipName();
-        SwingUtilities.invokeLater(() -> addMessage(shipName + ": ", event.getData()));
+        SwingUtilities.invokeLater(() -> addMessage(shipName + ": ", event.getData(), AI_TEXT, true));
     }
 
     // -- Message lifecycle -----------------------------------------------------
 
-    private void addMessage(String prefix, String text) {
+    private void addMessage(String prefix, String text, Color color, boolean ai) {
         // Fast-forward any still-typing message
         for (OverlayMessage m : messages) {
             m.complete = true;
             m.visibleText = m.fullText;
         }
 
-        OverlayMessage msg = new OverlayMessage(prefix, text);
+        OverlayMessage msg = new OverlayMessage(prefix, text, color, ai);
         messages.add(msg);
 
         while (messages.size() > MAX_MESSAGES) {
@@ -144,6 +151,14 @@ public class OBSOverlayWindow extends JFrame {
         private static final int PAD_X = 12;
         private static final int PAD_Y = 8;
         private static final int LINE_GAP = 6;
+        /**
+         * Alpha of the AI reply's sliding highlight wash at its anchored (left) edge.
+         */
+        private static final int AI_PANEL_ALPHA = 40;
+        /**
+         * Arm length of the L-brackets drawn at the AI panel's advancing (right) edge.
+         */
+        private static final int AI_BRACKET_ARM = 8;
 
         private final Font font;
 
@@ -190,26 +205,37 @@ public class OBSOverlayWindow extends JFrame {
             // Draw from the bottom up, newest last (bottom of panel)
             int y = getHeight() - PAD_Y;
             for (int i = messages.size() - 1; i >= 0; i--) {
+                OverlayMessage msg = messages.get(i);
                 List<String> lines = wrappedAll.get(i);
                 int blockH = lines.size() * fm.getHeight();
                 y -= blockH;
                 if (y + blockH < 0) break; // scrolled off top
 
-                g2.setColor(OVERLAY_TEXT);
+                boolean active = !msg.complete && i == messages.size() - 1;
+
+                // AI reply: a cyan highlight panel whose advancing (right) edge tracks the typed text, so the
+                // panel slides left-to-right in sync with the typewriter - matching the conversation view's
+                // active AI card. Anchored (strongest) at the left; L-brackets mark the typing frontier.
+                if (msg.ai && active) {
+                    int widest = 0;
+                    for (String ln : lines) widest = Math.max(widest, fm.stringWidth(ln));
+                    drawAiPanel(g2, PAD_X - 6, y - 2, PAD_X + widest + 8, blockH + 4);
+                }
+
+                g2.setColor(msg.color);
                 for (int li = 0; li < lines.size(); li++) {
                     g2.drawString(lines.get(li), PAD_X, y + li * fm.getHeight() + fm.getAscent());
                 }
 
-                // Blinking cursor on the active (newest, incomplete) message
-                OverlayMessage msg = messages.get(i);
-                if (!msg.complete && i == messages.size() - 1) {
+                // Thin blinking typewriter caret on the active (newest, incomplete) message, matching the
+                // conversation view's caret (a 2px vertical bar in the message's own colour).
+                if (active) {
                     String lastLine = lines.get(lines.size() - 1);
                     int cx = PAD_X + fm.stringWidth(lastLine);
                     int cy = y + (lines.size() - 1) * fm.getHeight();
-                    boolean blink = (System.currentTimeMillis() / 500) % 2 == 0;
-                    if (blink) {
-                        g2.setColor(OVERLAY_TEXT);
-                        g2.fillRect(cx + 2, cy + 2, fm.charWidth('M') / 2, fm.getAscent() - 2);
+                    if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                        g2.setColor(msg.color);
+                        g2.fillRect(cx + 1, cy + 3, 2, fm.getAscent() - 3);
                     }
                 }
 
@@ -218,6 +244,30 @@ public class OBSOverlayWindow extends JFrame {
 
             g2.dispose();
             g.drawImage(frame, 0, 0, null); // single blit to screen
+        }
+
+        /**
+         * Draws the AI reply's sliding highlight panel: a cyan wash strongest at the left (anchor) fading to
+         * transparent at the advancing right edge, plus L-brackets on that right edge marking the typing
+         * frontier. Called with a right edge that tracks the typed-text width, so it slides left-to-right as
+         * the typewriter runs.
+         */
+        private void drawAiPanel(Graphics2D g2, int left, int top, int right, int height) {
+            Color c = AI_TEXT;
+            Paint old = g2.getPaint();
+            g2.setPaint(new GradientPaint(left, top, withAlpha(c, AI_PANEL_ALPHA), right, top, withAlpha(c, 0)));
+            g2.fillRect(left, top, right - left, height);
+            g2.setPaint(old);
+            g2.setColor(c);
+            int arm = AI_BRACKET_ARM, t = 2, bottom = top + height;
+            g2.fillRect(right - arm, top, arm, t);          // top-right horizontal
+            g2.fillRect(right - t, top, t, arm);            // top-right vertical
+            g2.fillRect(right - arm, bottom - t, arm, t);   // bottom-right horizontal
+            g2.fillRect(right - t, bottom - arm, t, arm);   // bottom-right vertical
+        }
+
+        private static Color withAlpha(Color base, int alpha) {
+            return new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha);
         }
 
         private List<String> wrapText(String text, FontMetrics fm, int maxW) {

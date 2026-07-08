@@ -910,7 +910,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryStellarObjects() {
         return Stream.of("¿Qué planetas o lunas aterrizables hay en este sistema?",
-                "Hay anillos de hielo en este sistema estelar");
+                "¿Ci sono anelli di ghiaccio in questo sistema d'acciaio?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1072,7 +1072,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryDistanceToBubble() {
         return Stream.of("¿Qué tan lejos estamos de la Burbuja?", "Distancia a la Tierra", "Qué tan lejos está la Tierra",
-                "qué tan lejos de la civilización", "qué tan lejos de la Tierra");
+                "qué tan lejos de la civilización", "¿Qué tan lejos estamos de la Tierra?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

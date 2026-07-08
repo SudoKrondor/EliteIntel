@@ -84,9 +84,6 @@ final class CommanderPrompt {
                     The commander gives his orders in {inputLanguage}. Choose the function from his own {inputLanguage} words, using the {inputLanguage} triggers in <disambiguation> to map what he says to the exact function. Do NOT translate his words to English first: translation is unreliable and loses the precise {inputLanguage} phrasing the triggers depend on. Extract each argument by its own rule, verbatim in {inputLanguage} where it says so.
             </language>
                     
-                    <disambiguation>
-                        {disambiguationHints}
-                    </disambiguation>
                     
             <function_calling>
             You respond only with function calls, never free text.
@@ -157,7 +154,6 @@ final class CommanderPrompt {
     static String render() {
         return TEXT
                 .replace("{name}", CompanionSystemPromptPart.companionName())
-                .replace("{disambiguationHints}", CompanionSystemPromptPart.disambiguationHints())
                 .replace("{inputLanguage}", CompanionSystemPromptPart.inputLanguageName())
                 .replace("{language}", CompanionSystemPromptPart.languageName())
                 .replace("{personalityClause}", CompanionSystemPromptPart.personalityClause());

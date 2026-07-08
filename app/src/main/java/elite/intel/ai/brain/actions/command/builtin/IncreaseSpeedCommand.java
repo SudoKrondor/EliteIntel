@@ -27,7 +27,13 @@ import java.util.List;
 public final class IncreaseSpeedCommand implements IntelCommand {
     public static final String ID = "increase_speed";
 
-    @Override public String llmDescription() { return "Increase the throttle."; }
+    @Override
+    public String llmDescription() {
+        return """
+                    - Increase the speed.
+                    - Increase the speed by X
+                """;
+    }
 
 
     private static final String PARAM_KEY = "key";

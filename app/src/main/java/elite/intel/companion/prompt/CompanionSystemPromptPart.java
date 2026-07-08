@@ -2,7 +2,6 @@ package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
@@ -45,7 +44,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
      * cannot voice ru/uk/de, so those downgrade to English output) - see {@link AiResponseLanguagePolicy}.
      */
     static String languageName() {
-        return PromptLocalizations.rulesFor(effectiveLanguage()).languageName();
+        return effectiveLanguage().displayName();
     }
 
     /**
@@ -55,20 +54,9 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
      * the commander still speaks his own language.
      */
     static String inputLanguageName() {
-        return PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).languageName();
+        return SystemSession.getInstance().getLanguage().displayName();
     }
 
-    /**
-     * The per-language action-disambiguation triggers for the commander template's {@code {disambiguationHints}}
-     * slot, pulled from the same tested {@link elite.intel.ai.brain.i18n.PromptLanguageRules#companionDisambiguation()
-     * *PromptRules} the legacy pipeline used. Keyed on the commander's INPUT language ({@link SystemSession#getLanguage()}),
-     * not the effective response language: the triggers must match the words the commander actually speaks, even when
-     * TTS forces the spoken reply into another language. Returns "" when a language supplies none, so the template renders cleanly.
-     */
-    static String disambiguationHints() {
-        String hints = PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).companionDisambiguation();
-        return hints == null ? "" : hints;
-    }
 
     /**
      * The commander-chosen AI personality's roleplay clause, woven into the persona as {@code {personalityClause}}.

@@ -4,7 +4,6 @@ import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.AiPromptFactory;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.inference.anthropic.AnthropicAnalysisEndpoint;
-import elite.intel.ai.brain.inference.anthropic.AnthropicPromptFactory;
 import elite.intel.ai.brain.inference.deepseek.DeepSeekAnalysisEndpoint;
 import elite.intel.ai.brain.inference.gemini.GeminiAnalysisEndpoint;
 import elite.intel.ai.brain.inference.lmstudio.LMStudioAnalysisEndpoint;
@@ -61,14 +60,9 @@ public class ApiFactory {
     }
 
     public AiPromptFactory getAiPromptFactory() {
-        if (systemSession.useLocalCommandLlm()) {
-            return PromptFactory.getInstance();
-        }
-        ProviderEnum provider = LlmProviderResolver.detectCloudProvider();
-        return switch (provider) {
-            case ANTHROPIC -> AnthropicPromptFactory.getInstance();
-            default -> PromptFactory.getInstance();
-        };
+        // Single shared prompt factory: the analysis/sensor prompts are provider-agnostic. (Anthropic's
+        // command-classification caching variant was removed with the legacy command pipeline.)
+        return PromptFactory.getInstance();
     }
 
     ///

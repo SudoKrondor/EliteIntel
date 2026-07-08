@@ -1,7 +1,6 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -21,11 +20,11 @@ class CompanionSystemPromptPartTest {
 
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return PromptLocalizations.rulesFor(language).languageName();
+        return language.displayName();
     }
 
     private static String inputLanguageName() {
-        return PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).languageName();
+        return SystemSession.getInstance().getLanguage().displayName();
     }
 
     @Test
