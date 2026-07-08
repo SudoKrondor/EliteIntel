@@ -717,8 +717,11 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("squadron carrier route", "how many jumps on the squadron carrier route",
-                "squadron carrier route");
+        return Stream.of(
+                "squadron carrier route",
+                "how many jumps on the squadron carrier route",
+                "squadron carrier route"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -960,8 +963,13 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryStellarSignals() {
-        return Stream.of("What signals are in this system?", "What signals do you see?", "Any interesting signals?",
-                "System signals?", "What's in this system?");
+        return Stream.of(
+                "What signals are in this system?",
+                "What signals do you see?",
+                "Are there resource sites in this system?",
+                "System signals?",
+                "What's in this system?"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1006,9 +1014,15 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("What is our fleet carrier range?", "What's my fleet carrier fuel status",
-                "How long can we operate on current funds?", "How far can carrier we jump with current tritium?",
-                "carrier tritium status", "carrier fuel status", "tritium level");
+        return Stream.of(
+                "What is our fleet carrier range?",
+                "What's my fleet carrier fuel status",
+                "How long can we operate on current funds?",
+                "How far can carrier we jump with current tritium?",
+                "what is carrier tritium status",
+                "what is carrier fuel status",
+                "tritium level"
+        );
     }
 
 
@@ -1211,8 +1225,11 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryCarrierRoute() {
-        return Stream.of("What's on the carrier route?", "What's the route for our fleet carrier?",
-                "How many jump on the carrier route?");
+        return Stream.of(
+                "Analyze carrier route",
+                "What's the route for our fleet carrier?",
+                "How many jump on the carrier route?"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

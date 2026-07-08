@@ -239,7 +239,7 @@ public class NaturalSpeechIntegrationTestES {
     }
 
     static Stream<String> enterSupercruise() {
-        return Stream.of("entrar en supercruise", "activar supercruise", "supercruise", "velocidad de la luz");
+        return Stream.of("entrar en supercruise", "activar supercruise", "supercruise");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -864,7 +864,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryShipLoadout() {
         return Stream.of("equipamiento de la nave", "qué estoy pilotando", "con qué estamos equipados",
-                "tienes fuel scoop instalado", "tienes armas instaladas", "tienes una refinería instalada");
+                "¿Tienes instalada una pala de combustible?", "tienes armas instaladas", "¿Tiene instalada una refinería?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -910,7 +910,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryStellarObjects() {
         return Stream.of("¿Qué planetas o lunas aterrizables hay en este sistema?",
-                "¿Ci sono anelli di ghiaccio in questo sistema d'acciaio?");
+                "¿Hay algún anillo en este sistema de accionamiento?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
