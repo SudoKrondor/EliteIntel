@@ -515,9 +515,10 @@ public class NaturalSpeechIntegrationTestIT {
         assertRouted(input, DeployChaffCommand.ID);
     }
 
+    /// Countermeasures are not chaff, Countermeasures are radio jamming signal for misiles. a different command.
     static Stream<String> deployChaff() {
         return Stream.of("lancia chaff", "lancia contromisure", "usa chaff", "contromisure per i missili",
-                "lancia chaff per i missili", "usa contromisure", "attiva chaff", "attiva contromisure");
+                "lancia chaff per i missili", "usa contromisure", "attiva chaff");
     }
 
     // =========================================================================
@@ -1057,9 +1058,9 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("What is our fleet carrier range?", "What's my fleet carrier fuel status",
-                "How long can we operate on current funds?", "How far can carrier we jump with current tritium?",
-                "carrier tritium status", "carrier fuel status", "tritium level");
+        return Stream.of("Qual è l'autonomia della nostra portaerei?", "Qual è lo stato del carburante della mia portaerei",
+                "Per quanto tempo possiamo operare con i fondi attuali?", "Quanto lontano possiamo saltare con l'attuale trizio?",
+                "vettore trizio", "vettore carburante", "livello di trizio");
     }
 
 
@@ -1083,7 +1084,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryFsdTarget() {
-        return Stream.of("FSD target", "what star are we targeting", "info on next jump");
+        return Stream.of("Obiettivo FSD", "quale stella stiamo prendendo di mira", "informazioni sul prossimo salto");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1299,7 +1300,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> disembark() {
-        return Stream.of("disembark");
+        return Stream.of("sbarcare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1310,7 +1311,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openCentralPanel() {
-        return Stream.of("Open commander panel", "open central panel", "open role panel", "open knee board");
+        return Stream.of("Pannello comandante aperto", "pannello centrale aperto", "pannello ruolo aperto", "pannello ginocchio aperto");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1321,7 +1322,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openFighterPanel() {
-        return Stream.of("show fighter panel", "open fighter panel");
+        return Stream.of("mostra pannello combattente", "apri pannello combattente");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.inference.ollama;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -38,12 +39,11 @@ public class OllamaClient extends BaseAiClient implements Client {
     public JsonObject createPrompt(int model, float temp) {
 
         String localLlmCommandModel = systemSession.getOllamaCommandModel().trim();
-        String localLlmQueryModel = systemSession.getOllamaQueryModel().trim();
 
         boolean isQueryModel = model == MODEL_QUERIES;
 
         JsonObject request = new JsonObject();
-        request.addProperty("model", isQueryModel ? localLlmQueryModel : localLlmCommandModel);
+        request.addProperty("model", localLlmCommandModel);
         request.addProperty("temperature", temp);
         request.addProperty("stream", false);
         request.addProperty("think", false);
@@ -117,6 +117,9 @@ public class OllamaClient extends BaseAiClient implements Client {
      */
     public synchronized JsonObject sendOpenAiChatRequest(String request) {
         long t0 = System.nanoTime();
+        // Diagnostic: surface the model we actually put on the wire (the response's model name alone can't
+        // confirm the configured value was honoured).
+        UiBus.publish(new AppLogEvent("Ollama request -> model: " + requestedModel(request)));
         JsonObject response = super.sendJsonRequest(buildOpenAiCompatibleRequest(request));
         long elapsed = System.nanoTime() - t0;
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
@@ -128,6 +131,18 @@ public class OllamaClient extends BaseAiClient implements Client {
                     wallClockTps(elapsed, meta.usage().completionTokens())));
         }
         return response;
+    }
+
+    /**
+     * Reads the {@code model} field from an outgoing request body for the diagnostic log; tolerant of a malformed body.
+     */
+    private static String requestedModel(String body) {
+        try {
+            JsonObject json = JsonParser.parseString(body).getAsJsonObject();
+            return json.has("model") && !json.get("model").isJsonNull() ? json.get("model").getAsString() : "<none>";
+        } catch (RuntimeException malformed) {
+            return "<unparseable>";
+        }
     }
 
     private HttpRequest buildOpenAiCompatibleRequest(String body) {

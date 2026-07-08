@@ -23,6 +23,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import elite.intel.ui.dialog.CommandDetailsDialog;
+import elite.intel.ui.dialog.HudConfirmDialog;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
 import elite.intel.ui.widget.HudComboBox;
@@ -179,7 +180,8 @@ public class HelpTabPanel extends JPanel {
         JPanel phraseCol = transparentPanel(new GridBagLayout());
         GridBagConstraints fgc = baseGbc();
         addLabel(phraseCol, getText("location.field.phrase"), fgc);
-        phraseField = makeTextField();
+        // In-field info-"i" (HUD section 5.1) explaining what this field is for.
+        phraseField = makeTextField(this::showPhraseInfo);
         // Editable input, not a read-out: every edit re-runs the reducer over the field's current text and
         // re-highlights the matching available actions below - the same filtering a spoken phrase drives, but
         // reducer-only (no LLM turn), so it works even with no LLM connected. Guarded against our own
@@ -353,13 +355,20 @@ public class HelpTabPanel extends JPanel {
     /**
      * Live update of the commander's current spoken phrase (the normalized voice input), fired off the game
      * event thread; the field update is marshaled onto the EDT.
+     * <p>
+     * In companion mode the authoritative {@link CommanderMatchInputChangedEvent} follows this for the same
+     * utterance and drives the reducer highlight on the exact match input, so re-running the reducer here would
+     * recompute (and log) the same reduce twice. Legacy command mode never fires that event, so this remains the
+     * only highlight trigger there - hence the reducer runs here only when the companion runtime is absent.
      */
     @Subscribe
     public void onCommanderPhrase(NormalizedUserInputEvent event) {
         String text = event.getText() == null ? "" : event.getText();
         SwingUtilities.invokeLater(() -> {
             setPhraseText(text);
-            updateSemanticHighlights(text);
+            if (!companionRunning()) {
+                updateSemanticHighlights(text);
+            }
         });
     }
 
@@ -392,6 +401,15 @@ public class HelpTabPanel extends JPanel {
         } finally {
             settingPhraseText = false;
         }
+    }
+
+    /** Opens the in-field info-"i" (HUD section 5.1) help for the commander-phrase field. */
+    private void showPhraseInfo() {
+        HudConfirmDialog.info(
+                this,
+                getText("location.field.phrase"),
+                getText("location.field.phrase.info"),
+                getText("button.ok"));
     }
 
     /** Live update from the companion path: this is the exact match input used by the companion reducer. */
@@ -589,6 +607,16 @@ public class HelpTabPanel extends JPanel {
             return CompanionRuntime.reducer();
         } catch (IllegalStateException notRunning) {
             return semanticFallbackReducer;
+        }
+    }
+
+    /** True while the companion runtime is installed (companion mode); false in legacy command mode. */
+    private boolean companionRunning() {
+        try {
+            CompanionRuntime.reducer();
+            return true;
+        } catch (IllegalStateException notRunning) {
+            return false;
         }
     }
 

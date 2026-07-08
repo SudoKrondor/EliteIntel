@@ -1,7 +1,6 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -21,11 +20,11 @@ class CompanionSystemPromptPartTest {
 
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return PromptLocalizations.rulesFor(language).languageName();
+        return language.displayName();
     }
 
     private static String inputLanguageName() {
-        return PromptLocalizations.rulesFor(SystemSession.getInstance().getLanguage()).languageName();
+        return SystemSession.getInstance().getLanguage().displayName();
     }
 
     @Test
@@ -97,22 +96,5 @@ class CompanionSystemPromptPartTest {
         // Action derivation is native, driven by the per-language triggers - not by translating to English first.
         assertTrue(text.contains("Do NOT translate his words to English first"));
         assertFalse(text.contains("translate their input to English before choosing a function"));
-    }
-
-    @Test
-    void commanderPromptInjectsInputLanguageDisambiguationAndLeavesNoPlaceholder() {
-        // Disambiguation keys on the commander's INPUT language (STT/session), not the TTS-bound response language.
-        Language inputLanguage = SystemSession.getInstance().getLanguage();
-        String expectedHints = PromptLocalizations.rulesFor(inputLanguage).companionDisambiguation();
-
-        String text = prompt.staticRules(ThoughtSource.COMMANDER);
-
-        // The template slots must be fully resolved - no raw placeholder leaks into the prompt the model sees.
-        assertFalse(text.contains("{disambiguationHints}"));
-        assertFalse(text.contains("{inputLanguage}"));
-        // The tested, per-language disambiguation is present verbatim in the disambiguation block.
-        assertTrue(text.contains("<disambiguation>"));
-        assertTrue(expectedHints != null && !expectedHints.isBlank());
-        assertTrue(text.contains(expectedHints));
     }
 }

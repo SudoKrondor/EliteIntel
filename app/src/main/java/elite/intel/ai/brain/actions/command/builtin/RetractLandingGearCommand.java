@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
 public final class RetractLandingGearCommand implements IntelCommand {
     public static final String ID = "retract_landing_gear";
 
-    @Override public String llmDescription() { return "Retract the landing gear."; }
+    @Override
+    public String llmDescription() {
+        return "Fold / Retract the landing gear.";
+    }
 
 
     @Override
@@ -28,10 +31,11 @@ public final class RetractLandingGearCommand implements IntelCommand {
         return ID;
     }
 
-    /** Landing gear belongs to the main ship in normal space: not in the SRV, supercruise, docked or landed. */
+    /// due to bug in FDev impl of the Status.json we can't rely on the status
+    /// ALWAYS RETURN TRUE HERE
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return true;
     }
 
     @Override

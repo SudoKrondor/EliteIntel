@@ -338,23 +338,23 @@ public class SystemSession {
         });
     }
 
-    public void setOllamaSettings(String address, String commandModel, String queryModel) {
+    public void setOllamaSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setOllamaAddress(address);
             session.setOllamaCommandModel(commandModel);
-            session.setOllamaQueryModel(queryModel);
+            session.setOllamaQueryModel(commandModel); //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
     }
 
-    public void setLmStudioSettings(String address, String commandModel, String queryModel) {
+    public void setLmStudioSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setLmStudioAddress(address);
             session.setLmStudioCommandModel(commandModel);
-            session.setLmStudioQueryModel(queryModel);
+            session.setLmStudioQueryModel(commandModel);  //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
@@ -368,6 +368,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaCommandModel());
     }
 
+    @Deprecated
     public String getOllamaQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaQueryModel());
     }
@@ -380,6 +381,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioCommandModel());
     }
 
+    @Deprecated
     public String getLmStudioQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioQueryModel());
     }

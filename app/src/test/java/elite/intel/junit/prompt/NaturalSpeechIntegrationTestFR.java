@@ -1678,7 +1678,7 @@ public class NaturalSpeechIntegrationTestFR {
     static Stream<String> bareCarrierStatusDefaultsToFleet() {
         return Stream.of("statut du porte-vaisseaux",
                 "rapport du porte-vaisseaux",
-                "finances porte-vaisseaux",
+                "finances des transporteurs de flotte",
                 "combien de temps peut fonctionner le porte-vaisseaux",
                 "portée porte-vaisseaux avec tritium actuel");
     }

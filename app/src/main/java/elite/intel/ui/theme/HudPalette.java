@@ -93,7 +93,10 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_SLIDER_VALUE_TRACK = HUD_COLOR_FF2E00;
     /** Warm brown plaque behind a HudSlider track, on which the rail and value fill are drawn. */
     public static final Color HUD_COLOR_ROLE_SLIDER_TRACK_BACKGROUND = HUD_COLOR_151519;
-    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_FF7100;
+    /** Commander chat lane text (left cards + input caret). Green, distinct from the AI (blue) lane. */
+    public static final Color HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT = HUD_COLOR_4FC56B;
+    /** Commander chat lane marker/rail (left rail + bottom prompt glyph); own role so it can diverge from text. */
+    public static final Color HUD_COLOR_ROLE_COMMANDER_MARKER = HUD_COLOR_4FC56B;
     public static final Color HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT = HUD_COLOR_72A2B4;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TEXT = HUD_COLOR_5A6368;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;
@@ -193,7 +196,7 @@ public final class HudPalette {
      */
     public static final float HUD_FONT_TABLE_ROW      = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_TABLE_HEADER   = HUD_FONT_SM;   // 12
-    public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_SM;   // 12
+    public static final float HUD_FONT_FIELD_VALUE    = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_FIELD_LABEL    = HUD_FONT_SM + 1f; // 13 - form/readout key labels (section 5.1)
     public static final float HUD_FONT_READOUT_KEY    = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_READOUT_VALUE  = HUD_FONT_SM;   // 12
@@ -207,7 +210,7 @@ public final class HudPalette {
     public static final float HUD_FONT_BADGE_ROLE     = HUD_FONT_XS;   // 11
     public static final float HUD_FONT_COMMANDER_NAME = HUD_FONT_MD;   // 14
     public static final float HUD_FONT_APP_TITLE      = HUD_FONT_LG;   // 16 - app title in top bar
-    public static final float HUD_FONT_BANNER         = HUD_FONT_XS;   // 11 - banner message text
+    public static final float HUD_FONT_BANNER         = HUD_FONT_MD;   // 14 - banner message text
     public static final float HUD_FONT_TOOLTIP        = HUD_FONT_SM;   // 12 - hover tooltip text (global ToolTip.font)
     // Out-of-scale display sizes:
     public static final float HUD_FONT_CLOCK          = 26f;

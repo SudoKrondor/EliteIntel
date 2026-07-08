@@ -22,7 +22,10 @@ import java.util.TreeMap;
 public class AnalyzeFleetCarrierRouteQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_fleet_carrier_route";
 
-    @Override public String llmDescription() { return "Report the fleet carrier's planned route."; }
+    @Override
+    public String llmDescription() {
+        return "Report the fleet carrier's planned route. Analyze fleet carrier route, what is on the fleet carrier route";
+    }
 
 
     @Override public String id() { return ID; }

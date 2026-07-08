@@ -1,11 +1,9 @@
 package elite.intel.ui.controller;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.gson.JsonObject;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.LocalLlmModelCheck;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandLoadAnnouncement;
-import elite.intel.ai.brain.commons.ResponseRouter;
 import elite.intel.ai.ears.AudioCalibrator;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
 import elite.intel.ai.ears.AudioFormatDetector;
@@ -15,7 +13,6 @@ import elite.intel.ai.hands.KeyBindCheck;
 import elite.intel.ai.mouth.kokoro.KokoroTTS;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.CompanionSubsystemGate;
 import elite.intel.devices.DeviceService;
 import elite.intel.eventbus.GameEventBus;
@@ -43,8 +40,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
-
 public class AppController implements Runnable {
 
     private static final Logger log = LogManager.getLogger(AppController.class);
@@ -68,6 +63,9 @@ public class AppController implements Runnable {
     // Written on the EDT (retry Timer callback, stopRetryTimer), read on the ConnectionCheck-Worker
     // thread in onLlmConnectionStatus; volatile to make that cross-thread read safe.
     private volatile int retryAttemptNumber = 0;
+    // Silences the spoken "connection failed" message during silent retries (first failure still speaks).
+    // Written on the EDT in onLlmConnectionStatus, read on the ConnectionCheck-Worker thread; volatile.
+    private volatile boolean suppressConnectionFailSpeech = false;
 
     public AppController() {
         UiBus.register(this);
@@ -193,10 +191,9 @@ public class AppController implements Runnable {
 
     /**
      * Full stop/start of every service. Used when a setting change alters the service registry
-     * itself rather than the config of an existing service - e.g. toggling companion mode, which
-     * swaps {@code BRAIN} for {@code COMPANION} in {@link #buildServices(boolean)}. A granular
-     * {@link RestartBrainEvent} cannot do that swap, so the whole set is rebuilt. No-op when
-     * services are stopped (the toggle takes effect on the next Start).
+     * itself rather than the config of an existing service (e.g. a change that adds or removes a
+     * {@link ServiceType}). A granular {@link RestartBrainEvent} cannot do that, so the whole set is
+     * rebuilt. No-op when services are stopped (the change takes effect on the next Start).
      */
     private void restartAllServices() {
         if (!isRunning.get()) return;
@@ -215,10 +212,9 @@ public class AppController implements Runnable {
 
     private void restartBrainService() {
         if (!isRunning.get()) return;
-        // In companion mode the running LLM service is COMPANION, not BRAIN; restart whichever is active
-        // so an LLM source (local/cloud) change is picked up regardless of mode.
-        ServiceHolder brain = services.get(ServiceType.BRAIN);
-        if (brain == null) brain = services.get(ServiceType.COMPANION);
+        // The companion subsystem is the LLM service; restart it so an LLM source (local/cloud) change is
+        // picked up.
+        ServiceHolder brain = services.get(ServiceType.COMPANION);
         if (brain == null) return;
         appendToLog("Restarting LLM service...");
         brain.stop();
@@ -349,7 +345,7 @@ public class AppController implements Runnable {
 
     @Subscribe
     public void onLlmConnectionStatus(LlmConnectionStatusEvent event) {
-        ResponseRouter.getInstance().setSuppressConnectionFailSpeech(!event.connected() && retryAttemptNumber > 0);
+        suppressConnectionFailSpeech = !event.connected() && retryAttemptNumber > 0;
         SwingUtilities.invokeLater(() -> {
             if (event.connected()) {
                 stopRetryTimer();
@@ -362,10 +358,15 @@ public class AppController implements Runnable {
     private void connectionCheck() {
         bgExecutor.submit(() -> {
             try {
-                JsonObject direct = new JsonObject();
-                direct.addProperty("action", CONNECTION_CHECK_COMMAND);
-                direct.add("params", new JsonObject());
-                ApiFactory.getInstance().getAiRouter().processAiResponse(direct, null);
+                // Probe the live analysis endpoint directly (companion and query handlers share the same
+                // provider config). Publishing LlmConnectionStatusEvent drives the UI + retry timer; the
+                // spoken result is silenced during silent retries via suppressConnectionFailSpeech.
+                boolean reachable = ApiFactory.getInstance().getAnalysisEndpoint().verifyConnection();
+                UiBus.publish(new LlmConnectionStatusEvent(reachable));
+                if (!suppressConnectionFailSpeech) {
+                    String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
+                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm(key)));
+                }
             } catch (Exception e) {
                 log.warn("Connection check failed", e);
             }
@@ -412,21 +413,21 @@ public class AppController implements Runnable {
     private void initServices() {
         stopServices();
         this.services.clear();
-        this.services.putAll(buildServices(CompanionConfig.companionModeOn(), systemSession.useLocalTTS()));
+        this.services.putAll(buildServices(systemSession.useLocalTTS()));
     }
 
     /**
      * Builds the ordered service registry. Static and side-effect-free (it only wires lazy suppliers,
      * nothing is started here) so the registration can be verified in tests without standing up the
-     * controller. Order matters: audio (Mouth/Ears) comes up first, and exactly one of BRAIN/COMPANION
-     * is registered per {@code companionModeOn} (§0).
+     * controller. Order matters: audio (Mouth/Ears) comes up first, then the COMPANION subsystem (the
+     * sole LLM service since the legacy command pipeline was removed).
      * <p>
      * Radio transmissions are always voiced by Kokoro. When Kokoro is also the main mouth
      * ({@code useLocalTts}) it handles radio through its own queue and no extra service is needed.
      * When the main mouth is a cloud provider, a dedicated {@link ServiceType#RADIO_MOUTH} runs the
      * Kokoro engine in {@link KokoroTTS.Role#RADIO} alongside it.
      */
-    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean companionModeOn, boolean useLocalTts) {
+    static LinkedHashMap<ServiceType, ServiceHolder> buildServices(boolean useLocalTts) {
         LinkedHashMap<ServiceType, ServiceHolder> services = new LinkedHashMap<>();
         services.put(ServiceType.MOUTH, new ServiceHolder(ApiFactory.getInstance()::getMouthImpl));
         if (!useLocalTts) {
@@ -449,12 +450,8 @@ public class AppController implements Runnable {
                 DeviceService.getInstance().stop();
             }
         }));
-        // Companion mode replaces the legacy command mode: start one or the other, never both (§0).
-        if (companionModeOn) {
-            services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
-        } else {
-            services.put(ServiceType.BRAIN, new ServiceHolder(ApiFactory.getInstance()::getCommandEndpoint));
-        }
+        // The companion subsystem is the LLM service (the legacy command pipeline was removed).
+        services.put(ServiceType.COMPANION, new ServiceHolder(CompanionSubsystemGate::new));
         services.put(ServiceType.NOTIFICATION_MONITOR, new ServiceHolder(DeferredNotificationMonitor::getInstance));
         services.put(ServiceType.MISSING_MISSION_MONITOR, new ServiceHolder(MissingMissionMonitor::getInstance));
         services.put(ServiceType.WEB_SOCKET, new ServiceHolder(WebSocketBroadcaster::getInstance));
@@ -488,7 +485,7 @@ public class AppController implements Runnable {
     }
 
     enum ServiceType {
-        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, RADIO_MOUTH, EARS, BRAIN, COMPANION,
+        JOURNAL_PARSER, AUXILIARY_FILES_MONITOR, HANDS, DEVICE, MOUTH, RADIO_MOUTH, EARS, COMPANION,
         NOTIFICATION_MONITOR, MISSING_MISSION_MONITOR, WEB_SOCKET
     }
 }

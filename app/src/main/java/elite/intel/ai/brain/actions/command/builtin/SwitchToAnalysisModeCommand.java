@@ -18,7 +18,15 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_ACTIVATE_ANALYSI
 public final class SwitchToAnalysisModeCommand implements IntelCommand {
     public static final String ID = "switch_to_analysis_mode";
 
-    @Override public String llmDescription() { return "Switch the ship to analysis mode."; }
+    @Override
+    public String llmDescription() {
+        return """
+                    Switch the ship to analysis mode.
+                    Change HUD to analysis mode.
+                    Analysis mode.
+                    Exploration mode.
+                """;
+    }
 
 
     @Override

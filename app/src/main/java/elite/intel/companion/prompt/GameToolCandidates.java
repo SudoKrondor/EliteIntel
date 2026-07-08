@@ -9,7 +9,6 @@ import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
@@ -91,7 +90,7 @@ public final class GameToolCandidates {
         this.macros = macros;
         this.status = status;
         this.language = language;
-        this.languageName = PromptLocalizations.rulesFor(language).languageName();
+        this.languageName = language.displayName();
     }
 
     /** Visible game tools in the allowed categories, ordered commands, then queries, then macros. */

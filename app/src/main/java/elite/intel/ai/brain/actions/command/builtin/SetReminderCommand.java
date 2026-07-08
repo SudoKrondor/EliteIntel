@@ -21,7 +21,13 @@ import java.util.List;
 public final class SetReminderCommand implements IntelCommand {
     public static final String ID = "set_reminder";
 
-    @Override public String llmDescription() { return "Set a reminder."; }
+    @Override
+    public String llmDescription() {
+        return """
+                        Set a reminder.
+                        Reminder may have specifics or may be just general reminder.
+                """;
+    }
 
 
     private static final String PARAM_KEY = "key";

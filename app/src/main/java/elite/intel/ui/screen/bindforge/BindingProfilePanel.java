@@ -953,7 +953,9 @@ public class BindingProfilePanel extends JPanel {
 
         assignDialogOpen = true;
         try {
-            dialog.showDialog().ifPresent(selection -> saveKeyboardBinding(bindingId, selection));
+            AppTheme.runWithModalScrim(
+                    SwingUtilities.getWindowAncestor(this),
+                    () -> dialog.showDialog().ifPresent(selection -> saveKeyboardBinding(bindingId, selection)));
         } finally {
             assignDialogOpen = false;
         }
@@ -1006,7 +1008,7 @@ public class BindingProfilePanel extends JPanel {
         }
         ClearKeyboardBindingDialog dialog = new ClearKeyboardBindingDialog(
                 this, bindingId, slots, slotType -> clearKeyboardSlot(bindingId, slotType));
-        dialog.showDialog();
+        AppTheme.runWithModalScrim(SwingUtilities.getWindowAncestor(this), dialog::showDialog);
     }
 
     /**

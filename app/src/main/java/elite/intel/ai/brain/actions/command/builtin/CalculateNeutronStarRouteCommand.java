@@ -79,8 +79,8 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
             return;
         }
 
-        int efficiency = getIntSafely(key.getAsString());
-        if (efficiency < 1 || efficiency > 100) {
+        Integer efficiency = getIntSafely(key.getAsString());
+        if (efficiency != null && efficiency < 1 || efficiency > 100) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.efficiency")));
             return;
         }

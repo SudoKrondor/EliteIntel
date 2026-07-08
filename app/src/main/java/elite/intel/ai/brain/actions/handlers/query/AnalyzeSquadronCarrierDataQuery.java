@@ -20,7 +20,12 @@ public class AnalyzeSquadronCarrierDataQuery extends BaseQueryAnalyzer implement
 
     @Override
     public String llmDescription() {
-        return "Report the SQUADRON carrier's status, fuel, and finances. Use whenever the request mentions the squadron carrier - NOT the player's personal fleet carrier (for that use query_fleet_carrier_status_fuel_credit_finance).";
+        return """
+                    Report the SQUADRON carrier's status, fuel, and finances.
+                    - Use whenever the request mentions the squadron carrier
+                    - Use for question about how financial runway, range etc.
+                    - NOT the player's personal fleet carrier (for that use query_fleet_carrier_status_fuel_credit_finance).
+                """;
     }
 
 

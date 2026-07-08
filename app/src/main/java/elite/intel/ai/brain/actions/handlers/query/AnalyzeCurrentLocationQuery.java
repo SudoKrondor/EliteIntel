@@ -21,7 +21,24 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeCurrentLocationQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_current_location";
 
-    @Override public String llmDescription() { return "Report the commander's current system and position."; }
+    @Override
+    public String llmDescription() {
+        return """
+                    Information about current location.
+                    - day length, gravity, atmosphere
+                    - current state (docked/landed/in flight)
+                    - current star system
+                    - current planet or body (if applicable)
+                    - system security level
+                    - faction controlling current station
+                    - powers active in this system
+                    - historical death statistics for this system
+                    - historical traffic statistics for this system
+                    - radius of current planet in kilometers
+                    - surface temperature of current planet
+                    - pre-formatted solar day length for current planet
+                """;
+    }
 
 
     @Override public String id() { return ID; }
