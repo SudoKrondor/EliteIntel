@@ -6,6 +6,7 @@ import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
@@ -18,9 +19,10 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.prompt.ReflexResolver;
+import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
-import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.ClassifyTurnFunction;
+import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.gameapi.SensorDataEvent;
@@ -84,7 +86,8 @@ class ThoughtDispatcherTest {
     @Test
     void reflexInputExecutesTheCommandWithoutEngagingLlm() {
         // The reflex resolver matches the input to one safe parameterless command: it runs directly and the
-        // LLM is never engaged (the dispatcher routes to a ReflexThought, not a CommanderThought).
+        // LLM is never engaged. A command is a side effect, not dialogue, so the reflex files nothing to memory
+        // (neither the imperative nor the call echo).
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -93,8 +96,13 @@ class ThoughtDispatcherTest {
                 return CompletableFuture.completedFuture(null);
             }
         };
+        List<String> executed = new CopyOnWriteArrayList<>();
+        ExecutionGateway tracking = request -> {
+            executed.add(request.toolName());
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
         ThoughtContext ctx = new ThoughtContext(
-                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator(),
@@ -107,18 +115,14 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("navigation");
         dispatcher.stop();
 
-        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
-        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
-        assertEquals("navigation", memory.writes.get(0).content());
-        MemoryEntry outcome = memory.writes.get(1);
-        assertEquals(MemorySource.COMPANION, outcome.source(), "the reflex command is recorded as its call for pair replay");
-        assertEquals("open_nav", outcome.toolLink().toolName());
+        assertEquals(List.of("open_nav"), executed, "the reflex ran the resolved command directly");
+        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
     }
 
     @Test
-    void inputNormalizerCanonicalizesBeforeTheReflexGateButMemoryKeepsRawWords() {
+    void inputNormalizerCanonicalizesBeforeTheReflexGate() {
         // A synonym ("combat mode") is canonicalized to its training phrase ("switch to combat mode") before the
-        // reflex gate, so it reflexes without the LLM; the raw words are still what memory records.
+        // reflex gate, so it reflexes without the LLM. The command is a side effect, so nothing is filed to memory.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -127,8 +131,13 @@ class ThoughtDispatcherTest {
                 return CompletableFuture.completedFuture(null);
             }
         };
+        List<String> executed = new CopyOnWriteArrayList<>();
+        ExecutionGateway tracking = request -> {
+            executed.add(request.toolName());
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
         ThoughtContext ctx = new ThoughtContext(
-                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator(),
@@ -142,16 +151,15 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("combat mode");
         dispatcher.stop();
 
-        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
-        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
-        assertEquals("combat mode", memory.writes.get(0).content(), "memory keeps the raw words, not the canonical form");
-        assertEquals("switch_combat", memory.writes.get(1).toolLink().toolName());
+        assertEquals(List.of("switch_combat"), executed,
+                "the normalized synonym reflexes to the resolved command without the LLM");
+        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
     }
 
     @Test
-    void aLeadingCompanionNameIsStrippedForTheReflexGateButMemoryKeepsIt() {
+    void aLeadingCompanionNameIsStrippedForTheReflexGate() {
         // Addressing the companion by name ("Vega, all stop") still takes the reflex fast-path: the leading
-        // vocative name is stripped before reflex matching, yet memory keeps the raw words (with the name).
+        // vocative name is stripped before reflex matching. The command is a side effect, so nothing is filed.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -160,8 +168,13 @@ class ThoughtDispatcherTest {
                 return CompletableFuture.completedFuture(null);
             }
         };
+        List<String> executed = new CopyOnWriteArrayList<>();
+        ExecutionGateway tracking = request -> {
+            executed.add(request.toolName());
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
         ThoughtContext ctx = new ThoughtContext(
-                failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator(),
@@ -175,10 +188,8 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput(input);
         dispatcher.stop();
 
-        assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
-        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
-        assertEquals(input, memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-        assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
+        assertEquals(List.of("stop_ship"), executed, "the name-addressed short command still reflexes");
+        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
     }
 
     @Test
@@ -197,8 +208,13 @@ class ThoughtDispatcherTest {
                     return CompletableFuture.completedFuture(null);
                 }
             };
+            List<String> executed = new CopyOnWriteArrayList<>();
+            ExecutionGateway tracking = request -> {
+                executed.add(request.toolName());
+                return CompletableFuture.completedFuture(new JsonObject());
+            };
             ThoughtContext ctx = new ThoughtContext(
-                    failIfCalled, new FakeSpeech(), new FakeExecution(), memory,
+                    failIfCalled, new FakeSpeech(), tracking, memory,
                     new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                     (categories, currentInput) -> List.of(), new CompanionState(),
                     invocation -> false, new ConfirmationCoordinator(),
@@ -211,9 +227,8 @@ class ThoughtDispatcherTest {
             dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
             dispatcher.stop();
 
-            assertEquals(2, memory.writes.size(), "the reflex records the input and the command outcome");
-            assertEquals("Вега, all stop", memory.writes.get(0).content(), "memory keeps the raw words, including the name");
-            assertEquals("stop_ship", memory.writes.get(1).toolLink().toolName());
+            assertEquals(List.of("stop_ship"), executed, "the Cyrillic name-addressed short command still reflexes");
+            assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
         } finally {
             SystemSession.getInstance().setLanguage(previousLanguage);
         }
@@ -225,12 +240,32 @@ class ThoughtDispatcherTest {
         CapturingLlm llm = new CapturingLlm();
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), UrgencyPolicy.normalOnly(), noReflex);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("how is the ship");
         dispatcher.stop();
 
         assertTrue(llm.requests.size() >= 1, "a non-reflex commander input engages the LLM");
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
+    }
+
+    @Test
+    void aNonCommandTurnRecordsRawWordsNotTheCanonicalForm() {
+        // The normalizer canonicalizes the input for matching/tool selection, but a recorded (non-command) turn
+        // keeps the raw words the commander actually said. The reflex matches nothing, so the turn takes the LLM
+        // path and settles as a bare classify_turn - a conversational turn that files its input.
+        CapturingLlm llm = new CapturingLlm();
+        ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
+        Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), noReflex, normalizer);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
+        dispatcher.start();
+        dispatcher.submitCommanderInput("combat mode");
+        dispatcher.stop();
+
+        assertTrue(memory.writes.stream().anyMatch(
+                        e -> e.source() == MemorySource.COMMANDER && "combat mode".equals(e.content())),
+                "memory keeps the raw words, not the canonical form used for matching");
     }
 
     @Test
@@ -264,7 +299,8 @@ class ThoughtDispatcherTest {
 
     @Test
     void eventWithoutSummaryIsDroppedWithoutEngagingLlm() {
-        // An event that provides no memory summary is dropped inside the thought: nothing recorded, no LLM call.
+        // An event that provides no memory summary is dropped at the dispatcher, before any thought is queued:
+        // nothing recorded, no LLM call.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("an unremembered event must not engage the LLM");
@@ -467,6 +503,7 @@ class ThoughtDispatcherTest {
             }
         };
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), policy);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/preemption path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // runs, blocks on the LLM
@@ -483,6 +520,7 @@ class ThoughtDispatcherTest {
     void interruptLiveThoughtsPreemptsTheLiveThought() throws InterruptedException {
         BlockFirstLlm llm = new BlockFirstLlm();
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/barge-in path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // blocks on the LLM
@@ -614,6 +652,7 @@ class ThoughtDispatcherTest {
         final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }

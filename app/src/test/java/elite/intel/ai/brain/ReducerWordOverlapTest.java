@@ -1,7 +1,7 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQueryCommand;
+import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
@@ -47,7 +47,7 @@ class ReducerWordOverlapTest {
     @Test
     void noOverlapFallsBackToConversationWhenConversational() {
         Map<String, String> result = Reducer.wordOverlapReduce("xyzzy plugh", map(), true);
-        assertTrue(result.containsKey(GeneralConversationQueryCommand.ID));
+        assertTrue(result.containsKey(GeneralConversationQuery.ID));
     }
 
     @Test

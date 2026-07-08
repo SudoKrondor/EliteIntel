@@ -1,7 +1,6 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
@@ -32,7 +31,7 @@ class CompressionPromptComposerTest {
     /** Commander's language name, resolved exactly as production does, so the test holds in any environment. */
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return PromptLocalizations.rulesFor(language).languageName();
+        return language.displayName();
     }
 
     @Test

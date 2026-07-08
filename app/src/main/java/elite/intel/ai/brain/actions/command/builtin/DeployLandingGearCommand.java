@@ -28,6 +28,13 @@ public final class DeployLandingGearCommand implements IntelCommand {
         return ID;
     }
 
+    /// due to bug in FDev impl of the Status.json we can't rely on the status
+    /// ALWAYS RETURN TRUE HERE
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();

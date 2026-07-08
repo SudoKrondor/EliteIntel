@@ -19,10 +19,26 @@ import java.util.List;
 public final class DeployFighterCommand implements IntelCommand {
     public static final String ID = "deploy_fighter";
 
-    @Override public String llmDescription() { return "Launch a ship-launched fighter."; }
+    @Override
+    public String llmDescription() {
+        return "Launch a ship-launched fighter from the fighter bay while flying in normal space. Not an undock of the ship and not an SRV/Nomad surface vehicle.";
+    }
 
 
     private final Status status = Status.getInstance();
+
+    /**
+     * A fighter can only be launched while flying the main ship in normal space - not while docked, landed, or in
+     * supercruise. Gating to that context keeps "launch/deploy fighter" from competing with the dock-only undock
+     * (launch ship) and the surface-only SRV/Nomad deploys.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip()
+                && !status.isDocked()
+                && !status.isLanded()
+                && !status.isInSupercruise();
+    }
 
     @Override
     public String id() {

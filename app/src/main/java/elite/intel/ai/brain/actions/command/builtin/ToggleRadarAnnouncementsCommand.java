@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
 
 import java.util.List;
 
@@ -37,6 +38,12 @@ public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** App-side announcement setting (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

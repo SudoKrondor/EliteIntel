@@ -5,6 +5,7 @@ import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtContext;
 import elite.intel.companion.mind.ThoughtDispatcher;
@@ -172,6 +173,7 @@ class GameEventFilterTest {
         final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }

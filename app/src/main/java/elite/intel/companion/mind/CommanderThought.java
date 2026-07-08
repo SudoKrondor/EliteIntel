@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
@@ -17,8 +18,10 @@ import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
+import elite.intel.companion.memory.facts.MergedFactCandidates;
+import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.prompt.ComposedPrompt;
-import elite.intel.companion.prompt.MemoryFactCandidates;
+import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 import elite.intel.companion.tools.SpeakFunction;
@@ -41,8 +44,8 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * A thought born from a commander reply. It owns the tool-calling turn: compose -> LLM round -> apply
- * {@code classify_turn} and record the input -> dangerous-action confirmation -> execute tool-calls, then the
- * turn ends. It is single-round by design - a command/query/macro or speak settles it (memory is retrieved
+ * {@code classify_turn} and file the input (a command / custom command turn is a side effect and files nothing)
+ * -> dangerous-action confirmation -> execute tool-calls, then the turn ends. It is single-round by design - a command/query/macro or speak settles it (memory is retrieved
  * before the turn as inlined answer facts, so no in-turn lookup round is needed) - or an unrecoverable
  * response stops it (§2.5/§2.6/§2.8/§5.1).
  * <p>
@@ -124,27 +127,33 @@ public final class CommanderThought extends Thought {
 
             List<LlmToolInvocation> invocations = result.toolInvocations();
 
-            // Classify the turn (topic + importance + is_question) and record the input before any tool runs
-            // (§2.6). The turn is marked recorded once filed so it is not re-filed on interrupt/error.
+            // Classify the turn (topic + importance + is_question) before any tool runs (§2.6).
             Map<LlmToolInvocation, JsonObject> preExecuted = applyClassification(invocations);
-            // Record every commander turn so the dialogue history alternates user/assistant (needed for the
-            // model to follow the conversation). A question carries no durable fact, so it is stamped LOW in
-            // applyClassification and filtered out of fact-recall candidates (see MemoryFactCandidates); a
-            // statement keeps its rated importance. Commands/macros often carry a fact worth keeping
-            // (add_mining_target "diamonds", set_reminder "Hutton").
-            recordCurrentInput();
+            // A command / custom command turn is a side effect, not dialogue: its imperative ("optimal speed",
+            // "request docking") carries nothing worth recalling and would only clutter the short-term timeline
+            // and the prompt, so it is not filed (its call echo is dropped too - see gameToolCallId). A query,
+            // statement, or pure-conversation turn is still recorded so the dialogue history keeps its
+            // user/assistant alternation: a question is stamped LOW in applyClassification and filtered out of
+            // fact-recall candidates, a statement keeps its rated importance.
+            if (!isPureCommandTurn(invocations)) {
+                recordCurrentInput();
+            }
+            // Mark the input handled either way - filed, or deliberately skipped for a command turn - so an
+            // interrupt/error does not fall back to re-filing it as unresolved input.
             inputRecorded = true;
 
-            // An interrupt landing after the input was filed but before the turn replies is a cut-off turn:
-            // route it through safeFlush so it drops a <cut_off/> boundary marker instead of ending silently.
+            // An interrupt landing after the input was handled (filed, or skipped for a command turn) but before
+            // the turn replies is a cut-off turn: route it through safeFlush so it drops a <cut_off/> boundary
+            // marker instead of ending silently.
             if (interrupted) {
                 safeFlush(inputRecorded);
                 return;
             }
 
             // §2.13: a dangerous action freezes the whole validated set for the commander's confirmation.
-            if (hasDangerousAction(invocations)) {
-                handleDangerousConfirmation(tools, invocations, preExecuted);
+            List<LlmToolInvocation> dangerous = dangerousActions(invocations);
+            if (!dangerous.isEmpty()) {
+                handleDangerousConfirmation(tools, invocations, preExecuted, dangerous);
                 return; // a dangerous turn is terminal
             }
 
@@ -176,10 +185,10 @@ public final class CommanderThought extends Thought {
         return ctx.systemFunctionProvider().systemFunctions(source());
     }
 
-    /** Pre-turn clean answer facts for this commander input, inlined in the prompt as a {@code <facts>} block. */
+    /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
     @Override
-    protected List<MemoryFactCandidates.Fact> memoryCandidates() {
-        return MemoryFactCandidates.forInput(ctx.memoryGateway(), matchInput);
+    protected List<Fact> memoryCandidates() {
+        return MergedFactCandidates.forInput(ctx.memoryGateway(), new MemoryFactContext(matchInput, source(), urgency()));
     }
 
     /** The canonical fact classify_turn stated this turn (empty when none), for the recorded entry. */
@@ -210,16 +219,39 @@ public final class CommanderThought extends Thought {
                         JsonUtils.getAsStringOrEmpty(inv.arguments(), ClassifyTurnFunction.PARAM_IS_QUESTION));
                 if (turnIsQuestion) {
                     // A question carries no durable fact; stamp it LOW so its recorded input never surfaces as a
-                    // fact-recall candidate (the MemoryFactCandidates filter drops LOW commander lines).
+                    // fact-recall candidate (the MemoryMergedFactCandidates filter drops LOW commander lines).
                     turnImportance = MemoryImportance.LOW;
                 }
-                turnCanonicalFact = JsonUtils.getAsStringOrEmpty(
-                        inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT).strip();
-                preExecuted.put(inv, execute(inv));
+                turnCanonicalFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
+                        inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT));
+                preExecuted.put(inv, execute(inv)); // runs classify_turn's handle, which moves the global topic
+                CompanionDiagnostics.debug(trace(), "classify",
+                        "topic=" + memoryTopic() + " importance=" + turnImportance + " question=" + turnIsQuestion
+                                + (turnCanonicalFact.isBlank() ? "" : " fact=\"" + CompanionDiagnostics.truncate(turnCanonicalFact) + "\""));
                 break;
             }
         }
         return preExecuted;
+    }
+
+    /**
+     * Normalizes classify_turn's canonical_fact to a real fact or empty. Small local models echo the literal
+     * placeholder {@code ""} (or wrap the fact in quotes) when they mean "no fact"; any quote-only or
+     * whitespace-only value carries no fact, so it must never reach memory as a stored fact / recall line.
+     */
+    private static String cleanCanonicalFact(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String s = raw.strip();
+        while (s.length() >= 2 && isQuote(s.charAt(0)) && isQuote(s.charAt(s.length() - 1))) {
+            s = s.substring(1, s.length() - 1).strip();
+        }
+        return s.chars().anyMatch(Character::isLetterOrDigit) ? s : "";
+    }
+
+    private static boolean isQuote(char c) {
+        return c == '"' || c == '\'' || c == '«' || c == '»';
     }
 
     /**
@@ -240,10 +272,12 @@ public final class CommanderThought extends Thought {
                 if (suppressSpeak) {
                     // A game action already owns the spoken outcome this turn, so the LLM's speak fires no TTS -
                     // nothing is said, nothing is recorded.
+                    CompanionDiagnostics.debug(trace(), "settle", "speak withheld (game action owns outcome)");
                     continue;
                 }
                 // The companion's own voice (pure conversation / memory recall): vocalize and record the words
                 // said as a COMPANION entry, so a later turn knows it already answered.
+                CompanionDiagnostics.info(trace(), "settle", "speak \"" + CompanionDiagnostics.truncate(spokenTextOf(inv)) + "\"");
                 execute(inv);
                 recordCompanionSpeech(spokenTextOf(inv));
                 continue;
@@ -252,11 +286,17 @@ public final class CommanderThought extends Thought {
             if (!preExecuted.containsKey(inv) && isCommand(inv)) {
                 voice(StringUtls.affirmative(), false);
             }
+            IntelActionType settledType = ctx.actionTypeResolver().resolve(inv.name());
+            if (settledType.isGameAction()) {
+                // The turn-settling game action - the headline of what the companion actually did this turn.
+                CompanionDiagnostics.info(trace(), "settle", settledType + " " + inv.name());
+            }
             settleGameCall(inv, tools, preExecuted);
         }
         // No game action owned the outcome and no non-blank speak was voiced (bare classify_turn, or an empty
         // speak): the turn drew no reply - record that so the timeline keeps a distinct turn boundary here.
         if (!suppressSpeak && !spokeToCommander(invocations)) {
+            CompanionDiagnostics.debug(trace(), "settle", "no reply");
             recordSystemNote(NO_ANSWER_NOTE);
         }
     }
@@ -299,14 +339,36 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * A fresh tool-call id for a game tool (command/query/macro), so its recorded call pairs with its result on
-     * replay; {@code null} for a system function (classify_turn), which needs no pairing.
+     * A fresh tool-call id for a QUERY, so its recorded call pairs with its answer on replay; {@code null} for a
+     * COMMAND / custom command and for a system function (classify_turn). A command turn is a side effect, not
+     * dialogue - its call echo is not recorded - so it gets no id; with none, any handler-voiced outcome is
+     * remembered as a plain companion line rather than a linked tool result, leaving nothing orphaned in the
+     * replayed timeline.
      */
     private String gameToolCallId(LlmToolInvocation inv) {
-        return switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND, QUERY, MACRO -> newId();
-            default -> null;
-        };
+        return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY ? newId() : null;
+    }
+
+    /**
+     * Whether this turn is a pure command / custom command (MACRO) turn - a side effect, not dialogue - whose
+     * imperative and call echo are not filed to memory (they carry nothing worth recalling and would only
+     * clutter the short-term timeline and the prompt). True when the turn runs a command or custom command and
+     * no QUERY. A co-occurring QUERY vetoes the suppression: a query records a call/result pair that must keep
+     * its preceding user turn (else the pair replays as an {@code assistant(tool_calls)} with no user before it),
+     * so the input is filed. A query, statement, or pure-conversation turn is recorded normally.
+     */
+    private boolean isPureCommandTurn(List<LlmToolInvocation> invocations) {
+        boolean hasCommand = false;
+        for (LlmToolInvocation inv : invocations) {
+            IntelActionType type = ctx.actionTypeResolver().resolve(inv.name());
+            if (type == IntelActionType.QUERY) {
+                return false; // a query records a pair needing its preceding user turn, so keep the input
+            }
+            if (type == IntelActionType.COMMAND || type == IntelActionType.MACRO) {
+                hasCommand = true;
+            }
+        }
+        return hasCommand;
     }
 
     /**
@@ -317,12 +379,9 @@ public final class CommanderThought extends Thought {
      */
     private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
         for (LlmToolInvocation inv : invocations) {
-            if (SpeakFunction.ID.equals(inv.name())) {
-                continue;
-            }
-            switch (ctx.actionTypeResolver().resolve(inv.name())) {
-                case COMMAND, QUERY, MACRO -> turnRanGameAction = true;
-                default -> { }
+            if (!SpeakFunction.ID.equals(inv.name())
+                    && ctx.actionTypeResolver().resolve(inv.name()).isGameAction()) {
+                turnRanGameAction = true;
             }
         }
         return turnRanGameAction;
@@ -336,14 +395,11 @@ public final class CommanderThought extends Thought {
     // recordOutcome / recordCall / recordToolResult / voice now live on the base Thought - shared with the
     // deterministic ReflexThought, which runs the same per-type outcome handling without an LLM round.
 
-    /** Whether any tool-call in the validated set is a dangerous action requiring confirmation (§2.13). */
-    private boolean hasDangerousAction(List<LlmToolInvocation> invocations) {
-        for (LlmToolInvocation inv : invocations) {
-            if (ctx.dangerousActionPolicy().isDangerous(inv)) {
-                return true;
-            }
-        }
-        return false;
+    /** The tool-calls in the validated set that require dangerous-action confirmation, in LLM order (empty when none) (§2.13). */
+    private List<LlmToolInvocation> dangerousActions(List<LlmToolInvocation> invocations) {
+        return invocations.stream()
+                .filter(inv -> ctx.dangerousActionPolicy().isDangerous(inv))
+                .toList();
     }
 
     /**
@@ -354,7 +410,8 @@ public final class CommanderThought extends Thought {
      * recorded and the turn ends (terminal).
      */
     private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
-                                             Map<LlmToolInvocation, JsonObject> preExecuted) {
+                                             Map<LlmToolInvocation, JsonObject> preExecuted, List<LlmToolInvocation> dangerous) {
+        CompanionDiagnostics.info(trace(), "confirm", "dangerous action detected: " + CompanionDiagnostics.calls(dangerous));
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action requires confirmation"));
 
@@ -365,6 +422,7 @@ public final class CommanderThought extends Thought {
         recordCompanionSpeech(prompt);
 
         MemoryProcessingState outcome = awaitConfirmationOutcome();
+        CompanionDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
         if (outcome == MemoryProcessingState.CONFIRMED) {
             // Execute the frozen set in LLM order. Each call is recorded then voiced and remembered by its
             // action type, exactly like a normal turn (§settleGameCall / §recordOutcome).
@@ -411,6 +469,7 @@ public final class CommanderThought extends Thought {
      * a fixed service phrase (no LLM). The turn ends.
      */
     private void onInvalidResponse(boolean inputRecorded) {
+        CompanionDiagnostics.info(trace(), "settle", "cannot execute (unrecoverable LLM response)");
         if (!inputRecorded) {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput));
@@ -426,6 +485,8 @@ public final class CommanderThought extends Thought {
      * adjacent to the next commander turn and coalesced with it. No new LLM/query/action/speech is started here.
      */
     private void safeFlush(boolean inputRecorded) {
+        CompanionDiagnostics.debug(trace(), "flush",
+                inputRecorded ? "cut off after filing input" : "interrupted before filing (input saved as unresolved)");
         if (!inputRecorded) {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput));

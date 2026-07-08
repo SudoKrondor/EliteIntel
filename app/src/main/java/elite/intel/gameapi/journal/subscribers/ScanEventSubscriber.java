@@ -61,111 +61,111 @@ public class ScanEventSubscriber {
         Thread.ofVirtual().start(() -> {
 
             String shortName = subtractString(event.getBodyName(), event.getStarSystem());
-            String bodyName = event.getBodyName();
-
-            LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
             LocationDto.LocationType locationType = determineLocationType(event);
-            LocationDto primaryStarLocation = locationManager.findPrimaryStar(event.getStarSystem());
-            location.setBodyId(event.getBodyID());
-            location.setStarName(primaryStarLocation.getStarName());
-            location.setX(primaryStarLocation.getX());
-            location.setY(primaryStarLocation.getY());
-            location.setZ(primaryStarLocation.getZ());
-            location.setStarName(event.getStarSystem());
-            location.setBodyId(event.getBodyID());
-            location.setSystemAddress(event.getSystemAddress());
-            location.setOrbitalPeriod(event.getOrbitalPeriod());
-
 
             if (BELT_CLUSTER.equals(locationType)) {
                 return; // skip belt clusters.
             }
 
-            location.setLocationType(locationType);
+            // Read-modify-write under a per-body lock so a concurrent SAASignalsFound for the same
+            // body can't interleave and wipe its signals/materials (blind whole-JSON upsert).
+            locationManager.updateBody(event.getSystemAddress(), event.getBodyID(), location -> {
+                LocationDto primaryStarLocation = locationManager.findPrimaryStar(event.getStarSystem());
+                location.setBodyId(event.getBodyID());
+                location.setStarName(primaryStarLocation.getStarName());
+                location.setX(primaryStarLocation.getX());
+                location.setY(primaryStarLocation.getY());
+                location.setZ(primaryStarLocation.getZ());
+                location.setStarName(event.getStarSystem());
+                location.setBodyId(event.getBodyID());
+                location.setSystemAddress(event.getSystemAddress());
+                location.setOrbitalPeriod(event.getOrbitalPeriod());
 
-            // For moons, record the parent planet's bodyID so day-length can use the planet's orbital period
-            if (MOON.equals(locationType) && event.getParents() != null && !event.getParents().isEmpty()) {
-                ScanEvent.Parent firstParent = event.getParents().get(0);
-                if (firstParent.getPlanet() != null) {
-                    location.setParentBodyId(firstParent.getPlanet());
-                }
-            }
-            location.setSystemAddress(event.getSystemAddress());
-            location.setStarClass(event.getStarType());
-            location.setPlanetName(event.getBodyName());
-            location.setBodyId(event.getBodyID());
-            location.setPlanetShortName(shortName);
-            location.setVolcanism(event.getVolcanism());
+                location.setLocationType(locationType);
 
-
-            Double gravity = GravityCalculator.calculateSurfaceGravity(event.getMassEM(), event.getRadius());
-            if (gravity != null)
-                location.setGravity(gravity); //DO NOT use event.getSurfaceGravity() as it is not accurate
-            location.setMassEM(event.getMassEM());
-            location.setStarName(event.getStarSystem());
-            location.setPlanetName(event.getBodyName());
-            location.setRadius(event.getRadius());
-            location.setSurfaceTemperature(event.getSurfaceTemperature());
-            location.setLandable(event.isLandable());
-            location.setPlanetClass(event.getPlanetClass());
-            location.setTerraformable("Terraformable".equalsIgnoreCase(event.getTerraformState()));
-            location.setTidalLocked(event.isTidalLock());
-            location.setAtmosphere(event.getAtmosphereType());
-            location.setMaterials(toListOfMaterials(event.getMaterials()));
-            location.setDistance(event.getDistanceFromArrivalLS());
-            location.setOurDiscovery(!event.isWasDiscovered());
-            location.setRotationPeriod(event.getRotationPeriod());
-            location.setOrbitalPeriod(event.getOrbitalPeriod());
-            location.setAxialTilt(event.getAxialTilt());
-            location.setWeMappedIt(!event.isWasMapped());
-            location.setPlanetShortName(subtractString(event.getBodyName(), event.getStarSystem()));
-
-
-            List<FSSBodySignalsEvent.Signal> fssSignals = locationManager.getLocation(event.getStarSystem(), event.getBodyID()).getFssSignals();
-            List<SAASignalsFoundEvent.Signal> saaSignals = locationManager.getLocation(event.getStarSystem(), event.getBodyID()).getSaaSignals();
-
-            int countBioSignals = 0;
-            int countGeological = 0;
-            if (fssSignals != null && !fssSignals.isEmpty()) {
-                for (FSSBodySignalsEvent.Signal signal : fssSignals) {
-                    if ("$SAA_SignalType_Biological;".equalsIgnoreCase(signal.getType())) {
-                        countBioSignals = countBioSignals + signal.getCount();
-                    }
-                    if ("$SAA_SignalType_Geological;".equalsIgnoreCase(signal.getType())) {
-                        countGeological = countGeological + signal.getCount();
+                // For moons, record the parent planet's bodyID so day-length can use the planet's orbital period
+                if (MOON.equals(locationType) && event.getParents() != null && !event.getParents().isEmpty()) {
+                    ScanEvent.Parent firstParent = event.getParents().get(0);
+                    if (firstParent.getPlanet() != null) {
+                        location.setParentBodyId(firstParent.getPlanet());
                     }
                 }
-            }
+                location.setSystemAddress(event.getSystemAddress());
+                location.setStarClass(event.getStarType());
+                location.setPlanetName(event.getBodyName());
+                location.setBodyId(event.getBodyID());
+                location.setPlanetShortName(shortName);
+                location.setVolcanism(event.getVolcanism());
 
-            /// IF fss did not catch it, try saa
-            if (countBioSignals == 0 || countGeological == 0) {
-                if (saaSignals != null && !saaSignals.isEmpty()) {
-                    for (SAASignalsFoundEvent.Signal signal : saaSignals) {
-                        if (countBioSignals == 0 && "$SAA_SignalType_Biological;".equalsIgnoreCase(signal.getType())) {
+
+                Double gravity = GravityCalculator.calculateSurfaceGravity(event.getMassEM(), event.getRadius());
+                if (gravity != null)
+                    location.setGravity(gravity); //DO NOT use event.getSurfaceGravity() as it is not accurate
+                location.setMassEM(event.getMassEM());
+                location.setStarName(event.getStarSystem());
+                location.setPlanetName(event.getBodyName());
+                location.setRadius(event.getRadius());
+                location.setSurfaceTemperature(event.getSurfaceTemperature());
+                location.setLandable(event.isLandable());
+                location.setPlanetClass(event.getPlanetClass());
+                location.setTerraformable("Terraformable".equalsIgnoreCase(event.getTerraformState()));
+                location.setTidalLocked(event.isTidalLock());
+                location.setAtmosphere(event.getAtmosphereType());
+                location.setMaterials(toListOfMaterials(event.getMaterials()));
+                location.setDistance(event.getDistanceFromArrivalLS());
+                location.setOurDiscovery(!event.isWasDiscovered());
+                location.setRotationPeriod(event.getRotationPeriod());
+                location.setOrbitalPeriod(event.getOrbitalPeriod());
+                location.setAxialTilt(event.getAxialTilt());
+                location.setWeMappedIt(!event.isWasMapped());
+                location.setPlanetShortName(subtractString(event.getBodyName(), event.getStarSystem()));
+
+
+                List<FSSBodySignalsEvent.Signal> fssSignals = locationManager.getLocation(event.getStarSystem(), event.getBodyID()).getFssSignals();
+                List<SAASignalsFoundEvent.Signal> saaSignals = locationManager.getLocation(event.getStarSystem(), event.getBodyID()).getSaaSignals();
+
+                int countBioSignals = 0;
+                int countGeological = 0;
+                if (fssSignals != null && !fssSignals.isEmpty()) {
+                    for (FSSBodySignalsEvent.Signal signal : fssSignals) {
+                        if ("$SAA_SignalType_Biological;".equalsIgnoreCase(signal.getType())) {
                             countBioSignals = countBioSignals + signal.getCount();
                         }
-                        if (countGeological == 0 && "$SAA_SignalType_Geological;".equalsIgnoreCase(signal.getType())) {
+                        if ("$SAA_SignalType_Geological;".equalsIgnoreCase(signal.getType())) {
                             countGeological = countGeological + signal.getCount();
                         }
                     }
                 }
-            }
 
-            location.setBioSignals(countBioSignals);
-            location.setGeoSignals(countGeological);
-
-
-            List<MaterialDto> materials = new ArrayList<>();
-            if (event.getMaterials() != null) {
-                for (ScanEvent.Material material : event.getMaterials()) {
-                    materials.add(new MaterialDto(material.getName(), material.getPercent()));
+                /// IF fss did not catch it, try saa
+                if (countBioSignals == 0 || countGeological == 0) {
+                    if (saaSignals != null && !saaSignals.isEmpty()) {
+                        for (SAASignalsFoundEvent.Signal signal : saaSignals) {
+                            if (countBioSignals == 0 && "$SAA_SignalType_Biological;".equalsIgnoreCase(signal.getType())) {
+                                countBioSignals = countBioSignals + signal.getCount();
+                            }
+                            if (countGeological == 0 && "$SAA_SignalType_Geological;".equalsIgnoreCase(signal.getType())) {
+                                countGeological = countGeological + signal.getCount();
+                            }
+                        }
+                    }
                 }
-                location.setMaterials(materials);
-            }
 
-            announceIfNewDiscovery(event, location);
-            locationManager.save(location);
-            playerSession.setLastScan(location);
+                location.setBioSignals(countBioSignals);
+                location.setGeoSignals(countGeological);
+
+
+                List<MaterialDto> materials = new ArrayList<>();
+                if (event.getMaterials() != null) {
+                    for (ScanEvent.Material material : event.getMaterials()) {
+                        materials.add(new MaterialDto(material.getName(), material.getPercent()));
+                    }
+                    location.setMaterials(materials);
+                }
+
+                announceIfNewDiscovery(event, location);
+                playerSession.setLastScan(location);
+            });
         });
     }
 
@@ -173,6 +173,11 @@ public class ScanEventSubscriber {
         boolean isStar = event.getStarType() != null && !event.getStarType().isEmpty() || event.getSurfaceTemperature() > 1000;
         boolean isPrimaryStar = event.getDistanceFromArrivalLS() == 0;
         boolean isBeltCluster = event.getBodyName().contains("Belt Cluster");
+        // Rings follow the ED "<parent> <letter> Ring" convention. Match the suffix precisely rather
+        // than contains("Ring") so a system whose name contains "Ring" doesn't misclassify its bodies.
+        // A ring's parent is a planet, so without this it would fall through to MOON/PLANET.
+        boolean isRing = event.getBodyName() != null && event.getBodyName().matches(".* [A-Z] Ring");
+        if (isRing) return PLANETARY_RING;
         boolean isPlanet = false;
         boolean isMoon = false;
         List<ScanEvent.Parent> parents = event.getParents();

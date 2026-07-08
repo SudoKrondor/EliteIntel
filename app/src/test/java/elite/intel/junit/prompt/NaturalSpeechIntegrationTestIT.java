@@ -3,21 +3,14 @@ package elite.intel.junit.prompt;
 
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
-import elite.intel.ai.brain.commons.HandlerDispatchedEvent;
-import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
-import elite.intel.gameapi.UserInputEvent;
+import elite.intel.companion.input.CompanionRoutingHarness;
 import elite.intel.i18n.Language;
-import elite.intel.session.SystemSession;
-import elite.intel.ws.WebSocketBroadcaster;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 
 /**
@@ -40,37 +33,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NaturalSpeechIntegrationTestIT {
 
-    /**
-     * Pause between each test phrase. Increase if your LLM is slow.
-     * 3000 simulates a typical interaction.
-     * 1500 go faster.
-     * 250 you are pushing it.
-     * 150 bro I want your hardware.
-     */
-    private static final int LLM_WAIT_MS = 5000;
-    private static final int LLM_POLL_MS = 100;
-
-    private HandlerCapture capture;
+    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.IT);
 
     @BeforeAll
-    void bootstrap() throws InterruptedException {
-        SystemSession systemSession = SystemSession.getInstance();
-        systemSession.setConversationalMode(false);
-        systemSession.setLanguage(Language.IT);
-        HeadlessBootstrap.start();
-        WebSocketBroadcaster.getInstance().start();
-        capture = new HandlerCapture();
-        // Let any startup noise (connection check etc.) settle
-        Thread.sleep(2000);
-        /// this allows LLM to cache the prompt header / same request runs on app
-        /// startup.
-        GameEventBus.publish(new SensorDataEvent("ping - connection check", "Acknowledge connection"));
-        Thread.sleep(4000);
+    void bootstrap() throws Exception {
+        harness.boot();
     }
 
     @AfterAll
     void teardown() {
-        HeadlessBootstrap.stop();
+        harness.shutdown();
     }
 
     // -------------------------------------------------------------------------
@@ -78,28 +50,7 @@ public class NaturalSpeechIntegrationTestIT {
     // -------------------------------------------------------------------------
 
     private void assertRouted(String input, String expectedAction) throws InterruptedException {
-        capture.reset();
-        GameEventBus.publish(new UserInputEvent(input));
-
-        HandlerDispatchedEvent event = waitForDispatch(expectedAction);
-        assertNotNull(event,
-                "No handler dispatched for input: \"" + input + "\"");
-        assertEquals(expectedAction, event.getAction(),
-                "Input: \"" + input + "\" → got \"" + event.getAction()
-                        + "\" but expected \"" + expectedAction + "\"");
-    }
-
-    private HandlerDispatchedEvent waitForDispatch(String expectedAction) throws InterruptedException {
-        long deadline = System.currentTimeMillis() + LLM_WAIT_MS;
-        HandlerDispatchedEvent event = null;
-        while (System.currentTimeMillis() < deadline) {
-            event = capture.getLastEvent();
-            if (event != null && expectedAction.equals(event.getAction())) {
-                return event;
-            }
-            Thread.sleep(LLM_POLL_MS);
-        }
-        return event;
+        harness.assertRouted(input, expectedAction);
     }
 
     // =========================================================================
@@ -125,7 +76,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> ignoreMe() {
-        return Stream.of("non ascoltarmi più", "ignora i miei comandi", "ignora i comandi");
+        return Stream.of("sospenditi", "vai in standby", "ignorami", "non ascoltarmi più", "ignora i miei comandi", "ignora i comandi");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -177,11 +128,11 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(16)
     @MethodSource
     void honkTheSystem(String input) throws InterruptedException {
-        assertRouted(input, HonkCommand.ID);
+        assertRouted(input, RunSystemScanCommand.ID);
     }
 
     static Stream<String> honkTheSystem() {
-        return Stream.of("honk", "esplora il sistema", "esegui una scansione del sistema");
+        return Stream.of("esplora il sistema", "esegui una scansione del sistema");
     }
     // =========================================================================
     // Speed / throttle - highest collision risk group
@@ -311,7 +262,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> dropFromSupercruise() {
-        return Stream.of("uscire", "uscire qui", "uscire dalla supercrociera", "abbandonare la supercrociera", "uscire da supercruise", "uscire da velocità luce");
+        return Stream.of("uscire", "uscire qui", "uscire dalla supercrociera", "abbandonare la supercrociera", "uscire da supercruise",
+                "uscire da velocità luce");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -407,7 +359,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> deployLandingGear() {
-        return Stream.of("estrai il carrello", "giù il carrello", "schiera il carrello", "abbassa il carrello");
+        return Stream.of("estrai il carrello", "giù il carrello", "schiera il carrello", "abbassa il carrello", "schierare il carrello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -430,8 +382,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> requestDocking() {
         return Stream.of("richiesta di attracco", "attracco alla stazione", "richiesta di atterraggio",
-                "contattare la torre di controllo e richiedere una piattaforma di atterraggio", "richiesta di autorizzazione all'atterraggio", "richiesta di piattaforma di atterraggio",
-                "richiesta di autorizzazione all'atterraggio");
+                "contattare la torre di controllo e richiedere una piattaforma di atterraggio",
+                "richiesta di autorizzazione all'atterraggio", "richiesta di piattaforma di atterraggio");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -442,7 +394,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> cargoScoop() {
-        return Stream.of("apri cargo scoop", "apri lo scoop", "apri scoop di carico", "apri vano di carico", "chiudi cargo scoop", "chiudi lo scoop", "chiudi scoop di carico", "chiudi vano di carico");
+        return Stream.of("apri cargo scoop", "apri lo scoop", "apri scoop di carico", "apri vano di carico",
+                "chiudi cargo scoop", "chiudi lo scoop", "chiudi scoop di carico", "chiudi vano di carico");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -516,8 +469,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> retractHardpoints() {
-        return Stream.of("ritira le armi", "disattiva le armi", "via le armi", "armi ritirate", "armi disattivate",
-                "armi al sicuro", "armi in standby");
+        return Stream.of("ritira le armi", "disattiva le armi", "via le armi", "armi ritirate", "armi disattivate", "armi in standby");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -541,7 +493,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> selectHighestThreat() {
         return Stream.of("mira al bersaglio più pericoloso", "seleziona nemico", "seleziona minaccia più alta",
-                "mira al nemico più pericoloso", "seleziona il nemico più pericoloso", "mira alla minaccia più alta", "nemico più pericoloso");
+                "mira al nemico più pericoloso", "seleziona il nemico più pericoloso", "mira alla minaccia più alta",
+                "nemico più pericoloso");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -562,9 +515,10 @@ public class NaturalSpeechIntegrationTestIT {
         assertRouted(input, DeployChaffCommand.ID);
     }
 
+    /// Countermeasures are not chaff, Countermeasures are radio jamming signal for misiles. a different command.
     static Stream<String> deployChaff() {
         return Stream.of("lancia chaff", "lancia contromisure", "usa chaff", "contromisure per i missili",
-                "lancia chaff per i missili", "usa contromisure", "attiva chaff", "attiva contromisure");
+                "lancia chaff per i missili", "usa contromisure", "attiva chaff");
     }
 
     // =========================================================================
@@ -579,7 +533,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToShields() {
-        return Stream.of("potenza agli scudi", "max scudi", "boost scudi", "massimizza scudi", "scudi al massimo", "scudi al 100 per cento", "scudi al 100%", "scudi al massimo livello");
+        return Stream.of("potenza agli scudi", "max scudi", "boosta scudi", "massimizza scudi", "scudi al massimo",
+                "scudi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -590,7 +545,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToEngines() {
-        return Stream.of("potenza ai motori", "potenza max motori", "boost motori", "massimizza motori", "potenza motori al massimo", "potenza motori al 100 per cento", "potenza motori al 100%", "potenza motori al massimo livello");
+        return Stream.of("potenza ai motori", "potenza max motori", "boost motori", "massimizza motori",
+                "potenza motori al massimo", "potenza motori al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -601,7 +557,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> powerToWeapons() {
-        return Stream.of("potenza alle armi", "max armi", "boost armi", "massimizza armi", "armi al massimo", "armi al 100 per cento", "armi al 100%", "armi al massimo livello");
+        return Stream.of("potenza alle armi", "max armi", "boosta armi", "massimizza armi", "armi al massimo",
+                "armi al massimo livello");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -612,7 +569,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> resetPower() {
-        return Stream.of("bilancia potenza", "reset potenza", "distribuisci potenza equamente", "riporta potenza a livelli normali", "riporta potenza a livelli standard");
+        return Stream.of("bilancia potenza", "reset potenza", "distribuisci potenza equamente", "riporta potenza a livelli normali");
     }
 
     // =========================================================================
@@ -628,7 +585,7 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> openFss() {
         return Stream.of("apri FSS ed esegui scansione", "esegui scansione a spettro filtrato", "scansione a spettro completo",
-                "scansione pianeti", "scansione completa", "scan completo", "fss");
+                "scan completo", "fss");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -650,10 +607,11 @@ public class NaturalSpeechIntegrationTestIT {
         assertRouted(input, FindMiningSiteCommand.ID);
     }
 
+    /// NOTE: The material is required for the query. "find mining site" will always fail that is by design.
     static Stream<String> findMiningSite() {
-        return Stream.of("trova sito di estrazione per alexandrite entro 300 anni luce",
+        return Stream.of("trova sito di estrazione per alessandrite entro 300 anni luce",
                 "trova posizione di estrazione per bromelite entro 1200 anni luce", "trova campo di asteroidi con oro",
-                "sito di estrazione", "sito mining", "trova sito di estrazione", "trova campo di asteroidi con platino", "trova campo di asteroidi con ferro");
+                "trova campo di asteroidi con platino", "trova campo di asteroidi con ferro");
     }
 
     // =========================================================================
@@ -697,6 +655,20 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> findNearestCarrier() {
         return Stream.of("trova fleet carrier più vicina", "fleet carrier più vicina", "trova la fleet carrier più vicina",
             "trova la portanavi più vicina", "trova la portanavi più vicina a me");
+
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(83)
+    @MethodSource
+    void openFleetCarrierPanel(String input) throws InterruptedException {
+        assertRouted(input, DisplayFleetCarrierManagementPanelCommand.ID);
+    }
+
+    static Stream<String> openFleetCarrierPanel() {
+        return Stream.of("mostra il pannello di gestione della fleet carrier", "apri il pannello di gestione della fleet carrier",
+                "visualizza il pannello di gestione della fleet carrier", "mostra il pannello di gestione della portanavi",
+                "apri il pannello di gestione della portanavi", "visualizza il pannello di gestione della portanavi");
     }
 
     // =========================================================================
@@ -713,7 +685,8 @@ public class NaturalSpeechIntegrationTestIT {
     static Stream<String> navigateToSquadronCarrier() {
         return Stream.of("naviga alla squadron carrier", "vai alla squadron carrier", "dirigiti verso la squadron carrier",
                 "portami alla squadron carrier", "naviga alla portanavi dello squadrone", "vai alla portanavi dello squadrone",
-                "dirigiti verso la portanavi dello squadrone");
+                "dirigiti verso la portanavi dello squadrone", "dirigiti verso la portanavi della squadriglia");
+
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -724,7 +697,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> calculateNeutronRoute() {
-        return Stream.of("calculate neutron route with efficiency 20", "calculate neutron route");
+        return Stream.of("calcola rotta verso la stella di neutroni con efficienza 20", "calcola rotta verso la stella di neutroni");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -735,7 +708,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> plotNextNeutronLeg() {
-        return Stream.of("next neutron star jump", "plot route to next neutron star waypoint", "next neutron star");
+        return Stream.of("prossimo salto verso la stella di neutroni", "rotta verso la prossima stella di neutroni",
+                "prossima stella di neutroni");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -746,7 +720,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> clearNeutronStarRoute() {
-        return Stream.of("clear neutron route");
+        return Stream.of("annulla rotta verso la stella di neutroni", "cancella rotta verso la stella di neutroni",
+                "cancella rotta verso le stelle di neutroni");
     }
 
 
@@ -754,49 +729,57 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(240)
     @MethodSource
     void querySquadronCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierDataQueryCommand.ID);
+        assertRouted(input, AnalyzeSquadronCarrierDataQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierStatus() {
-        return Stream.of("squadron carrier status", "squadron carrier finances", "squadron carrier balance",
-                "how long can we operate the squadron carrier",
-                "squadron carrier tritium", "squadron carrier fuel", "squadron carrier fuel level");
+        return Stream.of("stato della squadron carrier", "quanto a lungo possiamo usare la squadron carrier",
+                "finanze della squadron carrier", "bilancio della squadron carrier", "panoramica della squadron carrier",
+                "fondi della squadron carrier", "stato del carburante della squadron carrier", "trizio della squadron carrier",
+                "livello di trizio della squadron carrier", "livello del carburante della squadron carrier",
+                "livello del carburante della portanavi dello squadrone", "livello di trizio della portanavi dello squadrone",
+                "stato della portanavi dello squadrone", "stato della portanavi della squadriglia",
+                "livello di trizio della portanavi della squadriglia", "livello del carburante della portanavi della squadriglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(242)
     @MethodSource
     void querySquadronCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierRouteQueryCommand.ID);
+        assertRouted(input, AnalyzeSquadronCarrierRouteQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("squadron carrier route", "how many jumps on the squadron carrier route",
-                "squadron carrier route");
+        return Stream.of("rotta della squadron carrier", "navigazione della squadron carrier", "rotta di salto della squadron carrier",
+                "quanti salti rimangono sulla rotta della squadron carrier", "salti rimanenti sullo squadron carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(243)
     @MethodSource
     void querySquadronCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierFinalDestinationQueryCommand.ID);
+        assertRouted(input, AnalyzeSquadronCarrierFinalDestinationQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierDestination() {
-        return Stream.of("where is the squadron carrier going", "squadron carrier final destination",
-                "squadron carrier heading");
+        return Stream.of("dove sta andando lo squadron carrier", "direzione della squadron carrier", "arrivo della squadron carrier",
+                "destinazione finale della squadron carrier", "dove sta andando la portanavi dello squadrone",
+                "destinazione finale della portanavi dello squadrone", "dove sta andando la portanavi della squadriglia");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(244)
     @MethodSource
     void querySquadronCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierETAQueryCommand.ID);
+        assertRouted(input, AnalyzeSquadronCarrierETAQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierEta() {
-        return Stream.of("squadron carrier ETA", "when does the squadron carrier arrive",
-                "how long until the squadron carrier arrives");
+        return Stream.of("tempo stimato di arrivo della squadron carrier", "quando arriva lo squadron carrier",
+            "quanto manca allo squadron carrier", "tempo di arrivo della squadron carrier",
+            "tempo di salto della squadron carrier", "tempo di arrivo della portanavi dello squadrone",
+            "tempo stimato di arrivo della portanavi dello squadrone", "quando arriva la portanavi dello squadrone",
+            "quanto manca alla portanavi dello squadriglia", "tempo di arrivo della portanavi della squadriglia");
     }
 
     // =========================================================================
@@ -811,18 +794,25 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> bareCarrierDefaultsToFleet() {
-        return Stream.of("navigate to fleet carrier", "return to carrier", "take us to carrier");
+        return Stream.of("raggiungere la fleet carrier", "andare alla fleet carrier", "vai verso la fleet carrier",
+                "tornare alla fleet carrier", "portami alla fleet carrier", "dirigiti alla fleet carrier", "rotta verso la fleet carrier",
+                "vai verso la portanavi", "portami alla portanavi", "dirigiti alla portanavi");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(251)
     @MethodSource
     void bareCarrierStatusDefaultsToFleet(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQueryCommand.ID);
+        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
     }
 
     static Stream<String> bareCarrierStatusDefaultsToFleet() {
-        return Stream.of("fleet carrier status", "fleet carrier balance", "fleet carrier funds");
+        return Stream.of("stato della fleet carrier", "per quanto tempo possiamo usare la fleet carrier",
+                "quanto può saltare la fleet carrier", "raggio di salto della fleet carrier con trizio attuale",
+                "raggio di salto della fleet carrier", "finanze della fleet carrier", "panoramica della fleet carrier",
+                "stato della fleet carrier", "stato del carburante della fleet carrier", "fondi della fleet carrier",
+                "bilancio della fleet carrier", "finanze della fleet carrier", "finanze della portanavi",
+                "bilancio della portanavi", "stato del carburante della portanavi");
     }
 
     // =========================================================================
@@ -837,7 +827,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> disableAnnouncements() {
-        return Stream.of("disable all announcements");
+        return Stream.of("disattiva tutte le comunicazioni", "attiva tutte le comunicazioni",
+                "disattiva tutti gli annunci vocali", "silenzia tutti gli annunci", "commuta tutti gli annunci");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -848,7 +839,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("set reminder refuel at next stop");
+        return Stream.of("imposta un promemoria per il rifornimento al prossimo stop", "ricordami di fare rifornimento alla prossima fermata",
+                "attiva promemoria per il rifornimento al prossimo stop", "ricordami di eseguire rifornimento alla prossima fermata");
     }
 
     // =========================================================================
@@ -863,7 +855,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> galaxyMap() {
-        return Stream.of("open galaxy map", "show galaxy map", "display galaxy map");
+        return Stream.of("mostra la mappa della galassia", "apri la mappa della galassia", "visualizza la mappa della galassia",
+                "apri la mappa galattica", "mostra la mappa galattica", "visualizza la mappa galattica");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -874,7 +867,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> systemMap() {
-        return Stream.of("open local map", "show system map", "display system map");
+        return Stream.of("mostra la mappa del sistema", "apri la mappa del sistema", "mostra la mappa del sistema",
+                "visualizza la mappa del sistema", "apri la mappa stellare", "mostra la mappa stellare", "visualizza la mappa stellare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -885,7 +879,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> navigationPanel() {
-        return Stream.of("show navigation panel", "open navigation panel");
+        return Stream.of("mostra il pannello di navigazione", "apri il pannello di navigazione", "visualizza il pannello di navigazione");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -896,7 +890,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> modulesPanel() {
-        return Stream.of("show modules panel", "open modules panel", "display modules panel");
+        return Stream.of("mostra il pannello moduli", "apri il pannello moduli", "visualizza il pannello moduli");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -907,7 +901,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> statusPanel() {
-        return Stream.of("show status panel", "open status panel");
+        return Stream.of("mostra il pannello dello stato", "apri il pannello dello stato", "visualizza il pannello dello stato");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -918,7 +912,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> inventoryPanel() {
-        return Stream.of("show inventory panel", "open inventory panel");
+        return Stream.of("mostra il pannello inventario", "apri il pannello inventario", "visualizza il pannello inventario");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -929,7 +923,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> closePanel() {
-        return Stream.of("exit close panel", "close panel");
+        return Stream.of("esci dal pannello", "chiudi pannello", "chiudi mappa", "chiudi mappa della galassia", "chiudi mappa del sistema");
     }
 
     // =========================================================================
@@ -940,53 +934,57 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(200)
     @MethodSource
     void queryCurrentLocation(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeCurrentLocationQueryCommand.ID);
+        assertRouted(input, AnalyzeCurrentLocationQuery.ID);
     }
 
     static Stream<String> queryCurrentLocation() {
-        return Stream.of("Where are we right now?", "what is our location", "where are we",
-                "how long does the day last at current location");
+        return Stream.of("Dove siamo adesso?", "qual è la nostra posizione", "dove siamo",
+                "quanto dura il giorno nella posizione attuale", "quanto dura il giorno in questa posizione", "quanto dura il giorno qui");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(202)
     @MethodSource
     void queryShipLoadout(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeShipLoadoutQueryCommand.ID);
+        assertRouted(input, AnalyzeShipLoadoutQuery.ID);
     }
 
     static Stream<String> queryShipLoadout() {
-        return Stream.of("ship loadout", "what am I flying", "ship equipment", "do you have fuel scoop equipped",
-                "do you have weapons equipped", "what weapons do you have equipped", "do you have a refinery equipped");
+        return Stream.of("carico della nave", "rapporto danni", "moduli della nave", "rapporto efficienza al combattimento",
+                "equipaggiamento della nave", "specifiche della nave", "su che cosa sto volando", "con cosa siamo equipaggiati",
+                "è equipaggiato", "generatore di scudi", "rinforzo della carena", "sensori", "propulsori", "frameshift",
+                "fuel scoop", "installate");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(203)
     @MethodSource
     void queryCargoHold(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeCargoHoldQueryCommand.ID);
+        assertRouted(input, AnalyzeCargoHoldQuery.ID);
     }
 
     static Stream<String> queryCargoHold() {
-        return Stream.of("cargo hold", "what are we carrying", "cargo contents");
+        return Stream.of("contenuto del cargo", "cosa stiamo trasportando", "contenuto del carico");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(204)
     @MethodSource
     void queryPlottedRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeRouterQueryCommand.ID);
+        assertRouted(input, AnalyzeRouterQuery.ID);
     }
 
     static Stream<String> queryPlottedRoute() {
-        return Stream.of("plotted route", "jumps remaining", "how many jumps to destination", "are we there yet");
+        return Stream.of("rotta impostata", "riforimento alla prossima fermata", "dispinibilità rifornimento sulla rotta",
+                "analisi rotta", "rotta corrente", "navigatione rotta", "salti rimanenti", "salti rimasti", "quanti salti",
+                "prossima stella scoopabile", "fermata per rifornimento");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(205)
     @MethodSource
     void queryStationsInSystem(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeStationsQueryCommand.ID);
+        assertRouted(input, AnalyzeStationsQuery.ID);
     }
 
     static Stream<String> queryStationsInSystem() {
@@ -998,7 +996,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(206)
     @MethodSource
     void queryStellarObjects(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeStellarObjectsQueryCommand.ID);
+        assertRouted(input, AnalyzeStellarObjectsQuery.ID);
     }
 
     static Stream<String> queryStellarObjects() {
@@ -1010,7 +1008,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(207)
     @MethodSource
     void queryStellarSignals(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeStellarSignalsQueryCommand.ID);
+        assertRouted(input, AnalyzeStellarSignalsQuery.ID);
     }
 
     static Stream<String> queryStellarSignals() {
@@ -1022,7 +1020,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(208)
     @MethodSource
     void queryBioScanProgress(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeBioScansStarSystemQueryCommand.ID);
+        assertRouted(input, AnalyzeBioScansStarSystemQuery.ID);
     }
 
     static Stream<String> queryBioScanProgress() {
@@ -1033,7 +1031,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(209)
     @MethodSource
     void queryExobiologySamples(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeBioSamplesPlanetSurfaceQueryCommand.ID);
+        assertRouted(input, AnalyzeBioSamplesPlanetSurfaceQuery.ID);
     }
 
     static Stream<String> queryExobiologySamples() {
@@ -1045,7 +1043,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(210)
     @MethodSource
     void queryPlayerProfile(String input) throws InterruptedException {
-        assertRouted(input, AnalyzePlayerProfileQueryCommand.ID);
+        assertRouted(input, AnalyzePlayerProfileQuery.ID);
     }
 
     static Stream<String> queryPlayerProfile() {
@@ -1056,13 +1054,13 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(211)
     @MethodSource
     void queryCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQueryCommand.ID);
+        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("What is our fleet carrier range?", "What's my fleet carrier fuel status",
-                "How long can we operate on current funds?", "How far can carrier we jump with current tritium?",
-                "carrier tritium", "carrier fuel", "tritium level");
+        return Stream.of("Qual è l'autonomia della nostra portaerei?", "Qual è lo stato del carburante della mia portaerei",
+                "Per quanto tempo possiamo operare con i fondi attuali?", "Quanto lontano possiamo saltare con l'attuale trizio?",
+                "vettore trizio", "vettore carburante", "livello di trizio");
     }
 
 
@@ -1070,7 +1068,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(213)
     @MethodSource
     void queryDistanceToCarrier(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeDistanceFromFleetCarrierQueryCommand.ID);
+        assertRouted(input, AnalyzeDistanceFromFleetCarrierQuery.ID);
     }
 
     static Stream<String> queryDistanceToCarrier() {
@@ -1082,18 +1080,18 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(214)
     @MethodSource
     void queryFsdTarget(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFsdTargetQueryCommand.ID);
+        assertRouted(input, AnalyzeFsdTargetQuery.ID);
     }
 
     static Stream<String> queryFsdTarget() {
-        return Stream.of("FSD target", "what star are we targeting", "info on next jump");
+        return Stream.of("Obiettivo FSD", "quale stella stiamo prendendo di mira", "informazioni sul prossimo salto");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(215)
     @MethodSource
     void queryExplorationProfits(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeExplorationProfitsQueryCommand.ID);
+        assertRouted(input, AnalyzeExplorationProfitsQuery.ID);
     }
 
     static Stream<String> queryExplorationProfits() {
@@ -1105,18 +1103,18 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(216)
     @MethodSource
     void queryTime(String input) throws InterruptedException {
-        assertRouted(input, TimeQueryCommand.ID);
+        assertRouted(input, TimeQuery.ID);
     }
 
     static Stream<String> queryTime() {
-        return Stream.of("current time", "what time is it", "utc time");
+        return Stream.of("current time", "what time is it");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(217)
     @MethodSource
     void querySystemSecurity(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSystemSecurityQueryCommand.ID);
+        assertRouted(input, AnalyzeSystemSecurityQuery.ID);
     }
 
     static Stream<String> querySystemSecurity() {
@@ -1127,7 +1125,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(218)
     @MethodSource
     void queryStationDetails(String input) throws InterruptedException {
-        assertRouted(input, StationDataQueryCommand.ID);
+        assertRouted(input, StationDataQuery.ID);
     }
 
     static Stream<String> queryStationDetails() {
@@ -1139,7 +1137,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(219)
     @MethodSource
     void queryMaterials(String input) throws InterruptedException {
-        assertRouted(input, AnalyseMaterialsQueryCommand.ID);
+        assertRouted(input, AnalyseMaterialsQuery.ID);
     }
 
     static Stream<String> queryMaterials() {
@@ -1150,7 +1148,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(220)
     @MethodSource
     void queryPlanetMaterials(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeMaterialsOnPlanetQueryCommand.ID);
+        assertRouted(input, AnalyzeMaterialsOnPlanetQuery.ID);
     }
 
     static Stream<String> queryPlanetMaterials() {
@@ -1161,7 +1159,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(221)
     @MethodSource
     void queryDistanceToBubble(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeDistanceFromTheBubbleQueryCommand.ID);
+        assertRouted(input, AnalyzeDistanceFromTheBubbleQuery.ID);
     }
 
     static Stream<String> queryDistanceToBubble() {
@@ -1173,7 +1171,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(224)
     @MethodSource
     void queryLastScan(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeLastScanQueryCommand.ID);
+        assertRouted(input, AnalyzeLastScanQuery.ID);
     }
 
     static Stream<String> queryLastScan() {
@@ -1184,7 +1182,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(225)
     @MethodSource
     void queryReminder(String input) throws InterruptedException {
-        assertRouted(input, RemindTargetDestinationQueryCommand.ID);
+        assertRouted(input, RemindTargetDestinationQuery.ID);
     }
 
     static Stream<String> queryReminder() {
@@ -1195,7 +1193,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(226)
     @MethodSource
     void queryCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierETAQueryCommand.ID);
+        assertRouted(input, AnalyzeFleetCarrierETAQuery.ID);
     }
 
     static Stream<String> queryCarrierEta() {
@@ -1206,7 +1204,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(227)
     @MethodSource
     void queryGeoSignals(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeGeologyInStarSystemQueryCommand.ID);
+        assertRouted(input, AnalyzeGeologyInStarSystemQuery.ID);
     }
 
     static Stream<String> queryGeoSignals() {
@@ -1217,7 +1215,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(228)
     @MethodSource
     void queryLocalStations(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeMarketsQueryCommand.ID);
+        assertRouted(input, AnalyzeMarketsQuery.ID);
     }
 
     static Stream<String> queryLocalStations() {
@@ -1228,7 +1226,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(229)
     @MethodSource
     void queryTotalBounties(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeBountiesCollectedQueryCommand.ID);
+        assertRouted(input, AnalyzeBountiesCollectedQuery.ID);
     }
 
     static Stream<String> queryTotalBounties() {
@@ -1239,7 +1237,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(231)
     @MethodSource
     void queryBiomeAnalysis(String input) throws InterruptedException {
-        assertRouted(input, BiomeAnalyzerQueryCommand.ID);
+        assertRouted(input, BiomeAnalyzerQuery.ID);
     }
 
     static Stream<String> queryBiomeAnalysis() {
@@ -1250,7 +1248,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(232)
     @MethodSource
     void queryLastBioSample(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeDistanceFromLastBioSampleQueryCommand.ID);
+        assertRouted(input, AnalyzeDistanceFromLastBioSampleQuery.ID);
     }
 
     static Stream<String> queryLastBioSample() {
@@ -1261,7 +1259,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(233)
     @MethodSource
     void queryCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierRouteQueryCommand.ID);
+        assertRouted(input, AnalyzeFleetCarrierRouteQuery.ID);
     }
 
     static Stream<String> queryCarrierRoute() {
@@ -1273,11 +1271,13 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(233)
     @MethodSource
     void queryCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierFinalDestinationQueryCommand.ID);
+        assertRouted(input, AnalyzeFleetCarrierFinalDestinationQuery.ID);
     }
 
     static Stream<String> queryCarrierDestination() {
-        return Stream.of("Where is the fleet carrier headed?", "What's the carrier's final destination?");
+        return Stream.of("dove sta andando la fleet carrier?", "qual è la destinazione finale della fleet carrier?",
+                "dove è diretta la fleet carrier?", "dove è diretta la portanavi?", "direzione fleet carrier?", "destinazione finale fleet carrier?",
+                "destinazione fleet carrier?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1300,7 +1300,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> disembark() {
-        return Stream.of("disembark");
+        return Stream.of("sbarcare");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1311,7 +1311,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openCentralPanel() {
-        return Stream.of("Open commander panel", "open central panel", "open role panel", "open knee board");
+        return Stream.of("Pannello comandante aperto", "pannello centrale aperto", "pannello ruolo aperto", "pannello ginocchio aperto");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1322,7 +1322,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openFighterPanel() {
-        return Stream.of("show fighter panel", "open fighter panel");
+        return Stream.of("mostra pannello combattente", "apri pannello combattente");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

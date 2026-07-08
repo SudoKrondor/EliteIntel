@@ -29,6 +29,12 @@ public final class DisplayOpenGalaxyMapCommand implements IntelCommand {
     }
 
     @Override
+    ///available anywhere
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
+    @Override
     public void execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
         Status status = Status.getInstance();

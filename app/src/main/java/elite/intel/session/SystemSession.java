@@ -40,34 +40,28 @@ public class SystemSession {
     }
 
 
-    // Voice and personality are app-global (single voice per TTS provider, one personality), stored in
-    // the game_session row. The two providers keep independent selections so switching TTS preserves each:
-    //   Kokoro voice -> kokoroVoice column, Google voice -> googleVoice column, personality -> aiPersonality.
-    // The legacy aiVoice/aiCadence columns are retired (dropped in the pre-release cleanup); the per-ship
-    // ship.voice/ship.personality columns are left untouched for V1.0 compatibility.
+    // Voice and personality are per-ship: each ship carries one voice (ship.voice, interpreted against the
+    // active TTS provider's enum) and one personality (ship.personality). Switching TTS provider reinterprets
+    // the stored voice name and falls back to the provider's default when it isn't a valid voice there. The
+    // companion and the legacy brain both read getAIPersonality(), so they follow the active ship's personality.
 
     public GoogleVoices getGoogleVoice() {
-        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getGoogleVoice());
-        if (voice == null) return GoogleVoices.EMMA;
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return GoogleVoices.STEVE;
+        String voice = ship.getVoice();
+        if (voice == null) return GoogleVoices.STEVE;
         try {
             return GoogleVoices.valueOf(voice);
         } catch (IllegalArgumentException e) {
-            return GoogleVoices.EMMA;
+            return GoogleVoices.STEVE;
         }
-    }
-
-    public void setGoogleVoice(GoogleVoices voice) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setGoogleVoice(voice.name());
-            dao.save(session);
-            return null;
-        });
     }
 
 
     public KokoroVoices getKokoroVoice() {
-        String voice = Database.withDao(GameSessionDao.class, dao -> dao.get().getKokoroVoice());
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return KokoroVoices.BELLA;
+        String voice = ship.getVoice();
         if (voice == null) return KokoroVoices.BELLA;
         try {
             return KokoroVoices.valueOf(voice);
@@ -76,18 +70,11 @@ public class SystemSession {
         }
     }
 
-    public void setKokoroVoice(KokoroVoices voice) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setKokoroVoice(voice.name());
-            dao.save(session);
-            return null;
-        });
-    }
-
 
     public ShipPersonality getAIPersonality() {
-        String personality = Database.withDao(GameSessionDao.class, dao -> dao.get().getAiPersonality());
+        ShipDao.Ship ship = shipManager.getShip();
+        if (ship == null) return ShipPersonality.CASUAL;
+        String personality = ship.getPersonality();
         if (personality == null) return ShipPersonality.CASUAL;
         try {
             return ShipPersonality.valueOf(personality);
@@ -95,16 +82,6 @@ public class SystemSession {
             return ShipPersonality.CASUAL;
         }
     }
-
-    public void setAIPersonality(ShipPersonality personality) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setAiPersonality(personality.name());
-            dao.save(session);
-            return null;
-        });
-    }
-
 
 
     public boolean isSleepingModeOn() {
@@ -361,23 +338,23 @@ public class SystemSession {
         });
     }
 
-    public void setOllamaSettings(String address, String commandModel, String queryModel) {
+    public void setOllamaSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setOllamaAddress(address);
             session.setOllamaCommandModel(commandModel);
-            session.setOllamaQueryModel(queryModel);
+            session.setOllamaQueryModel(commandModel); //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
     }
 
-    public void setLmStudioSettings(String address, String commandModel, String queryModel) {
+    public void setLmStudioSettings(String address, String commandModel) {
         Database.withDao(GameSessionDao.class, dao -> {
             GameSessionDao.GameSession session = dao.get();
             session.setLmStudioAddress(address);
             session.setLmStudioCommandModel(commandModel);
-            session.setLmStudioQueryModel(queryModel);
+            session.setLmStudioQueryModel(commandModel);  //backward compatibility use single model
             dao.save(session);
             return Void.class;
         });
@@ -391,6 +368,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaCommandModel());
     }
 
+    @Deprecated
     public String getOllamaQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaQueryModel());
     }
@@ -403,6 +381,7 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioCommandModel());
     }
 
+    @Deprecated
     public String getLmStudioQueryModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioQueryModel());
     }
@@ -462,7 +441,12 @@ public class SystemSession {
     }
 
     public boolean conversationalModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
+        // HARDCODED OFF: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline, so conversation mode (a legacy-pipeline flag) is unconditionally off. The
+        // setter still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus
+        // the DB read below can be restored together when the modes become user-selectable again.
+        return false;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
 
     public void setCompanionMode(boolean b) {
@@ -475,7 +459,12 @@ public class SystemSession {
     }
 
     public boolean companionModeOn() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
+        // HARDCODED ON: testers are forced onto companion mode ahead of retiring the legacy LLM
+        // pipeline (the legacy command/query path is kept dormant but inaccessible). The setter
+        // still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus the DB
+        // read below can be restored together when the modes become user-selectable again.
+        return true;
+        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isCompanionModeOn());
     }
 
     public boolean isPushToTalkEnabled() {

@@ -86,7 +86,10 @@ public class SettingsTabPanel extends JPanel {
                     getText("settings.ai.discardChanges"),  // extra
                     getText("settings.ai.keepEditing"));    // dismiss
             if (choice == HudConfirmDialog.Result.PRIMARY) {        // Save
-                aiServicesPanel.save();
+                if (!aiServicesPanel.save()) {
+                    revertToAiTab(tabs);
+                    return;
+                }
             } else if (choice == HudConfirmDialog.Result.EXTRA) {   // Discard
                 aiServicesPanel.reload();
             } else {                                                // Keep editing / closed

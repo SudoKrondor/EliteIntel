@@ -18,11 +18,26 @@ public class LauchNomadCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "lauch or deploy Nomad scout.";
+        return "Deploy the Nomad aerial scout from the ship while flying low in the air over a planet surface. Not an undock/launch of the ship, and not the ground-based SRV.";
     }
 
     private final UINavigator navigator = new UINavigator();
     private final Status status = Status.getInstance();
+
+    /**
+     * The Nomad is an AERIAL scout (no wheels), deployed from the ship while in flight - not in supercruise, and
+     * not parked (docked/landed). Gating to that context keeps it distinct from the ground-only SRV and the
+     * dock-only undock (launch ship). Note the FDev quirk: once out, the Nomad reports as an SRV
+     * ({@code isInSrv()} is true), so this deploy command deliberately keys off {@code isInMainShip()} - which is
+     * false while piloting the Nomad - to stop offering itself once the Nomad is already out.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip()
+                && !status.isDocked()
+                && !status.isLanded()
+                && !status.isInSupercruise();
+    }
 
 
     @Override

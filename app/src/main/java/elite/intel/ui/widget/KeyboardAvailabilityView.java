@@ -24,6 +24,12 @@ public class KeyboardAvailabilityView extends JPanel {
 
     private static final int UNIT = 30;
     private static final int CELL_GAP = 2;
+    /**
+     * Width units every key row must sum to. A shared total means one unit is the same pixel width in
+     * every row, so same-size keys render identically and the key columns line up; {@link #row} fails
+     * fast if a row's definition drifts from it.
+     */
+    private static final double UNITS_PER_ROW = 15;
 
     private final String bindingId;
     private final Map<String, KeyBindingsParser.KeyBinding> existingBindings;
@@ -39,7 +45,7 @@ public class KeyboardAvailabilityView extends JPanel {
         this.bindingId = bindingId;
         this.existingBindings = existingBindings == null ? Map.of() : existingBindings;
         setOpaque(false);
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        setLayout(new GridBagLayout());
         buildRows();
         refresh();
     }
@@ -75,38 +81,58 @@ public class KeyboardAvailabilityView extends JPanel {
     }
 
     private void buildRows() {
-        add(row(
-                k("Key_Escape", "Esc"), gap(0.5),
-                k("Key_F1", "F1"), k("Key_F2", "F2"), k("Key_F3", "F3"), k("Key_F4", "F4"),
-                k("Key_F5", "F5"), k("Key_F6", "F6"), k("Key_F7", "F7"), k("Key_F8", "F8"),
+        // Each row's key widths sum to UNITS_PER_ROW (enforced in row()).
+        int y = 0;
+        addRow(y++, 0, row(
+                k("Key_Escape", "Esc"), gap(1),
+                k("Key_F1", "F1"), k("Key_F2", "F2"), k("Key_F3", "F3"), k("Key_F4", "F4"), gap(0.5),
+                k("Key_F5", "F5"), k("Key_F6", "F6"), k("Key_F7", "F7"), k("Key_F8", "F8"), gap(0.5),
                 k("Key_F9", "F9"), k("Key_F10", "F10"), k("Key_F11", "F11"), k("Key_F12", "F12")));
-        add(row(
+        addRow(y++, CELL_GAP, row(
                 k("Key_Grave", "`"), k("Key_1", "1"), k("Key_2", "2"), k("Key_3", "3"), k("Key_4", "4"),
                 k("Key_5", "5"), k("Key_6", "6"), k("Key_7", "7"), k("Key_8", "8"), k("Key_9", "9"),
                 k("Key_0", "0"), k("Key_Minus", "-"), k("Key_Equals", "="), w("Key_Backspace", "Bksp", 2)));
-        add(row(
+        addRow(y++, CELL_GAP, row(
                 w("Key_Tab", "Tab", 1.5),
                 k("Key_Q", "Q"), k("Key_W", "W"), k("Key_E", "E"), k("Key_R", "R"), k("Key_T", "T"),
                 k("Key_Y", "Y"), k("Key_U", "U"), k("Key_I", "I"), k("Key_O", "O"), k("Key_P", "P"),
                 k("Key_LeftBracket", "["), k("Key_RightBracket", "]"), w("Key_BackSlash", "\\", 1.5)));
-        add(row(
+        addRow(y++, CELL_GAP, row(
                 w("Key_CapsLock", "Caps", 1.75),
                 k("Key_A", "A"), k("Key_S", "S"), k("Key_D", "D"), k("Key_F", "F"), k("Key_G", "G"),
                 k("Key_H", "H"), k("Key_J", "J"), k("Key_K", "K"), k("Key_L", "L"),
                 k("Key_SemiColon", ";"), k("Key_Apostrophe", "'"), w("Key_Return", "Enter", 2.25)));
-        add(row(
+        addRow(y++, CELL_GAP, row(
                 mod("Key_LeftShift", "Shift", 2.25),
                 k("Key_Z", "Z"), k("Key_X", "X"), k("Key_C", "C"), k("Key_V", "V"), k("Key_B", "B"),
                 k("Key_N", "N"), k("Key_M", "M"), k("Key_Comma", ","), k("Key_Period", "."), k("Key_Slash", "/"),
                 mod("Key_RightShift", "Shift", 2.75)));
-        add(row(
+        addRow(y++, CELL_GAP, row(
                 mod("Key_LeftControl", "Ctrl", 1.5), mod("Key_LeftAlt", "Alt", 1.5),
-                w("Key_Space", "Space", 6),
+                w("Key_Space", "Space", 9),
                 mod("Key_RightAlt", "Alt", 1.5), mod("Key_RightControl", "Ctrl", 1.5)));
-        add(Box.createVerticalStrut(6));
-        add(row(
+        addRow(y, 6, row(
                 k("Key_LeftArrow", "←"), k("Key_UpArrow", "↑"),
-                k("Key_DownArrow", "↓"), k("Key_RightArrow", "→"), gap(8)));
+                k("Key_DownArrow", "↓"), k("Key_RightArrow", "→"), gap(11)));
+    }
+
+    /**
+     * Adds one key row to the vertical stack, pinned to {@code gridx=0} and stretched to the full
+     * width ({@code fill=HORIZONTAL}, {@code weightx=1}) so every row spans the same width; the keys
+     * within it are then flushed to that row's edges by {@link ProportionalRowLayout}. {@code topGap}
+     * is the vertical spacing above the row (matching the horizontal {@link #CELL_GAP} between keys;
+     * larger before the arrow cluster).
+     */
+    private void addRow(int gridy, int topGap, JPanel rowPanel) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = gridy;
+        gbc.weightx = 1.0;
+        gbc.weighty = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.NORTHWEST;
+        gbc.insets = new Insets(topGap, 0, 0, 0);
+        add(rowPanel, gbc);
     }
 
     private static Key k(String token, String label) {
@@ -126,26 +152,118 @@ public class KeyboardAvailabilityView extends JPanel {
     }
 
     private JPanel row(Key... keys) {
-        // GridBagLayout with per-cell weightx = the key's width units, so the row stretches to
-        // fill the available width and cells stay proportional (rectangular keys are fine).
-        JPanel rowPanel = new JPanel(new GridBagLayout());
-        rowPanel.setOpaque(false);
-        rowPanel.setAlignmentX(LEFT_ALIGNMENT);
-        rowPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, UNIT));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.insets = new Insets(0, 0, 0, CELL_GAP);
-        int x = 0;
+        double units = 0;
         for (Key key : keys) {
-            gbc.gridx = x++;
-            gbc.weightx = key.width();
-            rowPanel.add(cell(key), gbc);
+            units += key.width();
+        }
+        // Fail fast: a row whose units drift from UNITS_PER_ROW would silently distort key widths
+        // (a unit would be a different pixel size in this row than in the others).
+        if (Math.abs(units - UNITS_PER_ROW) > 1e-9) {
+            throw new IllegalStateException(
+                    "Keyboard row must sum to " + UNITS_PER_ROW + " units but was " + units);
+        }
+        // Custom ProportionalRowLayout instead of GridBagLayout: GridBag rounds fractional column
+        // weights to whole pixels and centres the leftover, so each row drifts a few px and the edges
+        // never line up. ProportionalRowLayout distributes pixels by cumulative rounding, so the
+        // widths sum exactly to the row width - first key at x=0, last key flush to the right edge.
+        JPanel rowPanel = new JPanel(new ProportionalRowLayout(CELL_GAP));
+        rowPanel.setOpaque(false);
+        for (Key key : keys) {
+            JComponent cell = cell(key);
+            cell.putClientProperty(WEIGHT_KEY, key.width());
+            rowPanel.add(cell);
         }
         return rowPanel;
     }
 
-    private Component cell(Key key) {
+    /** Client-property key carrying a cell's width in units, read by {@link ProportionalRowLayout}. */
+    private static final String WEIGHT_KEY = "eliteIntel.kbd.weight";
+
+    /**
+     * Distributes {@code available} pixels across cells proportionally to {@code weights}, using
+     * cumulative rounding so the returned widths sum EXACTLY to {@code available} (no per-cell drift,
+     * no leftover gap that would leave the last cell short of the edge). Package-private and pure so
+     * the exact-sum guarantee is unit-testable without AWT.
+     *
+     * @param weights   per-cell width units, at least one and all positive
+     * @param available total pixels to share out (already net of inter-cell gaps)
+     * @return one width per weight, summing to {@code available}
+     */
+    static int[] distribute(double[] weights, int available) {
+        double totalWeight = 0;
+        for (double weight : weights) {
+            totalWeight += weight;
+        }
+        int[] widths = new int[weights.length];
+        double acc = 0;
+        int placed = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += weights[i] / totalWeight * available;
+            int end = (int) Math.round(acc);
+            widths[i] = end - placed;
+            placed = end;
+        }
+        return widths;
+    }
+
+    /**
+     * Lays a row of keys left-to-right, each sized proportionally to its unit weight with a fixed
+     * {@code gap} between keys. Pixel widths are assigned by cumulative rounding so they sum exactly
+     * to the available width: the first key sits at x=0 and the last key ends flush against the right
+     * edge, in every row - which GridBagLayout cannot guarantee with fractional weights.
+     */
+    private static final class ProportionalRowLayout implements LayoutManager {
+        private final int gap;
+
+        ProportionalRowLayout(int gap) {
+            this.gap = gap;
+        }
+
+        @Override public void addLayoutComponent(String name, Component comp) { }
+
+        @Override public void removeLayoutComponent(Component comp) { }
+
+        @Override public Dimension preferredLayoutSize(Container parent) {
+            int h = 0;
+            for (Component c : parent.getComponents()) {
+                h = Math.max(h, c.getPreferredSize().height);
+            }
+            Insets in = parent.getInsets();
+            return new Dimension(0, h + in.top + in.bottom);
+        }
+
+        @Override public Dimension minimumLayoutSize(Container parent) {
+            return preferredLayoutSize(parent);
+        }
+
+        @Override public void layoutContainer(Container parent) {
+            Component[] comps = parent.getComponents();
+            int n = comps.length;
+            if (n == 0) {
+                return;
+            }
+            Insets in = parent.getInsets();
+            int available = parent.getWidth() - in.left - in.right - gap * (n - 1);
+            double[] weights = new double[n];
+            for (int i = 0; i < n; i++) {
+                weights[i] = weightOf(comps[i]);
+            }
+            int[] widths = distribute(weights, available);
+            int h = parent.getHeight() - in.top - in.bottom;
+            int x = in.left;
+            for (int i = 0; i < n; i++) {
+                comps[i].setBounds(x, in.top, widths[i], h);
+                x += widths[i] + gap;
+            }
+        }
+
+        private static double weightOf(Component c) {
+            Object w = (c instanceof JComponent jc) ? jc.getClientProperty(WEIGHT_KEY) : null;
+            return (w instanceof Number num) ? num.doubleValue() : 1.0;
+        }
+    }
+
+    private JComponent cell(Key key) {
         if (key.token() == null) {
             JPanel spacer = new JPanel();
             spacer.setOpaque(false);

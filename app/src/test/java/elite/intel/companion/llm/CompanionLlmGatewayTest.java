@@ -155,12 +155,29 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void bareClassifyTurnAloneIsAcceptedWithoutRetry() throws Exception {
-        // A pure-ack turn legitimately ends with classify_turn alone; the protocol check must not retry it.
-        LlmResult result = run(new ScriptedAdapter(ok("classify_turn")), requestOffering("speak", "classify_turn"));
+    void classifyOnlyDrawsSettlingNudgeThenActs() throws Exception {
+        // A classify-only response has classified but not answered/acted (it would fall silent): one retry
+        // whose nudge tells the model to speak, and the repaired classify+speak response is returned.
+        ScriptedAdapter adapter = new ScriptedAdapter(ok("classify_turn"), ok("classify_turn", "speak"));
+        LlmResult result = run(adapter, requestOffering("speak", "classify_turn"));
 
         assertTrue(result.isValid());
-        assertEquals(1, sends.get());
+        assertEquals(2, sends.get());
+        assertEquals(2, result.toolInvocations().size());
+        String nudge = adapter.lastRequest.messages().get(adapter.lastRequest.messages().size() - 1).content();
+        assertTrue(nudge.contains("speak"), "the repair nudge must ask the model to speak/act, was: " + nudge);
+    }
+
+    @Test
+    void classifyOnlySettlingStillMissingDegradesGracefully() throws Exception {
+        // Both responses are classify-only: after one nudge the turn settles silently with the valid response
+        // rather than falling to the INVALID service phrase (mirrors the missing-classify graceful path).
+        LlmResult result = run(new ScriptedAdapter(ok("classify_turn"), ok("classify_turn")),
+                requestOffering("speak", "classify_turn"));
+
+        assertTrue(result.isValid());
+        assertEquals("classify_turn", result.toolInvocations().get(0).name());
+        assertEquals(2, sends.get());
     }
 
     @Test

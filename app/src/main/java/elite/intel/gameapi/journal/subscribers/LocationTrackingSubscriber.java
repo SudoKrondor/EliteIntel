@@ -411,8 +411,11 @@ public class LocationTrackingSubscriber {
         if (isAboveAnnouncementThreshold(highPriority)) {
             StringBuilder sb = new StringBuilder();
             if (text != null) sb.append(text);
+            sb.append(" ");
             if (distance > 0) sb.append(NavigationUtils.formatDistance(distance));
+            sb.append(" ");
             if (bearing > 0) sb.append(localizedEvent("event.nav.bearing", (int) bearing));
+            sb.append(" ");
             log.info(sb.toString());
             GameEventBus.publish(new NavigationVocalisationEvent(sb.toString()));
             lastAnnounceTime = System.currentTimeMillis();

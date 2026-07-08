@@ -123,29 +123,50 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
 
     @Override
     public final LlmResult parse(JsonObject response) {
+        // Diagnostics captured regardless of the outcome: the stop reason, and any free text the model returned
+        // alongside the tool-calls (which a consciousness turn discards - see LlmResult.droppedText). Read inside
+        // the try so a malformed-shape response still degrades to INVALID_RESPONSE rather than throwing out.
+        String finishReason = null;
+        String droppedText = null;
         try {
+            finishReason = finishReasonOf(response);
+            droppedText = parseText(response);
             JsonArray toolCalls = toolCallsOf(response);
             if (toolCalls == null || toolCalls.isEmpty()) {
-                return invalid();
+                return invalid(finishReason, droppedText);
             }
             List<LlmToolInvocation> invocations = new ArrayList<>();
             for (JsonElement element : toolCalls) {
                 JsonObject call = element.getAsJsonObject();
                 JsonObject function = call.getAsJsonObject("function");
                 if (function == null || !function.has("name")) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 String name = function.get("name").getAsString();
                 if (name == null || name.isBlank()) {
-                    return invalid();
+                    return invalid(finishReason, droppedText);
                 }
                 String id = call.has("id") && !call.get("id").isJsonNull() ? call.get("id").getAsString() : null;
                 invocations.add(new LlmToolInvocation(id, name, parseArguments(function.get("arguments"))));
             }
-            return new LlmResult(LlmResult.Status.OK, invocations);
+            return new LlmResult(LlmResult.Status.OK, invocations, finishReason, droppedText);
         } catch (RuntimeException malformed) {
-            return invalid();
+            return invalid(finishReason, droppedText);
         }
+    }
+
+    /** The provider's {@code choices[0].finish_reason} ({@code stop}/{@code length}/{@code tool_calls}), or null. */
+    private static String finishReasonOf(JsonObject response) {
+        if (response == null || !response.has("choices")) {
+            return null;
+        }
+        JsonArray choices = response.getAsJsonArray("choices");
+        if (choices == null || choices.isEmpty()) {
+            return null;
+        }
+        JsonObject choice = choices.get(0).getAsJsonObject();
+        return choice.has("finish_reason") && !choice.get("finish_reason").isJsonNull()
+                ? choice.get("finish_reason").getAsString() : null;
     }
 
     @Override
@@ -192,7 +213,7 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         return JsonParser.parseString(arguments.getAsString()).getAsJsonObject();
     }
 
-    private static LlmResult invalid() {
-        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
+    private static LlmResult invalid(String finishReason, String droppedText) {
+        return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of(), finishReason, droppedText);
     }
 }

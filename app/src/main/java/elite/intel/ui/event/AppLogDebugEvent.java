@@ -1,19 +1,23 @@
 package elite.intel.ui.event;
 
-import java.time.LocalTime;
+import java.time.Instant;
 
 public class AppLogDebugEvent {
 
-    private final LocalTime timestamp;
+    private final Instant timestamp;
     private final String data;
 
-    /** Captures current time automatically; producers pass only the message text. */
+    /**
+     * Captures the current instant automatically; producers pass only the message text. The instant is rendered
+     * as local {@code HH:mm:ss} in the SYSTEM LOG panel and as a UTC (journal-style) timestamp when the log is
+     * exported to a file, so a saved log lines up line-by-line with the game journal for debugging.
+     */
     public AppLogDebugEvent(String data) {
-        this.timestamp = LocalTime.now();
+        this.timestamp = Instant.now();
         this.data = data;
     }
 
-    public LocalTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 

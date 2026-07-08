@@ -2,15 +2,19 @@ package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.input.EventTopicMap;
 import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
+import elite.intel.companion.prompt.SemanticReflexResolver;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
+import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,6 +65,21 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     private final ThoughtContext ctx;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
+    /**
+     * The semantic reflex gate, tried after the exact-alias {@link #reflexResolver}: a confident, unambiguous
+     * embedding match dispatches directly (command or query), so a weak command model is never asked to pick a
+     * tool the embedder already identified. A no-op when the embedding model is unavailable. Package-private and
+     * replaceable so a test exercising the LLM/preemption path can pin it to {@link SemanticReflexResolver#disabled()}.
+     */
+    private volatile SemanticReflexResolver semanticReflexResolver = new SemanticReflexResolver();
+
+    /**
+     * Test seam: disable (or pin) the semantic reflex so a preemption/LLM-path test is not intercepted by it.
+     */
+    void setSemanticReflexResolver(SemanticReflexResolver resolver) {
+        this.semanticReflexResolver = resolver;
+    }
+
     /**
      * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
      * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
@@ -141,11 +160,42 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
         // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
         // recorded from `input`, never from this normalized match text.
-        String matchInput = inputNormalizer.apply(stripLeadingCompanionName(input));
-        Optional<String> reflexCommand = reflexResolver.resolve(matchInput);
+        String rawStripped = stripLeadingCompanionName(input);
+        String matchInput = inputNormalizer.apply(rawStripped);
+        ctx.state().setLastCommanderMatchInput(matchInput);
+        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
+        // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
+        // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
+        // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
+        // deterministic reflex for a phrase the commander said verbatim.
+        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped);
+        if (reflexCommand.isEmpty()) {
+            reflexCommand = reflexResolver.resolve(matchInput);
+        }
+        // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
+        // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
+        // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
+        String reflexKind = reflexCommand.isPresent() ? "exact" : null;
+        if (reflexCommand.isEmpty()) {
+            // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
+            // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
+            reflexCommand = semanticReflexResolver.resolve(matchInput);
+            if (reflexCommand.isPresent()) {
+                reflexKind = "semantic";
+            }
+        }
         Thought thought = reflexCommand
-                .map(commandId -> Thought.reflex(urgency, input, commandId, ctx))
+                .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
                 .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+        String route = reflexCommand.isPresent()
+                ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
+                : "think";
+        CompanionDiagnostics.info(thought.trace(), "intake",
+                "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (!matchInput.equals(input)) {
+            // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
+            CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
+        }
         enqueue(ThoughtSource.COMMANDER, thought, urgency);
     }
 
@@ -174,44 +224,59 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a filtered game event, creates an EVENT thought, and queues it on the event lane. The EVENT
-     * thought is memory-only: it records the event's readable {@link BaseEvent#memorySummary()} when non-blank
-     * (an event with no summary writes nothing), and the LLM is never engaged (see {@code EventThought}).
+     * Accepts a filtered game event. An event with a readable {@link BaseEvent#memorySummary()} becomes a
+     * memory-only EVENT thought queued on the event lane (it records that summary; the LLM is never engaged, see
+     * {@code EventThought}). An event with no summary is a no-op: it is logged and dropped here without queuing.
      */
     public void submitEvent(BaseEvent event) {
         if (event == null) {
             return;
         }
+        ConversationTopic topic = EventTopicMap.topicFor(event);
+        String summary = event.memorySummary();
+        // A no-summary event is a pure no-op for the memory-only EventThought (it would record nothing): log one
+        // line and drop it here, instead of spawning a lane thought that would only log start/done for no effect.
+        if (summary == null || summary.isBlank()) {
+            CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "event",
+                    "no-op (no summary) type=" + event.getEventType() + " topic=" + topic);
+            return;
+        }
         Urgency urgency = urgencyPolicy.forEvent(event);
-        enqueue(ThoughtSource.EVENT,
-                Thought.event(urgency, event.memorySummary(), EventTopicMap.topicFor(event), ctx),
-                urgency);
+        Thought thought = Thought.event(urgency, summary, topic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "event",
+                "\"" + CompanionDiagnostics.truncate(summary) + "\" type=" + event.getEventType() + " topic=" + topic);
+        enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
      * Accepts subscriber-prepared sensor narration, creates a NARRATION thought, and queues it on the
      * narration lane. SensorDataEvent is trusted output from gameplay subscribers: they already applied
-     * settings, filtering, and calculations, so the thought is born as urgent narration under the topic
-     * provided by that layer.
+     * settings, filtering, and calculations. The thought is queued at normal urgency under the topic
+     * provided by that layer, so a burst of sensor callouts plays in order instead of each one cutting off
+     * the line before it.
      */
     public void submitSensorData(SensorDataEvent event) {
         if (event == null) {
             return;
         }
-        Urgency urgency = Urgency.URGENT;
-        enqueue(ThoughtSource.NARRATION,
-                Thought.sensorNarration(urgency, SensorInputFormatter.format(event), sensorTopic(event), ctx),
-                urgency);
+        Urgency urgency = Urgency.NORMAL;
+        ConversationTopic topic = sensorTopic(event);
+        Thought thought = Thought.sensorNarration(urgency, SensorInputFormatter.format(event), topic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "narration", "sensor topic=" + topic);
+        enqueue(ThoughtSource.NARRATION, thought, urgency);
     }
 
     /**
-     * Accepts a curated announcement that already carries finished text (mining/discovery/route/radar/
-     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane. The line is
-     * remembered and voiced verbatim in the companion's voice - no LLM phrasing.
+     * Accepts a curated announcement that already carries finished text (mining/discovery/route/
+     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane at normal
+     * urgency, so a burst of announcements plays in order instead of each one cutting off the line before
+     * it. A caller that must preempt current speech (radar contact, mission-critical) uses the explicit
+     * urgency overload. The line is remembered and voiced verbatim in the companion's voice - no LLM
+     * phrasing.
      */
     @Override
     public void submitVerbatimNarration(String text, ConversationTopic topic) {
-        submitVerbatimNarration(text, topic, Urgency.URGENT, null);
+        submitVerbatimNarration(text, topic, Urgency.NORMAL, null);
     }
 
     /**
@@ -238,8 +303,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             }
             return;
         }
-        enqueue(ThoughtSource.NARRATION,
-                Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId), urgency);
+        Thought thought = Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId);
+        CompanionDiagnostics.debug(thought.trace(), "narration",
+                "verbatim topic=" + topic + ": \"" + CompanionDiagnostics.truncate(text) + "\"");
+        enqueue(ThoughtSource.NARRATION, thought, urgency);
     }
 
     @Override
@@ -282,6 +349,7 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     /** Interrupts every live thought on barge-in (§2.15); the dispatcher owns the thought lifecycle, not speech. */
     public void interruptLiveThoughts() {
+        CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "barge-in", "interrupting live thoughts");
         interruptLive();
     }
 

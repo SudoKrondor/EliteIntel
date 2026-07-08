@@ -21,7 +21,9 @@ import elite.intel.session.PlayerSession;
  * {@code VocalisationRouter -> TTS} path, which stays silent for them while companion mode is on (so they
  * are not spoken twice). The per-feature user toggles remain authoritative here, read from
  * {@link PlayerSession}: an announcement the commander turned off is never narrated. Each event carries
- * finished text, so it is voiced verbatim (no LLM) under a fixed topic.
+ * finished text, so it is voiced verbatim (no LLM) under a fixed topic. Routine announcements (mining,
+ * discovery, route, navigation) queue at normal urgency so a burst plays in order; radar contact preempts
+ * current speech (urgent), since a fresh contact matters more than a routine callout still in flight.
  * <p>
  * {@code RadioTransmissionEvent} is intentionally not bridged: it stays on the legacy random-voice path and
  * is not recorded in memory.
@@ -62,10 +64,11 @@ public final class CompanionAnnouncementBridge {
         }
     }
 
+    /** Radar contact preempts current speech (URGENT): a new contact matters more than a routine callout in flight. */
     @Subscribe
     public void onRadarContact(RadarContactAnnouncementEvent event) {
         if (playerSession.isRadarContactAnnouncementOn()) {
-            dispatcher.submitVerbatimNarration(event.getText(), ConversationTopic.COMBAT);
+            dispatcher.submitVerbatimNarration(event.getText(), ConversationTopic.COMBAT, Urgency.URGENT, null);
         }
     }
 

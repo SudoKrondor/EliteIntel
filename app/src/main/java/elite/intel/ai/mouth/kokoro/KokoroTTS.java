@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -71,16 +72,17 @@ public class KokoroTTS implements MouthInterface {
 
     private final AtomicBoolean interruptRequested = new AtomicBoolean(false);
     private final AtomicBoolean canBeInterrupted = new AtomicBoolean(true);
+    private final AtomicLong interruptGeneration = new AtomicLong(0);
     private final AtomicReference<SourceDataLine> currentLine = new AtomicReference<>();
 
-    private record SynthesisTask(String text, String voiceName, boolean isRadio,
+    private record SynthesisTask(String text, String voiceName, boolean isRadio, long generation,
                                  @Nullable CompletableFuture<Void> completionFuture) {
     }
 
     /**
      * Synthesized PCM paired with an optional completion future from the originating request.
      */
-    private record PlaybackTask(byte[] pcm, @Nullable CompletableFuture<Void> completionFuture) {
+    private record PlaybackTask(byte[] pcm, long generation, @Nullable CompletableFuture<Void> completionFuture) {
     }
 
     // Stage 1: raw sentence strings waiting for synthesis
@@ -237,6 +239,7 @@ public class KokoroTTS implements MouthInterface {
         playbackQueue.drainTo(drainedPlayback);
         drainedPlayback.stream().map(PlaybackTask::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
 
+        interruptGeneration.incrementAndGet();
         interruptRequested.set(true);
 
         SourceDataLine line = currentLine.get();
@@ -245,7 +248,6 @@ public class KokoroTTS implements MouthInterface {
             line.flush();
             line.start();
         }
-        interruptRequested.set(false);
 
         log.info("KokoroTTS interrupted and queues cleared");
 
@@ -284,11 +286,13 @@ public class KokoroTTS implements MouthInterface {
             if (!s.isBlank()) sentences.add(s);
         }
         CompletableFuture<Void> completionFuture = event.getCompletionFuture();
+        long generation = interruptGeneration.get();
         for (int i = 0; i < sentences.size(); i++) {
             boolean isLast = (i == sentences.size() - 1);
             boolean isRadio = event.isRadio();
             if (!Status.getInstance().isInMainShip()) isRadio = true;
-            synthesisQueue.offer(new SynthesisTask(sentences.get(i), event.getVoiceName(), isRadio, isLast ? completionFuture : null));
+            synthesisQueue.offer(new SynthesisTask(sentences.get(i), event.getVoiceName(), isRadio, generation,
+                    isLast ? completionFuture : null));
         }
     }
 
@@ -298,8 +302,7 @@ public class KokoroTTS implements MouthInterface {
         while (running) {
             try {
                 SynthesisTask task = synthesisQueue.take();
-                if (interruptRequested.get()) {
-                    // Complete future immediately so customCommand doesn't wait until timeout
+                if (task.generation() != interruptGeneration.get()) {
                     if (task.completionFuture() != null) task.completionFuture().complete(null);
                     continue;
                 }
@@ -322,6 +325,10 @@ public class KokoroTTS implements MouthInterface {
                     if (task.completionFuture() != null) task.completionFuture().complete(null);
                     continue;
                 }
+                if (task.generation() != interruptGeneration.get()) {
+                    if (task.completionFuture() != null) task.completionFuture().complete(null);
+                    continue;
+                }
 
                 byte[] pcm = floatToPcm16(audio.getSamples());
 
@@ -330,7 +337,7 @@ public class KokoroTTS implements MouthInterface {
                 if (task.isRadio()) {
                     RadioFilter.apply(pcm);
                 }
-                playbackQueue.put(new PlaybackTask(pcm, task.completionFuture()));
+                playbackQueue.put(new PlaybackTask(pcm, task.generation(), task.completionFuture()));
 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -350,12 +357,12 @@ public class KokoroTTS implements MouthInterface {
             try {
                 PlaybackTask task = playbackQueue.poll(200, TimeUnit.MILLISECONDS);
                 if (task == null) continue;
-                if (interruptRequested.get()) {
-                    // Complete future immediately so customCommand doesn't wait until timeout
+                if (task.generation() != interruptGeneration.get()) {
                     if (task.completionFuture() != null) task.completionFuture().complete(null);
                     continue;
                 }
 
+                interruptRequested.set(false);
                 playPcm(task.pcm());
                 if (task.completionFuture() != null) {
                     task.completionFuture().complete(null);
@@ -408,6 +415,8 @@ public class KokoroTTS implements MouthInterface {
             if (!interruptRequested.get()) persistentLine.drain();
             else persistentLine.flush();
         } finally {
+            currentLine.set(null);
+            interruptRequested.set(false);
             if (role != Role.RADIO) MainVoicePlaybackGate.end();
         }
     }

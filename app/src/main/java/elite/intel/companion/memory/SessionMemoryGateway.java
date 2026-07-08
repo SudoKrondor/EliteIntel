@@ -3,6 +3,7 @@ package elite.intel.companion.memory;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
@@ -132,7 +133,16 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public synchronized List<String> recallMatching(String query, int limit) {
+    public List<String> recallMatching(String query, int limit) {
+        // Diagnostic emitted outside the lock: UiBus is synchronous, so a subscriber runs on this thread and
+        // must not execute while the memory monitor is held (a future subscriber touching memory would deadlock).
+        List<String> hits = recallMatchingLocked(query, limit);
+        CompanionDiagnostics.debugAmbient("memory-search",
+                "\"" + CompanionDiagnostics.truncate(query) + "\" -> " + hits.size() + " hit(s)");
+        return hits;
+    }
+
+    private synchronized List<String> recallMatchingLocked(String query, int limit) {
         // Ranking and de-duplication live in MemorySearch; the gateway only supplies the current memory areas
         // and the shared matcher. A given entry lives in exactly one of short-term / mid-term, so no double-count.
         // The long-term summary is no longer inlined into every prompt - it is reached here, as a searchable entry.
@@ -141,7 +151,17 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public synchronized List<MemoryEntry> recallCandidates(String query, int limit) {
+    public List<MemoryEntry> recallCandidates(String query, int limit) {
+        // Diagnostic emitted outside the lock, for the same reason as recallMatching.
+        List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
+        // The query here is the turn's input, already echoed by the intake line; log only the outcome, spelled out
+        // so it reads on its own: how many remembered facts were pulled in to ground this turn's answer. Grouped
+        // under the "memory" stage with the record lines. The facts themselves appear as the compose "facts:" lines.
+        CompanionDiagnostics.debugAmbient("memory", "recalled " + hits.size() + " fact candidate(s) for grounding");
+        return hits;
+    }
+
+    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit) {
         // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
         // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
         return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
@@ -174,6 +194,20 @@ public final class SessionMemoryGateway implements MemoryGateway {
     @Override
     public synchronized List<MemoryEntry> longTermPinnedFacts() {
         return longTerm.pinnedFacts();
+    }
+
+    @Override
+    public synchronized MemorySnapshot snapshot() {
+        // Regroup the flat mid-term view by topic for the dump; each entry already carries its topic, and an
+        // EnumMap keeps the natural topic order. Everything handed to the snapshot is an unmodifiable copy detached
+        // from the live stores (short-term/pinned are already List.copyOf), so the snapshot is truly immutable.
+        Map<ConversationTopic, List<MemoryEntry>> byTopic = new EnumMap<>(ConversationTopic.class);
+        for (MemoryEntry entry : midTerm.allEntries()) {
+            byTopic.computeIfAbsent(entry.topic(), t -> new ArrayList<>()).add(entry);
+        }
+        byTopic.replaceAll((topic, entries) -> List.copyOf(entries));
+        return new MemorySnapshot(shortTerm.timeline(), Collections.unmodifiableMap(byTopic),
+                longTerm.get(), longTerm.pinnedFacts());
     }
 
     @Override

@@ -36,6 +36,12 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
         return ID;
     }
 
+    /** App-side route calculation (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
@@ -44,11 +50,12 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
-
+        // getCriteria returns null when no starting station could be resolved (it already voiced why); guard
+        // before dereferencing it, otherwise criteria.getStation() below throws an NPE.
         if (criteria == null) {
             return;
         }
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();

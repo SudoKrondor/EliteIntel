@@ -30,6 +30,12 @@ public final class RequestDockingCommand implements IntelCommand {
         return ID;
     }
 
+    /// Ship, Nomad or Fighter
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInFighter() || status.isInSrv(); ///Nomad is a flying SRV
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         if(status.isInMainShip()){
@@ -48,7 +54,6 @@ public final class RequestDockingCommand implements IntelCommand {
             // Exit the panel and restore the assumed UI state.
             navigator.closeAndRestore(StatusFlags.GuiFocus.EXTERNAL_PANEL);
         }
-        //if (!status.isOnFoot() && !status.isInMainShip() && !status.isInSrv()) {
         else {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),

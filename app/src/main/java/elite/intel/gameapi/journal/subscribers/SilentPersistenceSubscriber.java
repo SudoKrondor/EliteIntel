@@ -175,6 +175,10 @@ public class SilentPersistenceSubscriber {
             if (first.getPlanet() != null) location.setParentBodyId(first.getPlanet());
         }
 
+        if (PLANETARY_RING.equals(locationType)) {
+            location.setParentBodyName(event.getBodyName().replaceAll(" [A-Z] Ring$", ""));
+        }
+
         if (event.getMaterials() != null) {
             List<MaterialDto> materials = new ArrayList<>();
             for (ScanEvent.Material m : event.getMaterials()) {
@@ -185,6 +189,41 @@ public class SilentPersistenceSubscriber {
 
         locationManager.save(location);
         log.debug("PreScan: saved scan {}", event.getBodyName());
+    }
+
+    @Subscribe
+    public void onSAASignalsFound(SAASignalsFoundEvent event) {
+        if (event.getBodyName() == null) return;
+
+        LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
+        LocationDto primaryStar = locationManager.findBySystemAddress(event.getSystemAddress());
+        location.setBodyId(event.getBodyID());
+        location.setSystemAddress(event.getSystemAddress());
+        location.setPlanetName(event.getBodyName());
+        location.setStarName(primaryStar.getStarName());
+        location.setX(primaryStar.getX());
+        location.setY(primaryStar.getY());
+        location.setZ(primaryStar.getZ());
+        location.addSaaSignals(event.getSignals());
+
+        // Rings are bodies: classify, record the parent, and keep the mining reserves. Without this
+        // the pre-scan drops ring signals entirely (no SAA handler previously existed here).
+        if (event.getBodyName().matches(".* [A-Z] Ring")) {
+            location.setLocationType(PLANETARY_RING);
+            location.setParentBodyName(event.getBodyName().replaceAll(" [A-Z] Ring$", ""));
+            if (event.getSignals() != null && !event.getSignals().isEmpty()) {
+                List<MaterialDto> materials = new ArrayList<>();
+                for (SAASignalsFoundEvent.Signal signal : event.getSignals()) {
+                    materials.add(new MaterialDto(signal.getType(), 100, true));
+                }
+                location.setMaterials(materials);
+            }
+        }
+
+        if (location.getStarName() != null && !location.getStarName().isEmpty()) {
+            locationManager.save(location);
+            log.debug("PreScan: saved SAA signals {}", event.getBodyName());
+        }
     }
 
     @Subscribe
@@ -219,6 +258,9 @@ public class SilentPersistenceSubscriber {
         List<ScanEvent.Parent> parents = event.getParents();
 
         if (isBeltCluster) return BELT_CLUSTER;
+        // Rings follow the ED "<parent> <letter> Ring" convention; match the suffix precisely so it
+        // wins over the MOON branch below (a ring's parent is a planet).
+        if (event.getBodyName() != null && event.getBodyName().matches(".* [A-Z] Ring")) return PLANETARY_RING;
         if (isPrimaryStar) return PRIMARY_STAR;
         if (parents == null || parents.isEmpty()) return isStar ? STAR : UNCLASSIFIED;
 

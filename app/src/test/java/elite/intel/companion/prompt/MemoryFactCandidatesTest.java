@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
@@ -28,8 +29,8 @@ class MemoryFactCandidatesTest {
         // Keep COMMANDER at NORMAL+ and EVENT; drop COMMANDER LOW banter, COMPANION acks, TOOL_RESULT, SYSTEM.
         // Each surviving fact carries its provenance: a commander statement vs a game event.
         assertEquals(
-                List.of(new MemoryFactCandidates.Fact("поле зовётся бедлам", "commander"),
-                        new MemoryFactCandidates.Fact("прибыли в систему вольф", "event")),
+                List.of(new Fact("поле зовётся бедлам", "commander"),
+                        new Fact("прибыли в систему вольф", "event")),
                 MemoryFactCandidates.forInput(memory, "что помним"));
     }
 
@@ -39,7 +40,7 @@ class MemoryFactCandidatesTest {
                 entry(MemorySource.COMMANDER, MemoryImportance.HIGH,
                         "и запиши: покупатель утиля — халлоран", "покупатель утиля — халлоран")));
 
-        assertEquals(List.of(new MemoryFactCandidates.Fact("покупатель утиля — халлоран", "commander")),
+        assertEquals(List.of(new Fact("покупатель утиля — халлоран", "commander")),
                 MemoryFactCandidates.forInput(memory, "утиль"));
     }
 
@@ -70,6 +71,8 @@ class MemoryFactCandidatesTest {
         private FakeMemory(List<MemoryEntry> candidates) {
             this.candidates = candidates;
         }
+
+        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
 
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return candidates; }
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }

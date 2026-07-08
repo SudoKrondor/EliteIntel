@@ -1,7 +1,6 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.PromptLocalizations;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -21,17 +20,21 @@ class CompanionSystemPromptPartTest {
 
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return PromptLocalizations.rulesFor(language).languageName();
+        return language.displayName();
+    }
+
+    private static String inputLanguageName() {
+        return SystemSession.getInstance().getLanguage().displayName();
     }
 
     @Test
     void alwaysCarriesPersonaAndFunctionCalling() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("## Persona"));
-        assertTrue(text.contains("the commander's female ship companion"));
-        assertTrue(text.contains("## Function calling"));
+        assertTrue(text.contains("<persona>"));
+        assertTrue(text.contains("a human woman serving as the commander's"));
+        assertTrue(text.contains("<function_calling>"));
         // Danger is detected and voiced by the thought after the response, never prompted: no safety section.
-        assertFalse(text.contains("## Safety"));
+        assertFalse(text.contains("<safety>"));
     }
 
     @Test
@@ -39,8 +42,8 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("Never invent game facts"));
-        // Every turn must settle - never stop after the metadata-only classify_turn.
-        assertTrue(text.contains("Never stop after 'classify_turn'"));
+        // Every turn must settle - a response that is only the metadata-only classify_turn is invalid.
+        assertTrue(text.contains("you MUST always add the settling call"));
         // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
     }
@@ -56,23 +59,23 @@ class CompanionSystemPromptPartTest {
     @Test
     void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
-        assertTrue(text.contains("## Function calling"));
+        assertTrue(text.contains("<function_calling>"));
         assertTrue(text.contains("that settles the turn"));
         // The commander branch is not the narration report-only task.
-        assertFalse(text.contains("## Narration"));
+        assertFalse(text.contains("<narration>"));
     }
 
     @Test
     void narrationBranchIsReportOnlyAndExcludesCommanderSections() {
         String text = prompt.staticRules(ThoughtSource.NARRATION);
-        assertTrue(text.contains("## Persona"));
-        assertTrue(text.contains("## Narration"));
+        assertTrue(text.contains("<persona>"));
+        assertTrue(text.contains("<narration>"));
         assertTrue(text.contains("must be reported to the commander"));
         // The lean narration prompt drops the commander-only function-calling section and memory/query guidance.
-        assertFalse(text.contains("## Function calling"));
-        assertFalse(text.contains("## Safety"));
+        assertFalse(text.contains("<function_calling>"));
+        assertFalse(text.contains("<safety>"));
         assertFalse(text.contains("memory_search"));
-        assertTrue(text.contains("## Language"));
+        assertTrue(text.contains("<language>"));
     }
 
     @Test
@@ -80,10 +83,18 @@ class CompanionSystemPromptPartTest {
         String name = resolvedLanguageName();
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
 
-        assertTrue(text.contains("## Language"));
-        // The commander's language is named, and spoken output is bound to that same language.
-        assertTrue(text.contains("The commander speaks " + name));
-        // The spoken surface (speak) is bound to the commander's language.
+        assertTrue(text.contains("<language>"));
+        // The commander is named as speaking his INPUT language (what he says / what STT produces).
+        assertTrue(text.contains("The commander speaks " + inputLanguageName()));
+        // The spoken surface (speak) is bound to the effective (TTS) response language.
         assertTrue(text.contains("the text in speak - in " + name));
+    }
+
+    @Test
+    void commanderPromptSelectsFunctionsFromNativeWordsNotTranslation() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+        // Action derivation is native, driven by the per-language triggers - not by translating to English first.
+        assertTrue(text.contains("Do NOT translate his words to English first"));
+        assertFalse(text.contains("translate their input to English before choosing a function"));
     }
 }

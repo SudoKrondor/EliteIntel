@@ -53,6 +53,17 @@ public class SupercruiseExitEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: dropping out of supercruise at a location. No subscriber narrates this, so it is remembered here. */
+    @Override
+    public String memorySummary() {
+        if (starSystem == null || starSystem.isBlank()) {
+            return "";
+        }
+        return body == null || body.isBlank()
+                ? "dropped from supercruise in " + starSystem
+                : "dropped from supercruise at " + body + " in " + starSystem;
+    }
+
     @Override
     public String llmDescription() {
         return "Dropped from supercruise into normal space; carries the star system and the body you arrived at.";

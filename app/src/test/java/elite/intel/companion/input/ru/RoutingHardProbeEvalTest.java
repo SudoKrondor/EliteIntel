@@ -3,11 +3,7 @@ package elite.intel.companion.input.ru;
 import elite.intel.companion.input.CompanionEvalHarness;
 import elite.intel.companion.input.CompanionEvalHarness.Executed;
 import elite.intel.i18n.Language;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 
 import java.util.List;
 
@@ -47,7 +43,7 @@ class RoutingHardProbeEvalTest {
             new Case("вырубай радио", "toggle_radio"),
             new Case("вырубай все объявления", "toggle_all_announcements"),
             new Case("где купить платину", "find_commodity"),
-            new Case("проложи маршрут к миссии срочно", "navigate_to_mission_target"));
+            new Case("проложи маршрут к миссии срочно", "navigate_to_active_mission"));
 
     @BeforeAll
     void boot() throws Exception {

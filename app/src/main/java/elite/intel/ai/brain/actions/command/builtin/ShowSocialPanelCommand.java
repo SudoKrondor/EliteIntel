@@ -20,7 +20,8 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
  * Stage-4b self-describing command for "show social panel".
  */
 @RegisterCommand
-public final class ShowSocialPanelCommand implements IntelCommand {
+public final class
+ShowSocialPanelCommand implements IntelCommand {
     public static final String ID = "show_social_panel";
 
     @Override public String llmDescription() { return "Open the social panel."; }
@@ -32,6 +33,11 @@ public final class ShowSocialPanelCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInFighter() || status.isOnFoot() || status.isOnFoot();
     }
 
     @Override

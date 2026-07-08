@@ -2,6 +2,7 @@ package elite.intel.companion.prompt;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
+import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import org.apache.logging.log4j.LogManager;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -34,8 +36,17 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     private static final Logger log = LogManager.getLogger(SemanticActionReducer.class);
 
-    /** Below this best cosine, nothing is close enough in meaning: offer no game tools. (Legacy semantic floor.) */
-    private static final double SEM_FLOOR = 0.80;
+    /**
+     * Below this best cosine, nothing is close enough in meaning: offer no game tools. Calibrated for
+     * multilingual-e5-small against the live-LLM natural-speech routing suite (EN + RU), the recall authority:
+     * 0.85 matches 0.80's routing exactly for EN/RU (no real commands dropped) while rejecting more sub-0.85
+     * junk, whereas 0.87+ starts dropping EN commands. Conversational noise embeds ~0.87-0.92, so this floor
+     * does not reject it without also costing recall - a known limit of this model's compressed band, not fixed
+     * by any single global floor. IT aliases embed lower and regress even at 0.85 (deprioritized for now); a
+     * per-language floor or stronger IT aliases would be the real fix. Recalibrate after any model change (see
+     * {@code SemanticReducerProbe#dumpsFloorCalibration}).
+     */
+    private static final double SEM_FLOOR = 0.85;
     /**
      * Keep candidates scoring within this margin of the best match (legacy semantic margin). Deliberately
      * inclusive: the correct tool is not always the single top match (a noun like "двигатели" can pull a
@@ -73,15 +84,22 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
         if (candidates.isEmpty()) {
+            // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
+            // selection outcome, so it needs no line; a non-empty set that yielded nothing is worth surfacing.
+            if (!allowedCategories.isEmpty()) {
+                CompanionDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);
+            }
             return List.of();
         }
         // A blank input has no meaning to embed; the word-overlap fallback owns the "offer all" blank-input rule.
         if (currentInput == null || currentInput.isBlank()) {
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             // Embedding model unavailable: degrade to word-overlap for the rest of the session (documented contract).
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
         try {
@@ -89,6 +107,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         } catch (RuntimeException embedFailure) {
             // WHY: a transient embed failure must not drop the turn's tools; degrade to word-overlap for this turn.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
+            CompanionDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
     }
@@ -109,6 +128,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             best = Math.max(best, scores[i]);
         }
         if (best < SEM_FLOOR) {
+            CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+                    "semantic: candidates=%d best=%.3f < floor %.2f -> no game tools (conversation/recall)",
+                    candidates.size(), best, SEM_FLOOR));
             return List.of();
         }
 
@@ -133,6 +155,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                 result.add(candidate.tool());
             }
         }
+        CompanionDiagnostics.debugAmbient("reduce", String.format(Locale.ROOT,
+                "semantic: candidates=%d best=%.3f cutoff=%.3f kept=%d -> %s",
+                candidates.size(), best, cutoff, result.size(), CompanionDiagnostics.names(result)));
         return result;
     }
 }

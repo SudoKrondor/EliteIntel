@@ -54,6 +54,27 @@ class StringUtlsSanitizeTtsTest {
     }
 
     @Test
+    void espeakPathFlattensIntonationPunctuation() {
+        // The no-arg overload hardens for espeak-ng: "!" and ":" are flattened, "..." collapses to a space.
+        String result = StringUtls.sanitizeTts("Warning! Ready: set... go");
+
+        assertFalse(result.contains("!"), "espeak path drops '!', got: " + result);
+        assertFalse(result.contains(":"), "espeak path drops ':', got: " + result);
+        assertFalse(result.contains("..."), "espeak path drops '...', got: " + result);
+    }
+
+    @Test
+    void googlePathPreservesIntonationPunctuation() {
+        // The Google path (hardenForEspeak=false) keeps "!", ":" and "..." so the neural voice / GoogleSsml can
+        // use them for intonation and pauses.
+        String result = StringUtls.sanitizeTts("Warning! Ready: set... go", false);
+
+        assertTrue(result.contains("!"), "Google path keeps '!', got: " + result);
+        assertTrue(result.contains(":"), "Google path keeps ':', got: " + result);
+        assertTrue(result.contains("..."), "Google path keeps '...', got: " + result);
+    }
+
+    @Test
     void composesDecomposedAccentsSoTheySurviveTheMarkStrip() {
         // "cafe" + U+0301 (COMBINING ACUTE ACCENT) on the e must fold into the single
         // precomposed letter é, not be stripped as a combining mark.

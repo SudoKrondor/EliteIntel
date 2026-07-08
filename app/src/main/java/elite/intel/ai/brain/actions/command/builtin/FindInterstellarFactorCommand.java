@@ -11,6 +11,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsResultDto;
 import elite.intel.search.spansh.station.interstellarfactors.InterstellarFactorsSearch;
+import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
@@ -33,6 +34,12 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /// Route plotting available anywhere in the game
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

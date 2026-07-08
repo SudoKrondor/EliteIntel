@@ -31,17 +31,18 @@ public final class FindEncodedMaterialTraderCommand implements IntelCommand {
         return ID;
     }
 
+    /// Route plotting available anywhere in the game
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
-        Status status = Status.getInstance();
-        if(status.isInSrv() || status.isInMainShip()) {
-            Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.ENCODED.getType())));
-            TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
-            RoutePlotter routePlotter = new RoutePlotter();
-            routePlotter.plotRoute(search.location(TraderType.ENCODED, null, range));
-        } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.notInShipOrSrv")));
-        }
+        Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
+        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.ENCODED.getType())));
+        TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
+        RoutePlotter routePlotter = new RoutePlotter();
+        routePlotter.plotRoute(search.location(TraderType.ENCODED, null, range));
     }
 }

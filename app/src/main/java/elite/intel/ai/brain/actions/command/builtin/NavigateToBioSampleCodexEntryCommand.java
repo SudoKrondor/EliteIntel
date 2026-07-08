@@ -43,6 +43,16 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         return ID;
     }
 
+    /**
+     * Navigates to a biological-sample codex entry the app already holds in the DB - it infers no parameters from
+     * the commander, so it is offered in any control mode (ship, SRV, fighter, on foot). When no codex entry is
+     * known for the current planet, {@link #execute} says so rather than the command being hidden.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInSrv() || status.isInFighter() || status.isOnFoot();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();

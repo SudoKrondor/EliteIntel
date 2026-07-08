@@ -13,13 +13,9 @@ import javax.annotation.Nullable;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class StringUtls {
 
-    private static final Pattern DISPLAY_INTEGER_PATTERN =
-            Pattern.compile("(?<![\\p{L}\\p{N}])([+-]?\\d{4,})(?![\\p{L}\\p{N}])");
 
     public static String subtractString(String a, String b) {
         if (a == null || b == null) return "";
@@ -98,16 +94,14 @@ public class StringUtls {
         String safeShipName = shipName == null || shipName.isBlank()
                 ? MultiLingualTextProvider.getText(language, "speech.shipFallback")
                 : shipName;
+        // WHY: the intro no longer carries an honorific. The honorific lookup resolves only for English
+        // (its maps are keyed by English rank names while the rank map is localized), so every non-English
+        // locale rendered a trailing "null". Dropping the title keeps the greeting clean in all languages.
         return MultiLingualTextProvider.getText(
                 language,
                 "speech.shipIntroduction",
                 spokenName,
-                safeShipName,
-                Ranks.getPlayerHonorific(
-                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankEmpire(),
-                        PlayerSession.getInstance().getRankAndProgressDto().getCombatRankFederation()
-                )
-        );
+                safeShipName);
     }
 
     public static String localizedSpeech(String key, Object... args) {
@@ -233,11 +227,25 @@ public class StringUtls {
     }
 
     public static String sanitizeTts(String input) {
+        return sanitizeTts(input, true);
+    }
+
+    /**
+     * Cleans LLM text for speech synthesis.
+     * <p>
+     * When {@code hardenForEspeak} is true (the no-arg overload, used by the espeak-ng-based Kokoro engine),
+     * punctuation that crashes or misreads in espeak-ng is flattened ("!" → ". ", ":" → " - ", "..." → space).
+     * When false (the Google path), that punctuation is preserved so the neural voice can use it for intonation
+     * and {@code GoogleSsml} can turn it into explicit pauses ({@code GoogleSsml} then normalizes "!" to "."). All
+     * other cleanup is identical and the ordering is preserved, so the no-arg overload reproduces the previous
+     * output exactly.
+     */
+    public static String sanitizeTts(String input, boolean hardenForEspeak) {
         if (input == null) return "";
         // NFC first: fold any decomposed accents (e + combining acute) into single precomposed
         // letters so legitimate German/French/Russian/Ukrainian/Spanish characters survive the
         // \p{M} strip below. Precomposed letters (é, ü, ñ, Cyrillic й/ї) are category L, not M.
-        return Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
+        String s = Normalizer.normalize(stripLeadingFillers(input), Normalizer.Form.NFC)
                 .replaceAll("\\*{1,2}([^*\n]*?)\\*{1,2}", "$1") // **bold** / *italic* → plain
                 .replaceAll("_([^_\n]*?)_", "$1")                // _italic_ → plain
                 .replaceAll("~~([^~\n]*?)~~", "$1")              // ~~strikethrough~~ → plain
@@ -246,56 +254,24 @@ public class StringUtls {
                 .replaceAll("(?m)^>\\s?", "")                   // > blockquotes → remove marker
                 .replace("\\n", " ").replace("\\r", " ")        // literal escape sequences from LLM
                 .replaceAll("[\\r\\n]+", " ")                    // actual newline characters → space
-                .replaceAll("(?<=\\S)-(?=\\S)", " ")             // "ninety-five" → "ninety five" (hyphen between chars)
-                .replace("!", ". ")                             // espeak-ng stof crash on exclamatory sentences
-                .replace("*", " ")                              // any stray asterisks
+                .replaceAll("(?<=\\S)-(?=\\S)", " ");            // "ninety-five" → "ninety five" (hyphen between chars)
+        if (hardenForEspeak) s = s.replace("!", ". ");          // espeak-ng stof crash on exclamatory sentences
+        s = s.replace("*", " ")                                 // any stray asterisks
                 .replace("`", "")                               // any stray backticks
                 .replace("\"", "")
                 .replace(". .", ".")
                 .replace("[", "").replace("]", "")
-                .replace("ETA", ". E.T.A.")
-                .replace(":", " - ")
-                // Join grouped digits so TTS reads "44 543" as one number instead of 44 and 543.
-                .replaceAll("(?<=\\d)[ \\u00A0\\u202F](?=\\d{3}(?:[ \\u00A0\\u202F]\\d{3})*(?!\\d))", "")
-                .replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")      // drop controls, emojis, and standalone symbols
-                .replaceAll("\\p{M}+", "")                       // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
-                .replaceAll("\\.{2,}", " ")                     // "..." → space (espeak-ng stof crash on multi-dot sequences)
-                .replaceAll("\\s{2,}", " ")                     // collapse repeated spaces
+                .replace("ETA", ". E.T.A.");
+        if (hardenForEspeak) s = s.replace(":", " - ");
+        s = s.replaceAll("[\\p{C}\\p{So}\\p{Sk}]+", " ")         // drop controls, emojis, and standalone symbols
+                .replaceAll("\\p{M}+", "");                      // drop stray combining marks (e.g. IPA U+0329) NFC couldn't compose; precomposed accents are \p{L} and survive
+        if (hardenForEspeak) s = s.replaceAll("\\.{2,}", " ");  // "..." → space (espeak-ng stof crash on multi-dot sequences)
+        s = s.replaceAll("\\s{2,}", " ")                        // collapse repeated spaces
                 .replace(", pilot", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace(", Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .replace("Commander", " " + PlayerSession.getInstance().getVariablePlayerName())
                 .trim();
-    }
-
-    /**
-     * Groups long standalone integers for display without changing the text sent to TTS.
-     * Alphanumeric identifiers are left untouched.
-     */
-    public static String formatNumbersForDisplay(String input) {
-        if (input == null || input.isEmpty()) return input;
-
-        Matcher matcher = DISPLAY_INTEGER_PATTERN.matcher(input);
-        StringBuilder formatted = new StringBuilder(input.length());
-
-        while (matcher.find()) {
-            String value = matcher.group(1);
-            int digitStart = value.charAt(0) == '+' || value.charAt(0) == '-' ? 1 : 0;
-            String sign = value.substring(0, digitStart);
-            String digits = value.substring(digitStart);
-
-            StringBuilder grouped = new StringBuilder(value.length() + digits.length() / 3);
-            grouped.append(sign);
-            int firstGroupLength = digits.length() % 3;
-            if (firstGroupLength == 0) firstGroupLength = 3;
-            grouped.append(digits, 0, firstGroupLength);
-            for (int index = firstGroupLength; index < digits.length(); index += 3) {
-                grouped.append(' ').append(digits, index, index + 3);
-            }
-
-            matcher.appendReplacement(formatted, Matcher.quoteReplacement(grouped.toString()));
-        }
-        matcher.appendTail(formatted);
-        return formatted.toString();
+        return s;
     }
 
     public static String normalizeVersion(String v) {

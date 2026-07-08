@@ -63,7 +63,7 @@ public final class PromptComposer {
             List<LlmToolDefinition> selectedTools,
             List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<MemoryFactCandidates.Fact> memoryCandidates
+            List<Fact> memoryCandidates
     ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
@@ -83,7 +83,7 @@ public final class PromptComposer {
             ThoughtSource source, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<MemoryFactCandidates.Fact> memoryCandidates) {
+            List<Fact> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
         messages.addAll(coalesceHistory(buildHistoryMessages(shortTerm)));
@@ -129,7 +129,8 @@ public final class PromptComposer {
 
     /** Full selectable topic enum; the model needs the valid values for the classify_turn topic parameter. */
     private void appendTopics(StringBuilder sb) {
-        PromptSections.heading(sb, "Topics");
+        // Blank line separates the topics block from the static prefix ending in </function_calling>.
+        sb.append("\n<topics>\n");
         sb.append("Valid values for the classify_turn topic parameter:\n");
         for (ConversationTopic topic : ConversationTopic.values()) {
             if (topic.selectable()) {
@@ -142,6 +143,7 @@ public final class PromptComposer {
         sb.append("Classify every turn under the topic its content fits. If the turn is a short continuation "
                 + "with no topic of its own (\"and then?\", \"yeah\"), use the conversation above to place it "
                 + "under the topic it continues.\n");
+        sb.append("</topics>\n");
     }
 
     /** Wire content of a synthesized tool result when a recorded tool-call left no voiced/textual outcome. */
@@ -247,11 +249,11 @@ public final class PromptComposer {
      * for delineating provided context (OpenAI long-context guidance). Kept out of the cached prefix (it changes
      * every turn); only built when non-empty.
      */
-    private String buildCandidatesBlock(List<MemoryFactCandidates.Fact> memoryCandidates) {
+    private String buildCandidatesBlock(List<Fact> memoryCandidates) {
         StringBuilder sb = new StringBuilder();
         sb.append("<facts>\n");
         int id = 1;
-        for (MemoryFactCandidates.Fact fact : memoryCandidates) {
+        for (Fact fact : memoryCandidates) {
             sb.append("  <fact id=\"").append(id++).append("\" source=\"").append(fact.source()).append("\">")
                     .append(fact.text()).append("</fact>\n");
         }

@@ -72,7 +72,21 @@ public final class CustomCommandKeyDeriver {
                 longest = token;
             }
         }
-        return longest == null ? "" : truncate(dedupeTokens(longest), CustomCommandValidator.MAX_ACTION_KEY_LENGTH);
+        return longest == null ? "" : toBaseKey(longest);
+    }
+
+    /**
+     * Normalizes arbitrary text into a base (pre-uniqueness) action key: {@link #sanitize sanitizes} it,
+     * de-duplicates repeated word tokens, and truncates at a word boundary to
+     * {@link CustomCommandValidator#MAX_ACTION_KEY_LENGTH}. Returns {@code ""} when nothing is usable.
+     * <p>
+     * This is the seam the LLM key generator uses to fold a model-proposed English identifier into the same
+     * routing-safe shape a phrase-derived key takes, so both paths converge on one format and one uniqueness
+     * rule ({@link #uniquify}).
+     */
+    public static String toBaseKey(String rawText) {
+        String token = sanitize(rawText);
+        return token.isEmpty() ? "" : truncate(dedupeTokens(token), CustomCommandValidator.MAX_ACTION_KEY_LENGTH);
     }
 
     /**
@@ -94,8 +108,17 @@ public final class CustomCommandKeyDeriver {
      * the command's own current key when editing so a command keeps its key across edits.
      */
     public static String deriveUniqueKey(String phrases, Collection<String> takenKeys) {
-        String base = deriveBaseKey(phrases);
-        if (base.isEmpty()) {
+        return uniquify(deriveBaseKey(phrases), takenKeys);
+    }
+
+    /**
+     * Makes {@code base} unique against {@code takenKeys}, appending a {@code _2}, {@code _3}, ... suffix on
+     * collision (case-insensitive). A blank {@code base} falls back to {@link #FALLBACK_KEY}. Shared by
+     * phrase derivation and the LLM key generator so both enforce the same uniqueness rule; {@code takenKeys}
+     * should exclude the command's own current key when editing so it keeps its key across edits.
+     */
+    public static String uniquify(String base, Collection<String> takenKeys) {
+        if (base == null || base.isBlank()) {
             base = FALLBACK_KEY;
         }
         Set<String> taken = new HashSet<>();

@@ -76,6 +76,17 @@ public class TouchdownEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: touching down on a planetary surface. Recorded unconditionally, regardless of narration toggles. */
+    @Override
+    public String memorySummary() {
+        if (body == null || body.isBlank()) {
+            return "";
+        }
+        return starSystem == null || starSystem.isBlank()
+                ? "landed on " + body
+                : "landed on " + body + " in " + starSystem;
+    }
+
     @Override
     public String llmDescription() {
         return "Landed on a planetary surface; carries latitude, longitude, and the nearest point of interest.";

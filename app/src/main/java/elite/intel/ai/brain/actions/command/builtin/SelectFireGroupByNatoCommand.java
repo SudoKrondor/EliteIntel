@@ -6,6 +6,7 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.gameapi.FireGroups;
+import elite.intel.session.Status;
 
 import java.util.List;
 
@@ -39,6 +40,12 @@ public final class SelectFireGroupByNatoCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Fire groups exist only while piloting a vehicle with modules: main ship, fighter, or SRV. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip() || status.isInFighter() || status.isInSrv();
     }
 
     @Override

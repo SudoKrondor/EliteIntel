@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.eventbus.UiBus;
+import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.PttModeChangedEvent;
 import elite.intel.ui.event.VoiceInputModeToggleEvent;
@@ -15,7 +16,7 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
  */
 @RegisterCommand
 public final class SleepCommand implements IntelCommand {
-    public static final String ID = "sleep";
+    public static final String ID = "sleep_ignore_do_not_monitor";
 
     @Override public String llmDescription() { return "Put the companion to sleep so it stops responding until woken."; }
 
@@ -23,6 +24,12 @@ public final class SleepCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+    /** Companion-side control (listening/PTT); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

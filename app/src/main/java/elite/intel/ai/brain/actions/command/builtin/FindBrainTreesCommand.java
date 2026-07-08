@@ -14,6 +14,7 @@ import elite.intel.db.managers.ReminderManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
+import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
 import elite.intel.util.StringUtls;
 
@@ -53,6 +54,13 @@ public final class FindBrainTreesCommand implements IntelCommand {
     @Override
     public String id() {
         return ID;
+    }
+
+
+    @Override
+    ///Plotting routes are available anywhere in the game
+    public boolean isVisibleForLLM(Status status) {
+        return true;
     }
 
     @Override

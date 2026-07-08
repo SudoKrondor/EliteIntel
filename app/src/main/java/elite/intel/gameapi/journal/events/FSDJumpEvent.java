@@ -286,6 +286,16 @@ public class FSDJumpEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /**
+     * Lived-experience line: arriving in a system via hyperspace. Recorded unconditionally so the jump is
+     * remembered even when route narration is off; when it is on, the richer narration entry complements this
+     * short fact (different wording, different source), it does not duplicate it.
+     */
+    @Override
+    public String memorySummary() {
+        return starSystem == null || starSystem.isBlank() ? "" : "jumped to " + starSystem;
+    }
+
     @Override
     public String llmDescription() {
         return "Arrived in a new star system via a hyperspace jump; carries the destination system name, jump distance in light years, and fuel used.";

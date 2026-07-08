@@ -76,6 +76,17 @@ public class LiftoffEvent extends BaseEvent {
         return Importance.NORMAL;
     }
 
+    /** Lived-experience line: lifting off from a planetary surface. No subscriber narrates this, so it is remembered here. */
+    @Override
+    public String memorySummary() {
+        if (body == null || body.isBlank()) {
+            return "";
+        }
+        return starSystem == null || starSystem.isBlank()
+                ? "lifted off from " + body
+                : "lifted off from " + body + " in " + starSystem;
+    }
+
     @Override
     public String llmDescription() {
         return "Lifted off from a planetary surface back into flight; carries latitude and longitude.";

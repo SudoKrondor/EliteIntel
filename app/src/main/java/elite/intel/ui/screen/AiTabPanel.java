@@ -2,6 +2,9 @@ package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.diag.CompanionMemoryDump;
+import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -9,16 +12,25 @@ import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
 import elite.intel.util.SleepNoThrow;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.Duration;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -40,8 +52,7 @@ public class AiTabPanel extends JPanel {
     private HudCommanderBlock commanderBlock;
     private final AtomicBoolean isServiceRunning = new AtomicBoolean(false);
 
-    private HudLogArea userPanel;
-    private HudLogArea aiPanel;
+    private HudLogArea chatPanel;
     private HudLogArea systemPanel;
 
     // QUICK STATUS readouts
@@ -129,24 +140,20 @@ public class AiTabPanel extends JPanel {
         updateAppButton = new HudUpdateButton(false);
 
         // --- Log panels ---
-        userPanel = new HudLogArea(30, HudLogArea.Style.USER_INPUT);
-
-        aiPanel = new HudLogArea(25, HudLogArea.Style.AI_RESPONSE);
+        // Single chat stream: commander lines left (USER_INPUT), AI lines right (AI_RESPONSE).
+        chatPanel = HudLogArea.chat(25);
 
         systemPanel = new HudLogArea(12, HudLogArea.Style.SYSTEM_LOG);
 
-        // --- Main log area (user/ai top, system below) ---
-        HudSplitPane topSplit = new HudSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
-                logSection(getText("ai.section.userInput"), userPanel),
-                logSection(getText("ai.section.aiResponse"), aiPanel)
-        );
-        topSplit.setResizeWeight(0.38);
+        // --- Main log area (conversation top, system below) ---
+        HudSection chatSection = logSection(getText("ai.section.conversation"), chatPanel);
 
+        HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
+        systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                topSplit,
-                logSection(getText("ai.section.systemMessages"), systemPanel)
+                chatSection,
+                systemSection
         );
         mainSplit.setResizeWeight(0.65);
 
@@ -243,6 +250,106 @@ public class AiTabPanel extends JPanel {
         return section;
     }
 
+    /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
+    private HudGlyphButton buildClearLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudTrashGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear);
+    }
+
+    /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */
+    private HudGlyphButton buildSaveLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog);
+    }
+
+    /** Builds the SYSTEM LOG header action: a memory-glyph button that dumps the companion's memory to a JSON file. */
+    private HudGlyphButton buildDumpMemoryButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
+                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory);
+    }
+
+    /**
+     * Writes a full JSON snapshot of the companion's session memory to a user-chosen {@code .json} file. Runs on
+     * the EDT (button click). When the companion subsystem is not running its memory is unreachable, so the button
+     * reports that as a SYSTEM LOG line instead of failing; every outcome (dumped file, not running, or write
+     * error) is reported the same way, keeping feedback inside the HUD instead of a native popup.
+     */
+    private void dumpCompanionMemory() {
+        MemoryGateway memory;
+        try {
+            memory = CompanionRuntime.memory();
+        } catch (IllegalStateException notRunning) {
+            // WHY: only the not-installed case degrades to "nothing to dump" here (CompanionRuntime getters throw
+            // when the subsystem is stopped). Snapshot and serialization run outside this guard so any real failure
+            // there surfaces as a write error rather than being mislabelled "not running".
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.empty")));
+            return;
+        }
+        String content = CompanionMemoryDump.toJson(memory.snapshot());
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(getText("ai.section.systemMessages.dump.title"));
+        chooser.setSelectedFile(new File(defaultMemoryDumpFileName()));
+        chooser.setFileFilter(new FileNameExtensionFilter("JSON (*.json)", "json"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".json")) {
+            file = new File(file.getAbsolutePath() + ".json");
+        }
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.success", file.getName())));
+        } catch (IOException e) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.dump.error", String.valueOf(e.getMessage()))));
+        }
+    }
+
+    /**
+     * Writes the full SYSTEM LOG transcript to a user-chosen {@code .log} file. Runs on the EDT (button click).
+     * The outcome (saved file, empty log, or write error) is reported back as a SYSTEM LOG line, so feedback
+     * stays inside the HUD instead of a native popup.
+     */
+    private void saveSystemLog() {
+        String content = systemPanel.exportText();
+        if (content.isBlank()) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.empty")));
+            return;
+        }
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(getText("ai.section.systemMessages.save.title"));
+        chooser.setSelectedFile(new File(defaultLogFileName()));
+        chooser.setFileFilter(new FileNameExtensionFilter("Log (*.log)", "log"));
+        if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File file = chooser.getSelectedFile();
+        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".log")) {
+            file = new File(file.getAbsolutePath() + ".log");
+        }
+        try {
+            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.success", file.getName())));
+        } catch (IOException e) {
+            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.error", String.valueOf(e.getMessage()))));
+        }
+    }
+
+    /** Timestamped default file name, e.g. {@code companion_diagnostics_20260704_132155.log}. */
+    private static String defaultLogFileName() {
+        return "companion_diagnostics_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".log";
+    }
+
+    /** Timestamped default file name, e.g. {@code companion_memory_dump_20260704_132155.json}. */
+    private static String defaultMemoryDumpFileName() {
+        return "companion_memory_dump_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".json";
+    }
+
     public void initData(boolean sleepingModeOn, boolean servicesRunning) {
         this.sleeping = sleepingModeOn;
         wakeWordButton.setText(wakeWordText());
@@ -250,15 +357,17 @@ public class AiTabPanel extends JPanel {
     }
 
     public void addUserMessage(String text) {
-        SwingUtilities.invokeLater(() -> userPanel.addMessage(text));
+        SwingUtilities.invokeLater(() ->
+                chatPanel.addMessage(text, HudLogArea.Style.USER_INPUT, HudLogArea.Align.LEFT));
     }
 
     public void addAiMessage(String text) {
-        SwingUtilities.invokeLater(() -> aiPanel.addMessage(text));
+        SwingUtilities.invokeLater(() ->
+                chatPanel.addMessage(text, HudLogArea.Style.AI_RESPONSE, HudLogArea.Align.RIGHT));
     }
 
-    /** Renders a structured SYSTEM_LOG entry; timestamp is formatted as {@code HH:mm:ss}. */
-    public void addSystemMessage(LocalTime timestamp, String text) {
+    /** Renders a structured SYSTEM_LOG entry; the panel shows local {@code HH:mm:ss}, the export uses UTC. */
+    public void addSystemMessage(Instant timestamp, String text) {
         SwingUtilities.invokeLater(() -> systemPanel.addSystemLogEntry(timestamp, text));
     }
 
@@ -521,8 +630,7 @@ public class AiTabPanel extends JPanel {
     @Subscribe
     public void onClearConsoleEvent(ClearConsoleEvent event) {
         SwingUtilities.invokeLater(() -> {
-            userPanel.clear();
-            aiPanel.clear();
+            chatPanel.clear();
             systemPanel.clear();
         });
     }

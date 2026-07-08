@@ -31,6 +31,12 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
         return ID;
     }
 
+    /// Never block pips when in a vehicle (any vehicle)
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return !status.isOnFoot();
+    }
+
     @Override
     public void execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
