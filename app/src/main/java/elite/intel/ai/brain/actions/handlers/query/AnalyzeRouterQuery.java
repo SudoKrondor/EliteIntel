@@ -24,7 +24,7 @@ import static elite.intel.util.NavigationUtils.calculateGalacticDistance;
 public class AnalyzeRouterQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_ship_route_remaining_jumps";
 
-    @Override public String llmDescription() { return "Report the number of jumps remaining on the current route."; }
+    @Override public String llmDescription() { return "Use this for the remaining jump count on the commander's current ship route. Do not use this for carrier routes."; }
 
 
     @Override public String id() { return ID; }

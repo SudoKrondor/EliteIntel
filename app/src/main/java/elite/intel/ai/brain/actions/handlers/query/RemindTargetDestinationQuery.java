@@ -11,7 +11,7 @@ import elite.intel.db.managers.ReminderManager;
 public class RemindTargetDestinationQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_reminder";
 
-    @Override public String llmDescription() { return "Report the active target-destination reminder."; }
+    @Override public String llmDescription() { return "Use this when the commander asks about the active reminder, especially a saved target or destination reminder."; }
 
 
     @Override public String id() { return ID; }

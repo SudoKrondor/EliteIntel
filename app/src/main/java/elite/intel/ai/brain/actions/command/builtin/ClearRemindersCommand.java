@@ -19,7 +19,7 @@ import elite.intel.util.StringUtls;
 public final class ClearRemindersCommand implements IntelCommand {
     public static final String ID = "clear_reminders";
 
-    @Override public String llmDescription() { return "Clear all reminders."; }
+    @Override public String llmDescription() { return "Use this when the commander asks to clear, delete, remove, or forget all active reminders."; }
 
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
