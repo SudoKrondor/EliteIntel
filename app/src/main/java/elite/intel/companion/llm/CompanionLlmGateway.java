@@ -183,11 +183,12 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * Appends a terse, defect-targeted format correction and returns the amended request. The nudge is a
-     * {@link LlmMessageRole#SYSTEM} message, not USER: a USER-role nudge reads to the model as a new commander
-     * turn, so a chatty model burns the retry reasoning <em>about</em> the error instead of just re-emitting the
-     * call. As a system-level instruction it stays terse and out of the dialogue. Kept short for the same reason
-     * - only the correction, no prose.
+     * Merges a terse, defect-targeted format correction into the leading {@link LlmMessageRole#SYSTEM} message
+     * and returns the amended request. The nudge remains system-level instruction, not USER: a USER-role nudge
+     * reads to the model as a new commander turn, so a chatty model burns the retry reasoning <em>about</em> the
+     * error instead of just re-emitting the call. It is merged into the first system message instead of appended
+     * as another message because strict local chat templates often allow only one optional system turn at the
+     * beginning.
      */
     private LlmRequest repair(LlmRequest request, Defect defect) {
         String nudge = switch (defect) {
@@ -196,7 +197,12 @@ public final class CompanionLlmGateway implements LlmGateway {
             default -> "Format correction: reply only with tool calls - 'classify_turn' plus a settling call ('speak' or an action). No prose.";
         };
         List<LlmMessage> messages = new ArrayList<>(request.messages());
-        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, nudge));
+        if (!messages.isEmpty() && messages.get(0).role() == LlmMessageRole.SYSTEM) {
+            LlmMessage first = messages.get(0);
+            messages.set(0, LlmMessage.of(LlmMessageRole.SYSTEM, first.content() + "\n\n" + nudge));
+        } else {
+            messages.add(0, LlmMessage.of(LlmMessageRole.SYSTEM, nudge));
+        }
         return new LlmRequest(request.requestId(), messages, request.tools(), request.profile(), request.trace());
     }
 }

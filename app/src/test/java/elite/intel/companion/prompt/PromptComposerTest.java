@@ -44,6 +44,10 @@ class PromptComposerTest {
                 content, MemoryImportance.NORMAL, null, null, ToolLink.result(toolCallId));
     }
 
+    private static long systemCount(List<LlmMessage> messages) {
+        return messages.stream().filter(m -> m.role() == LlmMessageRole.SYSTEM).count();
+    }
+
     private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm) {
         return composer.compose(
                 ThoughtSource.COMMANDER,
@@ -150,15 +154,18 @@ class PromptComposerTest {
                 result("tc2", "hardpoints deployed"))).messages();
 
         // system, assistant(tool_calls), tool(result) pulled up next to its call, the commander "status" history
-        // turn, then the distinct current-input user message (never coalesced into the history).
-        assertEquals(5, messages.size());
+        // turn, a no-reply assistant boundary to keep role alternation, then the distinct current-input user
+        // message (never coalesced into the history).
+        assertEquals(6, messages.size());
         assertEquals(LlmMessageRole.ASSISTANT, messages.get(1).role());
         assertEquals(LlmMessageRole.TOOL, messages.get(2).role());
         assertEquals("hardpoints deployed", messages.get(2).content());
         assertEquals(LlmMessageRole.USER, messages.get(3).role());
         assertEquals("status", messages.get(3).content());
-        assertEquals(LlmMessageRole.USER, messages.get(4).role());
-        assertTrue(messages.get(4).content().contains("set course to Sol"));
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(4).role());
+        assertEquals("<no_reply/>", messages.get(4).content());
+        assertEquals(LlmMessageRole.USER, messages.get(5).role());
+        assertTrue(messages.get(5).content().contains("set course to Sol"));
     }
 
     @Test
@@ -169,14 +176,17 @@ class PromptComposerTest {
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "hey"),
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "you there?"))).messages();
 
-        // system, both commander history turns merged into one user, then the separate current-input user.
-        assertEquals(3, messages.size());
+        // system, both commander history turns merged into one user, a no-reply assistant boundary to keep
+        // alternation, then the separate current-input user.
+        assertEquals(4, messages.size());
         assertEquals(LlmMessageRole.USER, messages.get(1).role());
         assertTrue(messages.get(1).content().contains("hey"));
         assertTrue(messages.get(1).content().contains("you there?"));
         assertFalse(messages.get(1).content().contains("set course to Sol"), "the current turn stays a separate message");
-        assertEquals(LlmMessageRole.USER, messages.get(2).role());
-        assertTrue(messages.get(2).content().contains("set course to Sol"));
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
+        assertEquals("<no_reply/>", messages.get(2).content());
+        assertEquals(LlmMessageRole.USER, messages.get(3).role());
+        assertTrue(messages.get(3).content().contains("set course to Sol"));
     }
 
     @Test
@@ -198,6 +208,47 @@ class PromptComposerTest {
         assertEquals("set course to Sol", input);
         assertFalse(input.contains("current topic"));
         assertFalse(input.contains("## Current input"));
+    }
+
+    @Test
+    void factsAndAmbientNotesAreInFinalUserContextNotSystemMessages() {
+        ComposedPrompt prompt = composer.compose(
+                ThoughtSource.COMMANDER,
+                "where are we",
+                List.of(), List.of(),
+                List.of(
+                        entry(MemorySource.EVENT, ConversationTopic.NAVIGATION, "jump completed"),
+                        entry(MemorySource.SYSTEM, ConversationTopic.SYSTEM, "diagnostic note")),
+                List.of(new Fact("current system Sol", "memory")));
+        List<LlmMessage> messages = prompt.messages();
+
+        assertEquals(2, messages.size());
+        assertEquals(1, systemCount(messages), "only the leading system message is allowed");
+        assertEquals(LlmMessageRole.SYSTEM, messages.get(0).role());
+        assertEquals(LlmMessageRole.USER, messages.get(1).role());
+        String current = messages.get(1).content();
+        assertTrue(current.contains("<context>"));
+        assertTrue(current.contains("<facts>"));
+        assertTrue(current.contains("current system Sol"));
+        assertTrue(current.contains("<ambient_context>"));
+        assertTrue(current.contains("jump completed"));
+        assertTrue(current.contains("diagnostic note"));
+        assertTrue(current.contains("<commander_input>"));
+        assertTrue(current.contains("where are we"));
+    }
+
+    @Test
+    void boundarySystemNotesReplayAsAssistantPlaceholders() {
+        List<LlmMessage> messages = composeCommander(List.of(
+                entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "status"),
+                entry(MemorySource.SYSTEM, ConversationTopic.SYSTEM, "<no_reply/>"))).messages();
+
+        assertEquals(4, messages.size());
+        assertEquals(1, systemCount(messages), "boundary notes must not create mid-dialogue system messages");
+        assertEquals(LlmMessageRole.USER, messages.get(1).role());
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
+        assertEquals("<no_reply/>", messages.get(2).content());
+        assertEquals(LlmMessageRole.USER, messages.get(3).role());
     }
 
     @Test

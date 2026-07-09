@@ -17,6 +17,7 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.memory.facts.MergedFactCandidates;
 import elite.intel.companion.memory.facts.MemoryFactContext;
@@ -65,16 +66,6 @@ public final class CommanderThought extends Thought {
     private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
     /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt (§2.13). */
     private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
-    /**
-     * System turn-boundary marker recorded when a commander turn produced no reply (the model chose not to
-     * answer). Explained to the model literally in {@code CompanionSystemPromptPart.FUNCTION_CALLING} - keep in sync.
-     */
-    private static final String NO_ANSWER_NOTE = "<no_reply/>";
-    /**
-     * System turn-boundary marker recorded when a commander turn was interrupted before it could reply.
-     * Explained to the model literally in {@code CompanionSystemPromptPart.FUNCTION_CALLING} - keep in sync.
-     */
-    private static final String INTERRUPTED_NOTE = "<cut_off/>";
 
     /**
      * Turn-scoped narration accounting. Set once any game command/query runs this turn; from then on the
@@ -297,7 +288,7 @@ public final class CommanderThought extends Thought {
         // speak): the turn drew no reply - record that so the timeline keeps a distinct turn boundary here.
         if (!suppressSpeak && !spokeToCommander(invocations)) {
             CompanionDiagnostics.debug(trace(), "settle", "no reply");
-            recordSystemNote(NO_ANSWER_NOTE);
+            recordSystemNote(TurnBoundaryMarkers.NO_ANSWER);
         }
     }
 
@@ -308,14 +299,15 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Records a turn-boundary marker ({@link #NO_ANSWER_NOTE} / {@link #INTERRUPTED_NOTE}) as a {@code SYSTEM}
-     * short-term entry. It keeps a distinct boundary between two commander turns instead of leaving them
-     * adjacent to be coalesced into one blurred {@code user} message, which erodes anaphora resolution across
-     * turns (an unanswered "why?" then a follow-up would otherwise fuse). It is written as SYSTEM, not as a
-     * fabricated companion reply, so the model reads it as an out-of-band observation rather than an
-     * in-character example of staying silent (which would normalize non-answers, against the always-answer
-     * rule); a self-closing tag is used - not prose - so it never reads as speech or a stray instruction.
-     * Stamped LOW: transient bookkeeping, never a durable fact or a recall candidate.
+     * Records a turn-boundary marker ({@link TurnBoundaryMarkers#NO_ANSWER} / {@link TurnBoundaryMarkers#INTERRUPTED})
+     * as a {@code SYSTEM} short-term entry. It keeps a distinct boundary between two commander turns instead of
+     * leaving them adjacent to be coalesced into one blurred {@code user} message, which erodes anaphora resolution
+     * across turns (an unanswered "why?" then a follow-up would otherwise fuse). The {@code SYSTEM} source is the
+     * storage choice (transient bookkeeping, stamped LOW, never a durable fact or a recall candidate); it does not
+     * dictate the prompt role. {@code PromptComposer} replays a boundary marker as an {@code assistant} placeholder
+     * so the message flow keeps a single leading {@code system} turn while still marking the boundary, and the model
+     * is told what the tag means (see {@code CommanderPrompt}). A self-closing tag is used - not prose - so it never
+     * reads as speech or a stray instruction.
      */
     private void recordSystemNote(String marker) {
         ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
@@ -481,8 +473,9 @@ public final class CommanderThought extends Thought {
      * Safe-flush on interrupt (§2.7): never leave a memory hole. If the input was not yet recorded, write it
      * under the unresolved-commander-input fallback as INTERRUPTED; tool results are written as they execute,
      * so nothing is batched to flush. If the input WAS already recorded (the turn was cut off after filing it
-     * but before replying), drop a {@link #INTERRUPTED_NOTE} boundary marker so the interrupted turn is not left
-     * adjacent to the next commander turn and coalesced with it. No new LLM/query/action/speech is started here.
+     * but before replying), drop a {@link TurnBoundaryMarkers#INTERRUPTED} boundary marker so the interrupted turn
+     * is not left adjacent to the next commander turn and coalesced with it. No new LLM/query/action/speech is
+     * started here.
      */
     private void safeFlush(boolean inputRecorded) {
         CompanionDiagnostics.debug(trace(), "flush",
@@ -491,7 +484,7 @@ public final class CommanderThought extends Thought {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput));
         } else {
-            recordSystemNote(INTERRUPTED_NOTE);
+            recordSystemNote(TurnBoundaryMarkers.INTERRUPTED);
         }
     }
 

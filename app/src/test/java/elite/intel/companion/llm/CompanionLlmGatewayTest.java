@@ -76,6 +76,14 @@ class CompanionLlmGatewayTest {
                 PromptCacheProfile.COMMANDER);
     }
 
+    private static LlmRequest requestWithMessages(List<LlmMessage> messages, String... toolNames) {
+        List<LlmToolDefinition> tools = new ArrayList<>();
+        for (String name : toolNames) {
+            tools.add(new LlmToolDefinition(name, "d", "", List.of()));
+        }
+        return new LlmRequest("req-2", messages, List.copyOf(tools), PromptCacheProfile.COMMANDER);
+    }
+
     private static LlmResult ok(String... toolNames) {
         List<LlmToolInvocation> calls = new ArrayList<>();
         int id = 1;
@@ -187,5 +195,26 @@ class CompanionLlmGatewayTest {
 
         assertTrue(result.isValid());
         assertEquals(1, sends.get());
+    }
+
+    @Test
+    void repairMergesNudgeIntoLeadingSystemMessage() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(invalid(), invalid());
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "go")),
+                "speak");
+
+        run(adapter, request);
+
+        List<LlmMessage> retried = adapter.lastRequest.messages();
+        assertEquals(2, retried.size(), "repair must not append an extra system/user message");
+        assertEquals(LlmMessageRole.SYSTEM, retried.get(0).role());
+        assertTrue(retried.get(0).content().contains("rules"));
+        assertTrue(retried.get(0).content().contains("Format correction"));
+        assertEquals(LlmMessageRole.USER, retried.get(1).role());
+        assertEquals("go", retried.get(1).content());
+        assertEquals(1, retried.stream().filter(m -> m.role() == LlmMessageRole.SYSTEM).count());
     }
 }
