@@ -396,6 +396,9 @@ public abstract class Thought {
         if (text == null || text.isBlank()) {
             return;
         }
+        // An over-long answer (e.g. a full system briefing) is handed by the gateway to background gist
+        // compression, which re-writes a shorter line carrying this same toolCallId - so the call stays paired
+        // once the gist lands (see OversizedMemoryCompressor), rather than being orphaned as "(no textual result)".
         ctx.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
                 null, null, ToolLink.result(toolCallId)));

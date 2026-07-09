@@ -1,7 +1,6 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -32,13 +31,20 @@ final class CompressionPromptComposer {
 
     /**
      * Returns [system instruction, user(content)] for shrinking a single over-long memory entry to a short
-     * gist (the prompt-bloat guard, {@code MemoryCompressionThought}). Plain-text turn, capped at the entry
-     * size limit; the gist stays in the commander's language.
+     * gist (the prompt-bloat guard, run by {@link OversizedMemoryCompressor}, which caps the stored gist at the
+     * entry size limit). Plain-text turn; the gist stays in the commander's language.
      */
     List<LlmMessage> composeLineCompression(String content) {
-        String instruction = "Shorten the crew memory line below to a compact gist of at most "
-                + CompanionConfig.memoryEntryMaxChars() + " characters, preserving the key facts and dropping "
-                + "filler. Reply with only the shortened line as plain text. " + languageRule();
+        // The line being shrunk is a SPOKEN answer (numbers spelled out in words), which wastes space; memory is
+        // plain text, so use digits and drop speech padding. Accuracy over brevity: a small model must not be
+        // invited to re-round or restate a figure (it once turned 44M into 440M), so keep every number verbatim.
+        String instruction = "Rewrite the crew memory line below as ONE short sentence (about 15 words) that keeps "
+                + "only its single most important point and drops secondary details, enumerations and coordinates. "
+                + "Keep every fact and number you include exactly as in the source - never invent, change, "
+                + "re-estimate or exaggerate it. Write numbers as digits, not spelled-out words. Reply with only "
+                + "that sentence as plain text: no preamble, no list, no quotes, no line breaks. " + languageRule()
+                + " Example of the target form: \"Lembava: independent high-tech system with bounty-hunting sites "
+                + "and a conflict zone.\"";
         return List.of(
                 LlmMessage.of(LlmMessageRole.SYSTEM, instruction),
                 LlmMessage.of(LlmMessageRole.USER, content == null ? "" : content.strip()));

@@ -58,6 +58,24 @@ class CompressionPromptComposerTest {
     }
 
     @Test
+    void lineCompressionAsksForOneShortSentenceWithFaithfulNumbersInTheCommandersLanguage() {
+        List<LlmMessage> messages = composer.composeLineCompression("  a very long station-services briefing  ");
+
+        assertEquals(2, messages.size());
+        LlmMessage system = messages.get(0);
+        assertEquals(LlmMessageRole.SYSTEM, system.role());
+        assertTrue(system.content().contains("ONE short sentence"), "asks for a single short sentence");
+        assertTrue(system.content().contains("never invent, change, re-estimate or exaggerate"),
+                "forbids distorting facts/numbers (a small model turned 44M into 440M)");
+        assertTrue(system.content().contains("write the summary in " + resolvedLanguageName()),
+                "binds the gist to the commander's language");
+
+        LlmMessage user = messages.get(1);
+        assertEquals(LlmMessageRole.USER, user.role());
+        assertEquals("a very long station-services briefing", user.content(), "the entry text is passed stripped");
+    }
+
+    @Test
     void rendersNoneWhenSummaryEmpty() {
         List<LlmMessage> messages = composer.compose("", List.of(entry(ConversationTopic.TRADE, "sold cargo")));
         assertTrue(messages.get(1).content().contains("Existing summary:\n(none)"));

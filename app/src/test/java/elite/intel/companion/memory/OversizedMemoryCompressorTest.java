@@ -8,6 +8,7 @@ import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.ToolLink;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -50,6 +52,59 @@ class OversizedMemoryCompressorTest {
         assertEquals(MemorySource.COMPANION, written.source(), "original source is preserved");
         assertEquals(ConversationTopic.NAVIGATION, written.topic(), "original topic is preserved");
         assertEquals(MemoryImportance.HIGH, written.importance(), "original importance is preserved");
+    }
+
+    @Test
+    void preservesToolLinkSoACompressedResultStaysPairedWithItsCall() {
+        llm.scripted = "res sites and a conflict zone";
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a very long system briefing that would bloat the prompt timeline",
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-7"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry gist = memory.writes.get(0);
+        assertEquals("res sites and a conflict zone", gist.content());
+        assertNotNull(gist.toolLink(), "the gist keeps the call linkage so it replays as the call's RESULT");
+        assertTrue(gist.toolLink().isResult());
+        assertEquals("call-7", gist.toolLink().toolCallId());
+    }
+
+    @Test
+    void keepsTheTruncatedGistWhenTheModelsSummaryStaysOverTheCap() {
+        // A small local model may echo an over-cap "gist". Its truncated form - the purpose-built summary, not the
+        // raw head of the original - is kept, still paired with the call.
+        llm.scripted = "z".repeat(CompanionConfig.memoryEntryMaxChars() + 1);
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a".repeat(CompanionConfig.memoryEntryMaxChars() + 500),
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-9"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size(), "the linked result is kept, not dropped");
+        MemoryEntry stored = memory.writes.get(0);
+        assertTrue(stored.content().length() <= CompanionConfig.memoryEntryMaxChars(), "fits the cap");
+        assertTrue(stored.content().startsWith("z"),
+                "the model's summary attempt is kept (truncated), not the raw head of the original");
+        assertNotNull(stored.toolLink(), "stays paired with its call");
+        assertEquals("call-9", stored.toolLink().toolCallId());
+    }
+
+    @Test
+    void fallsBackToTheOriginalHeadOnlyWhenCompressionReturnsNothing() {
+        // The model produced nothing usable: keep a truncated copy of the original so the pair still survives.
+        llm.scripted = null;
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a".repeat(CompanionConfig.memoryEntryMaxChars() + 500),
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-10"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry stored = memory.writes.get(0);
+        assertTrue(stored.content().startsWith("a"), "with no gist, the truncated original head is kept");
+        assertNotNull(stored.toolLink(), "stays paired with its call");
     }
 
     @Test

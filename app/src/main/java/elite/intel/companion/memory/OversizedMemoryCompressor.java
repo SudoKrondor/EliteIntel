@@ -52,24 +52,49 @@ public final class OversizedMemoryCompressor implements OversizedMemoryListener 
         executor.execute(() -> compress(entry));
     }
 
-    /** One compression pass off the lane: shrink to a gist, then re-write it; drop on any unusable result. */
+    /**
+     * One compression pass off the lane: shrink to a gist and re-write it. When the model fails to produce a
+     * usable within-cap gist, a <b>linked</b> entry (a tool CALL/RESULT) falls back to a hard-truncated copy so
+     * its pair is never orphaned as {@code "(no textual result)"}; an unlinked entry is dropped as before.
+     */
     private void compress(MemoryEntry entry) {
-        String gist;
+        String gist = null;
+        boolean failed = false;
         try {
             gist = llmGateway.compressMidTermMemory(compressionRequest(entry.content())).get();
-        } catch (Exception failure) { // provider error / interruption; the over-long entry is simply dropped
-            log.warn("Memory compression failed; dropping an over-long entry", failure);
-            return;
+        } catch (Exception failure) { // provider error / interruption; fall through to the fallback below
+            log.warn("Memory compression failed for an over-long entry", failure);
+            failed = true;
         }
         int max = CompanionConfig.memoryEntryMaxChars();
-        if (gist == null || gist.isBlank() || gist.strip().length() > max) {
-            log.warn("Memory compression produced unusable output ({}); dropping the over-long entry",
-                    gist == null ? "null" : gist.strip().length() + " chars");
+        boolean hasGist = gist != null && !gist.isBlank();
+        String stored;
+        if (hasGist && gist.strip().length() <= max) {
+            stored = gist.strip();
+        } else if (entry.toolLink() != null) {
+            // A tool CALL/RESULT must stay paired. Prefer the model's summary attempt (truncated) over the raw
+            // head of the original - a purpose-built gist is more useful even cut - and fall back to the original
+            // only when the model returned nothing usable. Either way the pair is never orphaned.
+            stored = truncateToCap(hasGist ? gist.strip() : entry.content(), max);
+        } else {
+            // Unlinked over-long entry with no usable gist: drop it (it was prompt-bloat). Log the reason unless a
+            // provider failure was already logged above.
+            if (!failed) {
+                log.warn("Memory compression produced unusable output ({}); dropping the over-long entry",
+                        gist == null ? "null" : gist.strip().length() + " chars");
+            }
             return;
         }
-        // Re-write under the original provenance; the gist is within the cap, so this stores normally.
-        memoryGateway.write(new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), gist.strip(),
-                entry.importance()));
+        // Re-write under the original provenance - source, topic, importance, canonical fact AND tool linkage -
+        // so a compressed tool result stays paired with its call. The stored text is within the cap.
+        memoryGateway.write(new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), stored,
+                entry.importance(), null, entry.canonicalFact(), entry.toolLink()));
+    }
+
+    /** Hard-trims to the entry cap (with an ellipsis); the fallback when the model cannot shorten within it. */
+    private static String truncateToCap(String text, int max) {
+        int end = Math.min(text.length(), Math.max(0, max - 1));
+        return text.substring(0, end).strip() + "…";
     }
 
     private LlmRequest compressionRequest(String content) {
