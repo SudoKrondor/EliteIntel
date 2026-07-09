@@ -19,6 +19,11 @@ import java.util.List;
 public class AnalyzeMarketsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_markets";
 
+    /**
+     * EDSM station type for a player fleet carrier.
+     */
+    private static final String FLEET_CARRIER_TYPE = "Fleet Carrier";
+
     @Override
     public String llmDescription() {
         return "List the stations, outposts and settlements in the current star system and which facilities each has (market, shipyard, outfitting), from external data. Does not report commodity prices.";
@@ -41,28 +46,42 @@ public class AnalyzeMarketsQuery extends BaseQueryAnalyzer implements IntelQuery
         }
 
         List<StationData> stationData = new LinkedList<>();
-        stations.forEach(s -> stationData.add(
-                new StationData(
-                        s.getType(),
-                        s.getName(),
-                        s.getBody() == null ? null : s.getBody().getName(),
-                        s.getDistanceToArrivalInLightSeconds(),
-                        s.getAllegiance(),
-                        s.getGovernment(),
-                        s.getEconomy(),
-                        s.isHaveMarket(),
-                        s.isHaveShipyard(),
-                        s.isHaveOutfitting(),
-                        s.getControllingFaction() == null ? null : s.getControllingFaction().getName()
-                )
-        ));
+        int fleetCarrierCount = 0;
+        for (Station s : stations) {
+            // A busy system can hold hundreds of fleet carriers; listing them blows the LLM's token budget for no
+            // gain (they are transient player ships). Only their count survives; query_carriers reports details.
+            if (FLEET_CARRIER_TYPE.equalsIgnoreCase(s.getType())) {
+                fleetCarrierCount++;
+                continue;
+            }
+            stationData.add(
+                    new StationData(
+                            s.getType(),
+                            s.getName(),
+                            s.getBody() == null ? null : s.getBody().getName(),
+                            s.getDistanceToArrivalInLightSeconds(),
+                            s.getAllegiance(),
+                            s.getGovernment(),
+                            s.getEconomy(),
+                            s.isHaveMarket(),
+                            s.isHaveShipyard(),
+                            s.isHaveOutfitting(),
+                            s.getControllingFaction() == null ? null : s.getControllingFaction().getName()
+                    )
+            );
+        }
 
         String instructions = """
                 Answer the user's question about stations in this star system.
                 Answer only what was asked.
                 
+                Top-level fields:
+                - starSystemName: the star system these stations are in
+                - fleetCarrierCount: how many fleet carriers are currently parked in this system
+                - stations: the permanent stations (fleet carriers are not listed individually)
+
                 Data fields (per station):
-                - stationType: station type (Coriolis, Outpost, Planetary Port, Fleet Carrier, etc.)
+                - stationType: station type (Coriolis, Outpost, Planetary Port, etc.)
                 - stationName: station name
                 - orbitingAround: body the station orbits (if applicable)
                 - distanceToArrivalInLightSeconds: distance from the main star in light seconds
@@ -78,18 +97,20 @@ public class AnalyzeMarketsQuery extends BaseQueryAnalyzer implements IntelQuery
                 - If asked broadly whether stations exist: state the count by type. Do not list names.
                 - If asked which stations have a market, shipyard, or outfitting: state the count and name up to three examples.
                 - If asked about a specific station by name: give its details.
-                - Fleet Carriers are player-owned ships, not permanent stations. Mention them as a count only.
+                - Fleet Carriers are player-owned ships, not permanent stations. Report fleetCarrierCount only; their
+                  names and services are not available here.
                 - Answer only what was asked.
                 """;
 
         return process(
                 new AiDataStruct(instructions,
-                        new DataDto(starName, stationData)
+                        new DataDto(starName, fleetCarrierCount, stationData)
                 ), originalUserInput
         );
     }
 
-    record DataDto(String starSystemName, List<StationData> stations) implements ToYamlConvertable {
+    record DataDto(String starSystemName, int fleetCarrierCount,
+                   List<StationData> stations) implements ToYamlConvertable {
         @Override public String toYaml() {
             return YamlFactory.toYaml(this);
         }
