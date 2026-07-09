@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
@@ -80,12 +78,11 @@ public final class FindMiningSiteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         JsonElement mat = params.get(PARAM_KEY);
         JsonElement distance = params.get(PARAM_MAX_DISTANCE);
         if (mat == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.didNotCatch")));
-            return;
+            return StringUtls.localizedLlm("handler.miningSite.didNotCatch");
         }
 
         String material =
@@ -104,8 +101,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
                 );
 
         if (miningLocations == null || miningLocations.getResults().isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFound")));
-            return;
+            return StringUtls.localizedLlm("handler.miningSite.notFound");
         }
 
         Optional<StellarObjectSearchResultDto.Result> result = miningLocations.getResults().stream().findFirst();
@@ -114,9 +110,9 @@ public final class FindMiningSiteCommand implements IntelCommand {
             routePlotter.plotRoute(result.get().getSystemName());
             String reminder = StringUtls.localizedLlm("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
             ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
-            GameEventBus.publish(new AiVoxResponseEvent(reminder));
+            return reminder;
         } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.miningSite.notFoundInRange")));
+            return StringUtls.localizedLlm("handler.miningSite.notFoundInRange");
         }
     }
 }

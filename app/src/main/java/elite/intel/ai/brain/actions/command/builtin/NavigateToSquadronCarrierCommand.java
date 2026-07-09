@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -38,16 +37,15 @@ public final class NavigateToSquadronCarrierCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         PlayerSession playerSession = PlayerSession.getInstance();
         CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
         if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
-            return;
+            return StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable");
         }
 
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(squadronCarrier.getStarName());
+        return plotter.plotRoute(squadronCarrier.getStarName());
     }
 }

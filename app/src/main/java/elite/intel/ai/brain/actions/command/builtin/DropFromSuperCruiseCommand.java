@@ -34,11 +34,8 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
-        GameControllerBus.publish(
-                GameInputSequenceEvent.single(
-                        GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())
-                )
-        );
+    public String execute(JsonObject params, String responseText) {
+        GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())));
+        return null;
     }
 }

@@ -15,6 +15,7 @@ import elite.intel.companion.memory.MidTermToLongTermConsolidator;
 import elite.intel.companion.memory.OversizedMemoryCompressor;
 import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
+import elite.intel.companion.mind.DispatcherCompanionNarrator;
 import elite.intel.companion.mind.ThoughtContext;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.prompt.CompanionActionReducer;
@@ -27,15 +28,16 @@ import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.UserInputEvent;
-import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
 
 /**
  * The single gate seam between existing input and the companion subsystem, and the owner of the
- * subsystem lifecycle. Bootstraps the whole companion graph (gateways, memory, dispatcher, filter)
- * and, while {@code companionModeOn}, subscribes to the same voice ({@code UserInputEvent}) and
- * game-event ({@code BaseEvent}) streams as the old command mode and routes them into the
- * consciousness instead.
+ * subsystem lifecycle. Bootstraps the whole companion graph (gateways, memory, dispatcher, narrator) and,
+ * while {@code companionModeOn}, subscribes to the commander voice ({@code UserInputEvent}) and routes it into
+ * the consciousness. Raw game events are <b>not</b> subscribed here: they never reach the companion directly.
+ * A gameplay subscriber decides what, if anything, the companion does with an event - it calls
+ * {@code CompanionRuntime.narrator()} to voice a reaction, or writes durable knowledge - so events participate
+ * in the companion only through their subscribers.
  * <p>
  * Lifecycle is managed by {@code AppController}; only one of the old BRAIN service or this companion
  * service is active at a time. A live {@code dispatcher} doubles as the "started" sentinel.
@@ -43,11 +45,8 @@ import elite.intel.ui.controller.ManagedService;
 public final class CompanionSubsystemGate implements ManagedService {
 
     private ThoughtDispatcher dispatcher;
-    private GameEventFilter gameEventFilter;
     private ConfirmationCoordinator confirmationCoordinator;
     private BargeInController bargeInController;
-    private CompanionSensorDataBridge sensorDataBridge;
-    private CompanionAnnouncementBridge announcementBridge;
 
     private final LlmGateway llmOverride;
     private final ExecutionGateway executionOverride;
@@ -93,15 +92,6 @@ public final class CompanionSubsystemGate implements ManagedService {
         dispatcher.submitCommanderInput(input);
     }
 
-    /** Game event gate (journal/status events arrive here as {@code BaseEvent}). */
-    @Subscribe
-    public void onGameEvent(BaseEvent event) {
-        if (!isCompanionModeOn()) {
-            return;
-        }
-        gameEventFilter.onGameEvent(event);
-    }
-
     /**
      * Confirmation bus: the commander confirmed a frozen dangerous action. Routed to the coordinator the
      * waiting thought blocks on (§2.13); a no-op when nothing is awaiting confirmation. The actual voice
@@ -144,16 +134,14 @@ public final class CompanionSubsystemGate implements ManagedService {
                 dangerousActionPolicy, confirmationCoordinator);
         dispatcher = new ThoughtDispatcher(ctx);
         dispatcher.start();
-        gameEventFilter = new GameEventFilter(dispatcher);
+        // The single door gameplay subscribers use to voice reactions (filler/narrate/announce), wrapping the
+        // dispatcher and speech gateway; published statically so a subscriber reaches it via CompanionRuntime.
+        CompanionRuntime.installNarrator(new DispatcherCompanionNarrator(dispatcher, speech));
         bargeInController = new BargeInController(dispatcher);
-        sensorDataBridge = new CompanionSensorDataBridge(dispatcher);
-        announcementBridge = new CompanionAnnouncementBridge(dispatcher);
 
         // Subscribe last, so events only flow once the whole graph is live.
         GameEventBus.register(this);
         GameEventBus.register(bargeInController);
-        GameEventBus.register(sensorDataBridge);
-        GameEventBus.register(announcementBridge);
     }
 
     @Override
@@ -163,14 +151,9 @@ public final class CompanionSubsystemGate implements ManagedService {
         }
         GameEventBus.unregister(this);
         GameEventBus.unregister(bargeInController);
-        GameEventBus.unregister(sensorDataBridge);
-        GameEventBus.unregister(announcementBridge);
         dispatcher.stop();
         dispatcher = null;
-        gameEventFilter = null;
         bargeInController = null;
-        sensorDataBridge = null;
-        announcementBridge = null;
         confirmationCoordinator = null;
         CompanionRuntime.clear();
     }

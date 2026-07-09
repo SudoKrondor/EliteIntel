@@ -1,10 +1,11 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.TouchdownEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
@@ -60,7 +61,7 @@ public class TouchdownEventSubscriber {
             locationManager.save(currentLocation);
 
             if (pointOfInterest != null && !pointOfInterest.isEmpty()) {
-                GameEventBus.publish(new SensorDataEvent(sb.toString(), "Confirm touchdown. State the point of interest we have landed at."));
+                CompanionRuntime.narrator().narrate(sb.toString(), "Confirm touchdown. State the point of interest we have landed at.");
             } else {
                 EventNarrator.critical(localizedEvent("event.touchdown"));
             }

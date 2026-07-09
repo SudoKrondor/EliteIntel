@@ -1,9 +1,10 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.BioSampleDistanceCalculator;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
@@ -67,9 +68,9 @@ public class BioSampleTrackingSubscriber {
 
             if (wasFarEnough != isFarEnough) {
                 if (isFarEnough) {
-                    GameEventBus.publish(new SensorDataEvent(vehicle + " is now far enough to take the new sample.", "State that minimum separation distance from the previous bio colony has been reached and a new sample can now be taken."));
+                    CompanionRuntime.narrator().narrate(vehicle + " is now far enough to take the new sample.", "State that minimum separation distance from the previous bio colony has been reached and a new sample can now be taken.");
                 } else {
-                    GameEventBus.publish(new SensorDataEvent(vehicle + " is moved too close to previous colony to take new sample. insufficient bio diversity.", "Warn that we have moved within minimum separation distance of the previous bio colony and a new sample cannot be taken at this position."));
+                    CompanionRuntime.narrator().narrate(vehicle + " is moved too close to previous colony to take new sample. insufficient bio diversity.", "Warn that we have moved within minimum separation distance of the previous bio colony and a new sample cannot be taken at this position.");
                 }
             }
         }

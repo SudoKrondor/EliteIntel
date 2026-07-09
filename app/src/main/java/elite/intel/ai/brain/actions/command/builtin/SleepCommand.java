@@ -36,7 +36,7 @@ public final class SleepCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         SystemSession session = SystemSession.getInstance();
         if (session.isPushToTalkEnabled() && session.isPushToTalkToggleMode()) {
             session.setPushToTalkToggleMode(false);
@@ -44,5 +44,6 @@ public final class SleepCommand implements IntelCommand {
         }
         session.stopStartListening(true);
         UiBus.publish(new VoiceInputModeToggleEvent(true));
+        return null;
     }
 }

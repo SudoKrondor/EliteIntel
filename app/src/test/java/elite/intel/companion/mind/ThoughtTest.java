@@ -101,7 +101,7 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderSilentCommandTurnDropsSpeak() {
+    void commanderSilentCommandTurnFilesInputAndAck() {
         llm.scripted.add(ok(call("close_panel", new JsonObject()),
                 call(SpeakFunction.ID, text("closing the panel"))));
 
@@ -111,16 +111,24 @@ class ThoughtTest {
                 "silent command runs; the co-occurring speak is withheld (never executed)");
         assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
         assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
-        assertTrue(memory.writes.isEmpty(),
-                "a command turn files nothing: the withheld speak and the immediate ack both leave no memory entry");
+        // A command turn is remembered as a user->assistant pair: the commander imperative and the immediate
+        // acknowledgement (the silent command voiced no outcome of its own). The withheld speak and the command's
+        // call echo stay unrecorded.
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
+                        && "close the panel".equals(e.content())),
+                "the commander imperative is filed as the user turn");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && speech.requests.get(0).text().equals(e.content())),
+                "the immediate ack is filed as the companion reply, so the turn is not a dangling commander line");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
+                "the command records no call echo, and the withheld speak leaves no entry");
     }
 
     @Test
     void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
-        // A turn that runs both a QUERY and a COMMAND is not a pure side effect: the query records a call/result
-        // pair that must keep its preceding user turn (else it replays as an assistant tool-call with no user
-        // before it). So the commander input is still filed (a lone command turn would file nothing), and the
-        // query call is recorded; the co-occurring command still records no call echo.
+        // A turn that runs both a QUERY and a COMMAND: the commander input is filed (as it is for every turn now),
+        // the query records its call/result pair keeping that preceding user turn (else it replays as an assistant
+        // tool-call with no user before it), and the co-occurring command still records no call echo.
         IntelActionTypeResolver mixed = new IntelActionTypeResolver(id -> switch (id) {
             case "scan_system" -> IntelActionType.QUERY;
             case "close_panel" -> IntelActionType.COMMAND;
@@ -157,30 +165,23 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderQueryAnswerIsPublishedAsAiVoxForTheBridge() {
-        // Self-narrating queries: the answer is published as an AiVoxResponseEvent (mirroring the legacy
-        // router) for CompanionAnnouncementBridge to voice and remember; recordOutcome no longer voices it.
+    void commanderQueryAnswerIsRecordedAsResultAndVoicedDirectly() {
+        // The query answer is in the execution result: recordOutcome records it as the call's RESULT and voices
+        // it directly - no AiVoxResponseEvent / CompanionAnnouncementBridge detour (that event is system-only now).
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
         execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
         llm.scripted.add(ok(call("scan_system", new JsonObject())));
 
-        List<String> voxTexts = new ArrayList<>();
-        Object collector = new Object() {
-            @Subscribe public void on(AiVoxResponseEvent e) { voxTexts.add(e.getText()); }
-        };
-        GameEventBus.register(collector);
-        try {
-            Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
-        } finally {
-            GameEventBus.unregister(collector);
-        }
+        Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
 
-        assertEquals(List.of("two stars and a gas giant"), voxTexts,
-                "the query answer is published as an AiVoxResponseEvent for the bridge to voice and remember");
-        assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION && e.toolLink() == null),
-                "recordOutcome records no companion speech for the query; its answer becomes the call's RESULT via the bridge");
+        assertEquals(List.of("two stars and a gas giant"),
+                speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the query answer is voiced directly");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
+                        && e.toolLink() != null && e.toolLink().isResult()
+                        && "two stars and a gas giant".equals(e.content())),
+                "the query answer is recorded as the call's RESULT");
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
                         && e.toolLink() != null && e.toolLink().isCall() && "scan_system".equals(e.toolLink().toolName())),
                 "the query call is recorded for pair replay");
@@ -239,103 +240,71 @@ class ThoughtTest {
     }
 
     @Test
-    void eventThoughtWithSummaryRecordsMemoryWithoutEngagingLlm() {
-        // An event that provides a readable summary is recorded under its static topic and ends - no LLM, no
-        // speech, no tools (spontaneous event speech belongs to NarrationThought now).
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+    void eventReactionRecordsStimulusThenSpokenReply() {
+        // A reactive event: phrase the pre-digested stimulus, voice it, and leave a clean user->assistant pair in
+        // memory - the event stimulus as the (EVENT-source) user turn, the spoken reply as the companion's words.
+        // The phrasing instructions steer only the prompt; they are never recorded.
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("Signals detected on the ring, Commander."))));
 
-        assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
-        assertTrue(speech.requests.isEmpty(), "EVENT thought never speaks");
-        assertEquals(1, memory.writes.size(), "the event summary is recorded once");
-        MemoryEntry input = memory.writes.get(0);
-        assertEquals(MemorySource.EVENT, input.source());
-        assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
-        assertEquals("jumped to Sol", input.content());
-    }
+        Thought.eventReaction(Urgency.NORMAL, "surface scan: alexandrite, void opals",
+                "Report the signals briefly.", ConversationTopic.EXPLORATION, ctx()).run();
 
-    @Test
-    void eventThoughtWithBlankSummaryRecordsNothing() {
-        // No summary (the event opted out of being remembered): nothing is recorded, no LLM, no speech.
-        Thought.event(Urgency.NORMAL, "", ConversationTopic.NAVIGATION, ctx()).run();
-
-        assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
-        assertTrue(speech.requests.isEmpty(), "EVENT thought is never spoken");
-        assertTrue(memory.writes.isEmpty(), "an event with no summary is not retained in memory");
-    }
-
-    @Test
-    void narrationThoughtSpeaksAndRecordsOnlyTheSpokenLine() {
-        // One short round: phrase the sensor data, voice it, remember only the spoken line (no raw data).
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("Fuel is running low, Commander."))));
-
-        Thought.sensorNarration(Urgency.URGENT, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
-
-        assertEquals(1, llm.requests.size(), "narration is a single short round");
+        assertEquals(1, llm.requests.size(), "an event reaction is a single short round");
+        List<LlmMessage> promptMessages = llm.requests.get(0).messages();
+        LlmMessage promptInput = promptMessages.get(promptMessages.size() - 1);
+        assertEquals(LlmMessageRole.USER, promptInput.role());
+        assertTrue(promptInput.content().contains("<event_data>\nsurface scan: alexandrite, void opals\n</event_data>"),
+                "event data is tagged in the LLM-visible prompt");
+        assertTrue(promptInput.content().contains(
+                        "<narration_instructions>\nReport the signals briefly.\n</narration_instructions>"),
+                "phrasing instructions are tagged separately");
         assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "the phrased line is voiced via speak");
-        assertEquals(1, memory.writes.size(), "only the spoken line is recorded - the raw sensor data is not");
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals("Fuel is running low, Commander.", spoken.content());
-        assertEquals(ConversationTopic.NAVIGATION, spoken.topic());
+        assertEquals(2, memory.writes.size(), "the stimulus and the reply are both recorded, in order");
+        MemoryEntry stimulus = memory.writes.get(0);
+        assertEquals(MemorySource.EVENT, stimulus.source(), "the stimulus is an EVENT turn (rendered as user)");
+        assertEquals("surface scan: alexandrite, void opals", stimulus.content(),
+                "the clean event data is recorded, not the phrasing instructions");
+        assertEquals(ConversationTopic.EXPLORATION, stimulus.topic());
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals("Signals detected on the ring, Commander.", reply.content());
     }
 
     @Test
-    void narrationThoughtVoicesOnlyTheFirstSpeakWhenTheModelEmitsTwo() {
-        // A model that splits the callout into two speak invocations must be read once, not twice: only the
-        // first speak is voiced and remembered, the extra one is dropped.
+    void eventReactionVoicesOnlyTheFirstSpeakWhenTheModelEmitsTwo() {
+        // A small model sometimes splits its line into two speak calls in one round. Only the first is voiced and
+        // recorded; the extra is dropped, so the reaction stays a single clean user->assistant pair.
         llm.scripted.add(ok(
-                call(SpeakFunction.ID, text("Fuel is running low, Commander.")),
-                call(SpeakFunction.ID, text("Consider refuelling."))));
+                call(SpeakFunction.ID, text("Signals on the ring.")),
+                call(SpeakFunction.ID, text("Alexandrite and void opals."))));
 
-        Thought.sensorNarration(Urgency.NORMAL, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
+        Thought.eventReaction(Urgency.NORMAL, "surface scan: alexandrite, void opals",
+                "Report the signals briefly.", ConversationTopic.EXPLORATION, ctx()).run();
 
         assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only the first speak is voiced");
-        assertEquals(1, memory.writes.size(), "only the first line is recorded - the extra speak is dropped");
-        assertEquals("Fuel is running low, Commander.", memory.writes.get(0).content());
+        assertEquals(2, memory.writes.size(), "still one clean user->assistant pair, the extra speak is dropped");
+        assertEquals("Signals on the ring.", memory.writes.get(1).content(),
+                "the first speak is the recorded reply");
     }
 
     @Test
-    void verbatimNarrationRecordsThenVoicesTheLineWithoutLlm() {
-        // A curated announcement already carries finished text: remember it, then voice it verbatim, no LLM.
-        Thought.verbatimNarration(Urgency.URGENT, "Target material detected, Commander.",
-                ConversationTopic.MINING, ctx()).run();
+    void eventVerbatimRecordsSourceIdThenPhraseWithoutLlm() {
+        // A verbatim result: no LLM. The short source id is the user turn (never raw data), the finished phrase is
+        // voiced and recorded as the companion's reply - the same clean user->assistant order as narration.
+        Thought.eventVerbatim(Urgency.URGENT, "SAAScanComplete", "Surface scan complete, Commander.",
+                ConversationTopic.EXPLORATION, ctx()).run();
 
-        assertTrue(llm.requests.isEmpty(), "verbatim narration never engages the LLM");
-        assertEquals(1, memory.writes.size(), "the curated line is remembered as the companion's words");
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals(ConversationTopic.MINING, spoken.topic());
-        assertEquals("Target material detected, Commander.", spoken.content());
-        assertEquals(List.of("Target material detected, Commander."),
+        assertTrue(llm.requests.isEmpty(), "verbatim never engages the LLM");
+        assertEquals(2, memory.writes.size(), "the source id and the phrase are both recorded, in order");
+        MemoryEntry stimulus = memory.writes.get(0);
+        assertEquals(MemorySource.EVENT, stimulus.source());
+        assertEquals("SAAScanComplete", stimulus.content(), "the user turn is the short source id, not raw data");
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals("Surface scan complete, Commander.", reply.content());
+        assertEquals(ConversationTopic.EXPLORATION, reply.topic());
+        assertEquals(List.of("Surface scan complete, Commander."),
                 speech.requests.stream().map(SpeechRequest::text).toList(), "and voiced verbatim");
-    }
-
-    @Test
-    void verbatimNarrationCompletesSpokenSignalWhenPlaybackEnds() {
-        // A bridged synchronous caller (e.g. a macro SPEAK step) blocks on this signal until playback finishes.
-        CompletableFuture<Void> signal = new CompletableFuture<>();
-
-        Thought.verbatimNarration(Urgency.URGENT, "Reminder set, Commander.",
-                ConversationTopic.NAVIGATION, ctx(), signal).run();
-
-        assertTrue(signal.isDone() && !signal.isCompletedExceptionally(),
-                "the signal completes when the gateway reports playback finished");
-    }
-
-    @Test
-    void verbatimNarrationCompletesSpokenSignalEvenIfVoicingFails() {
-        // If voicing cannot even start, the caller must not be stranded for its full timeout.
-        SpeechGateway throwing = request -> { throw new RuntimeException("tts down"); };
-        ThoughtContext failingCtx = new ThoughtContext(llm, throwing, execution, memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator);
-        CompletableFuture<Void> signal = new CompletableFuture<>();
-
-        assertThrows(RuntimeException.class, () -> Thought.verbatimNarration(Urgency.URGENT, "boom",
-                ConversationTopic.NAVIGATION, failingCtx, signal).run());
-
-        assertTrue(signal.isCompletedExceptionally(),
-                "a startup failure completes the signal (exceptionally) instead of stranding the caller");
     }
 
     @Test

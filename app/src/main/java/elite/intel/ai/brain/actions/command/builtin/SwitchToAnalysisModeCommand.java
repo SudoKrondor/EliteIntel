@@ -35,7 +35,7 @@ public final class SwitchToAnalysisModeCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
         if (!status.isAnalysisMode()) {
             if (status.isInMainShip()) {
@@ -46,5 +46,6 @@ public final class SwitchToAnalysisModeCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_ANALYSIS_MODE_BUGGY.getGameBinding())));
             }
         }
+        return null;
     }
 }

@@ -35,7 +35,8 @@ public final class SetOptimalSpeedCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_SET_SPEED75.getGameBinding()))); /// Sets to 75%
+        return null;
     }
 }

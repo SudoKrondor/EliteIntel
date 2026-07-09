@@ -34,7 +34,8 @@ public final class ClearActiveMissionsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         missionManager.clear();
+        return null;
     }
 }

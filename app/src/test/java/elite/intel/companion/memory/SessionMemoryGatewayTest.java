@@ -7,6 +7,7 @@ import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.ToolLink;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -127,6 +129,26 @@ class SessionMemoryGatewayTest {
         assertEquals(1, timeline.size());
         assertEquals("b", timeline.get(0).content());
         assertTrue(midTermTopics(gateway).contains(ConversationTopic.EXPLORATION));
+    }
+
+    @Test
+    void writePreservesToolLinkWhenNormalizingForStorage() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        ToolLink call = ToolLink.call("call-1", "query_fleet_carrier_route", "{}");
+
+        gateway.write(new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION,
+                MemorySource.COMPANION, "Query_Fleet_Carrier_Route", MemoryImportance.LOW,
+                null, null, call));
+
+        List<MemoryEntry> timeline = gateway.readShortTermTimeline();
+        assertEquals(1, timeline.size());
+        MemoryEntry stored = timeline.get(0);
+        assertEquals("query_fleet_carrier_route", stored.content());
+        assertNotNull(stored.toolLink(), "tool-call linkage must survive lower-casing/embedding storage prep");
+        assertTrue(stored.toolLink().isCall());
+        assertEquals("call-1", stored.toolLink().toolCallId());
+        assertEquals("query_fleet_carrier_route", stored.toolLink().toolName());
+        assertEquals("{}", stored.toolLink().argumentsJson());
     }
 
     @Test

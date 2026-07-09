@@ -102,7 +102,7 @@ class CompanionExecutionGatewayTest {
         CompanionExecutionGateway gateway = new CompanionExecutionGateway(
                 Map.of("nav", command), Map.of(), Map.of(), SYNC, SYNC);
 
-        gateway.submit(new ExecutionRequest("r1", "nav", new JsonObject(), "call-1", "is planet b one landable")).get();
+        gateway.submit(new ExecutionRequest("r1", "nav", new JsonObject(), "is planet b one landable")).get();
 
         assertEquals("is planet b one landable", command.seenText);
     }

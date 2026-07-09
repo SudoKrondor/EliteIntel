@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -40,14 +41,13 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.plottingHome")));
+    public String execute(JsonObject params, String responseText) {
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.navigate.plottingHome"), false);
         LocationDto location = playerSession.getHomeSystem();
         if (location.getBodyId() == -1) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.homeNotSet")));
-            return;
+            return StringUtls.localizedLlm("handler.navigate.homeNotSet");
         }
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(location.getStarName());
+        return plotter.plotRoute(location.getStarName());
     }
 }

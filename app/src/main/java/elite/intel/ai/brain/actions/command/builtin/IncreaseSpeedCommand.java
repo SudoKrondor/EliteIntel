@@ -8,7 +8,6 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -72,17 +71,17 @@ public final class IncreaseSpeedCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         JsonElement key = params.get(PARAM_KEY);
         Integer num = key == null ? null : StringUtls.getIntSafely(key.getAsString());
         if (num == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.speed.invalidAmount")));
-            return;
+            return StringUtls.localizedLlm("handler.speed.invalidAmount");
         }
         String increase = bindingName();
         for (int i = 0; i < num; i++) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(increase)));
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
         }
+        return null;
     }
 }

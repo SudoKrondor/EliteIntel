@@ -48,7 +48,7 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public Set<ThoughtSource> sources() {
-        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT, ThoughtSource.NARRATION);
+        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
     }
 
     /**

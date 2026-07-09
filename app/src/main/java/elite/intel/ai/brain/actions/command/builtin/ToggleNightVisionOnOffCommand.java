@@ -39,11 +39,12 @@ public final class ToggleNightVisionOnOffCommand implements IntelCommand {
 
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_HUMANOID_NIGHT_VISION_BUTTON.getGameBinding())));
         } else {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_NIGHT_VISION_TOGGLE.getGameBinding())));
         }
+        return null;
     }
 }

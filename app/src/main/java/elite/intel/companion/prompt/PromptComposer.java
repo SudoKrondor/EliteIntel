@@ -30,9 +30,9 @@ import java.util.Map;
  * Conversation history is replayed as native role-alternating messages (commander -> {@code user}, the
  * companion's own words -> {@code assistant}, a model tool-call -> {@code assistant(tool_calls)} immediately
  * followed by its {@code tool} result) rather than flattened into one system block, so the model reads the
- * dialogue in the role structure it was aligned on (better coreference/turn-taking). Ambient timeline entries
- * that are not dialogue turns (events, system notes) are inlined into the final current-turn context instead of
- * becoming mid-dialogue {@code system} messages, which strict chat templates reject.
+ * dialogue in the role structure it was aligned on (better coreference/turn-taking). Event timeline entries are
+ * replayed as tagged {@code user} data turns, while other ambient notes are inlined into the final current-turn
+ * context instead of becoming mid-dialogue {@code system} messages, which strict chat templates reject.
  */
 public final class PromptComposer {
 
@@ -69,9 +69,9 @@ public final class PromptComposer {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
                     selectedTools, systemTools, shortTerm, memoryCandidates);
-            case NARRATION -> composeNarration(source, currentInput, systemTools, shortTerm);
-            // EVENT thoughts are memory-only (see EventThought); they never reach here.
-            case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
+            // A reactive EVENT thought uses a lean phrase-and-speak prompt: the subscriber pre-digested the data,
+            // so there are no game tools and no topic enum, just the history and the stimulus as the current input.
+            case EVENT -> composeNarration(source, currentInput, systemTools, shortTerm);
         };
     }
 
@@ -102,7 +102,7 @@ public final class PromptComposer {
 
     /**
      * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
-     * a narration thought has only speak), the role-based conversation history for continuity, the sensor
+     * a narration thought has only speak), the role-based conversation history for continuity, the tagged event
      * data as the current input, the system tools, and its own NARRATION cache profile so it never shares the
      * commander prefix. {@code selectedTools} does not apply here.
      */
@@ -113,7 +113,7 @@ public final class PromptComposer {
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, systemPrompt.staticRules(source)));
         ReplayedHistory history = buildHistoryMessages(shortTerm);
         messages.addAll(coalesceHistory(history.messages()));
-        appendCurrentInput(messages, buildCurrentInput(currentInput, List.of(), history.ambient(), "current_input"));
+        appendCurrentInput(messages, buildNarrationInput(currentInput, history.ambient()));
 
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
@@ -203,7 +203,11 @@ public final class PromptComposer {
                         ambient.add(new AmbientContextNote("tool_result", entry.content()));
                     }
                 }
-                case EVENT -> ambient.add(new AmbientContextNote("event", entry.content()));
+                // A reactive event stimulus is world data on the user channel: replay it as a tagged user turn
+                // so its spoken reply (a COMPANION assistant turn) reads as a proper reaction without pretending
+                // the commander said the raw event payload.
+                case EVENT -> out.add(LlmMessage.of(LlmMessageRole.USER,
+                        PromptXml.element("event_data", entry.content())));
                 case SYSTEM -> {
                     if (TurnBoundaryMarkers.isBoundary(entry.content())) {
                         out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, entry.content()));
@@ -281,7 +285,7 @@ public final class PromptComposer {
         int id = 1;
         for (Fact fact : memoryCandidates) {
             sb.append("  <fact id=\"").append(id++).append("\" source=\"").append(fact.source()).append("\">")
-                    .append(xmlText(fact.text())).append("</fact>\n");
+                    .append(PromptXml.text(fact.text())).append("</fact>\n");
         }
         sb.append("</facts>\n");
     }
@@ -319,8 +323,25 @@ public final class PromptComposer {
         }
         sb.append("</context>\n\n");
         sb.append('<').append(inputTag).append(">\n");
-        sb.append(xmlText(input));
+        sb.append(PromptXml.text(input));
         sb.append("\n</").append(inputTag).append(">\n");
+        return sb.toString();
+    }
+
+    private String buildNarrationInput(String currentInput, List<AmbientContextNote> ambient) {
+        String input = currentInput == null ? "" : currentInput;
+        boolean hasAmbient = ambient != null && !ambient.isEmpty();
+        if (!hasAmbient) {
+            return input;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<context>\n");
+        sb.append("The following facts and notes are trusted context, not words spoken by the commander.\n");
+        appendAmbientBlock(sb, ambient);
+        sb.append("</context>\n\n");
+        // The narration input is already trusted prompt XML assembled by Thought.eventReaction().
+        sb.append(input);
         return sb.toString();
     }
 
@@ -329,17 +350,9 @@ public final class PromptComposer {
         int id = 1;
         for (AmbientContextNote note : ambient) {
             sb.append("  <note id=\"").append(id++).append("\" source=\"").append(note.source()).append("\">")
-                    .append(xmlText(note.text())).append("</note>\n");
+                    .append(PromptXml.text(note.text())).append("</note>\n");
         }
         sb.append("</ambient_context>\n");
-    }
-
-    /** Escapes XML metacharacters in text embedded inside a context tag so content cannot break the tag structure. */
-    private static String xmlText(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     /** One non-dialogue timeline entry to inline as current-turn context instead of a mid-dialogue system message. */

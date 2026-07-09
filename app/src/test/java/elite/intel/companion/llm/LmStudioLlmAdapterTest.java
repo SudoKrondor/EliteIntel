@@ -1,5 +1,6 @@
 package elite.intel.companion.llm;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
@@ -7,6 +8,7 @@ import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import org.junit.jupiter.api.Test;
 
@@ -63,5 +65,35 @@ class LmStudioLlmAdapterTest {
                 importance.getAsJsonArray("enum").asList().stream().map(e -> e.getAsString()).toList());
         // The free-form param has no enum so the model is not constrained.
         assertFalse(properties.getAsJsonObject("note").has("enum"), "free-form param must not render an enum");
+    }
+
+    @Test
+    void rendersReplayedToolCallAsAssistantToolCallsAndToolResult() {
+        LlmRequest request = new LlmRequest("req-3",
+                List.of(
+                        LlmMessage.of(LlmMessageRole.USER, "analyze carrier route"),
+                        LlmMessage.assistantToolCalls(List.of(
+                                new LlmToolInvocation("call-1", "query_fleet_carrier_route", new JsonObject()))),
+                        LlmMessage.toolResult("call-1", "{\"totalJumps\":8}")),
+                List.of(),
+                PromptCacheProfile.COMMANDER);
+
+        JsonArray messages = JsonParser.parseString(adapter.buildRequestBody(request)).getAsJsonObject()
+                .getAsJsonArray("messages");
+
+        JsonObject assistant = messages.get(1).getAsJsonObject();
+        assertEquals("assistant", assistant.get("role").getAsString());
+        assertTrue(!assistant.has("content") || assistant.get("content").isJsonNull(),
+                "a replayed tool call must not become assistant text");
+        JsonObject call = assistant.getAsJsonArray("tool_calls").get(0).getAsJsonObject();
+        assertEquals("call-1", call.get("id").getAsString());
+        assertEquals("function", call.get("type").getAsString());
+        assertEquals("query_fleet_carrier_route", call.getAsJsonObject("function").get("name").getAsString());
+        assertEquals("{}", call.getAsJsonObject("function").get("arguments").getAsString());
+
+        JsonObject tool = messages.get(2).getAsJsonObject();
+        assertEquals("tool", tool.get("role").getAsString());
+        assertEquals("call-1", tool.get("tool_call_id").getAsString());
+        assertEquals("{\"totalJumps\":8}", tool.get("content").getAsString());
     }
 }

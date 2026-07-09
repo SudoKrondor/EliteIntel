@@ -37,8 +37,9 @@ public final class RunSystemScanCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         ShipSettingsDao.ShipSettings shipSettings = shipSettingsManager.getSettings(playerSession.getShipLoadout().getShipId());
         DiscoveryScanner.honk(shipSettings);
+        return null;
     }
 }

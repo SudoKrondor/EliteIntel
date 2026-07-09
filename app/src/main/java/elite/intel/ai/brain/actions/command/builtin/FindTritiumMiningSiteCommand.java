@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
@@ -47,9 +48,9 @@ public final class FindTritiumMiningSiteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 1000);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue())));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.carrierFuel.searching", range.intValue()), false);
 
         ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
         shipRouteManager.clearRoute();
@@ -63,23 +64,20 @@ public final class FindTritiumMiningSiteCommand implements IntelCommand {
                 );
 
         if (tritiumLocations == null || tritiumLocations.getResults().isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFound")));
-            return;
+            return StringUtls.localizedLlm("handler.carrierFuel.notFound");
         }
 
         Optional<StellarObjectSearchResultDto.Result> result = tritiumLocations.getResults().stream().findFirst();
         double distance = NavigationUtils.calculateGalacticDistance(result.get().getX(), result.get().getY(), result.get().getZ(), coordinates.x(), coordinates.y(), coordinates.z());
         if (distance > range.intValue()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange")));
-            return;
+            return StringUtls.localizedLlm("handler.carrierFuel.notFoundInRange");
         }
 
-
         String reminder = StringUtls.localizedLlm("handler.carrierFuel.headTo", result.get().getSystemName());
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
+        CompanionRuntime.narrator().filler(reminder, false);
         ReminderManager reminderManager = ReminderManager.getInstance();
         reminderManager.setReminder(reminder, result.get().getSystemName());
         RoutePlotter routePlotter = new RoutePlotter();
-        routePlotter.plotRoute(result.get().getSystemName());
+        return routePlotter.plotRoute(result.get().getSystemName());
     }
 }

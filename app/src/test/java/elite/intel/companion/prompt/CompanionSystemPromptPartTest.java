@@ -66,8 +66,8 @@ class CompanionSystemPromptPartTest {
     }
 
     @Test
-    void narrationBranchIsReportOnlyAndExcludesCommanderSections() {
-        String text = prompt.staticRules(ThoughtSource.NARRATION);
+    void eventBranchIsReportOnlyAndExcludesCommanderSections() {
+        String text = prompt.staticRules(ThoughtSource.EVENT);
         assertTrue(text.contains("<persona>"));
         assertTrue(text.contains("<narration>"));
         assertTrue(text.contains("must be reported to the commander"));

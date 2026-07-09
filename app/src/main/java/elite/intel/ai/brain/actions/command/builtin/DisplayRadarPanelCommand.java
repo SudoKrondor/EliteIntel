@@ -35,7 +35,7 @@ public final class DisplayRadarPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -45,5 +45,6 @@ public final class DisplayRadarPanelCommand implements IntelCommand {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding())));
         }
+        return null;
     }
 }

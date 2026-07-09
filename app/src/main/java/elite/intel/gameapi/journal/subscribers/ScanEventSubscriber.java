@@ -1,8 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.commons.BiomeAnalyzer;
-import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
@@ -227,9 +228,9 @@ public class ScanEventSubscriber {
 
         if (!wasDiscovered && PLANET.equals(location.getLocationType())) {
             if (event.getTerraformState() != null && !event.getTerraformState().isEmpty()) {
-                GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newTerraformable", shortName)));
+                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newTerraformable", shortName), "EXPLORATION", false);
             } else if (event.getPlanetClass() != null && valuablePlanetClasses.contains(event.getPlanetClass().toLowerCase())) {
-                GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newDiscovery", event.getPlanetClass())));
+                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newDiscovery", event.getPlanetClass()), "EXPLORATION", false);
             }
         }
 
@@ -240,7 +241,7 @@ public class ScanEventSubscriber {
                 log.info(sensorData);
             }
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
-            GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEvent("event.scan.newSystem")));
+            CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newSystem"), "EXPLORATION", false);
         }
     }
 

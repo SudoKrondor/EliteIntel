@@ -40,7 +40,7 @@ public final class RequestDockingCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if(status.isInMainShip()){
             navigator.assumeDefaultState(StatusFlags.GuiFocus.EXTERNAL_PANEL);
             // Open contacts before navigating to the station docking request.
@@ -67,5 +67,6 @@ public final class RequestDockingCommand implements IntelCommand {
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding())
             ));
         }
+        return null;
     }
 }

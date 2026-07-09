@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeRouteManager;
@@ -52,12 +51,11 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.notFound");
         }
 
         GameEvents.CargoEvent shipCargo = playerSession.getShipCargo();
@@ -65,8 +63,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noMoreStops")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.noMoreStops");
         }
 
         String sourceSystem = nextStop.getTradeStopDto().getSourceSystem();
@@ -104,7 +101,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             }
         }
 
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         reminderManager.setReminder(message, destinationSystem);
+        return message;
     }
 }

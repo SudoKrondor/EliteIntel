@@ -37,7 +37,7 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         String ui_left = Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding();
         String ui_up = Bindings.GameCommand.BINDING_UI_UP.getGameBinding();
         String ui_down = Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding();
@@ -58,5 +58,6 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
                 GameInputStep.bindingTap(activate)
         ));
         navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+        return null;
     }
 }

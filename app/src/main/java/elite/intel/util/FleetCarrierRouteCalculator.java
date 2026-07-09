@@ -1,6 +1,7 @@
 package elite.intel.util;
 
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -18,7 +19,7 @@ import static elite.intel.util.StringUtls.localizedEventPlural;
 
 public class FleetCarrierRouteCalculator {
 
-    public static void calculate() {
+    public static String calculate() {
 
         SpanshCarrierRouteClient client = new SpanshCarrierRouteClient();
         PlayerSession playerSession = PlayerSession.getInstance();
@@ -35,18 +36,16 @@ public class FleetCarrierRouteCalculator {
         int cargoSpaceUsed = carrierData.getCargoSpaceUsed();
         String destination = ClipboardUtils.getClipboardText();
 
-        GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.accessing")));
+        CompanionRuntime.narrator().filler(localizedEvent("event.carrier.route.accessing"), false);
 
         if(carrierData.getX() == 0 && carrierData.getY() == 0 && carrierData.getZ() == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.locationUnavailable")));
-            return;
+            return localizedEvent("event.carrier.route.locationUnavailable");
         }
 
         LocationDto nearestStartingPoint = NearestKnownLocationSearchClient.findNearest(carrierData.getX(), carrierData.getY(), carrierData.getZ());
 
         if (destination == null || nearestStartingPoint == null) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.noDestination")));
-            return;
+            return localizedEvent("event.carrier.route.noDestination");
         }
 
         CarrierRouteCriteria carrierRouteCriteria = new CarrierRouteCriteria(
@@ -64,15 +63,11 @@ public class FleetCarrierRouteCalculator {
         int numJumps = route.size();
 
         if (numJumps == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.carrier.route.navFailed", destination)));
+            return localizedEvent("event.carrier.route.navFailed", destination);
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(
-                    localizedEvent("event.carrier.route.calculated",
-                            destination,
-                            localizedEventPlural(numJumps, "event.carrier.jump.count"),
-                            fuelRequired)
-                            + " " + localizedEvent("event.carrier.route.nextStep")
-            ));
+            return localizedEvent("event.carrier.route.calculated", destination, localizedEventPlural(numJumps, "event.carrier.jump.count"), fuelRequired)
+                   + " "
+                   + localizedEvent("event.carrier.route.nextStep");
         }
     }
 }

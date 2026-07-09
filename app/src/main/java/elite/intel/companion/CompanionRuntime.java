@@ -25,6 +25,7 @@ public final class CompanionRuntime {
     private static volatile MemoryGateway memory;
     private static volatile CompanionActionReducer reducer;
     private static volatile CompanionState state;
+    private static volatile CompanionNarrator narrator;
 
     private CompanionRuntime() {
     }
@@ -40,6 +41,15 @@ public final class CompanionRuntime {
         CompanionRuntime.state = state;
     }
 
+    /**
+     * Publishes the {@link CompanionNarrator} - the single door gameplay subscribers use to voice reactions.
+     * Installed separately from {@link #install} because it wraps the {@code ThoughtDispatcher}, which is built
+     * after the gateways.
+     */
+    public static void installNarrator(CompanionNarrator narrator) {
+        CompanionRuntime.narrator = narrator;
+    }
+
     /** Clears the references when the companion subsystem stops. */
     public static void clear() {
         llm = null;
@@ -48,6 +58,7 @@ public final class CompanionRuntime {
         memory = null;
         reducer = null;
         state = null;
+        narrator = null;
     }
 
     public static LlmGateway llm() {
@@ -72,6 +83,16 @@ public final class CompanionRuntime {
 
     public static CompanionState state() {
         return require(state, "state");
+    }
+
+    /**
+     * The single door gameplay subscribers use to voice reactions. Returns {@link CompanionNarrator#NO_OP} when
+     * the subsystem is not running, so a subscriber can call it unconditionally without guarding on companion
+     * mode (a reaction voiced outside companion mode is simply dropped).
+     */
+    public static CompanionNarrator narrator() {
+        CompanionNarrator current = narrator;
+        return current != null ? current : CompanionNarrator.NO_OP;
     }
 
     private static <T> T require(T value, String name) {

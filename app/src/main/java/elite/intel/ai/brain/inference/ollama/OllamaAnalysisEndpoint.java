@@ -10,7 +10,6 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
 import elite.intel.ai.brain.commons.AiEndPoint;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -98,55 +97,4 @@ public class OllamaAnalysisEndpoint extends AiEndPoint implements AiAnalysisInte
                 root -> root.has("message"));
     }
 
-    public JsonObject processSensor(SensorDataEvent event) {
-        try {
-            OllamaClient client = OllamaClient.getInstance();
-            JsonObject prompt = client.createPrompt(OllamaClient.MODEL_QUERIES, 0.70f);
-
-            // Build messages array
-            JsonArray messages = new JsonArray();
-
-            JsonObject sensorPrompt = new JsonObject();
-            sensorPrompt.addProperty("role", AIConstants.ROLE_SYSTEM);
-            sensorPrompt.addProperty("content", ApiFactory.getInstance().getAiPromptFactory().generateSensorPrompt());
-            messages.add(sensorPrompt);
-
-            JsonObject instructions = new JsonObject();
-            instructions.addProperty("role", AIConstants.ROLE_SYSTEM);
-            instructions.addProperty("content", "EVENT SPECIFIC INSTRUCTIONS: " + event.getInstructions());
-            messages.add(instructions);
-
-            JsonObject userMsg = new JsonObject();
-            userMsg.addProperty("role", AIConstants.ROLE_USER);
-            userMsg.addProperty("content", event.getSensorData());
-            messages.add(userMsg);
-
-            prompt.add("messages", messages);
-
-            JsonObject properties = new JsonObject();
-            JsonObject responseTextProp = new JsonObject();
-            responseTextProp.addProperty("type", "string");
-            properties.add("text_to_speech_response", responseTextProp);
-
-            JsonObject format = new JsonObject();
-            format.add("properties", properties);
-            JsonArray required = new JsonArray();
-            required.add("text_to_speech_response");
-            format.add("required", required);
-            format.addProperty("additionalProperties", false);
-            format.addProperty("type", "object");
-            prompt.add("format", format);
-
-            JsonObject root = processAiPrompt(gson.toJson(prompt), client);
-            log.debug("Ollama sensor raw response:\n{}", gson.toJson(root));
-            String sensorContent = root.getAsJsonObject("message").get("content").getAsString();
-            return JsonUtils.sanitizeTtsResponse(JsonParser.parseString(JsonUtils.repairLlmJson(sensorContent)).getAsJsonObject());
-
-        } catch (Exception e) {
-            log.error("Ollama sensor processing failed", e);
-            JsonObject err = new JsonObject();
-            err.addProperty("text_to_speech_response", "Sensor analysis failed – check logs");
-            return err;
-        }
-    }
 }

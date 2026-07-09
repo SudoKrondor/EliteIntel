@@ -3,16 +3,12 @@ package elite.intel.companion.mind;
 import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
-import elite.intel.companion.input.EventTopicMap;
-import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.SensorDataEvent;
-import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import org.apache.logging.log4j.LogManager;
@@ -31,24 +27,23 @@ import java.util.stream.Collectors;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
- * {@link ThoughtSource}, so at most one COMMANDER, one EVENT, and one NARRATION thought are live at a time
- * (they may run concurrently); a lane's deque is that source's thought queue. It assigns urgency at thought
- * birth and drives preemption, but does not interpret meaning or know a thought's internal state (§2.3).
+ * {@link ThoughtSource}, so at most one COMMANDER and one EVENT thought are live at a time (they may run
+ * concurrently); a lane's deque is that source's thought queue. It assigns urgency at thought birth and drives
+ * preemption, but does not interpret meaning or know a thought's internal state (§2.3).
  * <p>
  * The lanes are held in one source-keyed map, published as a single volatile reference: cross-cutting
  * operations (start/stop, interrupt, watchdog, idle) iterate the lanes, while a submit targets the lane of
- * its source. A separate NARRATION lane keeps the slow LLM narration round off the EVENT lane, so the
- * memory-only event "knowing" channel records without queuing behind it.
+ * its source. The EVENT lane carries subscriber-driven reactions (a reaction to a game event); it is kept off
+ * the commander lane so a slow reaction never blocks live commander input, and vice versa.
  * <p>
  * Urgency (§1.1.4/§1.7.29): a normal thought queues at its lane's tail; an urgent thought interrupts every
  * live thought (regardless of its origin) and jumps to its lane's head. The urgent-phrase /
- * urgent-event-type matchers are a tunable concern (§7.1); by the default policy nothing is urgent yet,
- * except subscriber narration, which is born urgent.
+ * urgent-event-type matchers are a tunable concern (§7.1).
  * <p>
  * A watchdog periodically force-interrupts a thought that overruns the timeout (§2.3). Barge-in reaches
  * the live thoughts via {@link #interruptLiveThoughts()}.
  */
-public final class ThoughtDispatcher implements ManagedService, VerbatimNarrationSink {
+public final class ThoughtDispatcher implements ManagedService {
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
@@ -224,89 +219,36 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a filtered game event. An event with a readable {@link BaseEvent#memorySummary()} becomes a
-     * memory-only EVENT thought queued on the event lane (it records that summary; the LLM is never engaged, see
-     * {@code EventThought}). An event with no summary is a no-op: it is logged and dropped here without queuing.
+     * Accepts a gameplay subscriber's request to <b>react out loud</b> (a {@code CompanionReactionEvent}) and
+     * queues a reactive {@link EventThought} on the EVENT lane. The subscriber pre-digested the data, so the
+     * thought only phrases {@code stimulus} and speaks it; the stimulus is recorded as a {@code user} turn and
+     * the reply as the companion's own words, keeping a clean two-party dialogue. {@code instructions} steer only
+     * this turn's phrasing and are not remembered.
      */
-    public void submitEvent(BaseEvent event) {
-        if (event == null) {
+    public void submitEventReaction(String stimulus, String instructions, String topic, Urgency urgency) {
+        if (stimulus == null || stimulus.isBlank()) {
             return;
         }
-        ConversationTopic topic = EventTopicMap.topicFor(event);
-        String summary = event.memorySummary();
-        // A no-summary event is a pure no-op for the memory-only EventThought (it would record nothing): log one
-        // line and drop it here, instead of spawning a lane thought that would only log start/done for no effect.
-        if (summary == null || summary.isBlank()) {
-            CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "event",
-                    "no-op (no summary) type=" + event.getEventType() + " topic=" + topic);
-            return;
-        }
-        Urgency urgency = urgencyPolicy.forEvent(event);
-        Thought thought = Thought.event(urgency, summary, topic, ctx);
-        CompanionDiagnostics.debug(thought.trace(), "event",
-                "\"" + CompanionDiagnostics.truncate(summary) + "\" type=" + event.getEventType() + " topic=" + topic);
+        ConversationTopic conversationTopic = topicFrom(topic);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "event", "reaction topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
-     * Accepts subscriber-prepared sensor narration, creates a NARRATION thought, and queues it on the
-     * narration lane. SensorDataEvent is trusted output from gameplay subscribers: they already applied
-     * settings, filtering, and calculations. The thought is queued at normal urgency under the topic
-     * provided by that layer, so a burst of sensor callouts plays in order instead of each one cutting off
-     * the line before it.
+     * Accepts a gameplay subscriber's <b>finished phrase</b> to voice verbatim (no LLM) and queues a verbatim
+     * {@link EventThought} on the EVENT lane. The phrase is recorded as the companion's reply, paired with the
+     * short {@code sourceId} as the {@code user} turn (never the raw data), so the timeline keeps a clean
+     * two-party dialogue. A blank phrase is ignored.
      */
-    public void submitSensorData(SensorDataEvent event) {
-        if (event == null) {
+    public void submitEventVerbatim(String sourceId, String phrase, String topic, Urgency urgency) {
+        if (phrase == null || phrase.isBlank()) {
             return;
         }
-        Urgency urgency = Urgency.NORMAL;
-        ConversationTopic topic = sensorTopic(event);
-        Thought thought = Thought.sensorNarration(urgency, SensorInputFormatter.format(event), topic, ctx);
-        CompanionDiagnostics.debug(thought.trace(), "narration", "sensor topic=" + topic);
-        enqueue(ThoughtSource.NARRATION, thought, urgency);
-    }
-
-    /**
-     * Accepts a curated announcement that already carries finished text (mining/discovery/route/
-     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane at normal
-     * urgency, so a burst of announcements plays in order instead of each one cutting off the line before
-     * it. A caller that must preempt current speech (radar contact, mission-critical) uses the explicit
-     * urgency overload. The line is remembered and voiced verbatim in the companion's voice - no LLM
-     * phrasing.
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic) {
-        submitVerbatimNarration(text, topic, Urgency.NORMAL, null);
-    }
-
-    /**
-     * Verbatim narration with an explicit urgency and an optional {@code spokenSignal} completed when playback
-     * ends - used to bridge a command/macro's own narration ({@code AiVoxResponseEvent}/
-     * {@code MissionCriticalAnnouncementEvent}) so a synchronous caller waits the same as on the legacy path.
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
-                                        java.util.concurrent.CompletableFuture<Void> spokenSignal) {
-        submitVerbatimNarration(text, topic, urgency, spokenSignal, null);
-    }
-
-    /**
-     * As above, but attributes the line to a model tool-call ({@code toolCallId}), so it is remembered as that
-     * call's tool result rather than free-standing companion speech (see {@code VerbatimNarrationThought}).
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
-                                        java.util.concurrent.CompletableFuture<Void> spokenSignal, String toolCallId) {
-        if (text == null || text.isBlank()) {
-            if (spokenSignal != null) {
-                spokenSignal.complete(null); // never strand a caller blocked on an empty line
-            }
-            return;
-        }
-        Thought thought = Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId);
-        CompanionDiagnostics.debug(thought.trace(), "narration",
-                "verbatim topic=" + topic + ": \"" + CompanionDiagnostics.truncate(text) + "\"");
-        enqueue(ThoughtSource.NARRATION, thought, urgency);
+        ConversationTopic conversationTopic = topicFrom(topic);
+        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, ctx);
+        CompanionDiagnostics.debug(thought.trace(), "event", "verbatim topic=" + conversationTopic);
+        enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     @Override
@@ -319,7 +261,6 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
             built.put(ThoughtSource.COMMANDER,
                     new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
             built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
-            built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration", 1));
             lanes = built; // single volatile publish of the fully-built lane set
         }
         if (watchdog == null) {
@@ -399,9 +340,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         lane.interruptStuck(watchdogTimeoutMillis);
     }
 
-    private static ConversationTopic sensorTopic(SensorDataEvent event) {
+    /** Maps a neutral topic tag (a {@code ConversationTopic} name) to the enum, falling back to SYSTEM when unknown/blank. */
+    private static ConversationTopic topicFrom(String topic) {
         try {
-            return ConversationTopic.valueOf(event.getTopic().trim().toUpperCase(Locale.ROOT));
+            return ConversationTopic.valueOf(topic.trim().toUpperCase(Locale.ROOT));
         } catch (RuntimeException invalidTopic) {
             return ConversationTopic.SYSTEM;
         }

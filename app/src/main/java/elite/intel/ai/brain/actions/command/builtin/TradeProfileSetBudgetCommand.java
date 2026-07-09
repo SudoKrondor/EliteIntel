@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -60,16 +59,16 @@ public final class TradeProfileSetBudgetCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Integer budget = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
         if (budget == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidBudget")));
-           return;
+            return StringUtls.localizedLlm("handler.tradeProfile.invalidBudget");
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setStartingCapitol(budget)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.startingBudget", budget)));
+            return StringUtls.localizedLlm("handler.tradeProfile.startingBudget", budget);
         }
+        return null;
     }
 }

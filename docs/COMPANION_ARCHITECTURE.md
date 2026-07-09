@@ -4,14 +4,24 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.18**.
+Версия **v0.19**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
 
+> **v0.19.** Событийная сторона переустроена: источников мысли теперь **два** — `COMMANDER` и `EVENT` (`NARRATION` удалён), а единственная дверь для игровых subscriber'ов — `CompanionNarrator`.
+> - **`EVENT` поглотил наррацию и verbatim.** Классы `NarrationThought` / `VerbatimNarrationThought` / `VerbatimNarrationSink` удалены; их работу несёт один `EventThought` в двух режимах. **`EVENT` больше не memory-only** — его задача озвучить реакцию subscriber'а на игровое событие: в **narration**-режиме один короткий ЛЛМ-раунд (лаконичный narration-промпт) фразирует переданные (уже переваренные, не сырые) данные, озвучивает и пишет пару `user`→`[COMPANION]`; в **verbatim**-режиме готовая фраза озвучивается как есть без ЛЛМ, а `user`-ходом пишется короткий `sourceId` (не сырые данные). Если модель разбила ответ на два `speak`, озвучивается только **первый**. EVENT никогда не двигает глобальную тему — тег памяти = тема, переданная subscriber'ом.
+> - **Удалён весь input/bridge/filter-слой:** `GameEventFilter`, `EventTopicMap`, `SensorInputFormatter`, `CompanionSensorDataBridge`, `CompanionAnnouncementBridge` и intake-событие `SensorDataEvent`. `CompanionSubsystemGate` больше **не** подписан на `BaseEvent` — сырые игровые события не доходят до компаньона напрямую. Гейта по важности события для компаньона больше нет. События участвуют в компаньоне только через своих gameplay-subscriber'ов.
+> - **`CompanionNarrator`** (интерфейс в `elite.intel.companion`, статически через `CompanionRuntime.narrator()`; при остановленной подсистеме — `NO_OP`, поэтому subscriber зовёт безусловно) — единственная дверь. Три метода: `filler(text, urgent)` — одноразовая стартовая реплика прямо в `SpeechGateway`, без памяти и ЛЛМ; `narrate(data, instructions, topic)` — результат как данные+инструкции, один ЛЛМ-раунд фразирует, озвучивает и помнит парой `user`→`assistant` (→ `submitEventReaction` → EventThought narration); `announce(sourceId, phrase, topic, urgent)` — готовая фраза, озвучивается дословно без ЛЛМ и помнится, `sourceId` как `user`-ход (→ `submitEventVerbatim` → EventThought verbatim). Продакшн-реализация — `DispatcherCompanionNarrator` (обёртка над `ThoughtDispatcher` + `SpeechGateway`), ставится `CompanionSubsystemGate` через `CompanionRuntime.installNarrator(...)`. Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются **в самом subscriber'е** до вызова наррратора.
+> - **Инструменты по источнику:** `COMMANDER` → QUERY/ACTION/MACRO; `EVENT` → пусто (у реактивного события нет игровых инструментов — subscriber уже посчитал и отфильтровал данные). `IntelActionAccessPolicy` для `EVENT` отдаёт пусто. `speak` доступен для `COMMANDER` и `EVENT`.
+> - **`EVENT` теперь строит промпт** (лаконичный narration-блок, профиль кэша `NARRATION`, ролевая история, только системный `speak`, данные события как current input). В реплеe истории стимул EVENT выдаётся тегированным `<event_data>` `user`-ходом (не ambient system-note), чтобы озвученный ответ читался как реакция. `PromptComposer` для `EVENT` → `composeNarration`.
+> - **Команды.** `IntelCommand.execute(...)` возвращает `String` (озвучиваемый исход или null) вместо `void`; `handle` заворачивает непустой исход в `text_to_speech_response`. Командные ходы **теперь пишутся в память** (императив как `user`-ход, парой к озвученному ответу/ack). `Thought.recordOutcome` озвучивает исход команды/запроса напрямую — без `AiVoxResponseEvent` (это событие теперь только системное).
+> - **`ExecutionRequest` = `(requestId, toolName, arguments, commanderInput)`** — компонент `toolCallId` и механизм thread-scoped `ActiveToolCall` **удалены**. Спаривание CALL/RESULT в памяти держит `ToolLink` (свой `toolCallId` внутри мысли через `recordCall`/`recordToolResult`) — это отдельный, незатронутый механизм.
+> - **`VocalisationRouter`** озвучивает только системную речь (`AiVoxResponseEvent`, `MissionCriticalAnnouncementEvent`, radio, voice demo) во всех режимах; mining/discovery/route/radar/navigation-объявлений он больше не маршрутизирует (эти события удалены) и гейта `companionVoicesNarration()` у него нет.
+
 > **v0.18 (2026-07-03).** Контекстное окно переведено на **нативные роли** вместо плоского `system`-блока «Visible context».
 > - **История диалога — сообщения `user`/`assistant`/`tool`** (`PromptComposer.buildHistoryMessages`): реплики командира → `user`, ответы компаньона → `assistant`, а вызов инструмента модели → `assistant(tool_calls)` + парный `tool`-результат (реплей по `tool_call_id`, пары матчатся по id даже при несоседстве). Подряд идущие одинаковые роли истории коалесятся; текущий ход — отдельное лёгкое `user`-сообщение (обёртка `## Current input` и инъекция `current topic` убраны). `CompanionSystemPromptPart` описывает роли, а не «Visible context».
-> - **Пары вызов/результат в памяти.** `MemoryEntry` получил `ToolLink` (CALL/RESULT); `CommanderThought`/`ReflexThought` пишут CALL и прокидывают `tool_call_id` через `ExecutionRequest`; `CompanionExecutionGateway` ставит thread-scoped `ActiveToolCall` вокруг хендлера (шина синхронная — тот же поток), а `CompanionAnnouncementBridge`/`VerbatimNarrationThought` пишут озвученный исход как RESULT этого вызова. Маркер «command X executed» и хелперы `description`/`rememberAction` удалены (исход = связанный RESULT).
+> - **Пары вызов/результат в памяти.** `MemoryEntry` получил `ToolLink` (CALL/RESULT); мысль пишет CALL (`recordCall`) и RESULT (`recordToolResult`), неся `toolCallId` внутри себя. (В v0.19 `toolCallId` вынесен из `ExecutionRequest`, а thread-scoped `ActiveToolCall` удалён — спаривание держит только `ToolLink`.) Маркер «command X executed» и хелперы `description`/`rememberAction` удалены (исход = связанный RESULT).
 > - **Каждый ход командира записывается** (чтобы история чередовалась `user`/`assistant`); вопрос (`is_question`) принудительно `LOW`, поэтому не всплывает как факт-кандидат. Тему всегда возвращает `classify_turn` (по фразе + видимой истории); явная подсказка темы больше не подаётся.
 
 > **v0.17 (2026-06-26).** Добавлен **рефлекс** — детерминированный fast-path для прямых команд, минующий ЛЛМ.
@@ -88,21 +98,21 @@
 
 * ведёт непрерывный диалог с командиром;
 * слышит голос командира;
-* получает отфильтрованные игровые события и **помнит** их (knowing-канал);
+* реагирует на игровые события через их gameplay-subscriber'ов и **помнит** реакции;
 * вызывает функции для действий и чтения данных;
 * помнит ход сессии;
-* озвучивает **курируемые наррации** — что и когда сказать о событиях решает subscriber-слой, не сознание;
+* озвучивает **реакции subscriber'ов на события** — что и когда сказать решает subscriber-слой (вызовом `CompanionNarrator`), не сознание;
 * не играет сам за командира по событиям.
 
 Основные идеи:
 
 * **Режим-замена.** Компаньон заменяет старый command mode, а не работает параллельно с ним. Активен один режим за раз.
-* **Два входных потока, три источника мысли.** Реплики командира и игровые события рождают мысли; событийная сторона расщеплена на `EVENT` (сырое событие → только память, «знание») и `NARRATION` (курируемая наррация → речь).
-* **Один класс мысли на источник, у каждого свой ход.** `CommanderThought` (полное рассуждение), `EventThought` (memory-only), `NarrationThought` (ЛЛМ фразирует курируемые данные), `VerbatimNarrationThought` (дословная озвучка готового текста). Поведение несёт тип класса, а не ветки `if (origin)`.
-* **Knowing ≠ speaking.** Сырые события только запоминаются (сознание по ним не говорит); спонтанную речь даёт исключительно курируемый narration-слой. Это устраняет «болтовню ЛЛМ по своему усмотрению».
+* **Два входных потока, два источника мысли.** Реплики командира → `COMMANDER`; реакции gameplay-subscriber'ов на игровые события → `EVENT`. Сырые события к сознанию напрямую не идут: их обслуживают subscriber'ы, которые зовут `CompanionNarrator`.
+* **Один класс мысли на источник.** `CommanderThought` (полное рассуждение) **или** `ReflexThought` (детерминированный fast-path без ЛЛМ) для `COMMANDER`; `EventThought` для `EVENT`. `EventThought` несёт два режима — narration (один ЛЛМ-раунд фразирует переданные данные) и verbatim (дословная озвучка готовой фразы без ЛЛМ). Поведение несёт тип класса, а не ветки `if (origin)`.
+* **Единая дверь для событий — `CompanionNarrator`.** Gameplay-subscriber зовёт `filler` (одноразовая стартовая реплика, без памяти), `narrate` (данные → ЛЛМ фразирует → память) или `announce` (готовая фраза → дословно → память). Решение «что и когда сказать» принимает subscriber, сознание только фразирует/озвучивает. Это устраняет «болтовню ЛЛМ по своему усмотрению».
 * **Память сессии.** В пределах процесса. Персистентная память — будущий отдельный трек.
-* **Сознание — единственный умный узел.** Остальные компоненты — механика, шлюзы, исполнители, фильтры, очереди и хранилища. ЛЛМ работает только в `COMMANDER` и `NARRATION`; `EVENT` и verbatim — детерминированные, без ЛЛМ.
-* **Tool-calling only (в ЛЛМ-мыслях).** В `COMMANDER`/`NARRATION` ответ LLM должен быть function/tool call; свободный текст невалиден. `EVENT`/verbatim ЛЛМ не зовут.
+* **Сознание — единственный умный узел.** Остальные компоненты — механика, шлюзы, исполнители, очереди и хранилища. ЛЛМ работает в `COMMANDER` и в narration-режиме `EVENT`; verbatim-режим `EVENT` — детерминированный, без ЛЛМ.
+* **Tool-calling only (в ЛЛМ-мыслях).** В `COMMANDER` и в narration-`EVENT` ответ LLM должен быть function/tool call; свободный текст невалиден. Verbatim-`EVENT` ЛЛМ не зовёт.
 * **Опасное подтверждается кодом.** Dangerous actions никогда не исполняются только потому, что LLM так решила.
 
 ### §0.1. Типы гарантий
@@ -111,7 +121,7 @@
 
 **Hard architectural boundary** — граница, которую должен обеспечивать runtime/lifecycle:
 
-* `EventThought` вообще не строит промпт и не зовёт ЛЛМ (memory-only); `NarrationThought` получает нулевой набор game-tools, `VerbatimNarrationThought` — ни ЛЛМ, ни tools. Action/macro-tools физически доступны только `CommanderThought`;
+* `EventThought` получает **нулевой** набор game-tools в обоих режимах (subscriber уже посчитал и отфильтровал данные); в verbatim-режиме он к тому же не строит промпт и не зовёт ЛЛМ. Action/macro-tools физически доступны только `CommanderThought`;
 * retry не пересобирает prompt/tools и использует исходный immutable tools snapshot;
 * `LlmGateway`, `SpeechGateway` и `ExecutionModule` не получают объект `Thought` и не callback'ают в него;
 * `MemoryConsolidator` не является `Thought` и не использует consciousness prompt/tools;
@@ -143,36 +153,34 @@
 2. **Компаньон получает два входа.**
 
     * STT/PTT → `UserInputEvent` → gate → `ThoughtDispatcher`;
-    * journal/status/game events → EventBus → gate → `EventFilter` → `ThoughtDispatcher`.
+    * реакция gameplay-subscriber'а на игровое событие → `CompanionNarrator` (статически через `CompanionRuntime.narrator()`) → `ThoughtDispatcher`.
 
-3. **`EventFilter` механический.**
-   Он только отсеивает шум. Он не думает, не пишет в память, не определяет срочность, не меняет тему.
+3. **Сырые события к компаньону напрямую не идут.**
+   `CompanionSubsystemGate` не подписан на `BaseEvent`; отдельного event-filter/importance-гейта для компаньона нет. Что (если вообще) делать с событием, решает его subscriber: он либо зовёт `CompanionNarrator` для озвучиваемой реакции, либо пишет знание своим путём.
 
 4. **Срочность определяет `ThoughtDispatcher`.**
    Срочность ставится при рождении мысли механически:
 
     * голос — по шаблонам/матчерам срочных фраз;
-    * событие — по типу события из списка срочных event types.
+    * реакция subscriber'а — по флагу `urgent` в вызове `CompanionNarrator` (напр. свежий radar-контакт).
 
 ---
 
 ### §1.2. Типы мыслей
 
-5. **Есть три источника мысли (`ThoughtSource`) и четыре конкретных вида.**
+5. **Есть два источника мысли (`ThoughtSource`).**
 
     * `COMMANDER` → `CommanderThought` (полный ЛЛМ-цикл) **или** `ReflexThought` (детерминированный fast-path без ЛЛМ для дословно распознанной прямой команды, v0.17). Какой из двух — решает `ReflexResolver` при рождении мысли (§2.3).
-    * `EVENT` → `EventThought` — мысль от сырого игрового события (memory-only, без ЛЛМ).
-    * `NARRATION` → `NarrationThought` (фразирует курируемые сенсорные данные через ЛЛМ) **или** `VerbatimNarrationThought` (дословно озвучивает готовый announcement-текст, без ЛЛМ).
+    * `EVENT` → `EventThought` — реакция gameplay-subscriber'а на игровое событие, в двух режимах: **narration** (один короткий ЛЛМ-раунд фразирует переданные данные → `speak`) и **verbatim** (дословная озвучка готовой фразы без ЛЛМ). Режим выбирает вызов `CompanionNarrator` (`narrate` / `announce`).
 
    `Thought` — абстрактная база (общие хелперы, исполнение и озвучка/память исхода `recordOutcome`, interrupt), цикла мышления она не содержит: его несёт каждый вид в своём `run()`.
 
 6. **Сколько мыслей живёт одновременно — по lane источника (v0.16):**
 
     * `COMMANDER` — до `MAX_LIVE_COMMANDER_THOUGHTS` (=5) одновременно (bounded-пул), остальное в очереди;
-    * `EVENT` — одна (memory-only, мгновенная);
-    * `NARRATION` — одна (короткий раунд).
+    * `EVENT` — одна (сериализованный lane, ёмкость 1).
 
-   `ThoughtDispatcher` держит lane на источник в `EnumMap` (§2.3). Командирский пул нужен, чтобы долгая синхронная команда (медленна не из-за ЛЛМ, а из-за хендлера) не держала новые командирские мысли; медленный narration-ЛЛМ не блокирует мгновенную запись событий.
+   `ThoughtDispatcher` держит lane на источник в `EnumMap` (§2.3). Командирский пул нужен, чтобы долгая синхронная команда (медленна не из-за ЛЛМ, а из-за хендлера) не держала новые командирские мысли; медленная реакция события не блокирует живой командирский ввод, и наоборот.
 
 7. **Каждая новая мысль при рождении получает:**
 
@@ -180,7 +188,7 @@
     * `urgency`;
     * `currentInput`.
 
-   Отдельного per-thought `topic` нет (см. §2.4/§2.5): тег памяти разрешается по источнику — глобальная тема для `COMMANDER`, тема из статической мапы события для `EVENT`/`NARRATION`.
+   Отдельного per-thought `topic` нет (см. §2.4/§2.5): тег памяти разрешается по источнику — глобальная тема для `COMMANDER`, переданная subscriber'ом тема для `EVENT`.
 
 8. **`currentInput` не пишется сразу в память.**
    Это текущий вход мысли, а не прошлое. Он передаётся в `PromptComposer` отдельно и пишется в память только после разрешения темы или fallback.
@@ -202,17 +210,17 @@
 
 ---
 
-### §1.4. Права EVENT и NARRATION мыслей
+### §1.4. Права EVENT мысли
 
-**`EventThought` — чистый «knowing»-канал.** Он не строит промпт, не зовёт ЛЛМ, не говорит и не вызывает никаких tools. Его единственное действие: при `importance() == HIGH` записать событие в память под статической темой (`NORMAL`/`LOW` — не пишет; см. §2.2.1). Спонтанную речь по событиям он не производит вовсе.
+**`EventThought` озвучивает реакцию subscriber'а на игровое событие**, в двух режимах, и в обоих получает **нулевой** набор game-tools (ни команд, ни query): subscriber уже посчитал и отфильтровал данные.
 
-**`NarrationThought` (ЛЛМ-фразировка).** Источник — курируемые сенсорные данные (`SensorDataEvent`). Получает **нулевой** набор game-tools (ни команд, ни query) и системную функцию только `speak` (решение «озвучить» уже принято subscriber-слоем). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`. Не вызывает `search_in_memory`/`classify_turn` и не двигает глобальную тему.
+**narration-режим (ЛЛМ-фразировка).** Subscriber отдал переваренные (не сырые) данные + инструкции по фразировке. `EventThought` строит лаконичный narration-промпт и получает единственную системную функцию `speak` (решение «озвучить» уже принято subscriber'ом). За один короткий раунд ЛЛМ фразирует данные в характере → `speak`; затем стимул пишется как `user`-ход, а произнесённая фраза как `[COMPANION]` (чистая пара `user`→`assistant`). Если модель разбила ответ на два `speak`, озвучивается только **первый**. Не вызывает `search_in_memory`/`classify_turn` и не двигает глобальную тему.
 
-**`VerbatimNarrationThought` (дословно).** Источник — готовый announcement-текст. Не зовёт ЛЛМ и не получает tools вообще: пишет фразу как `[COMPANION]` и озвучивает её дословно.
+**verbatim-режим (дословно).** Subscriber отдал готовую фразу. `EventThought` не зовёт ЛЛМ и не строит промпт: пишет короткий `sourceId` как `user`-ход (не сырые данные), озвучивает фразу дословно и пишет её как `[COMPANION]`.
 
-Тема narration/event-мысли для записи в память берётся не от LLM, а из источника (статическая мапа `event-type → topic` для `EVENT`, переданная subscriber'ом тема для `NARRATION`); событийная сторона никогда не двигает глобальную тему разговора.
+Тема event-мысли для записи в память берётся не от LLM, а из источника (переданная subscriber'ом тема); событийная сторона никогда не двигает глобальную тему разговора.
 
-Запрет action/macro/query-tools для событийной стороны — **code-level enforcement**, а не prompt-инструкция: `IntelActionAccessPolicy` для `EVENT` отдаёт `QUERY` (но `EventThought` промпт не строит), для `NARRATION` — пусто; `CommanderThought` — единственный, кто получает `ACTION`/`MACRO`.
+Запрет action/macro/query-tools для событийной стороны — **code-level enforcement**, а не prompt-инструкция: `IntelActionAccessPolicy` для `EVENT` отдаёт **пусто**; `CommanderThought` — единственный, кто получает `ACTION`/`MACRO`.
 
 ---
 
@@ -301,15 +309,15 @@
 28. **Обычная мысль становится в хвост своей очереди.**
 
 29. **Срочная мысль становится в голову своей очереди и прерывает все живые мысли (во всех lane).**
-    Независимо от источника срочной мысли. (Narration рождается срочной, см. §2.3.)
+    Независимо от источника срочной мысли. (Срочная реакция события — по флагу `urgent`, см. §2.3.)
 
 30. **Interrupt не должен создавать дыру в памяти.**
     `CommanderThought` перед смертью делает `safe-flush` (записывает ещё не сохранённый вход как `INTERRUPTED`).
-    `EventThought`/`NarrationThought`/verbatim коротки и почти мгновенны: им нечего флашить (event пишет сразу либо ничего; narration пишет `[COMPANION]` по завершении).
+    `EventThought` коротка и почти мгновенна: флашить нечего (verbatim ничего не ждёт; narration пишет пару `user`→`[COMPANION]` только по завершении раунда, а на прерванном раунде остаётся молчаливой).
 
 31. **Командирская мысль при interrupt умирает сразу** после safe-flush.
 
-32. **Событийная сторона при interrupt просто завершается** (сырое событие либо уже записано, либо отбрасывается).
+32. **Событийная сторона при interrupt просто завершается** (verbatim либо уже озвучен, либо нет; прерванный narration-раунд молчит).
 
 33. **После interrupt мысль не ждёт долгий LLM-ответ.**
     In-flight requests отменяются/помечаются cancelled на уровне handle.
@@ -436,96 +444,56 @@ STT / PTT
 
 Если `companionModeOn = false`, голосовой ввод обслуживает старый command mode.
 
-#### Событийный вход — три пути
+#### Событийный вход — единственная дверь `CompanionNarrator`
 
-«Сырое» событие (только знание):
+Сырые события к компаньону напрямую не идут. Gameplay-subscriber реагирует на событие и зовёт `CompanionNarrator` (статически через `CompanionRuntime.narrator()`; при выключенной подсистеме — `NO_OP`, поэтому вызов безусловный). Три ветки:
 
-```text
-Journal / Status / Game events
-→ EventBus → companionModeOn gate → GameEventFilter → ThoughtDispatcher
-→ EventThought   (memory-only)
-```
-
-Курируемая наррация — ЛЛМ фразирует:
+`filler` — одноразовая стартовая реплика, прямо в TTS, без памяти и ЛЛМ:
 
 ```text
-subscriber → SensorDataEvent → CompanionSensorDataBridge → ThoughtDispatcher.submitSensorData
-→ NarrationThought   (один ЛЛМ-раунд, speak)
+subscriber → CompanionRuntime.narrator().filler(text, urgent) → SpeechGateway
 ```
 
-Курируемое announcement-объявление — дословно:
+`narrate` — данные+инструкции, ЛЛМ фразирует (один раунд, speak), помнит пару `user`→`[COMPANION]`:
 
 ```text
-subscriber → MiningAnnouncementEvent / Discovery / Route / RadarContact / Navigation
-→ CompanionAnnouncementBridge (тумблеры PlayerSession) → ThoughtDispatcher.submitVerbatimNarration
-→ VerbatimNarrationThought   (без ЛЛМ: запись [COMPANION] + дословная озвучка)
+subscriber → CompanionRuntime.narrator().narrate(data, instructions, topic)
+→ ThoughtDispatcher.submitEventReaction → EventThought (narration)
 ```
 
-В companion-режиме legacy `VocalisationRouter` для этих announcement-событий молчит (чтобы не озвучить дважды); radio-трансмиссия остаётся на legacy-пути и в память не попадает. Если `companionModeOn = false`, companion event flow не активен.
+`announce` — готовая фраза, дословно, без ЛЛМ, помнит `sourceId`→`[COMPANION]`:
+
+```text
+subscriber (проверил тумблер, напр. isMiningAnnouncementOn)
+→ CompanionRuntime.narrator().announce(sourceId, phrase, topic, urgent)
+→ ThoughtDispatcher.submitEventVerbatim → EventThought (verbatim)
+```
+
+Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются в самом subscriber'е до вызова. Legacy `VocalisationRouter` этих объявлений больше не маршрутизирует (их события удалены); radio-трансмиссия остаётся на legacy-пути и в память не попадает. Если `companionModeOn = false`, наррратор — `NO_OP`, реакция просто отбрасывается.
 
 ---
 
-### §2.2. EventFilter
+### §2.2. Дверь событий: CompanionNarrator
 
-`EventFilter` — механический компонент.
+Отдельного event-filter для компаньона больше нет. Единственная дверь от gameplay-subscriber'ов к сознанию — `CompanionNarrator` (интерфейс в `elite.intel.companion`, статически через `CompanionRuntime.narrator()`; при остановленной подсистеме — `NO_OP`, поэтому subscriber зовёт безусловно, без гейта на режим). Три метода — по одному на стадию реакции subscriber'а:
 
-Он:
+* **`filler(text, urgent)`** — одноразовая стартовая реплика (ack, пока идёт работа): прямо в `SpeechGateway`, **никогда не помнится, без ЛЛМ**;
+* **`narrate(data, instructions, topic)`** — результат как переваренные (не сырые) данные + инструкции по фразировке: один ЛЛМ-раунд формулирует произнесённую строку, озвучивает и помнит обмен парой `user`→`assistant` (→ `submitEventReaction` → EventThought narration);
+* **`announce(sourceId, phrase, topic, urgent)`** — результат как готовая фраза: озвучивается дословно (без ЛЛМ) и помнится, `user`-ходом идёт короткий `sourceId`, а не сырые данные (→ `submitEventVerbatim` → EventThought verbatim).
 
-* получает игровые события;
-* отсекает шум: события вне gameplay-таксономии (`EventTopicMap`) и события важности `LOW` (см. §2.2.1);
-* пропускает события, которые достойны внимания;
-* не пишет в память;
-* не определяет срочность;
-* не вызывает LLM;
-* не вызывает query/action tools;
-* не меняет topic.
-
-Единственный выход:
-
-```text
-EventFilter
-→ ThoughtDispatcher
-```
-
-Срочность события определяет `ThoughtDispatcher` по типу события.
+Продакшн-реализация — `DispatcherCompanionNarrator` (обёртка над `ThoughtDispatcher` + `SpeechGateway`), ставится при старте подсистемы через `CompanionRuntime.installNarrator(...)`. Срочность реакции задаёт флаг `urgent` в вызове.
 
 ---
 
-### §2.2.1. Важность события (importance)
+### §2.2.1. Кто и что решает по событию
 
-У каждого игрового события есть `importance()` (см. `BaseEvent.Importance`): `LOW`, `NORMAL`, `HIGH`.
-**Это фильтр внимания** (будить ли сознание), а **не** гейт памяти и не триггер речи: `EventThought`
-memory-only и не озвучивает вовсе — спонтанную речь по событиям даёт только курируемый narration-слой.
-Важность читается по экземпляру, поэтому может зависеть от payload.
+Гейта по важности события для компаньона **нет**: сырые события к сознанию не доходят, поэтому нет ни `LOW → drop / NORMAL / HIGH`-фильтра, ни intake-формата события. Что делать с игровым событием, решает его gameplay-subscriber:
 
-* **`LOW` — компаньон игнорирует полностью.** `GameEventFilter` отбрасывает событие: ни память, ни мысль не
-  создаются. Это высокочастотная телеметрия (`FSSSignalDiscovered`, `MaterialCollected`, `Cargo`,
-  `FSDTarget` и т.п.).
-* **`NORMAL`/`HIGH` — доходят до `EventThought`.** Сама важность память не пишет; что сохранить, решает
-  `memorySummary()` (ниже).
-
-**Что попадает в память — решает `memorySummary()`, а не важность.** `EventThought` записывает событие тогда и
-только тогда, когда оно отдаёт непустую **читаемую строку** `BaseEvent.memorySummary()` (напр. «docked at
-Jameson Memorial in Shinrarta Dezhra»), собранную из полей самого события. Запись идёт под статическим topic
-события как `[EVENT]`, **без ЛЛМ и без речи** — EVENT-канал только «знает». Событие без summary не пишет
-ничего: это opt-in, который держит телеметрию вне ленты (вместо прежнего гейта по `HIGH`). В памяти лежит
-читаемая строка, а **не** JSON-конверт события (прежний `EventInputFormatter` удалён).
-
-**Избегание дубля с наррацией.** Если у события есть курируемая наррация **самого факта** (озвучка + запись
-`[COMPANION]` через subscriber-слой), писать ещё и `[EVENT]` — дубль; такие события **оставляют
-`memorySummary()` пустым** и помнятся как слова Веги (напр. `FSDJump`, `ScanOrganic`, `CodexEntry`,
-`MissionAccepted/Completed/Redirected`, `SAAScanComplete`, `Scan`, `NavRoute`, `ShipyardBuy/New`, `Loadout`).
-`memorySummary()` дают события **без** наррации факта, которые стоит помнить (`Docked`, `Location`,
-`Promotion`, `Reputation`, `MissionFailed` и др. — см. аудит). Тонкость: озвучка лишь **побочного эффекта**
-(напр. `FinanceSubscriber` сообщает изменение баланса для `ModuleBuy/Sell`, `Shipyard Sell/Transfer`,
-`SellOrganicData`) фактом не считается — у таких событий summary остаётся, чтобы помнить сам поступок.
-
-Примеры payload-зависимой важности: `ShipTargeted` — только для отсканированной wanted-цели; `ReceiveText` —
-только для пиратского оклика при наличии груза. (`ProspectedAsteroid` свой target-чек делегировал
-`ProspectorSubscriber`, который и владеет mining-наррацией.)
+* нужна озвучиваемая реакция — subscriber зовёт `CompanionNarrator` (`filler` / `narrate` / `announce`), сам проверив свои тумблеры (напр. `isMiningAnnouncementOn`, `isRadarContactAnnouncementOn`) и payload-условия (напр. `ShipTargeted` — только для отсканированной wanted-цели);
+* реакция помнится единообразно парой `user`→`[COMPANION]` под темой, которую передал subscriber (глобальную тему разговора она не двигает).
 
 Детерминированную и критическую озвучку событий (топливо, кислород, скан груза, пиратский оклик, kill
-confirmed и т.п.) владеет `EventNarrator`, который звучит во всех режимах.
+confirmed и т.п.) по-прежнему владеет `EventNarrator`, который звучит во всех режимах.
 
 ---
 
@@ -537,14 +505,14 @@ confirmed и т.п.) владеет `EventNarrator`, который звучит
 
 Он знает:
 
-* по одному `ThoughtLane` на каждый `ThoughtSource`, хранятся в `EnumMap` и публикуются одной volatile-ссылкой (commander / event / narration); командирский lane — **bounded-пул** на `MAX_LIVE_COMMANDER_THOUGHTS` воркеров, event/narration — по одному;
-* набор живых мыслей на каждом lane (до N на commander, по одной на остальных);
+* по одному `ThoughtLane` на каждый `ThoughtSource`, хранятся в `EnumMap` и публикуются одной volatile-ссылкой (commander / event); командирский lane — **bounded-пул** на `MAX_LIVE_COMMANDER_THOUGHTS` воркеров, event — сериализованный (ёмкость 1);
+* набор живых мыслей на каждом lane (до N на commander, одна на event);
 * urgency каждой мысли;
 * source каждой мысли.
 
 Он умеет:
 
-* создать мысль (`submitCommanderInput` / `submitEvent` / `submitSensorData` / `submitVerbatimNarration`); `submitCommanderInput` сперва прогоняет `ReflexResolver` (коллаборатор диспетчера, как `UrgencyPolicy`): дословно распознанная прямая команда → `ReflexThought` (без ЛЛМ), иначе → `CommanderThought`. Резолвер — детерминированная подстановка по фразам/реестрам, не интерпретация смысла;
+* создать мысль (`submitCommanderInput` / `submitEventReaction` / `submitEventVerbatim`); `submitCommanderInput` сперва прогоняет `ReflexResolver` (коллаборатор диспетчера, как `UrgencyPolicy`): дословно распознанная прямая команда → `ReflexThought` (без ЛЛМ), иначе → `CommanderThought`. Резолвер — детерминированная подстановка по фразам/реестрам, не интерпретация смысла. `submitEventReaction`/`submitEventVerbatim` кладут `EventThought` (narration/verbatim) на EVENT-lane; их зовёт `DispatcherCompanionNarrator` из `CompanionNarrator.narrate`/`announce`;
 * поставить мысль в lane её источника;
 * срочную мысль поставить первой;
 * при срочной мысли отправить interrupt всем живым мыслям (во всех lane);
@@ -573,28 +541,28 @@ Thought (abstract)
 │                         исполнение, озвучка/память итога по типу действия (recordOutcome), подавление LLM-speak
 ├─ ReflexThought          fast-path без ЛЛМ: run() = recordCurrentInput → execute(команда) → recordOutcome;
 │                         рождается, когда ReflexResolver дословно распознал безопасную беспараметрную команду (§2.3)
-├─ EventThought           run() = (HIGH) recordCurrentInput, иначе ничего; ЛЛМ/речи/tools нет
-├─ NarrationThought       run() = один раунд → взять speak → озвучить + записать [COMPANION]
-└─ VerbatimNarrationThought  run() = записать [COMPANION] + озвучить дословно (без ЛЛМ)
+└─ EventThought           реакция subscriber'а на событие, два режима:
+   ├─ narration           run() = один раунд → взять первый speak → recordCurrentInput (user) + озвучить + записать [COMPANION]
+   └─ verbatim            run() = recordCurrentInput (sourceId) + озвучить дословно + записать [COMPANION] (без ЛЛМ)
 ```
 
 Поля общей мысли:
 
 ```text
-source = COMMANDER | EVENT | NARRATION
+source = COMMANDER | EVENT
 urgency = normal | urgent
 currentInput
 ```
 
-> **Тема — не поле мысли (см. §2.5).** Для `COMMANDER` тег памяти — глобальная тема; для `EVENT`/`NARRATION` — из источника. `CommanderThought` применяет `classify_turn` (тема + важность) как pre-execution шаг до записи реплики; до первого валидного ответа действует fallback `unresolved_*`.
+> **Тема — не поле мысли (см. §2.5).** Для `COMMANDER` тег памяти — глобальная тема; для `EVENT` — переданная subscriber'ом тема. `CommanderThought` применяет `classify_turn` (тема + важность) как pre-execution шаг до записи реплики; до первого валидного ответа действует fallback `unresolved_*`.
 
 `currentInput`:
 
 * для `COMMANDER` — реплика командира;
-* для `EVENT` — текст/summary игрового события;
-* для `NARRATION` — данные/инструкции сенсора (ЛЛМ-фразировка) или готовый announcement-текст (verbatim).
+* для `EVENT` narration — переваренные данные события (плюс инструкции по фразировке в LLM-видимом вводе);
+* для `EVENT` verbatim — короткий `sourceId` (не сырые данные).
 
-Для `CommanderThought` `currentInput` не является memory entry до topic resolution. `EventThought` пишет `currentInput` напрямую (под темой события); `NarrationThought`/verbatim **не пишут `currentInput` вовсе** — в память идёт только произнесённая фраза `[COMPANION]`.
+Для `CommanderThought` `currentInput` не является memory entry до topic resolution. `EventThought` в **обоих** режимах пишет `currentInput` как `user`-ход (стимул/`sourceId`) в паре с произнесённой фразой `[COMPANION]`; в narration-режиме — только по завершении раунда (прерванный раунд ничего не пишет).
 
 ---
 
@@ -629,11 +597,11 @@ turn importance   = importance   # штампует записи этого хо
 
 #### EVENT thought
 
-EVENT-мысль **не** трогает глобальную тему и не вызывает `classify_turn` (его нет в её tools). Тема для записи события берётся механически из статической мапы `event-type → topic` (каталог событий). Это даёт честный тег памяти, не перебивая тему разговора командира.
+EVENT-мысль **не** трогает глобальную тему и не вызывает `classify_turn` (его нет в её tools). Тема для записи берётся из значения, которое передал subscriber в `CompanionNarrator` (`narrate`/`announce`); неизвестное/пустое значение падает в `ConversationTopic.SYSTEM`. Это даёт честный тег памяти, не перебивая тему разговора командира.
 
 ```text
 global TopicModel — без изменений
-memory tag = EventTopicMap.topicFor(eventType)   # fallback: unresolved_game_event
+memory tag = переданная subscriber'ом тема   # fallback: SYSTEM
 ```
 
 ---
@@ -653,7 +621,7 @@ currentInput
 1. Thought created
 2. initial LLM turn returns a valid tool-call set
 3. topic resolved: COMMANDER applies classify_turn (if called) to the global topic and turn importance;
-   EVENT uses its static event-type topic
+   EVENT uses the subscriber-supplied topic
 4. currentInput записывается в память под разрешённой темой
 5. tool-calls выполняются по порядку
 6. tool results пишутся в память отдельно
@@ -666,19 +634,18 @@ currentInput
 [TOOL_RESULT] action result      # либо [COMPANION] произнесённая фраза, если ход был разговорный
 ```
 
-или у narration:
+или у EVENT-реакции — чистая пара `user`→`assistant`:
 
 ```text
+[EVENT] стимул (переваренные данные / sourceId)
 [COMPANION] произнесённая в характере фраза
 ```
-
-(`EventThought` пишет одну запись `[EVENT]` для HIGH-события и ничего больше.)
 
 ---
 
 ### §2.7. Safe-flush при interrupt (только CommanderThought)
 
-Safe-flush — забота `CommanderThought` (у него длинный ЛЛМ-цикл). `EventThought` мгновенный; `NarrationThought`/verbatim коротки — флашить нечего. Команды/запросы исполняются синхронно (v0.15): долгая команда держит lane до конца; начатую input-sequence interrupt не прерывает (§1.9.41), чтобы не оставить игру в неизвестном состоянии.
+Safe-flush — забота `CommanderThought` (у него длинный ЛЛМ-цикл). `EventThought` короткий (verbatim мгновенный, narration — один раунд) — флашить нечего. Команды/запросы исполняются синхронно (v0.15): долгая команда держит lane до конца; начатую input-sequence interrupt не прерывает (§1.9.41), чтобы не оставить игру в неизвестном состоянии.
 
 При interrupt `CommanderThought` не начинает новых действий. Она делает только safe-flush.
 
@@ -771,7 +738,7 @@ LlmRequest
 requestId
 messages
 tools                # immutable tools snapshot для этого запроса
-profile              # PromptCacheProfile: COMMANDER | EVENT | COMPRESSION; задаёт Mistral prompt_cache_key
+profile              # PromptCacheProfile: COMMANDER | NARRATION | COMPRESSION; задаёт Mistral prompt_cache_key
 ```
 
 `LlmGateway` возвращает:
@@ -832,7 +799,7 @@ SpeechGateway → служебная фраза “не могу выполни�
 Thought ends
 ```
 
-`NarrationThought` (best-effort): просто завершается молча, ничего не пишет. `EventThought`/verbatim ЛЛМ не зовут — INVALID_RESPONSE у них не бывает.
+`EventThought` narration (best-effort): на невалидном/прерванном раунде просто завершается молча, ничего не пишет. Verbatim-режим ЛЛМ не зовёт — INVALID_RESPONSE у него не бывает.
 
 Unresolved-записи идут обычным путём памяти.
 
@@ -840,7 +807,7 @@ Unresolved-записи идут обычным путём памяти.
 
 ### §2.10. PromptComposer
 
-`PromptComposer` — тупой укладчик `messages + tools`; ветвится по источнику: `COMMANDER` → полный промпт (persona + tool-calling + commander-rules + safety + language + topic enum + memory + timeline + current input, профиль `COMMANDER`); `NARRATION` → лаконичный промпт (narration-persona + задача + language + timeline + данные, **без** topic enum/memory/safety, профиль `NARRATION`); `EVENT` промпт не строит (memory-only).
+`PromptComposer` — тупой укладчик `messages + tools`; ветвится по источнику: `COMMANDER` → `composeCommander` — полный промпт (persona + tool-calling + commander-rules + safety + language + topic enum + memory + timeline + current input, профиль `COMMANDER`); `EVENT` → `composeNarration` — лаконичный промпт (narration-блок + задача + language + ролевая история + данные события как current input, **без** topic enum/memory/safety, профиль кэша `NARRATION`, только системный `speak`). Verbatim-режим `EventThought` промпт не строит.
 
 Он не решает:
 
@@ -923,8 +890,7 @@ content:
 
 ```text
 COMMANDER → QUERY, ACTION, MACRO
-EVENT     → QUERY            (но EventThought промпт не строит — memory-only)
-NARRATION → ∅               (нулевой набор: ни команд, ни query)
+EVENT     → ∅               (нулевой набор: subscriber уже посчитал и отфильтровал данные)
 ```
 
 Это единственная точка категорий. Корректная классификация query/action/macro — implementation contract.
@@ -958,13 +924,13 @@ search_in_memory
 classify_turn
 ```
 
-NARRATION system tools (`EVENT` промпт не строит и системных функций не получает):
+EVENT system tools (narration-режим):
 
 ```text
 speak
 ```
 
-`NARRATION speak` уже решено озвучить курируемым subscriber-слоем (прежний `EventSpeechPolicy` удалён). `availableFor(NARRATION)` у `SpeakFunction` возвращает true; остальные системные функции — COMMANDER-only.
+`EVENT speak` без гейта: решение «озвучить» уже принял subscriber. `SpeakFunction.sources()` = `{COMMANDER, EVENT}`; остальные системные функции — COMMANDER-only. Verbatim-режим промпта не строит и системных функций не получает.
 
 Системные функции присутствуют в prompt только если разрешены для источника.
 `SYSTEM_FUNCTION` — trusted internal category: она не должна публиковать `GameInputSequenceEvent`, выполнять macro/action behavior или менять game state.
@@ -1004,9 +970,10 @@ ExecutionRequest
 requestId
 toolName
 arguments
+commanderInput   # сырая реплика командира (originalUserInput для хендлера); "" когда её нет
 ```
 
-`operationType` (action/macro/query/system-function lane) выводится при резолве `toolName` по реестрам и в запросе не передаётся.
+`operationType` (action/macro/query/system-function lane) выводится при резолве `toolName` по реестрам и в запросе не передаётся. `toolCallId` в `ExecutionRequest` **нет** (удалён в v0.19) — спаривание CALL/RESULT в памяти держит `ToolLink` внутри мысли.
 Он возвращает `CompletableFuture<JsonObject>`.
 
 #### Очереди
@@ -1137,12 +1104,12 @@ Thought ends
 ### §2.14. SpeechGateway
 
 > **Кто решает, что озвучивать.** Не LLM. Источники речи: (1) command/query/macro-итог — детерминированно по
-> типу действия (`CommanderThought.recordOutcome`, §5.1): COMMAND — текст хендлера (crit→urgent) либо ack
-> `affirmative()` для side-effect; QUERY — ответ; MACRO — молча (свои шаги). LLM-`speak` за ход с
-> `COMMAND|QUERY|MACRO` подавляется. (2) курируемый subscriber-слой (`gameapi.journal.subscribers`) →
-> `NarrationThought` (ЛЛМ фразирует) / `VerbatimNarrationThought` (дословно); (3) свободный `speak` LLM —
+> типу действия (`Thought.recordOutcome`, §5.1): COMMAND — озвучиваемый исход из `execute` (crit→urgent); QUERY —
+> ответ; MACRO — молча (свои шаги). LLM-`speak` за ход с `COMMAND|QUERY|MACRO` подавляется. (2) реакция
+> gameplay-subscriber'а через `CompanionNarrator` → `EventThought`: `narrate` (ЛЛМ фразирует) / `announce`
+> (дословно), плюс `filler` (одноразовая реплика прямо в `SpeechGateway`, без памяти); (3) свободный `speak` LLM —
 > только на разговорном ходу без игрового действия. Слова компаньона (свободный `speak`, ответ запроса,
-> narration) пишутся в память как `[COMPANION]`.
+> исход команды, реакция события) пишутся в память как `[COMPANION]`.
 
 `SpeechGateway` — единственная дверь на озвучку.
 
@@ -1574,19 +1541,19 @@ turn importance   = importance   # важность хода: штампует �
 
 ### §4.2. System tools для событийной стороны
 
-`EventThought` системных функций **не получает вовсе** — он memory-only, промпт не строит, ЛЛМ не зовёт.
+`EventThought` game-tools не получает ни в одном режиме (subscriber уже посчитал и отфильтровал данные).
 
-`NarrationThought` (`source = NARRATION`) получает ровно одну:
+В **narration**-режиме он получает ровно одну системную функцию:
 
 ```text
-speak            # без гейта: решение «озвучить» принял subscriber-слой
+speak            # без гейта: решение «озвучить» принял subscriber
 ```
 
-Курируемый слой уже решил, что фраза достойна озвучки (прежний `EventSpeechPolicy` удалён). ЛЛМ за один раунд формулирует фразу → `speak`, и ход завершается. `search_in_memory`/`classify_turn` ему недоступны.
+Subscriber уже решил, что фраза достойна озвучки. ЛЛМ за один раунд формулирует фразу → `speak` (озвучивается только **первый**, если модель дала несколько), и ход завершается. `search_in_memory`/`classify_turn` ему недоступны.
 
-`VerbatimNarrationThought` ЛЛМ и tools не получает вовсе — он детерминированно пишет `[COMPANION]` и озвучивает готовый текст.
+В **verbatim**-режиме ЛЛМ и tools нет вовсе — он детерминированно пишет `sourceId` как `user`-ход, озвучивает готовый текст дословно и пишет его как `[COMPANION]`.
 
-Тему для записи берёт не LLM, а источник (§2.5): статическая мапа `event-type → topic` для `EVENT`, переданная subscriber'ом тема для `NARRATION`.
+Тему для записи берёт не LLM, а источник (§2.5): переданная subscriber'ом тема (fallback `SYSTEM`).
 
 ---
 
@@ -1602,10 +1569,10 @@ UserInputEvent
 → PromptComposer initial messages → LlmGateway → tool-calls
 → turn classified (classify_turn applied if called: global topic + turn importance)
 → currentInput written to memory   ([COMMANDER])
-→ execute tool-calls in order (sync); then recordOutcome by IntelActionType:
-     COMMAND  → voice text (crit→urgent) | ack affirmative() if side-effect;  mem [TOOL_RESULT] "command id executed"+text/desc
-     QUERY    → voice answer;                                                  mem [COMPANION] = answer
-     MACRO    → no voice (own steps);                                          mem [TOOL_RESULT] "macro id executed"+desc
+→ execute tool-calls in order (sync); then recordOutcome by IntelActionType (voices directly, no AiVoxResponseEvent):
+     COMMAND  → voice outcome (execute return, wrapped by IntelCommand#handle);  mem [COMPANION] = outcome (free-standing line)
+     QUERY    → voice answer;                                                    mem [TOOL_RESULT] = answer (paired with recorded CALL)
+     MACRO    → no voice (own SPEAK steps carry completion futures)
      SYSTEM   → no speech, no timeline (result only feeds the flow)
      speak    → suppressed if game action this turn; else voice + [COMPANION]
 → search_in_memory issued? -> replay assistant tool_calls + result into flow, one more LLM round to speak the answer
@@ -1617,33 +1584,33 @@ UserInputEvent
 
 ---
 
-### §5.2. EVENT и NARRATION flows
+### §5.2. EVENT flows
 
-Сырое событие (memory-only, без ЛЛМ):
-
-```text
-BaseEvent → GameEventFilter → ThoughtDispatcher → EventThought
-→ HIGH ? write [EVENT] under event-type topic : drop
-→ end   (ЛЛМ и речь не задействованы)
-```
-
-Курируемая наррация (ЛЛМ фразирует):
+Стартовая реплика (filler) — прямо в TTS, без мысли и памяти:
 
 ```text
-SensorDataEvent → CompanionSensorDataBridge → NarrationThought
-→ PromptComposer (lean narration prompt, NARRATION cache profile) → LlmGateway → один раунд
-→ взять speak → озвучить + write [COMPANION] under provided topic
-→ end   (currentInput/сырые данные в память не пишутся)
+subscriber → CompanionRuntime.narrator().filler(text, urgent) → SpeechGateway
 ```
 
-Курируемое объявление (дословно, без ЛЛМ):
+Реакция-наррация (ЛЛМ фразирует):
 
 ```text
-AnnouncementEvent → CompanionAnnouncementBridge (toggle) → VerbatimNarrationThought
-→ write [COMPANION] under topic → озвучить дословно → end
+subscriber → narrator().narrate(data, instructions, topic)
+→ ThoughtDispatcher.submitEventReaction → EventThought (narration)
+→ PromptComposer.composeNarration (lean prompt, NARRATION cache profile, only speak) → LlmGateway → один раунд
+→ взять первый speak → write [EVENT] stimulus (user) + озвучить + write [COMPANION] under provided topic
+→ end
 ```
 
-Событийная сторона не может вызывать game input и не двигает глобальную тему.
+Реакция-объявление (дословно, без ЛЛМ):
+
+```text
+subscriber (проверил тумблер) → narrator().announce(sourceId, phrase, topic, urgent)
+→ ThoughtDispatcher.submitEventVerbatim → EventThought (verbatim)
+→ write [EVENT] sourceId (user) → озвучить дословно → write [COMPANION] under topic → end
+```
+
+Событийная сторона не получает game-tools и не двигает глобальную тему.
 
 ---
 
@@ -1693,13 +1660,13 @@ COMMANDER:
 → end
 ```
 
-Invalid-flow касается только ЛЛМ-мыслей. `NarrationThought` best-effort: на невалидном/прерванном раунде просто молчит (ничего не пишет). `EventThought`/verbatim ЛЛМ не зовут — invalid-пути у них нет.
+Invalid-flow касается только ЛЛМ-мыслей. `EventThought` narration best-effort: на невалидном/прерванном раунде просто молчит (ничего не пишет). Verbatim-режим ЛЛМ не зовёт — invalid-пути у него нет.
 
 ---
 
 ### §5.5. Interrupt flow
 
-Urgent thought arrives (narration рождается urgent):
+Urgent thought arrives (срочность реакции — по флагу `urgent` в вызове `CompanionNarrator`):
 
 ```text
 → placed first in its lane
@@ -1709,7 +1676,7 @@ Urgent thought arrives (narration рождается urgent):
 Interrupted thought:
 
 ```text
-→ CommanderThought: safe-flush; короткие event/narration просто завершаются
+→ CommanderThought: safe-flush; короткая event-мысль просто завершается
 → cancel handles (in-flight LLM future)
 → no new LLM/query/action/speech
 → end
@@ -1758,12 +1725,11 @@ In-flight cancelled requests:
 ### §6.2. Новое
 
 * `companionModeOn` gate.
-* `EventFilter` (`GameEventFilter`).
 * `ThoughtDispatcher` (lane на источник, `EnumMap`) + `ThoughtLane`.
-* `Thought` (abstract) + `CommanderThought` / `ReflexThought` / `EventThought` / `NarrationThought` / `VerbatimNarrationThought`.
+* `Thought` (abstract) + `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы).
 * рефлекс-гейт: `ReflexResolver` (`submitCommanderInput`: дословная безопасная беспараметрная команда → `ReflexThought` без ЛЛМ).
-* curated-narration мосты: `CompanionSensorDataBridge` (ЛЛМ) / `CompanionAnnouncementBridge` (verbatim).
-* `ToolAccessPolicy` (`IntelActionAccessPolicy`, источник → категории; `NARRATION` → пусто).
+* единая дверь событий: `CompanionNarrator` (`filler`/`narrate`/`announce`) + `DispatcherCompanionNarrator`, ставится через `CompanionRuntime.installNarrator`.
+* `ToolAccessPolicy` (`IntelActionAccessPolicy`, источник → категории; `EVENT` → пусто).
 * `SystemToolProvider`.
 * `DangerousActionPolicy` / `ActionSafetyClassifier`.
 * `ToolCallValidator` / exact tools snapshot validation boundary.
@@ -1978,10 +1944,9 @@ v0.13 основана на прогоне правдоподобных сцен
 | Концепт в документе | Класс в коде | Пакет |
 |---|---|---|
 | companionModeOn gate | `CompanionSubsystemGate` | `companion.input` |
-| `EventFilter` | `GameEventFilter` | `companion.input` |
-| curated-narration мосты | `CompanionSensorDataBridge` (ЛЛМ) / `CompanionAnnouncementBridge` (verbatim) | `companion.input` |
-| origin мысли | `ThoughtSource` (COMMANDER/EVENT/NARRATION) | `companion.model` |
-| вид мысли (один на источник) | `CommanderThought` / `ReflexThought` / `EventThought` / `NarrationThought` / `VerbatimNarrationThought` (abstract `Thought`) | `companion.mind` |
+| дверь событий (filler/narrate/announce) | `CompanionNarrator` (интерфейс) / `DispatcherCompanionNarrator` (impl) | `companion` / `companion.mind` |
+| origin мысли | `ThoughtSource` (COMMANDER/EVENT) | `companion.model` |
+| вид мысли (один на источник) | `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы) (abstract `Thought`) | `companion.mind` |
 | `ThoughtDispatcher` / lane | `ThoughtDispatcher` / `ThoughtLane` | `companion.mind` |
 | рефлекс-гейт (fast-path команды) | `ReflexResolver` | `companion.prompt` |
 | `Topic` enum | `ConversationTopic` | `companion.model` |
@@ -2013,9 +1978,10 @@ elite.intel.companion
 │  ├─ speech            SpeechRequest
 │  ├─ execution         ExecutionRequest
 │  └─ memory            MemoryEntry, MemorySource, MemoryProcessingState
-├─ input                CompanionSubsystemGate, GameEventFilter, EventTopicMap, BargeInController,
-│                       CompanionSensorDataBridge, CompanionAnnouncementBridge
-├─ mind                 Thought (abstract) + CommanderThought/ReflexThought/EventThought/NarrationThought/VerbatimNarrationThought,
+├─ CompanionNarrator    single door for gameplay subscribers (filler/narrate/announce; NO_OP off-mode)
+├─ input                CompanionSubsystemGate, BargeInController
+├─ mind                 Thought (abstract) + CommanderThought/ReflexThought/EventThought,
+│                       DispatcherCompanionNarrator,
 │                       ThoughtDispatcher, ThoughtLane, UrgencyPolicy, ThoughtContext, CompanionState
 ├─ prompt               PromptComposer, ComposedPrompt, IntelActionAccessPolicy,
 │                       CompanionActionReducer, WordOverlapActionReducer, GameToolCandidates, ReflexResolver
@@ -2031,21 +1997,21 @@ elite.intel.companion
 └─ confirm              DangerousActionConfirmedEvent
 ```
 
-> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel`) — installed at subsystem start. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `classify_turn` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic` (its `topic` param) and echoes the turn's `importance`; an EVENT thought never gets it (its memory topic comes from a static event-type map). `find_action` is retired and no longer registered. `LlmMemory` and `MidTermTopicMemory` search are implemented, so `search_in_memory` is functional.
+> **`CompanionRuntime` / `CompanionState`.** `CompanionRuntime` is the static install/clear access point so system-function `handle`s reach the gateways, the `CompanionActionReducer`, and the shared `CompanionState` (global `TopicModel`) — installed at subsystem start. It also holds the `CompanionNarrator`, installed separately via `installNarrator(...)` (it wraps the `ThoughtDispatcher`, built after the gateways) and returned as `NO_OP` when the subsystem is not running, so gameplay subscribers call `narrator()` unconditionally. `CompanionState` is a plain mutable holder that the `ThoughtDispatcher` will own as a field once it exists. There is a single global topic (no per-thought topic): `classify_turn` is COMMANDER-only and is an ordinary executed function whose `handle` writes `CompanionState.setGlobalTopic` (its `topic` param) and echoes the turn's `importance`; an EVENT thought never gets it (its memory topic is the subscriber-supplied topic). `find_action` is retired and no longer registered. `LlmMemory` and `MidTermTopicMemory` search are implemented, so `search_in_memory` is functional.
 
 ### §10.3. Уточнения механизмов (отличия от ранних разделов)
 
 * **Шлюзы возвращают `CompletableFuture`, не handle/owner-token.** `LlmGateway` → `CompletableFuture<LlmResult>`, `SpeechGateway` → `CompletableFuture<Void>`, `ExecutionGateway` → `CompletableFuture<JsonObject>`. Отмена — `future.cancel(...)` (skip из очереди / discard результата); отдельного `CancellationToken` нет. Инвариант «только owning thought потребляет result» сохраняется: future держит сама мысль.
-* **Один класс мысли на источник.** `Thought` — тонкая общая база (`composeInitialPrompt`/`submitRound`/`execute`/`recordCurrentInput`/`recordCompanionSpeech`/interrupt), **без цикла мышления**. `CommanderThought` владеет полным tool-calling-циклом и dangerous-confirmation; `NarrationThought` — один короткий ЛЛМ-раунд (фразирует `SensorDataEvent`); `VerbatimNarrationThought` — дословная озвучка announcement-текста без ЛЛМ; `EventThought` — memory-only (`HIGH` пишет в память, `NORMAL`/`LOW` — нет), ЛЛМ не зовёт и промпт не строит. Слова компаньона пишутся источником памяти `COMPANION` (сам текст, не `{status:spoken}`). `ThoughtDispatcher` держит lane на каждый `ThoughtSource` в `EnumMap`; командирский lane — bounded-пул на `MAX_LIVE_COMMANDER_THOUGHTS` (v0.16), event/narration — одиночные.
-* **`mode` → `PromptCacheProfile`** {COMMANDER, NARRATION, COMPRESSION}. У каждого стабильный `cacheKey()` → Mistral `prompt_cache_key` (свой кэш-префикс на профиль). `EVENT` промпт не строит (memory-only), поэтому своего профиля не имеет; `NARRATION` несёт собственный лаконичный промпт (без topic enum / memory / safety). Признак «ждём tool-calls vs текст» выводится (consciousness vs COMPRESSION / `tools.isEmpty()`), отдельного флага нет.
+* **Один класс мысли на источник.** `Thought` — тонкая общая база (`composeInitialPrompt`/`submitRound`/`execute`/`recordCurrentInput`/`recordCompanionSpeech`/`recordOutcome`/interrupt), **без цикла мышления**. `CommanderThought` владеет полным tool-calling-циклом и dangerous-confirmation; `EventThought` озвучивает реакцию subscriber'а в двух режимах: narration — один короткий ЛЛМ-раунд фразирует переданные данные (лаконичный narration-промпт, только `speak`), verbatim — дословная озвучка готовой фразы без ЛЛМ и промпта; в обоих режимах пишется пара `user`→`[COMPANION]`. Слова компаньона пишутся источником памяти `COMPANION` (сам текст, не `{status:spoken}`). `ThoughtDispatcher` держит lane на каждый `ThoughtSource` в `EnumMap`; командирский lane — bounded-пул на `MAX_LIVE_COMMANDER_THOUGHTS` (v0.16), event — сериализованный (ёмкость 1).
+* **`mode` → `PromptCacheProfile`** {COMMANDER, NARRATION, COMPRESSION, KEY_GENERATION}. У каждого стабильный `cacheKey()` → Mistral `prompt_cache_key` (свой кэш-префикс на профиль). `EVENT` narration-режим использует профиль `NARRATION` (собственный лаконичный промпт без topic enum / memory / safety); verbatim-режим промпт не строит и профиля не имеет. Признак «ждём tool-calls vs текст» выводится (consciousness vs COMPRESSION / `tools.isEmpty()`), отдельного флага нет.
 * **`LlmRequest` = `(requestId, messages, tools, profile)`.** Список `tools` и есть immutable snapshot; `urgency` на запросе не нужен — приоритет/преемпция реализуются через interrupt на уровне `ThoughtDispatcher`.
-* **`ExecutionRequest` = `(requestId, toolName, arguments, toolCallId)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся. `toolCallId` (nullable) — id вызова модели: gateway ставит его thread-scoped (`ActiveToolCall`) вокруг хендлера, чтобы озвученный исход команды записался как RESULT этой tool-пары.
+* **`ExecutionRequest` = `(requestId, toolName, arguments, commanderInput)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся. `commanderInput` — сырая реплика командира (`originalUserInput` для хендлера; `""` когда её нет). Компонент `toolCallId` и thread-scoped `ActiveToolCall` **удалены** (v0.19): спаривание CALL/RESULT в памяти держит только `ToolLink` (свой `toolCallId` внутри мысли через `recordCall`/`recordToolResult`).
 * **`SpeechRequest` = `(requestId, text, urgency)`.** Различие conscious / system-notification — забота вызывающей стороны, поля `source` нет.
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. В набор tools попадает любой action с `isVisibleForLLM(status) == true` — это автоматически отсекает неуместный в текущем контексте набор (например, on-foot команды, когда командир в корабле). Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
   * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английские нарочно: схема английская, не-английский ввод модель сперва переводит на английский (см. language rule), и английское описание одинаково для всех языков → единый кэш-префикс. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в уточняющий вопрос вместо команды). Синтетический префикс «Game action `<id>`» убран.
 * **System-prompt steering (`CompanionSystemPromptPart`).** `Tool calling` несёт только механику (только вызовы функций; ход начинается с одного `classify_turn`; одношаговость + memory-lookup как единственное продолжение; пустой ответ = ошибка). Само **решение — единая упорядоченная if-else лестница в `Turn source`**, по которой модель идёт сверху вниз и берёт **первый** подходящий пункт (memory-ветки свёрнуты сюда, отдельной секции «Memory usage rules» больше нет): (1) командир хочет действие (в т.ч. голое/односложное имя панели/режима — «navigation», «inventory», «contacts») → **ровно один** offered-инструмент подходит → вызвать его; **несколько** подходят и не ясно, какой именно → `speak` с уточняющим вопросом, **не угадывать** (выполнить не ту команду хуже вопроса); **ни один** → не подделывать чужой, сказать через `speak`, что не может; (2) спрашивает текущее состояние корабля/галактики → matching `query` (те же ветки один/несколько/ни один); (3) спрашивает про сказанное/запомненное ранее и этого нет в видимой истории диалога → `classify_turn` + `search_in_memory` в этом ответе, ответ озвучить следующим; (4) ответ уже в видимой истории диалога / болтовня / уже знаешь → `speak`; (5) ничего из перечисленного (пустое подтверждение, шум) → один `classify_turn`. Плюс сквозные правила: **граундинг** (факты только из функций/памяти, не выдумывать числа/имена/дистанции), **язык** (`languageRule` — не-английский ввод понять по-английски перед выбором функции, аргументы по правилу параметра). Замер на отдельном пробнике подтвердил выигрыш на терсовых фразах (`цель силовая установка`). Покрыто `CompanionSystemPromptPartTest`.
-* **`CompanionActionReducer` → `WordOverlapActionReducer` (собственный отбор, не легаси `Reducer`).** Берёт actions из реестров через `GameToolCandidates`, получает `allowedToolCategories` (из `IntelActionAccessPolicy` по origin: `COMMANDER` → `QUERY/ACTION/MACRO`, `EVENT` → `QUERY` (memory-only, промпт не строит), `NARRATION` → пусто) и `currentInput`, отбирает по совпадению значимых слов реплики с локализованными тренировочными фразами кандидата (`phraseKey`) и возвращает `List<LlmToolDefinition>`. Алгоритм отбора:
+* **`CompanionActionReducer` → `WordOverlapActionReducer` (собственный отбор, не легаси `Reducer`).** Берёт actions из реестров через `GameToolCandidates`, получает `allowedToolCategories` (из `IntelActionAccessPolicy` по origin: `COMMANDER` → `QUERY/ACTION/MACRO`, `EVENT` → пусто) и `currentInput`, отбирает по совпадению значимых слов реплики с локализованными тренировочными фразами кандидата (`phraseKey`) и возвращает `List<LlmToolDefinition>`. Алгоритм отбора:
   * **Сопоставление слов** — `CompanionWordMatch`: для флективных языков терпит окончания (одно слово — начало другого / общая основа / 1–2 правки Левенштейна, бюджет растёт с длиной), для аналитических (английский) — точное равенство; выбор по языку сессии (`ANALYTIC = {EN}`, всё прочее — fuzzy). Это чинит русские склонения (`навігація`/`навигации`, `ведомого`/`ведомый`), которые точное совпадение прячет.
   * **Стоп-слова** — служебные слова языка (`InputNormalizerLocalizations.stopWords()`, теперь заполнены для всех языков) и слова короче 3 букв отбрасываются.
   * **Вес по редкости (IDF)** — слово, встречающееся у многих команд, весит меньше; команда оценивается суммой весов совпавших слов, список ранжируется по баллу (общее «авианосцем» само по себе тащит слабо, «управление»+«авианосцем» — сильно).
@@ -2054,6 +2020,6 @@ elite.intel.companion
   Fallback-id (general-conversation, ignore-nonsensical, connection-check) не включаются. **Рефлекс не затронут** — `ReflexResolver` остаётся на точном совпадении всей фразы (fuzzy только в отборе кандидатов, не в рефлексе).
 * **LLM provider seam:** провайдер-специфичный рендер/разбор — `LlmProviderAdapter`. Общий OpenAI-совместимый рендер/парсинг живёт в базовом `OpenAiCompatibleLlmAdapter`; тонкие per-provider impl'ы задают только модель, `tool_choice` и `prompt_cache_key`: `MistralLlmAdapter` (cloud — `any`, с cache key) и `LmStudioLlmAdapter` (local LM Studio — `required`, без cache key). Это бывш. `CompanionLlmDialect`/`MistralToolCallDialect`, переименованы. У `LlmGateway` две операции: `submit` (tool-calling сознания) и `compressMidTermMemory(LlmRequest) → CompletableFuture<String>` (текстовый ответ для сжатия памяти; адаптер даёт `parseText`, тело — тот же `buildRequestBody` с пустыми `tools`).
 * **Long-term память реализована:** `LongTermMemory` (холдер), `MidTermTopicMemory.evictOverflow` (per-topic cap), `MidTermEvictionListener` (гейтвей отдаёт overflow, сам LLM не зовёт) и `MidTermToLongTermConsolidator` (буфер→порог→`compressMidTermMemory`→валидация `SUMMARY_MAX_CHARS`→atomic `replaceLongTermSummary`; провал → буфер потерян, summary цела, `SpeechGateway` system-notification). Все лимиты памяти — в `CompanionMemoryLimits`. Подключение listener'а к гейтвею — при bootstrap (`CompanionSubsystemGate`).
-* **Итог tool-call по типу действия (`Thought.recordOutcome`, v0.15; скорректировано после отката `CommandOutcome`).** Тип резолвит `IntelActionTypeResolver` (`companion.tools`, инжектируемый тест-сим) → `COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN`. Озвучка/память: `CommanderThought` даёт LLM-команде немедленный ack `affirmative()` перед `execute(inv)`, чтобы подтверждение не ждало handler; сам COMMAND остаётся самохозяином речи (handler снова self-narrating через старый voice path), а `recordOutcome` только пишет `[TOOL_RESULT]` «command id executed»+текст/описание и не добавляет поздний fallback-ack для пустого результата. QUERY — `text_to_speech_response` озвучивается и пишется в память как `[COMPANION]`; MACRO — молча, память «macro id executed»+описание; SYSTEM/UNKNOWN — речь и timeline не трогаем. Описание берётся из снапшота tools (`LlmToolDefinition.description()`), не из реестра. Команды/запросы синхронны (fire-and-forget откатан). `silentInCompanion()` удалён.
+* **Итог tool-call по типу действия (`Thought.recordOutcome`).** Тип резолвит `IntelActionTypeResolver` (`companion.tools`, инжектируемый тест-сим) → `COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN`. `recordOutcome` озвучивает исход **напрямую** (без `AiVoxResponseEvent` — это событие теперь только системное). Озвучка/память: **COMMAND** — `IntelCommand.execute(...)` возвращает `String` (озвучиваемый исход или null; `handle` заворачивает непустой в `text_to_speech_response`); `recordOutcome` озвучивает этот исход и пишет его свободной строкой `[COMPANION]` (командный ход не пишет CALL, к которому можно привязать RESULT). **QUERY** — ответ озвучивается и пишется как `[TOOL_RESULT]`, привязанный к записанному `recordCall`-у CALL (пара CALL/RESULT). **MACRO** — молча (свои SPEAK-шаги несут completion futures). **SYSTEM/UNKNOWN** — речь и timeline не трогаем. Команды/запросы синхронны (fire-and-forget откатан). `silentInCompanion()` удалён.
 * **`MemoryProcessingState`** = `PROCESSED`, `UNRESOLVED`, `AWAITING_CONFIRMATION`, `CONFIRMED`, `CANCELLED`, `TIMED_OUT`, `INTERRUPTED`.
 

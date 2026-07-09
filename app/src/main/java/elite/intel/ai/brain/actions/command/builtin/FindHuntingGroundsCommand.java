@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
@@ -63,7 +62,7 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         int range = params.get(PARAM_KEY) == null
                 || getIntSafely(params.get(PARAM_KEY).getAsString()) == null
                 || params.isEmpty() ? 100 : params.get(PARAM_KEY).getAsInt();
@@ -85,9 +84,9 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
                         : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
                 message = providers + " " + nav;
             }
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
+            return message;
         } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range)));
+            return StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range);
         }
     }
 }

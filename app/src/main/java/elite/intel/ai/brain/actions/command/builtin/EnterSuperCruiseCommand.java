@@ -1,11 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
@@ -48,22 +49,22 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
 
-        if (status.isFsdCharging()) return;
+        if (status.isFsdCharging()) return null;
 
         if (status.isFsdMassLocked()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.massLocked")));
+            return StringUtls.localizedLlm("handler.supercruise.massLocked");
         } else if (status.isFsdCooldown()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.cooldown")));
+            return StringUtls.localizedLlm("handler.supercruise.cooldown");
         }
 
         ///NOTE. this is commented out until FDev fixes the Status.json.
         /// Game has a bug status.isFighterOut() == true when nomad is equipped and returned to base.
 //        else if (status.isFighterOut()) {
 //            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-//            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
+//            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.supercruise.fighterOut"), false);
 //        }
 
         else if (status.isInMainShip()) {
@@ -105,7 +106,8 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                 }
             }
         } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.notInShip")));
+            return StringUtls.localizedLlm("handler.supercruise.notInShip");
         }
+        return null;
     }
 }

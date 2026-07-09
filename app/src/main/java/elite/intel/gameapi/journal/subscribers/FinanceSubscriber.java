@@ -1,9 +1,10 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BuyAmmoEvent;
 import elite.intel.gameapi.journal.events.BuyDronesEvent;
 import elite.intel.gameapi.journal.events.CarrierBankTransferEvent;
@@ -49,10 +50,9 @@ import elite.intel.ui.event.CreditsUpdatedEvent;
  * If another journal event is found to move money, add it here (and to
  * {@code FinancePreScanAccumulator}).
  *
- * <p>This is also where the spoken financial announcements live: notable events
- * publish a {@link SensorDataEvent} (English data + instruction) so the LLM speaks
- * a personality-styled summary in the user's chosen language - no fixed templates,
- * no localization bundle needed. {@code MarketSell} is the deliberate exception: its
+ * <p>This is also where the spoken financial announcements live: notable events hand the companion English
+ * data + instruction via {@code CompanionRuntime.narrator().narrate(...)} so the LLM speaks a
+ * personality-styled summary in the user's chosen language - no fixed templates, no localization bundle needed. {@code MarketSell} is the deliberate exception: its
  * announcement stays in {@code MarketSellEventSubscriber} because it is tied to the
  * trade-route feature.
  */
@@ -231,7 +231,7 @@ public class FinanceSubscriber {
      * Hands English data + instruction to the LLM, which speaks it in the user's language with personality.
      */
     private void announce(String data, String instruction) {
-        GameEventBus.publish(new SensorDataEvent(data, instruction));
+        CompanionRuntime.narrator().narrate(data, instruction);
     }
 
     // Signed deltas (positive = inflow, negative = outflow). Public/static so the

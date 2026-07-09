@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -60,17 +59,17 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Integer numberOfStops = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if (numberOfStops == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidStops")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeProfile.invalidStops");
         }
 
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setMaximumStops(numberOfStops)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops)));
+            return StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops);
         }
+        return null;
     }
 }

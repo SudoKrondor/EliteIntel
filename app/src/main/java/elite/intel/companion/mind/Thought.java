@@ -2,9 +2,7 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.companion.diag.CompanionDiagnostics;
-import elite.intel.companion.execution.ActiveToolCall;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.ThoughtSource;
@@ -18,8 +16,8 @@ import elite.intel.companion.model.memory.ToolLink;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
+import elite.intel.companion.prompt.PromptXml;
 import elite.intel.companion.tools.SpeakFunction;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -39,9 +37,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * companion's own speech to memory.
  * <p>
  * It owns no thinking loop. Each concrete kind drives its own {@link #run}: {@link CommanderThought} the full
- * tool-calling loop with dangerous-action confirmation, {@link NarrationThought} a single short round,
- * {@link EventThought} a memory-only write. There is no per-thought topic field: the memory tag is the global
- * conversation topic for COMMANDER and the event's static topic for EVENT/narration (§2.4/§2.5).
+ * tool-calling loop with dangerous-action confirmation, {@link EventThought} a single short round (or a verbatim
+ * line) that phrases a subscriber's reaction. There is no per-thought topic field: the memory tag is the global
+ * conversation topic for COMMANDER and the subscriber-supplied topic for EVENT (§2.4/§2.5).
  * <p>
  * Threading: {@link #run} executes on a dispatcher lane thread; {@link #interrupt} is called from another
  * thread and cooperates via a volatile flag and by cancelling the awaited future (§2.7).
@@ -110,50 +108,32 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a thought from a filtered game event. Its memory tag is fixed at birth from the static
-     * event-type map; an EVENT thought never moves the global conversation topic. It is memory-only: the
-     * event's readable {@code summary} ({@code memorySummary()}) is recorded if non-blank, otherwise nothing,
-     * and the LLM is never engaged.
+     * Creates a reactive thought from a gameplay subscriber's {@code CompanionReactionEvent}: the companion
+     * phrases the pre-digested {@code stimulus} and speaks it. The stimulus is recorded verbatim as the
+     * {@code user} turn; the LLM-visible input wraps it as {@code <event_data>} and wraps {@code instructions}
+     * as {@code <narration_instructions>} so data and phrasing guidance are not read as commander speech.
+     * Instructions steer only this turn's phrasing and are never remembered. Its memory tag is the
+     * subscriber-supplied topic; it never moves the global conversation topic and gets no game tools.
      */
-    public static Thought event(Urgency urgency, String summary, ConversationTopic eventTopic,
-                                ThoughtContext ctx) {
-        return new EventThought(urgency, summary, eventTopic, ctx);
+    public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,
+                                        ConversationTopic eventTopic, ThoughtContext ctx) {
+        StringBuilder promptInput = new StringBuilder(PromptXml.element("event_data", stimulus));
+        if (instructions != null && !instructions.isBlank()) {
+            promptInput.append("\n\n")
+                    .append(PromptXml.element("narration_instructions", instructions));
+        }
+        return new EventThought(urgency, stimulus, promptInput.toString(), eventTopic, ctx);
     }
 
     /**
-     * Creates a thought from subscriber-prepared sensor narration. The subscriber layer already decided this
-     * is worth saying, so this kind skips game tools; the LLM's only job is to phrase the provided data.
+     * Creates a verbatim reactive thought from a gameplay subscriber that already has a finished phrase: it is
+     * voiced as-is (no LLM) and recorded as the companion's reply, paired with the short {@code sourceId} as the
+     * {@code user} turn (never the raw data - a huge list would bloat the prompt). Its memory tag is the
+     * subscriber-supplied topic; it never moves the global conversation topic and gets no game tools.
      */
-    public static Thought sensorNarration(Urgency urgency, String summary, ConversationTopic eventTopic, ThoughtContext ctx) {
-        return new NarrationThought(urgency, summary, eventTopic, ctx);
-    }
-
-    /**
-     * Creates a thought from a curated announcement that already carries finished text. It is voiced verbatim
-     * (no LLM phrasing) in the companion's voice and recorded as the companion's own words under the topic.
-     */
-    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic, ThoughtContext ctx) {
-        return new VerbatimNarrationThought(urgency, text, topic, ctx);
-    }
-
-    /**
-     * Verbatim narration whose {@code spokenSignal} is completed when the companion's playback finishes, for a
-     * synchronous caller (e.g. a bridged macro SPEAK step) that blocks until the line is actually spoken.
-     */
-    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
-                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal) {
-        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal);
-    }
-
-    /**
-     * Verbatim narration that is the voiced outcome of a model tool-call: it is recorded as that call's tool
-     * result (linked by {@code toolCallId}), so the timeline replays it as the RESULT half of an
-     * {@code assistant(tool_calls) -> tool} pair rather than as free-standing companion speech.
-     */
-    public static Thought verbatimNarration(Urgency urgency, String text, ConversationTopic topic,
-                                            ThoughtContext ctx, java.util.concurrent.CompletableFuture<Void> spokenSignal,
-                                            String toolCallId) {
-        return new VerbatimNarrationThought(urgency, text, topic, ctx, spokenSignal, toolCallId);
+    public static Thought eventVerbatim(Urgency urgency, String sourceId, String phrase,
+                                        ConversationTopic eventTopic, ThoughtContext ctx) {
+        return new EventThought(urgency, sourceId, sourceId, phrase, eventTopic, ctx);
     }
 
     /**
@@ -181,9 +161,9 @@ public abstract class Thought {
 
     /**
      * IntelAction categories this thought may use - the single input to game-tool selection. Default: the
-     * access policy's categories for this thought's source (COMMANDER -> QUERY/ACTION/MACRO, EVENT -> QUERY).
-     * A subclass narrows it: {@link NarrationThought} returns none, so the one reducer call offers no game
-     * tools (the subscriber already calculated and filtered the data to narrate).
+     * access policy's categories for this thought's source (COMMANDER -> QUERY/ACTION/MACRO; EVENT -> none,
+     * since a reactive {@link EventThought} only phrases pre-digested subscriber data, so the one reducer call
+     * offers no game tools).
      */
     protected Set<IntelActionCategory> allowedCategories() {
         return ctx.intelActionAccessPolicy().allowedCategories(source);
@@ -292,15 +272,6 @@ public abstract class Thought {
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
     protected JsonObject execute(LlmToolInvocation inv) {
-        return execute(inv, null);
-    }
-
-    /**
-     * As {@link #execute(LlmToolInvocation)}, but tags the run with the tool-call id, so a command handler's
-     * own narration (emitted during {@code handle()} on the lane thread) is recorded as this call's tool result
-     * (see {@link ActiveToolCall}). A {@code null} id runs with no pairing (system functions, plain reflexes).
-     */
-    protected JsonObject execute(LlmToolInvocation inv, String toolCallId) {
         // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
         // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
         // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
@@ -309,7 +280,7 @@ public abstract class Thought {
         }
         try {
             return ctx.executionGateway()
-                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), toolCallId, currentInput))
+                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), currentInput))
                     .join();
         } catch (RuntimeException failed) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
@@ -374,29 +345,33 @@ public abstract class Thought {
     }
 
     /**
-     * Records a tool outcome by action type as the RESULT half of a replayed {@code assistant(tool_calls) ->
-     * tool} pair (its CALL half is written by {@link #recordCall} before the call runs). Commands and macros
-     * are self-narrating: the handler voices its own outcome, which the {@code CompanionAnnouncementBridge}
-     * records as this call's tool result via the active tool-call id the execution gateway set around
-     * {@code handle()} - so nothing is written here (a silent command leaves the call resultless; the composer
-     * synthesizes one so the pair stays valid). A query answer is self-narrating too: it is published as an
-     * {@link AiVoxResponseEvent} with the active id set, so the bridge records the answer as this call's tool
-     * result rather than free-standing companion speech.
+     * Records a tool outcome by action type, voicing it directly (no {@code AiVoxResponseEvent} detour - that
+     * event is now system-only and the companion owns its own speech). A <b>query</b> answer is carried in the
+     * execution result and recorded as this call's tool RESULT (paired with the CALL {@link #recordCall} wrote).
+     * A <b>command</b> declares its outcome in the result too (its {@code execute} return value, wrapped by
+     * {@code IntelCommand#handle}); a command turn files no call to pair with, so its outcome is remembered as a
+     * free-standing companion line. A <b>macro</b> stays
+     * self-narrating (its SPEAK steps carry completion futures), so its outcome is not handled here. {@code SYSTEM}
+     * functions leave no timeline entry.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
                                  String toolCallId) {
         switch (ctx.actionTypeResolver().resolve(inv.name())) {
-            case COMMAND, MACRO -> { /* handler-voiced; recorded as this call's RESULT via ActiveToolCall */ }
             case QUERY -> {
-                // WHY publish instead of calling the dispatcher directly: the CompanionAnnouncementBridge is
-                // the single owner of verbatim narration (topic tagging + completion-future handling), so the
-                // answer converges with command/macro narration on one path, mirroring the legacy router.
-                // The active tool-call id makes the bridge record it as this call's RESULT, not loose speech.
                 String answer = spokenTextOf(result);
                 if (!answer.isBlank()) {
-                    ActiveToolCall.runWith(toolCallId, () -> GameEventBus.publish(new AiVoxResponseEvent(answer)));
+                    recordToolResult(toolCallId, answer);  // RESULT half, paired with the recorded CALL
+                    voice(answer, false);
                 }
             }
+            case COMMAND -> {
+                String outcome = spokenTextOf(result);
+                if (!outcome.isBlank()) {
+                    recordCompanionSpeech(outcome);        // free-standing line: a command turn files no call to pair
+                    voice(outcome, false);
+                }
+            }
+            case MACRO -> { /* self-narrating: SPEAK steps carry completion futures; handled on their own path */ }
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }

@@ -1,10 +1,11 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.eventbus.GameEventBus;
@@ -64,15 +65,14 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         String keyword = params.get(PARAM_KEY) == null ? null : params.get(PARAM_KEY).getAsString();
 
         MissionDto mission = missionManager.findByKeyword(keyword).stream().findFirst().orElse(null);
         if (mission == null) {
             mission = missionManager.getMissions().values().stream().findFirst().orElse(null);
             if (mission == null) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.noMissionsFound")));
-                return;
+                return StringUtls.localizedLlm("handler.navigate.noMissionsFound");
             }
         }
 
@@ -90,8 +90,8 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
                 mission.getDestinationSystem()
         );
 
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.headToSystem", mission.getDestinationSystem())));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.navigate.headToSystem", mission.getDestinationSystem()), false);
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(mission.getDestinationSystem());
+        return plotter.plotRoute(mission.getDestinationSystem());
     }
 }

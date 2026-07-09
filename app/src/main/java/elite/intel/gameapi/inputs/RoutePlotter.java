@@ -24,16 +24,15 @@ public class RoutePlotter {
     public RoutePlotter() {
     }
 
-    public void plotRoute(String destination) {
+    public String plotRoute(String destination) {
         navigator.closeOpenPanel();
         if (destination == null || destination.isEmpty()) {
-            return;
+            return null;
         }
 
         String finalDestination = ShipRouteManager.getInstance().getDestination();
         if (finalDestination != null && finalDestination.equalsIgnoreCase(destination)) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.route.alreadyPlotted", finalDestination)));
-            return;
+            return StringUtls.localizedLlm("handler.route.alreadyPlotted", finalDestination);
         }
 
 
@@ -65,5 +64,6 @@ public class RoutePlotter {
         ));
 
         GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+        return null;
     }
 }

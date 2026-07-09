@@ -1,7 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.RouteAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.NavRouteEvent;
 import elite.intel.session.PlayerSession;
@@ -13,7 +14,7 @@ public class NavRouteSetSubscriber {
     @Subscribe
     public void onNavRouteSetEvent(NavRouteEvent event) {
         if (PlayerSession.getInstance().isRouteAnnouncementOn()) {
-            GameEventBus.publish(new RouteAnnouncementEvent(localizedEvent("event.route.set")));
+            CompanionRuntime.narrator().announce("route", localizedEvent("event.route.set"), "NAVIGATION", false);
         }
     }
 }

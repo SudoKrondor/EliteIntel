@@ -27,9 +27,9 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     public String staticRules(ThoughtSource source) {
         return switch (source) {
             case COMMANDER -> CommanderPrompt.render();
-            case NARRATION -> NarrationPrompt.render();
-            // EVENT thoughts are memory-only (see EventThought); they never compose a prompt.
-            case EVENT -> throw new IllegalArgumentException("EVENT thoughts do not compose a prompt");
+            // A reactive EVENT thought phrases pre-digested subscriber data and speaks it - a lean task, so it
+            // uses the lean narration-style rules.
+            case EVENT -> NarrationPrompt.render();
         };
     }
 

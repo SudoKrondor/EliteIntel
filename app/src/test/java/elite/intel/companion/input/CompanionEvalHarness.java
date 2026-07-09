@@ -27,7 +27,6 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.util.Database;
 import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.i18n.Language;
@@ -260,20 +259,6 @@ public final class CompanionEvalHarness {
     public void gameEvent(String type, String summary, BaseEvent.Importance importance) throws Exception {
         beginTurn();
         GameEventBus.publish(gameEventOf(type, summary, importance));
-        awaitIdle();
-    }
-
-    /**
-     * Publishes subscriber-prepared sensor narration the production way (through the sensor-data bridge into a
-     * {@code NarrationThought}) and waits for the turn to settle.
-     *
-     * @param sensorData   the already-filtered data the subscriber layer prepared
-     * @param instructions the subscriber's narration instruction
-     * @param topic        a neutral topic id, e.g. {@link SensorDataEvent#TOPIC_NAVIGATION}
-     */
-    public void narrate(String sensorData, String instructions, String topic) throws Exception {
-        beginTurn();
-        GameEventBus.publish(new SensorDataEvent(sensorData, instructions, topic));
         awaitIdle();
     }
 

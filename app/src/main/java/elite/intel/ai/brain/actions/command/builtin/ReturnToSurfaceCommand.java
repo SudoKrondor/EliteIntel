@@ -5,7 +5,6 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -42,7 +41,7 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_RECALL_DISMISS_SHIP.getGameBinding())));
         } else if (status.isOnFoot()) {
@@ -54,13 +53,12 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissRejected")));
-            return;
+            return StringUtls.localizedLlm("speech.shipDismissRejected");
         }
         if (status.isLanded()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipDismissed")));
+            return StringUtls.localizedLlm("speech.shipDismissed");
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.shipRecall")));
+            return StringUtls.localizedLlm("speech.shipRecall");
         }
     }
 }

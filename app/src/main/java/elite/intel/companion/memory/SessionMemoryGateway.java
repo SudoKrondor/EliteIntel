@@ -87,20 +87,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
             oversizedListener.onOversized(entry);
             return;
         }
-        // Stored lower-cased: case carries no recall signal (search lower-cases anyway) and it keeps the
-        // inlined timeline uniform. The meaning-vector is computed here, once, on the lower-cased text so
-        // semantic recall reads it for free. New entries land in short-term first; whatever overflows the
-        // count/token bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
-        MemoryEntry stored = entry;
-        if (entry.content() != null) {
-            // Store both texts lower-cased (case carries no recall signal), then embed the clean candidate text
-            // (MemoryEntry.embeddingText: the canonical fact when present, else the verbatim content).
-            String lowerContent = entry.content().toLowerCase(Locale.ROOT);
-            String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
-            MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
-                    entry.importance(), null, lowerCanonical);
-            stored = lowered.withEmbedding(embed(lowered.embeddingText()));
-        }
+        // Stored lower-cased with its meaning-vector attached once (see prepareForStore). New entries land in
+        // short-term first; whatever overflows the count/token bounds is moved into mid-term topic memory by
+        // topic (never duplicated across both levels).
+        MemoryEntry stored = prepareForStore(entry);
         // Collapse a fact that is already in memory under near-identical meaning into one fresh copy, so a
         // re-stated or re-asked fact (commander fact + the companion's echo, repeated questions, repeated
         // "I didn't find it" replies) does not pile up near-duplicate entries that later crowd out recall.
@@ -290,6 +280,23 @@ public final class SessionMemoryGateway implements MemoryGateway {
         if (!shortTerm.remove(entry)) {
             midTerm.remove(entry);
         }
+    }
+
+    /**
+     * Normalizes an entry for storage (used by {@link #write}): both texts are stored
+     * lower-cased (case carries no recall signal; search lower-cases anyway) and the meaning-vector is computed
+     * once here on the clean candidate text ({@link MemoryEntry#embeddingText}: the canonical fact when present,
+     * else the verbatim content), so semantic recall reads it for free. A null-content entry is returned as-is.
+     */
+    private MemoryEntry prepareForStore(MemoryEntry entry) {
+        if (entry.content() == null) {
+            return entry;
+        }
+        String lowerContent = entry.content().toLowerCase(Locale.ROOT);
+        String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
+        MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
+                entry.importance(), null, lowerCanonical, entry.toolLink());
+        return lowered.withEmbedding(embed(lowered.embeddingText()));
     }
 
     /**

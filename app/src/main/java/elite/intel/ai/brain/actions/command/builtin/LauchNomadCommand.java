@@ -41,7 +41,7 @@ public class LauchNomadCommand implements IntelCommand {
 
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),
@@ -59,6 +59,7 @@ public class LauchNomadCommand implements IntelCommand {
             navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
 
         }
+        return null;
     }
 
     @Override

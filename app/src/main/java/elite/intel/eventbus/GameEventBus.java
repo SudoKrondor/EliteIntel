@@ -9,9 +9,7 @@ import com.google.common.eventbus.EventBus;
  */
 public class GameEventBus {
     // WHY: a synchronous EventBus - subscribers run on the publishing thread. Some seams rely on this
-    // same-thread dispatch, e.g. companion tool-result correlation reads a thread-scoped id
-    // (elite.intel.companion.execution.ActiveToolCall) inside a subscriber. Switching to AsyncEventBus would
-    // silently break those; audit them first.
+    // same-thread dispatch; switching to AsyncEventBus would silently break those, so audit them first.
     private static final EventBus bus = new EventBus();
 
     public static void publish(Object event) {

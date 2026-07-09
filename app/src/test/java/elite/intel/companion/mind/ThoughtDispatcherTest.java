@@ -10,6 +10,8 @@ import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
+import elite.intel.companion.model.llm.LlmMessage;
+import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolInvocation;
@@ -25,13 +27,11 @@ import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -269,62 +269,15 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void eventInputRunsAThoughtTaggedFromEventTopic() {
-        ThoughtDispatcher dispatcher = dispatcher();
-        dispatcher.start();
-        dispatcher.submitEvent(new FakeEvent("FSDJump"));
-        dispatcher.stop();
-
-        assertEquals(1, memory.writes.size());
-        MemoryEntry entry = memory.writes.get(0);
-        assertEquals(MemorySource.EVENT, entry.source());
-        assertEquals(ConversationTopic.NAVIGATION, entry.topic(), "event memory tag comes from the event-type map");
-    }
-
-    @Test
-    void eventRecordsItsReadableSummaryInMemory() {
-        CapturingLlm llm = new CapturingLlm();
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
-        dispatcher.start();
-        dispatcher.submitEvent(new FakeEvent("FSDJump", BaseEvent.Importance.HIGH,
-                "The ship completed a hyperspace jump.", "arrived in Sol"));
-        dispatcher.stop();
-
-        assertTrue(llm.requests.isEmpty(), "an event is memory-only and never engages the LLM");
-        assertEquals(1, memory.writes.size());
-        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
-        // The event's readable memorySummary (here the FakeEvent's detail) is recorded, not a raw JSON envelope.
-        assertEquals("arrived in Sol", memory.writes.get(0).content());
-    }
-
-    @Test
-    void eventWithoutSummaryIsDroppedWithoutEngagingLlm() {
-        // An event that provides no memory summary is dropped at the dispatcher, before any thought is queued:
-        // nothing recorded, no LLM call.
-        LlmGateway failIfCalled = new LlmGateway() {
-            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
-                throw new AssertionError("an unremembered event must not engage the LLM");
-            }
-            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
-                return CompletableFuture.completedFuture(null);
-            }
-        };
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(failIfCalled));
-        dispatcher.start();
-        dispatcher.submitEvent(new FakeEvent("MarketSell", BaseEvent.Importance.NORMAL, "desc", ""));
-        dispatcher.stop();
-
-        assertTrue(memory.writes.isEmpty(), "an event with no summary is not retained in memory");
-    }
-
-    @Test
-    void sensorNarrationOffersOnlyNarrationToolsAndRecordsTheSpokenLine() {
+    void eventReactionRecordsStimulusThenReplyAndOffersOnlySpeak() {
+        // A subscriber-driven reaction: one short round offering only speak; the stimulus is recorded as an
+        // EVENT (user) turn and the spoken reply as the companion's words, keeping a clean two-party dialogue.
         List<LlmRequest> requests = new CopyOnWriteArrayList<>();
         LlmGateway llm = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 requests.add(request);
                 JsonObject speakArgs = new JsonObject();
-                speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "Plotting a route to Sol, Commander.");
+                speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "Signals detected on the ring, Commander.");
                 LlmToolInvocation speak = new LlmToolInvocation(UUID.randomUUID().toString(), SpeakFunction.ID, speakArgs);
                 return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(speak)));
             }
@@ -332,104 +285,28 @@ class ThoughtDispatcherTest {
                 return CompletableFuture.completedFuture(null);
             }
         };
-        CompanionState state = new CompanionState();
-        ThoughtContext ctx = new ThoughtContext(
-                llm, new FakeSpeech(), new FakeExecution(), memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> {
-                    assertTrue(categories.isEmpty(), "sensor narration is offered no game-tool categories");
-                    return List.of();
-                },
-                state, invocation -> false, new ConfirmationCoordinator());
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
         dispatcher.start();
-
-        dispatcher.submitSensorData(new SensorDataEvent(
-                "In route to Sol, G class star.",
-                "Announce this route information.",
-                SensorDataEvent.TOPIC_NAVIGATION));
+        dispatcher.submitEventReaction("surface scan: alexandrite", "Report it briefly.",
+                "EXPLORATION", Urgency.NORMAL);
         dispatcher.stop();
 
-        assertEquals(1, requests.size(), "narration is a single short round");
+        assertEquals(1, requests.size(), "an event reaction is a single short round");
+        List<LlmMessage> promptMessages = requests.get(0).messages();
+        LlmMessage promptInput = promptMessages.get(promptMessages.size() - 1);
+        assertEquals(LlmMessageRole.USER, promptInput.role());
+        assertTrue(promptInput.content().contains("<event_data>\nsurface scan: alexandrite\n</event_data>"));
+        assertTrue(promptInput.content().contains(
+                "<narration_instructions>\nReport it briefly.\n</narration_instructions>"));
         assertEquals(Set.of(SpeakFunction.ID),
                 requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()),
-                "narration offers only speak");
-
-        // Only the spoken line is recorded, under the provided topic - the raw sensor data is not persisted.
-        assertEquals(1, memory.writes.size());
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals(ConversationTopic.NAVIGATION, spoken.topic());
-        assertEquals("Plotting a route to Sol, Commander.", spoken.content());
-    }
-
-    @Test
-    void aBlockedNarrationDoesNotDelayEventRecording() throws InterruptedException {
-        // Narration blocks on the LLM (live on its own lane); a HIGH event must still record immediately,
-        // because it runs on the separate event lane - not queued behind the slow narration.
-        BlockFirstLlm llm = new BlockFirstLlm();
-        ThoughtContext ctx = new ThoughtContext(
-                llm, new FakeSpeech(), new FakeExecution(), memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
-                invocation -> false, new ConfirmationCoordinator());
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
-        dispatcher.start();
-
-        dispatcher.submitSensorData(new SensorDataEvent(
-                "In route to Sol.", "Announce it.", SensorDataEvent.TOPIC_NAVIGATION));
-        waitUntil(() -> llm.calls.get() >= 1);     // the narration is live and blocked on the LLM
-        dispatcher.submitEvent(new FakeEvent("FSDJump", BaseEvent.Importance.HIGH));
-        waitUntil(() -> !memory.writes.isEmpty()); // the event records without waiting for narration
-
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.EVENT),
-                "a HIGH event records immediately on its own lane, not behind the blocked narration");
-        dispatcher.stop();
-    }
-
-    @Test
-    void verbatimNarrationIsRecordedAndVoicedWithoutEngagingLlm() {
-        FakeSpeech speech = new FakeSpeech();
-        LlmGateway failIfCalled = new LlmGateway() {
-            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
-                throw new AssertionError("verbatim narration must not engage the LLM");
-            }
-            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
-                return CompletableFuture.completedFuture(null);
-            }
-        };
-        ThoughtContext ctx = new ThoughtContext(
-                failIfCalled, speech, new FakeExecution(), memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
-                invocation -> false, new ConfirmationCoordinator());
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
-        dispatcher.start();
-        dispatcher.submitVerbatimNarration("Target material detected.", ConversationTopic.MINING);
-        dispatcher.stop();
-
-        assertEquals(1, memory.writes.size());
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals(ConversationTopic.MINING, spoken.topic());
-        assertEquals("Target material detected.", spoken.content());
-        assertEquals(1, speech.requests.size(), "the line is voiced verbatim");
-        assertEquals("Target material detected.", speech.requests.get(0).text());
-    }
-
-    @Test
-    void commanderAndEventUseSeparateLanes() {
-        ThoughtDispatcher dispatcher = dispatcher();
-        dispatcher.start();
-        dispatcher.submitCommanderInput("how is the ship");
-        dispatcher.submitEvent(new FakeEvent("MarketSell"));
-        dispatcher.stop();
-
-        // Commander turn: the input plus a <no_reply/> marker (bare classify_turn settles with no reply);
-        // event lane: one write. The separate-lane check is the two source kinds both being present.
-        assertEquals(3, memory.writes.size());
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.EVENT));
+                "an event reaction offers only speak");
+        assertEquals(2, memory.writes.size(), "the stimulus and the reply are both recorded, in order");
+        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
+        assertEquals("surface scan: alexandrite", memory.writes.get(0).content());
+        assertEquals(MemorySource.COMPANION, memory.writes.get(1).source());
+        assertEquals("Signals detected on the ring, Commander.", memory.writes.get(1).content());
+        assertEquals(ConversationTopic.EXPLORATION, memory.writes.get(1).topic());
     }
 
     @Test
@@ -468,7 +345,7 @@ class ThoughtDispatcherTest {
         dispatcher.start();
         dispatcher.submitCommanderInput("   ");
         dispatcher.submitCommanderInput(null);
-        dispatcher.submitEvent(null);
+        dispatcher.submitEventReaction(null, null, "SYSTEM", Urgency.NORMAL);
         dispatcher.stop();
 
         assertTrue(memory.writes.isEmpty());
@@ -678,38 +555,4 @@ class ThoughtDispatcherTest {
         }
     }
 
-    private static final class FakeEvent extends BaseEvent {
-        private final String type;
-        private final Importance importance;
-        private final String description;
-        private final String detail;
-
-        FakeEvent(String type) {
-            this(type, Importance.HIGH); // default: exercise the full thinking loop
-        }
-
-        FakeEvent(String type, Importance importance) {
-            this(type, importance, "Description for " + type, "detail for " + type);
-        }
-
-        FakeEvent(String type, Importance importance, String description, String detail) {
-            super(Instant.now().toString(), Duration.ofMinutes(1), type);
-            this.type = type;
-            this.importance = importance;
-            this.description = description;
-            this.detail = detail;
-        }
-
-        @Override public String getEventType() { return type; }
-        @Override public Importance importance() { return importance; }
-        @Override public String llmDescription() { return description; }
-        @Override public String memorySummary() { return detail; }
-        @Override public String toJson() { return toJsonObject().toString(); }
-        @Override public JsonObject toJsonObject() {
-            JsonObject object = new JsonObject();
-            object.addProperty("event", type);
-            object.addProperty("detail", detail);
-            return object;
-        }
-    }
 }

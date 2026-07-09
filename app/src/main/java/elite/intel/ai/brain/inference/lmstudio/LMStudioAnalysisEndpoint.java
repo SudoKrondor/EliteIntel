@@ -9,7 +9,6 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
 import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
 import elite.intel.ai.brain.commons.AiEndPoint;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -99,55 +98,4 @@ public class LMStudioAnalysisEndpoint extends AiEndPoint implements AiAnalysisIn
                 root -> root.has("choices") && !root.getAsJsonArray("choices").isEmpty());
     }
 
-    public JsonObject processSensor(SensorDataEvent event) {
-        try {
-            LMStudioClient client = LMStudioClient.getInstance();
-            JsonObject prompt = client.createPrompt(LMStudioClient.MODEL_QUERIES, 0.70f);
-
-            JsonArray messages = new JsonArray();
-
-            JsonObject sensorPrompt = new JsonObject();
-            sensorPrompt.addProperty("role", AIConstants.ROLE_SYSTEM);
-
-            /// combine base prompt with event specific instructions
-            sensorPrompt.addProperty("content", ApiFactory.getInstance().getAiPromptFactory().generateSensorPrompt() + "\n\n" + event.getInstructions());
-            messages.add(sensorPrompt);
-/*
-            JsonObject instructions = new JsonObject();
-            instructions.addProperty("role", AIConstants.ROLE_SYSTEM);
-            instructions.addProperty("content", "EVENT SPECIFIC INSTRUCTIONS: " + event.getInstructions());
-            messages.add(instructions);*/
-
-            JsonObject userMsg = new JsonObject();
-            userMsg.addProperty("role", AIConstants.ROLE_USER);
-            userMsg.addProperty("content", event.getSensorData());
-            messages.add(userMsg);
-
-            prompt.add("messages", messages);
-            prompt.add("response_format", buildResponseFormat());
-
-            JsonObject root = processAiPrompt(gson.toJson(prompt), client);
-            log.debug("LM Studio sensor raw response:\n{}", gson.toJson(root));
-
-            StructuredResponse sr = checkResponse(root);
-            if (!sr.isSuccessful()) {
-                JsonObject err = new JsonObject();
-                err.addProperty("text_to_speech_response", "Sensor analysis failed – check logs");
-                return err;
-            }
-
-            log.debug("LM Studio sensor content: {}", sr.content());
-            JsonObject parsed = JsonParser.parseString(JsonUtils.repairLlmJson(sr.content())).getAsJsonObject();
-            log.debug("LM Studio sensor parsed: {}", parsed);
-            JsonObject sanitized = JsonUtils.sanitizeTtsResponse(parsed);
-            log.debug("LM Studio sensor sanitized: {}", sanitized);
-            return sanitized;
-
-        } catch (Exception e) {
-            log.error("LM Studio sensor processing failed", e);
-            JsonObject err = new JsonObject();
-            err.addProperty("text_to_speech_response", "Sensor analysis failed – check logs");
-            return err;
-        }
-    }
 }

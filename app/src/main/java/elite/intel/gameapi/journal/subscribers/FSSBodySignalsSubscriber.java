@@ -1,7 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
@@ -56,9 +57,9 @@ public class FSSBodySignalsSubscriber {
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
                 if (bioSignals > 0)
-                    GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(bioSignals, "event.fss.body.bioSignals")));
+                    CompanionRuntime.narrator().announce("discovery", localizedEventPlural(bioSignals, "event.fss.body.bioSignals"), "EXPLORATION", false);
                 if (geoSignals > 0)
-                    GameEventBus.publish(new DiscoveryAnnouncementEvent(localizedEventPlural(geoSignals, "event.fss.body.geoSignals")));
+                    CompanionRuntime.narrator().announce("discovery", localizedEventPlural(geoSignals, "event.fss.body.geoSignals"), "EXPLORATION", false);
             }
         });
     }

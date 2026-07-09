@@ -41,7 +41,7 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
 
     /// not a sure fire. assumes default UI selection. will fail often.
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
@@ -74,5 +74,6 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         }
+        return null;
     }
 }

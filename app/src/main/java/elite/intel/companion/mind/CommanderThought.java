@@ -120,15 +120,13 @@ public final class CommanderThought extends Thought {
 
             // Classify the turn (topic + importance + is_question) before any tool runs (§2.6).
             Map<LlmToolInvocation, JsonObject> preExecuted = applyClassification(invocations);
-            // A command / custom command turn is a side effect, not dialogue: its imperative ("optimal speed",
-            // "request docking") carries nothing worth recalling and would only clutter the short-term timeline
-            // and the prompt, so it is not filed (its call echo is dropped too - see gameToolCallId). A query,
-            // statement, or pure-conversation turn is still recorded so the dialogue history keeps its
-            // user/assistant alternation: a question is stamped LOW in applyClassification and filtered out of
-            // fact-recall candidates, a statement keeps its rated importance.
-            if (!isPureCommandTurn(invocations)) {
-                recordCurrentInput();
-            }
+            // Every turn's input is filed so the dialogue history keeps its user/assistant alternation - a command
+            // turn included: its imperative ("optimal speed", "request docking") is remembered as the user turn,
+            // paired with the companion's spoken reply (the handler outcome, or the immediate acknowledgement when
+            // the command returns none). A question is stamped LOW in applyClassification and filtered out of
+            // fact-recall candidates; a statement keeps its rated importance. (A command's call echo is still
+            // dropped - see gameToolCallId - so the pair replays as plain dialogue, not a tool-call.)
+            recordCurrentInput();
             // Mark the input handled either way - filed, or deliberately skipped for a command turn - so an
             // interrupt/error does not fall back to re-filing it as unresolved input.
             inputRecorded = true;
@@ -274,15 +272,23 @@ public final class CommanderThought extends Thought {
                 continue;
             }
             // Game tool / system function: acknowledge a command immediately (before it runs), then settle it.
+            String ack = null;
             if (!preExecuted.containsKey(inv) && isCommand(inv)) {
-                voice(StringUtls.affirmative(), false);
+                ack = StringUtls.affirmative();
+                voice(ack, false);
             }
             IntelActionType settledType = ctx.actionTypeResolver().resolve(inv.name());
             if (settledType.isGameAction()) {
                 // The turn-settling game action - the headline of what the companion actually did this turn.
                 CompanionDiagnostics.info(trace(), "settle", settledType + " " + inv.name());
             }
-            settleGameCall(inv, tools, preExecuted);
+            JsonObject settled = settleGameCall(inv, tools, preExecuted);
+            // A command that voiced only the acknowledgement (its handler returned no spoken outcome) still needs an
+            // assistant line: file the ack we just voiced so the command turn is remembered as a user->assistant
+            // pair, not a dangling commander turn. A command whose handler produced an outcome already recorded it.
+            if (ack != null && spokenTextOf(settled).isBlank()) {
+                recordCompanionSpeech(ack);
+            }
         }
         // No game action owned the outcome and no non-blank speak was voiced (bare classify_turn, or an empty
         // speak): the turn drew no reply - record that so the timeline keeps a distinct turn boundary here.
@@ -319,15 +325,19 @@ public final class CommanderThought extends Thought {
      * result when present), then record its outcome - all under one tool-call id linking the call to its result.
      * A system function (classify_turn) gets no id and no CALL entry. Shared by the normal round and the
      * dangerous-confirmation round so the recording sequence lives in one place.
+     * <p>
+     * Returns the raw handle result so the caller can tell whether the command produced a spoken outcome (a blank
+     * one means the turn's reply falls back to the immediate acknowledgement).
      */
-    private void settleGameCall(LlmToolInvocation inv, List<LlmToolDefinition> tools,
+    private JsonObject settleGameCall(LlmToolInvocation inv, List<LlmToolDefinition> tools,
                                 Map<LlmToolInvocation, JsonObject> preExecuted) {
         String toolCallId = gameToolCallId(inv);
         if (toolCallId != null) {
             recordCall(toolCallId, inv);
         }
-        JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv, toolCallId);
+        JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
         recordOutcome(inv, result, tools, toolCallId);
+        return result;
     }
 
     /**
@@ -339,28 +349,6 @@ public final class CommanderThought extends Thought {
      */
     private String gameToolCallId(LlmToolInvocation inv) {
         return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY ? newId() : null;
-    }
-
-    /**
-     * Whether this turn is a pure command / custom command (MACRO) turn - a side effect, not dialogue - whose
-     * imperative and call echo are not filed to memory (they carry nothing worth recalling and would only
-     * clutter the short-term timeline and the prompt). True when the turn runs a command or custom command and
-     * no QUERY. A co-occurring QUERY vetoes the suppression: a query records a call/result pair that must keep
-     * its preceding user turn (else the pair replays as an {@code assistant(tool_calls)} with no user before it),
-     * so the input is filed. A query, statement, or pure-conversation turn is recorded normally.
-     */
-    private boolean isPureCommandTurn(List<LlmToolInvocation> invocations) {
-        boolean hasCommand = false;
-        for (LlmToolInvocation inv : invocations) {
-            IntelActionType type = ctx.actionTypeResolver().resolve(inv.name());
-            if (type == IntelActionType.QUERY) {
-                return false; // a query records a pair needing its preceding user turn, so keep the input
-            }
-            if (type == IntelActionType.COMMAND || type == IntelActionType.MACRO) {
-                hasCommand = true;
-            }
-        }
-        return hasCommand;
     }
 
     /**

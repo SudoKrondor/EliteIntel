@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.ShipManager;
@@ -41,18 +42,17 @@ public final class MonetizeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         ShipManager shipManager = ShipManager.getInstance();
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.shipNoCapacity")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.shipNoCapacity");
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.searchingMarkets")));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.tradeRoute.searchingMarkets"), false);
 
         MonetizeRoute.TradeTransaction tradeTuple = monetizeRouteManager.monetizeRoute();
 
         if (tradeTuple == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noTradeFound")));
+            return StringUtls.localizedLlm("handler.tradeRoute.noTradeFound");
         } else {
             String reminder = StringUtls.localizedLlm("handler.tradeRoute.tradeReminder",
                     tradeTuple.getSource().getStarSystem(),
@@ -63,7 +63,7 @@ public final class MonetizeRouteCommand implements IntelCommand {
 
             reminderManager.setReminder(reminder, tradeTuple.getSource().getStarSystem());
 
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.tradeFound", reminder)));
+            return StringUtls.localizedLlm("handler.tradeRoute.tradeFound", reminder);
         }
     }
 }

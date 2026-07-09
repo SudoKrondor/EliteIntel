@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
@@ -43,7 +44,7 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         HuntingGroundManager manager = HuntingGroundManager.getInstance();
         LocationManager locationManager = LocationManager.getInstance();
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = manager.findTargetSystemInRangeForRecon(locationManager.getGalacticCoordinates());
@@ -54,20 +55,21 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
 
         if (target == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noReconSystems")));
-            return;
+            return StringUtls.localizedLlm("handler.pirate.noReconSystems");
         }
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
+        // Non-terminal warning: the recon announcement and route plotting below must still run, so voice
+        // the line via CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
         if (multipleMissionProviders) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.multipleProviders")));
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.multipleProviders"), false);
         }
 
         String starSystem = target.getStarSystem();
 
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem)));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem), false);
 
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(starSystem);
+        return plotter.plotRoute(starSystem);
     }
 }

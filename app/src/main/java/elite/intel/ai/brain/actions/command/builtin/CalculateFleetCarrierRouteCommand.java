@@ -32,7 +32,7 @@ public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
-        FleetCarrierRouteCalculator.calculate();
+    public String execute(JsonObject params, String responseText) {
+        return FleetCarrierRouteCalculator.calculate();
     }
 }

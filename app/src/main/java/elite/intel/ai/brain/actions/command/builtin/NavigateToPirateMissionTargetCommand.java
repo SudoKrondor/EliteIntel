@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.MissionType;
@@ -41,24 +40,23 @@ public final class NavigateToPirateMissionTargetCommand implements IntelCommand 
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         MissionManager missionManager = MissionManager.getInstance();
 
         MissionType[] missionTypes = missionManager.getPirateMissionTypes();
         Set<String> targetFactions = missionManager.getTargetFactions(missionTypes);
 
         if (targetFactions.isEmpty()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.pirate.noProvidersMassacre")));
-            return;
+            return StringUtls.localizedLlm("handler.pirate.noProvidersMassacre");
         }
 
         MissionDto mission = missionManager.getMissions(missionTypes)
                 .values()
                 .stream().filter(v -> v.getMissionType().equals(MissionType.MISSION_PIRATE_MASSACRE)).findFirst().orElse(null);
 
-        if(mission == null) return;
+        if(mission == null) return null;
 
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(mission.getDestinationSystem());
+        return plotter.plotRoute(mission.getDestinationSystem());
     }
 }

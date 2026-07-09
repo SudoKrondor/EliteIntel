@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.actions.command;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.actions.IntelAction;
 
 /**
@@ -35,11 +36,19 @@ public interface IntelCommand extends IntelAction {
         return CommandKind.ACTION;
     }
 
-    void execute(JsonObject params, String responseText);
+    /** Runs the command and returns its spoken outcome (the line to voice and remember), or null when it has none. */
+    String execute(JsonObject params, String responseText);
 
     @Override
     default JsonObject handle(String action, JsonObject params, String responseText) {
-        execute(params, responseText);
-        return null;
+        // The command returns its spoken outcome, or null when it voiced directly (filler/narrator) or has nothing
+        // to say - a null result is a silent side-effect dispatch, not an error.
+        String outcome = execute(params, responseText);
+        if (outcome == null || outcome.isBlank()) {
+            return null;
+        }
+        JsonObject result = new JsonObject();
+        result.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, outcome);
+        return result;
     }
 }

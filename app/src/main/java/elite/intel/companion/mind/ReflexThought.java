@@ -43,14 +43,14 @@ final class ReflexThought extends Thought {
             recordCurrentInput();
             String toolCallId = newId();
             recordCall(toolCallId, inv);
-            JsonObject result = execute(inv, toolCallId);
+            JsonObject result = execute(inv);
             recordOutcome(inv, result, List.of(), toolCallId);
             return;
         }
         // A command reflex - a side effect, not dialogue - so neither the imperative nor the call echo is filed
-        // to memory. Executed with no tool-call id: any handler-voiced outcome is remembered as a plain companion
-        // line rather than a linked tool result, so nothing is left orphaned.
-        execute(inv, null);
+        // to memory. Any handler-voiced outcome is remembered as a plain companion line rather than a linked
+        // tool result, so nothing is left orphaned.
+        execute(inv);
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */
