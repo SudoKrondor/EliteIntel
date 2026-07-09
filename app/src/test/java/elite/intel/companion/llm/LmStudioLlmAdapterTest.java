@@ -4,19 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.model.llm.LlmToolInvocation;
-import elite.intel.companion.model.llm.PromptCacheProfile;
+import elite.intel.companion.model.llm.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The LM Studio (local) provider config over the shared OpenAI-compatible adapter: the configured served
@@ -73,7 +66,7 @@ class LmStudioLlmAdapterTest {
                 List.of(
                         LlmMessage.of(LlmMessageRole.USER, "analyze carrier route"),
                         LlmMessage.assistantToolCalls(List.of(
-                                new LlmToolInvocation("call-1", "query_fleet_carrier_route", new JsonObject()))),
+                                new LlmToolInvocation("call-1", "query_carrier_voyage", new JsonObject()))),
                         LlmMessage.toolResult("call-1", "{\"totalJumps\":8}")),
                 List.of(),
                 PromptCacheProfile.COMMANDER);
@@ -88,7 +81,7 @@ class LmStudioLlmAdapterTest {
         JsonObject call = assistant.getAsJsonArray("tool_calls").get(0).getAsJsonObject();
         assertEquals("call-1", call.get("id").getAsString());
         assertEquals("function", call.get("type").getAsString());
-        assertEquals("query_fleet_carrier_route", call.getAsJsonObject("function").get("name").getAsString());
+        assertEquals("query_carrier_voyage", call.getAsJsonObject("function").get("name").getAsString());
         assertEquals("{}", call.getAsJsonObject("function").get("arguments").getAsString());
 
         JsonObject tool = messages.get(2).getAsJsonObject();

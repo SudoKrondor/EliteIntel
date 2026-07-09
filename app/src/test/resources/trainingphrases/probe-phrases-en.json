@@ -237,7 +237,17 @@
     "where should we mine platinum",
     "search for a nearby mining location",
     "find a hotspot for low temperature diamonds",
-    "find a resource field for palladium"
+    "find a resource field for palladium",
+    "find a tritium mining site within 300 light years",
+    "locate a tritium hotspot nearby",
+    "where can we mine tritium",
+    "find a tritium field within 200 light years",
+    "search for a tritium mining location",
+    "find an icy ring with tritium",
+    "where is the nearest tritium hotspot",
+    "locate a tritium mining system",
+    "find a place to mine tritium",
+    "show me tritium mining sites nearby"
   ],
   "set_speed_100": [
     "full throttle",
@@ -1427,18 +1437,6 @@
     "use raw trader",
     "set raw trader"
   ],
-  "find_tritium_mining_site": [
-    "find a tritium mining site within 300 light years",
-    "locate a tritium hotspot nearby",
-    "where can we mine tritium",
-    "find a tritium field within 200 light years",
-    "search for a tritium mining location",
-    "find an icy ring with tritium",
-    "where is the nearest tritium hotspot",
-    "locate a tritium mining system",
-    "find a place to mine tritium",
-    "show me tritium mining sites nearby"
-  ],
   "ignore_hunting_ground": [
     "ignore hunting ground",
     "skip this hunting ground",
@@ -1823,7 +1821,37 @@
     "what is at this station",
     "current station details"
   ],
-  "query_squadron_carrier_final_destination": [
+  "query_carrier_voyage": [
+    "carrier route",
+    "show carrier route",
+    "check carrier route",
+    "give me carrier route",
+    "carrier navigation",
+    "show carrier navigation",
+    "check carrier navigation",
+    "give me carrier navigation",
+    "how many jumps on carrier route",
+    "tell me how many jumps on carrier route",
+    "where is carrier going",
+    "tell me where is carrier going",
+    "check where is carrier going",
+    "where is carrier headed",
+    "tell me where is carrier headed",
+    "check where is carrier headed",
+    "carrier heading",
+    "show carrier heading",
+    "check carrier heading",
+    "give me carrier heading",
+    "squadron carrier route",
+    "show squadron carrier route",
+    "check squadron carrier route",
+    "give me squadron carrier route",
+    "squadron carrier navigation",
+    "show squadron carrier navigation",
+    "check squadron carrier navigation",
+    "give me squadron carrier navigation",
+    "squadron carrier jump route",
+    "show squadron carrier jump route",
     "where is squadron carrier going",
     "tell me where is squadron carrier going",
     "check where is squadron carrier going",
@@ -1835,7 +1863,7 @@
     "show squadron carrier endpoint",
     "check squadron carrier endpoint"
   ],
-  "query_fleet_carrier_eta": [
+  "query_carrier_departure_eta": [
     "carrier ETA",
     "show carrier ETA",
     "check carrier ETA",
@@ -1845,9 +1873,7 @@
     "check when does carrier arrive",
     "how long until carrier",
     "tell me how long until carrier",
-    "check how long until carrier"
-  ],
-  "query_squadron_carrier_eta": [
+    "check how long until carrier",
     "squadron carrier ETA",
     "show squadron carrier ETA",
     "check squadron carrier ETA",
@@ -1858,18 +1884,6 @@
     "how long until squadron carrier arrives",
     "tell me how long until squadron carrier arrives",
     "check how long until squadron carrier arrives"
-  ],
-  "query_squadron_carrier_route": [
-    "squadron carrier route",
-    "show squadron carrier route",
-    "check squadron carrier route",
-    "give me squadron carrier route",
-    "squadron carrier navigation",
-    "show squadron carrier navigation",
-    "check squadron carrier navigation",
-    "give me squadron carrier navigation",
-    "squadron carrier jump route",
-    "show squadron carrier jump route"
   ],
   "query_signals_in_star_system": [
     "signals in system",
@@ -1894,18 +1908,6 @@
     "give me trading route",
     "current trade plan",
     "show current trade plan"
-  ],
-  "query_fleet_carrier_final_destination": [
-    "where is carrier going",
-    "tell me where is carrier going",
-    "check where is carrier going",
-    "where is carrier headed",
-    "tell me where is carrier headed",
-    "check where is carrier headed",
-    "carrier heading",
-    "show carrier heading",
-    "check carrier heading",
-    "give me carrier heading"
   ],
   "query_carriers": [
     "fleet carriers in system",
@@ -1943,7 +1945,17 @@
     "mission log",
     "show mission log"
   ],
-  "query_squadron_carrier_status_fuel_credit_finance": [
+  "query_carrier_status": [
+    "carrier status",
+    "show carrier status",
+    "check carrier status",
+    "give me carrier status",
+    "how long can we operate carrier",
+    "tell me how long can we operate carrier",
+    "check how long can we operate carrier",
+    "how far can carrier jump",
+    "tell me how far can carrier jump",
+    "check how far can carrier jump",
     "squadron carrier status",
     "show squadron carrier status",
     "check squadron carrier status",
@@ -2014,30 +2026,6 @@
     "give me discovery profits",
     "how much exploration worth",
     "tell me how much exploration worth"
-  ],
-  "query_fleet_carrier_status_fuel_credit_finance": [
-    "carrier status",
-    "show carrier status",
-    "check carrier status",
-    "give me carrier status",
-    "how long can we operate carrier",
-    "tell me how long can we operate carrier",
-    "check how long can we operate carrier",
-    "how far can carrier jump",
-    "tell me how far can carrier jump",
-    "check how far can carrier jump"
-  ],
-  "query_fleet_carrier_route": [
-    "carrier route",
-    "show carrier route",
-    "check carrier route",
-    "give me carrier route",
-    "carrier navigation",
-    "show carrier navigation",
-    "check carrier navigation",
-    "give me carrier navigation",
-    "how many jumps on carrier route",
-    "tell me how many jumps on carrier route"
   ],
   "query_fsd_target": [
     "what star are we targeting",

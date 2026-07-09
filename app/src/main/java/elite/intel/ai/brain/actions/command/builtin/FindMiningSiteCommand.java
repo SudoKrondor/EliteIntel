@@ -5,16 +5,17 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.stellarobjects.ReserveLevel;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearch;
 import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
+import elite.intel.util.json.GetNumberFromParam;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
  * Self-describing "find mining site" command.
  * Owns its own execution: body migrated 1:1 from the legacy FindMiningSiteHandler,
  * routed through CommandRegistry via the self-describing model.
+ * <p>
+ * Also serves tritium (fleet-carrier fuel), which is an ordinary mineable commodity in {@code key}. The separate
+ * find_tritium_mining_site command that once existed was a workaround for an STT engine that could not transcribe
+ * "tritium"; the current engine can, so the workaround is gone.
  */
 @RegisterCommand
 public final class FindMiningSiteCommand implements IntelCommand {
@@ -32,7 +37,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Find and plot a route to the nearest pristine mining site (ring/asteroid field) that yields the commodity in 'key', within 'max_distance' ly.";
+        return "Find and plot a route to the nearest pristine mining site (ring/asteroid field) that yields the commodity in 'key', within 'max_distance' ly. Tritium (fleet-carrier fuel) is one such commodity.";
     }
 
 
@@ -70,7 +75,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
     }
 
     /**
-     * Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit.
+     * Maps and routes are available anywhere in the game.
      */
     @Override
     public boolean isVisibleForLLM(Status status) {
@@ -80,7 +85,6 @@ public final class FindMiningSiteCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         JsonElement mat = params.get(PARAM_KEY);
-        JsonElement distance = params.get(PARAM_MAX_DISTANCE);
         if (mat == null) {
             return StringUtls.localizedLlm("handler.miningSite.didNotCatch");
         }
@@ -91,13 +95,21 @@ public final class FindMiningSiteCommand implements IntelCommand {
                                 mat.getAsString(), 8
                         )
                 );
+        // The model may hand back a non-numeric radius ("three hundred"); this is how every sibling search
+        // command reads max_distance, and it falls back to the default rather than throwing.
+        int range = GetNumberFromParam.extractRangeParameter(params, MAX_DEFAULT_RANGE).intValue();
+
+        // The Spansh ring search takes seconds; every other long search command voices a filler so the
+        // commander is not left in silence.
+        CompanionRuntime.narrator().filler(
+                StringUtls.localizedLlm("handler.miningSite.searching", material, range), false);
 
         StellarObjectSearchResultDto miningLocations = StellarObjectSearch.getInstance()
                 .findRings(
                         material,
                         ReserveLevel.PRISTINE,
                         LocationManager.getInstance().getGalacticCoordinates(),
-                        distance == null ? MAX_DEFAULT_RANGE : distance.getAsInt()
+                        range
                 );
 
         if (miningLocations == null || miningLocations.getResults().isEmpty()) {

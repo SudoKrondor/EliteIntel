@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class QueryRegistryTest {
 
     /** Number of @RegisterQuery built-in query handlers. Update deliberately when adding/removing one. */
-    private static final int EXPECTED_QUERY_COUNT = 45;
+    private static final int EXPECTED_QUERY_COUNT = 40;
 
     @BeforeAll
     static void loadRegistry() {

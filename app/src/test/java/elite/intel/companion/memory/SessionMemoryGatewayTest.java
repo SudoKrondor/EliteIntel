@@ -15,10 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Phase 2 memory spine: short-term timeline and count/token eviction into mid-term by topic. A
@@ -134,20 +131,20 @@ class SessionMemoryGatewayTest {
     @Test
     void writePreservesToolLinkWhenNormalizingForStorage() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
-        ToolLink call = ToolLink.call("call-1", "query_fleet_carrier_route", "{}");
+        ToolLink call = ToolLink.call("call-1", "query_carrier_voyage", "{}");
 
         gateway.write(new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION,
-                MemorySource.COMPANION, "Query_Fleet_Carrier_Route", MemoryImportance.LOW,
+                MemorySource.COMPANION, "Query_Carrier_Voyage", MemoryImportance.LOW,
                 null, null, call));
 
         List<MemoryEntry> timeline = gateway.readShortTermTimeline();
         assertEquals(1, timeline.size());
         MemoryEntry stored = timeline.get(0);
-        assertEquals("query_fleet_carrier_route", stored.content());
+        assertEquals("query_carrier_voyage", stored.content());
         assertNotNull(stored.toolLink(), "tool-call linkage must survive lower-casing/embedding storage prep");
         assertTrue(stored.toolLink().isCall());
         assertEquals("call-1", stored.toolLink().toolCallId());
-        assertEquals("query_fleet_carrier_route", stored.toolLink().toolName());
+        assertEquals("query_carrier_voyage", stored.toolLink().toolName());
         assertEquals("{}", stored.toolLink().argumentsJson());
     }
 
