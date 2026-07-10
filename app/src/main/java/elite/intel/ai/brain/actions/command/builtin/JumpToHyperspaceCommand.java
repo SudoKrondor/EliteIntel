@@ -7,12 +7,12 @@ import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.GlobalSettingsManager;
-import elite.intel.db.managers.NeutronStarRouteManager;
-import elite.intel.db.managers.ShipRouteManager;
+import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.inputs.PreFtlChecks;
 import elite.intel.gameapi.inputs.UiNavCommon;
+import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
@@ -36,6 +36,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
+    private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override
     public String id() {
@@ -53,18 +54,17 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));
         UiNavCommon.close();
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(150)));
-
-        int routeSize = ShipRouteManager.getInstance().getOrderedRoute().size();
-        int neutronRouteSize = NeutronStarRouteManager.getInstance().getNeutronStarRoute().size();
-
-        if (routeSize == 0 || neutronRouteSize == 0) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fsd.noroute"), false);
-            return null;
-        }
+        LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
 
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget != null) {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
+
+            if (currentLocation.getStarName().equals(starName)) {
+                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fsd.nodestination"), false);
+                return null;
+            }
+
             String starClass = fsdTarget.getStarClass() == null ? "unknown" : fsdTarget.getStarClass();
             String message;
             if (GlobalSettingsManager.getInstance().getAnnounceFuelAvailable()) {
