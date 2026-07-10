@@ -148,6 +148,7 @@ public final class ThoughtDispatcher implements ManagedService {
         if (input == null || input.isBlank()) {
             return;
         }
+        long acceptedAtNanos = System.nanoTime();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
@@ -157,7 +158,7 @@ public final class ThoughtDispatcher implements ManagedService {
         // recorded from `input`, never from this normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
-        ThoughtContext context = ThoughtContext.commander(urgency, input, matchInput);
+        ThoughtContext context = ThoughtContext.commander(urgency, input, matchInput, acceptedAtNanos);
         dependencies.state().setLastCommanderMatchInput(matchInput);
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
         // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
@@ -172,11 +173,14 @@ public final class ThoughtDispatcher implements ManagedService {
         // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
         // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
         String reflexKind = reflexCommand.isPresent() ? "exact" : null;
+        long semanticReflexMillis = -1;
         if (reflexCommand.isEmpty()) {
             // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
+            long semanticReflexStartedNanos = System.nanoTime();
             SemanticReflexResolver.Resolution semanticResolution =
                     semanticReflexResolver.resolveWithSemanticQuery(matchInput);
+            semanticReflexMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - semanticReflexStartedNanos);
             reflexCommand = semanticResolution.actionId();
             context = context.withSemanticQuery(semanticResolution.semanticQuery());
             if (reflexCommand.isPresent()) {
@@ -192,6 +196,9 @@ public final class ThoughtDispatcher implements ManagedService {
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (semanticReflexMillis >= 0) {
+            CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
+        }
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
             CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");

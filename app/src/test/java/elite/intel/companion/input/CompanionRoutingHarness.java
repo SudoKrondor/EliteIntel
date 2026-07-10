@@ -1,5 +1,6 @@
 package elite.intel.companion.input;
 
+import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
@@ -18,18 +19,23 @@ import elite.intel.companion.tools.SystemFunctionRegistry;
 import elite.intel.util.json.JsonUtils;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.UserInputEvent;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
 import elite.intel.util.Cypher;
+import elite.intel.ui.event.AppLogDebugEvent;
+import elite.intel.ui.event.AppLogEvent;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -50,6 +56,9 @@ public final class CompanionRoutingHarness {
     private static final long TURN_START_GRACE_MS = 15_000;
     private static final long TURN_TIMEOUT_MS = 90_000;
     private static final long POLL_MS = 50;
+
+    /** End-to-end timing for one routed input, measured after the harness has already completed {@link #boot()}. */
+    public record TurnTiming(long timeToFirstToolMillis, long timeToIdleMillis, boolean settled) {}
 
     // StatusFlags bit values (mirror elite.intel.session.StatusFlags). The companion path enforces
     // isVisibleForLLM, so each test forces the game context its target command needs (see applyStateFor).
@@ -79,7 +88,13 @@ public final class CompanionRoutingHarness {
     // The phrases the companion LLM spoke this turn (speak.text), captured so a failed assertion can show the
     // model's actual answer, not just the dispatched tool names.
     private final List<String> turnSpeech = new CopyOnWriteArrayList<>();
+    // Timing diagnostics are emitted through UiBus in production; capture just the latency-related subset here
+    // so Gradle/IDE local-integration output can show it through stdout.
+    private final List<String> turnLatencyDiagnostics = new CopyOnWriteArrayList<>();
     private final Map<String, IntelAction> actionsById = new HashMap<>();
+    private final AtomicLong firstToolNanos = new AtomicLong();
+
+    private volatile TurnTiming lastTurnTiming = new TurnTiming(-1, -1, false);
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -87,6 +102,7 @@ public final class CompanionRoutingHarness {
     private long bootSavedFlags;
     private long bootSavedFlags2;
     private boolean statusSaved;
+    private boolean uiRegistered;
 
     public CompanionRoutingHarness(Language language) {
         this.language = language;
@@ -120,6 +136,7 @@ public final class CompanionRoutingHarness {
         // dispatches a data query or just speaks - so they run for real. Every tool name is still recorded.
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
+            firstToolNanos.compareAndSet(0L, System.nanoTime());
             turnTools.add(toolName);
             if (SpeakFunction.ID.equals(toolName)) {
                 String spoken = JsonUtils.getAsStringOrEmpty(request.arguments(), SpeakFunction.PARAM_TEXT);
@@ -146,6 +163,8 @@ public final class CompanionRoutingHarness {
         gate = new CompanionSubsystemGate(null, recording); // null LLM override → production companion LLM gateway
         gate.start();
         dispatcher = gate.dispatcher();
+        UiBus.register(this);
+        uiRegistered = true;
 
         // Remember the tester's real status so it can be restored on shutdown; each test sets its own context.
         GameEvents.StatusEvent snapshot = Status.getInstance().getStatus();
@@ -160,6 +179,10 @@ public final class CompanionRoutingHarness {
      * Stops the subsystem and restores the previous language and status snapshot; safe if never booted.
      */
     public void shutdown() {
+        if (uiRegistered) {
+            UiBus.unregister(this);
+            uiRegistered = false;
+        }
         if (gate != null) {
             gate.stop();
             gate = null;
@@ -184,6 +207,10 @@ public final class CompanionRoutingHarness {
     public List<String> route(String input) throws InterruptedException {
         turnTools.clear();
         turnSpeech.clear();
+        turnLatencyDiagnostics.clear();
+        firstToolNanos.set(0L);
+        lastTurnTiming = new TurnTiming(-1, -1, false);
+        long turnStartedNanos = System.nanoTime();
         GameEventBus.publish(new UserInputEvent(input));
         // Wait for the turn to start: the dispatcher goes busy, or a tool is already recorded (a fast reflex may
         // finish before we observe "busy"). The grace tolerates a slow LLM first token; exiting on a recorded
@@ -197,7 +224,56 @@ public final class CompanionRoutingHarness {
         while (!dispatcher.isIdle() && System.currentTimeMillis() < deadline) {
             Thread.sleep(POLL_MS);
         }
+        long firstToolAtNanos = firstToolNanos.get();
+        long firstToolMillis = firstToolAtNanos == 0L ? -1
+                : TimeUnit.NANOSECONDS.toMillis(firstToolAtNanos - turnStartedNanos);
+        long idleMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - turnStartedNanos);
+        boolean settled = dispatcher.isIdle();
+        lastTurnTiming = new TurnTiming(firstToolMillis, idleMillis, settled);
+        printTurnLatency(input, lastTurnTiming);
         return List.copyOf(turnTools);
+    }
+
+    /** Returns the end-to-end measurement recorded by the most recent {@link #route(String)} call. */
+    public TurnTiming lastTurnTiming() {
+        return lastTurnTiming;
+    }
+
+    /** Captures info-level companion latency diagnostics for the active local-integration turn. */
+    @Subscribe
+    public void onAppLog(AppLogEvent event) {
+        captureLatencyDiagnostic(event.getData());
+    }
+
+    /** Captures detail-level companion latency diagnostics for the active local-integration turn. */
+    @Subscribe
+    public void onAppLogDebug(AppLogDebugEvent event) {
+        captureLatencyDiagnostic(event.getData());
+    }
+
+    private void captureLatencyDiagnostic(String line) {
+        if (isLatencyDiagnostic(line)) {
+            turnLatencyDiagnostics.add(line);
+        }
+    }
+
+    private static boolean isLatencyDiagnostic(String line) {
+        return line != null && line.startsWith("Companion ")
+                && (line.contains(" intake:")
+                || line.contains(" semantic-reflex:")
+                || line.contains(" compose:")
+                || line.contains(" llm:")
+                || line.contains(" llm-http:")
+                || line.contains(" latency:")
+                || line.contains(" exec-time:")
+                || line.contains(" done:"));
+    }
+
+    private void printTurnLatency(String input, TurnTiming timing) {
+        System.out.printf("%n=== Companion turn latency: \"%s\" ===%n", input);
+        turnLatencyDiagnostics.forEach(System.out::println);
+        System.out.printf("Companion routing timing: first-tool=%d ms, idle=%d ms, settled=%s%n",
+                timing.timeToFirstToolMillis(), timing.timeToIdleMillis(), timing.settled());
     }
 
     /**
@@ -220,7 +296,8 @@ public final class CompanionRoutingHarness {
                 // it but the companion LLM did not pick it (prompt/model problem).
                 fail("Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction
                         + "\"; reducer selected " + reducerSelection()
-                        + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech)));
+                        + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech))
+                        + System.lineSeparator() + "Timing: " + lastTurnTiming);
             }
         } finally {
             snapshot.setFlags(savedFlags);

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -102,6 +103,7 @@ final class ThoughtLane {
     private Runnable wrap(Thought thought) {
         return () -> {
             long startMillis = System.currentTimeMillis();
+            long startNanos = System.nanoTime();
             live.put(thought, startMillis);
             log.info("Lane {}: {} ({}) thought started", Thread.currentThread().getName(), thought.source(), thought.urgency());
             CompanionDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + Thread.currentThread().getName());
@@ -114,9 +116,11 @@ final class ThoughtLane {
                 CompanionDiagnostics.exitThought();
                 live.remove(thought);
                 pending.decrementAndGet(); // mark idle only after the thought has fully finished
+                long runMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
                 log.info("Lane {}: {} thought finished in {} ms",
-                        Thread.currentThread().getName(), thought.source(), System.currentTimeMillis() - startMillis);
-                CompanionDiagnostics.debug(thought.trace(), "done", (System.currentTimeMillis() - startMillis) + " ms");
+                        Thread.currentThread().getName(), thought.source(), runMillis);
+                CompanionDiagnostics.debug(thought.trace(), "done",
+                        "run=" + runMillis + " ms turn=" + thought.elapsedSinceAcceptanceMillis() + " ms");
             }
         };
     }

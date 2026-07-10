@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -105,7 +106,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     private record Attempt(LlmResult result, Defect defect) {}
 
     private LlmResult process(LlmRequest request) {
-        Attempt first = attempt(request);
+        Attempt first = attempt(request, 1);
         if (first.defect() == Defect.NONE) {
             return first.result();
         }
@@ -116,7 +117,7 @@ public final class CompanionLlmGateway implements LlmGateway {
         CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + first.defect() + " -> retry");
         log.warn("LLM response has defect {} (status={}, tool-calls={}); repairing and retrying once",
                 first.defect(), first.result().status(), first.result().toolInvocations().size());
-        Attempt second = attempt(repair(request, first.defect()));
+        Attempt second = attempt(repair(request, first.defect()), 2);
 
         // Prefer a clean retry; otherwise keep the best usable (non-fatal) response - a missing classify_turn
         // or a classify-only silent turn still settles the turn for the commander, better than the INVALID
@@ -140,11 +141,35 @@ public final class CompanionLlmGateway implements LlmGateway {
         return INVALID;
     }
 
-    private Attempt attempt(LlmRequest request) {
-        String body = adapter.buildRequestBody(request);
-        JsonObject response = transport.send(body);
-        LlmResult result = adapter.parse(response);
-        return new Attempt(result, defectOf(result, request));
+    private Attempt attempt(LlmRequest request, int attemptNumber) {
+        long attemptStartedNanos = System.nanoTime();
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        try {
+            long renderStartedNanos = System.nanoTime();
+            String body = adapter.buildRequestBody(request);
+            long renderMillis = elapsedMillis(renderStartedNanos);
+            long httpStartedNanos = System.nanoTime();
+            JsonObject response = transport.send(body);
+            long httpMillis = elapsedMillis(httpStartedNanos);
+            long parseStartedNanos = System.nanoTime();
+            LlmResult result = adapter.parse(response);
+            long parseMillis = elapsedMillis(parseStartedNanos);
+            CompanionDiagnostics.debug(trace, "llm-http",
+                    "attempt=" + attemptNumber
+                            + " render=" + renderMillis + " ms"
+                            + " http=" + httpMillis + " ms"
+                            + " parse=" + parseMillis + " ms"
+                            + " total=" + elapsedMillis(attemptStartedNanos) + " ms");
+            return new Attempt(result, defectOf(result, request));
+        } catch (RuntimeException failure) {
+            CompanionDiagnostics.debug(trace, "llm-http",
+                    "attempt=" + attemptNumber + " failed after " + elapsedMillis(attemptStartedNanos) + " ms");
+            throw failure;
+        }
+    }
+
+    private static long elapsedMillis(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
     /**

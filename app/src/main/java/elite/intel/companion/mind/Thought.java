@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -61,6 +62,8 @@ public abstract class Thought {
     protected volatile boolean interrupted;
     /** The future the lane thread is currently awaiting (LLM round / confirmation wait), or null. */
     protected volatile CompletableFuture<?> inFlight;
+    /** Lane-thread-confined marker used to report the latency until this turn first begins tool execution. */
+    private boolean firstToolStarted;
 
     /** Creates a thought from its immutable turn signals and the shared service context. */
     protected Thought(ThoughtContext context, ThoughtDependencies dependencies) {
@@ -72,6 +75,11 @@ public abstract class Thought {
     /** The per-thought diagnostic tag ({@code SOURCE#n}); every {@link CompanionDiagnostics} line of this thought carries it. */
     public final String trace() {
         return trace;
+    }
+
+    /** Returns the elapsed time since the dispatcher accepted this turn, for diagnostics only. */
+    final long elapsedSinceAcceptanceMillis() {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - context.acceptedAtNanos());
     }
 
     // --- factories (the public construction API; each returns the matching concrete kind) ---
@@ -234,16 +242,32 @@ public abstract class Thought {
 
     /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */
     protected ComposedPrompt composeInitialPrompt() {
+        long composeStartedNanos = System.nanoTime();
+        long reducerStartedNanos = System.nanoTime();
         List<LlmToolDefinition> gameTools = selectedGameTools();
+        long reducerMillis = elapsedMillis(reducerStartedNanos);
         List<LlmToolDefinition> sysTools = systemTools();
+        long timelineStartedNanos = System.nanoTime();
         List<MemoryEntry> timeline = dependencies.memoryGateway().readShortTermTimeline();
+        long timelineMillis = elapsedMillis(timelineStartedNanos);
+        long factsStartedNanos = System.nanoTime();
         List<Fact> candidates = memoryCandidates();
+        long factsMillis = elapsedMillis(factsStartedNanos);
+        long promptStartedNanos = System.nanoTime();
+        ComposedPrompt composed = dependencies.promptComposer().compose(
+                source(), context.matchInput(), gameTools, sysTools, timeline, candidates);
+        long promptMillis = elapsedMillis(promptStartedNanos);
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
         // tools, the grounding facts, and the recalled timeline depth - so no tool count is repeated across lines.
         CompanionDiagnostics.debug(trace, "compose",
                 "sysTools=" + CompanionDiagnostics.names(sysTools)
-                        + " facts=" + candidates.size() + " timeline=" + timeline.size());
+                        + " facts=" + candidates.size() + " timeline=" + timeline.size()
+                        + " | reduce=" + reducerMillis + " ms"
+                        + " timeline=" + timelineMillis + " ms"
+                        + " facts=" + factsMillis + " ms"
+                        + " prompt=" + promptMillis + " ms"
+                        + " total=" + elapsedMillis(composeStartedNanos) + " ms");
         // Show the actual inlined facts (memory core plus source-tagged live facts), one per line as in the prompt,
         // numbered i/total so multiple grounding facts are easy to count and reference.
         int factNo = 0;
@@ -251,7 +275,7 @@ public abstract class Thought {
             CompanionDiagnostics.debug(trace, "facts",
                     (++factNo) + "/" + candidates.size() + " " + CompanionDiagnostics.fact(fact));
         }
-        return dependencies.promptComposer().compose(source(), context.matchInput(), gameTools, sysTools, timeline, candidates);
+        return composed;
     }
 
     /**
@@ -267,6 +291,10 @@ public abstract class Thought {
         return dependencies.reducer().selectTools(allowedCategories(), context.matchInput(), context.semanticQuery());
     }
 
+    private static long elapsedMillis(long startedNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+    }
+
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
     protected JsonObject execute(LlmToolInvocation inv) {
         // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
@@ -275,6 +303,11 @@ public abstract class Thought {
         if (dependencies.actionTypeResolver().resolve(inv.name()).isGameAction()) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + CompanionDiagnostics.args(inv.arguments()));
         }
+        if (!firstToolStarted) {
+            firstToolStarted = true;
+            CompanionDiagnostics.debug(trace, "latency", "time-to-first-tool=" + elapsedSinceAcceptanceMillis() + " ms");
+        }
+        long executionStartedNanos = System.nanoTime();
         try {
             return dependencies.executionGateway()
                     .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput()))
@@ -282,6 +315,8 @@ public abstract class Thought {
         } catch (RuntimeException failed) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
             return executionError(inv.name(), failed);
+        } finally {
+            CompanionDiagnostics.debug(trace, "exec-time", inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms");
         }
     }
 
