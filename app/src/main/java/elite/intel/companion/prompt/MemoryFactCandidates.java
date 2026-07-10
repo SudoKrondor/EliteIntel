@@ -1,5 +1,6 @@
 package elite.intel.companion.prompt;
 
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
@@ -44,11 +45,19 @@ public final class MemoryFactCandidates {
      * paired with its provenance for the prompt's per-fact {@code source} attribute.
      */
     public static List<Fact> forInput(MemoryGateway memory, String input) {
+        return forInput(memory, input, null);
+    }
+
+    /**
+     * The same lookup as {@link #forInput(MemoryGateway, String)}, preserving an intake-prepared semantic query
+     * when this prompt is being composed for a live thought.
+     */
+    public static List<Fact> forInput(MemoryGateway memory, String input, SemanticQuery semanticQuery) {
         if (memory == null || input == null || input.isBlank()) {
             return List.of();
         }
         List<Fact> facts = new ArrayList<>();
-        for (MemoryEntry entry : memory.recallCandidates(input, CANDIDATE_POOL)) {
+        for (MemoryEntry entry : memory.recallCandidates(input, CANDIDATE_POOL, semanticQuery)) {
             if (isTier2(entry)) {
                 // The clean canonical restatement when present, else the verbatim content, tagged by provenance.
                 facts.add(new Fact(entry.embeddingText(), sourceLabel(entry.source())));

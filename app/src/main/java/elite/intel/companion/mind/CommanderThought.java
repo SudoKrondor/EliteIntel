@@ -6,8 +6,6 @@ import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.ThoughtSource;
-import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
@@ -83,8 +81,8 @@ public final class CommanderThought extends Thought {
     /** The clean canonical fact the consciousness stated for this turn via classify_turn (empty when none). */
     private String turnCanonicalFact = "";
 
-    CommanderThought(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
-        super(ThoughtSource.COMMANDER, urgency, input, matchInput, ctx);
+    CommanderThought(ThoughtContext context, ThoughtDependencies dependencies) {
+        super(context, dependencies);
     }
 
     /**
@@ -158,7 +156,7 @@ public final class CommanderThought extends Thought {
     /** The live global conversation topic (a {@code classify_turn} call may move it during the thought). */
     @Override
     protected ConversationTopic memoryTopic() {
-        return ctx.state().globalTopic();
+        return dependencies.state().globalTopic();
     }
 
     /** The importance the consciousness set for this turn via {@code classify_turn} (default NORMAL). */
@@ -171,13 +169,14 @@ public final class CommanderThought extends Thought {
 
     @Override
     protected List<LlmToolDefinition> systemTools() {
-        return ctx.systemFunctionProvider().systemFunctions(source());
+        return dependencies.systemFunctionProvider().systemFunctions(source());
     }
 
     /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
     @Override
     protected List<Fact> memoryCandidates() {
-        return MergedFactCandidates.forInput(ctx.memoryGateway(), new MemoryFactContext(matchInput, source(), urgency()));
+        return MergedFactCandidates.forInput(dependencies.memoryGateway(),
+                new MemoryFactContext(context.matchInput(), source(), urgency()), context.semanticQuery());
     }
 
     /** The canonical fact classify_turn stated this turn (empty when none), for the recorded entry. */
@@ -277,7 +276,7 @@ public final class CommanderThought extends Thought {
                 ack = StringUtls.affirmative();
                 voice(ack, false);
             }
-            IntelActionType settledType = ctx.actionTypeResolver().resolve(inv.name());
+            IntelActionType settledType = dependencies.actionTypeResolver().resolve(inv.name());
             if (settledType.isGameAction()) {
                 // The turn-settling game action - the headline of what the companion actually did this turn.
                 CompanionDiagnostics.info(trace(), "settle", settledType + " " + inv.name());
@@ -316,7 +315,7 @@ public final class CommanderThought extends Thought {
      * {@code CommanderPrompt}). A self-closing tag is used - not prose - so it never reads as speech.
      */
     private void recordTurnBoundary(String marker) {
-        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
+        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
                 marker, MemoryImportance.LOW));
     }
 
@@ -348,7 +347,7 @@ public final class CommanderThought extends Thought {
      * replayed timeline.
      */
     private String gameToolCallId(LlmToolInvocation inv) {
-        return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY ? newId() : null;
+        return dependencies.actionTypeResolver().resolve(inv.name()) == IntelActionType.QUERY ? newId() : null;
     }
 
     /**
@@ -360,7 +359,7 @@ public final class CommanderThought extends Thought {
     private boolean shouldSuppressSpeak(List<LlmToolInvocation> invocations) {
         for (LlmToolInvocation inv : invocations) {
             if (!SpeakFunction.ID.equals(inv.name())
-                    && ctx.actionTypeResolver().resolve(inv.name()).isGameAction()) {
+                    && dependencies.actionTypeResolver().resolve(inv.name()).isGameAction()) {
                 turnRanGameAction = true;
             }
         }
@@ -369,7 +368,7 @@ public final class CommanderThought extends Thought {
 
     /** COMMANDER-only immediate acknowledgement before an LLM-selected command starts executing. */
     private boolean isCommand(LlmToolInvocation inv) {
-        return ctx.actionTypeResolver().resolve(inv.name()) == IntelActionType.COMMAND;
+        return dependencies.actionTypeResolver().resolve(inv.name()) == IntelActionType.COMMAND;
     }
 
     // recordOutcome / recordCall / recordToolResult / voice now live on the base Thought - shared with the
@@ -378,7 +377,7 @@ public final class CommanderThought extends Thought {
     /** The tool-calls in the validated set that require dangerous-action confirmation, in LLM order (empty when none) (§2.13). */
     private List<LlmToolInvocation> dangerousActions(List<LlmToolInvocation> invocations) {
         return invocations.stream()
-                .filter(inv -> ctx.dangerousActionPolicy().isDangerous(inv))
+                .filter(inv -> dependencies.dangerousActionPolicy().isDangerous(inv))
                 .toList();
     }
 
@@ -392,7 +391,7 @@ public final class CommanderThought extends Thought {
     private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
                                              Map<LlmToolInvocation, JsonObject> preExecuted, List<LlmToolInvocation> dangerous) {
         CompanionDiagnostics.info(trace(), "confirm", "dangerous action detected: " + CompanionDiagnostics.calls(dangerous));
-        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action requires confirmation"));
 
         // Code-voiced confirmation prompt (no LLM), recorded as the companion's own COMPANION line; urgent so
@@ -407,7 +406,7 @@ public final class CommanderThought extends Thought {
             // The commander confirmed: record that as a distinct user turn (a <confirmed/> marker) so the executed
             // outcome pairs with it as its own exchange, rather than trailing the confirmation prompt as a second
             // assistant line for the same turn. Stamped LOW (bookkeeping, never a durable fact or recall candidate).
-            ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMMANDER,
+            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMMANDER,
                     TurnBoundaryMarkers.CONFIRMED, MemoryImportance.LOW));
             // Execute the frozen set in LLM order. Each call is recorded then voiced and remembered by its
             // action type, exactly like a normal turn (§settleGameCall / §recordOutcome).
@@ -415,13 +414,13 @@ public final class CommanderThought extends Thought {
                 settleGameCall(inv, tools, preExecuted);
             }
         }
-        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action " + outcome.name().toLowerCase(Locale.ROOT)));
     }
 
     /** Blocks on the confirmation coordinator; maps confirm/cancel/timeout/overlap to a memory outcome. */
     private MemoryProcessingState awaitConfirmationOutcome() {
-        ConfirmationCoordinator coordinator = ctx.confirmationCoordinator();
+        ConfirmationCoordinator coordinator = dependencies.confirmationCoordinator();
         CompletableFuture<Boolean> wait = coordinator.open();
         if (wait == null) {
             return MemoryProcessingState.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
@@ -456,10 +455,10 @@ public final class CommanderThought extends Thought {
     private void onInvalidResponse(boolean inputRecorded) {
         CompanionDiagnostics.info(trace(), "settle", "cannot execute (unrecoverable LLM response)");
         if (!inputRecorded) {
-            ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, currentInput));
+            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
+                    MemorySource.COMMANDER, context.currentInput()));
         }
-        ctx.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
+        dependencies.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
     }
 
     /**
@@ -474,8 +473,8 @@ public final class CommanderThought extends Thought {
         CompanionDiagnostics.debug(trace(), "flush",
                 inputRecorded ? "cut off after filing input" : "interrupted before filing (input saved as unresolved)");
         if (!inputRecorded) {
-            ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, currentInput));
+            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
+                    MemorySource.COMMANDER, context.currentInput()));
         } else {
             recordTurnBoundary(TurnBoundaryMarkers.INTERRUPTED);
         }

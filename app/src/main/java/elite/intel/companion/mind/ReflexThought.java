@@ -2,8 +2,6 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.ThoughtSource;
-import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
@@ -28,15 +26,15 @@ final class ReflexThought extends Thought {
 
     private final String actionId;
 
-    ReflexThought(Urgency urgency, String input, String actionId, ThoughtContext ctx) {
-        super(ThoughtSource.COMMANDER, urgency, input, ctx);
+    ReflexThought(ThoughtContext context, String actionId, ThoughtDependencies dependencies) {
+        super(context, dependencies);
         this.actionId = actionId;
     }
 
     @Override
     public void run() {
         LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, new JsonObject());
-        if (ctx.actionTypeResolver().resolve(actionId) == IntelActionType.QUERY) {
+        if (dependencies.actionTypeResolver().resolve(actionId) == IntelActionType.QUERY) {
             // A query reflex: file the input (a query turn keeps its user turn for pair replay), run the query's
             // own data-grounded analysis path under a tool-call id, and publish the answer - the reply comes from
             // the data, not the model.
@@ -62,7 +60,7 @@ final class ReflexThought extends Thought {
     /** The live global conversation topic, exactly as a commander thought tags its memory. */
     @Override
     protected ConversationTopic memoryTopic() {
-        return ctx.state().globalTopic();
+        return dependencies.state().globalTopic();
     }
 
     /**

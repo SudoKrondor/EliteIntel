@@ -31,8 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A unit of work of the consciousness: the parts shared by every kind of thought. It holds the source,
- * urgency, current input and collaborators, and provides the building blocks - assembling the prompt,
+ * A unit of work of the consciousness: the parts shared by every kind of thought. It holds its turn-scoped
+ * input signals and shared collaborators, and provides the building blocks - assembling the prompt,
  * running a single interruptible LLM round, executing a tool-call, and recording the input or the
  * companion's own speech to memory.
  * <p>
@@ -51,37 +51,22 @@ public abstract class Thought {
     /** Monotonic sequence backing the short per-thought {@link #trace} id, so concurrent lanes are told apart in the log. */
     private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
 
-    private final ThoughtSource source;
-    private final Urgency urgency;
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
-    protected final String currentInput;
-    /**
-     * Canonical form of {@link #currentInput} used only for command matching (the reducer) and as the
-     * LLM-visible current input - this is what lets a normalized synonym ("combat mode" -> "switch to combat
-     * mode") steer tool selection. Memory always records the raw {@link #currentInput}, never this. Defaults
-     * to the raw input when no separate canonical form is supplied.
-     */
-    protected final String matchInput;
-    protected final ThoughtContext ctx;
+    /** Immutable input-side signals born with this thought; distinct from service-owning {@link #dependencies}. */
+    protected final ThoughtContext context;
+    protected final ThoughtDependencies dependencies;
 
     /** Set by {@link #interrupt} from another thread; a run honors it at step boundaries (§2.7). */
     protected volatile boolean interrupted;
     /** The future the lane thread is currently awaiting (LLM round / confirmation wait), or null. */
     protected volatile CompletableFuture<?> inFlight;
 
-    protected Thought(ThoughtSource source, Urgency urgency, String currentInput, ThoughtContext ctx) {
-        this(source, urgency, currentInput, currentInput, ctx);
-    }
-
-    /** As above, but with a separate canonical {@link #matchInput} for command matching / the LLM prompt. */
-    protected Thought(ThoughtSource source, Urgency urgency, String currentInput, String matchInput, ThoughtContext ctx) {
-        this.source = source;
-        this.urgency = urgency;
-        this.currentInput = currentInput;
-        this.matchInput = matchInput;
-        this.ctx = ctx;
-        this.trace = source + "#" + TRACE_SEQ.incrementAndGet();
+    /** Creates a thought from its immutable turn signals and the shared service context. */
+    protected Thought(ThoughtContext context, ThoughtDependencies dependencies) {
+        this.context = context;
+        this.dependencies = dependencies;
+        this.trace = context.source() + "#" + TRACE_SEQ.incrementAndGet();
     }
 
     /** The per-thought diagnostic tag ({@code SOURCE#n}); every {@link CompanionDiagnostics} line of this thought carries it. */
@@ -95,16 +80,21 @@ public abstract class Thought {
      * Creates a thought from a commander reply. Its memory tag is the live global conversation topic
      * (which a {@code classify_turn} call may move during the thought).
      */
-    public static Thought commander(Urgency urgency, String input, ThoughtContext ctx) {
-        return commander(urgency, input, input, ctx);
+    public static Thought commander(Urgency urgency, String input, ThoughtDependencies dependencies) {
+        return commander(ThoughtContext.commander(urgency, input, input), dependencies);
     }
 
     /**
      * As above, but with a separate canonical {@code matchInput} (e.g. the synonym-normalized form) used for
      * tool selection and as the LLM-visible current input; memory still records the raw {@code input}.
      */
-    public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtContext ctx) {
-        return new CommanderThought(urgency, input, matchInput, ctx);
+    public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtDependencies dependencies) {
+        return commander(ThoughtContext.commander(urgency, input, matchInput), dependencies);
+    }
+
+    /** Creates a commander thought from turn signals already prepared by the dispatcher. */
+    static Thought commander(ThoughtContext context, ThoughtDependencies dependencies) {
+        return new CommanderThought(context, dependencies);
     }
 
     /**
@@ -116,13 +106,14 @@ public abstract class Thought {
      * subscriber-supplied topic; it never moves the global conversation topic and gets no game tools.
      */
     public static Thought eventReaction(Urgency urgency, String stimulus, String instructions,
-                                        ConversationTopic eventTopic, ThoughtContext ctx) {
+                                        ConversationTopic eventTopic, ThoughtDependencies dependencies) {
         StringBuilder promptInput = new StringBuilder(PromptXml.element("event_data", stimulus));
         if (instructions != null && !instructions.isBlank()) {
             promptInput.append("\n\n")
                     .append(PromptXml.element("narration_instructions", instructions));
         }
-        return new EventThought(urgency, stimulus, promptInput.toString(), eventTopic, ctx);
+        return new EventThought(ThoughtContext.event(urgency, stimulus, promptInput.toString()), eventTopic,
+                dependencies);
     }
 
     /**
@@ -132,8 +123,9 @@ public abstract class Thought {
      * subscriber-supplied topic; it never moves the global conversation topic and gets no game tools.
      */
     public static Thought eventVerbatim(Urgency urgency, String sourceId, String phrase,
-                                        ConversationTopic eventTopic, ThoughtContext ctx) {
-        return new EventThought(urgency, sourceId, sourceId, phrase, eventTopic, ctx);
+                                        ConversationTopic eventTopic, ThoughtDependencies dependencies) {
+        return new EventThought(ThoughtContext.event(urgency, sourceId, sourceId), phrase, eventTopic,
+                dependencies);
     }
 
     /**
@@ -142,8 +134,13 @@ public abstract class Thought {
      * LLM entirely - it just records the input, executes the resolved command, and voices/remembers its
      * outcome ({@link #recordOutcome}). Anything ambiguous, parameterized or dangerous is never a reflex.
      */
-    public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtContext ctx) {
-        return new ReflexThought(urgency, input, commandId, ctx);
+    public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtDependencies dependencies) {
+        return reflex(ThoughtContext.commander(urgency, input, input), commandId, dependencies);
+    }
+
+    /** Creates a reflex thought from turn signals already prepared by the dispatcher. */
+    static Thought reflex(ThoughtContext context, String commandId, ThoughtDependencies dependencies) {
+        return new ReflexThought(context, commandId, dependencies);
     }
 
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */
@@ -166,7 +163,7 @@ public abstract class Thought {
      * offers no game tools).
      */
     protected Set<IntelActionCategory> allowedCategories() {
-        return ctx.intelActionAccessPolicy().allowedCategories(source);
+        return dependencies.intelActionAccessPolicy().allowedCategories(source());
     }
 
     /**
@@ -183,7 +180,7 @@ public abstract class Thought {
      */
     protected LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
         CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
-        CompletableFuture<LlmResult> future = ctx.llmGateway()
+        CompletableFuture<LlmResult> future = dependencies.llmGateway()
                 .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace));
         inFlight = future;
         if (interrupted) {
@@ -239,7 +236,7 @@ public abstract class Thought {
     protected ComposedPrompt composeInitialPrompt() {
         List<LlmToolDefinition> gameTools = selectedGameTools();
         List<LlmToolDefinition> sysTools = systemTools();
-        List<MemoryEntry> timeline = ctx.memoryGateway().readShortTermTimeline();
+        List<MemoryEntry> timeline = dependencies.memoryGateway().readShortTermTimeline();
         List<Fact> candidates = memoryCandidates();
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
@@ -254,7 +251,7 @@ public abstract class Thought {
             CompanionDiagnostics.debug(trace, "facts",
                     (++factNo) + "/" + candidates.size() + " " + CompanionDiagnostics.fact(fact));
         }
-        return ctx.promptComposer().compose(source, matchInput, gameTools, sysTools, timeline, candidates);
+        return dependencies.promptComposer().compose(source(), context.matchInput(), gameTools, sysTools, timeline, candidates);
     }
 
     /**
@@ -267,7 +264,7 @@ public abstract class Thought {
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
     private List<LlmToolDefinition> selectedGameTools() {
-        return ctx.reducer().selectTools(allowedCategories(), matchInput);
+        return dependencies.reducer().selectTools(allowedCategories(), context.matchInput(), context.semanticQuery());
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
@@ -275,12 +272,12 @@ public abstract class Thought {
         // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
         // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
         // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
-        if (ctx.actionTypeResolver().resolve(inv.name()).isGameAction()) {
+        if (dependencies.actionTypeResolver().resolve(inv.name()).isGameAction()) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + CompanionDiagnostics.args(inv.arguments()));
         }
         try {
-            return ctx.executionGateway()
-                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), currentInput))
+            return dependencies.executionGateway()
+                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput()))
                     .join();
         } catch (RuntimeException failed) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
@@ -305,8 +302,8 @@ public abstract class Thought {
         // The verbatim input is already shown by the intake line; log only that it was filed and under which stamp.
         CompanionDiagnostics.debug(trace, "memory",
                 "record input [" + memoryTopic() + "/" + memoryImportance() + "]");
-        ctx.memoryGateway().write(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), currentInput, memoryImportance(),
+        dependencies.memoryGateway().write(new MemoryEntry(
+                Instant.now(), memoryTopic(), memorySource(), context.currentInput(), memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
     }
 
@@ -335,7 +332,7 @@ public abstract class Thought {
         }
         // The spoken text is already shown by the settle line; log only that the reply was filed to memory.
         CompanionDiagnostics.debug(trace, "memory", "record reply");
-        ctx.memoryGateway().write(new MemoryEntry(
+        dependencies.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
 
@@ -356,7 +353,7 @@ public abstract class Thought {
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
                                  String toolCallId) {
-        switch (ctx.actionTypeResolver().resolve(inv.name())) {
+        switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
                 String answer = spokenTextOf(result);
                 if (!answer.isBlank()) {
@@ -383,7 +380,7 @@ public abstract class Thought {
      */
     protected void recordCall(String toolCallId, LlmToolInvocation inv) {
         String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
-        ctx.memoryGateway().write(new MemoryEntry(
+        dependencies.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
                 null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
     }
@@ -399,7 +396,7 @@ public abstract class Thought {
         // An over-long answer (e.g. a full system briefing) is handed by the gateway to background gist
         // compression, which re-writes a shorter line carrying this same toolCallId - so the call stays paired
         // once the gist lands (see OversizedMemoryCompressor), rather than being orphaned as "(no textual result)".
-        ctx.memoryGateway().write(new MemoryEntry(
+        dependencies.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
                 null, null, ToolLink.result(toolCallId)));
     }
@@ -415,7 +412,7 @@ public abstract class Thought {
             return;
         }
         CompanionDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + CompanionDiagnostics.truncate(text) + "\"");
-        ctx.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
+        dependencies.speechGateway().submit(new SpeechRequest(newId(), text, critical ? Urgency.URGENT : Urgency.NORMAL));
     }
 
     /**
@@ -432,16 +429,16 @@ public abstract class Thought {
     }
 
     public final ThoughtSource source() {
-        return source;
+        return context.source();
     }
 
     public final Urgency urgency() {
-        return urgency;
+        return context.urgency();
     }
 
     /** The memory source marker for this thought's own input (COMMANDER vs EVENT). */
     private MemorySource memorySource() {
-        return source == ThoughtSource.COMMANDER ? MemorySource.COMMANDER : MemorySource.EVENT;
+        return source() == ThoughtSource.COMMANDER ? MemorySource.COMMANDER : MemorySource.EVENT;
     }
 
     /** Compact JSON of a tool result, for both the tool-result message and the memory entry. */

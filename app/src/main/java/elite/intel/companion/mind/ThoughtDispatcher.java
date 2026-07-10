@@ -57,7 +57,7 @@ public final class ThoughtDispatcher implements ManagedService {
     /** Production input canonicalizer: the legacy synonym map ("combat mode" -> "switch to combat mode"). */
     private static final Function<String, String> DEFAULT_NORMALIZER = InputNormalizer.getInstance()::normalize;
 
-    private final ThoughtContext ctx;
+    private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
     /**
@@ -88,47 +88,47 @@ public final class ThoughtDispatcher implements ManagedService {
     private volatile Map<ThoughtSource, ThoughtLane> lanes;
     private volatile ScheduledExecutorService watchdog;
 
-    public ThoughtDispatcher(ThoughtContext ctx) {
-        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies) {
+        this(dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Wires the dispatcher with an explicit reflex resolver (production wiring, or a test pinning the gate). */
-    public ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver and the input normalizer to exercise canonicalization routing. */
-    ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
+    ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy to exercise preemption. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy) {
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver to exercise reflex-vs-commander routing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
-        this(ctx, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
+        this(dependencies, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy and watchdog timing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 watchdogTimeoutMillis, watchdogIntervalMillis);
     }
 
     /** Canonical constructor: all collaborators, the input normalizer, and watchdog timing explicit. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
                       Function<String, String> inputNormalizer,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this.ctx = ctx;
+        this.dependencies = dependencies;
         this.urgencyPolicy = urgencyPolicy;
         this.reflexResolver = reflexResolver;
         this.inputNormalizer = inputNormalizer;
@@ -157,7 +157,8 @@ public final class ThoughtDispatcher implements ManagedService {
         // recorded from `input`, never from this normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
-        ctx.state().setLastCommanderMatchInput(matchInput);
+        ThoughtContext context = ThoughtContext.commander(urgency, input, matchInput);
+        dependencies.state().setLastCommanderMatchInput(matchInput);
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
         // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
         // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
@@ -174,14 +175,18 @@ public final class ThoughtDispatcher implements ManagedService {
         if (reflexCommand.isEmpty()) {
             // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
-            reflexCommand = semanticReflexResolver.resolve(matchInput);
+            SemanticReflexResolver.Resolution semanticResolution =
+                    semanticReflexResolver.resolveWithSemanticQuery(matchInput);
+            reflexCommand = semanticResolution.actionId();
+            context = context.withSemanticQuery(semanticResolution.semanticQuery());
             if (reflexCommand.isPresent()) {
                 reflexKind = "semantic";
             }
         }
+        ThoughtContext finalContext = context;
         Thought thought = reflexCommand
-                .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
-                .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+                .map(actionId -> Thought.reflex(finalContext, actionId, dependencies))
+                .orElseGet(() -> Thought.commander(finalContext, dependencies));
         String route = reflexCommand.isPresent()
                 ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
                 : "think";
@@ -230,7 +235,7 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, ctx);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, dependencies);
         CompanionDiagnostics.debug(thought.trace(), "event", "reaction topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
@@ -246,7 +251,7 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, ctx);
+        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, dependencies);
         CompanionDiagnostics.debug(thought.trace(), "event", "verbatim topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }

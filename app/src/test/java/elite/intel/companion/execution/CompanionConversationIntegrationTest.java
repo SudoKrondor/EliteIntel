@@ -13,7 +13,7 @@ import elite.intel.companion.llm.LlmTransport;
 import elite.intel.companion.llm.MistralLlmAdapter;
 import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
-import elite.intel.companion.mind.ThoughtContext;
+import elite.intel.companion.mind.ThoughtDependencies;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -112,11 +112,11 @@ class CompanionConversationIntegrationTest {
         ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
         CompanionRuntime.install(llm, speech, execution, memory, reducer, state);
-        ThoughtContext ctx = new ThoughtContext(llm, speech, execution, memory,
+        ThoughtDependencies dependencies = new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
                 notDangerous, coordinator);
         // Pin the reflex gate off this run (no game tools / no commands), so every turn stays LLM-driven.
-        return new ThoughtDispatcher(ctx, new ReflexResolver(() -> List.of(), notDangerous));
+        return new ThoughtDispatcher(dependencies, new ReflexResolver(() -> List.of(), notDangerous));
     }
 
     /** Submits one commander turn and waits for the lane to drain it, so the conversation plays sequentially. */

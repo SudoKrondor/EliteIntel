@@ -1,6 +1,7 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
@@ -142,8 +143,13 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public List<MemoryEntry> recallCandidates(String query, int limit) {
+        return recallCandidates(query, limit, null);
+    }
+
+    @Override
+    public List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
         // Diagnostic emitted outside the lock, for the same reason as recallMatching.
-        List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
+        List<MemoryEntry> hits = recallCandidatesLocked(query, limit, semanticQuery);
         // The query here is the turn's input, already echoed by the intake line; log only the outcome, spelled out
         // so it reads on its own: how many remembered facts were pulled in to ground this turn's answer. Grouped
         // under the "memory" stage with the record lines. The facts themselves appear as the compose "facts:" lines.
@@ -151,11 +157,12 @@ public final class SessionMemoryGateway implements MemoryGateway {
         return hits;
     }
 
-    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit) {
+    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit,
+                                                                    SemanticQuery semanticQuery) {
         // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
         // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
         return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
-                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource, semanticQuery);
     }
 
     /**

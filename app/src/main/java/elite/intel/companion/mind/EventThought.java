@@ -2,7 +2,6 @@ package elite.intel.companion.mind;
 
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
-import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
@@ -40,23 +39,18 @@ public final class EventThought extends Thought {
      */
     private final String verbatimText;
 
-    /**
-     * Narration constructor.
-     *
-     * @param stimulus    the digested event data, recorded verbatim as the {@code user} turn (the {@code currentInput})
-     * @param promptInput the LLM-visible current input (tagged event data plus optional phrasing instructions)
-     */
-    EventThought(Urgency urgency, String stimulus, String promptInput, ConversationTopic eventTopic, ThoughtContext ctx) {
-        this(urgency, stimulus, promptInput, null, eventTopic, ctx);
+    /** Creates the narration mode from the event turn signals. */
+    EventThought(ThoughtContext context, ConversationTopic eventTopic, ThoughtDependencies dependencies) {
+        this(context, null, eventTopic, dependencies);
     }
 
     /**
-     * Full constructor. A non-null {@code verbatimText} selects verbatim mode; in that mode {@code stimulus} is
-     * the short source/event id (the {@code user} turn) and {@code promptInput} is unused.
+     * Creates either mode. A non-null {@code verbatimText} selects verbatim mode; its turn context then carries the
+     * short source/event id as the {@code user} turn and its match input is unused.
      */
-    EventThought(Urgency urgency, String stimulus, String promptInput, String verbatimText,
-                 ConversationTopic eventTopic, ThoughtContext ctx) {
-        super(ThoughtSource.EVENT, urgency, stimulus, promptInput, ctx);
+    EventThought(ThoughtContext context, String verbatimText, ConversationTopic eventTopic,
+                 ThoughtDependencies dependencies) {
+        super(context, dependencies);
         this.eventTopic = eventTopic;
         this.verbatimText = verbatimText;
     }
@@ -127,6 +121,6 @@ public final class EventThought extends Thought {
      */
     @Override
     protected List<LlmToolDefinition> systemTools() {
-        return ctx.systemFunctionProvider().systemFunctions(source());
+        return dependencies.systemFunctionProvider().systemFunctions(source());
     }
 }

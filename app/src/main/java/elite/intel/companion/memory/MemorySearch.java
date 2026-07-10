@@ -2,6 +2,7 @@ package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.VectorMath;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -55,7 +56,7 @@ final class MemorySearch {
         if (limit <= 0) {
             return List.of();
         }
-        return emit(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource), limit);
+        return emit(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource, null), limit);
     }
 
     /**
@@ -68,16 +69,27 @@ final class MemorySearch {
     static List<MemoryEntry> recallEntries(String query, int limit, List<MemoryEntry> shortTerm,
                                            List<MemoryEntry> midTerm, List<MemoryEntry> summary,
                                            List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource) {
+        return recallEntries(query, limit, shortTerm, midTerm, summary, archive, matcherSource, null);
+    }
+
+    /**
+     * The same entry recall, optionally reusing the query embedding prepared during the current thought's intake.
+     */
+    static List<MemoryEntry> recallEntries(String query, int limit, List<MemoryEntry> shortTerm,
+                                           List<MemoryEntry> midTerm, List<MemoryEntry> summary,
+                                           List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource,
+                                           SemanticQuery semanticQuery) {
         if (limit <= 0) {
             return List.of();
         }
-        return emitEntries(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource), limit);
+        return emitEntries(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource, semanticQuery), limit);
     }
 
     /** Scores, filters and orders every memory area against {@code query} into the final ranked candidate list. */
     private static List<Scored> rankEligible(String query, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
                                              List<MemoryEntry> summary, List<MemoryEntry> archive,
-                                             Supplier<SemanticPhraseMatcher> matcherSource) {
+                                             Supplier<SemanticPhraseMatcher> matcherSource,
+                                             SemanticQuery semanticQuery) {
         // The first companion turn has no memory at all. There is nothing to rank, so avoid lazily loading the
         // semantic model and embedding its query just to return an empty list.
         if (shortTerm.isEmpty() && midTerm.isEmpty() && summary.isEmpty() && archive.isEmpty()) {
@@ -89,7 +101,11 @@ final class MemorySearch {
         // (every entry matches with relevance 0, so it degenerates to importance-then-recency). The dedup step
         // below still runs on every path, collapsing near-identical entries that carry vectors.
         SemanticPhraseMatcher matcher = blank ? null : matcherSource.get();
-        float[] queryVector = matcher == null ? null : safeEmbedQuery(matcher, query);
+        float[] queryVector = matcher == null || semanticQuery == null ? null : semanticQuery.vectorFor(query, matcher);
+        if (queryVector == null && matcher != null) {
+            // No usable prepared context (absent, another input, or another matcher): retain the normal path.
+            queryVector = safeEmbedQuery(matcher, query);
+        }
         boolean semantic = queryVector != null;
 
         List<Scored> scored = new ArrayList<>();

@@ -16,7 +16,7 @@ import elite.intel.companion.memory.OversizedMemoryCompressor;
 import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.DispatcherCompanionNarrator;
-import elite.intel.companion.mind.ThoughtContext;
+import elite.intel.companion.mind.ThoughtDependencies;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
@@ -129,10 +129,10 @@ public final class CompanionSubsystemGate implements ManagedService {
 
         DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
         confirmationCoordinator = new ConfirmationCoordinator();
-        ThoughtContext ctx = new ThoughtContext(llm, speech, execution, memory,
+        ThoughtDependencies dependencies = new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
                 dangerousActionPolicy, confirmationCoordinator);
-        dispatcher = new ThoughtDispatcher(ctx);
+        dispatcher = new ThoughtDispatcher(dependencies);
         dispatcher.start();
         // The single door gameplay subscribers use to voice reactions (filler/narrate/announce), wrapping the
         // dispatcher and speech gateway; published statically so a subscriber reaches it via CompanionRuntime.

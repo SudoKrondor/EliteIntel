@@ -54,11 +54,11 @@ class ThoughtDispatcherTest {
     private final FakeMemory memory = new FakeMemory();
 
     private ThoughtDispatcher dispatcher() {
-        return new ThoughtDispatcher(ctxWith(new TerminatingLlm()));
+        return new ThoughtDispatcher(dependenciesWith(new TerminatingLlm()));
     }
 
-    private ThoughtContext ctxWith(LlmGateway llm) {
-        return new ThoughtContext(
+    private ThoughtDependencies dependenciesWith(LlmGateway llm) {
+        return new ThoughtDependencies(
                 llm, new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
@@ -98,7 +98,7 @@ class ThoughtDispatcherTest {
             executed.add(request.toolName());
             return CompletableFuture.completedFuture(new JsonObject());
         };
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
@@ -107,7 +107,7 @@ class ThoughtDispatcherTest {
         ReflexResolver reflex = new ReflexResolver(
                 () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)),
                 invocation -> false);
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, UrgencyPolicy.normalOnly(), reflex);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
         dispatcher.start();
         dispatcher.submitCommanderInput("navigation");
         dispatcher.stop();
@@ -140,7 +140,7 @@ class ThoughtDispatcherTest {
             return CompletableFuture.completedFuture(result);
         };
         FakeSpeech speech = new FakeSpeech();
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, speech, summarizing, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
@@ -150,7 +150,7 @@ class ThoughtDispatcherTest {
                 () -> List.of(new ReflexResolver.CommandPhrase(
                         "calculate_fleet_carrier_route", "calculate fleet carrier route", true)),
                 invocation -> false);
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, UrgencyPolicy.normalOnly(), reflex);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
         dispatcher.start();
         dispatcher.submitCommanderInput("calculate fleet carrier route");
         dispatcher.stop();
@@ -183,7 +183,7 @@ class ThoughtDispatcherTest {
             executed.add(request.toolName());
             return CompletableFuture.completedFuture(new JsonObject());
         };
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
@@ -193,7 +193,7 @@ class ThoughtDispatcherTest {
                 () -> List.of(new ReflexResolver.CommandPhrase("switch_combat", "switch to combat mode", true)),
                 invocation -> false);
         Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, normalizer);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, normalizer);
         dispatcher.start();
         dispatcher.submitCommanderInput("combat mode");
         dispatcher.stop();
@@ -220,7 +220,7 @@ class ThoughtDispatcherTest {
             executed.add(request.toolName());
             return CompletableFuture.completedFuture(new JsonObject());
         };
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 failIfCalled, new FakeSpeech(), tracking, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
@@ -229,7 +229,7 @@ class ThoughtDispatcherTest {
         ReflexResolver reflex = new ReflexResolver(
                 () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
                 invocation -> false);
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, s -> s); // identity normalizer
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
         dispatcher.start();
         String input = CompanionConfig.companionName() + ", all stop";
         dispatcher.submitCommanderInput(input);
@@ -260,7 +260,7 @@ class ThoughtDispatcherTest {
                 executed.add(request.toolName());
                 return CompletableFuture.completedFuture(new JsonObject());
             };
-            ThoughtContext ctx = new ThoughtContext(
+            ThoughtDependencies dependencies = new ThoughtDependencies(
                     failIfCalled, new FakeSpeech(), tracking, memory,
                     new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                     (categories, currentInput) -> List.of(), new CompanionState(),
@@ -269,7 +269,7 @@ class ThoughtDispatcherTest {
             ReflexResolver reflex = new ReflexResolver(
                     () -> List.of(new ReflexResolver.CommandPhrase("stop_ship", "all stop", true)),
                     invocation -> false);
-            ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, reflex, s -> s); // identity normalizer
+            ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, s -> s); // identity normalizer
             dispatcher.start();
             dispatcher.submitCommanderInput("Вега, all stop"); // Cyrillic vocative + the reflex phrase
             dispatcher.stop();
@@ -286,7 +286,7 @@ class ThoughtDispatcherTest {
         // The resolver matches nothing, so the input takes the normal CommanderThought path - the LLM is engaged.
         CapturingLlm llm = new CapturingLlm();
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), UrgencyPolicy.normalOnly(), noReflex);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), UrgencyPolicy.normalOnly(), noReflex);
         dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("how is the ship");
@@ -304,7 +304,7 @@ class ThoughtDispatcherTest {
         CapturingLlm llm = new CapturingLlm();
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
         Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), noReflex, normalizer);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, normalizer);
         dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("combat mode");
@@ -332,7 +332,7 @@ class ThoughtDispatcherTest {
                 return CompletableFuture.completedFuture(null);
             }
         };
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
         dispatcher.start();
         dispatcher.submitEventReaction("surface scan: alexandrite", "Report it briefly.",
                 "EXPLORATION", Urgency.NORMAL);
@@ -367,12 +367,12 @@ class ThoughtDispatcherTest {
             holder[0].interruptLiveThoughts();
             return CompletableFuture.completedFuture(new JsonObject());
         };
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 new TerminatingLlm(), new FakeSpeech(), interruptingExecution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> List.of(), new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator());
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies);
         holder[0] = dispatcher;
         dispatcher.start();
         dispatcher.submitCommanderInput("set speed to 50");
@@ -426,7 +426,7 @@ class ThoughtDispatcherTest {
                 return Urgency.NORMAL;
             }
         };
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), policy);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), policy);
         dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/preemption path, not reflex
         dispatcher.start();
 
@@ -443,7 +443,7 @@ class ThoughtDispatcherTest {
     @Test
     void interruptLiveThoughtsPreemptsTheLiveThought() throws InterruptedException {
         BlockFirstLlm llm = new BlockFirstLlm();
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
         dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/barge-in path, not reflex
         dispatcher.start();
 
@@ -460,7 +460,7 @@ class ThoughtDispatcherTest {
     void watchdogInterruptsAStuckThought() throws InterruptedException {
         BlockFirstLlm llm = new BlockFirstLlm();
         // Tiny watchdog: 50ms timeout, checked every 10ms.
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm), UrgencyPolicy.normalOnly(), 50, 10);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), UrgencyPolicy.normalOnly(), 50, 10);
         dispatcher.start();
 
         dispatcher.submitCommanderInput("stuck task"); // blocks on the LLM forever
@@ -475,7 +475,7 @@ class ThoughtDispatcherTest {
         // A long command occupies a worker; with the bounded commander pool a new commander thought runs on a
         // free worker instead of queuing behind the blocked one.
         BlockFirstLlm llm = new BlockFirstLlm(); // first thought blocks on the LLM forever; later ones end
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctxWith(llm));
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow one");   // takes the first LLM call and blocks (worker A)
@@ -492,12 +492,12 @@ class ThoughtDispatcherTest {
     @Test
     void aFailingThoughtDoesNotKillTheLane() {
         // A reducer that always throws makes every thought fail during prompt assembly.
-        ThoughtContext ctx = new ThoughtContext(
+        ThoughtDependencies dependencies = new ThoughtDependencies(
                 new TerminatingLlm(), new FakeSpeech(), new FakeExecution(), memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 (categories, currentInput) -> { throw new RuntimeException("boom"); }, new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator());
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies);
         dispatcher.start();
 
         dispatcher.submitCommanderInput("first");

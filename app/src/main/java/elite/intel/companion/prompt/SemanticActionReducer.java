@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.IntelActionCategory;
@@ -98,7 +99,13 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     @Override
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
-        List<LlmToolDefinition> selected = doSelect(allowedCategories, currentInput);
+        return selectTools(allowedCategories, currentInput, null);
+    }
+
+    @Override
+    public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
+                                               SemanticQuery semanticQuery) {
+        List<LlmToolDefinition> selected = doSelect(allowedCategories, currentInput, semanticQuery);
         // Diagnostics harness: surface the reducer's shortlist as a structured marker so the skill can tell a
         // recall miss (expected id ABSENT here - fix the aliases) from a selection miss (expected id present but
         // the LLM dispatched another - fix the llmDescription), without scraping the prose DBG/LOG lines. The
@@ -110,7 +117,8 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         return selected;
     }
 
-    private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput) {
+    private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput,
+                                             SemanticQuery semanticQuery) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
         if (candidates.isEmpty()) {
             // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
@@ -132,7 +140,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             return wordOverlapFallback.selectTools(allowedCategories, currentInput);
         }
         try {
-            return semanticSelect(matcher, candidates, currentInput);
+            return semanticSelect(matcher, candidates, currentInput, semanticQuery);
         } catch (RuntimeException embedFailure) {
             // WHY: a transient embed failure must not drop the turn's tools; degrade to word-overlap for this turn.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
@@ -146,8 +154,12 @@ public final class SemanticActionReducer implements CompanionActionReducer {
      * the relative band above the floor, ranked and capped. Returns empty when the best match is below the floor.
      */
     private List<LlmToolDefinition> semanticSelect(SemanticPhraseMatcher matcher,
-                                                   List<GameToolCandidates.Candidate> candidates, String input) {
-        float[] queryVector = matcher.embedQuery(input);
+                                                   List<GameToolCandidates.Candidate> candidates, String input,
+                                                   SemanticQuery semanticQuery) {
+        float[] queryVector = semanticQuery == null ? null : semanticQuery.vectorFor(input, matcher);
+        if (queryVector == null) {
+            queryVector = matcher.embedQuery(input);
+        }
         double[] scores = new double[candidates.size()];
         double best = -1.0;
         for (int i = 0; i < candidates.size(); i++) {
