@@ -39,11 +39,12 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
         body.addProperty("max_tokens", MAX_TOKENS);
         body.addProperty("temperature", request.profile().temperature());
 
-        String system = systemPrompt(request.messages());
+        List<LlmMessage> messages = ToolCallIdNormalizer.forWire(request.messages());
+        String system = systemPrompt(messages);
         if (!system.isBlank()) {
             body.addProperty("system", system);
         }
-        body.add("messages", renderMessages(request.messages()));
+        body.add("messages", renderMessages(messages));
 
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));

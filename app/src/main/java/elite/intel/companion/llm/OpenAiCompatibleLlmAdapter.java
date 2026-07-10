@@ -51,7 +51,7 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         if (sendsTemperature) {
             body.addProperty("temperature", request.profile().temperature());
         }
-        body.add("messages", renderMessages(request.messages()));
+        body.add("messages", renderMessages(ToolCallIdNormalizer.forWire(request.messages())));
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));
             body.addProperty("tool_choice", toolChoice); // require a function call

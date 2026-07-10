@@ -68,8 +68,8 @@ class LmStudioLlmAdapterTest {
                 List.of(
                         LlmMessage.of(LlmMessageRole.USER, "analyze carrier route"),
                         LlmMessage.assistantToolCalls(List.of(
-                                new LlmToolInvocation("call-1", "query_carrier_voyage", new JsonObject()))),
-                        LlmMessage.toolResult("call-1", "{\"totalJumps\":8}")),
+                                new LlmToolInvocation("call00001", "query_carrier_voyage", new JsonObject()))),
+                        LlmMessage.toolResult("call00001", "{\"totalJumps\":8}")),
                 List.of(),
                 PromptCacheProfile.COMMANDER);
 
@@ -81,14 +81,14 @@ class LmStudioLlmAdapterTest {
         assertTrue(!assistant.has("content") || assistant.get("content").isJsonNull(),
                 "a replayed tool call must not become assistant text");
         JsonObject call = assistant.getAsJsonArray("tool_calls").get(0).getAsJsonObject();
-        assertEquals("call-1", call.get("id").getAsString());
+        assertEquals("call00001", call.get("id").getAsString());
         assertEquals("function", call.get("type").getAsString());
         assertEquals("query_carrier_voyage", call.getAsJsonObject("function").get("name").getAsString());
         assertEquals("{}", call.getAsJsonObject("function").get("arguments").getAsString());
 
         JsonObject tool = messages.get(2).getAsJsonObject();
         assertEquals("tool", tool.get("role").getAsString());
-        assertEquals("call-1", tool.get("tool_call_id").getAsString());
+        assertEquals("call00001", tool.get("tool_call_id").getAsString());
         assertEquals("{\"totalJumps\":8}", tool.get("content").getAsString());
         assertFalse(body.has("parallel_tool_calls"), "the option belongs only on requests that offer tools");
     }

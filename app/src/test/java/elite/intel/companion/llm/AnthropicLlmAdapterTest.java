@@ -71,13 +71,15 @@ class AnthropicLlmAdapterTest {
     void rendersAssistantToolUseAndCoalescesConsecutiveToolResults() {
         JsonObject argsA = new JsonObject();
         argsA.addProperty("text", "hi");
+        String firstId = "da2ea247-86cc-45d2-a272-9e99af14a88d";
+        String secondId = "gateway-classify-1";
         LlmRequest req = request(List.of(
                 LlmMessage.of(LlmMessageRole.USER, "go"),
                 LlmMessage.assistantToolCalls(List.of(
-                        new LlmToolInvocation("call-1", "speak", argsA),
-                        new LlmToolInvocation("call-2", "scan", new JsonObject()))),
-                LlmMessage.toolResult("call-1", "{\"status\":\"spoken\"}"),
-                LlmMessage.toolResult("call-2", "{\"status\":\"scanned\"}")), List.of());
+                        new LlmToolInvocation(firstId, "speak", argsA),
+                        new LlmToolInvocation(secondId, "scan", new JsonObject()))),
+                LlmMessage.toolResult(firstId, "{\"status\":\"spoken\"}"),
+                LlmMessage.toolResult(secondId, "{\"status\":\"scanned\"}")), List.of());
 
         JsonArray messages = JsonParser.parseString(adapter.buildRequestBody(req)).getAsJsonObject()
                 .getAsJsonArray("messages");
@@ -88,7 +90,11 @@ class AnthropicLlmAdapterTest {
         assertEquals("assistant", assistant.get("role").getAsString());
         JsonArray blocks = assistant.getAsJsonArray("content");
         assertEquals("tool_use", blocks.get(0).getAsJsonObject().get("type").getAsString());
-        assertEquals("call-1", blocks.get(0).getAsJsonObject().get("id").getAsString());
+        String firstWireId = blocks.get(0).getAsJsonObject().get("id").getAsString();
+        String secondWireId = blocks.get(1).getAsJsonObject().get("id").getAsString();
+        assertTrue(firstWireId.matches("[A-Za-z0-9]{9}"));
+        assertTrue(secondWireId.matches("[A-Za-z0-9]{9}"));
+        assertNotEquals(firstWireId, secondWireId);
         assertEquals("hi", blocks.get(0).getAsJsonObject().getAsJsonObject("input").get("text").getAsString());
 
         JsonObject toolTurn = messages.get(2).getAsJsonObject();
@@ -96,8 +102,8 @@ class AnthropicLlmAdapterTest {
         JsonArray results = toolTurn.getAsJsonArray("content");
         assertEquals(2, results.size(), "consecutive tool results must coalesce into one user turn");
         assertEquals("tool_result", results.get(0).getAsJsonObject().get("type").getAsString());
-        assertEquals("call-1", results.get(0).getAsJsonObject().get("tool_use_id").getAsString());
-        assertEquals("call-2", results.get(1).getAsJsonObject().get("tool_use_id").getAsString());
+        assertEquals(firstWireId, results.get(0).getAsJsonObject().get("tool_use_id").getAsString());
+        assertEquals(secondWireId, results.get(1).getAsJsonObject().get("tool_use_id").getAsString());
     }
 
     @Test
