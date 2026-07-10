@@ -8,6 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -25,15 +26,14 @@ import java.util.stream.Collectors;
  * <p>
  * It also enforces the classify-first protocol: when {@code classify_turn} is among the offered tools (a
  * classifying turn - narration never offers it), a response without a {@code classify_turn} call draws the
- * same single repair/retry with a targeted nudge. This omission is not fatal: if the retry still lacks it,
- * the structurally valid response is returned anyway (the turn settles; only the memory stamping degrades
- * to defaults), never downgraded to INVALID.
+ * same single repair/retry. When the partial response contains valid offered tool-calls, the retry replays them
+ * as an {@code assistant(tool_calls) -> tool(result)} continuation and rejects them without execution. This keeps
+ * the system prompt and commander history unchanged while giving the model protocol-valid feedback.
  * <p>
  * Symmetrically, a classifying turn must also carry a settling call: a response that calls
  * {@code classify_turn} and nothing else has classified the turn but neither answered nor acted, so it
- * falls silent. That draws the same single repair/retry (a nudge to speak or act) and the same graceful
- * degradation - if the retry still adds nothing, the classify-only response is accepted (the turn settles
- * silently) rather than downgraded to INVALID.
+ * falls silent. It receives the same repair. The repair transcript is request-local and is never written to
+ * durable memory; only a clean retry reaches the thought for execution.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future.
@@ -87,19 +87,9 @@ public final class CompanionLlmGateway implements LlmGateway {
         }
     }
 
-    /**
-     * What is wrong with a parsed response; drives the repair nudge and the fallback. A {@code fatal} defect
-     * (only {@link #MALFORMED} - not offered tool-calls at all) is unusable and downgrades to INVALID; the
-     * non-fatal defects ({@link #MISSING_CLASSIFY} - usable but unclassified, {@link #MISSING_SETTLING} -
-     * classified but silent) still leave a response that settles the turn, so after one failed repair they are
-     * accepted as-is. {@link #NONE} means no defect.
-     */
+    /** What is wrong with a parsed response. {@link #NONE} means the response is ready for execution. */
     private enum Defect {
-        NONE(false), MISSING_CLASSIFY(false), MISSING_SETTLING(false), MALFORMED(true);
-        final boolean fatal;
-        Defect(boolean fatal) {
-            this.fatal = fatal;
-        }
+        NONE, MISSING_CLASSIFY, MISSING_SETTLING, MALFORMED
     }
 
     /** A single send/parse round paired with the defect it was found to have. */
@@ -110,34 +100,21 @@ public final class CompanionLlmGateway implements LlmGateway {
         if (first.defect() == Defect.NONE) {
             return first.result();
         }
-        // One repair/retry with a defect-targeted nudge. Surface it on the diagnostics surface (attributed to the
-        // owning thought's trace) so this second physical call - otherwise only an unattributed token line - is
-        // visible as part of the round.
+        // One protocol-valid repair/retry. Surface it on the diagnostics surface (attributed to the owning
+        // thought's trace) so this second physical call is visible as part of the round.
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
-        CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + first.defect() + " -> retry");
-        log.warn("LLM response has defect {} (status={}, tool-calls={}); repairing and retrying once",
-                first.defect(), first.result().status(), first.result().toolInvocations().size());
-        Attempt second = attempt(repair(request, first.defect()), 2);
+        String retryKind = canContinue(first) ? "assistant/tool continuation" : "unchanged request";
+        CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + first.defect() + " -> retry (" + retryKind + ")");
+        log.warn("LLM response has defect {} (status={}, tool-calls={}); retrying once via {}",
+                first.defect(), first.result().status(), first.result().toolInvocations().size(), retryKind);
+        Attempt second = attempt(repair(request, first), 2);
 
-        // Prefer a clean retry; otherwise keep the best usable (non-fatal) response - a missing classify_turn
-        // or a classify-only silent turn still settles the turn for the commander, better than the INVALID
-        // service phrase. Prefer the original answer over the nudged retry. Only a fatal defect is unusable.
         if (second.defect() == Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#2 ok");
             return second.result();
         }
-        if (!first.defect().fatal) {
-            CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + second.defect() + "; kept original");
-            log.warn("accepting original response despite {}", first.defect());
-            return first.result();
-        }
-        if (!second.defect().fatal) {
-            CompanionDiagnostics.debug(trace, "llm", "attempt#2 kept repaired despite " + second.defect());
-            log.warn("accepting repaired response despite {}", second.defect());
-            return second.result();
-        }
-        CompanionDiagnostics.debug(trace, "llm", "attempt#2 still MALFORMED -> INVALID");
-        log.warn("LLM response still malformed after retry; returning INVALID_RESPONSE");
+        CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + second.defect() + " -> INVALID");
+        log.warn("LLM response still has defect {} after retry; returning INVALID_RESPONSE", second.defect());
         return INVALID;
     }
 
@@ -208,26 +185,53 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * Merges a terse, defect-targeted format correction into the leading {@link LlmMessageRole#SYSTEM} message
-     * and returns the amended request. The nudge remains system-level instruction, not USER: a USER-role nudge
-     * reads to the model as a new commander turn, so a chatty model burns the retry reasoning <em>about</em> the
-     * error instead of just re-emitting the call. It is merged into the first system message instead of appended
-     * as another message because strict local chat templates often allow only one optional system turn at the
-     * beginning.
+     * Builds a native tool continuation for a structurally valid but incomplete response. Each replayed call gets
+     * a truthful {@code rejected} result: no call has executed or changed state. Invalid or unoffered calls cannot
+     * form a valid continuation, so their retry keeps the original request unchanged.
      */
-    private LlmRequest repair(LlmRequest request, Defect defect) {
-        String nudge = switch (defect) {
-            case MISSING_CLASSIFY -> "Format correction: also call 'classify_turn' (first), then the settling call. Tool calls only.";
-            case MISSING_SETTLING -> "Format correction: after 'classify_turn' also act - call 'speak' or the matching function. Tool calls only.";
-            default -> "Format correction: reply only with tool calls - 'classify_turn' plus a settling call ('speak' or an action). No prose.";
-        };
-        List<LlmMessage> messages = new ArrayList<>(request.messages());
-        if (!messages.isEmpty() && messages.get(0).role() == LlmMessageRole.SYSTEM) {
-            LlmMessage first = messages.get(0);
-            messages.set(0, LlmMessage.of(LlmMessageRole.SYSTEM, first.content() + "\n\n" + nudge));
-        } else {
-            messages.add(0, LlmMessage.of(LlmMessageRole.SYSTEM, nudge));
+    private LlmRequest repair(LlmRequest request, Attempt failedAttempt) {
+        if (!canContinue(failedAttempt)) {
+            return request;
         }
-        return new LlmRequest(request.requestId(), messages, request.tools(), request.profile(), request.trace());
+        List<LlmToolInvocation> replayedCalls = withReplayIds(failedAttempt.result().toolInvocations());
+        List<LlmMessage> messages = new ArrayList<>(request.messages());
+        messages.add(LlmMessage.assistantToolCalls(replayedCalls));
+        String rejection = rejectionFor(failedAttempt.defect());
+        for (LlmToolInvocation call : replayedCalls) {
+            messages.add(LlmMessage.toolResult(call.id(), rejection));
+        }
+        return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
+    }
+
+    private static boolean canContinue(Attempt failedAttempt) {
+        return failedAttempt.defect() != Defect.MALFORMED
+                && failedAttempt.result().isValid()
+                && !failedAttempt.result().toolInvocations().isEmpty();
+    }
+
+    /** Assigns unique request-local ids when a provider omitted or duplicated them, keeping every result linked. */
+    private static List<LlmToolInvocation> withReplayIds(List<LlmToolInvocation> calls) {
+        List<LlmToolInvocation> replayed = new ArrayList<>(calls.size());
+        Set<String> usedIds = new HashSet<>();
+        int nextSyntheticId = 1;
+        for (LlmToolInvocation call : calls) {
+            String id = call.id();
+            if (id == null || id.isBlank() || !usedIds.add(id)) {
+                do {
+                    id = "repair-rejected-call-" + nextSyntheticId++;
+                } while (!usedIds.add(id));
+            }
+            replayed.add(new LlmToolInvocation(id, call.name(), call.arguments()));
+        }
+        return List.copyOf(replayed);
+    }
+
+    /** Returns a truthful tool result for a call that was never executed. */
+    private static String rejectionFor(Defect defect) {
+        return switch (defect) {
+            case MISSING_CLASSIFY -> "{\"status\":\"rejected\",\"reason\":\"classify_turn must be called before a settling function\"}";
+            case MISSING_SETTLING -> "{\"status\":\"rejected\",\"reason\":\"a settling function must follow classify_turn\"}";
+            case NONE, MALFORMED -> throw new IllegalArgumentException("No tool continuation for " + defect);
+        };
     }
 }

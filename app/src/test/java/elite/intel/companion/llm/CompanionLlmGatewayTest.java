@@ -137,55 +137,99 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void missingClassifyTurnIsRepairedWithATargetedNudge() throws Exception {
-        // A classifying turn (classify_turn offered): a speak-only response draws one retry whose nudge
-        // names classify_turn; the repaired response is returned.
+    void missingClassifyTurnIsRepairedAsAssistantToolContinuation() throws Exception {
         ScriptedAdapter adapter = new ScriptedAdapter(ok("speak"), ok("classify_turn", "speak"));
-        LlmResult result = run(adapter, requestOffering("speak", "classify_turn"));
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "earlier commander turn"),
+                        LlmMessage.of(LlmMessageRole.ASSISTANT, "earlier companion turn"),
+                        LlmMessage.of(LlmMessageRole.USER, "go")),
+                "speak", "classify_turn");
+        LlmResult result = run(adapter, request);
 
         assertTrue(result.isValid());
         assertEquals(2, sends.get());
-        assertEquals(2, result.toolInvocations().size());
-        String nudge = adapter.lastRequest.messages().get(adapter.lastRequest.messages().size() - 1).content();
-        assertTrue(nudge.contains("classify_turn"), "the repair nudge must name the omitted call, was: " + nudge);
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertRejectedContinuation(request, adapter.lastRequest, "speak", "c1", "classify_turn must be called");
     }
 
     @Test
-    void classifyStillMissingAfterRetryDegradesGracefullyToTheValidResponse() throws Exception {
-        // Both responses lack classify_turn but are otherwise valid: the turn must still settle with the
-        // model's answer (memory stamping degrades), never fall to the INVALID service phrase.
+    void classifyStillMissingAfterContinuationYieldsInvalidResponse() throws Exception {
         LlmResult result = run(new ScriptedAdapter(ok("speak"), ok("speak")),
                 requestOffering("speak", "classify_turn"));
 
-        assertTrue(result.isValid());
-        assertEquals("speak", result.toolInvocations().get(0).name());
+        assertFalse(result.isValid());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
         assertEquals(2, sends.get());
     }
 
     @Test
-    void classifyOnlyDrawsSettlingNudgeThenActs() throws Exception {
-        // A classify-only response has classified but not answered/acted (it would fall silent): one retry
-        // whose nudge tells the model to speak, and the repaired classify+speak response is returned.
+    void classifyOnlyIsRepairedAsAssistantToolContinuation() throws Exception {
         ScriptedAdapter adapter = new ScriptedAdapter(ok("classify_turn"), ok("classify_turn", "speak"));
-        LlmResult result = run(adapter, requestOffering("speak", "classify_turn"));
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "go")),
+                "speak", "classify_turn");
+        LlmResult result = run(adapter, request);
 
         assertTrue(result.isValid());
         assertEquals(2, sends.get());
-        assertEquals(2, result.toolInvocations().size());
-        String nudge = adapter.lastRequest.messages().get(adapter.lastRequest.messages().size() - 1).content();
-        assertTrue(nudge.contains("speak"), "the repair nudge must ask the model to speak/act, was: " + nudge);
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertRejectedContinuation(request, adapter.lastRequest, "classify_turn", "c1", "settling function must follow");
     }
 
     @Test
-    void classifyOnlySettlingStillMissingDegradesGracefully() throws Exception {
-        // Both responses are classify-only: after one nudge the turn settles silently with the valid response
-        // rather than falling to the INVALID service phrase (mirrors the missing-classify graceful path).
+    void classifyOnlySettlingStillMissingYieldsInvalidResponse() throws Exception {
         LlmResult result = run(new ScriptedAdapter(ok("classify_turn"), ok("classify_turn")),
                 requestOffering("speak", "classify_turn"));
 
-        assertTrue(result.isValid());
-        assertEquals("classify_turn", result.toolInvocations().get(0).name());
+        assertFalse(result.isValid());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
         assertEquals(2, sends.get());
+    }
+
+    @Test
+    void continuationSynthesizesAnIdWhenProviderOmitsOne() throws Exception {
+        LlmResult first = new LlmResult(LlmResult.Status.OK,
+                List.of(new LlmToolInvocation(null, "speak", new JsonObject())));
+        ScriptedAdapter adapter = new ScriptedAdapter(first, ok("classify_turn", "speak"));
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "go")),
+                "speak", "classify_turn");
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        assertRejectedContinuation(request, adapter.lastRequest, "speak", "repair-rejected-call-1",
+                "classify_turn must be called");
+    }
+
+    @Test
+    void continuationAvoidsCollidingWithProviderIssuedIds() throws Exception {
+        LlmResult first = new LlmResult(LlmResult.Status.OK, List.of(
+                new LlmToolInvocation("repair-rejected-call-1", "speak", new JsonObject()),
+                new LlmToolInvocation(null, "interrupt", new JsonObject())));
+        ScriptedAdapter adapter = new ScriptedAdapter(first, ok("classify_turn", "speak"));
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "go")),
+                "speak", "interrupt", "classify_turn");
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        List<LlmMessage> messages = adapter.lastRequest.messages();
+        assertEquals(List.of("repair-rejected-call-1", "repair-rejected-call-2"),
+                messages.get(2).toolCalls().stream().map(LlmToolInvocation::id).toList());
+        assertEquals(List.of("repair-rejected-call-1", "repair-rejected-call-2"),
+                messages.subList(3, 5).stream().map(LlmMessage::toolCallId).toList());
     }
 
     @Test
@@ -198,7 +242,7 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void repairMergesNudgeIntoLeadingSystemMessage() throws Exception {
+    void malformedResponseRetriesWithoutChangingThePrompt() throws Exception {
         ScriptedAdapter adapter = new ScriptedAdapter(invalid(), invalid());
         LlmRequest request = requestWithMessages(
                 List.of(
@@ -209,12 +253,37 @@ class CompanionLlmGatewayTest {
         run(adapter, request);
 
         List<LlmMessage> retried = adapter.lastRequest.messages();
-        assertEquals(2, retried.size(), "repair must not append an extra system/user message");
-        assertEquals(LlmMessageRole.SYSTEM, retried.get(0).role());
-        assertTrue(retried.get(0).content().contains("rules"));
-        assertTrue(retried.get(0).content().contains("Format correction"));
-        assertEquals(LlmMessageRole.USER, retried.get(1).role());
-        assertEquals("go", retried.get(1).content());
-        assertEquals(1, retried.stream().filter(m -> m.role() == LlmMessageRole.SYSTEM).count());
+        assertEquals(request.messages(), retried);
+    }
+
+    /** Verifies that the repair is an ephemeral, protocol-valid assistant/tool continuation. */
+    private static void assertRejectedContinuation(
+            LlmRequest original,
+            LlmRequest retried,
+            String expectedToolName,
+            String expectedToolCallId,
+            String expectedReason
+    ) {
+        int continuationIndex = original.messages().size();
+        List<LlmMessage> messages = retried.messages();
+        assertEquals(continuationIndex + 2, messages.size());
+        assertEquals(original.messages(), messages.subList(0, continuationIndex),
+                "repair must preserve the durable prompt prefix byte-for-byte");
+        List<LlmMessageRole> expectedRoles = new ArrayList<>(
+                original.messages().stream().map(LlmMessage::role).toList());
+        expectedRoles.add(LlmMessageRole.ASSISTANT);
+        expectedRoles.add(LlmMessageRole.TOOL);
+        assertEquals(expectedRoles, messages.stream().map(LlmMessage::role).toList());
+
+        LlmMessage assistant = messages.get(continuationIndex);
+        assertEquals(1, assistant.toolCalls().size());
+        assertEquals(expectedToolName, assistant.toolCalls().get(0).name());
+        assertEquals(expectedToolCallId, assistant.toolCalls().get(0).id());
+
+        LlmMessage tool = messages.get(continuationIndex + 1);
+        assertEquals(expectedToolCallId, tool.toolCallId());
+        assertTrue(tool.content().contains("\"status\":\"rejected\""));
+        assertFalse(tool.content().contains("accepted"));
+        assertTrue(tool.content().contains(expectedReason));
     }
 }
