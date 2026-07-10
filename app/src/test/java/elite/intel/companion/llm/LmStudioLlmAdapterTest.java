@@ -31,6 +31,7 @@ class LmStudioLlmAdapterTest {
 
         assertEquals("gemma-3", json.get("model").getAsString());
         assertEquals("required", json.get("tool_choice").getAsString());
+        assertTrue(json.get("parallel_tool_calls").getAsBoolean());
         assertFalse(json.has("prompt_cache_key"), "Mistral's cache key must not be sent to LM Studio");
         // Local models accept a custom temperature, so it must be sent (the inverse of the OpenAI case).
         assertTrue(json.has("temperature"), "a custom temperature must be sent to LM Studio");
@@ -71,8 +72,8 @@ class LmStudioLlmAdapterTest {
                 List.of(),
                 PromptCacheProfile.COMMANDER);
 
-        JsonArray messages = JsonParser.parseString(adapter.buildRequestBody(request)).getAsJsonObject()
-                .getAsJsonArray("messages");
+        JsonObject body = JsonParser.parseString(adapter.buildRequestBody(request)).getAsJsonObject();
+        JsonArray messages = body.getAsJsonArray("messages");
 
         JsonObject assistant = messages.get(1).getAsJsonObject();
         assertEquals("assistant", assistant.get("role").getAsString());
@@ -88,5 +89,6 @@ class LmStudioLlmAdapterTest {
         assertEquals("tool", tool.get("role").getAsString());
         assertEquals("call-1", tool.get("tool_call_id").getAsString());
         assertEquals("{\"totalJumps\":8}", tool.get("content").getAsString());
+        assertFalse(body.has("parallel_tool_calls"), "the option belongs only on requests that offer tools");
     }
 }

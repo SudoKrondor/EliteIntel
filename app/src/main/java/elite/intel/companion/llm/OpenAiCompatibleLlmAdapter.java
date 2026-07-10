@@ -16,9 +16,9 @@ import java.util.List;
  * turn ({@code tool_choice}), and parses the response's tool-calls (or plain text for a compression turn).
  * <p>
  * Both Mistral (cloud) and an LM Studio local endpoint speak this protocol, so provider subclasses only
- * supply the served model, the "must call a function" {@code tool_choice} value, and whether to send
- * Mistral's {@code prompt_cache_key}. {@code response_format} is omitted (that is the legacy JSON-mode path,
- * not tool-calling).
+ * supply the served model, the "must call a function" {@code tool_choice} value, whether to send Mistral's
+ * {@code prompt_cache_key}, and any endpoint-specific tool options. {@code response_format} is omitted (that is
+ * the legacy JSON-mode path, not tool-calling).
  */
 abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
 
@@ -55,6 +55,7 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));
             body.addProperty("tool_choice", toolChoice); // require a function call
+            addToolRequestParameters(body);
         }
         if (sendCacheKey) {
             body.addProperty("prompt_cache_key", request.profile().cacheKey());
@@ -63,6 +64,13 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
         // bodies to the provider; the default body.toString() would unicode-escape characters like '=' and
         // the apostrophe, bloating the body.
         return GsonFactory.getGson().toJson(body);
+    }
+
+    /**
+     * Adds endpoint-specific options for a request that offers tools. The default OpenAI-compatible body needs none.
+     */
+    protected void addToolRequestParameters(JsonObject body) {
+        // Default implementation intentionally leaves the shared wire shape unchanged.
     }
 
     private JsonArray renderMessages(List<LlmMessage> messages) {
