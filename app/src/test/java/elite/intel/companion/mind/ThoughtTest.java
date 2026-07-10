@@ -344,6 +344,11 @@ class ThoughtTest {
         assertFalse(speech.requests.isEmpty(), "the thought voices a confirmation prompt before running it");
         assertTrue(hasContent("dangerous action requires confirmation"));
         assertTrue(hasContent("dangerous action confirmed"));
+        // The confirmation is recorded as its own user turn (a <confirmed/> marker) so the executed outcome pairs
+        // with it as a distinct exchange rather than trailing the confirmation prompt as a second assistant line.
+        assertTrue(memory.writes.stream().anyMatch(
+                        e -> e.source() == MemorySource.COMMANDER && "<confirmed/>".equals(e.content())),
+                "the commander's confirmation is filed as a distinct user turn");
     }
 
     @Test

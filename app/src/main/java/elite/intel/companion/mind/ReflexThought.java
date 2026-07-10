@@ -47,11 +47,16 @@ final class ReflexThought extends Thought {
             recordOutcome(inv, result, List.of(), toolCallId);
             return;
         }
-        // A command reflex - a side effect, not dialogue - so neither the imperative nor the call echo is filed
-        // to memory. A command that returns a spoken outcome (e.g. a calculated carrier route summary) still has
-        // it voiced and remembered as a plain companion line rather than a linked tool result, so nothing is
-        // left orphaned. No CALL was filed, so there is no tool-call id to pair a result with.
-        recordOutcome(inv, execute(inv), List.of(), null);
+        // A command reflex is a side effect, not dialogue, so its call echo is never filed. But a command that
+        // returns a spoken outcome (e.g. a calculated carrier route summary) is a real exchange: file the
+        // imperative as the user turn and voice+remember the outcome as the companion reply - a clean pair. A
+        // silent side-effect (blank outcome) files nothing. No CALL is filed either way, so there is no tool-call
+        // id to pair a result with.
+        JsonObject result = execute(inv);
+        if (!spokenTextOf(result).isBlank()) {
+            recordCurrentInput();
+        }
+        recordOutcome(inv, result, List.of(), null);
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */
@@ -60,9 +65,15 @@ final class ReflexThought extends Thought {
         return ctx.state().globalTopic();
     }
 
-    /** A reflex runs no LLM, so it cannot rate the turn: its memory is ordinary importance. */
+    /**
+     * A reflex runs no LLM, so it cannot rate the turn - and an unrated turn is never a durable fact: its input
+     * (a fast imperative or question) and any query answer are stamped LOW, kept only for hot-timeline continuity.
+     * This keeps a reflexed imperative out of the answer-fact candidates - a NORMAL {@code COMMANDER} line would
+     * otherwise read as a stated fact (see {@code MemoryFactCandidates.isTier2}) - since only the consciousness's
+     * own LLM path (via {@code classify_turn}) promotes a turn to durable importance.
+     */
     @Override
     protected MemoryImportance memoryImportance() {
-        return MemoryImportance.NORMAL;
+        return MemoryImportance.LOW;
     }
 }

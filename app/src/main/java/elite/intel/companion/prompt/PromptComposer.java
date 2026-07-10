@@ -154,14 +154,15 @@ public final class PromptComposer {
      * structure it was aligned on. Durable facts that aged out of short-term are not replayed here - the
      * relevant ones are surfaced as an inline {@code <facts>} block in the final user message.
      * <p>
-     * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant}; a recorded
-     * model tool-call ({@code COMPANION} carrying a {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)}
-     * immediately followed by its {@code tool} result (matched by tool-call id, since the result is written by a
-     * later narration thought and may not be adjacent in the timeline; a missing result is synthesized so the
-     * pair stays protocol-valid). Ambient entries that are not dialogue turns (events, non-boundary system notes,
-     * an unlinked legacy tool marker) are collected for the final current-turn context so the message flow keeps
-     * a single leading {@code system}. Boundary notes ({@code <no_reply/>}/{@code <cut_off/>}) become assistant
-     * placeholders because they mark a companion-side omitted reply between user turns.
+     * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant} (this includes
+     * a {@code <no_reply/>}/{@code <cut_off/>} boundary, which is recorded as a COMPANION entry - the omitted
+     * reply - so it needs no special-casing here); a recorded model tool-call ({@code COMPANION} carrying a
+     * {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)} immediately followed by its {@code tool} result
+     * (matched by tool-call id, because an over-long result is re-written asynchronously by the oversized-gist
+     * compressor and can land non-adjacent to its call; a missing result is synthesized so the pair stays
+     * protocol-valid). Ambient entries that are not dialogue turns (events, system bookkeeping notes, an unlinked
+     * legacy tool marker) are collected for the final current-turn context so the message flow keeps a single
+     * leading {@code system}.
      */
     private ReplayedHistory buildHistoryMessages(List<MemoryEntry> shortTerm) {
         List<LlmMessage> out = new ArrayList<>();
@@ -169,8 +170,9 @@ public final class PromptComposer {
         if (shortTerm == null || shortTerm.isEmpty()) {
             return new ReplayedHistory(out, ambient);
         }
-        // Index tool results by their correlation id: a CALL pulls its RESULT to sit right after it, because the
-        // result is written when the narration thought runs and may land later in the timeline than its call.
+        // Index tool results by their correlation id: a CALL pulls its RESULT to sit right after it, because an
+        // over-long result is re-written asynchronously by the oversized-gist compressor (appended at the timeline
+        // tail), so it can land later in the timeline than its call.
         Map<String, MemoryEntry> resultsById = new HashMap<>();
         for (MemoryEntry entry : shortTerm) {
             ToolLink link = entry.toolLink();
@@ -208,24 +210,22 @@ public final class PromptComposer {
                 // the commander said the raw event payload.
                 case EVENT -> out.add(LlmMessage.of(LlmMessageRole.USER,
                         PromptXml.element("event_data", entry.content())));
-                case SYSTEM -> {
-                    if (TurnBoundaryMarkers.isBoundary(entry.content())) {
-                        out.add(LlmMessage.of(LlmMessageRole.ASSISTANT, entry.content()));
-                    } else {
-                        ambient.add(new AmbientContextNote("system", entry.content()));
-                    }
-                }
+                // A turn's omitted reply (a <no_reply/>/<cut_off/> boundary) is now a COMPANION entry, handled by
+                // the COMPANION branch above as a plain assistant message. Every SYSTEM entry left here is
+                // non-dialogue bookkeeping (a dangerous-action note, the searchable summary), inlined as ambient
+                // context so the flow keeps a single leading system message.
+                case SYSTEM -> ambient.add(new AmbientContextNote("system", entry.content()));
             }
         }
         return new ReplayedHistory(out, ambient);
     }
 
     /**
-     * Adds the current input as the final user turn. If history still ended on a user turn (production normally
-     * records a boundary marker after an unanswered turn, but one may be absent at this point), insert a generic
+     * Adds the current input as the final user turn. If history still ended on a user turn - a turn whose
+     * assistant half is not a recorded line (a self-narrating macro turn), or any residual gap - insert a generic
      * no-answer boundary so strict role-alternating chat templates do not see two user turns in a row.
      * {@link TurnBoundaryMarkers#NO_ANSWER} is used for any such gap regardless of its original cause: the prompt
-     * treats both boundary markers the same, so the exact one does not matter here.
+     * treats both omission markers the same, so the exact one does not matter here.
      */
     private static void appendCurrentInput(List<LlmMessage> messages, String content) {
         LlmMessage last = messages.isEmpty() ? null : messages.get(messages.size() - 1);
@@ -237,12 +237,13 @@ public final class PromptComposer {
 
     /**
      * Merges consecutive same-role plain messages <em>within the history</em> into one, so the transcript keeps
-     * clean {@code user}/{@code assistant} alternation. Adjacent same-role history messages arise when a commander
-     * turn drew a silent reply or two companion lines land back to back; a wall of same-role messages degrades
-     * small-model turn-taking and is rejected by strict-alternation providers (Anthropic, Gemini). Applied only
-     * to the history list - never the cached system prefix or the current-input message, which are assembled
-     * around it - so the cache prefix and the distinct current turn are preserved. A message carrying tool-calls
-     * or a tool result is a boundary and is never merged.
+     * clean {@code user}/{@code assistant} alternation. This is legitimate render normalization, not orphan
+     * patching: a single turn can legitimately emit several assistant-side lines - a turn that runs more than one
+     * command records an ack/outcome for each, and a self-narrating macro turn leaves its user turn without a
+     * companion reply - and a wall of same-role messages degrades small-model turn-taking and is rejected by
+     * strict-alternation providers (Anthropic, Gemini). Applied only to the history list - never the cached system
+     * prefix or the current-input message, which are assembled around it - so the cache prefix and the distinct
+     * current turn are preserved. A message carrying tool-calls or a tool result is a boundary and is never merged.
      */
     private static List<LlmMessage> coalesceHistory(List<LlmMessage> history) {
         List<LlmMessage> out = new ArrayList<>();

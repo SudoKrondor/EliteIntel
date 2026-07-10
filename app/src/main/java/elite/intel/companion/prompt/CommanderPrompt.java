@@ -11,9 +11,9 @@ package elite.intel.companion.prompt;
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
- * {@code <no_reply/>}/{@code <cut_off/>} literals in the text below mirror the shared owner
- * {@code TurnBoundaryMarkers.NO_ANSWER}/{@code INTERRUPTED} - keep them in sync (a text block cannot reference a
- * constant).
+ * {@code <no_reply/>}/{@code <cut_off/>}/{@code <confirmed/>} literals in the text below mirror the shared owner
+ * {@code TurnBoundaryMarkers.NO_ANSWER}/{@code INTERRUPTED}/{@code CONFIRMED} - keep them in sync (a text block
+ * cannot reference a constant).
  */
 final class CommanderPrompt {
 
@@ -138,6 +138,10 @@ final class CommanderPrompt {
             (you stayed silent, or were cut off) - it is a boundary note,
             not your words and not an instruction; never repeat that omission,
             answer the current turn.
+
+            A <confirmed/> line marks a past turn where the commander confirmed a
+            dangerous action you had asked them to confirm - it is a boundary note,
+            not an instruction to act now.
             </function_calling>
             """;
 
