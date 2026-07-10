@@ -42,17 +42,25 @@ public class AudioCalibrator {
     // 75th percentile captures typical ambient level while ignoring the top 25%
     // (transient peaks, brief louder music passages, etc.).
     private static final double NOISE_PERCENTILE = 0.75;
-    // Fraction of the noise-to-speech gap used to set the VAD trigger.
-    // 0.5 = midpoint: triggers halfway between ambient and average speech.
-    private static final double GATE_MIDPOINT_FACTOR = 0.5;
-    // Minimum acceptable separation between the gate-open level and the noise floor,
-    // expressed as a true RATIO (gateOpen >= noiseFloor * ratio) so it scales with the
-    // environment instead of a fixed additive margin. 2.0x is ~6 dB - below this the
-    // top quartile of ambient noise reliably crosses the gate and false-triggers.
-    private static final double MIN_GATE_TO_NOISE_RATIO = 2.0;
-    // Absolute lower bound on the gate-open margin, for near-silent rooms where the
-    // noise floor is ~0-30 and a pure ratio would set the gate down in mic self-noise.
-    private static final double MIN_GATE_OPEN_ABS = 120.0;
+    // The gate is anchored a fixed number of decibels BELOW average speech. Speech is the only
+    // stable reference here: the commander's quieter syllables sit some way under the average, and
+    // 12 dB clears them without reaching down toward breath and key clicks. Anchoring to a midpoint
+    // between floor and speech instead makes the gate a hostage to the noise floor - it lands ~6 dB
+    // under speech in a noisy room (dropping half of all speech frames) and 20+ dB under speech in a
+    // treated one (opening on anything).
+    private static final double GATE_BELOW_SPEECH_DB = 12.0;
+    // ...but never closer to the ambient floor than this, which is what keeps the top quartile of
+    // room noise from crossing the gate and false-triggering. Binds only in a noisy room.
+    private static final double MIN_GATE_ABOVE_NOISE_DB = 6.0;
+    // A room is usable when both bounds above can be honoured at once. Derived, never tuned apart
+    // from them: if speech does not clear noise by their sum, the two bounds cross and the gate has
+    // nowhere legal to sit.
+    private static final double MIN_SPEECH_TO_NOISE_DB = GATE_BELOW_SPEECH_DB + MIN_GATE_ABOVE_NOISE_DB;
+    // Absolute lower bound applied ONLY to a degenerate measurement (muted mic, or speech that never
+    // rose above ambient), where the noise bound alone can leave the gate down in mic self-noise.
+    // Never applied to a valid calibration: an absolute amplitude says nothing about whether a gate
+    // is well placed, and a quiet room with good gear legitimately gates far below it.
+    private static final double DEGENERATE_GATE_FALLBACK = 120.0;
     private static final double MAX_NOISE_AVG = 800.0;
     // Bounded retry for opening the capture line. On Windows the mic is frequently
     // grabbed for a moment by another process (Discord, a browser, the game's own
@@ -85,23 +93,21 @@ public class AudioCalibrator {
         speakPromptAndWait("speech.audioCalibrationCountTo12");
         double avgSpeechRMS = calibrateSpeech(captureFormat, bufferSize, buffer, info, noiseFloor, mixerInfo);
 
-        // VAD gate-open = midpoint between noise and speech (always above ambient,
-        // always below speech), but never closer to the floor than the minimum
-        // ratio/absolute margin. We reject only when the *speech* itself fails to
-        // clear that margin - i.e. the environment is genuinely unusable - rather
-        // than silently accepting a gate sitting in the noise.
-        double gap = avgSpeechRMS - noiseFloor;
-        double minOpen = Math.max(noiseFloor * MIN_GATE_TO_NOISE_RATIO, noiseFloor + MIN_GATE_OPEN_ABS);
-        double midpointOpen = noiseFloor + gap * GATE_MIDPOINT_FACTOR;
+        // A room is judged solely on how many DECIBELS speech clears ambient by. The absolute levels
+        // are irrelevant: a quiet room with a good microphone yields a low noise floor and a low
+        // gate, and that is a healthy calibration, not a degraded one.
+        double separation = separationDb(noiseFloor, avgSpeechRMS);
+        double gateOpen = gateOpenLevel(noiseFloor, avgSpeechRMS);
         double highThreshold;
-        if (avgSpeechRMS <= noiseFloor || midpointOpen < minOpen) {
-            log.warn("Insufficient speech/noise separation (noiseFloor={}, speechAvg={}, gap={}). " +
-                            "Environment too loud or mic gain too low; gate clamped to minimum ratio above floor, speech may be missed.",
-                    (int) noiseFloor, (int) avgSpeechRMS, (int) gap);
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationLowGap", String.valueOf((int) gap))));
-            highThreshold = minOpen;
+        if (separation < MIN_SPEECH_TO_NOISE_DB) {
+            log.warn("Insufficient speech/noise separation (noiseFloor={}, speechAvg={}, separation={} dB, minimum={} dB). " +
+                            "Environment too loud or mic gain too low; gate pinned just above the floor, speech may be missed.",
+                    (int) noiseFloor, (int) avgSpeechRMS, String.format("%.1f", separation), MIN_SPEECH_TO_NOISE_DB);
+            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationLowGap",
+                    String.format("%.1f dB", separation))));
+            highThreshold = Math.max(gateOpen, DEGENERATE_GATE_FALLBACK);
         } else {
-            highThreshold = midpointOpen;
+            highThreshold = gateOpen;
         }
 
         // noiseFloor is stored as-is (raw measured ambient level). The runtime VAD
@@ -116,11 +122,74 @@ public class AudioCalibrator {
         systemSession.setRmsThresholdHigh(highThreshold);
         systemSession.setRmsThresholdLow(lowThreshold);
 
-        log.info("Final calibrated RMS thresholds: HIGH={}, LOW={} (noise floor={}, speech avg={}, gap={})",
-                highThreshold, lowThreshold, (int) noiseFloor, (int) avgSpeechRMS, (int) gap);
+        log.info("Final calibrated RMS thresholds: HIGH={} ({}), LOW={} ({}) (speech avg={} ({}), separation={} dB)",
+                highThreshold, formatDbfs(highThreshold), lowThreshold, formatDbfs(lowThreshold),
+                (int) avgSpeechRMS, formatDbfs(avgSpeechRMS), String.format("%.1f", separation));
         UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationComplete",
-                String.valueOf(highThreshold), String.valueOf(lowThreshold))));
+                formatDbfs(highThreshold), formatDbfs(lowThreshold))));
         return new RmsTupple<>(highThreshold, lowThreshold);
+    }
+
+    /**
+     * @return the linear amplitude ratio equivalent to a gain of {@code db} decibels.
+     */
+    private static double dbToRatio(double db) {
+        return Math.pow(10.0, db / 20.0);
+    }
+
+    /**
+     * @return {@code amplitude} as a dBFS readout, matching what the mic meter displays.
+     */
+    private static String formatDbfs(double amplitude) {
+        if (amplitude <= 0) return "-inf dBFS";
+        return String.format("%.1f dBFS", 20.0 * Math.log10(amplitude / 32768.0));
+    }
+
+    /**
+     * @return how many decibels {@code avgSpeechRMS} clears {@code noiseFloor} by. Infinite for a
+     * digitally silent floor, negative infinity when no speech was captured at all.
+     */
+    static double separationDb(double noiseFloor, double avgSpeechRMS) {
+        if (avgSpeechRMS <= 0) return Double.NEGATIVE_INFINITY;
+        if (noiseFloor <= 0) return Double.POSITIVE_INFINITY;
+        return 20.0 * Math.log10(avgSpeechRMS / noiseFloor);
+    }
+
+    /**
+     * Places the VAD gate-open level {@link #GATE_BELOW_SPEECH_DB} below average speech, but no
+     * closer than {@link #MIN_GATE_ABOVE_NOISE_DB} to the ambient noise floor.
+     * <p>
+     * Both bounds are ratios, so the gate tracks the room instead of a hardcoded amplitude. In a
+     * quiet room the speech anchor governs and the gate sits far above the floor; in a noisy one the
+     * floor bound takes over. When {@link #separationDb} is at least {@link #MIN_SPEECH_TO_NOISE_DB}
+     * the two cannot conflict. Below that the caller warns, and the floor bound wins - the safer
+     * failure, since a gate in the noise false-triggers continuously.
+     * <p>
+     * The noise bound therefore also carries a failed speech measurement, where {@code avgSpeechRMS}
+     * arrives as zero: the gate still lands {@link #MIN_GATE_ABOVE_NOISE_DB} clear of the ambient
+     * floor rather than collapsing to it. Only a mic that captured nothing at all yields zero.
+     * <p>
+     * Arguments and result are linear RMS amplitudes in 16-bit sample units; the full-scale
+     * reference cancels out of every ratio here and is therefore never needed.
+     *
+     * @return the gate-open amplitude, or {@code 0} when neither speech nor ambient noise registered.
+     */
+    static double gateOpenLevel(double noiseFloor, double avgSpeechRMS) {
+        double belowSpeech = Math.max(avgSpeechRMS, 0) * dbToRatio(-GATE_BELOW_SPEECH_DB);
+        double aboveNoise = Math.max(noiseFloor, 0) * dbToRatio(MIN_GATE_ABOVE_NOISE_DB);
+        return Math.max(belowSpeech, aboveNoise);
+    }
+
+    /**
+     * @return whether a persisted {@code gateOpen} still clears {@code noiseFloor} by the minimum
+     * margin. The single criterion for a usable gate, shared with the STT startup check so the two
+     * cannot disagree. Deliberately not a test against any absolute amplitude: a low gate is exactly
+     * what a quiet room and a good microphone produce.
+     */
+    public static boolean gateClearsNoiseFloor(double noiseFloor, double gateOpen) {
+        if (gateOpen <= 0) return false;
+        if (noiseFloor <= 0) return true;
+        return separationDb(noiseFloor, gateOpen) >= MIN_GATE_ABOVE_NOISE_DB - 1e-9;
     }
 
     /**

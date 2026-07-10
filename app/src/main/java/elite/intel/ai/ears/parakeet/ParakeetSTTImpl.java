@@ -80,11 +80,10 @@ public class ParakeetSTTImpl implements EarsInterface {
     // ambient floor does. Provides amplitude hysteresis on top of the time-based
     // EXIT_SILENCE_FRAMES guard.
     private static final double GATE_CLOSE_FRACTION = 0.5;
-    // Minimum acceptable separation between gate-open and noise floor, as a ratio
-    // (~6 dB). Mirrors AudioCalibrator; below this the user is warned at startup.
-    private static final double MIN_GATE_TO_NOISE_RATIO = 2.0;
-    // Absolute sanity floor for the gate-open level (very quiet rooms).
-    private static final double MIN_GATE_OPEN_ABS = 250;
+    // Whether a persisted gate is usable is decided by AudioCalibrator.gateClearsNoiseFloor, so the
+    // startup warning cannot drift from the calibration that produced the value. Copies of the
+    // thresholds used to live here and had already drifted (an absolute floor of 250 against the
+    // calibrator's 120), which warned about perfectly good gates from quiet rooms.
     private Thread processingThread;
     private Mixer.Info inputMixerInfo;
 
@@ -133,7 +132,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationRequired")));
-        } else if (RMS_THRESHOLD_HIGH < MIN_GATE_OPEN_ABS || RMS_THRESHOLD_HIGH < NOISE_FLOOR * MIN_GATE_TO_NOISE_RATIO) {
+        } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
