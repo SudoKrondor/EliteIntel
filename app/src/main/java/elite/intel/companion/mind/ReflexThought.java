@@ -48,9 +48,10 @@ final class ReflexThought extends Thought {
             return;
         }
         // A command reflex - a side effect, not dialogue - so neither the imperative nor the call echo is filed
-        // to memory. Any handler-voiced outcome is remembered as a plain companion line rather than a linked
-        // tool result, so nothing is left orphaned.
-        execute(inv);
+        // to memory. A command that returns a spoken outcome (e.g. a calculated carrier route summary) still has
+        // it voiced and remembered as a plain companion line rather than a linked tool result, so nothing is
+        // left orphaned. No CALL was filed, so there is no tool-call id to pair a result with.
+        recordOutcome(inv, execute(inv), List.of(), null);
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */

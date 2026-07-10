@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AIConstants;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -10,11 +11,7 @@ import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
-import elite.intel.companion.model.llm.LlmMessage;
-import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.llm.LlmRequest;
-import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.llm.LlmToolInvocation;
+import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -32,7 +29,6 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -117,6 +113,52 @@ class ThoughtDispatcherTest {
 
         assertEquals(List.of("open_nav"), executed, "the reflex ran the resolved command directly");
         assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
+    }
+
+    @Test
+    void reflexCommandVoicesTheOutcomeItReturns() {
+        // A parameterless command that computes an answer (e.g. calculate_fleet_carrier_route returning its route
+        // summary) is reflex-eligible, so it never reaches the LLM. Its returned outcome must still be spoken and
+        // remembered as a free-standing companion line - otherwise the summary is computed and silently dropped.
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("a reflex must not engage the LLM");
+            }
+
+            @Override
+            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        String summary = "Route to Colonia calculated. 8 jumps, 4800 tons of tritium required.";
+        ExecutionGateway summarizing = request -> {
+            JsonObject result = new JsonObject();
+            result.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, summary);
+            return CompletableFuture.completedFuture(result);
+        };
+        FakeSpeech speech = new FakeSpeech();
+        ThoughtContext ctx = new ThoughtContext(
+                failIfCalled, speech, summarizing, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(),
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase(
+                        "calculate_fleet_carrier_route", "calculate fleet carrier route", true)),
+                invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(ctx, UrgencyPolicy.normalOnly(), reflex);
+        dispatcher.start();
+        dispatcher.submitCommanderInput("calculate fleet carrier route");
+        dispatcher.stop();
+
+        assertEquals(List.of(summary), speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the reflex voiced the summary the command returned");
+        // The imperative and the call echo are still not filed; only the spoken outcome is, as a companion line.
+        assertEquals(1, memory.writes.size(), "only the spoken outcome is remembered");
+        assertEquals(MemorySource.COMPANION, memory.writes.get(0).source());
+        assertEquals(summary, memory.writes.get(0).content());
     }
 
     @Test
