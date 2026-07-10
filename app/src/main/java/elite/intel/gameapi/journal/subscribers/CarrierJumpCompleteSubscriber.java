@@ -1,31 +1,26 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.EventNarrator;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.CarrierJumpEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
-import elite.intel.session.Status;
 import elite.intel.ui.event.AppLogEvent;
-import elite.intel.util.ClipboardUtils;
-import elite.intel.util.FleetCarrierRouteCalculator;
-
-import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 import static elite.intel.util.StringUtls.localizedEventPlural;
 
 @SuppressWarnings("unused")
 public class CarrierJumpCompleteSubscriber {
+    private static final Logger log = LogManager.getLogger(CarrierJumpCompleteSubscriber.class);
     private static final Long FOUR_MINUTES = (long) (1000 * 60 * 4);
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
@@ -35,55 +30,54 @@ public class CarrierJumpCompleteSubscriber {
         Thread.ofVirtual().start(() -> {
             String starSystem = event.getStarSystem();
             double[] starPos = event.getStarPos();
-            playerSession.setLastKnownCarrierLocation(starSystem);
 
-            if (starPos.length == 3 && starPos[0] == 0.0 && starPos[1] == 0.0 && starPos[2] == 0 && !"sol".equalsIgnoreCase(starSystem)) {
+            if (starPos == null || starPos.length != 3) {
+                log.warn("CarrierJump for {} carries a malformed StarPos ({}); skipping carrier jump handling",
+                        starSystem, starPos == null ? "absent" : starPos.length + " values");
+                return;
+            }
+
+            boolean coordsArePlaceholder = starPos[0] == 0.0 && starPos[1] == 0.0 && starPos[2] == 0.0
+                    && !"sol".equalsIgnoreCase(starSystem);
+
+            if (coordsArePlaceholder) {
                 UiBus.publish(new AppLogEvent(localizedEvent("event.carrier.jumpCompleteStarWarning")));
                 EventNarrator.critical(localizedEvent("event.carrier.jumpCompleteNoStar"));
             }
 
-
             FleetCarrierRouteManager fleetCarrierRouteManager = FleetCarrierRouteManager.getInstance();
-            CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-            carrierData.setSystemAddress(event.getSystemAddress());
-            carrierData.setStarName(event.getStarSystem());
-            CarrierJump currentLocationLeg = fleetCarrierRouteManager.findByPrimaryStar(event.getStarSystem());
-            boolean currentLegIsNotPresent = currentLocationLeg == null;
-            boolean routePlotted = !fleetCarrierRouteManager.getFleetCarrierRoute().isEmpty();
 
-            if (currentLegIsNotPresent && routePlotted) {
-                String systemName = fleetCarrierRouteManager
-                        .getFleetCarrierRoute()
-                        .get(fleetCarrierRouteManager.getFleetCarrierRoute().size() - 1)
-                        .getSystemName();
-                ClipboardUtils.setClipboardText(systemName);
-                FleetCarrierRouteCalculator.calculate();
-            }
+            // WHY: the system we are sitting in is never part of the remaining route. CarrierLocation
+            // normally clears the leg (and decrements fuel from it) a minute earlier, but that event
+            // is absent from older journals, so removing it here too keeps the route correct. The
+            // call is idempotent, and fuel is decremented in CarrierLocationSubscriber alone.
+            fleetCarrierRouteManager.removeLeg(starSystem);
 
-            int fuelUsed = currentLocationLeg == null ? 0 : currentLocationLeg.getFuelUsed();
-            carrierData.setFuelLevel(carrierData.getFuelLevel() - fuelUsed);
-            playerSession.setFleetCarrierData(carrierData);
-
-            fleetCarrierRouteManager.removeLeg(event.getStarSystem());
-
-            playerSession.setCarrierDepartureTime(null);
-
-            Status status = Status.getInstance();
-            CarrierDataDto carrierInfo = playerSession.getFleetCarrierData();
-
-            LocationDto location = toLocationDto(event);
-            if (status.isDocked()) {
-                location.setX(starPos[0]);
-                location.setY(starPos[1]);
-                location.setZ(starPos[2]);
-                if (event.getBodyId() != null) {
-                    playerSession.setCurrentLocationId(event.getBodyId(), event.getSystemAddress());
+            // WHY: CarrierJump is only written when the commander is aboard, but the DOCKED status
+            // flag is set only while he is in his ship. On foot in the concourse it is clear, so the
+            // live Status singleton cannot answer "was I aboard". The event's own fields can.
+            boolean commanderAboard = event.isDocked() || event.isOnFoot();
+            if (commanderAboard) {
+                playerSession.setCurrentPrimaryStarName(starSystem);
+                if (event.getBodyId() == null) {
+                    log.warn("CarrierJump for {} carries no BodyID; current location row not saved", starSystem);
+                } else {
+                    LocationDto arrival = CarrierJumpLocationMapper.toArrivalLocation(event, locationManager);
+                    locationManager.save(arrival);
+                    // WHY: point at the id the row actually holds, not the one the event reported.
+                    // LocationDto.setBodyId ignores a lower id, so an event reporting BodyID 0 for an
+                    // already identified body would otherwise leave the pointer aimed at nothing.
+                    playerSession.setCurrentLocationId(arrival.getBodyId(), event.getSystemAddress());
                 }
-                playerSession.setCurrentPrimaryStarName(event.getStarSystem());
-                locationManager.save(location);
             }
 
-            if (starPos[0] > 0) {
+            if (!coordsArePlaceholder) {
+                // WHY: CarrierJump carries the destination StarPos, which is authoritative and free.
+                // CarrierLocation has no coordinates and has to resolve them from the route leg or
+                // over the network, so refine them here whenever the commander was aboard to see it.
+                CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+                carrierData.setStarName(starSystem);
+                carrierData.setSystemAddress(event.getSystemAddress());
                 carrierData.setX(starPos[0]);
                 carrierData.setY(starPos[1]);
                 carrierData.setZ(starPos[2]);
@@ -120,23 +114,4 @@ public class CarrierJumpCompleteSubscriber {
         });
     }
 
-    private LocationDto toLocationDto(CarrierJumpEvent event) {
-        LocationManager locationData = LocationManager.getInstance();
-        LocationDto location = locationData.getLocation(event.getStarSystem(), event.getBodyId());
-        return fillInWhatWeCan(event, Objects.requireNonNullElseGet(location, () -> new LocationDto(event.getBodyId(), event.getStarSystem())));
-    }
-
-    private LocationDto fillInWhatWeCan(CarrierJumpEvent event, LocationDto location) {
-        location.setStarName(event.getStarSystem());
-        location.setAllegiance(event.getSystemAllegiance());
-        location.setX(event.getStarPos()[0]);
-        location.setY(event.getStarPos()[1]);
-        location.setZ(event.getStarPos()[2]);
-        location.setStationGovernment(event.getSystemGovernmentLocalised());
-        location.setPlanetName(event.getBody());
-        location.setAllegiance(event.getSystemAllegiance());
-        location.setControllingPower(event.getControllingPower());
-        //...
-        return location;
-    }
 }

@@ -2,8 +2,11 @@ package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.google.gson.JsonObject;
+import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.events.CarrierLocationEvent;
+import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.subscribers.CarrierLocationSubscriber;
+import elite.intel.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,12 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CarrierLocationSubscriberTest {
 
@@ -61,6 +64,29 @@ class CarrierLocationSubscriberTest {
         assertEquals("Deciat", session.getLastKnownCarrierLocation());
     }
 
+    /**
+     * CarrierLocation fires for every arrival and always ahead of CarrierJump, so it owns the fuel
+     * decrement. It has to read the completed leg before removing it from the route.
+     */
+    @Test
+    void fleetCarrierArrivalBurnsTheLegsFuelAndClearsTheLeg() throws InterruptedException {
+        FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
+        route.clear();
+        route.setFleetCarrierRoute(Map.of(1, leg("Deciat", 120), 2, leg("Shinrarta Dezhra", 95)));
+
+        CarrierDataDto carrier = new CarrierDataDto();
+        carrier.setFuelLevel(500);
+        session.setFleetCarrierData(carrier);
+
+        subscriber.onCarrierLocationEvent(carrierLocationEvent("Deciat", "FleetCarrier", 3803463824L));
+
+        awaitTrue(() -> session.getFleetCarrierData().getFuelLevel() == 380);
+
+        assertEquals(380, session.getFleetCarrierData().getFuelLevel(), "the arrival leg's tritium must be burned");
+        assertNull(route.findByPrimaryStar("Deciat"), "the system we are sitting in is never part of the route");
+        route.clear();
+    }
+
     @Test
     void squadronCarrierDoesNotUpdateLastKnownCarrierLocation() throws InterruptedException {
         String priorLocation = session.getLastKnownCarrierLocation();
@@ -71,6 +97,16 @@ class CarrierLocationSubscriberTest {
 
         // Last known carrier location should be unchanged (squadrons don't update it)
         assertEquals(priorLocation, session.getLastKnownCarrierLocation());
+    }
+
+    private static CarrierJump leg(String systemName, int fuelUsed) {
+        CarrierJump jump = new CarrierJump();
+        jump.setSystemName(systemName);
+        jump.setFuelUsed(fuelUsed);
+        jump.setX(1.0);
+        jump.setY(2.0);
+        jump.setZ(3.0);
+        return jump;
     }
 
     private static CarrierLocationEvent carrierLocationEvent(String system, String carrierType, long carrierId) {

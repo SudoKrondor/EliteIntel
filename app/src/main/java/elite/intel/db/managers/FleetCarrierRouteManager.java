@@ -72,7 +72,6 @@ public class FleetCarrierRouteManager {
 
     private static CarrierJump entityToDto(FleetCarrierRouteDao.FleetCarrierRouteLeg leg) {
         CarrierJump jump = new CarrierJump();
-        if(leg == null) return jump;
         jump.setLeg(leg.getLeg());
         jump.setDistance(leg.getDistance());
         jump.setFuelUsed(leg.getFuelUsed());
@@ -101,10 +100,18 @@ public class FleetCarrierRouteManager {
         });
     }
 
+    /**
+     * The plotted leg that ends at the given system, or null when the system is not on the route.
+     *
+     * <p>WHY: this used to answer with an empty CarrierJump instead of null, which silently made
+     * every {@code == null} check at the call sites unreachable. Callers could not tell "arrived at
+     * a plotted leg" from "arrived somewhere off-route", and read fuelUsed 0 and coordinates 0,0,0
+     * from the placeholder.
+     */
     public CarrierJump findByPrimaryStar(String starSystem) {
         return Database.withDao(FleetCarrierRouteDao.class, dao ->{
             FleetCarrierRouteDao.FleetCarrierRouteLeg leg = dao.findByPrimaryStarName(starSystem);
-            return entityToDto(leg);
+            return leg == null ? null : entityToDto(leg);
         });
     }
 
