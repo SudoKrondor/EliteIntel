@@ -253,6 +253,12 @@
 16. **Repair/retry не пересобирает tools.**
     Retry использует исходный request payload / tools snapshot и тот же cancellation/owner token.
     `LlmGateway` не вызывает `PromptComposer`, `Reducer`, `ToolAccessPolicy` или `SystemToolProvider`.
+    `classify_turn` без settling call — не repair и не execution: gateway локально replay'ит его как
+    `assistant(tool_calls)` и возвращает модели protocol-only result с `execution=pending`, затем делает ровно
+    один settling-only запрос с тем же immutable snapshot. Если тот вернул ровно один offered non-classify tool,
+    gateway отдаёт thought ожидаемую ровно двухэлементную пару `classify_turn` → settling tool; ни одна функция
+    до этого не выполнена. Несколько classify или settling calls в одном logical turn и любой другой ответ
+    continuation остаются invalid response.
 
 17. **`classify_turn` из первого валидного response обрабатывается до прочих tool-calls.**
     Это pre-execution step внутри thought lifecycle.
@@ -1567,6 +1573,7 @@ Command/query/macro исполняются **синхронно**, само-оз
 UserInputEvent
 → ThoughtDispatcher → CommanderThought
 → PromptComposer initial messages → LlmGateway → tool-calls
+     (classify-only physical response is continued inside the gateway before the pair returns)
 → turn classified (classify_turn applied if called: global topic + turn importance)
 → currentInput written to memory   ([COMMANDER])
 → execute tool-calls in order (sync); then recordOutcome by IntelActionType (voices directly, no AiVoxResponseEvent):
@@ -1576,10 +1583,10 @@ UserInputEvent
      SYSTEM   → no speech, no timeline (result only feeds the flow)
      speak    → suppressed if game action this turn; else voice + [COMPANION]
 → search_in_memory issued? -> replay assistant tool_calls + result into flow, one more LLM round to speak the answer
-→ else turn ends (single-round: command/query/macro, speak, or bare classify_turn)
+→ else turn ends (command/query/macro or speak; bare classify_turn never reaches the thought alone)
 ```
 
-Ход **одношаговый по умолчанию**: команда/запрос/макрос, `speak` — или голый `classify_turn` — завершают его в своём раунде. Единственное продолжение — `search_in_memory`: его найденные записи возвращаются модели (не командиру), поэтому цикл делает ещё один раунд, чтобы озвучить ответ (`speak`), который и завершает ход. Явного терминатора (`end_turn`) больше нет — маркер завершения не нужен, отсутствие продолжения и есть завершение; пустой ответ без вызовов по-прежнему = ошибка. Потолок `MAX_TOOL_ROUNDS` + watchdog — страховка от зацикленного lookup.
+Ход **одношаговый по умолчанию** для `CommanderThought`: команда/запрос/макрос или `speak` завершают его в своём раунде. Голый `classify_turn` продолжает только локальный protocol flow внутри `LlmGateway`: он не исполняется там и не приходит в thought без одного settling call. Единственное продолжение на уровне thought — `search_in_memory`: его найденные записи возвращаются модели (не командиру), поэтому цикл делает ещё один раунд, чтобы озвучить ответ (`speak`), который и завершает ход. Явного терминатора (`end_turn`) больше нет — маркер завершения не нужен, отсутствие продолжения и есть завершение; пустой ответ без вызовов по-прежнему = ошибка. Потолок `MAX_TOOL_ROUNDS` + watchdog — страховка от зацикленного lookup.
 (Тот же `recordOutcome` исполняет и подтверждённый dangerous-набор, §5.3.)
 
 ---

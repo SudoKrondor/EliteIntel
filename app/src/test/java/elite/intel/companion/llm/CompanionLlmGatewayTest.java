@@ -166,8 +166,20 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void classifyOnlyIsRepairedAsAssistantToolContinuation() throws Exception {
-        ScriptedAdapter adapter = new ScriptedAdapter(ok("classify_turn"), ok("classify_turn", "speak"));
+    void classifyingTurnRequiresExactlyOneSettlingCall() throws Exception {
+        LlmResult result = run(new ScriptedAdapter(ok("classify_turn", "speak", "speak"),
+                        ok("classify_turn", "speak")),
+                requestOffering("speak", "classify_turn"));
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals(2, sends.get());
+    }
+
+    @Test
+    void classifyOnlyContinuesWithPendingToolResult() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(ok("classify_turn"), ok("speak"));
         LlmRequest request = requestWithMessages(
                 List.of(
                         LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
@@ -179,11 +191,61 @@ class CompanionLlmGatewayTest {
         assertEquals(2, sends.get());
         assertEquals(List.of("classify_turn", "speak"),
                 result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
-        assertRejectedContinuation(request, adapter.lastRequest, "classify_turn", "c1", "settling function must follow");
+        assertPendingClassificationContinuation(request, adapter.lastRequest, "c1");
     }
 
     @Test
-    void classifyOnlySettlingStillMissingYieldsInvalidResponse() throws Exception {
+    void classifyOnlyContinuationSynthesizesAnIdWhenProviderOmitsOne() throws Exception {
+        LlmResult classify = new LlmResult(LlmResult.Status.OK,
+                List.of(new LlmToolInvocation(null, "classify_turn", new JsonObject())));
+        ScriptedAdapter adapter = new ScriptedAdapter(classify, ok("speak"));
+        LlmRequest request = requestOffering("speak", "classify_turn");
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals("gateway-classify-1", result.toolInvocations().get(0).id());
+        assertEquals(2, sends.get());
+        assertPendingClassificationContinuation(request, adapter.lastRequest, "gateway-classify-1");
+    }
+
+    @Test
+    void repairCanContinueThroughAClassifyOnlyRound() throws Exception {
+        ScriptedAdapter adapter = new ScriptedAdapter(ok("speak"), ok("classify_turn"), ok("speak"));
+        LlmRequest request = requestOffering("speak", "classify_turn");
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals("gateway-classify-1", result.toolInvocations().get(0).id());
+        assertEquals(3, sends.get());
+        List<LlmMessage> continuation = adapter.lastRequest.messages();
+        assertEquals(List.of("c1", "gateway-classify-1"), continuation.stream()
+                .flatMap(message -> message.toolCalls().stream())
+                .map(LlmToolInvocation::id)
+                .toList(), "every assistant tool call in the local flow must have a distinct id");
+        assertEquals(List.of("c1", "gateway-classify-1"), continuation.stream()
+                .map(LlmMessage::toolCallId)
+                .filter(java.util.Objects::nonNull)
+                .toList(), "each tool result must link to its corresponding unique call");
+    }
+
+    @Test
+    void classifyOnlyContinuationRejectsMultipleSettlingCalls() throws Exception {
+        LlmResult result = run(new ScriptedAdapter(ok("classify_turn"), ok("speak", "speak")),
+                requestOffering("speak", "classify_turn"));
+
+        assertFalse(result.isValid());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
+        assertEquals(2, sends.get());
+    }
+
+    @Test
+    void classifyOnlyContinuationRejectsAnotherClassifyTurn() throws Exception {
         LlmResult result = run(new ScriptedAdapter(ok("classify_turn"), ok("classify_turn")),
                 requestOffering("speak", "classify_turn"));
 
@@ -285,5 +347,29 @@ class CompanionLlmGatewayTest {
         assertTrue(tool.content().contains("\"status\":\"rejected\""));
         assertFalse(tool.content().contains("accepted"));
         assertTrue(tool.content().contains(expectedReason));
+    }
+
+    /** Verifies the genuine classify-only continuation, which is pending rather than rejected or executed. */
+    private static void assertPendingClassificationContinuation(
+            LlmRequest original,
+            LlmRequest continuation,
+            String classifyCallId
+    ) {
+        int continuationIndex = original.messages().size();
+        List<LlmMessage> messages = continuation.messages();
+        assertEquals(continuationIndex + 2, messages.size());
+        assertEquals(original.messages(), messages.subList(0, continuationIndex),
+                "continuation must preserve the durable prompt prefix byte-for-byte");
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(continuationIndex).role());
+        assertEquals(1, messages.get(continuationIndex).toolCalls().size());
+        assertEquals("classify_turn", messages.get(continuationIndex).toolCalls().get(0).name());
+        assertEquals(classifyCallId, messages.get(continuationIndex).toolCalls().get(0).id());
+        LlmMessage tool = messages.get(continuationIndex + 1);
+        assertEquals(LlmMessageRole.TOOL, tool.role());
+        assertEquals(classifyCallId, tool.toolCallId());
+        assertTrue(tool.content().contains("\"status\":\"received\""));
+        assertTrue(tool.content().contains("\"execution\":\"pending\""));
+        assertTrue(tool.content().contains("call exactly one settling function"));
+        assertFalse(tool.content().contains("rejected"));
     }
 }

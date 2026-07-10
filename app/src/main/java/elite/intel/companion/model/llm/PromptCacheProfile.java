@@ -6,14 +6,13 @@ package elite.intel.companion.model.llm;
  * so requests of the same profile share a cached prefix, and its sampling {@link #temperature()}.
  * <p>
  * The two prompt-composing thoughts have different stable prefixes: COMMANDER (full consciousness) and
- * NARRATION (lean subscriber-narration prompt). Compression is its own profile. COMMANDER runs slightly
- * warmer (0.4) for livelier conversation; narration and compression stay cooler (0.3) for fidelity. Command
- * and query selection held accurate in the evals, so the warmer setting costs no routing precision.
+ * NARRATION (lean subscriber-narration prompt). Compression is its own profile. COMMANDER runs cold to favor
+ * deterministic function calling; narration and compression stay at 0.3 for faithful prose.
  */
 public enum PromptCacheProfile {
 
     /** Commander consciousness turn. */
-    COMMANDER("companion-commander", 0.4),
+    COMMANDER("companion-commander", 0.2),
     /** Subscriber-prepared narration turn (its own lean prompt prefix). */
     NARRATION("companion-narration", 0.3),
     /** Mid-term -> long-term memory compression. */

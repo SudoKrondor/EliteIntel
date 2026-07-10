@@ -42,10 +42,23 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("Never invent game facts"));
-        // Every turn must settle - a response that is only the metadata-only classify_turn is invalid.
-        assertTrue(text.contains("you MUST always add the settling call"));
+        // A turn has classify_turn plus exactly one settling call, either together or as a native continuation.
+        assertTrue(text.contains("Each commander turn MUST contain exactly two calls"));
+        assertTrue(text.contains("You may emit both calls in one assistant tool-call message"));
+        assertTrue(text.contains("wait for its tool result"));
+        assertTrue(text.contains("do not call 'classify_turn' again"));
         // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
+    }
+
+    @Test
+    void commanderPromptAllowsASequentialSettlingCallWithoutFewShotExamples() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+
+        assertTrue(text.contains("or call\n'classify_turn' first, wait for its tool result"));
+        assertTrue(text.contains("then emit exactly one settling call in the next assistant"));
+        assertFalse(text.contains("Example A -"));
+        assertTrue(text.contains("never use speak to acknowledge, promise, or describe the matching"));
     }
 
     @Test
@@ -60,7 +73,7 @@ class CompanionSystemPromptPartTest {
     void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("<function_calling>"));
-        assertTrue(text.contains("that settles the turn"));
+        assertTrue(text.contains("exactly one settling call"));
         // The commander branch is not the narration report-only task.
         assertFalse(text.contains("<narration>"));
     }

@@ -55,9 +55,11 @@ final class CommanderPrompt {
             </language>
 
             <function_calling>
-            Respond only with function calls, never free text. Each commander-turn response MUST contain TWO calls in
-            this order: first 'classify_turn', then a second call that settles the turn. 'classify_turn' is metadata
-            only and NEVER settles the turn, so you MUST always add the settling call.
+            Respond only with function calls, never free text. Each commander turn MUST contain exactly two calls in
+            this order: first 'classify_turn', then exactly one settling call. 'classify_turn' is metadata only and
+            NEVER settles the turn. You may emit both calls in one assistant tool-call message, or call
+            'classify_turn' first, wait for its tool result, then emit exactly one settling call in the next assistant
+            tool-call message. In that sequential form, do not call 'classify_turn' again.
 
             For classify_turn, choose the closest topic; use low for chat or banter, normal for routine commands or
             questions, high for durable facts, and max only for explicit remember/save/note/log orders. Set
@@ -65,15 +67,19 @@ final class CommanderPrompt {
             recall. Set canonical_fact only for a high durable fact; otherwise return an empty string with no quotes.
 
             Choose the settling call by the first matching rule:
-            1. An offered action, query, or macro clearly matches -> call it. The commander's word is an order: act,
-               do not discuss it. A data question requires its matching offered query; never invent a yes/no or number.
-               Do not add speak to a game action.
+            1. An offered action, query, or macro clearly matches the commander's original wording -> call it. An
+               offered function that does not match is not a reason to call it. When a match exists, that call is
+               mandatory and excludes speak: never use speak to acknowledge, promise, or describe the matching
+               function. The commander's word is an order: act, do not discuss it. A data question requires its
+               matching offered query; never invent a yes/no or number.
             2. A <fact> answers the question and no offered function can retrieve it -> call speak with that fact.
             3. The commander explicitly asks to recall, list, or count memory and 'memory_search' is offered -> call it.
             4. Otherwise call speak for chat, opinions, explanations, ambiguity, or an unsupported request.
 
             A speak reply is words only: never claim an action occurred unless you called its function this turn. If no
-            function matches an order, say so plainly. A <no_reply/> or <cut_off/> line marks a past omitted reply, and
+            function matches an order, call speak and say so plainly.
+
+            A <no_reply/> or <cut_off/> line marks a past omitted reply, and
             a <confirmed/> line marks a past confirmation; both are boundaries, not words or instructions to repeat or act on.
             </function_calling>
             """;
