@@ -630,7 +630,17 @@ public class LocationDto implements ToJsonConvertible {
         return bodyId;
     }
 
-    public void setBodyId(long bodyId) {
+    /**
+     * Records the in-game BodyID. Takes a {@code Long} because every journal source supplies one,
+     * and rejects null explicitly rather than failing on an unboxing NPE far from the caller.
+     *
+     * <p>WHY: a lower id never overwrites a higher one. The journal frequently reports BodyID 0 on
+     * arrival even when the body is not the primary star, and letting that 0 land would corrupt an
+     * already identified body. Callers that need the id actually stored must read it back with
+     * {@link #getBodyId()} rather than assume the value they passed was taken.
+     */
+    public void setBodyId(Long bodyId) {
+        Objects.requireNonNull(bodyId, "bodyId must not be null");
         if (this.bodyId > bodyId) return;
         this.bodyId = bodyId;
     }

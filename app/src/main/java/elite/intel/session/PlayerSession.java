@@ -472,6 +472,21 @@ public class PlayerSession {
         });
     }
 
+    /**
+     * The system the fleet carrier is in right now, or null if it has never been seen. The one answer
+     * the route plotter plots from and the route table truncates at, so that both agree on where the
+     * carrier is.
+     *
+     * <p>WHY only {@code lastKnownCarrierLocation}: it is written solely by events that witness the
+     * carrier itself — CarrierLocation, CarrierJump, and docking at our own callsign — so nothing the
+     * commander does apart from the carrier can move it. {@link CarrierDataDto#getStarName()} tracks
+     * the same system but is also written from the commander's berth, and is refreshed a few
+     * statements later on arrival, so mid-arrival it still names the system the carrier just left.
+     */
+    public String getCurrentFleetCarrierSystem() {
+        return CarrierRouteLegs.normalise(getLastKnownCarrierLocation());
+    }
+
     public String getCarrierDepartureTime() {
         return Database.withDao(PlayerDao.class, dao -> dao.get().getCarrierDepartureTime());
     }
