@@ -291,10 +291,11 @@ public final class CommanderThought extends Thought {
             }
         }
         // No game action owned the outcome and no non-blank speak was voiced (bare classify_turn, or an empty
-        // speak): the turn drew no reply - record that so the timeline keeps a distinct turn boundary here.
+        // speak): the turn drew no reply - record the omitted (assistant-side) reply so the turn stays a clean
+        // user->assistant pair and keeps a distinct boundary here.
         if (!suppressSpeak && !spokeToCommander(invocations)) {
             CompanionDiagnostics.debug(trace(), "settle", "no reply");
-            recordSystemNote(TurnBoundaryMarkers.NO_ANSWER);
+            recordTurnBoundary(TurnBoundaryMarkers.NO_ANSWER);
         }
     }
 
@@ -306,17 +307,16 @@ public final class CommanderThought extends Thought {
 
     /**
      * Records a turn-boundary marker ({@link TurnBoundaryMarkers#NO_ANSWER} / {@link TurnBoundaryMarkers#INTERRUPTED})
-     * as a {@code SYSTEM} short-term entry. It keeps a distinct boundary between two commander turns instead of
-     * leaving them adjacent to be coalesced into one blurred {@code user} message, which erodes anaphora resolution
-     * across turns (an unanswered "why?" then a follow-up would otherwise fuse). The {@code SYSTEM} source is the
-     * storage choice (transient bookkeeping, stamped LOW, never a durable fact or a recall candidate); it does not
-     * dictate the prompt role. {@code PromptComposer} replays a boundary marker as an {@code assistant} placeholder
-     * so the message flow keeps a single leading {@code system} turn while still marking the boundary, and the model
-     * is told what the tag means (see {@code CommanderPrompt}). A self-closing tag is used - not prose - so it never
-     * reads as speech or a stray instruction.
+     * as the companion's own (assistant-side) omitted reply - a {@code COMPANION} short-term entry, stamped LOW
+     * (transient bookkeeping, never a durable fact or a recall candidate). It closes an unanswered or cut-off
+     * turn so the two commander turns around it are not left adjacent and coalesced into one blurred {@code user}
+     * message, which erodes anaphora resolution (an unanswered "why?" then a follow-up would otherwise fuse).
+     * Because it is already a {@code COMPANION} entry, {@code PromptComposer} replays it as a plain
+     * {@code assistant} message with no source-to-role indirection; the model is told what the tag means (see
+     * {@code CommanderPrompt}). A self-closing tag is used - not prose - so it never reads as speech.
      */
-    private void recordSystemNote(String marker) {
-        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+    private void recordTurnBoundary(String marker) {
+        ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
                 marker, MemoryImportance.LOW));
     }
 
@@ -404,6 +404,11 @@ public final class CommanderThought extends Thought {
         MemoryProcessingState outcome = awaitConfirmationOutcome();
         CompanionDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
         if (outcome == MemoryProcessingState.CONFIRMED) {
+            // The commander confirmed: record that as a distinct user turn (a <confirmed/> marker) so the executed
+            // outcome pairs with it as its own exchange, rather than trailing the confirmation prompt as a second
+            // assistant line for the same turn. Stamped LOW (bookkeeping, never a durable fact or recall candidate).
+            ctx.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMMANDER,
+                    TurnBoundaryMarkers.CONFIRMED, MemoryImportance.LOW));
             // Execute the frozen set in LLM order. Each call is recorded then voiced and remembered by its
             // action type, exactly like a normal turn (§settleGameCall / §recordOutcome).
             for (LlmToolInvocation inv : invocations) {
@@ -472,7 +477,7 @@ public final class CommanderThought extends Thought {
             ctx.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, currentInput));
         } else {
-            recordSystemNote(TurnBoundaryMarkers.INTERRUPTED);
+            recordTurnBoundary(TurnBoundaryMarkers.INTERRUPTED);
         }
     }
 

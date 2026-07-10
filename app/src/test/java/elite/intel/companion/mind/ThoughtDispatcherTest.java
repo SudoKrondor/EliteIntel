@@ -73,17 +73,18 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         // The bare classify_turn settles with no speak and no action, so the turn records the commander input
-        // and then a <no_reply/> boundary marker (see CommanderThought.recordSystemNote).
+        // and then a <no_reply/> boundary as the companion's omitted reply (see CommanderThought.recordTurnBoundary).
         assertEquals(2, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
-        assertEquals(MemorySource.SYSTEM, memory.writes.get(1).source());
+        assertEquals(MemorySource.COMPANION, memory.writes.get(1).source());
     }
 
     @Test
     void reflexInputExecutesTheCommandWithoutEngagingLlm() {
         // The reflex resolver matches the input to one safe parameterless command: it runs directly and the
-        // LLM is never engaged. A command is a side effect, not dialogue, so the reflex files nothing to memory
-        // (neither the imperative nor the call echo).
+        // LLM is never engaged. This command returns no spoken outcome, so it is a pure side effect and files
+        // nothing (neither the imperative nor the call echo); a command that DOES return an outcome files the
+        // pair (see reflexCommandRecordsThePairAndVoicesTheOutcomeItReturns).
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -112,14 +113,15 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         assertEquals(List.of("open_nav"), executed, "the reflex ran the resolved command directly");
-        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
+        assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
     }
 
     @Test
-    void reflexCommandVoicesTheOutcomeItReturns() {
+    void reflexCommandRecordsThePairAndVoicesTheOutcomeItReturns() {
         // A parameterless command that computes an answer (e.g. calculate_fleet_carrier_route returning its route
-        // summary) is reflex-eligible, so it never reaches the LLM. Its returned outcome must still be spoken and
-        // remembered as a free-standing companion line - otherwise the summary is computed and silently dropped.
+        // summary) is reflex-eligible, so it never reaches the LLM. Because it returns a spoken outcome, it is a
+        // real exchange: the imperative is filed as the user turn and the outcome voiced and remembered as the
+        // companion reply - a clean pair - otherwise the summary is computed and silently dropped.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override
             public CompletableFuture<LlmResult> submit(LlmRequest request) {
@@ -155,16 +157,19 @@ class ThoughtDispatcherTest {
 
         assertEquals(List.of(summary), speech.requests.stream().map(SpeechRequest::text).toList(),
                 "the reflex voiced the summary the command returned");
-        // The imperative and the call echo are still not filed; only the spoken outcome is, as a companion line.
-        assertEquals(1, memory.writes.size(), "only the spoken outcome is remembered");
-        assertEquals(MemorySource.COMPANION, memory.writes.get(0).source());
-        assertEquals(summary, memory.writes.get(0).content());
+        // The imperative is filed as the user turn and the spoken outcome as the companion reply - a clean pair.
+        // The call echo is still not filed (a command records no CALL to pair a result with).
+        assertEquals(2, memory.writes.size(), "the imperative and the spoken outcome are recorded as a pair");
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals("calculate fleet carrier route", memory.writes.get(0).content());
+        assertEquals(MemorySource.COMPANION, memory.writes.get(1).source());
+        assertEquals(summary, memory.writes.get(1).content());
     }
 
     @Test
     void inputNormalizerCanonicalizesBeforeTheReflexGate() {
         // A synonym ("combat mode") is canonicalized to its training phrase ("switch to combat mode") before the
-        // reflex gate, so it reflexes without the LLM. The command is a side effect, so nothing is filed to memory.
+        // reflex gate, so it reflexes without the LLM. This command returns no spoken outcome, so nothing is filed.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -195,13 +200,13 @@ class ThoughtDispatcherTest {
 
         assertEquals(List.of("switch_combat"), executed,
                 "the normalized synonym reflexes to the resolved command without the LLM");
-        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
+        assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
     }
 
     @Test
     void aLeadingCompanionNameIsStrippedForTheReflexGate() {
         // Addressing the companion by name ("Vega, all stop") still takes the reflex fast-path: the leading
-        // vocative name is stripped before reflex matching. The command is a side effect, so nothing is filed.
+        // vocative name is stripped before reflex matching. This command returns no spoken outcome, so nothing is filed.
         LlmGateway failIfCalled = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 throw new AssertionError("a reflex must not engage the LLM");
@@ -231,7 +236,7 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         assertEquals(List.of("stop_ship"), executed, "the name-addressed short command still reflexes");
-        assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
+        assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
     }
 
     @Test
@@ -270,7 +275,7 @@ class ThoughtDispatcherTest {
             dispatcher.stop();
 
             assertEquals(List.of("stop_ship"), executed, "the Cyrillic name-addressed short command still reflexes");
-            assertTrue(memory.writes.isEmpty(), "a reflex command files nothing to memory");
+            assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
         } finally {
             SystemSession.getInstance().setLanguage(previousLanguage);
         }
@@ -355,8 +360,8 @@ class ThoughtDispatcherTest {
     void interruptAfterInputRecordedWritesACutOffMarker() throws InterruptedException {
         // An interrupt landing after the LLM round but before the turn replies (raised here while the
         // classify_turn pre-execution runs on the lane) must leave the recorded input followed by a
-        // <cut_off/> SYSTEM boundary marker, not end silently (see CommanderThought.safeFlush). The turn is
-        // awaited BEFORE stop(): stop() nulls the lanes first, which would make the barge-in a no-op.
+        // <cut_off/> boundary as the companion's omitted reply, not end silently (see CommanderThought.safeFlush).
+        // The turn is awaited BEFORE stop(): stop() nulls the lanes first, which would make the barge-in a no-op.
         ThoughtDispatcher[] holder = new ThoughtDispatcher[1];
         ExecutionGateway interruptingExecution = request -> {
             holder[0].interruptLiveThoughts();
@@ -377,7 +382,7 @@ class ThoughtDispatcherTest {
         assertEquals(2, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         MemoryEntry marker = memory.writes.get(1);
-        assertEquals(MemorySource.SYSTEM, marker.source());
+        assertEquals(MemorySource.COMPANION, marker.source());
         assertEquals("<cut_off/>", marker.content());
     }
 
