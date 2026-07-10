@@ -994,7 +994,7 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> queryExobiologySamples() {
         return Stream.of("What bio scans have we completed?", "What organics do we still have to scan?",
-                "What organics or biology is on this planet");
+                "What organics or biology is we still need to scan on this planet");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1161,7 +1161,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryCarrierEta() {
-        return Stream.of("What's the ETA for our fleet carrier jump?");
+        return Stream.of("What's the ETA for our fleet carrier?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1216,7 +1216,7 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryLastBioSample() {
-        return Stream.of("Last bio-sample location and distance.", "How far are we from the last bio-sample?");
+        return Stream.of("What is the distance to last bio sample?", "How far are we from the last bio-sample?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
