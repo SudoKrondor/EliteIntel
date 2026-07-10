@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -155,6 +156,19 @@ class SessionMemoryGatewayTest {
 
         gateway.replaceLongTermSummary("commander has been mining in Borann for hours");
         assertEquals("commander has been mining in Borann for hours", gateway.longTermSummary());
+    }
+
+    @Test
+    void emptyMemoryRecallSkipsSemanticMatcher() {
+        AtomicInteger matcherCalls = new AtomicInteger();
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1), () -> {
+            matcherCalls.incrementAndGet();
+            return null;
+        });
+
+        assertTrue(gateway.recallCandidates("increase speed by 10", 3).isEmpty());
+        assertTrue(gateway.recallMatching("increase speed by 10", 3).isEmpty());
+        assertEquals(0, matcherCalls.get(), "empty memory must not initialize or query the semantic matcher");
     }
 
     @Test

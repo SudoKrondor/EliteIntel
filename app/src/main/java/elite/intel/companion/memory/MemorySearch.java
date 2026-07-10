@@ -46,7 +46,8 @@ final class MemorySearch {
      * @param summary       the session long-term summary as searchable entries (empty when none consolidated)
      * @param archive       pinned MAX facts (capped by {@link CompanionMemoryLimits#ARCHIVE_RECALL_LIMIT})
      * @param matcherSource supplies the shared semantic matcher, or null when semantic search is unavailable;
-     *                      consulted only for a non-blank query, so a blank query never loads the model
+     *                      consulted only for a non-blank query with at least one stored entry, so an empty
+     *                      memory never loads the model
      */
     static List<String> recall(String query, int limit, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
                                List<MemoryEntry> summary, List<MemoryEntry> archive,
@@ -77,6 +78,11 @@ final class MemorySearch {
     private static List<Scored> rankEligible(String query, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
                                              List<MemoryEntry> summary, List<MemoryEntry> archive,
                                              Supplier<SemanticPhraseMatcher> matcherSource) {
+        // The first companion turn has no memory at all. There is nothing to rank, so avoid lazily loading the
+        // semantic model and embedding its query just to return an empty list.
+        if (shortTerm.isEmpty() && midTerm.isEmpty() && summary.isEmpty() && archive.isEmpty()) {
+            return List.of();
+        }
         Set<String> queryTokens = tokens(query);
         boolean blank = queryTokens.isEmpty();
         // Semantic search runs only for a real query with a loaded model; a blank query keeps the old behaviour
