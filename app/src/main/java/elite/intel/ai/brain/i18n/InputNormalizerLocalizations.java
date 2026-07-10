@@ -6,6 +6,7 @@ import elite.intel.ai.brain.i18n.es.SpanishInputNormalizerRules;
 import elite.intel.ai.brain.i18n.fr.FrenchInputNormalizerRules;
 import elite.intel.ai.brain.i18n.it.ItalianInputNormalizerRules;
 import elite.intel.ai.brain.i18n.pt.PortugueseInputNormalizerRules;
+import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseInputNormalizerRules;
 import elite.intel.ai.brain.i18n.ru.RussianInputNormalizerRules;
 import elite.intel.ai.brain.i18n.uk.UkrainianInputNormalizerRules;
 import elite.intel.i18n.Language;
@@ -62,6 +63,7 @@ public final class InputNormalizerLocalizations {
             case ES -> new SpanishInputNormalizerRules();
             case IT -> new ItalianInputNormalizerRules();
             case PT -> new PortugueseInputNormalizerRules();
+            case PTBZ -> new BrazilianPortugueseInputNormalizerRules();
         };
     }
 

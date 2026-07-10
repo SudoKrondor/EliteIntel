@@ -8,6 +8,7 @@ public enum Language {
     FR("French"),
     ES("Spanish"),
     PT("Portuguese"),
+    PTBZ("Brazilian Portuguese"),
     IT("Italian");
 
     private final String displayName;

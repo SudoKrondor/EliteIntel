@@ -470,7 +470,8 @@ public class KokoroTTS implements MouthInterface {
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";
-            case PT -> "pt-br";
+            // Kokoro ships Brazilian Portuguese only, so European Portuguese speaks with a Brazilian accent.
+            case PT, PTBZ -> "pt-br";
             default -> "en-us";
         };
     }

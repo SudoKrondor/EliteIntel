@@ -1,21 +1,20 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.GlobalSettingsManager;
+import elite.intel.db.managers.NeutronStarRouteManager;
+import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.eventbus.GameControllerBus;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.inputs.PreFtlChecks;
 import elite.intel.gameapi.inputs.UiNavCommon;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
-import elite.intel.session.ui.UINavigator;
 import elite.intel.util.StringUtls;
 
 import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_JUMP_TO_HYPERSPACE;
@@ -37,8 +36,6 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
-    private final UINavigator navigator = new UINavigator();
-    private final Status status = Status.getInstance();
 
     @Override
     public String id() {
@@ -56,6 +53,15 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_TARGET_NEXT_ROUTE_SYSTEM.getGameBinding())));
         UiNavCommon.close();
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.delay(150)));
+
+        int routeSize = ShipRouteManager.getInstance().getOrderedRoute().size();
+        int neutronRouteSize = NeutronStarRouteManager.getInstance().getNeutronStarRoute().size();
+
+        if (routeSize == 0 || neutronRouteSize == 0) {
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fsd.noroute"), false);
+            return null;
+        }
+
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget != null) {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();

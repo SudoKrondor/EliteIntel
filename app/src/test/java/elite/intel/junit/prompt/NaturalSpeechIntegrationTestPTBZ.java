@@ -29,9 +29,9 @@ import java.util.stream.Stream;
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class NaturalSpeechIntegrationTestPT {
+public class NaturalSpeechIntegrationTestPTBZ {
 
-    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.PT);
+    private final CompanionRoutingHarness harness = new CompanionRoutingHarness(Language.PTBZ);
 
     @BeforeAll
     void bootstrap() throws Exception {

@@ -4,12 +4,7 @@ import com.google.cloud.texttospeech.v1.VoiceSelectionParams;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -21,7 +16,8 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
     private static final GoogleVoiceProvider INSTANCE = new GoogleVoiceProvider();
     /** Languages with Chirp3-HD coverage: the selected voice's character is kept, only the locale prefix changes. */
     private static final EnumSet<Language> CHIRP3_HD_LANGUAGES =
-            EnumSet.of(Language.RU, Language.UK, Language.DE, Language.FR, Language.ES, Language.IT);
+            EnumSet.of(Language.RU, Language.UK, Language.DE, Language.FR, Language.ES, Language.IT,
+                    Language.PTBZ);
     private final Map<String, VoiceSelectionParams> voiceMap;
     /**
      * Reports the voices Google offers for a BCP-47 language code (e.g. "ru-RU"), injected by the TTS engine
@@ -156,6 +152,7 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
             case ES -> "es-ES";
             case IT -> "it-IT";
             case PT -> "pt-PT";
+            case PTBZ -> "pt-BR";
         };
     }
 
@@ -230,6 +227,7 @@ public class GoogleVoiceProvider implements VoiceProvider<VoiceSelectionParams> 
             case ES -> male ? "es-ES-Standard-B" : "es-ES-Standard-E";
             case IT -> male ? "it-IT-Standard-C" : "it-IT-Standard-A";
             case PT -> male ? "pt-PT-Standard-B" : "pt-PT-Standard-A";
+            case PTBZ -> male ? "pt-BR-Standard-B" : "pt-BR-Standard-A";
         };
     }
 }

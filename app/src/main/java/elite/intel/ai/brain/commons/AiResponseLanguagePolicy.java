@@ -5,7 +5,17 @@ import elite.intel.ai.ProviderEnum;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
+import java.util.EnumSet;
+
 public final class AiResponseLanguagePolicy {
+
+    /**
+     * Languages the local Kokoro TTS can voice. Both Portuguese variants qualify: Kokoro's only
+     * Portuguese model is Brazilian, so European Portuguese is spoken with a Brazilian accent
+     * rather than falling back to English.
+     */
+    private static final EnumSet<Language> KOKORO_SPOKEN_LANGUAGES =
+            EnumSet.of(Language.FR, Language.ES, Language.PT, Language.PTBZ, Language.IT);
 
     private AiResponseLanguagePolicy() {
     }
@@ -19,8 +29,8 @@ public final class AiResponseLanguagePolicy {
      *
      * @param systemSession the session containing system language and TTS configuration details
      * @return the resolved language for AI responses; it will be the session's language if Google TTS
-     * is configured and usable, or defaults to English unless the session's language is French, Spanish,
-     * Portuguese, or Italian
+     * is configured and usable, or defaults to English unless the session's language is one Kokoro can
+     * voice ({@link #KOKORO_SPOKEN_LANGUAGES})
      */
     public static Language resolveEffectiveAiResponseLanguage(SystemSession systemSession) {
         boolean isGoogle = isGoogleTtsConfiguredAndUsable(systemSession);
@@ -30,7 +40,7 @@ public final class AiResponseLanguagePolicy {
         }
 
         Language sessionLanguage = systemSession.getLanguage();
-        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES || sessionLanguage == Language.PT || sessionLanguage == Language.IT) {
+        if (KOKORO_SPOKEN_LANGUAGES.contains(sessionLanguage)) {
             return sessionLanguage;
         }
 
