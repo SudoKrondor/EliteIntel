@@ -1,5 +1,6 @@
 package elite.intel.companion.mind;
 
+import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -30,6 +31,7 @@ public record ThoughtDependencies(
         CompanionState state,
         DangerousActionPolicy dangerousActionPolicy,
         ConfirmationCoordinator confirmationCoordinator,
+        CompanionRuntimeGeneration runtimeGeneration,
         IntelActionTypeResolver actionTypeResolver
 ) {
     /**
@@ -50,6 +52,47 @@ public record ThoughtDependencies(
             ConfirmationCoordinator confirmationCoordinator) {
         this(llmGateway, speechGateway, executionGateway, memoryGateway, promptComposer,
                 intelActionAccessPolicy, systemFunctionProvider, reducer, state,
-                dangerousActionPolicy, confirmationCoordinator, new IntelActionTypeResolver());
+                dangerousActionPolicy, confirmationCoordinator, new CompanionRuntimeGeneration(),
+                new IntelActionTypeResolver());
+    }
+
+    /** Backward-compatible constructor for call sites that supply only an explicit action-type resolver. */
+    public ThoughtDependencies(
+            LlmGateway llmGateway,
+            SpeechGateway speechGateway,
+            ExecutionGateway executionGateway,
+            MemoryGateway memoryGateway,
+            PromptComposer promptComposer,
+            IntelActionAccessPolicy intelActionAccessPolicy,
+            SystemFunctionProvider systemFunctionProvider,
+            CompanionActionReducer reducer,
+            CompanionState state,
+            DangerousActionPolicy dangerousActionPolicy,
+            ConfirmationCoordinator confirmationCoordinator,
+            IntelActionTypeResolver actionTypeResolver) {
+        this(llmGateway, speechGateway, executionGateway, memoryGateway, promptComposer,
+                intelActionAccessPolicy, systemFunctionProvider, reducer, state,
+                dangerousActionPolicy, confirmationCoordinator, new CompanionRuntimeGeneration(),
+                actionTypeResolver);
+    }
+
+    /** Production constructor that binds every thought to one runtime generation. */
+    public ThoughtDependencies(
+            LlmGateway llmGateway,
+            SpeechGateway speechGateway,
+            ExecutionGateway executionGateway,
+            MemoryGateway memoryGateway,
+            PromptComposer promptComposer,
+            IntelActionAccessPolicy intelActionAccessPolicy,
+            SystemFunctionProvider systemFunctionProvider,
+            CompanionActionReducer reducer,
+            CompanionState state,
+            DangerousActionPolicy dangerousActionPolicy,
+            ConfirmationCoordinator confirmationCoordinator,
+            CompanionRuntimeGeneration runtimeGeneration) {
+        this(llmGateway, speechGateway, executionGateway, memoryGateway, promptComposer,
+                intelActionAccessPolicy, systemFunctionProvider, reducer, state,
+                dangerousActionPolicy, confirmationCoordinator, runtimeGeneration,
+                new IntelActionTypeResolver());
     }
 }

@@ -269,29 +269,49 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
+        Map<ThoughtSource, ThoughtLane> newlyStartedLanes = null;
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
-            // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
-            // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
-            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
-            built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
-            lanes = built; // single volatile publish of the fully-built lane set
+            try {
+                // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
+                // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
+                // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
+                built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
+                built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
+                lanes = built; // single volatile publish of the fully-built lane set
+                newlyStartedLanes = built;
+            } catch (RuntimeException | Error startupFailure) {
+                built.values().forEach(lane -> lane.shutdown(0));
+                throw startupFailure;
+            }
         }
         if (watchdog == null) {
-            watchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "companion-watchdog");
-                thread.setDaemon(true);
-                return thread;
-            });
-            watchdog.scheduleAtFixedRate(this::checkWatchdog,
-                    watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+            ScheduledExecutorService newlyStartedWatchdog = null;
+            try {
+                newlyStartedWatchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                    Thread thread = new Thread(runnable, "companion-watchdog");
+                    thread.setDaemon(true);
+                    return thread;
+                });
+                newlyStartedWatchdog.scheduleAtFixedRate(this::checkWatchdog,
+                        watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+                watchdog = newlyStartedWatchdog;
+            } catch (RuntimeException | Error startupFailure) {
+                if (newlyStartedWatchdog != null) {
+                    newlyStartedWatchdog.shutdownNow();
+                }
+                if (newlyStartedLanes != null && lanes == newlyStartedLanes) {
+                    lanes = null;
+                    newlyStartedLanes.values().forEach(lane -> lane.shutdown(0));
+                }
+                throw startupFailure;
+            }
         }
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         ScheduledExecutorService currentWatchdog = watchdog;
         watchdog = null;
         if (currentWatchdog != null) {

@@ -2,6 +2,8 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
@@ -32,10 +34,11 @@ class SystemFunctionHandleTest {
     private final java.util.List<SpeechRequest> spoken = new java.util.ArrayList<>();
     private final RecordingMemory memory = new RecordingMemory();
     private final CompanionState state = new CompanionState();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void install() {
-        CompanionRuntime.install(
+        runtimeGraph = CompanionRuntimeTestSupport.install(
                 null,
                 request -> {
                     spoken.add(request);
@@ -49,7 +52,7 @@ class SystemFunctionHandleTest {
 
     @AfterEach
     void clear() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private static JsonObject params(String key, String value) {

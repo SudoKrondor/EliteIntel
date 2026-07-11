@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
@@ -14,7 +15,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -121,6 +126,34 @@ class MidTermToLongTermConsolidatorTest {
         assertEquals(1, llm.calls);
     }
 
+    @Test
+    void closeDiscardsAConsolidationThatCompletesAfterShutdown() throws Exception {
+        RecordingMemory delayedMemory = new RecordingMemory();
+        BlockingLlm delayedLlm = new BlockingLlm();
+        List<SpeechRequest> delayedNotices = new ArrayList<>();
+        ExecutorService worker = Executors.newSingleThreadExecutor();
+        MidTermToLongTermConsolidator delayedConsolidator = new MidTermToLongTermConsolidator(
+                delayedMemory,
+                delayedLlm,
+                request -> {
+                    delayedNotices.add(request);
+                    return CompletableFuture.completedFuture(null);
+                },
+                new CompanionRuntimeGeneration(),
+                worker);
+
+        for (int index = 0; index < CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD; index++) {
+            delayedConsolidator.onEvicted(entry("delayed-" + index));
+        }
+        assertTrue(delayedLlm.started.await(1, TimeUnit.SECONDS));
+        delayedConsolidator.close();
+        delayedLlm.result.complete("late summary");
+        assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
+
+        assertEquals("", delayedMemory.summary);
+        assertTrue(delayedNotices.isEmpty(), "shutdown cancellation must not emit a failure announcement");
+    }
+
     /** LlmGateway fake: scripted compression result; submit unused. */
     private static final class FakeLlm implements LlmGateway {
         volatile String scripted;
@@ -135,6 +168,20 @@ class MidTermToLongTermConsolidatorTest {
         public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
             calls++;
             return CompletableFuture.completedFuture(scripted);
+        }
+    }
+
+    private static final class BlockingLlm implements LlmGateway {
+        private final CountDownLatch started = new CountDownLatch(1);
+        private final CompletableFuture<String> result = new CompletableFuture<>();
+
+        @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            started.countDown();
+            return result;
         }
     }
 

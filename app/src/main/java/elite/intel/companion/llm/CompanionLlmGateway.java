@@ -168,10 +168,9 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * Shuts down the owned executor so a short-lived gateway does not leak its thread. The long-lived
-     * companion-runtime gateway is never closed; only callers that build a throwaway gateway (e.g. custom
-     * command key generation) close it, after their single blocking call has returned. The injected-executor
-     * test seam passes a non-{@link ExecutorService} executor, for which this is a no-op.
+     * Shuts down the owned executor. The companion runtime graph calls this during stop/restart; callers that
+     * build a throwaway gateway (e.g. custom command key generation) close it after their blocking call returns.
+     * The injected-executor test seam passes a non-{@link ExecutorService} executor, for which this is a no-op.
      */
     @Override
     public void close() {

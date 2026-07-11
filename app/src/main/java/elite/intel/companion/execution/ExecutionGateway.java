@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>
  * The gateway never writes to memory; real game changes arrive later via the journal/status path.
  */
-public interface ExecutionGateway {
+public interface ExecutionGateway extends AutoCloseable {
 
     /**
      * Submits a tool-call for execution on the lane selected by its operation type.
@@ -20,4 +20,9 @@ public interface ExecutionGateway {
      *         side effects); cancel it to skip the operation if it has not started yet
      */
     CompletableFuture<JsonObject> submit(ExecutionRequest request);
+
+    /** Releases executor or queue resources owned by this gateway. Resource-free implementations are no-ops. */
+    @Override
+    default void close() {
+    }
 }

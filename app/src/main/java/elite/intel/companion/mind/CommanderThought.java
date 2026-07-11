@@ -102,6 +102,9 @@ public final class CommanderThought extends Thought {
      */
     @Override
     CompletableFuture<Void> startLifecycle() {
+        if (isStopped()) {
+            return CompletableFuture.completedFuture(null);
+        }
         try {
             return beginTurn();
         } catch (Throwable failure) {
@@ -120,12 +123,12 @@ public final class CommanderThought extends Thought {
 
             // Single-round by design: one LLM round settles the turn (memory is retrieved before the turn as
             // inlined answer facts, so there is no in-turn lookup round).
-            if (interrupted) {
+            if (isStopped()) {
                 safeFlush(inputRecorded);
                 return CompletableFuture.completedFuture(null);
             }
             LlmResult result = submitRound(flow, tools, profile);
-            if (interrupted) {
+            if (isStopped()) {
                 safeFlush(inputRecorded); // interrupt takes precedence over an invalid/cancelled result
                 return CompletableFuture.completedFuture(null);
             }
@@ -152,7 +155,7 @@ public final class CommanderThought extends Thought {
             // An interrupt landing after the input was handled (filed, or skipped for a command turn) but before
             // the turn replies is a cut-off turn: route it through safeFlush so it drops a <cut_off/> boundary
             // marker instead of ending silently.
-            if (interrupted) {
+            if (isStopped()) {
                 safeFlush(inputRecorded);
                 return CompletableFuture.completedFuture(null);
             }
@@ -338,12 +341,12 @@ public final class CommanderThought extends Thought {
             recordTurnBoundary(TurnBoundaryMarkers.PROCESSING);
         }
         inFlight = execution;
-        if (interrupted) {
+        if (isStopped()) {
             execution.cancel(true);
         }
         return execution.handle((result, failure) -> {
             try {
-                if (interrupted || execution.isCancelled()) {
+                if (isStopped() || execution.isCancelled()) {
                     CompanionDiagnostics.debug(trace(), "settle", inv.name() + " late result discarded");
                     return null;
                 }
@@ -449,8 +452,11 @@ public final class CommanderThought extends Thought {
      */
     private void handleDangerousConfirmation(List<LlmToolDefinition> tools, List<LlmToolInvocation> invocations,
                                              Map<LlmToolInvocation, JsonObject> preExecuted, List<LlmToolInvocation> dangerous) {
+        if (!isRuntimeActive()) {
+            return;
+        }
         CompanionDiagnostics.info(trace(), "confirm", "dangerous action detected: " + CompanionDiagnostics.calls(dangerous));
-        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+        writeMemory(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action requires confirmation"));
 
         // Code-voiced confirmation prompt (no LLM), recorded as the companion's own COMPANION line; urgent so
@@ -460,12 +466,15 @@ public final class CommanderThought extends Thought {
         recordCompanionSpeech(prompt);
 
         MemoryProcessingState outcome = awaitConfirmationOutcome();
+        if (!isRuntimeActive()) {
+            return;
+        }
         CompanionDiagnostics.info(trace(), "confirm", "outcome=" + outcome.name().toLowerCase(Locale.ROOT));
         if (outcome == MemoryProcessingState.CONFIRMED) {
             // The commander confirmed: record that as a distinct user turn (a <confirmed/> marker) so the executed
             // outcome pairs with it as its own exchange, rather than trailing the confirmation prompt as a second
             // assistant line for the same turn. Stamped LOW (bookkeeping, never a durable fact or recall candidate).
-            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMMANDER,
+            writeMemory(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMMANDER,
                     TurnBoundaryMarkers.CONFIRMED, MemoryImportance.LOW));
             // Execute the frozen set in LLM order. Each call is recorded then voiced and remembered by its
             // action type, exactly like a normal turn (§settleGameCall / §recordOutcome).
@@ -473,7 +482,7 @@ public final class CommanderThought extends Thought {
                 settleGameCall(inv, tools, preExecuted);
             }
         }
-        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
+        writeMemory(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.SYSTEM,
                 "dangerous action " + outcome.name().toLowerCase(Locale.ROOT)));
     }
 
@@ -485,7 +494,7 @@ public final class CommanderThought extends Thought {
             return MemoryProcessingState.CANCELLED; // an overlapping confirmation is already pending (§1.6.25)
         }
         inFlight = wait;
-        if (interrupted) {
+        if (isStopped()) {
             wait.cancel(true);
         }
         try {
@@ -512,9 +521,12 @@ public final class CommanderThought extends Thought {
      * a fixed service phrase (no LLM). The turn ends.
      */
     private void onInvalidResponse(boolean inputRecorded) {
+        if (!isRuntimeActive()) {
+            return;
+        }
         CompanionDiagnostics.info(trace(), "settle", "cannot execute (unrecoverable LLM response)");
         if (!inputRecorded) {
-            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
+            writeMemory(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, context.currentInput()));
         }
         dependencies.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
@@ -529,10 +541,13 @@ public final class CommanderThought extends Thought {
      * started here.
      */
     private void safeFlush(boolean inputRecorded) {
+        if (!isRuntimeActive()) {
+            return;
+        }
         CompanionDiagnostics.debug(trace(), "flush",
                 inputRecorded ? "cut off after filing input" : "interrupted before filing (input saved as unresolved)");
         if (!inputRecorded) {
-            dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
+            writeMemory(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, context.currentInput()));
         } else {
             recordTurnBoundary(TurnBoundaryMarkers.INTERRUPTED);

@@ -2,7 +2,8 @@ package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionNarrator;
-import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.gameapi.journal.events.ShipyardBuyEvent;
 import elite.intel.gameapi.journal.subscribers.NewShipPurchasedHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -15,15 +16,16 @@ class NewShipPurchasedHandlerTest {
 
     private final NewShipPurchasedHandler handler = new NewShipPurchasedHandler();
     private final CapturingNarrator narrator = new CapturingNarrator();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void installNarrator() {
-        CompanionRuntime.installNarrator(narrator);
+        runtimeGraph = CompanionRuntimeTestSupport.installNarrator(narrator);
     }
 
     @AfterEach
     void clearNarrator() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private ShipyardBuyEvent buyEvent(String shipType) {

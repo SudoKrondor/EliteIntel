@@ -4,7 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.llm.CompanionLlmGateway;
@@ -55,10 +56,11 @@ class CompanionConversationIntegrationTest {
     private final SessionMemoryGateway memory = new SessionMemoryGateway(() -> null);
     private final CompanionState state = new CompanionState();
     private final RecordingSpeech speech = new RecordingSpeech();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @AfterEach
     void clearRuntime() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     @Test
@@ -112,10 +114,10 @@ class CompanionConversationIntegrationTest {
         DangerousActionPolicy notDangerous = invocation -> false;
         ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
-        CompanionRuntime.install(llm, speech, execution, memory, reducer, state);
+        runtimeGraph = CompanionRuntimeTestSupport.install(llm, speech, execution, memory, reducer, state);
         ThoughtDependencies dependencies = new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
-                notDangerous, coordinator);
+                notDangerous, coordinator, runtimeGraph.runtimeGeneration());
         // Pin the reflex gate off this run (no game tools / no commands), so every turn stays LLM-driven.
         return new ThoughtDispatcher(dependencies, new ReflexResolver(() -> List.of(), notDangerous));
     }

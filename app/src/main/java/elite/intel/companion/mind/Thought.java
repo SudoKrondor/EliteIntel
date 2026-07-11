@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -160,6 +161,9 @@ public abstract class Thought {
      * watchdog interruption, and {@code isIdle()} continue until the detached work settles.
      */
     CompletableFuture<Void> startLifecycle() {
+        if (isStopped()) {
+            return CompletableFuture.completedFuture(null);
+        }
         try {
             run();
             return CompletableFuture.completedFuture(null);
@@ -201,11 +205,14 @@ public abstract class Thought {
      * interrupt-driven cancellation (exceptional future) is treated as no usable result (§2.9/§2.7).
      */
     protected LlmResult submitRound(List<LlmMessage> flow, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
+        if (isStopped()) {
+            return null;
+        }
         CompanionDiagnostics.debug(trace, "llm", "request: tools=" + tools.size() + " messages=" + flow.size());
         CompletableFuture<LlmResult> future = dependencies.llmGateway()
                 .submit(new LlmRequest(newId(), List.copyOf(flow), tools, profile, trace));
         inFlight = future;
-        if (interrupted) {
+        if (isStopped()) {
             future.cancel(true); // interrupt raced ahead of registration: cancel now so join unblocks
         }
         // Time the whole round: the gateway runs its repair/retry synchronously within this one future, so the
@@ -217,11 +224,11 @@ public abstract class Thought {
                     describeResult(result) + " | " + (System.currentTimeMillis() - startedMillis) + " ms");
             return result;
         } catch (RuntimeException llmFailure) {
-            if (!interrupted) {
+            if (!isStopped()) {
                 // A provider/transport failure (not an interrupt-driven cancel) - surface the cause.
                 log.warn("Companion LLM round failed; treating as no usable result", llmFailure);
             }
-            CompanionDiagnostics.debug(trace, "llm", interrupted ? "response: cancelled" : "response: failed");
+            CompanionDiagnostics.debug(trace, "llm", isStopped() ? "response: cancelled" : "response: failed");
             return null;
         } finally {
             inFlight = null;
@@ -312,6 +319,10 @@ public abstract class Thought {
 
     /** Submits one tool-call and attributes its execution latency to this thought without awaiting it. */
     protected CompletableFuture<JsonObject> submitExecution(LlmToolInvocation inv) {
+        if (isStopped()) {
+            return CompletableFuture.failedFuture(
+                    new CancellationException("Companion runtime generation is no longer active"));
+        }
         // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
         // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
         // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
@@ -324,7 +335,8 @@ public abstract class Thought {
         }
         long executionStartedNanos = System.nanoTime();
         CompletableFuture<JsonObject> future = dependencies.executionGateway()
-                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput()));
+                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput(),
+                        dependencies.runtimeGeneration().generationId()));
         future.whenComplete((ignored, failure) -> CompanionDiagnostics.debug(trace, "exec-time",
                 inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms"));
         return future;
@@ -353,11 +365,14 @@ public abstract class Thought {
 
     /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
+        if (!isRuntimeActive()) {
+            return;
+        }
         String canonical = memoryCanonicalFact();
         // The verbatim input is already shown by the intake line; log only that it was filed and under which stamp.
         CompanionDiagnostics.debug(trace, "memory",
                 "record input [" + memoryTopic() + "/" + memoryImportance() + "]");
-        dependencies.memoryGateway().write(new MemoryEntry(
+        writeMemory(new MemoryEntry(
                 Instant.now(), memoryTopic(), memorySource(), context.currentInput(), memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
     }
@@ -382,12 +397,12 @@ public abstract class Thought {
      * noted...") cannot pollute recall.
      */
     protected void recordCompanionSpeech(String text) {
-        if (text == null || text.isBlank()) {
+        if (!isRuntimeActive() || text == null || text.isBlank()) {
             return;
         }
         // The spoken text is already shown by the settle line; log only that the reply was filed to memory.
         CompanionDiagnostics.debug(trace, "memory", "record reply");
-        dependencies.memoryGateway().write(new MemoryEntry(
+        writeMemory(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
 
@@ -396,7 +411,10 @@ public abstract class Thought {
      * next commander input from merging with this turn while detached work is still running.
      */
     protected void recordTurnBoundary(String marker) {
-        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
+        if (!isRuntimeActive()) {
+            return;
+        }
+        writeMemory(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
                 marker, MemoryImportance.LOW));
     }
 
@@ -417,6 +435,9 @@ public abstract class Thought {
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
                                  String toolCallId) {
+        if (!isRuntimeActive()) {
+            return;
+        }
         switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
                 String answer = spokenTextOf(result);
@@ -443,8 +464,11 @@ public abstract class Thought {
      * Written before the call runs (LOW importance: a call is bookkeeping, never a durable fact).
      */
     protected void recordCall(String toolCallId, LlmToolInvocation inv) {
+        if (!isRuntimeActive()) {
+            return;
+        }
         String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
-        dependencies.memoryGateway().write(new MemoryEntry(
+        writeMemory(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
                 null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
     }
@@ -454,13 +478,13 @@ public abstract class Thought {
      * half of the replayed pair. A blank result is not recorded (the composer synthesizes one if the call has none).
      */
     protected void recordToolResult(String toolCallId, String text) {
-        if (text == null || text.isBlank()) {
+        if (!isRuntimeActive() || text == null || text.isBlank()) {
             return;
         }
         // An over-long answer (e.g. a full system briefing) is handed by the gateway to background gist
         // compression, which re-writes a shorter line carrying this same toolCallId - so the call stays paired
         // once the gist lands (see OversizedMemoryCompressor), rather than being orphaned as "(no textual result)".
-        dependencies.memoryGateway().write(new MemoryEntry(
+        writeMemory(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
                 null, null, ToolLink.result(toolCallId)));
     }
@@ -473,6 +497,9 @@ public abstract class Thought {
      * @return true when the query produced and published a textual answer
      */
     protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId) {
+        if (!isRuntimeActive()) {
+            return false;
+        }
         String answer = spokenTextOf(result);
         if (answer.isBlank()) {
             return false;
@@ -490,7 +517,7 @@ public abstract class Thought {
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
     protected void voice(String text, boolean critical) {
-        if (text == null || text.isBlank()) {
+        if (!isRuntimeActive() || text == null || text.isBlank()) {
             return;
         }
         CompanionDiagnostics.debug(trace, "voice", (critical ? "urgent " : "") + "\"" + CompanionDiagnostics.truncate(text) + "\"");
@@ -508,6 +535,22 @@ public abstract class Thought {
         if (current != null) {
             current.cancel(true);
         }
+    }
+
+    /** Whether this thought's runtime generation still permits memory, execution, and speech side effects. */
+    protected final boolean isRuntimeActive() {
+        return dependencies.runtimeGeneration().isActive();
+    }
+
+    /** Whether interruption or runtime shutdown requires this thought to stop at the current boundary. */
+    protected final boolean isStopped() {
+        return interrupted || !isRuntimeActive();
+    }
+
+    /** Atomically fences a memory publication against runtime shutdown. */
+    protected final boolean writeMemory(MemoryEntry entry) {
+        return dependencies.runtimeGeneration().runIfActive(
+                () -> dependencies.memoryGateway().write(entry));
     }
 
     public final ThoughtSource source() {

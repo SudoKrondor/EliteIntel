@@ -14,12 +14,15 @@ import com.google.gson.JsonObject;
  * @param commanderInput the commander's raw utterance that led to this call, passed to the handler as its
  *                   {@code originalUserInput} so handlers that match a spoken name (e.g. "is B 1 landable")
  *                   can resolve it. Never null (normalized to ""); empty when there is no originating utterance.
+ * @param runtimeGenerationId process-local companion generation that owns this operation; zero for callers that
+ *                   execute outside an installed companion runtime (primarily isolated gateway tests)
  */
 public record ExecutionRequest(
         String requestId,
         String toolName,
         JsonObject arguments,
-        String commanderInput
+        String commanderInput,
+        long runtimeGenerationId
 ) {
     public ExecutionRequest {
         if (commanderInput == null) commanderInput = "";
@@ -27,6 +30,11 @@ public record ExecutionRequest(
 
     /** Convenience constructor for a request with no originating commander utterance. */
     public ExecutionRequest(String requestId, String toolName, JsonObject arguments) {
-        this(requestId, toolName, arguments, "");
+        this(requestId, toolName, arguments, "", 0L);
+    }
+
+    /** Backward-compatible constructor for a request outside an explicitly owned runtime generation. */
+    public ExecutionRequest(String requestId, String toolName, JsonObject arguments, String commanderInput) {
+        this(requestId, toolName, arguments, commanderInput, 0L);
     }
 }
