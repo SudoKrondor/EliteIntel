@@ -18,9 +18,12 @@ public final class TaxiToLandingPadCommand extends SimpleTapCommand {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED_ZERO.getGameBinding());
     }
 
-    ///
+    /** Docking computer control is available only while the main ship is flying in normal space. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && status.isInSupercruise();
+        return status.isInMainShip()
+                && !status.isDocked()
+                && !status.isLanded()
+                && !status.isInSupercruise();
     }
 }
