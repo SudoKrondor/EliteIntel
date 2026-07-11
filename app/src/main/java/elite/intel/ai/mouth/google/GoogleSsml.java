@@ -5,10 +5,10 @@ package elite.intel.ai.mouth.google;
  * SSML on the synchronous synthesis path. This is Google-only: the Kokoro/espeak-ng path keeps plain text.
  * <p>
  * The neural voices phrase flatly on bare punctuation, so this escapes the text for XML, normalizes "!" to "."
- * (its exclamatory intonation sounds unnatural), and inserts explicit {@code <break>} pauses after sentence ends
- * and ellipses to improve rhythm. The other punctuation marks are kept so the voice still gets its intonation cue;
- * a {@code <break>} can only add a pause, never remove one the voice inserts on its own. Pause durations are
- * tuning constants, adjusted by ear.
+ * (its exclamatory intonation sounds unnatural), and inserts explicit {@code <break>} pauses after sentence ends,
+ * ellipses, and commas to improve rhythm. Sentence punctuation is kept for its intonation cue, while a clause comma
+ * is replaced by its break: keeping both makes Chirp add its automatic comma pause to the explicit pause. Pause
+ * durations are tuning constants, adjusted by ear.
  */
 final class GoogleSsml {
 
@@ -16,6 +16,8 @@ final class GoogleSsml {
     private static final String SENTENCE_BREAK = "300ms";
     /** Pause for an ellipsis ("..."). */
     private static final String ELLIPSIS_BREAK = "300ms";
+    /** Short clause pause after a comma. */
+    private static final String COMMA_BREAK = "120ms";
 
     private GoogleSsml() {
     }
@@ -60,7 +62,8 @@ final class GoogleSsml {
     private static String insertBreaks(String s) {
         return s
                 .replaceAll("\\.{3,}", "..." + breakTag(ELLIPSIS_BREAK))
-                .replaceAll("(?<=[.!?])(?=\\s|$)", breakTag(SENTENCE_BREAK));
+                .replaceAll("(?<=[.!?])(?=\\s|$)", breakTag(SENTENCE_BREAK))
+                .replaceAll(",(?=\\s|$)", breakTag(COMMA_BREAK));
     }
 
     private static String breakTag(String time) {
