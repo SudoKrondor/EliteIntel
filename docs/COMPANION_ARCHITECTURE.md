@@ -4,10 +4,16 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.23**.
+Версия **v0.24**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.24 (2026-07-11).** Нормальный COMMANDER tool flow сведён к одному физическому LLM-ответу.
+> - **Один assistant message:** `CommanderPrompt` требует вернуть `classify_turn` и ровно один settling call вместе, в этом порядке; ждать результат metadata-only классификации запрещено.
+> - **Симметричный совместимый fallback:** `CompanionLlmGateway` принимает односторонний provider deviation — либо голый `classify_turn`, либо ровно один offered settling call — и достраивает отсутствующую половину отдельным pending-continuation. До полной пары ничего не исполняется, а наружу всегда возвращается порядок `classify_turn` → settling call.
+> - **Диагностика:** repair и оба continuation показывают полученные tool-calls, поэтому различимы provider deviation, неверный выбор функции и malformed response.
+> - **Измерение на LM Studio:** до изменения 44–46 из 57 LLM-ходов требовали continuation. После one-message prompt и симметричного fallback три uncached-прогона `NaturalSpeechIntegrationTestEN` дали 339/339 каждый: classify-only = 5/8/7, settling-only = 1/1/1, repair = 0/0/0, invalid = 0/0/0. Это 63/66/65 физических LLM-вызовов вместо прежних 101–103.
 
 > **v0.23 (2026-07-11).** Runtime компаньона стал одной атомарно публикуемой и полностью закрываемой generation.
 > - **Один runtime graph:** `CompanionRuntimeGraph` содержит gateways, память, reducer/state, narrator, dispatcher и фоновые memory workers. `CompanionRuntime` публикует одну ссылку через `AtomicReference`, а identity-safe uninstall старой generation не может снять новую.
@@ -274,12 +280,14 @@
 16. **Repair/retry не пересобирает tools.**
     Retry использует исходный request payload / tools snapshot и тот же cancellation/owner token.
     `LlmGateway` не вызывает `PromptComposer`, `Reducer`, `ToolAccessPolicy` или `SystemToolProvider`.
-    `classify_turn` без settling call — не repair и не execution: gateway локально replay'ит его как
-    `assistant(tool_calls)` и возвращает модели protocol-only result с `execution=pending`, затем делает ровно
-    один settling-only запрос с тем же immutable snapshot. Если тот вернул ровно один offered non-classify tool,
-    gateway отдаёт thought ожидаемую ровно двухэлементную пару `classify_turn` → settling tool; ни одна функция
-    до этого не выполнена. Несколько classify или settling calls в одном logical turn и любой другой ответ
-    continuation остаются invalid response.
+    Нормальный response по контракту prompt уже содержит `classify_turn` и settling call в одном
+    `assistant(tool_calls)`. Односторонний ответ с ровно одним offered call — `classify_turn` без settling call
+    или settling call без `classify_turn` — совместимый provider fallback, не repair и не execution. Gateway
+    локально replay'ит полученный call как `assistant(tool_calls)`, возвращает модели protocol-only result с
+    `execution=pending` и делает ровно один запрос только отсутствующей половины с тем же immutable snapshot.
+    Если continuation вернул ровно один ожидаемый offered call, gateway отдаёт thought двухэлементную пару в
+    каноническом порядке `classify_turn` → settling tool; ни одна функция до этого не выполнена. Несколько вызовов
+    одного вида, unexpected call и любой другой ответ continuation остаются invalid response.
 
 17. **`classify_turn` из первого валидного response обрабатывается до прочих tool-calls.**
     Это pre-execution step внутри thought lifecycle.
@@ -810,6 +818,10 @@ Repair/retry может использовать только исходный r
 
 то `LlmGateway` делает одну repair/retry попытку, но только если потраченный token cost ниже настроечного порога.
 Retry использует тот же tools snapshot и тот же cancellation/owner token.
+
+Ровно один offered `classify_turn` или settling call при ожидаемой двухэлементной COMMANDER-паре не считается
+исполняемым частичным результатом: gateway держит call pending, запрашивает только вторую половину и лишь после неё
+возвращает thought пару в порядке `classify_turn` → settling call.
 
 Если хотя бы один tool-call invalid, invalid считается весь response.
 Никакие tool-calls из такого response не применяются, включая валидно выглядящий `classify_turn`.
@@ -1629,7 +1641,7 @@ Command/query/macro после ordered cognitive stage исполняются **
 UserInputEvent
 → ThoughtDispatcher → CommanderThought
 → PromptComposer initial messages → LlmGateway → tool-calls
-     (classify-only physical response is continued inside the gateway before the pair returns)
+     (a one-sided physical response is completed inside the gateway before the pair returns)
 → turn classified (classify_turn applied if called: global topic + turn importance)
 → freeze turn topic; currentInput written to memory ([COMMANDER])
 → dispatch game handler and release commander cognitive worker
@@ -1642,7 +1654,7 @@ UserInputEvent
 → interrupt/stop? queued future cancelled; already-started handler may finish operationally, but late result is discarded
 ```
 
-Ход однораундовый для LLM: `classify_turn` + ровно один settling call. Голый `classify_turn` продолжает только локальный protocol flow внутри `LlmGateway` и не приходит в thought без settling call. Game-handler completion асинхронен относительно следующих cognitive turns, но остаётся частью lifecycle той же мысли.
+Ход однораундовый для LLM и в норме требует одного физического ответа: один `assistant(tool_calls)` содержит `classify_turn` + ровно один settling call. Голый `classify_turn` — совместимый provider fallback; он продолжает только локальный protocol flow внутри `LlmGateway` и не приходит в thought без settling call. Game-handler completion асинхронен относительно следующих cognitive turns, но остаётся частью lifecycle той же мысли.
 (Тот же `recordOutcome` исполняет и подтверждённый dangerous-набор, §5.3.)
 
 ---
@@ -2077,7 +2089,7 @@ elite.intel.companion
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. На intake командирского turn один раз снимается `GameStateSnapshot(flags, flags2, fighterOut)`; точный/семантический reflex и reducer проверяют `isVisibleForLLM(status) == true` на detached `Status` из этого snapshot. Поэтому все стадии одного turn видят один контекст, а новое live-состояние применяется со следующего turn. Перед исполнением второго visibility-gate нет. Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
   * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английское описание стабилизирует схему и кэш, но `CommanderPrompt` требует выбирать функцию по исходной формулировке командира и не переводить её на английский. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в уточняющий вопрос вместо команды). Синтетический префикс «Game action `<id>`» убран.
-* **System-prompt steering (`CommanderPrompt`).** COMMANDER-промпт требует только tool calls: сначала один `classify_turn`, затем ровно один settling call. Лестница выбора берёт первый подходящий пункт: (1) offered action/query/macro, который явно соответствует намерению; (2) уже инлайненный `<fact>`, если никакой offered tool не может получить ответ; (3) `memory_search`, если командир явно просит вспомнить, перечислить или посчитать память и query offered; (4) `speak` для разговора, пояснения, неоднозначности или неподдерживаемого запроса. `CommanderThought` однораундовый: `memory_search`, как любой QUERY, озвучивает свой data-grounded outcome напрямую через `recordOutcome`, без второго LLM-раунда.
+* **System-prompt steering (`CommanderPrompt`).** COMMANDER-промпт требует только tool calls: initial `assistant(tool_calls)` должен содержать сначала `classify_turn`, затем ровно один settling call; metadata-only результат классификации не нужен для выбора settling call, поэтому ждать его запрещено. Отдельный tool-result может явно запросить ровно один отсутствующий protocol call; это request-local fallback `CompanionLlmGateway` для classify-only или settling-only provider deviation, а не обычный initial flow. Лестница выбора берёт первый подходящий пункт: (1) offered action/query/macro, который явно соответствует намерению; (2) уже инлайненный `<fact>`, если никакой offered tool не может получить ответ; (3) `memory_search`, если командир явно просит вспомнить, перечислить или посчитать память и query offered; (4) `speak` для разговора, пояснения, неоднозначности или неподдерживаемого запроса. `CommanderThought` однораундовый: `memory_search`, как любой QUERY, озвучивает свой data-grounded outcome напрямую через `recordOutcome`, без второго LLM-раунда.
 * **Semantic routing and reduction.** `ThoughtDispatcher` сначала пробует точный `ReflexResolver`, затем `SemanticReflexResolver`. Обе стадии получают один `GameStateSnapshot`; уверенный безопасный беспараметрный матч создаёт `ReflexThought`, а во всех остальных случаях snapshot и входной `SemanticQuery` остаются в `ThoughtContext`. `SemanticActionReducer` использует тот же snapshot для видимости и тот же вектор для shortlist игровых tools; pre-turn memory recall использует вектор для fact candidates. Если embedding недоступен или inference падает, reducer передаёт snapshot своему `WordOverlapActionReducer` fallback, а recall деградирует к word-only пути. EVENT не получает игровых tools.
 * **LLM provider seam:** провайдер-специфичный рендер/разбор — `LlmProviderAdapter`. Общий OpenAI-совместимый рендер/парсинг живёт в базовом `OpenAiCompatibleLlmAdapter`; тонкие per-provider impl'ы задают только модель, `tool_choice` и `prompt_cache_key`: `MistralLlmAdapter` (cloud — `any`, с cache key) и `LmStudioLlmAdapter` (local LM Studio — `required`, без cache key). Это бывш. `CompanionLlmDialect`/`MistralToolCallDialect`, переименованы. У `LlmGateway` две операции: `submit` (tool-calling сознания) и `compressMidTermMemory(LlmRequest) → CompletableFuture<String>` (текстовый ответ для сжатия памяти; адаптер даёт `parseText`, тело — тот же `buildRequestBody` с пустыми `tools`).
 * **Long-term память реализована:** `LongTermMemory` (холдер), `MidTermTopicMemory.evictOverflow` (per-topic cap), `MidTermEvictionListener` (гейтвей отдаёт overflow, сам LLM не зовёт) и `MidTermToLongTermConsolidator` (буфер→порог→`compressMidTermMemory`→валидация `SUMMARY_MAX_CHARS`→atomic `replaceLongTermSummary`; провал → буфер потерян, summary цела, `SpeechGateway` system-notification). Все лимиты памяти — в `CompanionMemoryLimits`. Подключение listener'а к гейтвею — при bootstrap (`CompanionSubsystemGate`).

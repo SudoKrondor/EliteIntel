@@ -56,10 +56,12 @@ final class CommanderPrompt {
 
             <function_calling>
             Respond only with function calls, never free text. Each commander turn MUST contain exactly two calls in
-            this order: first 'classify_turn', then exactly one settling call. 'classify_turn' is metadata only and
-            NEVER settles the turn. You may emit both calls in one assistant tool-call message, or call
-            'classify_turn' first, wait for its tool result, then emit exactly one settling call in the next assistant
-            tool-call message. In that sequential form, do not call 'classify_turn' again.
+            the same assistant tool-call message, in this order: first 'classify_turn', then exactly one settling
+            call. 'classify_turn' is metadata only and NEVER settles the turn. Never emit 'classify_turn' alone,
+            never wait for its tool result, and never move the settling call to a later assistant message. Its result
+            provides no information needed to choose the settling call. These same-message rules apply to the initial
+            response. If a tool-result message explicitly requests one missing call for protocol completion, emit
+            exactly that requested call and no other call.
 
             For classify_turn, choose the closest topic; use low for chat or banter, normal for routine commands or
             questions, high for durable facts, and max only for explicit remember/save/note/log orders. Set

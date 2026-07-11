@@ -32,15 +32,14 @@ import java.util.stream.Collectors;
  * only when it is one or more tool-calls whose names were actually offered this turn.
  * <p>
  * It also enforces the classify-first protocol: when {@code classify_turn} is among the offered tools (a
- * classifying turn - narration never offers it), a response without a {@code classify_turn} call draws the
- * same single repair/retry. When the partial response contains valid offered tool-calls, the retry replays them
- * as an {@code assistant(tool_calls) -> tool(result)} continuation and rejects them without execution. This keeps
- * the system prompt and commander history unchanged while giving the model protocol-valid feedback.
+ * classifying turn - narration never offers it), the completed logical result must contain exactly one
+ * {@code classify_turn} and exactly one settling call.
  * <p>
- * A classifying turn may arrive in two native tool-call rounds: {@code classify_turn} first, then its settling
- * call after a tool result. A classify-only response is therefore not repaired or executed. The gateway replays
- * it with a truthful pending result, makes one settling-only follow-up request, and returns the expected ordered
- * pair to the thought. The protocol transcript is request-local and is never written to durable memory.
+ * A provider may split either side of that pair into a second native tool-call round. A response containing only
+ * {@code classify_turn}, or only one valid offered settling call, is therefore not repaired or executed. The
+ * gateway replays that call with a truthful pending result, requests only the missing call, and returns the
+ * expected classify-first pair to the thought. Other incomplete responses retain the single repair/retry. Every
+ * local protocol transcript is request-local and is never written to durable memory.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future. Cancelling that future interrupts the exact executor task and, through
@@ -187,7 +186,8 @@ public final class CompanionLlmGateway implements LlmGateway {
     /** Which tool-call shape the current physical LLM round must produce. */
     private enum RoundExpectation {
         INITIAL,
-        SETTLING_AFTER_CLASSIFY
+        SETTLING_AFTER_CLASSIFY,
+        CLASSIFY_AFTER_SETTLING
     }
 
     /** A single send/parse round paired with the defect it was found to have. */
@@ -195,32 +195,44 @@ public final class CompanionLlmGateway implements LlmGateway {
 
     private LlmResult process(LlmRequest request) {
         ensureActive();
-        Attempt first = attempt(request, 1, RoundExpectation.INITIAL);
-        if (first.defect() == Defect.NONE) {
-            return first.result();
+        Attempt firstAttempt = attempt(request, 1, RoundExpectation.INITIAL);
+        if (firstAttempt.defect() == Defect.NONE) {
+            return firstAttempt.result();
         }
-        if (first.defect() == Defect.MISSING_SETTLING) {
-            return continueAfterClassification(request, first, 2);
+        if (firstAttempt.defect() == Defect.MISSING_SETTLING) {
+            return continueAfterClassification(request, firstAttempt, 2);
+        }
+        if (isSettlingOnly(firstAttempt)) {
+            return continueAfterSettlingCall(request, firstAttempt, 2);
         }
         // One protocol-valid repair/retry. Surface it on the diagnostics surface (attributed to the owning
         // thought's trace) so this second physical call is visible as part of the round.
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
-        String retryKind = canContinue(first) ? "assistant/tool continuation" : "unchanged request";
-        CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + first.defect() + " -> retry (" + retryKind + ")");
+        String retryKind = canBuildRejectedContinuation(firstAttempt)
+                ? "assistant/tool continuation"
+                : "unchanged request";
+        CompanionDiagnostics.debug(trace, "llm", "attempt#1 " + firstAttempt.defect()
+                + " calls=" + CompanionDiagnostics.calls(firstAttempt.result().toolInvocations())
+                + " -> retry (" + retryKind + ")");
         log.warn("LLM response has defect {} (status={}, tool-calls={}); retrying once via {}",
-                first.defect(), first.result().status(), first.result().toolInvocations().size(), retryKind);
-        LlmRequest repaired = repair(request, first);
-        Attempt second = attempt(repaired, 2, RoundExpectation.INITIAL);
+                firstAttempt.defect(), firstAttempt.result().status(),
+                firstAttempt.result().toolInvocations().size(), retryKind);
+        LlmRequest repairedRequest = buildRepairRequest(request, firstAttempt);
+        Attempt secondAttempt = attempt(repairedRequest, 2, RoundExpectation.INITIAL);
 
-        if (second.defect() == Defect.NONE) {
+        if (secondAttempt.defect() == Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#2 ok");
-            return second.result();
+            return secondAttempt.result();
         }
-        if (second.defect() == Defect.MISSING_SETTLING) {
-            return continueAfterClassification(repaired, second, 3);
+        if (secondAttempt.defect() == Defect.MISSING_SETTLING) {
+            return continueAfterClassification(repairedRequest, secondAttempt, 3);
         }
-        CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + second.defect() + " -> INVALID");
-        log.warn("LLM response still has defect {} after retry; returning INVALID_RESPONSE", second.defect());
+        if (isSettlingOnly(secondAttempt)) {
+            return continueAfterSettlingCall(repairedRequest, secondAttempt, 3);
+        }
+        CompanionDiagnostics.debug(trace, "llm", "attempt#2 still " + secondAttempt.defect()
+                + " calls=" + CompanionDiagnostics.calls(secondAttempt.result().toolInvocations()) + " -> INVALID");
+        log.warn("LLM response still has defect {} after retry; returning INVALID_RESPONSE", secondAttempt.defect());
         return INVALID;
     }
 
@@ -265,8 +277,8 @@ public final class CompanionLlmGateway implements LlmGateway {
      * {@link Defect#MISSING_CLASSIFY} when the turn offered {@code classify_turn} (a classifying turn) but the
      * response does not call it; {@link Defect#MISSING_SETTLING} when it calls exactly one
      * {@code classify_turn} and nothing else (a valid native continuation point); {@link Defect#NONE} when the
-     * classifying turn contains exactly one classify and exactly one settling call. A settling follow-up must
-     * contain exactly one non-classify offered call.
+     * classifying turn contains exactly one classify and exactly one settling call. A one-sided follow-up must
+     * contain exactly the one missing offered call.
      */
     private Defect defectOf(LlmResult result, LlmRequest request, RoundExpectation expectation) {
         if (!result.isValid() || result.toolInvocations().isEmpty()) {
@@ -283,6 +295,11 @@ public final class CompanionLlmGateway implements LlmGateway {
         }
         if (expectation == RoundExpectation.SETTLING_AFTER_CLASSIFY) {
             return result.toolInvocations().size() == 1 && !isClassify(result.toolInvocations().get(0))
+                    ? Defect.NONE
+                    : Defect.MALFORMED;
+        }
+        if (expectation == RoundExpectation.CLASSIFY_AFTER_SETTLING) {
+            return result.toolInvocations().size() == 1 && isClassify(result.toolInvocations().get(0))
                     ? Defect.NONE
                     : Defect.MALFORMED;
         }
@@ -313,28 +330,78 @@ public final class CompanionLlmGateway implements LlmGateway {
      * function. The pending result is deliberately not an execution acknowledgement: the thought receives the
      * completed pair and remains the sole owner of classification, memory, safety, and game side effects.
      */
-    private LlmResult continueAfterClassification(LlmRequest request, Attempt classifyOnly, int attemptNumber) {
+    private LlmResult continueAfterClassification(
+            LlmRequest request,
+            Attempt classifyOnlyAttempt,
+            int attemptNumber
+    ) {
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
-        LlmToolInvocation classify = onlyInvocation(classifyOnly.result());
-        if (classify == null || !isClassify(classify)) {
+        LlmToolInvocation classifyCall = onlyInvocation(classifyOnlyAttempt.result());
+        if (classifyCall == null || !isClassify(classifyCall)) {
             return INVALID; // defensive: MISSING_SETTLING is defined as exactly one classify call
         }
-        LlmToolInvocation replayedClassify = withReplayIds(List.of(classify), "gateway-classify-",
+        LlmToolInvocation replayedClassifyCall = withReplayIds(List.of(classifyCall), "gateway-classify-",
                 usedToolCallIds(request.messages())).get(0);
         CompanionDiagnostics.debug(trace, "llm", "attempt#" + (attemptNumber - 1)
-                + " classify-only -> settling continuation");
-        LlmRequest continuation = classificationContinuation(request, replayedClassify);
-        Attempt settling = attempt(continuation, attemptNumber, RoundExpectation.SETTLING_AFTER_CLASSIFY);
-        if (settling.defect() != Defect.NONE) {
+                + " classify-only -> settling continuation: "
+                + CompanionDiagnostics.calls(List.of(replayedClassifyCall)));
+        LlmRequest continuationRequest = buildSettlingContinuationRequest(request, replayedClassifyCall);
+        Attempt settlingAttempt = attempt(
+                continuationRequest, attemptNumber, RoundExpectation.SETTLING_AFTER_CLASSIFY);
+        if (settlingAttempt.defect() != Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " settling continuation "
-                    + settling.defect() + " -> INVALID");
-            log.warn("LLM settling continuation has defect {}; returning INVALID_RESPONSE", settling.defect());
+                    + settlingAttempt.defect() + " calls="
+                    + CompanionDiagnostics.calls(settlingAttempt.result().toolInvocations()) + " -> INVALID");
+            log.warn("LLM settling continuation has defect {}; returning INVALID_RESPONSE", settlingAttempt.defect());
             return INVALID;
         }
-        LlmToolInvocation settlingCall = settling.result().toolInvocations().get(0);
-        CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " settling continuation ok");
-        return new LlmResult(LlmResult.Status.OK, List.of(replayedClassify, settlingCall),
-                settling.result().finishReason(), settling.result().droppedText());
+        LlmToolInvocation settlingCall = settlingAttempt.result().toolInvocations().get(0);
+        CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " settling continuation ok: "
+                + CompanionDiagnostics.calls(List.of(settlingCall)));
+        return new LlmResult(LlmResult.Status.OK, List.of(replayedClassifyCall, settlingCall),
+                settlingAttempt.result().finishReason(), settlingAttempt.result().droppedText());
+    }
+
+    /**
+     * Completes a provider-deviant {@code settling call -> tool result -> classify_turn} exchange without executing
+     * either function. The returned result is normalized to the classify-first order expected by the thought.
+     */
+    private LlmResult continueAfterSettlingCall(
+            LlmRequest request,
+            Attempt settlingOnlyAttempt,
+            int attemptNumber
+    ) {
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        LlmToolInvocation settlingCall = onlyInvocation(settlingOnlyAttempt.result());
+        if (settlingCall == null || isClassify(settlingCall)) {
+            return INVALID; // defensive: settling-only means exactly one non-classify offered call
+        }
+        LlmToolInvocation replayedSettlingCall = withReplayIds(List.of(settlingCall), "gateway-settling-",
+                usedToolCallIds(request.messages())).get(0);
+        CompanionDiagnostics.debug(trace, "llm", "attempt#" + (attemptNumber - 1)
+                + " settling-only -> classify continuation: "
+                + CompanionDiagnostics.calls(List.of(replayedSettlingCall)));
+        LlmRequest continuationRequest = buildClassificationContinuationRequest(request, replayedSettlingCall);
+        Attempt classificationAttempt = attempt(
+                continuationRequest, attemptNumber, RoundExpectation.CLASSIFY_AFTER_SETTLING);
+        if (classificationAttempt.defect() != Defect.NONE) {
+            CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " classify continuation "
+                    + classificationAttempt.defect() + " calls="
+                    + CompanionDiagnostics.calls(classificationAttempt.result().toolInvocations()) + " -> INVALID");
+            log.warn("LLM classify continuation has defect {}; returning INVALID_RESPONSE",
+                    classificationAttempt.defect());
+            return INVALID;
+        }
+        LlmToolInvocation classifyCall = classificationAttempt.result().toolInvocations().get(0);
+        CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " classify continuation ok: "
+                + CompanionDiagnostics.calls(List.of(classifyCall)));
+        return new LlmResult(LlmResult.Status.OK, List.of(classifyCall, replayedSettlingCall),
+                classificationAttempt.result().finishReason(), classificationAttempt.result().droppedText());
+    }
+
+    private static boolean isSettlingOnly(Attempt attempt) {
+        LlmToolInvocation invocation = onlyInvocation(attempt.result());
+        return attempt.defect() == Defect.MISSING_CLASSIFY && invocation != null && !isClassify(invocation);
     }
 
     private static LlmToolInvocation onlyInvocation(LlmResult result) {
@@ -349,12 +416,31 @@ public final class CompanionLlmGateway implements LlmGateway {
      * Builds the local, non-executing continuation for a classify-only response. The tool result truthfully says
      * that execution is pending; it exists only to let a provider issue the next native function call.
      */
-    private static LlmRequest classificationContinuation(LlmRequest request, LlmToolInvocation classify) {
+    private static LlmRequest buildSettlingContinuationRequest(
+            LlmRequest request,
+            LlmToolInvocation classifyCall
+    ) {
         List<LlmMessage> messages = new ArrayList<>(request.messages());
-        messages.add(LlmMessage.assistantToolCalls(List.of(classify)));
-        messages.add(LlmMessage.toolResult(classify.id(),
+        messages.add(LlmMessage.assistantToolCalls(List.of(classifyCall)));
+        messages.add(LlmMessage.toolResult(classifyCall.id(),
                 "{\"status\":\"received\",\"execution\":\"pending\","
                         + "\"next\":\"call exactly one settling function\"}"));
+        return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
+    }
+
+    /**
+     * Builds the local, non-executing continuation for a settling-only response. The tool result keeps the offered
+     * action pending while asking the provider for only the missing classification metadata.
+     */
+    private static LlmRequest buildClassificationContinuationRequest(
+            LlmRequest request,
+            LlmToolInvocation settlingCall
+    ) {
+        List<LlmMessage> messages = new ArrayList<>(request.messages());
+        messages.add(LlmMessage.assistantToolCalls(List.of(settlingCall)));
+        messages.add(LlmMessage.toolResult(settlingCall.id(),
+                "{\"status\":\"received\",\"execution\":\"pending\","
+                        + "\"next\":\"call classify_turn only\"}"));
         return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
     }
 
@@ -362,8 +448,8 @@ public final class CompanionLlmGateway implements LlmGateway {
      * Builds a native repair continuation for a response that omitted {@code classify_turn}. Replayed calls were
      * never executed, so their tool result is truthfully rejected.
      */
-    private LlmRequest repair(LlmRequest request, Attempt failedAttempt) {
-        if (!canContinue(failedAttempt)) {
+    private LlmRequest buildRepairRequest(LlmRequest request, Attempt failedAttempt) {
+        if (!canBuildRejectedContinuation(failedAttempt)) {
             return request;
         }
         List<LlmToolInvocation> replayedCalls = withReplayIds(failedAttempt.result().toolInvocations(),
@@ -377,7 +463,7 @@ public final class CompanionLlmGateway implements LlmGateway {
         return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
     }
 
-    private static boolean canContinue(Attempt failedAttempt) {
+    private static boolean canBuildRejectedContinuation(Attempt failedAttempt) {
         return failedAttempt.defect() != Defect.MALFORMED
                 && failedAttempt.result().isValid()
                 && !failedAttempt.result().toolInvocations().isEmpty();

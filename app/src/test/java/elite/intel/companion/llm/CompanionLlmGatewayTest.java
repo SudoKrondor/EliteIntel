@@ -1,6 +1,8 @@
 package elite.intel.companion.llm;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
@@ -245,8 +247,12 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void missingClassifyTurnIsRepairedAsAssistantToolContinuation() throws Exception {
-        ScriptedAdapter adapter = new ScriptedAdapter(ok("speak"), ok("classify_turn", "speak"));
+    void settlingOnlyContinuesWithPendingToolResult() throws Exception {
+        LlmResult settlingOnly = new LlmResult(LlmResult.Status.OK,
+                List.of(new LlmToolInvocation("settling-1", "speak", new JsonObject())));
+        LlmResult classifyOnly = new LlmResult(LlmResult.Status.OK,
+                List.of(new LlmToolInvocation("classify-1", "classify_turn", new JsonObject())));
+        ScriptedAdapter adapter = new ScriptedAdapter(settlingOnly, classifyOnly);
         LlmRequest request = requestWithMessages(
                 List.of(
                         LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
@@ -260,12 +266,24 @@ class CompanionLlmGatewayTest {
         assertEquals(2, sends.get());
         assertEquals(List.of("classify_turn", "speak"),
                 result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
-        assertRejectedContinuation(request, adapter.lastRequest, "speak", "c1", "classify_turn must be called");
+        assertEquals(List.of("classify-1", "settling-1"),
+                result.toolInvocations().stream().map(LlmToolInvocation::id).toList());
+        assertPendingSettlingContinuation(request, adapter.lastRequest, "speak", "settling-1");
     }
 
     @Test
-    void classifyStillMissingAfterContinuationYieldsInvalidResponse() throws Exception {
+    void settlingOnlyContinuationRejectsAnotherSettlingCall() throws Exception {
         LlmResult result = run(new ScriptedAdapter(ok("speak"), ok("speak")),
+                requestOffering("speak", "classify_turn"));
+
+        assertFalse(result.isValid());
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
+        assertEquals(2, sends.get());
+    }
+
+    @Test
+    void settlingOnlyContinuationRejectsClassificationWithAnExtraSettlingCall() throws Exception {
+        LlmResult result = run(new ScriptedAdapter(ok("speak"), ok("classify_turn", "speak")),
                 requestOffering("speak", "classify_turn"));
 
         assertFalse(result.isValid());
@@ -303,6 +321,111 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
+    void lmStudioClassifyThenNavigationResponsesCompleteOneLogicalRequest() throws Exception {
+        JsonObject classifyResponse = JsonParser.parseString("""
+                {
+                  "id": "chatcmpl-48y8ierfdmbzx6ftg8lc6e",
+                  "object": "chat.completion",
+                  "created": 1783786749,
+                  "model": "google/gemma-4-e4b",
+                  "choices": [{
+                    "index": 0,
+                    "message": {
+                      "role": "assistant",
+                      "content": "",
+                      "tool_calls": [{
+                        "type": "function",
+                        "id": "681212727",
+                        "function": {
+                          "name": "classify_turn",
+                          "arguments": "{\\\"canonical_fact\\\":\\\"\\\",\\\"importance\\\":\\\"normal\\\",\\\"is_question\\\":false,\\\"topic\\\":\\\"navigation\\\"}"
+                        }
+                      }]
+                    },
+                    "logprobs": null,
+                    "finish_reason": "tool_calls"
+                  }],
+                  "usage": {
+                    "prompt_tokens": 1966,
+                    "completion_tokens": 34,
+                    "total_tokens": 2000,
+                    "completion_tokens_details": {"reasoning_tokens": 0}
+                  },
+                  "stats": {},
+                  "system_fingerprint": "google/gemma-4-e4b"
+                }
+                """).getAsJsonObject();
+        JsonObject navigationResponse = JsonParser.parseString("""
+                {
+                  "id": "chatcmpl-9c6emb9u6hbltt3ckzd1i",
+                  "object": "chat.completion",
+                  "created": 1783786751,
+                  "model": "google/gemma-4-e4b",
+                  "choices": [{
+                    "index": 0,
+                    "message": {
+                      "role": "assistant",
+                      "content": "",
+                      "tool_calls": [{
+                        "type": "function",
+                        "id": "318357260",
+                        "function": {
+                          "name": "navigate_to_squadron_carrier",
+                          "arguments": "{}"
+                        }
+                      }]
+                    },
+                    "logprobs": null,
+                    "finish_reason": "tool_calls"
+                  }],
+                  "usage": {
+                    "prompt_tokens": 2025,
+                    "completion_tokens": 15,
+                    "total_tokens": 2040,
+                    "completion_tokens_details": {"reasoning_tokens": 0}
+                  },
+                  "stats": {},
+                  "system_fingerprint": "google/gemma-4-e4b"
+                }
+                """).getAsJsonObject();
+        Deque<JsonObject> providerResponses = new ArrayDeque<>(List.of(classifyResponse, navigationResponse));
+        List<JsonObject> renderedRequests = new ArrayList<>();
+        LlmTransport transport = requestBody -> {
+            renderedRequests.add(JsonParser.parseString(requestBody).getAsJsonObject());
+            return providerResponses.removeFirst();
+        };
+        LlmRequest request = requestWithMessages(
+                List.of(
+                        LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
+                        LlmMessage.of(LlmMessageRole.USER, "navigate to the squadron carrier")),
+                "classify_turn", "navigate_to_squadron_carrier");
+
+        LlmResult result = new CompanionLlmGateway(
+                new LmStudioLlmAdapter("google/gemma-4-e4b"), transport, Runnable::run)
+                .submit(request)
+                .get();
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("classify_turn", "navigate_to_squadron_carrier"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals(List.of("681212727", "318357260"),
+                result.toolInvocations().stream().map(LlmToolInvocation::id).toList());
+        assertEquals("navigation", result.toolInvocations().get(0).arguments().get("topic").getAsString());
+        assertTrue(result.toolInvocations().get(1).arguments().isEmpty());
+        assertEquals(2, renderedRequests.size());
+
+        JsonArray continuationMessages = renderedRequests.get(1).getAsJsonArray("messages");
+        JsonObject replayedClassify = continuationMessages.get(2).getAsJsonObject()
+                .getAsJsonArray("tool_calls").get(0).getAsJsonObject();
+        JsonObject pendingToolResult = continuationMessages.get(3).getAsJsonObject();
+        assertEquals("681212727", replayedClassify.get("id").getAsString());
+        assertEquals("classify_turn", replayedClassify.getAsJsonObject("function").get("name").getAsString());
+        assertEquals("tool", pendingToolResult.get("role").getAsString());
+        assertEquals("681212727", pendingToolResult.get("tool_call_id").getAsString());
+        assertTrue(pendingToolResult.get("content").getAsString().contains("\"execution\":\"pending\""));
+    }
+
+    @Test
     void classifyOnlyContinuationSynthesizesAnIdWhenProviderOmitsOne() throws Exception {
         LlmResult classify = new LlmResult(LlmResult.Status.OK,
                 List.of(new LlmToolInvocation(null, "classify_turn", new JsonObject())));
@@ -321,8 +444,9 @@ class CompanionLlmGatewayTest {
 
     @Test
     void repairCanContinueThroughAClassifyOnlyRound() throws Exception {
-        ScriptedAdapter adapter = new ScriptedAdapter(ok("speak"), ok("classify_turn"), ok("speak"));
-        LlmRequest request = requestOffering("speak", "classify_turn");
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                ok("speak", "interrupt"), ok("classify_turn"), ok("speak"));
+        LlmRequest request = requestOffering("speak", "interrupt", "classify_turn");
 
         LlmResult result = run(adapter, request);
 
@@ -332,11 +456,11 @@ class CompanionLlmGatewayTest {
         assertEquals("gateway-classify-1", result.toolInvocations().get(0).id());
         assertEquals(3, sends.get());
         List<LlmMessage> continuation = adapter.lastRequest.messages();
-        assertEquals(List.of("c1", "gateway-classify-1"), continuation.stream()
+        assertEquals(List.of("c1", "c2", "gateway-classify-1"), continuation.stream()
                 .flatMap(message -> message.toolCalls().stream())
                 .map(LlmToolInvocation::id)
                 .toList(), "every assistant tool call in the local flow must have a distinct id");
-        assertEquals(List.of("c1", "gateway-classify-1"), continuation.stream()
+        assertEquals(List.of("c1", "c2", "gateway-classify-1"), continuation.stream()
                 .map(LlmMessage::toolCallId)
                 .filter(java.util.Objects::nonNull)
                 .toList(), "each tool result must link to its corresponding unique call");
@@ -363,10 +487,10 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
-    void continuationSynthesizesAnIdWhenProviderOmitsOne() throws Exception {
+    void settlingOnlyContinuationSynthesizesAnIdWhenProviderOmitsOne() throws Exception {
         LlmResult first = new LlmResult(LlmResult.Status.OK,
                 List.of(new LlmToolInvocation(null, "speak", new JsonObject())));
-        ScriptedAdapter adapter = new ScriptedAdapter(first, ok("classify_turn", "speak"));
+        ScriptedAdapter adapter = new ScriptedAdapter(first, ok("classify_turn"));
         LlmRequest request = requestWithMessages(
                 List.of(
                         LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
@@ -376,8 +500,10 @@ class CompanionLlmGatewayTest {
         LlmResult result = run(adapter, request);
 
         assertTrue(result.isValid());
-        assertRejectedContinuation(request, adapter.lastRequest, "speak", "repair-rejected-call-1",
-                "classify_turn must be called");
+        assertEquals(List.of("classify_turn", "speak"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals("gateway-settling-1", result.toolInvocations().get(1).id());
+        assertPendingSettlingContinuation(request, adapter.lastRequest, "speak", "gateway-settling-1");
     }
 
     @Test
@@ -426,37 +552,6 @@ class CompanionLlmGatewayTest {
         assertEquals(request.messages(), retried);
     }
 
-    /** Verifies that the repair is an ephemeral, protocol-valid assistant/tool continuation. */
-    private static void assertRejectedContinuation(
-            LlmRequest original,
-            LlmRequest retried,
-            String expectedToolName,
-            String expectedToolCallId,
-            String expectedReason
-    ) {
-        int continuationIndex = original.messages().size();
-        List<LlmMessage> messages = retried.messages();
-        assertEquals(continuationIndex + 2, messages.size());
-        assertEquals(original.messages(), messages.subList(0, continuationIndex),
-                "repair must preserve the durable prompt prefix byte-for-byte");
-        List<LlmMessageRole> expectedRoles = new ArrayList<>(
-                original.messages().stream().map(LlmMessage::role).toList());
-        expectedRoles.add(LlmMessageRole.ASSISTANT);
-        expectedRoles.add(LlmMessageRole.TOOL);
-        assertEquals(expectedRoles, messages.stream().map(LlmMessage::role).toList());
-
-        LlmMessage assistant = messages.get(continuationIndex);
-        assertEquals(1, assistant.toolCalls().size());
-        assertEquals(expectedToolName, assistant.toolCalls().get(0).name());
-        assertEquals(expectedToolCallId, assistant.toolCalls().get(0).id());
-
-        LlmMessage tool = messages.get(continuationIndex + 1);
-        assertEquals(expectedToolCallId, tool.toolCallId());
-        assertTrue(tool.content().contains("\"status\":\"rejected\""));
-        assertFalse(tool.content().contains("accepted"));
-        assertTrue(tool.content().contains(expectedReason));
-    }
-
     /** Verifies the genuine classify-only continuation, which is pending rather than rejected or executed. */
     private static void assertPendingClassificationContinuation(
             LlmRequest original,
@@ -478,6 +573,31 @@ class CompanionLlmGatewayTest {
         assertTrue(tool.content().contains("\"status\":\"received\""));
         assertTrue(tool.content().contains("\"execution\":\"pending\""));
         assertTrue(tool.content().contains("call exactly one settling function"));
+        assertFalse(tool.content().contains("rejected"));
+    }
+
+    /** Verifies a settling-only continuation, which keeps the action pending while requesting classification. */
+    private static void assertPendingSettlingContinuation(
+            LlmRequest original,
+            LlmRequest continuation,
+            String settlingToolName,
+            String settlingCallId
+    ) {
+        int continuationIndex = original.messages().size();
+        List<LlmMessage> messages = continuation.messages();
+        assertEquals(continuationIndex + 2, messages.size());
+        assertEquals(original.messages(), messages.subList(0, continuationIndex),
+                "continuation must preserve the durable prompt prefix byte-for-byte");
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(continuationIndex).role());
+        assertEquals(1, messages.get(continuationIndex).toolCalls().size());
+        assertEquals(settlingToolName, messages.get(continuationIndex).toolCalls().get(0).name());
+        assertEquals(settlingCallId, messages.get(continuationIndex).toolCalls().get(0).id());
+        LlmMessage tool = messages.get(continuationIndex + 1);
+        assertEquals(LlmMessageRole.TOOL, tool.role());
+        assertEquals(settlingCallId, tool.toolCallId());
+        assertTrue(tool.content().contains("\"status\":\"received\""));
+        assertTrue(tool.content().contains("\"execution\":\"pending\""));
+        assertTrue(tool.content().contains("call classify_turn only"));
         assertFalse(tool.content().contains("rejected"));
     }
 }
