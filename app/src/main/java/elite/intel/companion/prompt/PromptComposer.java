@@ -155,7 +155,7 @@ public final class PromptComposer {
      * relevant ones are surfaced as an inline {@code <facts>} block in the final user message.
      * <p>
      * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant} (this includes
-     * a {@code <no_reply/>}/{@code <cut_off/>} boundary, which is recorded as a COMPANION entry - the omitted
+     * a {@code <no_reply/>}/{@code <cut_off/>}/{@code <processing/>} boundary, recorded as a COMPANION entry - the
      * reply - so it needs no special-casing here); a recorded model tool-call ({@code COMPANION} carrying a
      * {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)} immediately followed by its {@code tool} result
      * (matched by tool-call id, because an over-long result is re-written asynchronously by the oversized-gist
@@ -210,7 +210,7 @@ public final class PromptComposer {
                 // the commander said the raw event payload.
                 case EVENT -> out.add(LlmMessage.of(LlmMessageRole.USER,
                         PromptXml.element("event_data", entry.content())));
-                // A turn's omitted reply (a <no_reply/>/<cut_off/> boundary) is now a COMPANION entry, handled by
+                // A turn boundary (<no_reply/>/<cut_off/>/<processing/>) is a COMPANION entry, handled by
                 // the COMPANION branch above as a plain assistant message. Every SYSTEM entry left here is
                 // non-dialogue bookkeeping (a dangerous-action note, the searchable summary), inlined as ambient
                 // context so the flow keeps a single leading system message.

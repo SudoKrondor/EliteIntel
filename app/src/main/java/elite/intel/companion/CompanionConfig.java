@@ -30,8 +30,8 @@ public final class CompanionConfig {
     private static final int SHORT_TERM_MEMORY_SIZE = 30;
     /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
-    /** Max commander thoughts that may run concurrently on the commander lane. */
-    private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
+    /** Max read-only query handlers that may execute concurrently after their commander turns are classified. */
+    private static final int MAX_PARALLEL_QUERY_EXECUTIONS = 4;
     /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
     private static final double SEMANTIC_RECALL_FLOOR = 0.85;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
@@ -103,9 +103,9 @@ public final class CompanionConfig {
         return MID_TERM_MEMORY_SIZE_PER_TOPIC;
     }
 
-    /** Max commander thoughts that may run concurrently on the commander lane. */
-    public static int maxParallelCommanderThoughts() {
-        return MAX_PARALLEL_COMMANDER_THOUGHTS;
+    /** Max read-only query handlers that may execute concurrently. */
+    public static int maxParallelQueryExecutions() {
+        return MAX_PARALLEL_QUERY_EXECUTIONS;
     }
 
     /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */

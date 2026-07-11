@@ -5,6 +5,7 @@ import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
@@ -23,12 +24,10 @@ import java.util.concurrent.Executors;
  * {@code Thought} decides what is spoken (via the {@code speak} system function), and the raw result flows
  * back as a tool result.
  * <p>
- * Threading: every tool runs on a parallel pool so a slow handler (e.g. a multi-minute Spansh search) never
- * blocks another tool's {@code handle()} - a commander can drop out of supercruise or shift power while a
- * route calculates. The gateway does not serialize game-input commands itself: the hands layer already does
- * (a keystroke command only publishes a {@code GameInputSequenceEvent}, and {@code InputSequenceExecutor}
- * drains those on a single thread), so the actual key presses stay sequential regardless of dispatch order.
- * System functions are not game input; the speech/memory gateways they call own their own ordering.
+ * Threading: commands/macros run on one serialized action lane, so multi-step game/session side effects retain
+ * submission order. Read-only queries run on a bounded parallel pool, so a slow lookup does not block unrelated
+ * queries or the next commander's cognitive turn. Small companion system functions execute on the caller's
+ * cognitive thread; they dispatch metadata/speech and are not remote game handlers.
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
@@ -47,14 +46,15 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
     private final Executor queryLane;
 
     /**
-     * Production: handler maps + system-function registry; parallel pools so no slow handler blocks another.
+     * Production: handler maps + system-function registry, a serialized action lane, and a bounded query pool.
      */
     public CompanionExecutionGateway() {
         this(CommandHandlerFactory.getInstance().registerCommandHandlers(),
                 QueryHandlerFactory.getInstance().registerQueryHandlers(),
                 loadedSystemFunctions(),
-                Executors.newCachedThreadPool(daemon("companion-action")),
-                Executors.newCachedThreadPool(daemon("companion-query")));
+                Executors.newSingleThreadExecutor(daemon("companion-action")),
+                Executors.newFixedThreadPool(CompanionConfig.maxParallelQueryExecutions(),
+                        daemon("companion-query")));
     }
 
     /** Test seam: inject handler/system-function maps and executors (e.g. synchronous). */
@@ -84,7 +84,7 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
         }
         IntelAction systemFunction = systemFunctions.get(toolName);
         if (systemFunction != null) {
-            return run(queryLane, systemFunction, request);
+            return run(Runnable::run, systemFunction, request);
         }
         return CompletableFuture.failedFuture(
                 new IllegalArgumentException("Unknown companion tool: " + toolName));

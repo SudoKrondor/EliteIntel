@@ -25,8 +25,8 @@ import java.util.function.Supplier;
  * Session-only: nothing is persisted to disk.
  * <p>
  * Thread-safety: the public methods are {@code synchronized} because writers arrive from several threads -
- * the EVENT/NARRATION lane workers and the bounded pool of COMMANDER lane workers (several commander
- * thoughts run at once). The internal stores are plain collections, so all access is serialized here; reads
+ * the EVENT worker, ordered COMMANDER cognition, and detached command/query completions. The internal stores
+ * are plain collections, so all access is serialized here; reads
  * return snapshots ({@code List.copyOf}), so a caller iterates outside the lock safely.
  */
 public final class SessionMemoryGateway implements MemoryGateway {

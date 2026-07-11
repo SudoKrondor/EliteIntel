@@ -47,8 +47,9 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("You may emit both calls in one assistant tool-call message"));
         assertTrue(text.contains("wait for its tool result"));
         assertTrue(text.contains("do not call 'classify_turn' again"));
-        // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
+        // Omitted/pending boundaries are explained so the model neither repeats them nor treats them as speech.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
+        assertTrue(text.contains("<processing/> means that turn's query"));
     }
 
     @Test

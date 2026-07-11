@@ -28,6 +28,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.util.Cypher;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.ui.event.AppLogEvent;
+import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +96,7 @@ public final class CompanionRoutingHarness {
     private final AtomicLong firstToolNanos = new AtomicLong();
 
     private volatile TurnTiming lastTurnTiming = new TurnTiming(-1, -1, false);
+    private volatile String lastMatchInput = "";
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -209,6 +211,7 @@ public final class CompanionRoutingHarness {
         turnSpeech.clear();
         turnLatencyDiagnostics.clear();
         firstToolNanos.set(0L);
+        lastMatchInput = "";
         lastTurnTiming = new TurnTiming(-1, -1, false);
         long turnStartedNanos = System.nanoTime();
         GameEventBus.publish(new UserInputEvent(input));
@@ -249,6 +252,12 @@ public final class CompanionRoutingHarness {
     @Subscribe
     public void onAppLogDebug(AppLogDebugEvent event) {
         captureLatencyDiagnostic(event.getData());
+    }
+
+    /** Captures the exact per-turn normalized input without storing it in shared companion runtime state. */
+    @Subscribe
+    public void onCommanderMatchInputChanged(CommanderMatchInputChangedEvent event) {
+        lastMatchInput = event.text();
     }
 
     private void captureLatencyDiagnostic(String line) {
@@ -310,15 +319,14 @@ public final class CompanionRoutingHarness {
     /**
      * Re-runs the semantic reducer for the turn that just failed and renders the tool names it selected. The
      * reducer is deterministic on {@code (allowedCategories, matchInput)}, so replaying it with the commander
-     * categories over {@link elite.intel.companion.mind.CompanionState#lastCommanderMatchInput() the last
-     * commander match input} (the exact normalized phrase the turn's reducer saw) reproduces that turn's
-     * selection. Best-effort: never masks the routing assertion, so any lookup failure renders as a note.
+     * categories over the last {@link CommanderMatchInputChangedEvent} value (the exact normalized phrase the
+     * turn's reducer saw) reproduces that turn's selection. Best-effort: never masks the routing assertion, so
+     * any lookup failure renders as a note.
      */
     private String reducerSelection() {
         try {
-            String matchInput = CompanionRuntime.state().lastCommanderMatchInput();
             return CompanionDiagnostics.names(CompanionRuntime.reducer().selectTools(
-                    new IntelActionAccessPolicy().allowedCategories(ThoughtSource.COMMANDER), matchInput));
+                    new IntelActionAccessPolicy().allowedCategories(ThoughtSource.COMMANDER), lastMatchInput));
         } catch (RuntimeException unavailable) {
             return "<reducer unavailable: " + unavailable.getMessage() + ">";
         }

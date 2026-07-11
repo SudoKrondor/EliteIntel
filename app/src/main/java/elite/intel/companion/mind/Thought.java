@@ -39,11 +39,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * It owns no thinking loop. Each concrete kind drives its own {@link #run}: {@link CommanderThought} the full
  * tool-calling loop with dangerous-action confirmation, {@link EventThought} a single short round (or a verbatim
- * line) that phrases a subscriber's reaction. There is no per-thought topic field: the memory tag is the global
- * conversation topic for COMMANDER and the subscriber-supplied topic for EVENT (§2.4/§2.5).
+ * line) that phrases a subscriber's reaction. COMMANDER/reflex thoughts freeze their topic before a handler
+ * detaches; EVENT uses the subscriber-supplied topic (§2.4/§2.5).
  * <p>
- * Threading: {@link #run} executes on a dispatcher lane thread; {@link #interrupt} is called from another
- * thread and cooperates via a volatile flag and by cancelling the awaited future (§2.7).
+ * Threading: the cognitive part starts on a dispatcher lane thread; detached completion may run on an execution
+ * thread. {@link #interrupt} cooperates through a volatile flag and cancellation of the owned future (§2.7).
  */
 public abstract class Thought {
 
@@ -60,7 +60,7 @@ public abstract class Thought {
 
     /** Set by {@link #interrupt} from another thread; a run honors it at step boundaries (§2.7). */
     protected volatile boolean interrupted;
-    /** The future the lane thread is currently awaiting (LLM round / confirmation wait), or null. */
+    /** The currently owned LLM, confirmation, or detached-handler future, or null. */
     protected volatile CompletableFuture<?> inFlight;
     /** Lane-thread-confined marker used to report the latency until this turn first begins tool execution. */
     private boolean firstToolStarted;
@@ -153,6 +153,20 @@ public abstract class Thought {
 
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */
     public abstract void run();
+
+    /**
+     * Starts the lane-owned lifecycle and returns its real completion. The default is synchronous; thoughts that
+     * detach slow handler work override this so the lane worker may accept the next turn while lifecycle tracking,
+     * watchdog interruption, and {@code isIdle()} continue until the detached work settles.
+     */
+    CompletableFuture<Void> startLifecycle() {
+        try {
+            run();
+            return CompletableFuture.completedFuture(null);
+        } catch (Throwable failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+    }
 
     /** COMMANDER: the live global conversation topic; EVENT/narration: the event's fixed topic. */
     protected abstract ConversationTopic memoryTopic();
@@ -295,8 +309,8 @@ public abstract class Thought {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
-    /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
-    protected JsonObject execute(LlmToolInvocation inv) {
+    /** Submits one tool-call and attributes its execution latency to this thought without awaiting it. */
+    protected CompletableFuture<JsonObject> submitExecution(LlmToolInvocation inv) {
         // Only game tools (command/query/macro) dump their call+args here; classify_turn / speak / memory_search
         // each have a dedicated, cleaner diagnostic line (classify / settle / memory-search), so their raw call
         // would only be a redundant third copy. A failure is always surfaced, whatever the tool.
@@ -308,15 +322,20 @@ public abstract class Thought {
             CompanionDiagnostics.debug(trace, "latency", "time-to-first-tool=" + elapsedSinceAcceptanceMillis() + " ms");
         }
         long executionStartedNanos = System.nanoTime();
+        CompletableFuture<JsonObject> future = dependencies.executionGateway()
+                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput()));
+        future.whenComplete((ignored, failure) -> CompanionDiagnostics.debug(trace, "exec-time",
+                inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms"));
+        return future;
+    }
+
+    /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
+    protected JsonObject execute(LlmToolInvocation inv) {
         try {
-            return dependencies.executionGateway()
-                    .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput()))
-                    .join();
+            return submitExecution(inv).join();
         } catch (RuntimeException failed) {
             CompanionDiagnostics.debug(trace, "exec", inv.name() + " failed: " + CompanionDiagnostics.truncate(String.valueOf(failed.getMessage())));
             return executionError(inv.name(), failed);
-        } finally {
-            CompanionDiagnostics.debug(trace, "exec-time", inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms");
         }
     }
 
@@ -369,6 +388,15 @@ public abstract class Thought {
         CompanionDiagnostics.debug(trace, "memory", "record reply");
         dependencies.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
+    }
+
+    /**
+     * Records an assistant-side boundary for a turn that has no immediate spoken reply. The marker prevents the
+     * next commander input from merging with this turn while detached work is still running.
+     */
+    protected void recordTurnBoundary(String marker) {
+        dependencies.memoryGateway().write(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
+                marker, MemoryImportance.LOW));
     }
 
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
@@ -434,6 +462,24 @@ public abstract class Thought {
         dependencies.memoryGateway().write(new MemoryEntry(
                 Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
                 null, null, ToolLink.result(toolCallId)));
+    }
+
+    /**
+     * Publishes a completed query pair without exposing an intermediate CALL-without-RESULT snapshot for a
+     * normally stored result. The RESULT is deliberately written first: PromptComposer ignores an orphan result,
+     * then resolves it by id once the CALL appears. A non-blank answer is voiced after both writes return.
+     *
+     * @return true when the query produced and published a textual answer
+     */
+    protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId) {
+        String answer = spokenTextOf(result);
+        if (answer.isBlank()) {
+            return false;
+        }
+        recordToolResult(toolCallId, answer);
+        recordCall(toolCallId, inv);
+        voice(answer, false);
+        return true;
     }
 
     /** The handler-provided spoken text in a tool result, or empty when absent. */

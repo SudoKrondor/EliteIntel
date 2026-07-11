@@ -4,9 +4,9 @@ package elite.intel.companion.model.memory;
  * Single owner of the turn-boundary marker literals. A boundary marker is a self-closing tag standing in for a
  * turn's missing dialogue half, so a turn is never left as a bare {@code user} line adjacent to the next one.
  * <ul>
- *   <li>{@link #NO_ANSWER} / {@link #INTERRUPTED} - the companion's own (assistant-side) omitted reply, recorded
- *       as a {@code COMPANION} short-term entry when a commander turn drew no reply or was cut off; they replay
- *       as plain {@code assistant} messages with no source-to-role indirection.</li>
+ *   <li>{@link #NO_ANSWER} / {@link #INTERRUPTED} / {@link #PROCESSING} - the companion's own (assistant-side)
+ *       boundary, recorded as a {@code COMPANION} short-term entry when a turn drew no reply, was cut off, or
+ *       detached a handler; they replay as plain {@code assistant} messages.</li>
  *   <li>{@link #CONFIRMED} - the commander-side (user) confirmation of a dangerous action, recorded as a
  *       {@code COMMANDER} entry so the executed outcome pairs with it as its own exchange.</li>
  * </ul>
@@ -24,6 +24,9 @@ public final class TurnBoundaryMarkers {
 
     /** Recorded when a commander turn was interrupted before it could reply. */
     public static final String INTERRUPTED = "<cut_off/>";
+
+    /** Recorded while a detached query or macro continues after its ordered cognitive turn has completed. */
+    public static final String PROCESSING = "<processing/>";
 
     /** Recorded as the commander's user turn when a dangerous action was confirmed, so its outcome pairs with it. */
     public static final String CONFIRMED = "<confirmed/>";

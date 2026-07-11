@@ -4,9 +4,11 @@ import com.google.gson.JsonObject;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryImportance;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A reflex: a commander input a reflex gate resolved to exactly one safe, parameterless action without the LLM -
@@ -19,12 +21,13 @@ import java.util.List;
  * its answer (via {@link #recordOutcome}) - so the reply is delivered from data, never a model's whim - and
  * records the input/call so the answer pairs with its turn on replay.
  * <p>
- * No interrupt handling (§1.9.41): the resolver only admits a fast, parameterless action, and a started action is
- * never cancelled - so a reflex simply runs to completion.
+ * The handler detaches exactly like an LLM-selected game call. A queued future is cancellable; a handler already
+ * started may finish operationally, but interruption discards its late speech and memory result.
  */
 final class ReflexThought extends Thought {
 
     private final String actionId;
+    private volatile ConversationTopic turnTopic;
 
     ReflexThought(ThoughtContext context, String actionId, ThoughtDependencies dependencies) {
         super(context, dependencies);
@@ -33,6 +36,21 @@ final class ReflexThought extends Thought {
 
     @Override
     public void run() {
+        startLifecycle().join();
+    }
+
+    /** Starts the reflex handler without retaining the ordered commander cognitive worker. */
+    @Override
+    CompletableFuture<Void> startLifecycle() {
+        try {
+            return beginReflex();
+        } catch (Throwable failure) {
+            return CompletableFuture.failedFuture(failure);
+        }
+    }
+
+    private CompletableFuture<Void> beginReflex() {
+        turnTopic = dependencies.state().globalTopic();
         LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, new JsonObject());
         if (dependencies.actionTypeResolver().resolve(actionId) == IntelActionType.QUERY) {
             // A query reflex: file the input (a query turn keeps its user turn for pair replay), run the query's
@@ -40,27 +58,71 @@ final class ReflexThought extends Thought {
             // the data, not the model.
             recordCurrentInput();
             String toolCallId = newId();
-            recordCall(toolCallId, inv);
-            JsonObject result = execute(inv);
-            recordOutcome(inv, result, List.of(), toolCallId);
-            return;
+            CompletableFuture<JsonObject> execution = submitExecution(inv);
+            boolean pendingBoundary = !execution.isDone();
+            if (pendingBoundary) {
+                recordTurnBoundary(TurnBoundaryMarkers.PROCESSING);
+            }
+            inFlight = execution;
+            if (interrupted) {
+                execution.cancel(true);
+            }
+            return execution.handle((result, failure) -> {
+                try {
+                    if (interrupted || execution.isCancelled()) {
+                        return null;
+                    }
+                    JsonObject settled = failure == null
+                            ? (result == null ? new JsonObject() : result)
+                            : executionError(inv.name(), failure);
+                    boolean answered = publishCompletedQuery(inv, settled, toolCallId);
+                    if (!pendingBoundary && !answered) {
+                        recordTurnBoundary(TurnBoundaryMarkers.NO_ANSWER);
+                    }
+                    return null;
+                } finally {
+                    if (inFlight == execution) {
+                        inFlight = null;
+                    }
+                }
+            });
         }
         // A command reflex is a side effect, not dialogue, so its call echo is never filed. But a command that
         // returns a spoken outcome (e.g. a calculated carrier route summary) is a real exchange: file the
         // imperative as the user turn and voice+remember the outcome as the companion reply - a clean pair. A
         // silent side-effect (blank outcome) files nothing. No CALL is filed either way, so there is no tool-call
         // id to pair a result with.
-        JsonObject result = execute(inv);
-        if (!spokenTextOf(result).isBlank()) {
-            recordCurrentInput();
+        CompletableFuture<JsonObject> execution = submitExecution(inv);
+        inFlight = execution;
+        if (interrupted) {
+            execution.cancel(true);
         }
-        recordOutcome(inv, result, List.of(), null);
+        return execution.handle((result, failure) -> {
+            try {
+                if (interrupted || execution.isCancelled()) {
+                    return null;
+                }
+                JsonObject settled = failure == null
+                        ? (result == null ? new JsonObject() : result)
+                        : executionError(inv.name(), failure);
+                if (!spokenTextOf(settled).isBlank()) {
+                    recordCurrentInput();
+                }
+                recordOutcome(inv, settled, List.of(), null);
+                return null;
+            } finally {
+                if (inFlight == execution) {
+                    inFlight = null;
+                }
+            }
+        });
     }
 
     /** The live global conversation topic, exactly as a commander thought tags its memory. */
     @Override
     protected ConversationTopic memoryTopic() {
-        return dependencies.state().globalTopic();
+        ConversationTopic frozen = turnTopic;
+        return frozen != null ? frozen : dependencies.state().globalTopic();
     }
 
     /**

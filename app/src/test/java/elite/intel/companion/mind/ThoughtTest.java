@@ -20,6 +20,7 @@ import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.tools.IntelActionTypeResolver;
@@ -410,6 +411,66 @@ class ThoughtTest {
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
     }
 
+    @Test
+    void interruptedDetachedCommandDiscardsItsLateOutcome() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_command", new JsonObject())));
+        CompletableFuture<JsonObject> startedHandler = new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                return false; // a started game handler may continue, but its owning thought must ignore the result
+            }
+        };
+        execution.futuresByTool.put("slow_command", startedHandler);
+        IntelActionTypeResolver asCommand = new IntelActionTypeResolver(
+                id -> "slow_command".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "start the slow command", dependencies(asCommand));
+        Thread worker = new Thread(thought::run, "thought-detached-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_command"));
+
+        thought.interrupt();
+        JsonObject late = outcomeText("late completion must stay silent");
+        startedHandler.complete(late);
+        worker.join(2000);
+
+        assertFalse(worker.isAlive(), "the thought completes when its non-cancellable handler eventually returns");
+        assertTrue(memory.writes.stream().noneMatch(e -> late.get("text_to_speech_response").getAsString()
+                        .equals(e.content())),
+                "an interrupted thought never records its handler's late outcome");
+        assertTrue(speech.requests.stream().noneMatch(r -> "late completion must stay silent".equals(r.text())),
+                "an interrupted thought never voices its handler's late outcome");
+    }
+
+    @Test
+    void detachedQueryClosesItsTurnBeforeAppendingTheLateCallResultPair() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> slowQuery = new CompletableFuture<>();
+        execution.futuresByTool.put("slow_query", slowQuery);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-query-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_query"));
+        waitUntil(() -> memory.writes.stream()
+                .anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
+
+        assertTrue(memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())),
+                "the next commander turn sees a closed processing boundary while the query is pending");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null),
+                "a pending query is not replayed with a synthetic result");
+
+        slowQuery.complete(outcomeText("system inspected"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
+                "the query CALL is appended once the real result exists");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isResult()
+                        && "system inspected".equals(e.content())),
+                "the matching RESULT is appended with the delayed CALL");
+    }
+
     // --- helpers ---
 
     private boolean hasContent(String content) {
@@ -500,8 +561,9 @@ class ThoughtTest {
     }
 
     private static final class FakeExecution implements ExecutionGateway {
-        final List<ExecutionRequest> requests = new ArrayList<>();
+        final List<ExecutionRequest> requests = new CopyOnWriteArrayList<>();
         final Map<String, JsonObject> resultsByTool = new HashMap<>();
+        final Map<String, CompletableFuture<JsonObject>> futuresByTool = new HashMap<>();
         CompanionState stateToMutate;
 
         @Override public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
@@ -512,6 +574,10 @@ class ThoughtTest {
                 if (topic != null) {
                     stateToMutate.setGlobalTopic(topic);
                 }
+            }
+            CompletableFuture<JsonObject> deferred = futuresByTool.get(request.toolName());
+            if (deferred != null) {
+                return deferred;
             }
             return CompletableFuture.completedFuture(resultsByTool.getOrDefault(request.toolName(), new JsonObject()));
         }

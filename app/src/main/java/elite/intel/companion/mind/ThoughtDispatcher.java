@@ -26,10 +26,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
- * {@link ThoughtSource}, so at most one COMMANDER and one EVENT thought are live at a time (they may run
- * concurrently); a lane's deque is that source's thought queue. It assigns urgency at thought birth and drives
- * preemption, but does not interpret meaning or know a thought's internal state (§2.3).
+ * The accounting/scheduling node of the consciousness. Owns one ordered {@link ThoughtLane} per
+ * {@link ThoughtSource}; a lane's deque is that source's cognitive queue. COMMANDER cognition is serialized, but
+ * completed cognitive stages may leave detached handlers live while the worker accepts later turns. It assigns
+ * urgency at thought birth and drives preemption without interpreting a thought's meaning (§2.3).
  * <p>
  * The lanes are held in one source-keyed map, published as a single volatile reference: cross-cutting
  * operations (start/stop, interrupt, watchdog, idle) iterate the lanes, while a submit targets the lane of
@@ -159,7 +159,7 @@ public final class ThoughtDispatcher implements ManagedService {
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(urgency, input, matchInput, acceptedAtNanos);
-        dependencies.state().setLastCommanderMatchInput(matchInput);
+        dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
         // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
         // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
@@ -267,11 +267,10 @@ public final class ThoughtDispatcher implements ManagedService {
     public void start() {
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            // Commander lane is a bounded pool: a long synchronous command/query occupies a worker, so several
-            // let new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
-            // stay single-worker (no slow handlers there).
-            built.put(ThoughtSource.COMMANDER,
-                    new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
+            // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
+            // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
+            // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
+            built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
             built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
             lanes = built; // single volatile publish of the fully-built lane set
         }

@@ -79,12 +79,13 @@ class CompanionConversationIntegrationTest {
                 call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\"}"),
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
-        // A conversation is sequential: each turn is submitted and drained before the next, so the
-        // memory -> recall dependency holds (the bounded commander pool would otherwise race the turns).
+        // Submit the conversation as a real burst. The commander cognitive lane must preserve intake order, so
+        // turn 3 sees the fact committed by turn 2 without the test manually draining between submissions.
         dispatcher.start();
-        playTurn(dispatcher, "take us to the next system");
-        playTurn(dispatcher, "note that the hull is solid");
-        playTurn(dispatcher, "what did I tell you about the hull");
+        dispatcher.submitCommanderInput("take us to the next system");
+        dispatcher.submitCommanderInput("note that the hull is solid");
+        dispatcher.submitCommanderInput("what did I tell you about the hull");
+        awaitIdle(dispatcher);
         dispatcher.stop();
 
         // The global topic moved across turns (real classify_turn handle on the real state).
@@ -119,9 +120,8 @@ class CompanionConversationIntegrationTest {
         return new ThoughtDispatcher(dependencies, new ReflexResolver(() -> List.of(), notDangerous));
     }
 
-    /** Submits one commander turn and waits for the lane to drain it, so the conversation plays sequentially. */
-    private static void playTurn(ThoughtDispatcher dispatcher, String input) {
-        dispatcher.submitCommanderInput(input);
+    /** Waits for every cognitive stage and detached handler owned by the dispatcher to settle. */
+    private static void awaitIdle(ThoughtDispatcher dispatcher) {
         long deadline = System.currentTimeMillis() + 5000;
         while (!dispatcher.isIdle() && System.currentTimeMillis() < deadline) {
             try {
@@ -131,6 +131,7 @@ class CompanionConversationIntegrationTest {
                 return;
             }
         }
+        assertTrue(dispatcher.isIdle(), "conversation did not settle before the test deadline");
     }
 
     private static Map<String, SystemFunction> systemFunctions() {

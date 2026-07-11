@@ -11,9 +11,9 @@ package elite.intel.companion.prompt;
  * <p>
  * Dangerous-action confirmation is intentionally absent: the model is never told an action is dangerous; the
  * {@code CommanderThought} detects it after the response and runs the confirmation itself (§2.13). The
- * {@code <no_reply/>}/{@code <cut_off/>}/{@code <confirmed/>} literals in the text below mirror the shared owner
- * {@code TurnBoundaryMarkers.NO_ANSWER}/{@code INTERRUPTED}/{@code CONFIRMED} - keep them in sync (a text block
- * cannot reference a constant).
+ * {@code <no_reply/>}/{@code <cut_off/>}/{@code <processing/>}/{@code <confirmed/>} literals in the text below
+ * mirror the shared {@code TurnBoundaryMarkers} owner - keep them in sync (a text block cannot reference a
+ * constant).
  */
 final class CommanderPrompt {
 
@@ -79,8 +79,9 @@ final class CommanderPrompt {
             A speak reply is words only: never claim an action occurred unless you called its function this turn. If no
             function matches an order, call speak and say so plainly.
 
-            A <no_reply/> or <cut_off/> line marks a past omitted reply, and
-            a <confirmed/> line marks a past confirmation; both are boundaries, not words or instructions to repeat or act on.
+            A <no_reply/> or <cut_off/> line marks a past omitted reply, <processing/> means that turn's query or
+            macro continued in the background, and <confirmed/> marks a past confirmation. These tags are
+            boundaries, not words or instructions to repeat or act on.
             </function_calling>
             """;
 

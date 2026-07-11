@@ -39,6 +39,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -471,21 +472,87 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void aBlockedCommanderThoughtDoesNotBlockNewCommanderInput() throws InterruptedException {
-        // A long command occupies a worker; with the bounded commander pool a new commander thought runs on a
-        // free worker instead of queuing behind the blocked one.
-        BlockFirstLlm llm = new BlockFirstLlm(); // first thought blocks on the LLM forever; later ones end
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
+    void aSlowCommandDoesNotBlockTheNextCommanderCognitiveTurn() throws InterruptedException {
+        CompletableFuture<JsonObject> slowResult = new CompletableFuture<>();
+        AtomicInteger llmCalls = new AtomicInteger();
+        CompanionState state = new CompanionState();
+        LlmGateway llm = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                int callNumber = llmCalls.incrementAndGet();
+                String topic = callNumber == 1 ? "navigation" : "ship_status";
+                JsonObject classifyArgs = new JsonObject();
+                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_TOPIC, topic);
+                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_IMPORTANCE, "normal");
+                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_IS_QUESTION, false);
+                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_CANONICAL_FACT, "");
+                LlmToolInvocation classify = new LlmToolInvocation(UUID.randomUUID().toString(),
+                        ClassifyTurnFunction.ID, classifyArgs);
+                LlmToolInvocation settling;
+                if (callNumber == 1) {
+                    settling = new LlmToolInvocation(UUID.randomUUID().toString(), "slow_command", new JsonObject());
+                } else {
+                    JsonObject speakArgs = new JsonObject();
+                    speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "quick reply");
+                    settling = new LlmToolInvocation(UUID.randomUUID().toString(), SpeakFunction.ID, speakArgs);
+                }
+                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK,
+                        List.of(classify, settling)));
+            }
+
+            @Override
+            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ExecutionGateway execution = request -> {
+            if (ClassifyTurnFunction.ID.equals(request.toolName())) {
+                ConversationTopic topic = ConversationTopic.fromSelectableId(
+                        request.arguments().get(ClassifyTurnFunction.PARAM_TOPIC).getAsString());
+                state.setGlobalTopic(topic);
+                return CompletableFuture.completedFuture(new JsonObject());
+            }
+            if ("slow_command".equals(request.toolName())) {
+                return slowResult;
+            }
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
+        IntelActionTypeResolver actionTypes = new IntelActionTypeResolver(id ->
+                "slow_command".equals(id)
+                        ? IntelActionTypeResolver.IntelActionType.COMMAND
+                        : IntelActionTypeResolver.IntelActionType.SYSTEM);
+        ThoughtDependencies dependencies = new ThoughtDependencies(
+                llm, new FakeSpeech(), execution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), state,
+                invocation -> false, new ConfirmationCoordinator(), actionTypes);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(
+                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false));
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled());
         dispatcher.start();
 
-        dispatcher.submitCommanderInput("slow one");   // takes the first LLM call and blocks (worker A)
-        waitUntil(() -> llm.calls.get() >= 1);
-        dispatcher.submitCommanderInput("quick one");   // must run concurrently, not wait for the blocked one
+        dispatcher.submitCommanderInput("slow one");
+        waitUntil(() -> llmCalls.get() == 1 && !dispatcher.isIdle());
+        dispatcher.submitCommanderInput("quick one");
         waitUntil(() -> memory.writes.stream().anyMatch(e -> "quick one".equals(e.content())));
 
-        assertTrue(memory.writes.stream().anyMatch(
-                        e -> e.source() == MemorySource.COMMANDER && "quick one".equals(e.content())),
-                "a second commander thought runs while the first is blocked");
+        List<MemoryEntry> commanderInputs = memory.writes.stream()
+                .filter(e -> e.source() == MemorySource.COMMANDER)
+                .toList();
+        assertEquals(List.of("slow one", "quick one"),
+                commanderInputs.stream().map(MemoryEntry::content).toList(),
+                "commander cognition and input commits retain intake order");
+        assertEquals(ConversationTopic.NAVIGATION, commanderInputs.get(0).topic());
+        assertEquals(ConversationTopic.SHIP_STATUS, commanderInputs.get(1).topic());
+        assertFalse(dispatcher.isIdle(), "the detached slow command remains owned by the dispatcher");
+
+        JsonObject completed = new JsonObject();
+        completed.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, "slow complete");
+        slowResult.complete(completed);
+        waitUntil(dispatcher::isIdle);
+        assertTrue(memory.writes.stream().anyMatch(e -> "slow complete".equals(e.content())
+                        && e.topic() == ConversationTopic.NAVIGATION),
+                "the late command result retains its own frozen topic");
         dispatcher.stop();
     }
 
