@@ -302,7 +302,8 @@ public abstract class Thought {
 
     /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
     private List<LlmToolDefinition> selectedGameTools() {
-        return dependencies.reducer().selectTools(allowedCategories(), context.matchInput(), context.semanticQuery());
+        return dependencies.reducer().selectTools(
+                allowedCategories(), context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
     }
 
     private static long elapsedMillis(long startedNanos) {

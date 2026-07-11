@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.embed.SemanticQuery;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 
@@ -9,10 +10,10 @@ import java.util.Set;
 
 /**
  * Selects the game tools offered to the LLM for one thought turn, narrowed from the full catalog to a
- * prompt-sized set. This is the swap seam for the selection strategy: the contract is intentionally
- * stated as {@code (allowedCategories, currentInput) -> tools}. An optional per-turn
- * {@link SemanticQuery} lets cooperating routing stages reuse already-computed work without becoming a
- * cross-turn cache; reducers that do not understand it simply ignore it. The seam otherwise leaks no algorithm
+ * prompt-sized set. This is the swap seam for the selection strategy: its required inputs are the allowed
+ * categories and current input; optional per-turn {@link SemanticQuery} and {@link GameStateSnapshot} hints let
+ * cooperating routing stages reuse already-computed work and one visibility context without becoming cross-turn
+ * caches. Reducers that do not understand those hints simply ignore them. The seam otherwise leaks no algorithm
  * detail (no phrase maps, no word-overlap), so the current word-overlap wrapper over the legacy
  * {@code elite.intel.ai.brain.Reducer} can later be replaced by a smarter (e.g. semantic) reducer
  * without touching any call site (see COMPANION_ARCHITECTURE.md §10.3).
@@ -40,5 +41,17 @@ public interface CompanionActionReducer {
     default List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
                                                 SemanticQuery semanticQuery) {
         return selectTools(allowedCategories, currentInput);
+    }
+
+    /**
+     * Returns this turn's tools using the immutable game state captured at commander intake. Implementations that
+     * do not gate game actions by status may keep the default and ignore the snapshot.
+     *
+     * @param gameStateSnapshot commander-turn visibility state; {@code null} for non-commander/legacy callers
+     */
+    default List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
+                                                SemanticQuery semanticQuery,
+                                                GameStateSnapshot gameStateSnapshot) {
+        return selectTools(allowedCategories, currentInput, semanticQuery);
     }
 }

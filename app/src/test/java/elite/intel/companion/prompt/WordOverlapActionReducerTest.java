@@ -1,14 +1,20 @@
 package elite.intel.companion.prompt;
 
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.i18n.Language;
+import elite.intel.session.PlayerSituation;
+import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -41,6 +47,19 @@ class WordOverlapActionReducerTest {
     void narrowsToWordOverlapMatch() {
         List<LlmToolDefinition> tools = reducer.selectTools(ALL, "open the market please");
         assertEquals(List.of("trade"), ids(tools));
+    }
+
+    @Test
+    void fallbackUsesTheSuppliedTurnSnapshot() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        WordOverlapActionReducer snapshotReducer = new WordOverlapActionReducer((allowed, snapshot) -> {
+            observed.set(snapshot);
+            return catalog;
+        }, Language.EN);
+
+        assertEquals(List.of("trade"), ids(snapshotReducer.selectTools(ALL, "open market", null, turnState)));
+        assertSame(turnState, observed.get(), "word-overlap fallback must retain the semantic path's turn state");
     }
 
     @Test

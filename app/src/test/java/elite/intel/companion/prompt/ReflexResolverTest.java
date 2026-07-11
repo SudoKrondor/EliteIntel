@@ -1,13 +1,18 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.prompt.ReflexResolver.CommandPhrase;
+import elite.intel.session.PlayerSituation;
+import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -37,6 +42,21 @@ class ReflexResolverTest {
         ReflexResolver resolver = resolver(List.of(new CommandPhrase("honk", "honk", true)), NOTHING_DANGEROUS);
 
         assertEquals(Optional.of("honk"), resolver.resolve("  HONK  "));
+    }
+
+    @Test
+    void exactReflexUsesTheSuppliedTurnSnapshot() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        ReflexResolver resolver = new ReflexResolver(snapshot -> {
+            observed.set(snapshot);
+            return snapshot.visibilityStatus().isInMainShip()
+                    ? List.of(new CommandPhrase("combat", "combat mode", true))
+                    : List.of();
+        }, NOTHING_DANGEROUS);
+
+        assertEquals(Optional.of("combat"), resolver.resolve("combat mode", turnState));
+        assertSame(turnState, observed.get(), "exact matching must use the owning turn's immutable state");
     }
 
     @Test

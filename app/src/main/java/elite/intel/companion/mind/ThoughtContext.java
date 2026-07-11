@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import elite.intel.ai.embed.SemanticQuery;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 
@@ -14,39 +15,56 @@ final class ThoughtContext {
     private final Urgency urgency;
     private final String currentInput;
     private final String matchInput;
+    private final GameStateSnapshot gameStateSnapshot;
     private final SemanticQuery semanticQuery;
     /** Monotonic intake timestamp retained solely to attribute one thought's latency diagnostics. */
     private final long acceptedAtNanos;
 
     private ThoughtContext(ThoughtSource source, Urgency urgency, String currentInput, String matchInput,
-                           SemanticQuery semanticQuery, long acceptedAtNanos) {
+                           GameStateSnapshot gameStateSnapshot, SemanticQuery semanticQuery, long acceptedAtNanos) {
         this.source = source;
         this.urgency = urgency;
         this.currentInput = currentInput;
         this.matchInput = matchInput;
+        this.gameStateSnapshot = gameStateSnapshot;
         this.semanticQuery = semanticQuery;
         this.acceptedAtNanos = acceptedAtNanos;
     }
 
     /** Builds the turn signals for a commander input, whose canonical match text may differ from its raw wording. */
     static ThoughtContext commander(Urgency urgency, String currentInput, String matchInput) {
-        return commander(urgency, currentInput, matchInput, System.nanoTime());
+        return commander(urgency, currentInput, matchInput, System.nanoTime(), GameStateSnapshot.capture());
     }
 
     /** Builds commander turn signals with the intake timestamp captured by the dispatcher. */
     static ThoughtContext commander(Urgency urgency, String currentInput, String matchInput, long acceptedAtNanos) {
-        return new ThoughtContext(ThoughtSource.COMMANDER, urgency, currentInput, matchInput, null, acceptedAtNanos);
+        return commander(urgency, currentInput, matchInput, acceptedAtNanos, GameStateSnapshot.capture());
+    }
+
+    /** Builds commander turn signals with an already-captured immutable routing state. */
+    static ThoughtContext commander(Urgency urgency, String currentInput, String matchInput,
+                                    GameStateSnapshot gameStateSnapshot) {
+        return commander(urgency, currentInput, matchInput, System.nanoTime(), gameStateSnapshot);
+    }
+
+    /** Builds commander turn signals with both intake time and routing state captured by the dispatcher. */
+    static ThoughtContext commander(Urgency urgency, String currentInput, String matchInput, long acceptedAtNanos,
+                                    GameStateSnapshot gameStateSnapshot) {
+        return new ThoughtContext(ThoughtSource.COMMANDER, urgency, currentInput, matchInput,
+                gameStateSnapshot, null, acceptedAtNanos);
     }
 
     /** Builds the turn signals for an event, whose match text is the LLM-visible event prompt. */
     static ThoughtContext event(Urgency urgency, String currentInput, String matchInput) {
-        return new ThoughtContext(ThoughtSource.EVENT, urgency, currentInput, matchInput, null, System.nanoTime());
+        return new ThoughtContext(ThoughtSource.EVENT, urgency, currentInput, matchInput,
+                null, null, System.nanoTime());
     }
 
     /** Returns a copy carrying the semantic query computed at intake for this exact turn. */
     ThoughtContext withSemanticQuery(SemanticQuery semanticQuery) {
         return this.semanticQuery == semanticQuery ? this
-                : new ThoughtContext(source, urgency, currentInput, matchInput, semanticQuery, acceptedAtNanos);
+                : new ThoughtContext(source, urgency, currentInput, matchInput,
+                gameStateSnapshot, semanticQuery, acceptedAtNanos);
     }
 
     /** The source lane and memory role for this thought. */
@@ -67,6 +85,11 @@ final class ThoughtContext {
     /** The canonical input used for tool selection and prompt construction. */
     String matchInput() {
         return matchInput;
+    }
+
+    /** The immutable game-state inputs used for every visibility decision in this commander turn. */
+    GameStateSnapshot gameStateSnapshot() {
+        return gameStateSnapshot;
     }
 
     /** The optional semantic query prepared before this thought entered its lane. */

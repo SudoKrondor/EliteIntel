@@ -6,10 +6,12 @@ import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -42,7 +44,8 @@ public final class SemanticReflexResolver {
      */
     private static final double GAP = parseDouble("elite.intel.companion.semreflex.gap", 0.05);
 
-    private final Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource;
+    private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource;
     private final Supplier<SemanticPhraseMatcher> matcherSupplier;
     private final DangerousActionPolicy dangerousActionPolicy;
 
@@ -57,16 +60,26 @@ public final class SemanticReflexResolver {
     }
 
     /**
-     * Production: visible candidates from the live registries/status, the shared embedder, the command danger flag.
+     * Production: candidates from live registries, visibility from the turn snapshot, the shared embedder and the
+     * command danger flag.
      */
     public SemanticReflexResolver() {
-        this(new GameToolCandidates()::collect, SemanticSearchProvider::matcher, new CommandFlagDangerousActionPolicy());
+        this((categories, snapshot) -> new GameToolCandidates(snapshot).collect(categories),
+                SemanticSearchProvider::matcher, new CommandFlagDangerousActionPolicy());
     }
 
     /**
      * Test seam: inject the candidate source, the matcher supplier (may return {@code null}), and the danger policy.
      */
     SemanticReflexResolver(Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource,
+                           Supplier<SemanticPhraseMatcher> matcherSupplier,
+                           DangerousActionPolicy dangerousActionPolicy) {
+        this((categories, snapshot) -> candidateSource.apply(categories), matcherSupplier, dangerousActionPolicy);
+    }
+
+    /** Test seam whose candidates can assert or vary by the supplied commander-turn state. */
+    SemanticReflexResolver(BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource,
                            Supplier<SemanticPhraseMatcher> matcherSupplier,
                            DangerousActionPolicy dangerousActionPolicy) {
         this.candidateSource = candidateSource;
@@ -100,12 +113,23 @@ public final class SemanticReflexResolver {
         if (input == null || input.isBlank()) {
             return new Resolution(Optional.empty(), null);
         }
+        return resolveWithSemanticQuery(input, GameStateSnapshot.capture());
+    }
+
+    /**
+     * Resolves against the same immutable visibility state used by exact reflex and the later reducer.
+     */
+    public Resolution resolveWithSemanticQuery(String input, GameStateSnapshot gameStateSnapshot) {
+        if (input == null || input.isBlank()) {
+            return new Resolution(Optional.empty(), null);
+        }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             return new Resolution(Optional.empty(), null); // no embedder: defer to the LLM path
         }
         List<GameToolCandidates.Candidate> candidates =
-                candidateSource.apply(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY));
+                candidateSource.apply(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY),
+                        Objects.requireNonNull(gameStateSnapshot));
         if (candidates.isEmpty()) {
             return new Resolution(Optional.empty(), null);
         }

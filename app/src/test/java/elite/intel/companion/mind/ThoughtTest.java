@@ -13,6 +13,7 @@ import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
@@ -32,6 +33,8 @@ import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.PlayerSituation;
+import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -97,8 +100,9 @@ class ThoughtTest {
     void preparedSemanticQueryFlowsToReducerAndMemoryFactRecall() {
         SemanticQuery prepared = new SemanticPhraseMatcher(new AngleEmbedder(Map.of("route", 0.0)))
                 .embedQueryContext("route");
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
         llm.scripted.add(ok(call(SpeakFunction.ID, text("on it"))));
-        ThoughtContext context = ThoughtContext.commander(Urgency.NORMAL, "plot a route", "route")
+        ThoughtContext context = ThoughtContext.commander(Urgency.NORMAL, "plot a route", "route", turnState)
                 .withSemanticQuery(prepared);
 
         Thought.commander(context, dependencies()).run();
@@ -107,6 +111,8 @@ class ThoughtTest {
                 "the thought must pass its intake query to the game-tool reducer");
         assertSame(prepared, memory.lastSemanticQuery,
                 "the thought must pass the same query to pre-turn memory recall");
+        assertSame(turnState, reducer.lastGameStateSnapshot,
+                "the thought must pass its intake visibility state to the game-tool reducer");
     }
 
     /**
@@ -619,6 +625,7 @@ class ThoughtTest {
     private static final class RecordingReducer implements CompanionActionReducer {
         Set<IntelActionCategory> lastCategories;
         SemanticQuery lastSemanticQuery;
+        GameStateSnapshot lastGameStateSnapshot;
         List<LlmToolDefinition> tools = List.of();
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
@@ -630,6 +637,13 @@ class ThoughtTest {
                                                               String currentInput, SemanticQuery semanticQuery) {
             lastSemanticQuery = semanticQuery;
             return selectTools(allowedCategories, currentInput);
+        }
+
+        @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories,
+                                                              String currentInput, SemanticQuery semanticQuery,
+                                                              GameStateSnapshot gameStateSnapshot) {
+            lastGameStateSnapshot = gameStateSnapshot;
+            return selectTools(allowedCategories, currentInput, semanticQuery);
         }
     }
 }

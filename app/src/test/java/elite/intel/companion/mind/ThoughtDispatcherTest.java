@@ -9,6 +9,7 @@ import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
@@ -40,6 +41,7 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -190,9 +192,11 @@ class ThoughtDispatcherTest {
                 (categories, currentInput) -> List.of(), new CompanionState(),
                 invocation -> false, new ConfirmationCoordinator(),
                 new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
-        ReflexResolver reflex = new ReflexResolver(
-                () -> List.of(new ReflexResolver.CommandPhrase("switch_combat", "switch to combat mode", true)),
-                invocation -> false);
+        List<GameStateSnapshot> observedStates = new CopyOnWriteArrayList<>();
+        ReflexResolver reflex = new ReflexResolver(snapshot -> {
+            observedStates.add(snapshot);
+            return List.of(new ReflexResolver.CommandPhrase("switch_combat", "switch to combat mode", true));
+        }, invocation -> false);
         Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, normalizer);
         dispatcher.start();
@@ -201,6 +205,9 @@ class ThoughtDispatcherTest {
 
         assertEquals(List.of("switch_combat"), executed,
                 "the normalized synonym reflexes to the resolved command without the LLM");
+        assertEquals(2, observedStates.size(), "raw and normalized exact attempts both consult visibility");
+        assertSame(observedStates.get(0), observedStates.get(1),
+                "raw and normalized exact attempts must share one immutable turn state");
         assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
     }
 

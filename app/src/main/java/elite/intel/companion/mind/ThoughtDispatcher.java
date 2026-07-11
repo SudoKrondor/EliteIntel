@@ -4,6 +4,7 @@ import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
@@ -149,6 +150,9 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         long acceptedAtNanos = System.nanoTime();
+        // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
+        // must never re-read a changing player_status row independently.
+        GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
@@ -158,16 +162,17 @@ public final class ThoughtDispatcher implements ManagedService {
         // recorded from `input`, never from this normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
-        ThoughtContext context = ThoughtContext.commander(urgency, input, matchInput, acceptedAtNanos);
+        ThoughtContext context = ThoughtContext.commander(
+                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot);
         dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
-        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
+        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
         // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
         // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
         // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
         // deterministic reflex for a phrase the commander said verbatim.
-        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped);
+        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
         if (reflexCommand.isEmpty()) {
-            reflexCommand = reflexResolver.resolve(matchInput);
+            reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
         }
         // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
         // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
@@ -179,7 +184,7 @@ public final class ThoughtDispatcher implements ManagedService {
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
             long semanticReflexStartedNanos = System.nanoTime();
             SemanticReflexResolver.Resolution semanticResolution =
-                    semanticReflexResolver.resolveWithSemanticQuery(matchInput);
+                    semanticReflexResolver.resolveWithSemanticQuery(matchInput, gameStateSnapshot);
             semanticReflexMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - semanticReflexStartedNanos);
             reflexCommand = semanticResolution.actionId();
             context = context.withSemanticQuery(semanticResolution.semanticQuery());

@@ -11,6 +11,7 @@ import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.mind.ThoughtDispatcher;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.tools.SpeakFunction;
@@ -97,6 +98,7 @@ public final class CompanionRoutingHarness {
 
     private volatile TurnTiming lastTurnTiming = new TurnTiming(-1, -1, false);
     private volatile String lastMatchInput = "";
+    private volatile GameStateSnapshot lastGameStateSnapshot;
 
     private CompanionSubsystemGate gate;
     private ThoughtDispatcher dispatcher;
@@ -212,6 +214,7 @@ public final class CompanionRoutingHarness {
         turnLatencyDiagnostics.clear();
         firstToolNanos.set(0L);
         lastMatchInput = "";
+        lastGameStateSnapshot = null;
         lastTurnTiming = new TurnTiming(-1, -1, false);
         long turnStartedNanos = System.nanoTime();
         GameEventBus.publish(new UserInputEvent(input));
@@ -258,6 +261,7 @@ public final class CompanionRoutingHarness {
     @Subscribe
     public void onCommanderMatchInputChanged(CommanderMatchInputChangedEvent event) {
         lastMatchInput = event.text();
+        lastGameStateSnapshot = event.gameStateSnapshot();
     }
 
     private void captureLatencyDiagnostic(String line) {
@@ -326,7 +330,8 @@ public final class CompanionRoutingHarness {
     private String reducerSelection() {
         try {
             return CompanionDiagnostics.names(CompanionRuntime.reducer().selectTools(
-                    new IntelActionAccessPolicy().allowedCategories(ThoughtSource.COMMANDER), lastMatchInput));
+                    new IntelActionAccessPolicy().allowedCategories(ThoughtSource.COMMANDER),
+                    lastMatchInput, null, lastGameStateSnapshot));
         } catch (RuntimeException unavailable) {
             return "<reducer unavailable: " + unavailable.getMessage() + ">";
         }

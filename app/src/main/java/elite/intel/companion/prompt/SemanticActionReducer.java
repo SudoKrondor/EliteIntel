@@ -4,6 +4,7 @@ import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.diagnostics.DiagnosticsLog;
@@ -16,6 +17,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -65,17 +67,19 @@ public final class SemanticActionReducer implements CompanionActionReducer {
      */
     private static final int SEM_MAX = 8;
 
-    private final Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource;
+    private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource;
     private final Supplier<SemanticPhraseMatcher> matcherSupplier;
     private final CompanionActionReducer wordOverlapFallback;
 
     /** Production: live candidates, the shared process-wide embedder, and a word-overlap reducer for degradation. */
     public SemanticActionReducer() {
         // Build the candidates fresh every turn (not once) so the reducer always reflects the CURRENT command
-        // language, game status and custom-command set. GameToolCandidates freezes those in its constructor, so
-        // capturing one instance would pin the language to companion-start time - a later language change (e.g.
-        // in Settings) would never reach the reducer and it would keep matching the old language's aliases.
-        this(cats -> new GameToolCandidates().collect(cats), SemanticSearchProvider::matcher, new WordOverlapActionReducer());
+        // language and custom-command set. GameToolCandidates freezes those in its constructor, so capturing one
+        // instance would pin the language to companion-start time - a later language change (e.g. in Settings)
+        // would never reach the reducer. Visibility alone is deliberately supplied by the owning turn snapshot.
+        this((categories, snapshot) -> new GameToolCandidates(snapshot).collect(categories),
+                SemanticSearchProvider::matcher, new WordOverlapActionReducer());
     }
 
     /**
@@ -92,6 +96,14 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     SemanticActionReducer(Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource,
                           Supplier<SemanticPhraseMatcher> matcherSupplier,
                           CompanionActionReducer wordOverlapFallback) {
+        this((categories, snapshot) -> candidateSource.apply(categories), matcherSupplier, wordOverlapFallback);
+    }
+
+    /** Test seam whose candidate catalog can observe the immutable commander-turn state. */
+    SemanticActionReducer(BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource,
+                          Supplier<SemanticPhraseMatcher> matcherSupplier,
+                          CompanionActionReducer wordOverlapFallback) {
         this.candidateSource = candidateSource;
         this.matcherSupplier = matcherSupplier;
         this.wordOverlapFallback = wordOverlapFallback;
@@ -99,13 +111,21 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     @Override
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
-        return selectTools(allowedCategories, currentInput, null);
+        return selectTools(allowedCategories, currentInput, null, null);
     }
 
     @Override
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
                                                SemanticQuery semanticQuery) {
-        List<LlmToolDefinition> selected = doSelect(allowedCategories, currentInput, semanticQuery);
+        return selectTools(allowedCategories, currentInput, semanticQuery, null);
+    }
+
+    @Override
+    public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
+                                               SemanticQuery semanticQuery,
+                                               GameStateSnapshot gameStateSnapshot) {
+        List<LlmToolDefinition> selected = doSelect(
+                allowedCategories, currentInput, semanticQuery, gameStateSnapshot);
         // Diagnostics harness: surface the reducer's shortlist as a structured marker so the skill can tell a
         // recall miss (expected id ABSENT here - fix the aliases) from a selection miss (expected id present but
         // the LLM dispatched another - fix the llmDescription), without scraping the prose DBG/LOG lines. The
@@ -118,8 +138,9 @@ public final class SemanticActionReducer implements CompanionActionReducer {
     }
 
     private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput,
-                                             SemanticQuery semanticQuery) {
-        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
+                                             SemanticQuery semanticQuery,
+                                             GameStateSnapshot gameStateSnapshot) {
+        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
         if (candidates.isEmpty()) {
             // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
             // selection outcome, so it needs no line; a non-empty set that yielded nothing is worth surfacing.
@@ -131,13 +152,13 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         // A blank input has no meaning to embed; the word-overlap fallback owns the "offer all" blank-input rule.
         if (currentInput == null || currentInput.isBlank()) {
             CompanionDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput);
+            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             // Embedding model unavailable: degrade to word-overlap for the rest of the session (documented contract).
             CompanionDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput);
+            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
         }
         try {
             return semanticSelect(matcher, candidates, currentInput, semanticQuery);
@@ -145,7 +166,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             // WHY: a transient embed failure must not drop the turn's tools; degrade to word-overlap for this turn.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
             CompanionDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput);
+            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
         }
     }
 
