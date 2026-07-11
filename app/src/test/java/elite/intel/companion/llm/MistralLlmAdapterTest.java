@@ -52,6 +52,7 @@ class MistralLlmAdapterTest {
         assertEquals("speak", function.get("name").getAsString());
         JsonObject schema = function.getAsJsonObject("parameters");
         assertEquals("object", schema.get("type").getAsString());
+        assertFalse(schema.get("additionalProperties").getAsBoolean(), "tool schemas must be closed");
         assertEquals("string", schema.getAsJsonObject("properties").getAsJsonObject("text").get("type").getAsString());
         assertEquals("text", schema.getAsJsonArray("required").get(0).getAsString());
 
@@ -114,6 +115,12 @@ class MistralLlmAdapterTest {
     @Test
     void rejectsResponseWithoutToolCalls() {
         assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(responseWithText("just text, no tool call")).status());
+    }
+
+    @Test
+    void rejectsNonObjectToolArguments() {
+        assertEquals(LlmResult.Status.INVALID_RESPONSE,
+                adapter.parse(responseWithToolCall("speak", "null")).status());
     }
 
     @Test

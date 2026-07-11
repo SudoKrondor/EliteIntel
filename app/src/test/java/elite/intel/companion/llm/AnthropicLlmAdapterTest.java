@@ -54,6 +54,7 @@ class AnthropicLlmAdapterTest {
         assertEquals("speak", tool.get("name").getAsString());
         JsonObject schema = tool.getAsJsonObject("input_schema");
         assertEquals("object", schema.get("type").getAsString());
+        assertFalse(schema.get("additionalProperties").getAsBoolean(), "tool schemas must be closed");
         assertEquals("string", schema.getAsJsonObject("properties").getAsJsonObject("text").get("type").getAsString());
         assertEquals("text", schema.getAsJsonArray("required").get(0).getAsString());
     }
@@ -123,6 +124,14 @@ class AnthropicLlmAdapterTest {
     void rejectsResponseWithoutToolUse() {
         assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(responseWithText("just chatting")).status());
         assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(new JsonObject()).status());
+    }
+
+    @Test
+    void rejectsNonObjectToolInput() {
+        JsonObject response = responseWithToolUse("tool-1", "speak", new JsonObject());
+        response.getAsJsonArray("content").get(0).getAsJsonObject().addProperty("input", "not-an-object");
+
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(response).status());
     }
 
     @Test

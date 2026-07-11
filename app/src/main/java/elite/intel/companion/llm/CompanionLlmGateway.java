@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 /**
  * Provider-neutral {@link LlmGateway}: orchestrates render -> send -> parse via the injected
  * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does a
- * single repair/retry before reporting {@link LlmResult.Status#INVALID_RESPONSE}. A response is valid
- * only when it is one or more tool-calls whose names were actually offered this turn.
+ * single repair/retry before reporting {@link LlmResult.Status#INVALID_RESPONSE}. A response is valid only when
+ * it is one or more tool-calls whose names and arguments match the exact tool snapshot offered this turn.
  * <p>
  * It also enforces the classify-first protocol: when {@code classify_turn} is among the offered tools (a
  * classifying turn - narration never offers it), the completed logical result must contain exactly one
@@ -180,7 +180,7 @@ public final class CompanionLlmGateway implements LlmGateway {
 
     /** What is wrong with a parsed response. {@link #NONE} means the response is ready for execution. */
     private enum Defect {
-        NONE, MISSING_CLASSIFY, MISSING_SETTLING, MALFORMED
+        NONE, MISSING_CLASSIFY, MISSING_SETTLING, INVALID_TOOL_CALL, MALFORMED
     }
 
     /** Which tool-call shape the current physical LLM round must produce. */
@@ -273,7 +273,8 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * Classifies a parsed response: {@link Defect#MALFORMED} when it is not one-or-more offered tool-calls;
+     * Classifies a parsed response: {@link Defect#MALFORMED} when it is not one-or-more parsed tool-calls;
+     * {@link Defect#INVALID_TOOL_CALL} when any parsed call does not match an offered name or its exact schema;
      * {@link Defect#MISSING_CLASSIFY} when the turn offered {@code classify_turn} (a classifying turn) but the
      * response does not call it; {@link Defect#MISSING_SETTLING} when it calls exactly one
      * {@code classify_turn} and nothing else (a valid native continuation point); {@link Defect#NONE} when the
@@ -284,15 +285,12 @@ public final class CompanionLlmGateway implements LlmGateway {
         if (!result.isValid() || result.toolInvocations().isEmpty()) {
             return Defect.MALFORMED;
         }
+        if (!ToolCallValidator.validateAndNormalizeExactSchemas(result.toolInvocations(), request.tools())) {
+            return Defect.INVALID_TOOL_CALL;
+        }
         Set<String> offered = request.tools().stream()
                 .map(LlmToolDefinition::name)
                 .collect(Collectors.toSet());
-        boolean allOffered = result.toolInvocations().stream()
-                .map(LlmToolInvocation::name)
-                .allMatch(offered::contains);
-        if (!allOffered) {
-            return Defect.MALFORMED;
-        }
         if (expectation == RoundExpectation.SETTLING_AFTER_CLASSIFY) {
             return result.toolInvocations().size() == 1 && !isClassify(result.toolInvocations().get(0))
                     ? Defect.NONE
@@ -512,6 +510,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     private static String rejectionFor(Defect defect) {
         return switch (defect) {
             case MISSING_CLASSIFY -> "{\"status\":\"rejected\",\"reason\":\"classify_turn must be called before a settling function\"}";
+            case INVALID_TOOL_CALL -> "{\"status\":\"rejected\",\"reason\":\"every call must use an offered function and match its exact parameter schema\"}";
             case NONE, MISSING_SETTLING, MALFORMED -> throw new IllegalArgumentException("No tool continuation for " + defect);
         };
     }

@@ -195,8 +195,10 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
                     return invalid(finishReason, droppedText);
                 }
                 String id = block.has("id") && !block.get("id").isJsonNull() ? block.get("id").getAsString() : null;
-                JsonObject input = block.has("input") && block.get("input").isJsonObject()
-                        ? block.getAsJsonObject("input") : new JsonObject();
+                if (block.has("input") && !block.get("input").isJsonObject()) {
+                    return invalid(finishReason, droppedText);
+                }
+                JsonObject input = block.has("input") ? block.getAsJsonObject("input") : new JsonObject();
                 invocations.add(new LlmToolInvocation(id, name, input));
             }
             return invocations.isEmpty() ? invalid(finishReason, droppedText)

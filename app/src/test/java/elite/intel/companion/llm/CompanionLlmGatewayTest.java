@@ -3,6 +3,7 @@ package elite.intel.companion.llm;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
 import elite.intel.companion.model.llm.LlmRequest;
@@ -10,6 +11,7 @@ import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
+import elite.intel.companion.tools.ClassifyTurnFunction;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -102,6 +104,11 @@ class CompanionLlmGatewayTest {
             calls.add(new LlmToolInvocation("c" + id++, name, new JsonObject()));
         }
         return new LlmResult(LlmResult.Status.OK, List.copyOf(calls));
+    }
+
+    private static LlmResult ok(String toolName, JsonObject arguments) {
+        return new LlmResult(LlmResult.Status.OK,
+                List.of(new LlmToolInvocation("c1", toolName, arguments)));
     }
 
     private static LlmResult invalid() {
@@ -282,6 +289,58 @@ class CompanionLlmGatewayTest {
     }
 
     @Test
+    void invalidArgumentsUseRejectedToolContinuationBeforeAValidRepair() throws Exception {
+        LlmToolDefinition navigate = new LlmToolDefinition("navigate", "Navigate", "",
+                List.of(new ActionParameterSpec("target", "string", true,
+                        "Target system", List.of(), null)));
+        LlmRequest request = new LlmRequest("req-schema",
+                List.of(LlmMessage.of(LlmMessageRole.USER, "navigate")),
+                List.of(navigate), PromptCacheProfile.COMMANDER);
+        JsonObject invalidArguments = new JsonObject();
+        invalidArguments.addProperty("target", 42);
+        JsonObject validArguments = new JsonObject();
+        validArguments.addProperty("target", "Sol");
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                ok("navigate", invalidArguments), ok("navigate", validArguments));
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        assertEquals("Sol", result.toolInvocations().get(0).arguments().get("target").getAsString());
+        assertEquals(2, sends.get());
+        int repairIndex = request.messages().size();
+        List<LlmMessage> repairedMessages = adapter.lastRequest.messages();
+        assertEquals(repairIndex + 2, repairedMessages.size());
+        assertEquals(LlmMessageRole.ASSISTANT, repairedMessages.get(repairIndex).role());
+        assertEquals("navigate", repairedMessages.get(repairIndex).toolCalls().get(0).name());
+        LlmMessage rejection = repairedMessages.get(repairIndex + 1);
+        assertEquals(LlmMessageRole.TOOL, rejection.role());
+        assertTrue(rejection.content().contains("\"status\":\"rejected\""));
+        assertTrue(rejection.content().contains("exact parameter schema"));
+    }
+
+    @Test
+    void optionalNullIsNormalizedToOmissionWithoutRepair() throws Exception {
+        LlmToolDefinition search = new LlmToolDefinition("search", "Search", "",
+                List.of(
+                        new ActionParameterSpec("key", "string", true, "Commodity", List.of(), null),
+                        new ActionParameterSpec("max_distance", "number", false,
+                                "Optional radius", List.of(), null)));
+        LlmRequest request = new LlmRequest("req-optional-null",
+                List.of(LlmMessage.of(LlmMessageRole.USER, "find gold")),
+                List.of(search), PromptCacheProfile.COMMANDER);
+        JsonObject arguments = new JsonObject();
+        arguments.addProperty("key", "gold");
+        arguments.add("max_distance", null);
+
+        LlmResult result = run(new ScriptedAdapter(ok("search", arguments)), request);
+
+        assertTrue(result.isValid());
+        assertEquals(1, sends.get(), "a harmless optional null must not spend the repair attempt");
+        assertFalse(result.toolInvocations().get(0).arguments().has("max_distance"));
+    }
+
+    @Test
     void settlingOnlyContinuationRejectsClassificationWithAnExtraSettlingCall() throws Exception {
         LlmResult result = run(new ScriptedAdapter(ok("speak"), ok("classify_turn", "speak")),
                 requestOffering("speak", "classify_turn"));
@@ -394,11 +453,15 @@ class CompanionLlmGatewayTest {
             renderedRequests.add(JsonParser.parseString(requestBody).getAsJsonObject());
             return providerResponses.removeFirst();
         };
-        LlmRequest request = requestWithMessages(
+        LlmRequest request = new LlmRequest("req-lm-studio",
                 List.of(
                         LlmMessage.of(LlmMessageRole.SYSTEM, "rules"),
                         LlmMessage.of(LlmMessageRole.USER, "navigate to the squadron carrier")),
-                "classify_turn", "navigate_to_squadron_carrier");
+                List.of(
+                        new LlmToolDefinition(ClassifyTurnFunction.ID, "Classify", "",
+                                new ClassifyTurnFunction().parameters()),
+                        new LlmToolDefinition("navigate_to_squadron_carrier", "Navigate", "", List.of())),
+                PromptCacheProfile.COMMANDER);
 
         LlmResult result = new CompanionLlmGateway(
                 new LmStudioLlmAdapter("google/gemma-4-e4b"), transport, Runnable::run)

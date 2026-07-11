@@ -69,16 +69,19 @@ class CompanionConversationIntegrationTest {
 
         // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
         transport.scripted.add(response(
-                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\"}"),
+                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\","
+                        + "\"is_question\":false,\"canonical_fact\":\"\"}"),
                 call("c2", "speak", "{\"text\":\"Course plotted.\"}")));
         // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
-                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
+                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\","
+                        + "\"is_question\":false,\"canonical_fact\":\"The hull is solid.\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}")));
         // Turn 3: the stated fact is injected as a "Relevant remembered fact" before the turn, so the companion
         // answers from it in one round (no in-turn lookup).
         transport.scripted.add(response(
-                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\"}"),
+                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\","
+                        + "\"is_question\":true,\"canonical_fact\":\"\"}"),
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
         // Submit the conversation as a real burst. The commander cognitive lane must preserve intake order, so
