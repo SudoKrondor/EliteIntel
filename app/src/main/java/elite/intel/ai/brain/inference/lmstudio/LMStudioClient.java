@@ -44,6 +44,7 @@ public class LMStudioClient extends BaseAiClient implements Client {
         request.addProperty("temperature", temp);
         request.addProperty("max_tokens", isQueryModel ? 1024 : 512);
         request.addProperty("stream", false);
+        request.addProperty("reasoning_effort", "none");
         return request;
     }
 
