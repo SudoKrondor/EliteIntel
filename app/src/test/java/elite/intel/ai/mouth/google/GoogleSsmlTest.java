@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Guards {@link GoogleSsml#wrap(String)}: it must produce well-formed SSML, escape XML metacharacters from the
- * source text, flatten "!" to a declarative ".", and insert explicit {@code <break>} pauses after sentence ends,
- * ellipses, and commas while leaving decimals and abbreviations intact.
+ * source text, flatten "!" to a declarative ".", and insert explicit {@code <break>} pauses after sentence ends
+ * and ellipses while preserving commas, decimals, and abbreviations.
  */
 class GoogleSsmlTest {
 
@@ -52,8 +52,8 @@ class GoogleSsmlTest {
     }
 
     @Test
-    void commaGetsAShortClauseBreak() {
-        assertEquals("<speak>Yes<break time=\"120ms\"/> ready</speak>", GoogleSsml.wrap("Yes, ready"));
+    void commaRemainsWithoutAnExplicitPause() {
+        assertEquals("<speak>Yes, ready</speak>", GoogleSsml.wrap("Yes, ready"));
     }
 
     @Test
