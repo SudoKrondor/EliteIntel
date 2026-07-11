@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
@@ -68,6 +69,13 @@ class SystemFunctionHandleTest {
         assertEquals(1, spoken.size());
         assertEquals("docking now", spoken.get(0).text());
         assertEquals("spoken", result.get("status").getAsString());
+    }
+
+    @Test
+    void speakRejectsBlankTextBeforeSubmittingToTts() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpeakFunction().handle("speak", params("text", "   "), ""));
+        assertEquals(0, spoken.size());
     }
 
     @Test

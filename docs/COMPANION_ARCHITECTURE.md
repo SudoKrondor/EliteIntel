@@ -4,10 +4,15 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.24**.
+Версия **v0.25**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.25 (2026-07-11).** Жизненный цикл речи принадлежит активному Mouth и коррелируется с конкретной заявкой.
+> - **Один owner speaking-state:** каждый `VocalisationRequestEvent` несёт `VocalisationHandle`; ровно один подходящий запущенный Mouth синхронно claim'ит его перед постановкой в очередь. Только handle публикует `IsSpeakingEvent`, причём лишь на переходах общего счётчика `0→1` и `1→0`, поэтому завершение реплики A не сообщает тишину, пока заявка B ещё активна.
+> - **Каждая заявка завершается:** Kokoro и Google проводят один handle через synthesis/playback очереди и закрывают его при успехе, адресной/общей отмене, blank после sanitization, ошибке synthesis/audio/playback и stop. Guava обрабатывает вложенные публикации в очереди того же потока, поэтому отсутствие claim проверяется только после завершения внешнего EventBus-cycle через `GameEventBus.afterCurrentDispatch`; лишь тогда future заявки без активного Mouth завершается ошибкой. `SpeechRequest` запрещает blank text/id и null urgency.
+> - **STT всегда активно:** `IsSpeakingEvent` обозначает TTS lifecycle и служит для обнаружения barge-in/диагностики, но не выключает распознавание и не отбрасывает обычные transcripts. Любая распознанная команда во время речи публикует один `BargeInEvent`, затем идёт обычным `UserInputEvent`; `BargeInController` единолично расщепляет сигнал на один TTS interrupt и thought interrupt. Защита от акустического echo — эксплуатационная (наушники), не программное подавление команд.
 
 > **v0.24 (2026-07-11).** Нормальный COMMANDER tool flow сведён к одному физическому LLM-ответу.
 > - **Один assistant message:** `CommanderPrompt` требует вернуть `classify_turn` и ровно один settling call вместе, в этом порядке; ждать результат metadata-only классификации запрещено.
@@ -1179,12 +1184,17 @@ urgency
 
 При interrupt Thought отменяет свои speech handles.
 
+`CompanionSpeechGateway` публикует `VocalisationRequestEvent` с тем же `requestId` и future. Главный или radio-Mouth, которому действительно принадлежит заявка, обязан синхронно claim'ить её `VocalisationHandle` до возврата из EventBus subscriber. Если никто не claim'ил событие, gateway завершает future ошибкой `no active Mouth` — бесконечно pending заявок нет.
+
+`IsSpeakingEvent` принадлежит только `VocalisationHandle`: первый принятый handle публикует `true`, последний завершившийся — `false`. Producer, `VocalisationRouter` и custom-command executor эти события не публикуют. Состояние означает наличие принятой TTS-работы, а не выключатель микрофона: STT продолжает распознавание и передаёт командирскую речь как barge-in.
+
 SpeechGateway:
 
-* queued cancelled speech → удалить/пропустить;
-* currently speaking cancelled/stale speech → остановить;
+* queued cancelled speech → адресно удалить/пропустить по `requestId`;
+* currently speaking cancelled/stale speech → адресно остановить;
 * urgent speech может прервать текущую речь;
 * barge-in может прервать текущую речь и очистить очередь.
+* success, interruption, blank/error, no-Mouth и stop обязаны завершить каждый принятый future ровно один раз.
 
 #### Системные нотификации
 
@@ -1225,6 +1235,8 @@ Speech interruption и Thought interruption разделены.
 
 `BargeInController` не принимает центрального решения “убить всё”.
 Он рассылает split signal двум адресатам, а каждый адресат применяет свою lifecycle-логику.
+
+STT не выключается во время TTS. Если `IsSpeakingEvent=true`, PTT и обычный hot-mic transcript публикуют один `BargeInEvent`, после чего непустая командирская фраза продолжает обычный путь `UserInputEvent`. Сам `ParakeetSTTImpl` не публикует параллельный `TTSInterruptEvent`: единственный interrupt речи создаёт `BargeInController`.
 
 SpeechGateway не должен сам решать судьбу Thought.
 ThoughtDispatcher не должен управлять аудио-очередью напрямую.

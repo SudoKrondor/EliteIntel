@@ -1,46 +1,65 @@
 package elite.intel.ai.mouth.subscribers.events;
 
+import elite.intel.ai.mouth.VocalisationHandle;
+
 import javax.annotation.Nullable;
 import java.util.concurrent.CompletableFuture;
+import java.util.UUID;
 
 public class VocalisationRequestEvent extends BaseVoxEvent {
 
     private final Class<? extends BaseVoxEvent> originType;
     private final String voiceName;
-    private boolean canBeInterrupted;
+    private final boolean canBeInterrupted;
     private final boolean isRadio;
-    /**
-     * Non-null only when a caller (e.g. customCommand SPEAK) needs to block until playback finishes.
-     * The TTS implementation must call {@link CompletableFuture#complete} after the last sentence plays.
-     */
-    @Nullable private final CompletableFuture<Void> completionFuture;
+    private final VocalisationHandle handle;
 
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(textToVoice, null, originType, canBeInterrupted, false, null);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted) {
-        this(textToVoice, voiceName, originType, canBeInterrupted, false, null);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, false, null);
     }
 
     public VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio) {
-        this(textToVoice, voiceName, originType, canBeInterrupted, isRadio, null);
+        this(UUID.randomUUID().toString(), textToVoice, voiceName, originType, canBeInterrupted, isRadio, null);
     }
 
     /**
      * Used when a completion signal is required (e.g. when routing a customCommand SPEAK request).
      */
     public VocalisationRequestEvent(String textToVoice, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, @Nullable CompletableFuture<Void> completionFuture) {
-        this(textToVoice, null, originType, canBeInterrupted, false, completionFuture);
+        this(UUID.randomUUID().toString(), textToVoice, null, originType, canBeInterrupted, false, completionFuture);
     }
 
-    private VocalisationRequestEvent(String textToVoice, String voiceName, Class<? extends BaseVoxEvent> originType, boolean canBeInterrupted, boolean isRadio, @Nullable CompletableFuture<Void> completionFuture) {
+    /** Creates a tracked companion request while preserving its correlation id through the Mouth pipeline. */
+    public static VocalisationRequestEvent tracked(
+            String requestId,
+            String textToVoice,
+            Class<? extends BaseVoxEvent> originType,
+            boolean canBeInterrupted,
+            CompletableFuture<Void> completionFuture
+    ) {
+        return new VocalisationRequestEvent(
+                requestId, textToVoice, null, originType, canBeInterrupted, false, completionFuture);
+    }
+
+    private VocalisationRequestEvent(
+            String requestId,
+            String textToVoice,
+            String voiceName,
+            Class<? extends BaseVoxEvent> originType,
+            boolean canBeInterrupted,
+            boolean isRadio,
+            @Nullable CompletableFuture<Void> completionFuture
+    ) {
         super(textToVoice, false);
         this.voiceName = voiceName;
         this.originType = originType;
         this.canBeInterrupted = canBeInterrupted;
         this.isRadio = isRadio;
-        this.completionFuture = completionFuture;
+        this.handle = new VocalisationHandle(requestId, canBeInterrupted, completionFuture);
     }
 
     public Class<? extends BaseVoxEvent> getOriginType() {
@@ -65,8 +84,12 @@ public class VocalisationRequestEvent extends BaseVoxEvent {
         return isRadio;
     }
 
-    @Nullable
+    /** The request-scoped lifecycle claimed and settled by the active Mouth. */
+    public VocalisationHandle handle() {
+        return handle;
+    }
+
     public CompletableFuture<Void> getCompletionFuture() {
-        return completionFuture;
+        return handle.completion();
     }
 }

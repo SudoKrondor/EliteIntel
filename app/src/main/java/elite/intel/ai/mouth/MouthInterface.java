@@ -11,5 +11,6 @@ public interface MouthInterface extends ManagedService {
      * Use elite.intel.gameapi.SubscriberRegistration to subscribe to these events
      * or add GameEventBus.register(this); in the constructor if your class is a singleton
      */
+    /** Eligible running implementations must claim the event handle before enqueueing any synthesis work. */
     @Subscribe void onVoiceProcessEvent(VocalisationRequestEvent event);
 }

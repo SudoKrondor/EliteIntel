@@ -49,12 +49,6 @@ public final class CompanionConfig {
      * channel is still pending; set to {@code false} to keep only the per-turn headlines.
      */
     private static final boolean DIAGNOSTICS_VERBOSE = true;
-    /**
-     * If true, non-PTT microphone transcripts are dropped while companion speech is active. Keep false to let
-     * commander barge-in speech interrupt the current narration and route as a normal command.
-     */
-    private static final boolean DROP_HOT_MIC_TRANSCRIPTS_WHILE_COMPANION_SPEAKS = false;
-
     private CompanionConfig() {
     }
 
@@ -143,8 +137,4 @@ public final class CompanionConfig {
         return DIAGNOSTICS_VERBOSE;
     }
 
-    /** Whether hot-mic transcripts are suppressed while companion speech is active. */
-    public static boolean dropHotMicTranscriptsWhileCompanionSpeaks() {
-        return DROP_HOT_MIC_TRANSCRIPTS_WHILE_COMPANION_SPEAKS;
-    }
 }
