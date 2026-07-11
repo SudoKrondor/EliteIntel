@@ -113,12 +113,18 @@ public class EnglishInputNormalizerRules implements InputNormalizerProvider {
         m.put("activate analysis mode", "switch to analysis mode");
         m.put("hud combat mode", "switch to combat mode");
         m.put("hud analysis mode", "switch to analysis mode");
-        m.put("combat mode", "switch to combat mode");
-        m.put("analysis mode", "switch to analysis mode");
         m.put("enter combat mode", "switch to combat mode");
+        m.put("enter analysis mode", "switch to analysis mode");
+        m.put("change to combat mode", "switch to combat mode");
+        m.put("change to analysis mode", "switch to analysis mode");
+        m.put("swap to combat mode", "switch to combat mode");
+        m.put("swap to analysis mode", "switch to analysis mode");
         m.put("combat hud", "switch to combat mode");
         m.put("analysis hud", "switch to analysis mode");
         m.put("explorer mode", "switch to analysis mode");
+        // Keep the shorter substring rules last so they cannot partially rewrite the specific phrases above.
+        m.put("combat mode", "switch to combat mode");
+        m.put("analysis mode", "switch to analysis mode");
         m.put("next enemy", "priority target");
         m.put("select enemy", "priority target");
         m.put("high threat", "priority target");
