@@ -35,7 +35,7 @@ class LmStudioLlmAdapterTest {
         assertFalse(json.has("prompt_cache_key"), "Mistral's cache key must not be sent to LM Studio");
         // Local models accept a custom temperature, so it must be sent (the inverse of the OpenAI case).
         assertTrue(json.has("temperature"), "a custom temperature must be sent to LM Studio");
-        assertEquals(PromptCacheProfile.COMMANDER.temperature(), json.get("temperature").getAsDouble(), 0.0001);
+        assertEquals(0.4, json.get("temperature").getAsDouble(), 0.0001);
     }
 
     @Test
