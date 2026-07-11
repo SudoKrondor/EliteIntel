@@ -17,5 +17,7 @@ public final class LmStudioLlmAdapter extends OpenAiCompatibleLlmAdapter {
     protected void addToolRequestParameters(JsonObject body) {
         // Gemma 4's LM Studio PEG parser needs the multi-call grammar for classify_turn plus the settling call.
         body.addProperty("parallel_tool_calls", true);
+        body.addProperty("reasoning_effort", "none");
+        body.addProperty("stream", false);
     }
 }
