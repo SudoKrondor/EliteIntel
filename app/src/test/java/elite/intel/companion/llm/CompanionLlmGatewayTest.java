@@ -10,14 +10,23 @@ import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -126,6 +135,105 @@ class CompanionLlmGatewayTest {
         assertFalse(result.isValid());
         assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
         assertEquals(2, sends.get());
+    }
+
+    @Test
+    void cancellingInFlightRequestInterruptsTransportAndReleasesWorker() throws Exception {
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        CountDownLatch neverReleased = new CountDownLatch(1);
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = body -> {
+            if (calls.incrementAndGet() == 1) {
+                entered.countDown();
+                try {
+                    neverReleased.await();
+                } catch (InterruptedException expected) {
+                    interrupted.countDown();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return new JsonObject();
+        };
+
+        try (CompanionLlmGateway gateway = new CompanionLlmGateway(
+                new ScriptedAdapter(ok("speak")), transport, Executors.newSingleThreadExecutor(),
+                Duration.ofSeconds(5))) {
+            CompletableFuture<LlmResult> first = gateway.submit(request());
+            assertTrue(entered.await(2, TimeUnit.SECONDS), "the physical transport must start");
+
+            assertTrue(first.cancel(true));
+            assertTrue(interrupted.await(2, TimeUnit.SECONDS), "future cancellation must interrupt transport");
+
+            LlmResult second = gateway.submit(request()).get(2, TimeUnit.SECONDS);
+            assertTrue(second.isValid(), "the sole worker must be available for the next request");
+            assertEquals(2, calls.get());
+        }
+    }
+
+    @Test
+    void logicalDeadlineInterruptsStalledCallWithoutRetry() throws Exception {
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch interrupted = new CountDownLatch(1);
+        CountDownLatch neverReleased = new CountDownLatch(1);
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = body -> {
+            calls.incrementAndGet();
+            entered.countDown();
+            try {
+                neverReleased.await();
+            } catch (InterruptedException expected) {
+                interrupted.countDown();
+                Thread.currentThread().interrupt();
+            }
+            return new JsonObject();
+        };
+
+        try (CompanionLlmGateway gateway = new CompanionLlmGateway(
+                new ScriptedAdapter(ok("speak")), transport, Executors.newSingleThreadExecutor(),
+                Duration.ofSeconds(1))) {
+            CompletableFuture<LlmResult> result = gateway.submit(request());
+            assertTrue(entered.await(2, TimeUnit.SECONDS), "the physical transport must start");
+
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                    () -> result.get(2, TimeUnit.SECONDS));
+            assertInstanceOf(TimeoutException.class, failure.getCause());
+            assertTrue(interrupted.await(2, TimeUnit.SECONDS), "deadline must interrupt transport");
+            assertEquals(1, calls.get(), "a timed-out physical call must not enter repair");
+        }
+    }
+
+    @Test
+    void oneLogicalDeadlineAlsoCoversRepairAttempt() throws Exception {
+        CountDownLatch repairEntered = new CountDownLatch(1);
+        CountDownLatch repairInterrupted = new CountDownLatch(1);
+        CountDownLatch neverReleased = new CountDownLatch(1);
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = body -> {
+            if (calls.incrementAndGet() == 2) {
+                repairEntered.countDown();
+                try {
+                    neverReleased.await();
+                } catch (InterruptedException expected) {
+                    repairInterrupted.countDown();
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return new JsonObject();
+        };
+
+        try (CompanionLlmGateway gateway = new CompanionLlmGateway(
+                new ScriptedAdapter(invalid(), ok("speak")), transport, Executors.newSingleThreadExecutor(),
+                Duration.ofSeconds(1))) {
+            CompletableFuture<LlmResult> result = gateway.submit(request());
+            assertTrue(repairEntered.await(2, TimeUnit.SECONDS), "repair must use the same logical request");
+
+            ExecutionException failure = assertThrows(ExecutionException.class,
+                    () -> result.get(2, TimeUnit.SECONDS));
+            assertInstanceOf(TimeoutException.class, failure.getCause());
+            assertTrue(repairInterrupted.await(2, TimeUnit.SECONDS), "shared deadline must interrupt repair");
+            assertEquals(2, calls.get());
+        }
     }
 
     @Test

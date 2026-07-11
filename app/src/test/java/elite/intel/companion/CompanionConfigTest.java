@@ -25,4 +25,9 @@ class CompanionConfigTest {
         assertFalse(CompanionConfig.isConfirmationCodeWord("not the word"));
         assertFalse(CompanionConfig.isConfirmationCodeWord(null));
     }
+
+    @Test
+    void llmDeadlineLeavesHeadroomBelowThoughtWatchdog() {
+        assertTrue(CompanionConfig.llmLogicalDeadline().compareTo(CompanionConfig.thoughtWatchdogTimeout()) < 0);
+    }
 }

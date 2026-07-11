@@ -4,6 +4,7 @@ import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +33,10 @@ public final class CompanionConfig {
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
     /** Max read-only query handlers that may execute concurrently after their commander turns are classified. */
     private static final int MAX_PARALLEL_QUERY_EXECUTIONS = 4;
+    /** Hard lifecycle ceiling for a live thought. */
+    private static final Duration THOUGHT_WATCHDOG_TIMEOUT = Duration.ofSeconds(60);
+    /** One deadline for queue wait plus all physical attempts of a logical LLM request. */
+    private static final Duration LLM_LOGICAL_DEADLINE = Duration.ofSeconds(50);
     /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
     private static final double SEMANTIC_RECALL_FLOOR = 0.85;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
@@ -106,6 +111,16 @@ public final class CompanionConfig {
     /** Max read-only query handlers that may execute concurrently. */
     public static int maxParallelQueryExecutions() {
         return MAX_PARALLEL_QUERY_EXECUTIONS;
+    }
+
+    /** Hard lifecycle ceiling for a live thought. */
+    public static Duration thoughtWatchdogTimeout() {
+        return THOUGHT_WATCHDOG_TIMEOUT;
+    }
+
+    /** Total LLM request deadline, deliberately shorter than {@link #thoughtWatchdogTimeout()}. */
+    public static Duration llmLogicalDeadline() {
+        return LLM_LOGICAL_DEADLINE;
     }
 
     /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */

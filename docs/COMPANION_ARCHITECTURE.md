@@ -4,10 +4,15 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.21**.
+Версия **v0.22**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.22 (2026-07-11).** LLM-cancellation теперь доходит до физического HTTP exchange и ограничена общим deadline.
+> - **Адресная отмена:** возвращаемый `CompletableFuture` связан с конкретной `FutureTask`; `cancel(...)` прерывает именно её, а синхронная provider-обёртка отменяет удерживаемый `HttpClient.sendAsync` future.
+> - **Один logical deadline:** 50 секунд покрывают ожидание в очереди, initial send, repair и classify continuation вместе. Это оставляет headroom до 60-секундного thought watchdog; timeout прерывает физический вызов и запрещает дальнейший retry/parse.
+> - **Публичный контракт не расширен:** отдельного owner/cancellation token нет; owning thought по-прежнему владеет единственным future, а late result после гонки отмены отбрасывается.
 
 > **v0.21 (2026-07-11).** Видимость игровых команд заморожена на один командирский turn.
 > - **Один intake-snapshot:** `ThoughtDispatcher` один раз снимает `GameStateSnapshot(flags, flags2, fighterOut)` и передаёт тот же объект в точный `ReflexResolver`, `SemanticReflexResolver` и `ThoughtContext`.
@@ -767,7 +772,8 @@ profile              # PromptCacheProfile: COMMANDER | NARRATION | COMPRESSION; 
 CompletableFuture<LlmResult>
 ```
 
-При interrupt мысль отменяет future (`future.cancel(...)`); отдельного cancellation/owner token нет.
+При interrupt мысль отменяет future (`future.cancel(...)`); gateway связывает его с конкретной физической задачей,
+прерывает её и отменяет удерживаемый HTTP exchange. Отдельного публичного cancellation/owner token нет.
 
 `LlmGateway` не знает, как пересобрать consciousness prompt.
 Он не имеет доступа к `Thought`, `PromptComposer`, `Reducer`, `ToolAccessPolicy` или `SystemToolProvider`.
@@ -776,7 +782,9 @@ Repair/retry может использовать только исходный r
 Поведение gateway:
 
 * queued cancelled request → удалить/пропустить;
-* in-flight cancelled request → дождаться технически, discard result, diagnostics;
+* in-flight cancelled request → прервать физическую задачу и HTTP exchange;
+* transport завершился в гонке с отменой → discard result, diagnostics;
+* один 50-секундный logical deadline покрывает очередь и все repair/continuation attempts вместе;
 * result cancelled request не попадает:
 
     * в Thought;
@@ -1713,7 +1721,9 @@ Queued cancelled requests:
 In-flight cancelled requests:
 
 ```text
-→ result discarded
+→ exact gateway task interrupted
+→ physical HTTP future cancelled
+→ any racing late result discarded
 → diagnostics
 ```
 
@@ -2024,7 +2034,7 @@ elite.intel.companion
 
 ### §10.3. Уточнения механизмов (отличия от ранних разделов)
 
-* **Шлюзы возвращают `CompletableFuture`, не handle/owner-token.** `LlmGateway` → `CompletableFuture<LlmResult>`, `SpeechGateway` → `CompletableFuture<Void>`, `ExecutionGateway` → `CompletableFuture<JsonObject>`. Отмена — `future.cancel(...)` (skip из очереди / discard результата); отдельного `CancellationToken` нет. Инвариант «только owning thought потребляет result» сохраняется: future держит сама мысль.
+* **Шлюзы возвращают `CompletableFuture`, не handle/owner-token.** `LlmGateway` → `CompletableFuture<LlmResult>`, `SpeechGateway` → `CompletableFuture<Void>`, `ExecutionGateway` → `CompletableFuture<JsonObject>`. Для LLM gateway связывает future с конкретной `FutureTask`: cancel/50-секундный logical deadline прерывает её и отменяет физический `HttpClient.sendAsync` exchange; очередь, initial call, repair и continuation делят один deadline. Для остальных шлюзов отмена остаётся skip/discard по их контракту. Отдельного публичного `CancellationToken` нет. Инвариант «только owning thought потребляет result» сохраняется: future держит сама мысль.
 * **Один класс мысли на источник.** `Thought` — тонкая общая база (`composeInitialPrompt`/`submitRound`/`submitExecution`/`recordCurrentInput`/`recordCompanionSpeech`/`recordOutcome`/interrupt), **без цикла мышления**. `CommanderThought` владеет полным tool-calling-циклом и dangerous-confirmation; `EventThought` озвучивает реакцию subscriber'а в двух режимах: narration — один короткий ЛЛМ-раунд фразирует переданные данные (лаконичный narration-промпт, только `speak`), verbatim — дословная озвучка готовой фразы без ЛЛМ и промпта; в обоих режимах пишется пара `user`→`[COMPANION]`. Слова компаньона пишутся источником памяти `COMPANION` (сам текст, не `{status:spoken}`). `ThoughtDispatcher` держит lane на каждый `ThoughtSource` в `EnumMap`; COMMANDER имеет один ordered cognitive worker, event — один worker. Detached handler futures остаются live/pending в `ThoughtLane`, не удерживая worker.
 * **`mode` → `PromptCacheProfile`** {COMMANDER, NARRATION, COMPRESSION, KEY_GENERATION}. У каждого стабильный `cacheKey()` → Mistral `prompt_cache_key` (свой кэш-префикс на профиль). `EVENT` narration-режим использует профиль `NARRATION` (собственный лаконичный промпт без topic enum / memory / safety); verbatim-режим промпт не строит и профиля не имеет. Признак «ждём tool-calls vs текст» выводится (consciousness vs COMPRESSION / `tools.isEmpty()`), отдельного флага нет.
 * **`LlmRequest` = `(requestId, messages, tools, profile)`.** Список `tools` и есть immutable snapshot; `urgency` на запросе не нужен — приоритет/преемпция реализуются через interrupt на уровне `ThoughtDispatcher`.

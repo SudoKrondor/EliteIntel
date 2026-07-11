@@ -8,10 +8,12 @@ import elite.intel.session.SystemSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class BaseAiClient {
     private static final Logger log = LogManager.getLogger(BaseAiClient.class);
@@ -43,8 +45,12 @@ public class BaseAiClient {
 
     public JsonObject sendJsonRequest(HttpRequest request) {
         currentRequestThread = Thread.currentThread();
+        CompletableFuture<HttpResponse<String>> exchange = null;
         try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            // Keep the provider-facing API synchronous, but retain the physical exchange future so interrupting
+            // a companion gateway task cancels the socket-level request instead of only abandoning its result.
+            exchange = sendAsync(request);
+            HttpResponse<String> response = exchange.get();
             int code = response.statusCode();
             if (code != 200) {
                 String body = response.body();
@@ -62,12 +68,24 @@ public class BaseAiClient {
             }
             return JsonParser.parseString(response.body()).getAsJsonObject();
         } catch (InterruptedException e) {
+            if (exchange != null) {
+                exchange.cancel(true);
+            }
             Thread.currentThread().interrupt();
             return createErrorResponse("LLM Call Failed");
-        } catch (IOException e) {
-            return createErrorResponse("Request failed: " + e.getMessage());
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            String message = cause != null ? cause.getMessage() : e.getMessage();
+            return createErrorResponse("Request failed: " + message);
+        } catch (CancellationException e) {
+            return createErrorResponse("LLM Call Failed");
         } finally {
             currentRequestThread = null;
         }
+    }
+
+    /** Starts the physical HTTP exchange; protected so cancellation can be verified without real network I/O. */
+    protected CompletableFuture<HttpResponse<String>> sendAsync(HttpRequest request) {
+        return HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString());
     }
 }

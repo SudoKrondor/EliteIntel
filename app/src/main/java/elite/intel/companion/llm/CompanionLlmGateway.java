@@ -1,21 +1,28 @@
 package elite.intel.companion.llm;
 
 import com.google.gson.JsonObject;
+import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -36,42 +43,128 @@ import java.util.stream.Collectors;
  * pair to the thought. The protocol transcript is request-local and is never written to durable memory.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
- * returns immediately with a future.
+ * returns immediately with a future. Cancelling that future interrupts the exact executor task and, through
+ * the provider client's interruptible HTTP wait, cancels the physical exchange. One logical deadline covers
+ * queue wait plus every repair/continuation attempt, so a stalled call cannot retain the sole worker beyond
+ * the thought watchdog.
  */
 public final class CompanionLlmGateway implements LlmGateway {
 
     private static final Logger log = LogManager.getLogger(CompanionLlmGateway.class);
 
     private static final LlmResult INVALID = new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
-
     private final LlmProviderAdapter adapter;
     private final LlmTransport transport;
     private final Executor executor;
+    private final Duration logicalDeadline;
 
     public CompanionLlmGateway(LlmProviderAdapter adapter, LlmTransport transport) {
         this(adapter, transport, Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "companion-llm");
             thread.setDaemon(true);
             return thread;
-        }));
+        }), CompanionConfig.llmLogicalDeadline());
     }
 
     /** Test seam: inject a synchronous/controlled executor. */
     CompanionLlmGateway(LlmProviderAdapter adapter, LlmTransport transport, Executor executor) {
-        this.adapter = adapter;
-        this.transport = transport;
-        this.executor = executor;
+        this(adapter, transport, executor, CompanionConfig.llmLogicalDeadline());
+    }
+
+    /** Test seam: inject the executor and the total deadline shared by every physical attempt. */
+    CompanionLlmGateway(
+            LlmProviderAdapter adapter,
+            LlmTransport transport,
+            Executor executor,
+            Duration logicalDeadline
+    ) {
+        this.adapter = Objects.requireNonNull(adapter, "adapter");
+        this.transport = Objects.requireNonNull(transport, "transport");
+        this.executor = Objects.requireNonNull(executor, "executor");
+        this.logicalDeadline = Objects.requireNonNull(logicalDeadline, "logicalDeadline");
+        if (logicalDeadline.isZero() || logicalDeadline.isNegative()) {
+            throw new IllegalArgumentException("logicalDeadline must be positive");
+        }
     }
 
     @Override
     public CompletableFuture<LlmResult> submit(LlmRequest request) {
-        return CompletableFuture.supplyAsync(() -> process(request), executor);
+        return submitCancellable(request, () -> process(request));
     }
 
     @Override
     public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
         // Plain-text turn (request carries no tools): render -> send -> extract text; null on bad output.
-        return CompletableFuture.supplyAsync(() -> adapter.parseText(transport.send(adapter.buildRequestBody(request))), executor);
+        return submitCancellable(request, () -> {
+            ensureActive();
+            String body = adapter.buildRequestBody(request);
+            ensureActive();
+            JsonObject response = transport.send(body);
+            ensureActive();
+            return adapter.parseText(response);
+        });
+    }
+
+    /**
+     * Runs one logical request on an explicitly cancellable task. {@link CompletableFuture#cancel(boolean)} does
+     * not interrupt a {@code supplyAsync} supplier by itself, so the returned future is deliberately bridged to
+     * the underlying {@link FutureTask}. The one timeout is armed before queueing and therefore covers queue wait,
+     * initial send, repair, and classify continuation together.
+     */
+    private <T> CompletableFuture<T> submitCancellable(LlmRequest request, Supplier<T> operation) {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        FutureTask<Void> task = new FutureTask<>(() -> {
+            if (result.isDone()) {
+                return null;
+            }
+            try {
+                ensureActive();
+                T value = operation.get();
+                ensureActive();
+                result.complete(value);
+            } catch (Throwable failure) {
+                result.completeExceptionally(failure);
+            }
+            return null;
+        });
+
+        result.orTimeout(logicalDeadline.toMillis(), TimeUnit.MILLISECONDS);
+        result.whenComplete((ignored, failure) -> {
+            if (result.isCancelled()) {
+                task.cancel(true);
+                CompanionDiagnostics.debug(trace, "llm", "request cancelled; physical call interrupted");
+            } else if (isTimeout(failure)) {
+                task.cancel(true);
+                CompanionDiagnostics.debug(trace, "llm", "logical deadline "
+                        + logicalDeadline.toMillis() + " ms exceeded; physical call interrupted");
+            }
+        });
+
+        try {
+            executor.execute(task);
+        } catch (RuntimeException rejected) {
+            result.completeExceptionally(rejected);
+        }
+        return result;
+    }
+
+    private static boolean isTimeout(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof TimeoutException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    /** Stops parse/retry work after the owning future has interrupted this exact task. */
+    private static void ensureActive() {
+        if (Thread.currentThread().isInterrupted()) {
+            throw new CancellationException("LLM request interrupted");
+        }
     }
 
     /**
@@ -102,6 +195,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     private record Attempt(LlmResult result, Defect defect) {}
 
     private LlmResult process(LlmRequest request) {
+        ensureActive();
         Attempt first = attempt(request, 1, RoundExpectation.INITIAL);
         if (first.defect() == Defect.NONE) {
             return first.result();
@@ -136,14 +230,18 @@ public final class CompanionLlmGateway implements LlmGateway {
         long attemptStartedNanos = System.nanoTime();
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
         try {
+            ensureActive();
             long renderStartedNanos = System.nanoTime();
             String body = adapter.buildRequestBody(request);
+            ensureActive();
             long renderMillis = elapsedMillis(renderStartedNanos);
             long httpStartedNanos = System.nanoTime();
             JsonObject response = transport.send(body);
+            ensureActive();
             long httpMillis = elapsedMillis(httpStartedNanos);
             long parseStartedNanos = System.nanoTime();
             LlmResult result = adapter.parse(response);
+            ensureActive();
             long parseMillis = elapsedMillis(parseStartedNanos);
             CompanionDiagnostics.debug(trace, "llm-http",
                     "attempt=" + attemptNumber

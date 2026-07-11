@@ -51,7 +51,7 @@ public final class ThoughtDispatcher implements ManagedService {
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
-    private static final long WATCHDOG_TIMEOUT_MILLIS = 60_000;
+    private static final long WATCHDOG_TIMEOUT_MILLIS = CompanionConfig.thoughtWatchdogTimeout().toMillis();
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
