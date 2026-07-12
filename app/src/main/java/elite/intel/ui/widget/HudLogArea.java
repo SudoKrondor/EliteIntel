@@ -12,6 +12,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Canvas-rendered HUD readout that displays messages bottom-up with a typewriter animation.
@@ -82,6 +83,8 @@ public class HudLogArea extends JPanel {
     private static final int CHAT_RAIL_ALPHA = 150;
     /** Alpha of the active AI card's background highlight at the rail edge (fades to transparent). */
     private static final int CHAT_HIGHLIGHT_ALPHA = 31;
+    private static final int FULL_ALPHA = 255;
+    private static final long CHAT_ACTIVE_HOLD_NANOS = TimeUnit.MILLISECONDS.toNanos(HudPalette.HUD_CHAT_ACTIVE_HOLD_MS);
 
     private final Style style;
     /**
@@ -98,6 +101,8 @@ public class HudLogArea extends JPanel {
      * Non-null only in chat mode; toggles {@link #caretVisible} to blink the commander prompt cursor.
      */
     private final Timer blinkTimer;
+    /** Repaints the short post-typewriter fade while Vega's active-card treatment decays. */
+    private final Timer activeCardTimer;
     private boolean caretVisible = false;
     private int scrollOffset = 0;
     private int totalContentHeight = 0;
@@ -116,6 +121,8 @@ public class HudLogArea extends JPanel {
         final Instant timestamp;
         String visibleText = "";
         boolean complete = false;
+        /** Monotonic deadline for Vega's post-typewriter active-card fade. */
+        long activeUntilNanos;
 
         Message(String t, int prefixLen, Style style, Align align, Instant timestamp) {
             this.fullText = t;
@@ -159,8 +166,11 @@ public class HudLogArea extends JPanel {
                 repaint();
             });
             blinkTimer.setRepeats(true);
+            activeCardTimer = new Timer(HudPalette.HUD_CHAT_ACTIVE_FADE_FRAME_MS, e -> repaintActiveCardFade());
+            activeCardTimer.setRepeats(true);
         } else {
             blinkTimer = null;
+            activeCardTimer = null;
         }
         addMouseWheelListener(e -> {
             int lineHeight = getFontMetrics(hudFont()).getHeight();
@@ -180,6 +190,7 @@ public class HudLogArea extends JPanel {
     @Override
     public void removeNotify() {
         if (blinkTimer != null) blinkTimer.stop();
+        if (activeCardTimer != null) activeCardTimer.stop();
         super.removeNotify();
     }
 
@@ -222,9 +233,11 @@ public class HudLogArea extends JPanel {
         if (text == null || text.isBlank()) return;
         transcript.addLast(transcriptText);
         while (transcript.size() > MAX_TRANSCRIPT) transcript.removeFirst();
+        if (activeCardTimer != null) activeCardTimer.stop();
         for (Message m : messages) {
             m.complete = true;
             m.visibleText = m.fullText;
+            m.activeUntilNanos = 0L;
         }
         typewriterTimer.stop();
         removeAllTimerListeners();
@@ -242,6 +255,7 @@ public class HudLogArea extends JPanel {
     public void clear() {
         typewriterTimer.stop();
         removeAllTimerListeners();
+        if (activeCardTimer != null) activeCardTimer.stop();
         messages.clear();
         transcript.clear();
         offscreen = null;
@@ -280,16 +294,34 @@ public class HudLogArea extends JPanel {
                 return;
             }
             int len = target.visibleText.length();
-            if (len >= target.fullText.length()) {
+            if (len < target.fullText.length()) {
+                target.visibleText = target.fullText.substring(0, len + 1);
+            }
+            if (target.visibleText.length() >= target.fullText.length()) {
                 target.complete = true;
                 target.visibleText = target.fullText;
                 typewriterTimer.stop();
-            } else {
-                target.visibleText = target.fullText.substring(0, len + 1);
+                retainVegaCardActivity(target);
             }
             paintImmediately(0, 0, getWidth(), getHeight());
         });
         typewriterTimer.start();
+    }
+
+    /** Retains the visual speaking state briefly after Vega's typewriter reaches the final character. */
+    private void retainVegaCardActivity(Message message) {
+        if (!chat || message.style != Style.AI_RESPONSE || message.align != Align.RIGHT) return;
+        message.activeUntilNanos = System.nanoTime() + CHAT_ACTIVE_HOLD_NANOS;
+        activeCardTimer.restart();
+    }
+
+    /** Repaints each fade frame and stops the timer once the newest Vega card reaches its normal treatment. */
+    private void repaintActiveCardFade() {
+        Message newest = messages.isEmpty() ? null : messages.get(messages.size() - 1);
+        if (newest == null || vegaActivityStrength(newest, messages.size() - 1) <= 0f) {
+            activeCardTimer.stop();
+        }
+        repaint();
     }
 
     @Override
@@ -390,7 +422,8 @@ public class HudLogArea extends JPanel {
      * Chat renderer: one merged, time-ordered stream of cards. Commander cards sit on the left with a green
      * rail; AI (Vega) cards sit on the right with a cyan rail. Each card shows a timestamp above its text.
      * The AI card that is still being written is the "active" card - it gets a fully-opaque rail, a faint
-     * left-fading highlight and L-shaped corner brackets instead of a typewriter caret. The commander's own
+     * left-fading highlight and L-shaped corner brackets instead of a typewriter caret. Its active treatment
+     * smoothly fades after the typewriter completes. The commander's own
      * in-progress line types in the blinking bottom prompt row (its waiting cursor) before it posts.
      * This method orchestrates layout/scroll; each card kind is drawn by a dedicated painter.
      */
@@ -432,8 +465,8 @@ public class HudLogArea extends JPanel {
             if (y + cardH <= 0) break; // fully scrolled above the viewport; all older cards are too
 
             if (msg.align == Align.RIGHT) {
-                boolean active = !msg.complete && i == messages.size() - 1;
-                paintVegaCard(g2, msg, lines, active, y, cardH, m);
+                float activityStrength = vegaActivityStrength(msg, i);
+                paintVegaCard(g2, msg, lines, activityStrength, y, cardH, m);
             } else {
                 paintCommanderCard(g2, msg, lines, y, cardH, m);
             }
@@ -442,6 +475,18 @@ public class HudLogArea extends JPanel {
 
         if (totalContentHeight > h) drawScrollbar(g2, w, h);
         paintCommanderPrompt(g2, h, m, cmdrAnimating, activeLines);
+    }
+
+    /** Returns the newest Vega card's active-treatment strength: full while typing, smoothly fading afterward. */
+    private float vegaActivityStrength(Message message, int messageIndex) {
+        if (message.style != Style.AI_RESPONSE || messageIndex != messages.size() - 1) return 0f;
+        if (!message.complete) return 1f;
+
+        long remainingNanos = message.activeUntilNanos - System.nanoTime();
+        if (remainingNanos <= 0L) return 0f;
+
+        float remainingFraction = Math.min(1f, remainingNanos / (float) CHAT_ACTIVE_HOLD_NANOS);
+        return remainingFraction * remainingFraction * (3f - 2f * remainingFraction);
     }
 
     /** Fonts, metrics and X-geometry shared by the chat card painters; computed once per paint. */
@@ -466,15 +511,17 @@ public class HudLogArea extends JPanel {
     }
 
     /** Right (Vega) card: cyan rail, timestamp, text right-anchored (single line) or column-aligned (wrapped);
-     *  the active card adds a highlight wash and corner brackets in place of a caret. */
-    private void paintVegaCard(Graphics2D g2, Message msg, List<String> lines, boolean active, int y, int cardH, ChatMetrics m) {
+     *  the active card adds a left-fading highlight and corner brackets in place of a caret. */
+    private void paintVegaCard(Graphics2D g2, Message msg, List<String> lines, float activityStrength,
+                               int y, int cardH, ChatMetrics m) {
         boolean multiLine = lines.size() > 1;
         int blockW = multiLine ? m.wrapW() : m.fm().stringWidth(lines.get(0));
         int colLeft = m.rightTextEnd() - blockW;
         int boxRight = m.rightRailX() + CHAT_RAIL_W;
-        if (active) paintActiveHighlight(g2, colLeft, y, boxRight, cardH);
-        g2.setColor(active ? HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK
-                : withAlpha(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, CHAT_RAIL_ALPHA));
+        int highlightAlpha = Math.round(CHAT_HIGHLIGHT_ALPHA * activityStrength);
+        if (highlightAlpha > 0) paintActiveHighlight(g2, colLeft, y, boxRight, cardH, highlightAlpha);
+        int railAlpha = CHAT_RAIL_ALPHA + Math.round((FULL_ALPHA - CHAT_RAIL_ALPHA) * activityStrength);
+        g2.setColor(withAlpha(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, railAlpha));
         g2.fillRect(m.rightRailX(), y, CHAT_RAIL_W, cardH);
         drawTimestamp(g2, msg, m.tsFont(), m.tsFm(), m.rightTextEnd(), y + m.tsFm().getAscent(), true);
         g2.setFont(m.font());
@@ -485,7 +532,8 @@ public class HudLogArea extends JPanel {
             int lx = multiLine ? colLeft : m.rightTextEnd() - m.fm().stringWidth(line);
             g2.drawString(line, lx, textTop + li * m.lineH() + m.fm().getAscent());
         }
-        if (active) paintCornerBrackets(g2, colLeft, y, boxRight, cardH);
+        int bracketAlpha = Math.round(FULL_ALPHA * activityStrength);
+        if (bracketAlpha > 0) paintCornerBrackets(g2, colLeft, y, boxRight, cardH, bracketAlpha);
     }
 
     /** Left (commander) card: green rail, timestamp, left-aligned text. */
@@ -541,18 +589,18 @@ public class HudLogArea extends JPanel {
         g2.drawString(ts, x, baselineY);
     }
 
-    /** Left-fading cyan wash behind the active AI card (strongest at the rail, transparent at the text edge). */
-    private void paintActiveHighlight(Graphics2D g2, int left, int top, int right, int cardH) {
+    /** Left-fading cyan wash behind the active AI card; an intentional exception to the HUD no-gradient rule. */
+    private void paintActiveHighlight(Graphics2D g2, int left, int top, int right, int cardH, int alpha) {
         Color c = HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK;
         Paint old = g2.getPaint();
-        g2.setPaint(new GradientPaint(right, top, withAlpha(c, CHAT_HIGHLIGHT_ALPHA), left, top, withAlpha(c, 0)));
+        g2.setPaint(new GradientPaint(right, top, withAlpha(c, alpha), left, top, withAlpha(c, 0)));
         g2.fillRect(left, top, right - left, cardH);
         g2.setPaint(old);
     }
 
     /** L-shaped corner brackets on the top-right and bottom-right of the active AI card. */
-    private void paintCornerBrackets(Graphics2D g2, int left, int top, int right, int cardH) {
-        g2.setColor(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK);
+    private void paintCornerBrackets(Graphics2D g2, int left, int top, int right, int cardH, int alpha) {
+        g2.setColor(withAlpha(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, alpha));
         int t = CHAT_RAIL_W, arm = CHAT_BRACKET_ARM, bottom = top + cardH;
         g2.fillRect(right - arm, top, arm, t);          // top-right horizontal
         g2.fillRect(right - t, top, t, arm);            // top-right vertical

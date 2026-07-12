@@ -122,6 +122,10 @@ public final class HudPalette {
     public static final int HUD_BORDER_THICKNESS_ACCENT = 2;
     /** Width of the blinking typewriter caret shared by the conversation view and stream overlay. */
     public static final int HUD_CARET_WIDTH = HUD_BORDER_THICKNESS_ACCENT;
+    /** Milliseconds over which a completed Vega response fades from its active conversation treatment. */
+    public static final int HUD_CHAT_ACTIVE_HOLD_MS = 1_200;
+    /** Repaint cadence for the short active-Vega fade in the conversation view. */
+    public static final int HUD_CHAT_ACTIVE_FADE_FRAME_MS = 33;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
