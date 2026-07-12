@@ -179,8 +179,8 @@
 
 ### §1.1. Режим и входные потоки
 
-1. **`companionModeOn` — главный gate режима.**
-   Флаг в `SystemSession` решает, кто обслуживает вход: старый `CommandEndPoint` или компаньон.
+1. **Компаньон — единственный command mode.**
+   `CompanionSubsystemGate` всегда принимает командирский ввод; переключателя на старый `CommandEndPoint` нет.
 
 2. **Компаньон получает два входа.**
 
@@ -477,12 +477,10 @@
 ```text
 STT / PTT
 → UserInputEvent
-→ companionModeOn gate
+→ CompanionSubsystemGate
 → ThoughtDispatcher
 → COMMANDER thought
 ```
-
-Если `companionModeOn = false`, голосовой ввод обслуживает старый command mode.
 
 #### Событийный вход — единственная дверь `CompanionNarrator`
 
@@ -509,7 +507,7 @@ subscriber (проверил тумблер, напр. isMiningAnnouncementOn)
 → ThoughtDispatcher.submitEventVerbatim → EventThought (verbatim)
 ```
 
-Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются в самом subscriber'е до вызова. Legacy `VocalisationRouter` этих объявлений больше не маршрутизирует (их события удалены); radio-трансмиссия остаётся на legacy-пути и в память не попадает. Если `companionModeOn = false`, наррратор — `NO_OP`, реакция просто отбрасывается.
+Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются в самом subscriber'е до вызова. Legacy `VocalisationRouter` этих объявлений больше не маршрутизирует (их события удалены); radio-трансмиссия остаётся на legacy-пути и в память не попадает.
 
 ---
 
@@ -1813,7 +1811,6 @@ In-flight cancelled requests:
 
 ### §6.2. Новое
 
-* `companionModeOn` gate.
 * `ThoughtDispatcher` (lane на источник, `EnumMap`) + `ThoughtLane`.
 * `Thought` (abstract) + `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы).
 * рефлекс-гейт: `ReflexResolver` (`submitCommanderInput`: дословная безопасная беспараметрная команда → `ReflexThought` без ЛЛМ).
@@ -1846,7 +1843,6 @@ In-flight cancelled requests:
 
 ### §7.1. Под read-only разведку кода
 
-* Где лучше поставить `companionModeOn` gate на текущей EventBus-схеме.
 * Какие `BaseEvent` типы пропускать через `EventFilter`.
 * Какие event types считать urgent.
 * Какие voice phrases считать urgent commander phrases.
@@ -1909,14 +1905,13 @@ In-flight cancelled requests:
 ```text
 STT/PTT
 → UserInputEvent
-→ companionModeOn gate
+→ CompanionSubsystemGate
 → ThoughtDispatcher
 → COMMANDER thought
 
 Journal/Status events
-→ companionModeOn gate
-→ EventFilter
-→ ThoughtDispatcher
+→ gameplay subscriber
+→ CompanionNarrator
 → EVENT thought
 
 Thought
@@ -2032,7 +2027,7 @@ v0.13 основана на прогоне правдоподобных сцен
 
 | Концепт в документе | Класс в коде | Пакет |
 |---|---|---|
-| companionModeOn gate | `CompanionSubsystemGate` | `companion.input` |
+| commander input gate / lifecycle owner | `CompanionSubsystemGate` | `companion.input` |
 | дверь событий (filler/narrate/announce) | `CompanionNarrator` (интерфейс) / `DispatcherCompanionNarrator` (impl) | `companion` / `companion.mind` |
 | origin мысли | `ThoughtSource` (COMMANDER/EVENT) | `companion.model` |
 | вид мысли (один на источник) | `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы) (abstract `Thought`) | `companion.mind` |
