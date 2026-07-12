@@ -77,7 +77,7 @@ final class ThoughtContext {
         return urgency;
     }
 
-    /** The raw user/event text retained for execution and memory. */
+    /** The raw user/event text retained for command execution and intake diagnostics. */
     String currentInput() {
         return currentInput;
     }
@@ -85,6 +85,14 @@ final class ThoughtContext {
     /** The canonical input used for tool selection and prompt construction. */
     String matchInput() {
         return matchInput;
+    }
+
+    /**
+     * The text retained in conversational memory: canonical commander wording, or the original event stimulus.
+     * Event match text may be an expanded LLM prompt rather than the stimulus itself, so it must not be stored.
+     */
+    String memoryInput() {
+        return source == ThoughtSource.COMMANDER ? matchInput : currentInput;
     }
 
     /** The immutable game-state inputs used for every visibility decision in this commander turn. */

@@ -527,7 +527,7 @@ public final class CommanderThought extends Thought {
         CompanionDiagnostics.info(trace(), "settle", "cannot execute (unrecoverable LLM response)");
         if (!inputRecorded) {
             writeMemory(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, context.currentInput()));
+                    MemorySource.COMMANDER, context.memoryInput()));
         }
         dependencies.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
     }
@@ -548,7 +548,7 @@ public final class CommanderThought extends Thought {
                 inputRecorded ? "cut off after filing input" : "interrupted before filing (input saved as unresolved)");
         if (!inputRecorded) {
             writeMemory(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
-                    MemorySource.COMMANDER, context.currentInput()));
+                    MemorySource.COMMANDER, context.memoryInput()));
         } else {
             recordTurnBoundary(TurnBoundaryMarkers.INTERRUPTED);
         }

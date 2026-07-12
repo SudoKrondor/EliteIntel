@@ -94,8 +94,8 @@ public abstract class Thought {
     }
 
     /**
-     * As above, but with a separate canonical {@code matchInput} (e.g. the synonym-normalized form) used for
-     * tool selection and as the LLM-visible current input; memory still records the raw {@code input}.
+     * As above, but with a separate canonical {@code matchInput} (e.g. an STT-corrected form) used for
+     * tool selection, the LLM-visible current input, and commander memory; raw {@code input} stays with execution.
      */
     public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtDependencies dependencies) {
         return commander(ThoughtContext.commander(urgency, input, matchInput), dependencies);
@@ -363,23 +363,23 @@ public abstract class Thought {
         return error;
     }
 
-    /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
+    /** Records the memory-visible input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         if (!isRuntimeActive()) {
             return;
         }
         String canonical = memoryCanonicalFact();
-        // The verbatim input is already shown by the intake line; log only that it was filed and under which stamp.
+        // The raw intake is already shown by the intake line; commander memory keeps its STT-corrected wording.
         CompanionDiagnostics.debug(trace, "memory",
                 "record input [" + memoryTopic() + "/" + memoryImportance() + "]");
         writeMemory(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), context.currentInput(), memoryImportance(),
+                Instant.now(), memoryTopic(), memorySource(), context.memoryInput(), memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
     }
 
     /**
      * Optional clean one-line restatement of a durable fact stated this turn, used only as the memory
-     * candidate/embedding text (the verbatim input stays the ground truth). Empty by default; a COMMANDER
+     * candidate/embedding text (the memory-visible input remains the normalized commander wording). Empty by default; a COMMANDER
      * thought supplies it from {@code classify_turn}.
      */
     protected String memoryCanonicalFact() {

@@ -645,7 +645,8 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> openFleetCarrierPanel() {
-        return Stream.of("display fleet carrier panel", "open fleet carrier panel", "fleet carrier panel");
+        return Stream.of("display fleet carrier panel", "open fleet carrier panel", "fleet carrier panel",
+                "open career management panel"); // STT acoustic confusion: career -> carrier
     }
     // =========================================================================
     // Squadron carrier

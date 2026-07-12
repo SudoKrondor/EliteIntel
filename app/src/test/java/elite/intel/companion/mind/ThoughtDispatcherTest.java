@@ -170,45 +170,51 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void inputNormalizerCanonicalizesBeforeTheReflexGate() {
-        // A synonym ("combat mode") is canonicalized to its training phrase ("switch to combat mode") before the
-        // reflex gate, so it reflexes without the LLM. This command returns no spoken outcome, so nothing is filed.
-        LlmGateway failIfCalled = new LlmGateway() {
-            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
-                throw new AssertionError("a reflex must not engage the LLM");
-            }
-            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
-                return CompletableFuture.completedFuture(null);
-            }
-        };
-        List<String> executed = new CopyOnWriteArrayList<>();
-        ExecutionGateway tracking = request -> {
-            executed.add(request.toolName());
-            return CompletableFuture.completedFuture(new JsonObject());
-        };
-        ThoughtDependencies dependencies = new ThoughtDependencies(
-                failIfCalled, new FakeSpeech(), tracking, memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                (categories, currentInput) -> List.of(), new CompanionState(),
-                invocation -> false, new ConfirmationCoordinator(),
-                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
-        List<GameStateSnapshot> observedStates = new CopyOnWriteArrayList<>();
-        ReflexResolver reflex = new ReflexResolver(snapshot -> {
-            observedStates.add(snapshot);
-            return List.of(new ReflexResolver.CommandPhrase("switch_combat", "switch to combat mode", true));
-        }, invocation -> false);
-        Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex, normalizer);
-        dispatcher.start();
-        dispatcher.submitCommanderInput("combat mode");
-        dispatcher.stop();
+    void phoneticNormalizerCanonicalizesBeforeTheReflexGate() {
+        // A known Parakeet acoustic confusion ("career") is corrected to the intended command term ("carrier")
+        // before the reflex gate, so it reflexes without the LLM. This command returns no spoken outcome, so nothing is filed.
+        Language previousLanguage = SystemSession.getInstance().getLanguage();
+        SystemSession.getInstance().setLanguage(Language.EN);
+        try {
+            LlmGateway failIfCalled = new LlmGateway() {
+                @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                    throw new AssertionError("a reflex must not engage the LLM");
+                }
+                @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                    return CompletableFuture.completedFuture(null);
+                }
+            };
+            List<String> executed = new CopyOnWriteArrayList<>();
+            ExecutionGateway tracking = request -> {
+                executed.add(request.toolName());
+                return CompletableFuture.completedFuture(new JsonObject());
+            };
+            ThoughtDependencies dependencies = new ThoughtDependencies(
+                    failIfCalled, new FakeSpeech(), tracking, memory,
+                    new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                    (categories, currentInput) -> List.of(), new CompanionState(),
+                    invocation -> false, new ConfirmationCoordinator(),
+                    new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+            List<GameStateSnapshot> observedStates = new CopyOnWriteArrayList<>();
+            ReflexResolver reflex = new ReflexResolver(snapshot -> {
+                observedStates.add(snapshot);
+                return List.of(new ReflexResolver.CommandPhrase(
+                        "display_fleet_carrier_management_panel", "open fleet carrier management panel", true));
+            }, invocation -> false);
+            ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, reflex);
+            dispatcher.start();
+            dispatcher.submitCommanderInput("open fleet career management panel");
+            dispatcher.stop();
 
-        assertEquals(List.of("switch_combat"), executed,
-                "the normalized synonym reflexes to the resolved command without the LLM");
-        assertEquals(2, observedStates.size(), "raw and normalized exact attempts both consult visibility");
-        assertSame(observedStates.get(0), observedStates.get(1),
-                "raw and normalized exact attempts must share one immutable turn state");
-        assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
+            assertEquals(List.of("display_fleet_carrier_management_panel"), executed,
+                    "the corrected acoustic term reflexes to the resolved command without the LLM");
+            assertEquals(2, observedStates.size(), "raw and normalized exact attempts both consult visibility");
+            assertSame(observedStates.get(0), observedStates.get(1),
+                    "raw and normalized exact attempts must share one immutable turn state");
+            assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
+        } finally {
+            SystemSession.getInstance().setLanguage(previousLanguage);
+        }
     }
 
     @Test
@@ -305,22 +311,27 @@ class ThoughtDispatcherTest {
     }
 
     @Test
-    void aNonCommandTurnRecordsRawWordsNotTheCanonicalForm() {
-        // The normalizer canonicalizes the input for matching/tool selection, but a recorded (non-command) turn
-        // keeps the raw words the commander actually said. The reflex matches nothing, so the turn takes the LLM
-        // path and settles as a bare classify_turn - a conversational turn that files its input.
+    void aNonCommandTurnRecordsCanonicalWordsNotTheRawSttForm() {
+        // The normalizer corrects an acoustic STT error. The reflex matches nothing, so the turn takes the LLM
+        // path and settles as a bare classify_turn; memory must retain the same canonical wording the LLM saw.
         CapturingLlm llm = new CapturingLlm();
         ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
-        Function<String, String> normalizer = s -> "combat mode".equals(s) ? "switch to combat mode" : s;
+        Function<String, String> normalizer = s -> "open fleet career management panel".equals(s)
+                ? "open fleet carrier management panel" : s;
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, normalizer);
         dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
-        dispatcher.submitCommanderInput("combat mode");
+        dispatcher.submitCommanderInput("open fleet career management panel");
         dispatcher.stop();
 
         assertTrue(memory.writes.stream().anyMatch(
-                        e -> e.source() == MemorySource.COMMANDER && "combat mode".equals(e.content())),
-                "memory keeps the raw words, not the canonical form used for matching");
+                        e -> e.source() == MemorySource.COMMANDER
+                                && "open fleet carrier management panel".equals(e.content())),
+                "memory keeps the canonical form used for matching and prompting");
+        assertTrue(memory.writes.stream().noneMatch(
+                        e -> e.source() == MemorySource.COMMANDER
+                                && "open fleet career management panel".equals(e.content())),
+                "memory must not retain the broken STT wording");
     }
 
     @Test
