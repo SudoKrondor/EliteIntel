@@ -4,10 +4,15 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.25**.
+Версия **v0.26**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.26 (2026-07-12).** HTTP-результат LLM отделён от model/protocol parsing и от пользовательской речи.
+> - **Типизированный transport outcome:** `AiTransportResult` различает success, transient, permanent, malformed 2xx response и cancellation. `400`/`401`/`403` не становятся обычным JSON-ответом модели и не входят в protocol repair.
+> - **Один ограниченный resend:** только network/IO, `429` и `5xx` получают одну повторную физическую отправку с jitter `250–750 ms`; она использует тот же body/tools snapshot и остаётся внутри общего 50-секундного logical deadline. Ошибка malformed `2xx` остаётся model/protocol defect и получает обычный один repair.
+> - **Без технической речи:** companion использует typed provider methods, а не legacy `sendJsonRequest`; поэтому низкоуровневый HTTP текст не публикуется как `AiVoxResponseEvent`. В речи остаётся обычный локализованный service-failure outcome, детали — только в diagnostics.
 
 > **v0.25 (2026-07-11).** Жизненный цикл речи принадлежит активному Mouth и коррелируется с конкретной заявкой.
 > - **Один owner speaking-state:** каждый `VocalisationRequestEvent` несёт `VocalisationHandle`; ровно один подходящий запущенный Mouth синхронно claim'ит его перед постановкой в очередь. Только handle публикует `IsSpeakingEvent`, причём лишь на переходах общего счётчика `0→1` и `1→0`, поэтому завершение реплики A не сообщает тишину, пока заявка B ещё активна.
@@ -154,7 +159,7 @@
 **Hard architectural boundary** — граница, которую должен обеспечивать runtime/lifecycle:
 
 * `EventThought` получает **нулевой** набор game-tools в обоих режимах (subscriber уже посчитал и отфильтровал данные); в verbatim-режиме он к тому же не строит промпт и не зовёт ЛЛМ. Action/macro-tools физически доступны только `CommanderThought`;
-* retry не пересобирает prompt/tools и использует исходный immutable tools snapshot;
+* protocol repair и transient transport resend не пересобирают prompt/tools и используют исходный immutable tools snapshot;
 * `LlmGateway`, `SpeechGateway` и `ExecutionModule` не получают объект `Thought` и не callback'ают в него;
 * `MemoryConsolidator` не является `Thought` и не использует consciousness prompt/tools;
 * `MemoryGateway` — единственная дверь к памяти.
@@ -800,7 +805,9 @@ Repair/retry может использовать только исходный r
 * queued cancelled request → удалить/пропустить;
 * in-flight cancelled request → прервать физическую задачу и HTTP exchange;
 * transport завершился в гонке с отменой → discard result, diagnostics;
-* один 50-секундный logical deadline покрывает очередь и все repair/continuation attempts вместе;
+* transient network/IO, `429` или `5xx` → одна повторная отправка с jitter; `400`/`401`/`403` → terminal `INVALID_RESPONSE` без protocol repair;
+* malformed `2xx` body → обычный model/protocol repair, а не transport resend;
+* один 50-секундный logical deadline покрывает очередь, все repair/continuation attempts и transient resend вместе;
 * result cancelled request не попадает:
 
     * в Thought;
@@ -808,6 +815,12 @@ Repair/retry может использовать только исходный r
     * в SpeechGateway;
     * в MemoryGateway;
     * в TopicModel.
+
+#### Transport failure
+
+`LlmGateway` получает от provider transport не error-JSON, а `AiTransportResult`.
+Только transient network/IO, `429` и `5xx` получают одну jittered повторную отправку; auth, authorization и request-shape
+ошибки не повторяются и не превращаются в model repair. Низкоуровневый текст transport-ошибки не озвучивается.
 
 #### Invalid response
 
@@ -1731,8 +1744,15 @@ Timeout/interrupted:
 ### §5.4. Invalid LLM flow
 
 ```text
-LlmGateway receives invalid model response
-→ retry/repair once if token cost below threshold
+LlmGateway receives transient HTTP/network failure
+→ resend once with jitter
+→ if still failed: INVALID_RESPONSE
+
+LlmGateway receives permanent HTTP failure
+→ INVALID_RESPONSE without protocol repair
+
+LlmGateway receives invalid model response or malformed 2xx body
+→ protocol repair once if token cost below threshold
 → if still invalid: INVALID_RESPONSE
 ```
 

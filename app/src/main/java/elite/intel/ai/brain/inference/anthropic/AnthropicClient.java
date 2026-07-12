@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.inference.anthropic;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -56,30 +57,43 @@ public class AnthropicClient extends BaseAiClient implements Client {
         return err;
     }
 
+    /** Sends a companion request without converting a transport failure into legacy speech JSON. */
+    public AiTransportResult sendCompanionRequest(String request) {
+        long t0 = System.nanoTime();
+        AiTransportResult outcome = sendTransportRequest(buildRequest(request));
+        if (outcome instanceof AiTransportResult.Success success) {
+            reportResponse(success.response(), System.nanoTime() - t0);
+        }
+        return outcome;
+    }
+
     @Override
     public JsonObject sendJsonRequest(String request) {
         try {
             long t0 = System.nanoTime();
             JsonObject response = super.sendJsonRequest(buildRequest(request));
-            long elapsed = System.nanoTime() - t0;
-            if (response != null && response.has("usage")) {
-                JsonObject usage = response.getAsJsonObject("usage");
-                int in = usage.has("input_tokens") ? usage.get("input_tokens").getAsInt() : 0;
-                int out = usage.has("output_tokens") ? usage.get("output_tokens").getAsInt() : 0;
-                int cached = usage.has("cache_read_input_tokens") ? usage.get("cache_read_input_tokens").getAsInt() : 0;
-                int written = usage.has("cache_creation_input_tokens") ? usage.get("cache_creation_input_tokens").getAsInt() : 0;
-                UiBus.publish(new AppLogEvent(
-                        "Claude – in= " + in + " out= " + out +
-                                (cached > 0 ? " cache_read= " + cached : "") +
-                                (written > 0 ? " cache_written= " + written : "") +
-                                " tokens"));
-                String model = response.has("model") ? response.get("model").getAsString() : MODEL_COMMAND_MODEL;
-                UiBus.publish(new LlmUsageEvent("Claude", model, in, out, cached, written, wallClockTps(elapsed, out)));
-            }
+            reportResponse(response, System.nanoTime() - t0);
             return response;
         } catch (Exception e) {
             log.error("Request failed", e);
             return createErrorResponse(e.getMessage());
+        }
+    }
+
+    private void reportResponse(JsonObject response, long elapsed) {
+        if (response != null && response.has("usage")) {
+            JsonObject usage = response.getAsJsonObject("usage");
+            int in = usage.has("input_tokens") ? usage.get("input_tokens").getAsInt() : 0;
+            int out = usage.has("output_tokens") ? usage.get("output_tokens").getAsInt() : 0;
+            int cached = usage.has("cache_read_input_tokens") ? usage.get("cache_read_input_tokens").getAsInt() : 0;
+            int written = usage.has("cache_creation_input_tokens") ? usage.get("cache_creation_input_tokens").getAsInt() : 0;
+            UiBus.publish(new AppLogEvent(
+                    "Claude – in= " + in + " out= " + out +
+                            (cached > 0 ? " cache_read= " + cached : "") +
+                            (written > 0 ? " cache_written= " + written : "") +
+                            " tokens"));
+            String model = response.has("model") ? response.get("model").getAsString() : MODEL_COMMAND_MODEL;
+            UiBus.publish(new LlmUsageEvent("Claude", model, in, out, cached, written, wallClockTps(elapsed, out)));
         }
     }
 
