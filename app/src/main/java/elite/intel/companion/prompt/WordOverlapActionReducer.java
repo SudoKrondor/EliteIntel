@@ -4,13 +4,16 @@ import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputComman
 import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.diag.CompanionDiagnostics;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -51,12 +54,14 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
      */
     private static final Set<Language> ANALYTIC = Set.of(Language.EN);
 
-    private final Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource;
+    private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource;
     private final boolean inflectionTolerant;
 
-    /** Production: candidates from the live registries/status, matcher chosen by the session language. */
+    /** Production: live registries, turn-snapshot visibility, matcher chosen by the session language. */
     public WordOverlapActionReducer() {
-        this(new GameToolCandidates()::collect, SystemSession.getInstance().getLanguage());
+        this((categories, snapshot) -> new GameToolCandidates(snapshot).collect(categories),
+                SystemSession.getInstance().getLanguage());
     }
 
     /** Test seam: inject a fixed candidate source; defaults to exact (English) matching. */
@@ -67,13 +72,27 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
     /** Test seam: inject a fixed candidate source and the matching language. */
     WordOverlapActionReducer(Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource,
                              Language language) {
+        this((categories, snapshot) -> candidateSource.apply(categories), language);
+    }
+
+    /** Test seam whose candidate catalog can observe the immutable commander-turn state. */
+    WordOverlapActionReducer(BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource,
+                             Language language) {
         this.candidateSource = candidateSource;
         this.inflectionTolerant = !ANALYTIC.contains(language);
     }
 
     @Override
     public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
-        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories);
+        return selectTools(allowedCategories, currentInput, null, null);
+    }
+
+    @Override
+    public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
+                                               SemanticQuery semanticQuery,
+                                               GameStateSnapshot gameStateSnapshot) {
+        List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
         if (candidates.isEmpty()) {
             // An empty allowed-category set is intent (no game tools requested), not a selection outcome, so it
             // needs no line; a non-empty set that yielded nothing is worth surfacing.

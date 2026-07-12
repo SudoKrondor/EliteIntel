@@ -1,8 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.ApproachSettlementEvent;
 import elite.intel.session.PlayerSession;
 
@@ -52,7 +53,7 @@ public class ApproachSettlementSubscriber {
                             Provide very brief summary for the settlement data.
                             Do not list every service.
                         """;
-                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
+                CompanionRuntime.narrator().narrate(sb.toString(), instructions);
             }
         });
     }

@@ -44,7 +44,7 @@ class AiActionMapGeneratorTest {
     }
 
     /**
-     * Frozen snapshot of the built-in action ids the generator must produce on EN (187 ids).
+     * Frozen snapshot of the built-in action ids the generator must produce on EN (182 ids).
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
      * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
      * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
@@ -104,7 +104,6 @@ class AiActionMapGeneratorTest {
             "find_mining_site",
             "find_nearest_fleet_carrier",
             "find_raw_material_trader",
-            "find_tritium_mining_site",
             "find_vista_genomics",
             "ignore_hunting_ground",
             "increase_speed",
@@ -130,6 +129,9 @@ class AiActionMapGeneratorTest {
             "query_biome_analysis",
             "query_cargo_hold_contents",
             "memory_search",
+            "query_carrier_departure_eta",
+            "query_carrier_status",
+            "query_carrier_voyage",
             "query_carriers",
             "query_current_location",
             "query_distance_to_bio_sample",
@@ -138,10 +140,6 @@ class AiActionMapGeneratorTest {
             "query_distance_to_carrier",
             "query_exobiology_samples",
             "query_exploration_profits",
-            "query_fleet_carrier_eta",
-            "query_fleet_carrier_final_destination",
-            "query_fleet_carrier_route",
-            "query_fleet_carrier_status_fuel_credit_finance",
             "query_fsd_target",
             "query_geo_signals",
             "query_last_scan",
@@ -157,10 +155,6 @@ class AiActionMapGeneratorTest {
             "query_ship_loadout",
             "query_ship_route_remaining_jumps",
             "query_signals_in_star_system",
-            "query_squadron_carrier_eta",
-            "query_squadron_carrier_final_destination",
-            "query_squadron_carrier_route",
-            "query_squadron_carrier_status_fuel_credit_finance",
             "query_station_details",
             "query_stations",
             "query_stellar_objects",
@@ -288,20 +282,13 @@ class AiActionMapGeneratorTest {
 
         requireBefore(order, "find_nearest_fleet_carrier", "navigate_to_fleet_carrier");
 
-        String fleet = "query_fleet_carrier_status_fuel_credit_finance";
-        requireBefore(order, fleet, "query_fleet_carrier_route");
-        requireBefore(order, fleet, "query_fleet_carrier_final_destination");
-        requireBefore(order, fleet, "query_fleet_carrier_eta");
-        requireBefore(order, fleet, "query_distance_to_carrier");
-        requireBefore(order, fleet, "calculate_fleet_carrier_route");
-        requireBefore(order, fleet, "enter_fleet_carrier_destination");
-        requireBefore(order, fleet, "set_carrier_fuel_reserve");
-        requireBefore(order, fleet, "query_squadron_carrier_status_fuel_credit_finance");
-
-        String squad = "query_squadron_carrier_status_fuel_credit_finance";
-        requireBefore(order, squad, "query_squadron_carrier_route");
-        requireBefore(order, squad, "query_squadron_carrier_final_destination");
-        requireBefore(order, squad, "query_squadron_carrier_eta");
+        String status = "query_carrier_status";
+        requireBefore(order, status, "query_carrier_voyage");
+        requireBefore(order, status, "query_carrier_departure_eta");
+        requireBefore(order, status, "query_distance_to_carrier");
+        requireBefore(order, status, "calculate_fleet_carrier_route");
+        requireBefore(order, status, "enter_fleet_carrier_destination");
+        requireBefore(order, status, "set_carrier_fuel_reserve");
     }
 
     /** Source must exist; target is guarded (skip if filtered out of the composition). */

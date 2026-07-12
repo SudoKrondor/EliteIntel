@@ -39,11 +39,12 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
         body.addProperty("max_tokens", MAX_TOKENS);
         body.addProperty("temperature", request.profile().temperature());
 
-        String system = systemPrompt(request.messages());
+        List<LlmMessage> messages = ToolCallIdNormalizer.forWire(request.messages());
+        String system = systemPrompt(messages);
         if (!system.isBlank()) {
             body.addProperty("system", system);
         }
-        body.add("messages", renderMessages(request.messages()));
+        body.add("messages", renderMessages(messages));
 
         if (!request.tools().isEmpty()) {
             body.add("tools", renderTools(request.tools()));
@@ -194,8 +195,10 @@ public final class AnthropicLlmAdapter implements LlmProviderAdapter {
                     return invalid(finishReason, droppedText);
                 }
                 String id = block.has("id") && !block.get("id").isJsonNull() ? block.get("id").getAsString() : null;
-                JsonObject input = block.has("input") && block.get("input").isJsonObject()
-                        ? block.getAsJsonObject("input") : new JsonObject();
+                if (block.has("input") && !block.get("input").isJsonObject()) {
+                    return invalid(finishReason, droppedText);
+                }
+                JsonObject input = block.has("input") ? block.getAsJsonObject("input") : new JsonObject();
                 invocations.add(new LlmToolInvocation(id, name, input));
             }
             return invocations.isEmpty() ? invalid(finishReason, droppedText)

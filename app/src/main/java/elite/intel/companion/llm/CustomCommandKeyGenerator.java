@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -110,6 +111,12 @@ public final class CustomCommandKeyGenerator {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new KeyGenerationException("Key generation was interrupted.");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                throw new KeyGenerationException("The language model did not respond in time. Please try again.");
+            }
+            log.warn("Action-key generation failed", e);
+            throw new KeyGenerationException("Key generation failed. Check your provider and connection, then try again.");
         } catch (Exception e) {
             log.warn("Action-key generation failed", e);
             throw new KeyGenerationException("Key generation failed. Check your provider and connection, then try again.");

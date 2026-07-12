@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -23,10 +22,7 @@ public final class SetReminderCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return """
-                        Set a reminder.
-                        Reminder may have specifics or may be just general reminder.
-                """;
+        return "Save a free-text spoken reminder note (in 'key') to recall later; no timer.";
     }
 
 
@@ -61,7 +57,7 @@ public final class SetReminderCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         ReminderManager reminderManager = ReminderManager.getInstance();
         JsonElement key = params.get(PARAM_KEY);
         if (key != null) {
@@ -70,7 +66,8 @@ public final class SetReminderCommand implements IntelCommand {
                     null
             );
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.noKey")));
+            return StringUtls.localizedLlm("handler.reminder.noKey");
         }
+        return null;
     }
 }

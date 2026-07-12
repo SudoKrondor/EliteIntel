@@ -1,7 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.DiscoveryAnnouncementEvent;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
@@ -72,7 +73,7 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     private void publishVoice(String message) {
-        GameEventBus.publish(new DiscoveryAnnouncementEvent(message));
+        CompanionRuntime.narrator().announce("discovery", message, "EXPLORATION", false);
     }
 
 

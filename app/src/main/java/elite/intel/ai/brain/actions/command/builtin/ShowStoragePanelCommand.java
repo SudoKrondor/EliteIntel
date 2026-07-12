@@ -19,7 +19,7 @@ public final class ShowStoragePanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the ship storage panel.";
+        return "Open the ship storage panel (stored modules and ships at this station).";
     }
 
 
@@ -36,7 +36,8 @@ public final class ShowStoragePanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STORAGE);
+        return null;
     }
 }

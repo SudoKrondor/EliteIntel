@@ -1,10 +1,11 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.MissionManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.MissionType;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.MissionCompletedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.session.PlayerSession;
@@ -30,13 +31,13 @@ public class MissionCompletedSubscriber {
             if (MISSION_PIRATE_MASSACRE.equals(missionType) || MISSION_PIRATE_MASSACRE_WING.equals(missionType)) {
                 playerSession.removeMission(event.getMissionID());
                 String targetFaction = event.getTargetFaction();
-                GameEventBus.publish(new SensorDataEvent("Notify: Mission against Faction \"" + targetFaction + "\" Completed: " + event,
-                        "Notify user of a successful mission completion, provide detailed summary from the data received."));
+                CompanionRuntime.narrator().narrate("Notify: Mission against Faction \"" + targetFaction + "\" Completed: " + event,
+                        "Notify user of a successful mission completion, provide detailed summary from the data received.");
             } else {
                 missionManager.remove(event.getMissionID());
                 String missionDetails = event.getLocalisedName();
-                GameEventBus.publish(new SensorDataEvent("Notify: Mission \"" + missionDetails + "\" Completed: " + event,
-                        "Summarize key mission parameters, destination, reward, and fields relevant to the missiontype. Ignore unimportant fields such as timestamps, timeToLive, missionID etc"));
+                CompanionRuntime.narrator().narrate("Notify: Mission \"" + missionDetails + "\" Completed: " + event,
+                        "Summarize key mission parameters, destination, reward, and fields relevant to the missiontype. Ignore unimportant fields such as timestamps, timeToLive, missionID etc");
             }
         });
     }

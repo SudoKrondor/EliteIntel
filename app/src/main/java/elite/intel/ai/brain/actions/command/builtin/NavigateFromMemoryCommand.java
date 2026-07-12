@@ -16,7 +16,10 @@ import elite.intel.util.ClipboardUtils;
 public final class NavigateFromMemoryCommand implements IntelCommand {
     public static final String ID = "navigate_from_memory";
 
-    @Override public String llmDescription() { return "Plot a route to a previously remembered location."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the system name currently on the clipboard (paste-from-memory navigation).";
+    }
 
 
     @Override
@@ -31,8 +34,8 @@ public final class NavigateFromMemoryCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(ClipboardUtils.getClipboardText());
+        return plotter.plotRoute(ClipboardUtils.getClipboardText());
     }
 }

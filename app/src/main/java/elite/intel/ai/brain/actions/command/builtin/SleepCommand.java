@@ -18,7 +18,10 @@ import elite.intel.ui.event.VoiceInputModeToggleEvent;
 public final class SleepCommand implements IntelCommand {
     public static final String ID = "sleep_ignore_do_not_monitor";
 
-    @Override public String llmDescription() { return "Put the companion to sleep so it stops responding until woken."; }
+    @Override
+    public String llmDescription() {
+        return "Put the companion to sleep so it stops listening and responding until explicitly woken.";
+    }
 
 
     @Override
@@ -33,7 +36,7 @@ public final class SleepCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         SystemSession session = SystemSession.getInstance();
         if (session.isPushToTalkEnabled() && session.isPushToTalkToggleMode()) {
             session.setPushToTalkToggleMode(false);
@@ -41,5 +44,6 @@ public final class SleepCommand implements IntelCommand {
         }
         session.stopStartListening(true);
         UiBus.publish(new VoiceInputModeToggleEvent(true));
+        return null;
     }
 }

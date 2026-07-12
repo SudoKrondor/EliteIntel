@@ -58,6 +58,7 @@ public final class AiActionAliasTextProvider {
             case ES -> Locale.forLanguageTag("es");
             case IT -> Locale.ITALIAN;
             case PT -> Locale.forLanguageTag("pt");
+            case PTBZ -> Locale.forLanguageTag("ptbz");
         };
     }
 }

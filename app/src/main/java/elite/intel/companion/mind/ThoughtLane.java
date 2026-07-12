@@ -8,20 +8,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * An execution lane for one thought source: a bounded pool of worker threads draining one deque, so up to
- * {@code concurrency} thoughts of this source are live at a time (the others wait in the deque). Normal
- * thoughts queue at the tail and urgent thoughts jump to the head (§1.7.28/§1.7.29); every live thought is
- * tracked so it can be interrupted for preemption, the watchdog, or shutdown.
+ * An execution lane for one thought source: worker threads drain one deque in admission order. Normal thoughts
+ * queue at the tail and urgent thoughts jump to the head (§1.7.28/§1.7.29). A thought may return a detached
+ * lifecycle completion; the worker then accepts the next thought while the detached one remains live and tracked
+ * for preemption, watchdog, shutdown, pending accounting, and {@link #isIdle()}.
  * <p>
- * A single-worker lane ({@code concurrency == 1}) keeps the original "one live thought" behaviour for the
- * memory-only EVENT and the short NARRATION lanes; the COMMANDER lane runs several workers so a long
- * synchronous command/query (whose slow part is the handler, not the LLM round) does not block new commander
- * input - other commander thoughts run on the free workers meanwhile.
+ * COMMANDER uses one worker so prompt/classification/topic/input commits remain ordered; game handlers detach
+ * after that stage. EVENT also uses one worker. The generic concurrency argument remains for lanes whose
+ * cognitive stages are safe to parallelize.
  * <p>
  * Shutdown is graceful: one poison pill per worker lets the workers finish their live thoughts and drain the
  * queue before they exit; only workers that do not finish within the join window are forced to interrupt.
@@ -90,35 +91,52 @@ final class ThoughtLane {
 
     /** Graceful stop: drain queued thoughts and finish the live ones, forcing interrupt only if a worker hangs. */
     void shutdown(long timeoutMillis) {
+        long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
         workers.forEach(worker -> queue.offerLast(POISON));
-        joinAll(timeoutMillis);
-        if (workers.stream().anyMatch(Thread::isAlive)) {
-            interruptLive(); // some live thought is stuck (e.g. slow LLM): make it safe-flush and die
+        joinAllUntil(deadlineNanos);
+        if (workers.stream().anyMatch(Thread::isAlive) || !live.isEmpty()) {
+            // A detached handler keeps its thought live after the lane worker has accepted the next turn. Stop owns
+            // that lifecycle too: cancel its result before the old runtime graph can speak or write into a restart.
+            interruptLive();
             workers.forEach(Thread::interrupt);
-            joinAll(timeoutMillis);
+            joinAllUntil(deadlineNanos);
+            awaitPendingUntil(deadlineNanos);
         }
     }
 
     private Runnable wrap(Thought thought) {
         return () -> {
             long startMillis = System.currentTimeMillis();
+            long startNanos = System.nanoTime();
+            String laneThread = Thread.currentThread().getName();
             live.put(thought, startMillis);
-            log.info("Lane {}: {} ({}) thought started", Thread.currentThread().getName(), thought.source(), thought.urgency());
-            CompanionDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + Thread.currentThread().getName());
+            log.info("Lane {}: {} ({}) thought started", laneThread, thought.source(), thought.urgency());
+            CompanionDiagnostics.debug(thought.trace(), "start", thought.urgency() + " on " + laneThread);
             // Bind this thought's trace to the lane thread so leaf components it calls (reducer, memory recall)
             // tag their own diagnostic lines with it (see CompanionDiagnostics.enterThought).
             CompanionDiagnostics.enterThought(thought.trace());
+            CompletableFuture<Void> completion;
             try {
-                thought.run();
+                completion = thought.startLifecycle();
             } finally {
                 CompanionDiagnostics.exitThought();
-                live.remove(thought);
-                pending.decrementAndGet(); // mark idle only after the thought has fully finished
-                log.info("Lane {}: {} thought finished in {} ms",
-                        Thread.currentThread().getName(), thought.source(), System.currentTimeMillis() - startMillis);
-                CompanionDiagnostics.debug(thought.trace(), "done", (System.currentTimeMillis() - startMillis) + " ms");
             }
+            completion.whenComplete((ignored, failure) ->
+                    finishThought(thought, laneThread, startNanos, failure));
         };
+    }
+
+    /** Completes lane ownership when both the cognitive stage and any detached handler work have settled. */
+    private void finishThought(Thought thought, String laneThread, long startNanos, Throwable failure) {
+        live.remove(thought);
+        pending.decrementAndGet();
+        long runMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+        if (failure != null) {
+            log.error("Companion thought failed on lane {}", laneThread, failure);
+        }
+        log.info("Lane {}: {} thought finished in {} ms", laneThread, thought.source(), runMillis);
+        CompanionDiagnostics.debug(thought.trace(), "done",
+                "run=" + runMillis + " ms turn=" + thought.elapsedSinceAcceptanceMillis() + " ms");
     }
 
     private void drain() {
@@ -142,12 +160,30 @@ final class ThoughtLane {
         }
     }
 
-    private void joinAll(long timeoutMillis) {
+    private void joinAllUntil(long deadlineNanos) {
         for (Thread worker : workers) {
+            long remainingNanos = deadlineNanos - System.nanoTime();
+            if (remainingNanos <= 0) {
+                return;
+            }
             try {
-                worker.join(timeoutMillis);
+                long millis = TimeUnit.NANOSECONDS.toMillis(remainingNanos);
+                int nanos = (int) (remainingNanos - TimeUnit.MILLISECONDS.toNanos(millis));
+                worker.join(millis, nanos);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
+    private void awaitPendingUntil(long deadlineNanos) {
+        while (pending.get() > 0 && System.nanoTime() < deadlineNanos) {
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
             }
         }
     }

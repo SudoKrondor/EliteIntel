@@ -23,11 +23,7 @@ public class BiomeAnalyzerQuery extends BaseQueryAnalyzer implements IntelQuery 
 
     @Override
     public String llmDescription() {
-        return """
-                    - Report the biome analysis for the current planet.
-                    - Analyze biome
-                    - Biome analysis
-                """;
+        return "Analyze the biome of a planet (named in 'key') or all bio-signal planets in the system, predicting the likely organisms/genera from planet class, atmosphere, gravity and temperature.";
     }
 
 

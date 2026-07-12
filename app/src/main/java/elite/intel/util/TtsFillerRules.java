@@ -108,6 +108,7 @@ public final class TtsFillerRules {
             case ES -> List.of("oh", "ah", "eh", "ehm", "mmm", "ay");
             case IT -> List.of("oh", "ah", "eh", "ehm", "mah", "mmm", "beh");
             case PT -> List.of("oh", "ah", "eh", "hum", "hmm");
+            case PTBZ -> List.of("oh", "ah", "eh", "hum", "hmm", "ué");
         };
     }
 
@@ -132,6 +133,9 @@ public final class TtsFillerRules {
                     "insomma", "ecco", "vabbè", "niente");
             case PT -> List.of("bem", "bom", "então", "olha", "escuta", "quer dizer",
                     "ou seja", "enfim", "pronto");
+            // "pronto" as a discourse marker is European; Brazilian leans on "tipo"/"né"/"sabe".
+            case PTBZ -> List.of("bem", "bom", "então", "olha", "escuta", "quer dizer",
+                    "ou seja", "enfim", "tipo", "né", "sabe");
         };
     }
 }

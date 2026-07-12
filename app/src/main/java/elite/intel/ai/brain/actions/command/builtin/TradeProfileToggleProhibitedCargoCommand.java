@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -20,7 +19,10 @@ import java.util.List;
 public final class TradeProfileToggleProhibitedCargoCommand implements IntelCommand {
     public static final String ID = "trade_profile_toggle_prohibited_cargo";
 
-    @Override public String llmDescription() { return "Toggle whether trade routes may include prohibited cargo."; }
+    @Override
+    public String llmDescription() {
+        return "Toggle whether the trade-route search may include prohibited/illegal commodities ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";
@@ -57,12 +59,13 @@ public final class TradeProfileToggleProhibitedCargoCommand implements IntelComm
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setAllowProhibitedCargo(isOn)) {
             String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.prohibitedCargo", state)));
+            return StringUtls.localizedLlm("handler.tradeProfile.prohibitedCargo", state);
         }
+        return null;
     }
 }

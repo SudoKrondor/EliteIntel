@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.spansh.station.TradersAndBrokersSearch;
@@ -21,7 +22,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindManufacturedMaterialTraderCommand implements IntelCommand {
     public static final String ID = "find_manufactured_material_trader";
 
-    @Override public String llmDescription() { return "Find the nearest manufactured material trader."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Manufactured material trader.";
+    }
 
 
     private static final int DEFAULT_RANGE = 250;
@@ -38,11 +42,11 @@ public final class FindManufacturedMaterialTraderCommand implements IntelCommand
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType())));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.trader.searching", TraderType.MANUFACTURED.getType()), false);
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
-        routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
+        return routePlotter.plotRoute(search.location(TraderType.MANUFACTURED, null, range));
     }
 }

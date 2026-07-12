@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowTransactionsPanelCommand implements IntelCommand {
     public static final String ID = "show_transactions_panel";
 
-    @Override public String llmDescription() { return "Open the transactions panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the transactions panel (left panel: active missions and transactions).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -37,7 +40,7 @@ public final class ShowTransactionsPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.EXTERNAL_PANEL, LeftPanel.TRANSACTIONS);
         } else if (status.isOnFoot()) {
@@ -50,5 +53,6 @@ public final class ShowTransactionsPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         }
+        return null;
     }
 }

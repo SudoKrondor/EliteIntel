@@ -19,11 +19,7 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return """
-                        Switch the ship to combat mode.
-                        Hud to combat.
-                        Prepare for Combat.
-                """;
+        return "Switch the ship/SRV HUD to combat mode.";
     }
 
 
@@ -38,7 +34,7 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isAnalysisMode()) {
@@ -50,5 +46,6 @@ public final class SwitchToCombatModeCommand implements IntelCommand {
                 GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_ACTIVATE_COMBAT_MODE.getGameBinding())));
             }
         }
+        return null;
     }
 }

@@ -14,9 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * Voice and personality are per-ship: each ship carries a single voice ({@code ship.voice}) and one
  * personality ({@code ship.personality}). {@link SystemSession} resolves both against the active ship
- * (the one named by the current loadout). The stored voice is interpreted against the active TTS
- * provider's enum, so switching provider falls back to that provider's default when the stored voice
- * name isn't valid there.
+ * (the one named by the current loadout). Ship voices are female-only, so the getters resolve the stored
+ * name against the active TTS provider's enum and fall back to that provider's default female when the
+ * stored voice name isn't a valid female voice there (including a legacy male voice from before the
+ * female-only constraint).
  */
 class PerShipVoicePersonalityTest {
 
@@ -48,7 +49,7 @@ class PerShipVoicePersonalityTest {
         SystemSession session = SystemSession.getInstance();
 
         saveShip(101, KokoroVoices.NOVA.name(), ShipPersonality.PROFESSIONAL.name());
-        saveShip(102, KokoroVoices.GEORGE.name(), ShipPersonality.ROGUE.name());
+        saveShip(102, KokoroVoices.ALICE.name(), ShipPersonality.ROGUE.name());
 
         makeActive(101);
         assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
@@ -56,19 +57,30 @@ class PerShipVoicePersonalityTest {
 
         // Switching the active ship switches the voice and personality with it.
         makeActive(102);
-        assertEquals(KokoroVoices.GEORGE, session.getKokoroVoice());
+        assertEquals(KokoroVoices.ALICE, session.getKokoroVoice());
         assertEquals(ShipPersonality.ROGUE, session.getAIPersonality());
+    }
+
+    @Test
+    void legacyMaleVoiceResolvesToDefaultFemale() {
+        SystemSession session = SystemSession.getInstance();
+
+        // Ship voices are female-only; a ship still carrying a legacy male voice resolves to the default female.
+        saveShip(301, KokoroVoices.GEORGE.name(), ShipPersonality.CASUAL.name());
+        makeActive(301);
+
+        assertEquals(KokoroVoices.DEFAULT_FEMALE, session.getKokoroVoice());
     }
 
     @Test
     void voiceInvalidForActiveProviderFallsBackToProviderDefault() {
         SystemSession session = SystemSession.getInstance();
 
-        // A Kokoro voice name isn't a valid Google voice, so the Google getter falls back to its default.
+        // A Kokoro voice name isn't a valid Google voice, so the Google getter falls back to its default female.
         saveShip(201, KokoroVoices.NOVA.name(), ShipPersonality.CASUAL.name());
         makeActive(201);
 
         assertEquals(KokoroVoices.NOVA, session.getKokoroVoice());
-        assertEquals(GoogleVoices.STEVE, session.getGoogleVoice());
+        assertEquals(GoogleVoices.DEFAULT_FEMALE, session.getGoogleVoice());
     }
 }

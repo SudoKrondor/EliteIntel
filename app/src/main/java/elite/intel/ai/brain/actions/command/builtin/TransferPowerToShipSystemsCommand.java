@@ -21,7 +21,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToShipSystemsCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_ship_systems";
 
-    @Override public String llmDescription() { return "Divert power to ship systems."; }
+    @Override
+    public String llmDescription() {
+        return "Divert maximum power pips to systems (SYS); same effect as diverting power to shields.";
+    }
 
 
     private static final Logger log = LogManager.getLogger(TransferPowerToShipSystemsCommand.class);
@@ -38,7 +41,7 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -48,7 +51,7 @@ public final class TransferPowerToShipSystemsCommand implements IntelCommand {
         if (status.isInSrv()) {
             powerToSystemsSRV();
         }
-
+        return null;
     }
 
     private void powerToSystemsSRV() {

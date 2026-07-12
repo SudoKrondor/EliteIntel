@@ -3,11 +3,9 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.db.managers.TradeRouteManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.search.spansh.traderoute.TradeRouteResponse;
 import elite.intel.search.spansh.traderoute.TradeRouteSearchCriteria;
 import elite.intel.search.spansh.traderoute.TradeRouteTransaction;
@@ -23,7 +21,10 @@ import elite.intel.util.StringUtls;
 public final class CalculateTradeRouteCommand implements IntelCommand {
     public static final String ID = "calculate_trade_route";
 
-    @Override public String llmDescription() { return "Calculate a profitable trade route."; }
+    @Override
+    public String llmDescription() {
+        return "Calculate a profitable multi-hop commodity trade route using the saved trade profile (budget, cargo capacity, max stops and distance).";
+    }
 
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
@@ -43,53 +44,49 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity");
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
         // getCriteria returns null when no starting station could be resolved (it already voiced why); guard
         // before dereferencing it, otherwise criteria.getStation() below throws an NPE.
         if (criteria == null) {
-            return;
+            return null;
         }
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation())));
+        // Start-of-processing filler: voiced while the search runs, never remembered.
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation()), false);
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName)));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName);
         }
 
         if (criteria.getMaxJumps() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName)));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName);
         }
 
 
         if (criteria.getMaxLsFromArrival() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName)));
-            return;
+            return StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName);
         }
 
         TradeRouteResponse route = tradeRouteManager.calculateTradeRoute(criteria);
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
             if (criteria.getStation() != null) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFound")));
+                return StringUtls.localizedLlm("handler.tradeRoute.notFound");
             } else {
                 String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding)));
+                return StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding);
             }
-            return;
         }
         long totalProfit = route.getResult().stream()
                 .mapToLong(TradeRouteTransaction::getTotalProfit)
                 .sum();
 
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit)));
+        return StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit);
     }
 }

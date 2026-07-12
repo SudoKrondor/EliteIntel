@@ -34,7 +34,9 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Speak a phrase aloud to the commander - to tell or answer something, or to ask a question (their reply comes as their next message). Use whenever you want the commander to hear something.";
+        return "Speak only when no offered action, query, or macro matches the commander's request. Use it for "
+                + "conversation, a grounded answer, clarification, or an unsupported request. Never use it to "
+                + "acknowledge, promise, or describe a matching function; call that function instead.";
     }
 
     @Override
@@ -48,7 +50,7 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public Set<ThoughtSource> sources() {
-        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT, ThoughtSource.NARRATION);
+        return EnumSet.of(ThoughtSource.COMMANDER, ThoughtSource.EVENT);
     }
 
     /**

@@ -5,7 +5,6 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -22,7 +21,7 @@ public final class RetractLandingGearCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Fold / Retract the landing gear.";
+        return "Raise/retract the landing gear after take-off.";
     }
 
 
@@ -31,25 +30,26 @@ public final class RetractLandingGearCommand implements IntelCommand {
         return ID;
     }
 
-    /** Landing gear belongs to the main ship in normal space: not in the SRV, supercruise, docked or landed. */
+    /// due to bug in FDev impl of the Status.json we can't rely on the status
+    /// ALWAYS RETURN TRUE HERE
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return status.isInMainShip() && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return true;
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.cantDoThat")));
-            return;
+            return StringUtls.localizedLlm("handler.landingGear.cantDoThat");
         }
 
         if (status.isLandingGearDown()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.alreadyRetracted")));
+            return StringUtls.localizedLlm("handler.landingGear.alreadyRetracted");
         }
+        return null;
     }
 }

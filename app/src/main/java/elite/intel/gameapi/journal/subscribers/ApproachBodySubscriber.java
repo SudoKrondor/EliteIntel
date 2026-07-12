@@ -1,9 +1,10 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
@@ -91,7 +92,7 @@ public class ApproachBodySubscriber {
                             Gravity around equal to or less than 1G is safe. Issue a gravity warning if gravity is higher than 1G.
                             If there is no atmosphere report as "Atmosphere: none".
                         """;
-                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
+                CompanionRuntime.narrator().narrate(sb.toString(), instructions);
             }
         }); // end virtual thread
     }

@@ -44,6 +44,10 @@ class PromptComposerTest {
                 content, MemoryImportance.NORMAL, null, null, ToolLink.result(toolCallId));
     }
 
+    private static long systemCount(List<LlmMessage> messages) {
+        return messages.stream().filter(m -> m.role() == LlmMessageRole.SYSTEM).count();
+    }
+
     private ComposedPrompt composeCommander(List<MemoryEntry> shortTerm) {
         return composer.compose(
                 ThoughtSource.COMMANDER,
@@ -73,24 +77,43 @@ class PromptComposerTest {
     }
 
     @Test
-    void narrationSourcePicksNarrationProfileAndLeanPrompt() {
+    void eventSourcePicksLeanPromptAndProfile() {
         LlmToolDefinition speak = new LlmToolDefinition("speak", "d", "", List.of());
         ComposedPrompt prompt = composer.compose(
-                ThoughtSource.NARRATION,
-                "fuel reserve critical",
+                ThoughtSource.EVENT,
+                PromptXml.element("event_data", "fuel reserve critical"),
                 List.of(), List.of(speak),
                 List.of(), List.of());
 
         assertEquals(PromptCacheProfile.NARRATION, prompt.profile());
-        // 2 messages (empty history): the narration static block and the current input.
+        // 2 messages (empty history): the lean event-reaction static block and the current input.
         assertEquals(2, prompt.messages().size());
         String system = prompt.messages().get(0).content();
         assertTrue(system.startsWith(STATIC_MARKER));
-        assertTrue(system.contains("NARRATION"));
-        // Lean: the commander-only stable-prefix sections are not stacked onto the narration block.
+        assertTrue(system.contains("EVENT"));
+        // Lean: the commander-only stable-prefix sections are not stacked onto the reaction block.
         assertFalse(system.contains("Topics"));
-        // Only the system functions are offered (a narration thought has no game tools).
+        assertEquals(PromptXml.element("event_data", "fuel reserve critical"),
+                currentInput(prompt).content());
+        // Only the system functions are offered (a reactive event thought has no game tools).
         assertEquals(List.of(speak), prompt.tools());
+    }
+
+    @Test
+    void eventSourceKeepsTaggedInputWhenAmbientContextExists() {
+        ComposedPrompt prompt = composer.compose(
+                ThoughtSource.EVENT,
+                PromptXml.element("event_data", "surface scan: <alexandrite>"),
+                List.of(), List.of(),
+                List.of(entry(MemorySource.SYSTEM, ConversationTopic.SYSTEM, "diagnostic <note>")),
+                List.of());
+
+        String current = currentInput(prompt).content();
+        assertTrue(current.contains("<context>"));
+        assertTrue(current.contains("diagnostic &lt;note&gt;"));
+        assertTrue(current.contains("<event_data>"));
+        assertTrue(current.contains("surface scan: &lt;alexandrite&gt;"));
+        assertFalse(current.contains("&lt;event_data&gt;"), "event data must remain a tag, not escaped text");
     }
 
     @Test
@@ -150,15 +173,18 @@ class PromptComposerTest {
                 result("tc2", "hardpoints deployed"))).messages();
 
         // system, assistant(tool_calls), tool(result) pulled up next to its call, the commander "status" history
-        // turn, then the distinct current-input user message (never coalesced into the history).
-        assertEquals(5, messages.size());
+        // turn, a no-reply assistant boundary to keep role alternation, then the distinct current-input user
+        // message (never coalesced into the history).
+        assertEquals(6, messages.size());
         assertEquals(LlmMessageRole.ASSISTANT, messages.get(1).role());
         assertEquals(LlmMessageRole.TOOL, messages.get(2).role());
         assertEquals("hardpoints deployed", messages.get(2).content());
         assertEquals(LlmMessageRole.USER, messages.get(3).role());
         assertEquals("status", messages.get(3).content());
-        assertEquals(LlmMessageRole.USER, messages.get(4).role());
-        assertTrue(messages.get(4).content().contains("set course to Sol"));
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(4).role());
+        assertEquals("<no_reply/>", messages.get(4).content());
+        assertEquals(LlmMessageRole.USER, messages.get(5).role());
+        assertTrue(messages.get(5).content().contains("set course to Sol"));
     }
 
     @Test
@@ -169,14 +195,17 @@ class PromptComposerTest {
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "hey"),
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "you there?"))).messages();
 
-        // system, both commander history turns merged into one user, then the separate current-input user.
-        assertEquals(3, messages.size());
+        // system, both commander history turns merged into one user, a no-reply assistant boundary to keep
+        // alternation, then the separate current-input user.
+        assertEquals(4, messages.size());
         assertEquals(LlmMessageRole.USER, messages.get(1).role());
         assertTrue(messages.get(1).content().contains("hey"));
         assertTrue(messages.get(1).content().contains("you there?"));
         assertFalse(messages.get(1).content().contains("set course to Sol"), "the current turn stays a separate message");
-        assertEquals(LlmMessageRole.USER, messages.get(2).role());
-        assertTrue(messages.get(2).content().contains("set course to Sol"));
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
+        assertEquals("<no_reply/>", messages.get(2).content());
+        assertEquals(LlmMessageRole.USER, messages.get(3).role());
+        assertTrue(messages.get(3).content().contains("set course to Sol"));
     }
 
     @Test
@@ -198,6 +227,66 @@ class PromptComposerTest {
         assertEquals("set course to Sol", input);
         assertFalse(input.contains("current topic"));
         assertFalse(input.contains("## Current input"));
+    }
+
+    @Test
+    void factsAndAmbientNotesAreInFinalUserContextNotSystemMessages() {
+        ComposedPrompt prompt = composer.compose(
+                ThoughtSource.COMMANDER,
+                "where are we",
+                List.of(), List.of(),
+                List.of(entry(MemorySource.SYSTEM, ConversationTopic.SYSTEM, "diagnostic note")),
+                List.of(new Fact("current system Sol", "memory")));
+        List<LlmMessage> messages = prompt.messages();
+
+        assertEquals(2, messages.size());
+        assertEquals(1, systemCount(messages), "only the leading system message is allowed");
+        assertEquals(LlmMessageRole.SYSTEM, messages.get(0).role());
+        assertEquals(LlmMessageRole.USER, messages.get(1).role());
+        String current = messages.get(1).content();
+        assertTrue(current.contains("<context>"));
+        assertTrue(current.contains("<facts>"));
+        assertTrue(current.contains("current system Sol"));
+        assertTrue(current.contains("<ambient_context>"));
+        assertTrue(current.contains("diagnostic note"));
+        assertTrue(current.contains("<commander_input>"));
+        assertTrue(current.contains("where are we"));
+    }
+
+    @Test
+    void eventStimulusReplaysAsUserTurn() {
+        // A reactive event stimulus is world data on the user channel: it replays as a tagged user turn in the
+        // history (not an ambient note), so its spoken reply reads as a proper reaction without making the raw
+        // payload look like commander speech.
+        List<LlmMessage> messages = composeCommander(List.of(
+                entry(MemorySource.EVENT, ConversationTopic.EXPLORATION, "signals found on the ring"),
+                entry(MemorySource.COMPANION, ConversationTopic.EXPLORATION, "alexandrite and void opals, Commander")))
+                .messages();
+
+        assertEquals(4, messages.size());
+        assertEquals(1, systemCount(messages), "an event turn must not create a mid-dialogue system message");
+        assertEquals(LlmMessageRole.USER, messages.get(1).role());
+        assertEquals(PromptXml.element("event_data", "signals found on the ring"), messages.get(1).content());
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
+        assertEquals("alexandrite and void opals, Commander", messages.get(2).content());
+        assertEquals(LlmMessageRole.USER, messages.get(3).role(), "then the current commander input");
+    }
+
+    @Test
+    void boundaryRepliesReplayAsAssistant() {
+        // A turn that drew no reply records a <no_reply/> boundary as the companion's (assistant-side) omitted
+        // reply - a COMPANION entry - so it replays as a plain assistant message that keeps role alternation,
+        // with no SYSTEM-to-assistant indirection.
+        List<LlmMessage> messages = composeCommander(List.of(
+                entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "status"),
+                entry(MemorySource.COMPANION, ConversationTopic.NAVIGATION, "<no_reply/>"))).messages();
+
+        assertEquals(4, messages.size());
+        assertEquals(1, systemCount(messages), "a boundary reply must not create a mid-dialogue system message");
+        assertEquals(LlmMessageRole.USER, messages.get(1).role());
+        assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
+        assertEquals("<no_reply/>", messages.get(2).content());
+        assertEquals(LlmMessageRole.USER, messages.get(3).role());
     }
 
     @Test

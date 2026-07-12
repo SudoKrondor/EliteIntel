@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags;
@@ -20,7 +19,10 @@ import elite.intel.util.StringUtls;
 public final class ShowSquadronPanelCommand implements IntelCommand {
     public static final String ID = "show_squadron_panel";
 
-    @Override public String llmDescription() { return "Open the squadron panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the squadron panel in comms.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -37,11 +39,12 @@ public final class ShowSquadronPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.SQUADRON);
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
+            return StringUtls.localizedLlm("handler.common.cantDoNow");
         }
+        return null;
     }
 }

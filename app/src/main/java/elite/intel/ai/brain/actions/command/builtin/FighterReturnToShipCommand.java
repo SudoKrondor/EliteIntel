@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class FighterReturnToShipCommand extends SimpleTapCommand {
     public static final String ID = "fighter_return_to_ship";
 
-    @Override public String llmDescription() { return "Order the ship-launched fighter to return to the ship."; }
+    @Override
+    public String llmDescription() {
+        return "Order the deployed ship-launched fighter to return and dock with the mother ship.";
+    }
 
     public FighterReturnToShipCommand() {
         super(ID, Bindings.GameCommand.BINDING_REQUEST_REQUEST_DOCK.getGameBinding());

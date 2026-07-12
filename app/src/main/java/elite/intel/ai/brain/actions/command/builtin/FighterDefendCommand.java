@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class FighterDefendCommand extends SimpleTapCommand {
     public static final String ID = "fighter_defend";
 
-    @Override public String llmDescription() { return "Order the ship-launched fighter to defend."; }
+    @Override
+    public String llmDescription() {
+        return "Order the deployed ship-launched fighter to defend the mother ship.";
+    }
 
     public FighterDefendCommand() {
         super(ID, Bindings.GameCommand.BINDING_REQUEST_DEFENSIVE_BEHAVIOUR.getGameBinding());

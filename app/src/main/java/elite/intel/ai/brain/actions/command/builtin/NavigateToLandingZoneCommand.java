@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -21,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class NavigateToLandingZoneCommand implements IntelCommand {
     public static final String ID = "navigate_to_landing_zone";
 
-    @Override public String llmDescription() { return "Plot a route to the landing zone."; }
+    @Override
+    public String llmDescription() {
+        return "Start surface navigation guidance to the saved landing-zone coordinates on the current body.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -43,13 +45,12 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         TargetLocation targetLocation = new TargetLocation();
         if (currentLocation.getLandingCoordinates() == null || currentLocation.getLandingCoordinates().length == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable")));
-            return;
+            return StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable");
         }
 
         targetLocation.setLatitude(currentLocation.getLandingCoordinates()[0]);
@@ -58,6 +59,6 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         targetLocation.setRequestedTime(System.currentTimeMillis());
         playerSession.setTracking(targetLocation);
 
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.startingNavLandingZone")));
+        return StringUtls.localizedLlm("handler.navigate.startingNavLandingZone");
     }
 }

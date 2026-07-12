@@ -1,5 +1,6 @@
 package elite.intel.companion.memory.facts;
 
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.prompt.MemoryFactCandidates;
@@ -34,7 +35,15 @@ public final class MergedFactCandidates {
      * core followed by the registered plugin sources' contributions.
      */
     public static List<Fact> forInput(MemoryGateway memory, MemoryFactContext context) {
-        return forInput(memory, context, MemoryFactGatherer.gather(context));
+        return forInput(memory, context, MemoryFactGatherer.gather(context), null);
+    }
+
+    /**
+     * The same per-turn fact merge, preserving a semantic query prepared during intake for the memory core only.
+     * Plugin fact sources continue to receive the domain-only {@link MemoryFactContext}.
+     */
+    public static List<Fact> forInput(MemoryGateway memory, MemoryFactContext context, SemanticQuery semanticQuery) {
+        return forInput(memory, context, MemoryFactGatherer.gather(context), semanticQuery);
     }
 
     /**
@@ -42,10 +51,16 @@ public final class MergedFactCandidates {
      * De-duplicates by text (case-insensitive) so the same fact from two producers is inlined once.
      */
     static List<Fact> forInput(MemoryGateway memory, MemoryFactContext context, List<Fact> pluginFacts) {
+        return forInput(memory, context, pluginFacts, null);
+    }
+
+    /** Merges already-gathered plugin facts while passing the optional query only to ranked memory recall. */
+    static List<Fact> forInput(MemoryGateway memory, MemoryFactContext context, List<Fact> pluginFacts,
+                               SemanticQuery semanticQuery) {
         List<Fact> merged = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         // Memory is the ranked core; it keeps its own internal cap well under MAX_TOTAL.
-        for (Fact fact : MemoryFactCandidates.forInput(memory, context.query())) {
+        for (Fact fact : MemoryFactCandidates.forInput(memory, context.query(), semanticQuery)) {
             addUnique(merged, seen, fact);
         }
         // Plugin facts follow, bounded per source and in total.

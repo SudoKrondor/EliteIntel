@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class CycleNextPageCommand extends SimpleTapCommand {
     public static final String ID = "cycle_next_page";
 
-    @Override public String llmDescription() { return "Cycle to the next page within the current panel."; }
+    @Override
+    public String llmDescription() {
+        return "Cycle to the next tab/page within the currently open in-game panel.";
+    }
 
     public CycleNextPageCommand() {
         super(ID, Bindings.GameCommand.BINDING_CYCLE_NEXT_PAGE.getGameBinding());

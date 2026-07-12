@@ -5,7 +5,6 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -23,7 +22,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class ShowHistoryPanelCommand implements IntelCommand {
     public static final String ID = "show_history_panel";
 
-    @Override public String llmDescription() { return "Open the history panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the comms history panel (previously received messages).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -40,7 +42,7 @@ public final class ShowHistoryPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.HISTORY);
         } else if (status.isOnFoot()) {
@@ -54,7 +56,8 @@ public final class ShowHistoryPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_CYCLE_NEXT_PANEL.getGameBinding())
             ));
         } else {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.common.cantDoNow")));
+            return StringUtls.localizedLlm("handler.common.cantDoNow");
         }
+        return null;
     }
 }

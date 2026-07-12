@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
@@ -21,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class IgnoreHuntingGroundCommand implements IntelCommand {
     public static final String ID = "ignore_hunting_ground";
 
-    @Override public String llmDescription() { return "Mark the current location to be ignored as a hunting ground."; }
+    @Override
+    public String llmDescription() {
+        return "Mark the current star system to be ignored/excluded as a pirate-massacre hunting ground.";
+    }
 
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
@@ -44,9 +46,9 @@ public final class IgnoreHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         huntingGroundManager.ignoreHuntingGround(location.getStarName());
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.huntingGroundDeleted", location.getStarName())));
+        return StringUtls.localizedLlm("handler.pirate.huntingGroundDeleted", location.getStarName());
     }
 }

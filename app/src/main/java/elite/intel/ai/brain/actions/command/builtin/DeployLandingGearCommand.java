@@ -5,7 +5,6 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -20,7 +19,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_LANDING_GEAR_TOG
 public final class DeployLandingGearCommand implements IntelCommand {
     public static final String ID = "deploy_landing_gear";
 
-    @Override public String llmDescription() { return "Deploy the landing gear."; }
+    @Override
+    public String llmDescription() {
+        return "Lower/extend the landing gear in preparation for docking or landing.";
+    }
 
 
     @Override
@@ -28,21 +30,22 @@ public final class DeployLandingGearCommand implements IntelCommand {
         return ID;
     }
 
-    /** Landing gear belongs to the main ship in normal space: not in the SRV, supercruise, docked or landed. */
-    ///NOTE Game bug. Nobad is a flying vehicle with landing gear. It repors as SRV
+    /// due to bug in FDev impl of the Status.json we can't rely on the status
+    /// ALWAYS RETURN TRUE HERE
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return (status.isInMainShip() || status.isInSrv()) && !status.isDocked() && !status.isLanded() && !status.isInSupercruise();
+        return true;
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isLandingGearDown()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.landingGear.alreadyDeployed")));
+            return StringUtls.localizedLlm("handler.landingGear.alreadyDeployed");
         } else {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         }
+        return null;
     }
 }

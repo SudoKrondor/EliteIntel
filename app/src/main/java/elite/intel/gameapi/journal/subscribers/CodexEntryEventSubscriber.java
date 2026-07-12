@@ -1,11 +1,12 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.CodexEntryDao;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.CodexEntryEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -116,7 +117,7 @@ public class CodexEntryEventSubscriber {
                         - Do not append any extra data.
                         - Express credit amounts using K (thousands) or M (millions) shorthand as appropriate (e.g. 50K, 1.2M).
                         """.formatted(organicGuidance);
-                GameEventBus.publish(new SensorDataEvent(sb.toString(), instructions));
+                CompanionRuntime.narrator().narrate(sb.toString(), instructions);
             }
             if (isOrganic) {
                 codexEntryManager.save(event);

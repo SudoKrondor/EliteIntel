@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.eventbus.UiBus;
@@ -79,8 +78,8 @@ public final class CustomCommandRegistry {
 
     /**
      * Adds custom command phrase->id entries to the LLM action map.
-     * Called from {@code AiActionsMap.actionMap()} so custom command trigger phrases reach the Reducer
-     * and appear in the ACTIONS block sent to the LLM.
+     * Called from {@code AiActionsMap.actionMap()} so custom command trigger phrases are known to
+     * every consumer of the action map (action reducer, validator, help UI).
      */
     public void contributeToActionMap(Map<String, String> map) {
         Set<String> protectedPhrases = new HashSet<>();
@@ -102,9 +101,11 @@ public final class CustomCommandRegistry {
         }
     }
 
+    /**
+     * Case-folds a phrase to the lower-case form STT input is matched against (no synonym rewriting).
+     */
     private static String normalizePhrase(String phrase) {
-        String normalized = InputNormalizer.getInstance().normalize(phrase == null ? "" : phrase);
-        return normalized == null ? "" : normalized.trim().toLowerCase(Locale.ROOT);
+        return phrase == null ? "" : phrase.trim().toLowerCase(Locale.ROOT);
     }
 
     /**

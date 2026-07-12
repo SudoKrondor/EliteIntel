@@ -13,7 +13,10 @@ import elite.intel.session.Status;
 public final class ActivateUiControlCommand extends SimpleTapCommand {
     public static final String ID = "activate_ui_control";
 
-    @Override public String llmDescription() { return "Activate the currently focused UI control."; }
+    @Override
+    public String llmDescription() {
+        return "Press the select/activate button on the currently focused in-game UI control (the UI 'select' key).";
+    }
 
 
     public ActivateUiControlCommand() {

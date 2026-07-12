@@ -4,8 +4,8 @@ import elite.intel.companion.model.ConversationTopic;
 
 /**
  * Consciousness-level runtime state shared across a companion session: the global topic (the conversation's
- * current topic, used to tag the commander's memory entries) and the latest commander match input used for
- * tool reduction.
+ * current topic, used to tag the commander's memory entries). It also retains the latest normalized commander
+ * input strictly as an observer snapshot for UI refresh; turn routing never reads that shared value.
  * <p>
  * The global topic is changed only by the COMMANDER {@code classify_turn} tool; EVENT thoughts never
  * change it (an event's topic for memory tagging comes from a static event-type map).
@@ -27,7 +27,7 @@ public final class CompanionState {
         this.globalTopic = topic;
     }
 
-    /** Latest commander phrase after companion-facing normalization, as passed to the action reducer. */
+    /** Latest normalized input for observer/UI refresh only; cognitive work uses its immutable ThoughtContext. */
     public String lastCommanderMatchInput() {
         return lastCommanderMatchInput;
     }

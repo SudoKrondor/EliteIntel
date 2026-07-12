@@ -1,11 +1,12 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.SupercruiseDestinationDropEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
@@ -28,7 +29,7 @@ public class SuperCruiseDropSubscriber {
                             - level 3 - 5 threat level medium
                             - level 6 - 8 threat level high
                         """;
-                GameEventBus.publish(new SensorDataEvent(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions));
+                CompanionRuntime.narrator().narrate(" Dropped from supercruise. Threat level: " + event.getThreat() + ". ", instructions);
             }
 
 

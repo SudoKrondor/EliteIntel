@@ -21,7 +21,10 @@ import java.util.List;
 public class AnalyzeExplorationProfitsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_exploration_profits";
 
-    @Override public String llmDescription() { return "Report the commander's exploration earnings."; }
+    @Override
+    public String llmDescription() {
+        return "Report exobiology (organic-scan) earnings: credits already earned this session versus the total potential if every known species in the current system were fully scanned.";
+    }
 
 
     @Override public String id() { return ID; }

@@ -19,7 +19,10 @@ import elite.intel.session.Status;
 public final class ShowStationServicesPanelCommand implements IntelCommand {
     public static final String ID = "show_station_services_panel";
 
-    @Override public String llmDescription() { return "Open the station services panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the station services menu (available while docked).";
+    }
 
 
     @Override
@@ -33,7 +36,7 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         UiNavCommon.prepToKnownUiPositionWhileInTheShipAtStation();
         GameControllerBus.publish(GameInputSequenceEvent.of(
@@ -41,5 +44,6 @@ public final class ShowStationServicesPanelCommand implements IntelCommand {
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
                 GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
         ));
+        return null;
     }
 }

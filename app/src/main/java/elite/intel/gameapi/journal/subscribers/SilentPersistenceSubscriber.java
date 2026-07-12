@@ -6,6 +6,7 @@ import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipManager;
 import elite.intel.gameapi.journal.events.*;
+import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
@@ -107,7 +108,10 @@ public class SilentPersistenceSubscriber {
 
     @Subscribe
     public void onFSDJump(FSDJumpEvent event) {
-        LocationDto primaryStar = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyId());
+        // WHY: keyed on the arrival body name, which is the unique column LocationDao.upsert conflicts
+        // on. Keying on bodyId can miss a row that the upsert then replaces wholesale, losing its scan
+        // data whenever the journal reports a different BodyID for the same body.
+        LocationDto primaryStar = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
         primaryStar.setBodyId(event.getBodyId());
         primaryStar.setSystemAddress(event.getSystemAddress());
         primaryStar.setStationGovernment(event.getSystemGovernmentLocalised());
@@ -128,6 +132,66 @@ public class SilentPersistenceSubscriber {
         playerSession.setCurrentPrimaryStarName(event.getStarSystem());
         playerSession.setCurrentLocationId(event.getBodyId(), event.getSystemAddress());
         log.debug("PreScan: saved jump destination {}", event.getStarSystem());
+    }
+
+    /**
+     * A carrier jump moves the commander without an FSDJump or Location event. Replaying the journal
+     * without this leaves the current-location pointer at the system he was in before the carrier
+     * took off, so the app reports a stale position on startup.
+     *
+     * <p>The DOCKED status flag is not consulted: it is set only while the commander is in his ship,
+     * and he may well have been on foot in the concourse. The event's own Docked/OnFoot fields say
+     * whether he was aboard.
+     */
+    @Subscribe
+    public void onCarrierJump(CarrierJumpEvent event) {
+        boolean commanderAboard = event.isDocked() || event.isOnFoot();
+        if (!commanderAboard) return;
+
+        if (event.getBodyId() == null) {
+            log.warn("PreScan: CarrierJump for {} carries no BodyID; location not persisted", event.getStarSystem());
+            return;
+        }
+
+        LocationDto arrival = CarrierJumpLocationMapper.toArrivalLocation(event, locationManager);
+        locationManager.save(arrival);
+        playerSession.setCurrentPrimaryStarName(event.getStarSystem());
+        // WHY: point at the id the row actually holds. LocationDto.setBodyId ignores a lower id, so
+        // an event reporting BodyID 0 for an already identified body would leave the pointer stale.
+        playerSession.setCurrentLocationId(arrival.getBodyId(), event.getSystemAddress());
+        playerSession.setLastKnownCarrierLocation(event.getStarSystem());
+        log.debug("PreScan: saved carrier jump destination {}", event.getStarSystem());
+    }
+
+    /**
+     * CarrierLocation is written for every carrier arrival, including those the commander was not
+     * aboard for (which produce no CarrierJump at all). Replaying it keeps the carrier's last known
+     * system correct across a restart.
+     *
+     * <p>WHY: deliberately narrower than the live CarrierLocationSubscriber. It does not decrement
+     * fuel, because the journal is replayed on every start and the decrement would compound; and it
+     * does not consult EDSM, because the pre-scan makes no network calls. Coordinates come from the
+     * location table if it already knows the system.
+     */
+    @Subscribe
+    public void onCarrierLocation(CarrierLocationEvent event) {
+        if (!"FleetCarrier".equalsIgnoreCase(event.getCarrierType())) return;
+
+        String starSystem = event.getStarSystem();
+        playerSession.setLastKnownCarrierLocation(starSystem);
+
+        CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+        carrierData.setStarName(starSystem);
+        carrierData.setSystemAddress(event.getSystemAddress());
+
+        LocationDto known = locationManager.findPrimaryStar(starSystem);
+        if (known.getX() != 0 || known.getY() != 0 || known.getZ() != 0) {
+            carrierData.setX(known.getX());
+            carrierData.setY(known.getY());
+            carrierData.setZ(known.getZ());
+        }
+        playerSession.setFleetCarrierData(carrierData);
+        log.debug("PreScan: carrier last known at {}", starSystem);
     }
 
     @Subscribe

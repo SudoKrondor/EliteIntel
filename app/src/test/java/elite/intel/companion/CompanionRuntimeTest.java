@@ -12,13 +12,16 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Verifies the static runtime holder publishes installed services/state and guards access before install /
- * after clear. Process-global static state, so each test clears it afterwards.
+ * Verifies atomic runtime-graph publication, generation-safe removal, and guarded access while no graph is live.
+ * Process-global static state, so each test uninstalls the graph afterwards.
  */
 class CompanionRuntimeTest {
 
@@ -29,12 +32,12 @@ class CompanionRuntimeTest {
 
     @AfterEach
     void clear() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.clearInstalledGraph();
     }
 
     @Test
     void installedServicesAreReturned() {
-        CompanionRuntime.install(null, speech, execution, null, reducer, state);
+        CompanionRuntimeTestSupport.install(null, speech, execution, null, reducer, state);
 
         assertSame(speech, CompanionRuntime.speech());
         assertSame(execution, CompanionRuntime.execution());
@@ -49,9 +52,63 @@ class CompanionRuntimeTest {
 
     @Test
     void accessAfterClearThrows() {
-        CompanionRuntime.install(null, speech, execution, null, reducer, state);
-        CompanionRuntime.clear();
+        CompanionRuntimeGraph runtimeGraph = CompanionRuntimeTestSupport.install(
+                null, speech, execution, null, reducer, state);
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
 
         assertThrows(IllegalStateException.class, CompanionRuntime::reducer);
+    }
+
+    @Test
+    void staleGraphCannotUninstallANewerGeneration() {
+        CompanionRuntimeGraph firstGeneration = CompanionRuntimeTestSupport.install(
+                null, speech, execution, null, reducer, state);
+        CompanionRuntimeTestSupport.uninstall(firstGeneration);
+        CompanionState newerState = new CompanionState();
+        CompanionRuntimeGraph secondGeneration = CompanionRuntimeTestSupport.install(
+                null, speech, execution, null, reducer, newerState);
+
+        assertFalse(CompanionRuntime.uninstallGraph(firstGeneration));
+        assertSame(newerState, CompanionRuntime.state());
+
+        CompanionRuntimeTestSupport.uninstall(secondGeneration);
+    }
+
+    @Test
+    void closedGraphCannotBeInstalled() {
+        CompanionRuntimeGraph runtimeGraph = CompanionRuntimeTestSupport.install(
+                null, speech, execution, null, reducer, state);
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
+
+        assertThrows(IllegalStateException.class, () -> CompanionRuntime.installGraph(runtimeGraph));
+    }
+
+    @Test
+    void oldExecutionGenerationCannotUseANewerRuntime() throws Exception {
+        CapturingNarrator newerNarrator = new CapturingNarrator();
+        CompanionRuntimeGraph oldGraph = CompanionRuntimeTestSupport.installNarrator(CompanionNarrator.NO_OP);
+        long oldGenerationId = oldGraph.runtimeGeneration().generationId();
+
+        CompanionRuntime.callWithinGeneration(oldGenerationId, () -> {
+            CompanionRuntimeTestSupport.uninstall(oldGraph);
+            CompanionRuntimeTestSupport.installNarrator(newerNarrator);
+
+            CompanionRuntime.narrator().filler("late old-generation speech", false);
+            assertThrows(IllegalStateException.class, CompanionRuntime::state);
+            return null;
+        });
+
+        CompanionRuntime.narrator().filler("current-generation speech", false);
+        assertEquals(1, newerNarrator.submissions.get());
+    }
+
+    private static final class CapturingNarrator implements CompanionNarrator {
+        private final AtomicInteger submissions = new AtomicInteger();
+
+        @Override public void filler(String text, boolean urgent) { submissions.incrementAndGet(); }
+        @Override public void narrate(String data, String instructions, String topic) { submissions.incrementAndGet(); }
+        @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) {
+            submissions.incrementAndGet();
+        }
     }
 }

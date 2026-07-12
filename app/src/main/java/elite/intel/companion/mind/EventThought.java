@@ -1,39 +1,100 @@
 package elite.intel.companion.mind;
 
 import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.ThoughtSource;
+import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.Urgency;
+import elite.intel.companion.model.llm.LlmResult;
+import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryImportance;
+import elite.intel.companion.prompt.ComposedPrompt;
+import elite.intel.companion.tools.SpeakFunction;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 
 /**
- * A thought born from a filtered game event. It is purely a knowledge channel: it records the event to
- * memory and ends, never engaging the LLM, never speaking, never running tools (spontaneous event speech now
- * belongs solely to {@link NarrationThought} via the curated subscriber layer - see
- * COMPANION_CURATED_NARRATION_PROPOSAL.md §2.1/§2.2). Its memory tag is fixed at birth from the static
- * event-type map; it never moves the global conversation topic.
- * <p>
- * An event is remembered only when it provides a readable {@code memorySummary()} (carried here as the
- * {@code currentInput}): that line is the event's lived-experience record. An event with no summary writes
- * nothing - this is the opt-in that keeps high-frequency telemetry out of the timeline, in place of the older
- * importance gate. {@code LOW} events never reach here - the {@code GameEventFilter} drops them upstream.
+ * A thought born from a gameplay subscriber that wants the companion to <b>voice the result</b> of reacting to a
+ * game event. The subscriber already decided this is worth saying and pre-digested the data. Two modes, both a
+ * tiny turn that leaves a clean two-party {@code user -> assistant} pair in memory (the stimulus as a
+ * {@code user} turn, the spoken line as the companion's own words) so the timeline never grows an orphan
+ * {@code assistant} line:
+ * <ul>
+ *   <li><b>narration</b> - the subscriber hands raw-but-digested data plus phrasing instructions; one LLM round
+ *       (the lean Narration prompt) compresses it into a spoken line. The stimulus recorded is the digested data.</li>
+ *   <li><b>verbatim</b> - the subscriber hands a finished phrase; it is voiced as-is with no LLM. The stimulus
+ *       recorded is only a short source/event id (never the raw data, which could be a huge list that would
+ *       bloat the prompt), and the finished phrase is recorded as if it were the LLM's reply.</li>
+ * </ul>
+ * It has no game tools and never moves the global conversation topic - its memory tag is the subscriber-supplied
+ * topic.
  */
 public final class EventThought extends Thought {
 
     private final ConversationTopic eventTopic;
+    /**
+     * Non-null selects verbatim mode: the finished phrase to voice as-is and record as the companion's reply,
+     * with no LLM round. Null selects narration mode (one LLM round phrases the stimulus).
+     */
+    private final String verbatimText;
 
-    EventThought(Urgency urgency, String summary, ConversationTopic eventTopic, ThoughtContext ctx) {
-        super(ThoughtSource.EVENT, urgency, summary, ctx);
-        this.eventTopic = eventTopic;
+    /** Creates the narration mode from the event turn signals. */
+    EventThought(ThoughtContext context, ConversationTopic eventTopic, ThoughtDependencies dependencies) {
+        this(context, null, eventTopic, dependencies);
     }
 
     /**
-     * Memory-only: records the event's readable summary under its static topic, or does nothing when the event
-     * provides no summary. The LLM is never engaged and nothing is spoken.
+     * Creates either mode. A non-null {@code verbatimText} selects verbatim mode; its turn context then carries the
+     * short source/event id as the {@code user} turn and its match input is unused.
      */
+    EventThought(ThoughtContext context, String verbatimText, ConversationTopic eventTopic,
+                 ThoughtDependencies dependencies) {
+        super(context, dependencies);
+        this.eventTopic = eventTopic;
+        this.verbatimText = verbatimText;
+    }
+
     @Override
     public void run() {
-        if (currentInput != null && !currentInput.isBlank()) {
-            recordCurrentInput();
+        if (verbatimText != null) {
+            runVerbatim();
+        } else {
+            runNarration();
+        }
+    }
+
+    /**
+     * Verbatim result: record the short source id as the {@code user} turn, voice the finished phrase, and record
+     * it as the companion's reply - a clean {@code user -> assistant} pair, no LLM. A blank phrase is not recorded.
+     */
+    private void runVerbatim() {
+        recordCurrentInput();                              // user turn = the short source/event id
+        voice(verbatimText, urgency() == Urgency.URGENT);  // voice the finished phrase (urgent preempts)
+        recordCompanionSpeech(verbatimText);               // remember it as the companion's reply
+    }
+
+    /**
+     * Narration result: one short round - compose the lean prompt, ask the LLM to phrase the stimulus once, then
+     * record the stimulus as a {@code user} turn, voice the first {@code speak} line, and record it as the
+     * companion's own words. Best-effort - a failed or interrupted round stays silent and records nothing (a
+     * reaction with no reply is not a dialogue turn).
+     */
+    private void runNarration() {
+        ComposedPrompt prompt = composeInitialPrompt();
+        LlmResult result = submitRound(prompt.messages(), prompt.tools(), prompt.profile());
+        if (result == null || !result.isValid()) {
+            return;
+        }
+        // Only the first speak is voiced. A model that splits the line into more than one speak in a single
+        // round (small models sometimes do) would otherwise be read twice; the extras are dropped.
+        for (LlmToolInvocation inv : result.toolInvocations()) {
+            if (SpeakFunction.ID.equals(inv.name())) {
+                recordCurrentInput();                      // user turn = the digested stimulus
+                execute(inv);                              // voice the phrased line through the speech gateway
+                recordCompanionSpeech(spokenTextOf(inv));  // remember what we said, not the phrasing instructions
+                return;
+            }
         }
     }
 
@@ -42,9 +103,24 @@ public final class EventThought extends Thought {
         return eventTopic;
     }
 
-    /** Events carry ordinary importance; only the commander rates a turn (classify_turn). */
+    /** Event reactions carry ordinary importance; only the commander rates a turn (classify_turn). */
     @Override
     protected MemoryImportance memoryImportance() {
         return MemoryImportance.NORMAL;
+    }
+
+    /** No game tools: the subscriber already calculated and filtered the data, so the reducer offers nothing. */
+    @Override
+    protected Set<IntelActionCategory> allowedCategories() {
+        return EnumSet.noneOf(IntelActionCategory.class);
+    }
+
+    /**
+     * System tools for the EVENT source ({@code speak} only, narration mode); the subscriber decided this should
+     * be narrated, so it is voiced unconditionally. Unused in verbatim mode (no prompt is composed).
+     */
+    @Override
+    protected List<LlmToolDefinition> systemTools() {
+        return dependencies.systemFunctionProvider().systemFunctions(source());
     }
 }

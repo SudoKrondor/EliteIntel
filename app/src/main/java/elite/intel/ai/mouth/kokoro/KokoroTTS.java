@@ -6,10 +6,7 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
-import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.MainVoicePlaybackGate;
-import elite.intel.ai.mouth.MouthInterface;
-import elite.intel.ai.mouth.RadioFilter;
+import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
@@ -25,7 +22,6 @@ import elite.intel.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.annotation.Nullable;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Mixer;
@@ -34,9 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,18 +65,19 @@ public class KokoroTTS implements MouthInterface {
     private volatile Role role = Role.MAIN;
 
     private final AtomicBoolean interruptRequested = new AtomicBoolean(false);
-    private final AtomicBoolean canBeInterrupted = new AtomicBoolean(true);
     private final AtomicLong interruptGeneration = new AtomicLong(0);
     private final AtomicReference<SourceDataLine> currentLine = new AtomicReference<>();
+    private final AtomicReference<SynthesisTask> currentSynthesis = new AtomicReference<>();
+    private final AtomicReference<PlaybackTask> currentPlayback = new AtomicReference<>();
 
     private record SynthesisTask(String text, String voiceName, boolean isRadio, long generation,
-                                 @Nullable CompletableFuture<Void> completionFuture) {
+                                 boolean lastSentence, VocalisationHandle handle) {
     }
 
     /**
      * Synthesized PCM paired with an optional completion future from the originating request.
      */
-    private record PlaybackTask(byte[] pcm, long generation, @Nullable CompletableFuture<Void> completionFuture) {
+    private record PlaybackTask(byte[] pcm, long generation, boolean lastSentence, VocalisationHandle handle) {
     }
 
     // Stage 1: raw sentence strings waiting for synthesis
@@ -152,8 +147,7 @@ public class KokoroTTS implements MouthInterface {
         }
 
         running = true;
-        synthesisQueue.clear();
-        playbackQueue.clear();
+        completeQueuedSpeech();
         interruptRequested.set(false); // ← reset after stop() left it true
 
         synthesisThread = new Thread(this::processSynthesisQueue, "KokoroTTS-Synthesis");
@@ -181,9 +175,9 @@ public class KokoroTTS implements MouthInterface {
         } catch (IllegalArgumentException ignored) {
             log.warn("Kokoro is not registered on event bus, ignore");
         }
-        synthesisQueue.clear();
-        playbackQueue.clear();
+        interruptGeneration.incrementAndGet();
         interruptRequested.set(true);
+        completeAllSpeech();
 
         if (persistentLine != null && persistentLine.isOpen()) {
             try {
@@ -228,71 +222,167 @@ public class KokoroTTS implements MouthInterface {
 
     @Override
     public void interruptAndClear() {
-        if (!canBeInterrupted.get()) return;
-
-        // Drain queues and complete any pending customCommand completion futures to avoid 30s timeout
-        List<SynthesisTask> drainedSynthesis = new ArrayList<>();
-        synthesisQueue.drainTo(drainedSynthesis);
-        drainedSynthesis.stream().map(SynthesisTask::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
-
-        List<PlaybackTask> drainedPlayback = new ArrayList<>();
-        playbackQueue.drainTo(drainedPlayback);
-        drainedPlayback.stream().map(PlaybackTask::completionFuture).filter(Objects::nonNull).forEach(f -> f.complete(null));
-
         interruptGeneration.incrementAndGet();
-        interruptRequested.set(true);
+        interruptRequests(null);
 
+        log.info("KokoroTTS interrupted and queues cleared");
+    }
+
+    @Subscribe
+    public void shutUp(TTSInterruptEvent event) {
+        if (event.requestId() == null) {
+            interruptAndClear();
+        } else {
+            interruptRequests(event.requestId());
+        }
+    }
+
+    @Override
+    @Subscribe
+    public void onVoiceProcessEvent(VocalisationRequestEvent event) {
+        // In RADIO role this engine runs alongside a non-Kokoro main mouth and voices radio only;
+        // normal narration belongs to the main mouth. In MAIN role it handles everything.
+        if (role == Role.RADIO && !event.isRadio()) return;
+        if (!running) {
+            return;
+        }
+        VocalisationHandle handle = event.handle();
+        if (!handle.claimForPlayback()) {
+            return;
+        }
+
+        try {
+            String sanitizedText = StringUtls.sanitizeTts(event.getText());
+            if (sanitizedText == null || sanitizedText.isBlank()) {
+                handle.fail(new IllegalArgumentException("Vocalisation text is blank after TTS sanitization"));
+                return;
+            }
+
+            GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
+            UiBus.publish(new AiResponseLogEvent(sanitizedText));
+
+            // Split on sentence boundaries and enqueue each piece for synthesis.
+            String[] allSentences = sanitizedText.split("(?<=[.,!?])\\s+(?=\\S)");
+            List<String> sentences = new ArrayList<>();
+            for (String sentence : allSentences) {
+                if (!sentence.isBlank()) sentences.add(sentence);
+            }
+            if (sentences.isEmpty()) {
+                handle.fail(new IllegalArgumentException("Vocalisation contains no speakable sentences"));
+                return;
+            }
+            long generation = interruptGeneration.get();
+            for (int i = 0; i < sentences.size(); i++) {
+                boolean isLast = (i == sentences.size() - 1);
+                boolean isRadio = event.isRadio();
+                if (!Status.getInstance().isInMainShip()) isRadio = true;
+                if (!synthesisQueue.offer(new SynthesisTask(
+                        sentences.get(i), event.getVoiceName(), isRadio, generation, isLast, handle))) {
+                    handle.fail(new IllegalStateException("Kokoro synthesis queue rejected vocalisation"));
+                    return;
+                }
+            }
+        } catch (RuntimeException failure) {
+            handle.fail(failure);
+            log.warn("Failed to enqueue Kokoro TTS request", failure);
+        }
+    }
+
+    private void interruptRequests(String requestId) {
+        long liveGeneration = interruptGeneration.get();
+        for (SynthesisTask task : new ArrayList<>(synthesisQueue)) {
+            if (shouldInterrupt(task.handle(), task.generation(), requestId, liveGeneration)
+                    && synthesisQueue.remove(task)) {
+                task.handle().complete();
+            }
+        }
+        for (PlaybackTask task : new ArrayList<>(playbackQueue)) {
+            if (shouldInterrupt(task.handle(), task.generation(), requestId, liveGeneration)
+                    && playbackQueue.remove(task)) {
+                task.handle().complete();
+            }
+        }
+
+        SynthesisTask synthesis = currentSynthesis.get();
+        if (synthesis != null
+                && shouldInterrupt(synthesis.handle(), synthesis.generation(), requestId, liveGeneration)) {
+            synthesis.handle().complete();
+        }
+        PlaybackTask playback = currentPlayback.get();
+        if (playback == null
+                || !shouldInterrupt(playback.handle(), playback.generation(), requestId, liveGeneration)) {
+            return;
+        }
+        playback.handle().complete();
+        interruptRequested.set(true);
         SourceDataLine line = currentLine.get();
         if (line != null && line.isOpen()) {
             line.stop();
             line.flush();
             line.start();
         }
+    }
 
-        log.info("KokoroTTS interrupted and queues cleared");
+    private static boolean shouldInterrupt(
+            VocalisationHandle handle,
+            long taskGeneration,
+            String requestId,
+            long liveGeneration
+    ) {
+        if (!handle.interruptible()) {
+            return false;
+        }
+        return requestId == null
+                ? taskGeneration != liveGeneration
+                : requestId.equals(handle.requestId());
+    }
 
-        if (synthesisThread == null || !synthesisThread.isAlive() ||
-                playbackThread == null || !playbackThread.isAlive()) {
-            log.warn("KokoroTTS worker died - restarting");
-            start();
+    private boolean isObsolete(VocalisationHandle handle, long taskGeneration) {
+        if (handle.isDone()) {
+            return true;
+        }
+        if (handle.interruptible() && taskGeneration != interruptGeneration.get()) {
+            handle.complete();
+            return true;
+        }
+        return false;
+    }
+
+    private void completeQueuedSpeech() {
+        List<SynthesisTask> synthesis = new ArrayList<>();
+        synthesisQueue.drainTo(synthesis);
+        synthesis.forEach(task -> task.handle().complete());
+        List<PlaybackTask> playback = new ArrayList<>();
+        playbackQueue.drainTo(playback);
+        playback.forEach(task -> task.handle().complete());
+    }
+
+    private void completeAllSpeech() {
+        completeQueuedSpeech();
+        SynthesisTask synthesis = currentSynthesis.get();
+        if (synthesis != null) {
+            synthesis.handle().complete();
+        }
+        PlaybackTask playback = currentPlayback.get();
+        if (playback != null) {
+            playback.handle().complete();
         }
     }
 
-    @Subscribe
-    public void shutUp(TTSInterruptEvent event) {
-        interruptAndClear();
-    }
-
-    @Override
-    @Subscribe
-    public void onVoiceProcessEvent(VocalisationRequestEvent event) {
-        if (!running) return;
-        // In RADIO role this engine runs alongside a non-Kokoro main mouth and voices radio only;
-        // normal narration belongs to the main mouth. In MAIN role it handles everything.
-        if (role == Role.RADIO && !event.isRadio()) return;
-        canBeInterrupted.set(event.canBeInterrupted());
-
-        String sanitizedText = StringUtls.sanitizeTts(event.getText());
-        if (sanitizedText.isBlank()) return;
-
-        GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-        UiBus.publish(new AiResponseLogEvent(sanitizedText));
-
-        // Split on sentence boundaries and enqueue each piece for synthesis
-        String[] allSentences = sanitizedText.split("(?<=[.,!?])\\s+(?=\\S)");
-        // Collect non-blank sentences so the completion future goes to the actual last one
-        List<String> sentences = new ArrayList<>();
-        for (String s : allSentences) {
-            if (!s.isBlank()) sentences.add(s);
+    private void failAllSpeech(Throwable failure) {
+        List<SynthesisTask> synthesis = new ArrayList<>();
+        synthesisQueue.drainTo(synthesis);
+        synthesis.forEach(task -> task.handle().fail(failure));
+        List<PlaybackTask> playback = new ArrayList<>();
+        playbackQueue.drainTo(playback);
+        playback.forEach(task -> task.handle().fail(failure));
+        SynthesisTask activeSynthesis = currentSynthesis.get();
+        if (activeSynthesis != null) {
+            activeSynthesis.handle().fail(failure);
         }
-        CompletableFuture<Void> completionFuture = event.getCompletionFuture();
-        long generation = interruptGeneration.get();
-        for (int i = 0; i < sentences.size(); i++) {
-            boolean isLast = (i == sentences.size() - 1);
-            boolean isRadio = event.isRadio();
-            if (!Status.getInstance().isInMainShip()) isRadio = true;
-            synthesisQueue.offer(new SynthesisTask(sentences.get(i), event.getVoiceName(), isRadio, generation,
-                    isLast ? completionFuture : null));
+        PlaybackTask activePlayback = currentPlayback.get();
+        if (activePlayback != null) {
+            activePlayback.handle().fail(failure);
         }
     }
 
@@ -300,10 +390,11 @@ public class KokoroTTS implements MouthInterface {
 
     private void processSynthesisQueue() {
         while (running) {
+            SynthesisTask task = null;
             try {
-                SynthesisTask task = synthesisQueue.take();
-                if (task.generation() != interruptGeneration.get()) {
-                    if (task.completionFuture() != null) task.completionFuture().complete(null);
+                task = synthesisQueue.take();
+                currentSynthesis.set(task);
+                if (isObsolete(task.handle(), task.generation())) {
                     continue;
                 }
 
@@ -322,11 +413,10 @@ public class KokoroTTS implements MouthInterface {
 
                 if (audio == null || audio.getSamples() == null || audio.getSamples().length == 0) {
                     log.warn("KokoroTTS: empty audio for: {}", task.text());
-                    if (task.completionFuture() != null) task.completionFuture().complete(null);
+                    task.handle().fail(new IllegalStateException("Kokoro produced empty audio"));
                     continue;
                 }
-                if (task.generation() != interruptGeneration.get()) {
-                    if (task.completionFuture() != null) task.completionFuture().complete(null);
+                if (isObsolete(task.handle(), task.generation())) {
                     continue;
                 }
 
@@ -337,13 +427,24 @@ public class KokoroTTS implements MouthInterface {
                 if (task.isRadio()) {
                     RadioFilter.apply(pcm);
                 }
-                playbackQueue.put(new PlaybackTask(pcm, task.generation(), task.completionFuture()));
+                playbackQueue.put(new PlaybackTask(
+                        pcm, task.generation(), task.lastSentence(), task.handle()));
 
             } catch (InterruptedException e) {
+                if (task != null) {
+                    task.handle().complete();
+                }
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
+                if (task != null) {
+                    task.handle().fail(e);
+                }
                 log.warn("KokoroTTS synthesis error: {}", e.getMessage(), e);
+            } finally {
+                if (task != null) {
+                    currentSynthesis.compareAndSet(task, null);
+                }
             }
         }
     }
@@ -351,29 +452,52 @@ public class KokoroTTS implements MouthInterface {
     // -- Stage 2: Playback thread ----------------------------------------------
 
     private void processPlaybackQueue() {
-        if (!openPersistentLine()) return;
+        if (!openPersistentLine()) {
+            IllegalStateException failure = new IllegalStateException("Kokoro audio output is unavailable");
+            failAllSpeech(failure);
+            running = false;
+            try {
+                GameEventBus.unregister(this);
+            } catch (IllegalArgumentException ignored) {
+                log.debug("Kokoro TTS was already unregistered after audio failure");
+            }
+            if (synthesisThread != null) {
+                synthesisThread.interrupt();
+            }
+            return;
+        }
 
         while (running) {
+            PlaybackTask task = null;
             try {
-                PlaybackTask task = playbackQueue.poll(200, TimeUnit.MILLISECONDS);
+                task = playbackQueue.poll(200, TimeUnit.MILLISECONDS);
                 if (task == null) continue;
-                if (task.generation() != interruptGeneration.get()) {
-                    if (task.completionFuture() != null) task.completionFuture().complete(null);
+                currentPlayback.set(task);
+                if (isObsolete(task.handle(), task.generation())) {
                     continue;
                 }
 
                 interruptRequested.set(false);
                 playPcm(task.pcm());
-                if (task.completionFuture() != null) {
-                    task.completionFuture().complete(null);
+                if (task.lastSentence()) {
+                    task.handle().complete();
                 }
 
             } catch (InterruptedException e) {
+                if (task != null) {
+                    task.handle().complete();
+                }
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
+                if (task != null) {
+                    task.handle().fail(e);
+                }
                 log.warn("KokoroTTS playback error: {}", e.getMessage(), e);
             } finally {
+                if (task != null) {
+                    currentPlayback.compareAndSet(task, null);
+                }
                 UiBus.publish(new AppLogEvent(""));
             }
         }
@@ -382,7 +506,9 @@ public class KokoroTTS implements MouthInterface {
 
     private void playPcm(byte[] audioData) {
         if (persistentLine == null || !persistentLine.isOpen()) {
-            if (!openPersistentLine()) return;
+            if (!openPersistentLine()) {
+                throw new IllegalStateException("Kokoro audio output is unavailable");
+            }
         }
 
         // Radio ducks behind the main voice: wait out any ongoing main-voice sentence, then play.
@@ -458,19 +584,22 @@ public class KokoroTTS implements MouthInterface {
     // -- Engine construction ---------------------------------------------------
 
     /**
-     * NOTE: Kokoro will speak other languages but with accent.
-     * Hindi hi
-     * Italian it
-     * Japanese ja
-     * Portuguese (Brazilian) pt-br
-     * Chinese (Mandarin) zh
+     * The espeak-ng phonemizer language Kokoro reads the text with. This is what decides pronunciation, and
+     * it is separate from the voice: a language with no native Kokoro voice (German) is still phonemized
+     * correctly here and merely spoken with the accent of whatever voice is selected. Getting this wrong is
+     * worse than an accent — German text read with "en-us" rules is mangled, not accented.
+     * <p>
+     * Cyrillic (RU/UK) has no entry on purpose: it cannot be phonemized at all, so those sessions are
+     * answered in English upstream (see {@code AiResponseLanguagePolicy}) and land on the default.
      */
     private static String kokoroLangCode(Language language) {
         return switch (language) {
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";
-            case PT -> "pt-br";
+            case DE -> "de";
+            // Kokoro ships Brazilian Portuguese only, so European Portuguese speaks with a Brazilian accent.
+            case PT, PTBZ -> "pt-br";
             default -> "en-us";
         };
     }

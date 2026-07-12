@@ -24,7 +24,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_material_inventory";
 
-    @Override public String llmDescription() { return "Report the commander's engineering materials and cargo commodities."; }
+    @Override
+    public String llmDescription() {
+        return "Report how much of an engineering material or commodity the commander holds; the item name is in 'key' (raw, manufactured, encoded materials, and cargo).";
+    }
 
 
     @Override public String id() { return ID; }

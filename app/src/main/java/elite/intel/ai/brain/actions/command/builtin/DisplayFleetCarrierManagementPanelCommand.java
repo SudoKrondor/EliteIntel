@@ -20,7 +20,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DisplayFleetCarrierManagementPanelCommand implements IntelCommand {
     public static final String ID = "display_fleet_carrier_management_panel";
 
-    @Override public String llmDescription() { return "Open the fleet carrier management panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the fleet-carrier management/administration panel.";
+    }
 
 
     private final Status status = Status.getInstance();
@@ -38,7 +41,7 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
 
     /// not a sure fire. assumes default UI selection. will fail often.
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         UiNavCommon.close();
         if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
@@ -60,6 +63,12 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
                     GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_UI_UP.getGameBinding()),
                     GameInputStep.delay(100),
+                    GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.delay(100),
+                    GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.delay(100),
+
+                    GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
                     GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
@@ -71,5 +80,6 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         }
+        return null;
     }
 }

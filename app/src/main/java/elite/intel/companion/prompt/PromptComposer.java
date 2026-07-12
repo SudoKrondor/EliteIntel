@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmMessage;
@@ -23,15 +24,15 @@ import java.util.Map;
  * commands are relevant, or how to describe a tool; it receives already-prepared data and assembles
  * the OpenAI/Mistral-compatible prompt (see COMPANION_ARCHITECTURE.md §2.10).
  * <p>
- * Cache-friendly ordering: the stable narrative + topic enum head the system message, and the
- * per-turn conversation history, remembered-fact candidates, and current input are separate later
- * messages so the cached prefix survives across turns.
+ * Cache-friendly ordering: the stable narrative + topic enum head the first and only system message, and the
+ * per-turn conversation history plus current input follow it so the cached prefix survives across turns.
  * <p>
  * Conversation history is replayed as native role-alternating messages (commander -> {@code user}, the
  * companion's own words -> {@code assistant}, a model tool-call -> {@code assistant(tool_calls)} immediately
  * followed by its {@code tool} result) rather than flattened into one system block, so the model reads the
- * dialogue in the role structure it was aligned on (better coreference/turn-taking). Ambient timeline entries
- * that are not dialogue turns (events, system notes) are replayed as inline {@code system} notes.
+ * dialogue in the role structure it was aligned on (better coreference/turn-taking). Event timeline entries are
+ * replayed as tagged {@code user} data turns, while other ambient notes are inlined into the final current-turn
+ * context instead of becoming mid-dialogue {@code system} messages, which strict chat templates reject.
  */
 public final class PromptComposer {
 
@@ -68,9 +69,9 @@ public final class PromptComposer {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
                     selectedTools, systemTools, shortTerm, memoryCandidates);
-            case NARRATION -> composeNarration(source, currentInput, systemTools, shortTerm);
-            // EVENT thoughts are memory-only (see EventThought); they never reach here.
-            case EVENT -> throw new IllegalStateException("EVENT thoughts do not compose a prompt");
+            // A reactive EVENT thought uses a lean phrase-and-speak prompt: the subscriber pre-digested the data,
+            // so there are no game tools and no topic enum, just the history and the stimulus as the current input.
+            case EVENT -> composeNarration(source, currentInput, systemTools, shortTerm);
         };
     }
 
@@ -86,14 +87,11 @@ public final class PromptComposer {
             List<Fact> memoryCandidates) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
-        messages.addAll(coalesceHistory(buildHistoryMessages(shortTerm)));
-        // Per-turn clean answer facts (kept out of the cached prefix, like the history). Omitted when empty.
-        if (memoryCandidates != null && !memoryCandidates.isEmpty()) {
-            messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildCandidatesBlock(memoryCandidates)));
-        }
+        ReplayedHistory history = buildHistoryMessages(shortTerm);
+        messages.addAll(coalesceHistory(history.messages()));
         // The current turn stays a distinct final user message - never coalesced into the history - so it is
         // never fused with a preceding (e.g. silently-answered) commander turn into one ambiguous message.
-        messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(currentInput)));
+        appendCurrentInput(messages, buildCurrentInput(currentInput, memoryCandidates, history.ambient(), "commander_input"));
 
         // Game/query tools first, then system functions; both already chosen upstream.
         List<LlmToolDefinition> tools = new ArrayList<>(selectedTools);
@@ -104,7 +102,7 @@ public final class PromptComposer {
 
     /**
      * Lean narration prompt: the narration static block only (no topic enum, no memory indexes, no safety -
-     * a narration thought has only speak), the role-based conversation history for continuity, the sensor
+     * a narration thought has only speak), the role-based conversation history for continuity, the tagged event
      * data as the current input, the system tools, and its own NARRATION cache profile so it never shares the
      * commander prefix. {@code selectedTools} does not apply here.
      */
@@ -113,8 +111,9 @@ public final class PromptComposer {
             List<LlmToolDefinition> systemTools, List<MemoryEntry> shortTerm) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, systemPrompt.staticRules(source)));
-        messages.addAll(coalesceHistory(buildHistoryMessages(shortTerm)));
-        messages.add(LlmMessage.of(LlmMessageRole.USER, buildCurrentInput(currentInput)));
+        ReplayedHistory history = buildHistoryMessages(shortTerm);
+        messages.addAll(coalesceHistory(history.messages()));
+        appendCurrentInput(messages, buildNarrationInput(currentInput, history.ambient()));
 
         return new ComposedPrompt(List.copyOf(messages), List.copyOf(systemTools), PromptCacheProfile.NARRATION);
     }
@@ -153,22 +152,27 @@ public final class PromptComposer {
      * Per-turn conversation history (kept out of the cached prefix): the short-term timeline replayed as native
      * role-alternating messages instead of one flattened block, so the model reads the dialogue in the role
      * structure it was aligned on. Durable facts that aged out of short-term are not replayed here - the
-     * relevant ones are surfaced as an inline {@code <facts>} block (see {@link #buildCandidatesBlock}).
+     * relevant ones are surfaced as an inline {@code <facts>} block in the final user message.
      * <p>
-     * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant}; a recorded
-     * model tool-call ({@code COMPANION} carrying a {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)}
-     * immediately followed by its {@code tool} result (matched by tool-call id, since the result is written by a
-     * later narration thought and may not be adjacent in the timeline; a missing result is synthesized so the
-     * pair stays protocol-valid). Ambient entries that are not dialogue turns (events, system notes, an unlinked
-     * legacy tool marker) become inline {@code system} notes.
+     * Mapping: {@code COMMANDER -> user}; the companion's own words {@code COMPANION -> assistant} (this includes
+     * a {@code <no_reply/>}/{@code <cut_off/>}/{@code <processing/>} boundary, recorded as a COMPANION entry - the
+     * reply - so it needs no special-casing here); a recorded model tool-call ({@code COMPANION} carrying a
+     * {@link ToolLink.Kind#CALL}) {@code -> assistant(tool_calls)} immediately followed by its {@code tool} result
+     * (matched by tool-call id, because an over-long result is re-written asynchronously by the oversized-gist
+     * compressor and can land non-adjacent to its call; a missing result is synthesized so the pair stays
+     * protocol-valid). Ambient entries that are not dialogue turns (events, system bookkeeping notes, an unlinked
+     * legacy tool marker) are collected for the final current-turn context so the message flow keeps a single
+     * leading {@code system}.
      */
-    private List<LlmMessage> buildHistoryMessages(List<MemoryEntry> shortTerm) {
+    private ReplayedHistory buildHistoryMessages(List<MemoryEntry> shortTerm) {
         List<LlmMessage> out = new ArrayList<>();
+        List<AmbientContextNote> ambient = new ArrayList<>();
         if (shortTerm == null || shortTerm.isEmpty()) {
-            return out;
+            return new ReplayedHistory(out, ambient);
         }
-        // Index tool results by their correlation id: a CALL pulls its RESULT to sit right after it, because the
-        // result is written when the narration thought runs and may land later in the timeline than its call.
+        // Index tool results by their correlation id: a CALL pulls its RESULT to sit right after it, because an
+        // over-long result is re-written asynchronously by the oversized-gist compressor (appended at the timeline
+        // tail), so it can land later in the timeline than its call.
         Map<String, MemoryEntry> resultsById = new HashMap<>();
         for (MemoryEntry entry : shortTerm) {
             ToolLink link = entry.toolLink();
@@ -176,6 +180,9 @@ public final class PromptComposer {
                 resultsById.put(link.toolCallId(), entry);
             }
         }
+        // WHY: one cohesive pass over the timeline. The switch dispatches each entry by source, but the branches
+        // share the resultsById index and the growing role-alternating output, so extracting the dispatch would
+        // sever the call/result pairing and the ordering it depends on.
         for (MemoryEntry entry : shortTerm) {
             ToolLink link = entry.toolLink();
             switch (entry.source()) {
@@ -195,23 +202,48 @@ public final class PromptComposer {
                 // An unlinked legacy marker falls through to the ambient system note.
                 case TOOL_RESULT -> {
                     if (link == null || !link.isResult()) {
-                        out.add(LlmMessage.of(LlmMessageRole.SYSTEM, "(" + entry.content() + ")"));
+                        ambient.add(new AmbientContextNote("tool_result", entry.content()));
                     }
                 }
-                case EVENT, SYSTEM -> out.add(LlmMessage.of(LlmMessageRole.SYSTEM, entry.content()));
+                // A reactive event stimulus is world data on the user channel: replay it as a tagged user turn
+                // so its spoken reply (a COMPANION assistant turn) reads as a proper reaction without pretending
+                // the commander said the raw event payload.
+                case EVENT -> out.add(LlmMessage.of(LlmMessageRole.USER,
+                        PromptXml.element("event_data", entry.content())));
+                // A turn boundary (<no_reply/>/<cut_off/>/<processing/>) is a COMPANION entry, handled by
+                // the COMPANION branch above as a plain assistant message. Every SYSTEM entry left here is
+                // non-dialogue bookkeeping (a dangerous-action note, the searchable summary), inlined as ambient
+                // context so the flow keeps a single leading system message.
+                case SYSTEM -> ambient.add(new AmbientContextNote("system", entry.content()));
             }
         }
-        return out;
+        return new ReplayedHistory(out, ambient);
+    }
+
+    /**
+     * Adds the current input as the final user turn. If history still ended on a user turn - a turn whose
+     * assistant half is not a recorded line (a self-narrating macro turn), or any residual gap - insert a generic
+     * no-answer boundary so strict role-alternating chat templates do not see two user turns in a row.
+     * {@link TurnBoundaryMarkers#NO_ANSWER} is used for any such gap regardless of its original cause: the prompt
+     * treats both omission markers the same, so the exact one does not matter here.
+     */
+    private static void appendCurrentInput(List<LlmMessage> messages, String content) {
+        LlmMessage last = messages.isEmpty() ? null : messages.get(messages.size() - 1);
+        if (last != null && last.role() == LlmMessageRole.USER) {
+            messages.add(LlmMessage.of(LlmMessageRole.ASSISTANT, TurnBoundaryMarkers.NO_ANSWER));
+        }
+        messages.add(LlmMessage.of(LlmMessageRole.USER, content));
     }
 
     /**
      * Merges consecutive same-role plain messages <em>within the history</em> into one, so the transcript keeps
-     * clean {@code user}/{@code assistant} alternation. Adjacent same-role history messages arise when a commander
-     * turn drew a silent reply or two companion lines land back to back; a wall of same-role messages degrades
-     * small-model turn-taking and is rejected by strict-alternation providers (Anthropic, Gemini). Applied only
-     * to the history list - never the cached system prefix or the current-input message, which are assembled
-     * around it - so the cache prefix and the distinct current turn are preserved. A message carrying tool-calls
-     * or a tool result is a boundary and is never merged.
+     * clean {@code user}/{@code assistant} alternation. This is legitimate render normalization, not orphan
+     * patching: a single turn can legitimately emit several assistant-side lines - a turn that runs more than one
+     * command records an ack/outcome for each, and a self-narrating macro turn leaves its user turn without a
+     * companion reply - and a wall of same-role messages degrades small-model turn-taking and is rejected by
+     * strict-alternation providers (Anthropic, Gemini). Applied only to the history list - never the cached system
+     * prefix or the current-input message, which are assembled around it - so the cache prefix and the distinct
+     * current turn are preserved. A message carrying tool-calls or a tool result is a boundary and is never merged.
      */
     private static List<LlmMessage> coalesceHistory(List<LlmMessage> history) {
         List<LlmMessage> out = new ArrayList<>();
@@ -247,28 +279,86 @@ public final class PromptComposer {
      * told to you). No heading and no usage instruction: the XML self-delineates the content, and how to use these
      * facts is owned once by the Function-calling rules, not duplicated per turn. XML with attributes tested best
      * for delineating provided context (OpenAI long-context guidance). Kept out of the cached prefix (it changes
-     * every turn); only built when non-empty.
+     * every turn) and embedded in the final user message, not as a second {@code system} message.
      */
-    private String buildCandidatesBlock(List<Fact> memoryCandidates) {
-        StringBuilder sb = new StringBuilder();
+    private void appendCandidatesBlock(StringBuilder sb, List<Fact> memoryCandidates) {
         sb.append("<facts>\n");
         int id = 1;
         for (Fact fact : memoryCandidates) {
             sb.append("  <fact id=\"").append(id++).append("\" source=\"").append(fact.source()).append("\">")
-                    .append(fact.text()).append("</fact>\n");
+                    .append(PromptXml.text(fact.text())).append("</fact>\n");
         }
         sb.append("</facts>\n");
-        return sb.toString();
     }
 
     /**
-     * The current turn as a plain {@code user} message: the commander's own words, nothing else. Its recency in
-     * the message list is what marks it as the current turn (OpenAI multi-turn guidance), so no envelope or
-     * per-turn metadata (source/urgency/topic) is added - that only duplicated the role or, mixed into the
-     * words, read as if the commander had said it. The turn's topic is classified by the model from the words
-     * and the conversation above (see the Topics section), not injected here.
+     * The current turn as the final {@code user} message. With no dynamic context it stays exactly the commander's
+     * words. When facts or ambient notes exist, they are separated from the commander's words in a {@code <context>}
+     * block and the current utterance is wrapped in its own input tag. This keeps dynamic data out of mid-dialogue
+     * {@code system} messages while preventing the model from reading context as something the commander said. The
+     * one-line {@code <context>} heading only marks the whole block as trusted context versus the commander's own
+     * speech (a role-separation concern); it is not a per-turn instruction on how to use the facts, which stays
+     * owned by the Function-calling rules.
      */
-    private String buildCurrentInput(String currentInput) {
-        return currentInput == null ? "" : currentInput;
+    private String buildCurrentInput(
+            String currentInput,
+            List<Fact> memoryCandidates,
+            List<AmbientContextNote> ambient,
+            String inputTag
+    ) {
+        String input = currentInput == null ? "" : currentInput;
+        boolean hasFacts = memoryCandidates != null && !memoryCandidates.isEmpty();
+        boolean hasAmbient = ambient != null && !ambient.isEmpty();
+        if (!hasFacts && !hasAmbient) {
+            return input;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<context>\n");
+        sb.append("The following facts and notes are trusted context, not words spoken by the commander.\n");
+        if (hasFacts) {
+            appendCandidatesBlock(sb, memoryCandidates);
+        }
+        if (hasAmbient) {
+            appendAmbientBlock(sb, ambient);
+        }
+        sb.append("</context>\n\n");
+        sb.append('<').append(inputTag).append(">\n");
+        sb.append(PromptXml.text(input));
+        sb.append("\n</").append(inputTag).append(">\n");
+        return sb.toString();
     }
+
+    private String buildNarrationInput(String currentInput, List<AmbientContextNote> ambient) {
+        String input = currentInput == null ? "" : currentInput;
+        boolean hasAmbient = ambient != null && !ambient.isEmpty();
+        if (!hasAmbient) {
+            return input;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<context>\n");
+        sb.append("The following facts and notes are trusted context, not words spoken by the commander.\n");
+        appendAmbientBlock(sb, ambient);
+        sb.append("</context>\n\n");
+        // The narration input is already trusted prompt XML assembled by Thought.eventReaction().
+        sb.append(input);
+        return sb.toString();
+    }
+
+    private void appendAmbientBlock(StringBuilder sb, List<AmbientContextNote> ambient) {
+        sb.append("<ambient_context>\n");
+        int id = 1;
+        for (AmbientContextNote note : ambient) {
+            sb.append("  <note id=\"").append(id++).append("\" source=\"").append(note.source()).append("\">")
+                    .append(PromptXml.text(note.text())).append("</note>\n");
+        }
+        sb.append("</ambient_context>\n");
+    }
+
+    /** One non-dialogue timeline entry to inline as current-turn context instead of a mid-dialogue system message. */
+    private record AmbientContextNote(String source, String text) {}
+
+    /** The replayed short-term history split into its two outputs: role-alternating messages and inlined ambient notes. */
+    private record ReplayedHistory(List<LlmMessage> messages, List<AmbientContextNote> ambient) {}
 }

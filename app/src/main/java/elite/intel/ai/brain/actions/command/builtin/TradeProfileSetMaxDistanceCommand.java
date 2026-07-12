@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeProfileManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -20,7 +19,10 @@ import java.util.List;
 public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     public static final String ID = "trade_profile_set_max_distance";
 
-    @Override public String llmDescription() { return "Set the trade-route maximum distance."; }
+    @Override
+    public String llmDescription() {
+        return "Set the trade-route profile's maximum acceptable station distance from arrival (light seconds) to 'key'.";
+    }
 
 
     private static final String PARAM_KEY = "key";
@@ -57,17 +59,17 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if(distanceFromEntry == null){
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.invalidDistance")));
-            return;
+            return StringUtls.localizedLlm("handler.tradeProfile.invalidDistance");
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setDistanceFromSystemEntry(distanceFromEntry)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry)));
+            return StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry);
         }
+        return null;
     }
 }

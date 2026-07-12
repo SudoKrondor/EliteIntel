@@ -2,21 +2,23 @@ package elite.intel.companion.memory;
 
 import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
+import elite.intel.ai.embed.TextEmbedder;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.ToolLink;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Phase 2 memory spine: short-term timeline and count/token eviction into mid-term by topic. A
@@ -130,12 +132,73 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void writePreservesToolLinkWhenNormalizingForStorage() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        ToolLink call = ToolLink.call("call-1", "query_carrier_voyage", "{}");
+
+        gateway.write(new MemoryEntry(Instant.now(), ConversationTopic.NAVIGATION,
+                MemorySource.COMPANION, "Query_Carrier_Voyage", MemoryImportance.LOW,
+                null, null, call));
+
+        List<MemoryEntry> timeline = gateway.readShortTermTimeline();
+        assertEquals(1, timeline.size());
+        MemoryEntry stored = timeline.get(0);
+        assertEquals("query_carrier_voyage", stored.content());
+        assertNotNull(stored.toolLink(), "tool-call linkage must survive lower-casing/embedding storage prep");
+        assertTrue(stored.toolLink().isCall());
+        assertEquals("call-1", stored.toolLink().toolCallId());
+        assertEquals("query_carrier_voyage", stored.toolLink().toolName());
+        assertEquals("{}", stored.toolLink().argumentsJson());
+    }
+
+    @Test
     void longTermSummaryDefaultsEmptyAndIsReplaceable() {
         SessionMemoryGateway gateway = new SessionMemoryGateway();
         assertEquals("", gateway.longTermSummary());
 
         gateway.replaceLongTermSummary("commander has been mining in Borann for hours");
         assertEquals("commander has been mining in Borann for hours", gateway.longTermSummary());
+    }
+
+    @Test
+    void emptyMemoryRecallSkipsSemanticMatcher() {
+        AtomicInteger matcherCalls = new AtomicInteger();
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1), () -> {
+            matcherCalls.incrementAndGet();
+            return null;
+        });
+
+        assertTrue(gateway.recallCandidates("increase speed by 10", 3).isEmpty());
+        assertTrue(gateway.recallMatching("increase speed by 10", 3).isEmpty());
+        assertEquals(0, matcherCalls.get(), "empty memory must not initialize or query the semantic matcher");
+    }
+
+    @Test
+    void recallCandidatesReusesPreparedSemanticQuery() {
+        AtomicInteger queryEmbeds = new AtomicInteger();
+        AngleEmbedder vectors = new AngleEmbedder(Map.of(
+                "known route", 0.0,
+                "navigation clue", 5.0));
+        TextEmbedder counting = new TextEmbedder() {
+            @Override public float[] embed(String text) {
+                if ("navigation clue".equals(text)) {
+                    queryEmbeds.incrementAndGet();
+                }
+                return vectors.embed(text);
+            }
+            @Override public int dimensions() {
+                return vectors.dimensions();
+            }
+        };
+        SemanticPhraseMatcher matcher = new SemanticPhraseMatcher(counting);
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1), () -> matcher);
+        gateway.write(entry(ConversationTopic.NAVIGATION, "known route"));
+
+        SemanticQuery prepared = matcher.embedQueryContext("navigation clue");
+        List<MemoryEntry> recalled = gateway.recallCandidates("navigation clue", 3, prepared);
+
+        assertEquals(List.of("known route"), recalled.stream().map(MemoryEntry::content).toList());
+        assertEquals(1, queryEmbeds.get(), "memory recall must reuse the intake query vector");
     }
 
     @Test

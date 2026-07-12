@@ -9,6 +9,7 @@ import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
 import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.i18n.Language;
@@ -64,6 +65,11 @@ public final class GameToolCandidates {
     /** Production: pulls the self-describing registries, the live game status, and the configured language. */
     public GameToolCandidates() {
         this(Status.getInstance());
+    }
+
+    /** Turn-scoped source: gates every candidate against one immutable commander visibility snapshot. */
+    GameToolCandidates(GameStateSnapshot snapshot) {
+        this(snapshot == null ? Status.getInstance() : snapshot.visibilityStatus());
     }
 
     /**

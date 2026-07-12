@@ -20,7 +20,10 @@ import java.util.*;
 public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_signals_in_star_system";
 
-    @Override public String llmDescription() { return "Report the signal sources detected in the current star system."; }
+    @Override
+    public String llmDescription() {
+        return "Report notable signal sources and points of interest in the current system: resource extraction sites, conflict zones, mining hotspots, and surface bio/geo signal counts.";
+    }
 
 
     @Override public String id() { return ID; }
@@ -32,8 +35,8 @@ public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements Int
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         String instructions = """
-                You are the ship's AI giving the commander a system briefing.
-                Structure the answer in this order, skipping any section with no data:
+                Give the commander a briefing based on the question asked.
+                Structure the answer in this order, skipping any section with no data, or not relevant to the question:
                 
                 1. SYSTEM OVERVIEW  one sentence covering allegiance, security level, and population.
                    If controllingPower is set, add who holds powerplay control.
@@ -77,6 +80,10 @@ public class AnalyzeStellarSignalsQuery extends BaseQueryAnalyzer implements Int
                   - ringName: ring name (null for planets/moons)
                   - signalType: signal category
                   - hotspotsAndSignals: map of signal subtype to count
+                
+                
+                DO NOT EMIT DATA THAT IS NOT RELEVANT TO THE QUESTION ASK.
+                EXAMPLE IF COMMANDER ASKS FOR MINING SITES COMMANDER DOES NOT CARE ABOUT STATIONS OR POLITICAL ALLEGIANCE
                 """;
 
         Collection<LocationDto> locations = locationManager.findAllBySystemAddress(

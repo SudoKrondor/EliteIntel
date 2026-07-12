@@ -1,8 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.journal.events.SAAScanCompleteEvent;
 import elite.intel.session.PlayerSession;
 
@@ -17,7 +18,7 @@ public class SAAScanCompleteSubscriber {
                         Report the surface scan result.
                         State the efficiency outcome clearly: whether the target was beaten, met, or missed, and by how many probes.
                     """;
-            GameEventBus.publish(new SensorDataEvent(message, instructions));
+            CompanionRuntime.narrator().narrate(message, instructions);
         }
     }
 

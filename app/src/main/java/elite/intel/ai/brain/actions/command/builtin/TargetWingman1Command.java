@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class TargetWingman1Command extends SimpleTapCommand {
     public static final String ID = "target_wingman_1";
 
-    @Override public String llmDescription() { return "Target wingman 1."; }
+    @Override
+    public String llmDescription() {
+        return "Target wing-mate 1 (Alpha).";
+    }
 
     public TargetWingman1Command() {
         super(ID, Bindings.GameCommand.BINDING_TARGET_WINGMAN0.getGameBinding());

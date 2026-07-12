@@ -15,7 +15,10 @@ import elite.intel.session.ui.UINavigator;
 public final class ShowFighterPanelCommand implements IntelCommand {
     public static final String ID = "show_fighter_panel";
 
-    @Override public String llmDescription() { return "Open the ship-launched fighter panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the ship-launched fighter (role) panel.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -32,9 +35,10 @@ public final class ShowFighterPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.FIGHTER);
         }
+        return null;
     }
 }

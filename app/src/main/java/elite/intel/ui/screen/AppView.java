@@ -51,7 +51,7 @@ public class AppView extends JFrame implements AppViewInterface {
     private StarVizionTabPanel starVizionTabPanel;
     private AiTabController aiTabController;
     private TopStatusBar topStatusBar;
-    private boolean servicesRunning;
+    private volatile ServicesStateEvent.State servicesState = ServicesStateEvent.State.STOPPED;
 
     public AppView() {
         super("--");
@@ -153,13 +153,14 @@ public class AppView extends JFrame implements AppViewInterface {
         actionsTabPanel.initData();
         bindForgeTabPanel.initData();
         helpTabPanel.initData();
-        aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesRunning);
+        aiTabPanel.initData(systemSession.isSleepingModeOn(), servicesState);
     }
 
     @Subscribe
     public void onServiceStatusEvent(ServicesStateEvent event) {
-        servicesRunning = event.isRunning();
-        // TopStatusBar handles ServicesStateEvent directly via its own subscription.
+        // Cache the latest lifecycle state so a later tab (re)build can seed AiTabPanel; AiTabPanel also
+        // updates its own controls through its own ServicesStateEvent subscription.
+        servicesState = event.state();
     }
 
     @Subscribe

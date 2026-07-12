@@ -3,6 +3,9 @@ package elite.intel.companion.mind;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
+import elite.intel.ai.embed.AngleEmbedder;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.execution.ExecutionGateway;
@@ -10,6 +13,7 @@ import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
@@ -17,6 +21,7 @@ import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.tools.IntelActionTypeResolver;
@@ -28,6 +33,8 @@ import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
+import elite.intel.session.PlayerSituation;
+import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -57,14 +64,14 @@ class ThoughtTest {
     private DangerousActionPolicy dangerousPolicy = invocation -> false;
     private final ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
-    private ThoughtContext ctx() {
-        return new ThoughtContext(llm, speech, execution, memory,
+    private ThoughtDependencies dependencies() {
+        return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 reducer, state, dangerousPolicy, coordinator);
     }
 
-    private ThoughtContext ctx(IntelActionTypeResolver resolver) {
-        return new ThoughtContext(llm, speech, execution, memory,
+    private ThoughtDependencies dependencies(IntelActionTypeResolver resolver) {
+        return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
                 reducer, state, dangerousPolicy, coordinator, resolver);
     }
@@ -73,7 +80,7 @@ class ThoughtTest {
     void commanderSpeaksThenEndsInOneRound() {
         llm.scripted.add(ok(call(SpeakFunction.ID, text("on it"))));
 
-        Thought.commander(Urgency.NORMAL, "set speed to 50", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "set speed to 50", dependencies()).run();
 
         assertEquals(1, llm.requests.size(), "speak settles the turn; no extra LLM round");
         assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only speak is executed");
@@ -89,6 +96,25 @@ class ThoughtTest {
         assertEquals(ConversationTopic.SOCIAL, spoken.topic());
     }
 
+    @Test
+    void preparedSemanticQueryFlowsToReducerAndMemoryFactRecall() {
+        SemanticQuery prepared = new SemanticPhraseMatcher(new AngleEmbedder(Map.of("route", 0.0)))
+                .embedQueryContext("route");
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("on it"))));
+        ThoughtContext context = ThoughtContext.commander(Urgency.NORMAL, "plot a route", "route", turnState)
+                .withSemanticQuery(prepared);
+
+        Thought.commander(context, dependencies()).run();
+
+        assertSame(prepared, reducer.lastSemanticQuery,
+                "the thought must pass its intake query to the game-tool reducer");
+        assertSame(prepared, memory.lastSemanticQuery,
+                "the thought must pass the same query to pre-turn memory recall");
+        assertSame(turnState, reducer.lastGameStateSnapshot,
+                "the thought must pass its intake visibility state to the game-tool reducer");
+    }
+
     /**
      * Action-type stub: close_panel and ship_status are commands, everything else a system function.
      * close_panel returns no spoken text (a side-effect command); ship_status returns an outcome.
@@ -101,26 +127,34 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderSilentCommandTurnDropsSpeak() {
+    void commanderSilentCommandTurnFilesInputAndAck() {
         llm.scripted.add(ok(call("close_panel", new JsonObject()),
                 call(SpeakFunction.ID, text("closing the panel"))));
 
-        Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
+        Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes())).run();
 
         assertEquals(List.of("close_panel"), execution.toolNames(),
                 "silent command runs; the co-occurring speak is withheld (never executed)");
         assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
         assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
-        assertTrue(memory.writes.isEmpty(),
-                "a command turn files nothing: the withheld speak and the immediate ack both leave no memory entry");
+        // A command turn is remembered as a user->assistant pair: the commander imperative and the immediate
+        // acknowledgement (the silent command voiced no outcome of its own). The withheld speak and the command's
+        // call echo stay unrecorded.
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
+                        && "close the panel".equals(e.content())),
+                "the commander imperative is filed as the user turn");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && speech.requests.get(0).text().equals(e.content())),
+                "the immediate ack is filed as the companion reply, so the turn is not a dangling commander line");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
+                "the command records no call echo, and the withheld speak leaves no entry");
     }
 
     @Test
     void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
-        // A turn that runs both a QUERY and a COMMAND is not a pure side effect: the query records a call/result
-        // pair that must keep its preceding user turn (else it replays as an assistant tool-call with no user
-        // before it). So the commander input is still filed (a lone command turn would file nothing), and the
-        // query call is recorded; the co-occurring command still records no call echo.
+        // A turn that runs both a QUERY and a COMMAND: the commander input is filed (as it is for every turn now),
+        // the query records its call/result pair keeping that preceding user turn (else it replays as an assistant
+        // tool-call with no user before it), and the co-occurring command still records no call echo.
         IntelActionTypeResolver mixed = new IntelActionTypeResolver(id -> switch (id) {
             case "scan_system" -> IntelActionType.QUERY;
             case "close_panel" -> IntelActionType.COMMAND;
@@ -129,7 +163,7 @@ class ThoughtTest {
         execution.resultsByTool.put("scan_system", outcomeText("two stars"));
         llm.scripted.add(ok(call("scan_system", new JsonObject()), call("close_panel", new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "scan the system and close the panel", ctx(mixed)).run();
+        Thought.commander(Urgency.NORMAL, "scan the system and close the panel", dependencies(mixed)).run();
 
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
                         && "scan the system and close the panel".equals(e.content())),
@@ -147,7 +181,7 @@ class ThoughtTest {
         // A reflex is a COMMAND - a side effect, not dialogue - so neither the imperative nor the call echo is
         // filed. A silent command (no handler-voiced outcome) therefore leaves no memory entry, and the
         // companion adds no affirmative voice of its own.
-        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", ctx(actionTypes())).run();
+        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", dependencies(actionTypes())).run();
 
         assertTrue(llm.requests.isEmpty());
         assertEquals(List.of("close_panel"), execution.toolNames());
@@ -157,30 +191,23 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderQueryAnswerIsPublishedAsAiVoxForTheBridge() {
-        // Self-narrating queries: the answer is published as an AiVoxResponseEvent (mirroring the legacy
-        // router) for CompanionAnnouncementBridge to voice and remember; recordOutcome no longer voices it.
+    void commanderQueryAnswerIsRecordedAsResultAndVoicedDirectly() {
+        // The query answer is in the execution result: recordOutcome records it as the call's RESULT and voices
+        // it directly - no AiVoxResponseEvent / CompanionAnnouncementBridge detour (that event is system-only now).
         IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
                 id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
         execution.resultsByTool.put("scan_system", outcomeText("two stars and a gas giant"));
         llm.scripted.add(ok(call("scan_system", new JsonObject())));
 
-        List<String> voxTexts = new ArrayList<>();
-        Object collector = new Object() {
-            @Subscribe public void on(AiVoxResponseEvent e) { voxTexts.add(e.getText()); }
-        };
-        GameEventBus.register(collector);
-        try {
-            Thought.commander(Urgency.NORMAL, "scan the system", ctx(asQuery)).run();
-        } finally {
-            GameEventBus.unregister(collector);
-        }
+        Thought.commander(Urgency.NORMAL, "scan the system", dependencies(asQuery)).run();
 
-        assertEquals(List.of("two stars and a gas giant"), voxTexts,
-                "the query answer is published as an AiVoxResponseEvent for the bridge to voice and remember");
-        assertTrue(speech.requests.isEmpty(), "recordOutcome no longer voices the query directly");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION && e.toolLink() == null),
-                "recordOutcome records no companion speech for the query; its answer becomes the call's RESULT via the bridge");
+        assertEquals(List.of("two stars and a gas giant"),
+                speech.requests.stream().map(SpeechRequest::text).toList(),
+                "the query answer is voiced directly");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
+                        && e.toolLink() != null && e.toolLink().isResult()
+                        && "two stars and a gas giant".equals(e.content())),
+                "the query answer is recorded as the call's RESULT");
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
                         && e.toolLink() != null && e.toolLink().isCall() && "scan_system".equals(e.toolLink().toolName())),
                 "the query call is recorded for pair replay");
@@ -193,7 +220,7 @@ class ThoughtTest {
         llm.scripted.add(ok(call("close_panel", new JsonObject())));
         llm.scripted.add(ok(call(SpeakFunction.ID, text("done"))));
 
-        Thought.commander(Urgency.NORMAL, "close the panel", ctx(actionTypes())).run();
+        Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes())).run();
 
         assertEquals(1, llm.requests.size(),
                 "the command settles the turn; the scripted second round is never requested");
@@ -206,7 +233,7 @@ class ThoughtTest {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
         llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high"))));
 
-        Thought.commander(Urgency.NORMAL, "let's talk routes", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "let's talk routes", dependencies()).run();
 
         assertEquals(ConversationTopic.NAVIGATION, state.globalTopic());
         // The recorded commander input is tagged with the NEW topic (not the default SOCIAL) and stamped with
@@ -223,7 +250,7 @@ class ThoughtTest {
         llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
                 call(SpeakFunction.ID, text("forty percent"))));
 
-        Thought.commander(Urgency.NORMAL, "how much fuel is left", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "how much fuel is left", dependencies()).run();
 
         // Every commander turn is recorded so the dialogue history alternates user/assistant. A question carries
         // no durable fact, so its input is stamped LOW (forced, even though classify_turn said "normal") - kept
@@ -239,110 +266,78 @@ class ThoughtTest {
     }
 
     @Test
-    void eventThoughtWithSummaryRecordsMemoryWithoutEngagingLlm() {
-        // An event that provides a readable summary is recorded under its static topic and ends - no LLM, no
-        // speech, no tools (spontaneous event speech belongs to NarrationThought now).
-        Thought.event(Urgency.NORMAL, "jumped to Sol", ConversationTopic.NAVIGATION, ctx()).run();
+    void eventReactionRecordsStimulusThenSpokenReply() {
+        // A reactive event: phrase the pre-digested stimulus, voice it, and leave a clean user->assistant pair in
+        // memory - the event stimulus as the (EVENT-source) user turn, the spoken reply as the companion's words.
+        // The phrasing instructions steer only the prompt; they are never recorded.
+        llm.scripted.add(ok(call(SpeakFunction.ID, text("Signals detected on the ring, Commander."))));
 
-        assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
-        assertTrue(speech.requests.isEmpty(), "EVENT thought never speaks");
-        assertEquals(1, memory.writes.size(), "the event summary is recorded once");
-        MemoryEntry input = memory.writes.get(0);
-        assertEquals(MemorySource.EVENT, input.source());
-        assertEquals(ConversationTopic.NAVIGATION, input.topic(), "event memory tag comes from the event topic");
-        assertEquals("jumped to Sol", input.content());
-    }
+        Thought.eventReaction(Urgency.NORMAL, "surface scan: alexandrite, void opals",
+                "Report the signals briefly.", ConversationTopic.EXPLORATION, dependencies()).run();
 
-    @Test
-    void eventThoughtWithBlankSummaryRecordsNothing() {
-        // No summary (the event opted out of being remembered): nothing is recorded, no LLM, no speech.
-        Thought.event(Urgency.NORMAL, "", ConversationTopic.NAVIGATION, ctx()).run();
-
-        assertTrue(llm.requests.isEmpty(), "EVENT thought must not engage the LLM");
-        assertTrue(speech.requests.isEmpty(), "EVENT thought is never spoken");
-        assertTrue(memory.writes.isEmpty(), "an event with no summary is not retained in memory");
-    }
-
-    @Test
-    void narrationThoughtSpeaksAndRecordsOnlyTheSpokenLine() {
-        // One short round: phrase the sensor data, voice it, remember only the spoken line (no raw data).
-        llm.scripted.add(ok(call(SpeakFunction.ID, text("Fuel is running low, Commander."))));
-
-        Thought.sensorNarration(Urgency.URGENT, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
-
-        assertEquals(1, llm.requests.size(), "narration is a single short round");
+        assertEquals(1, llm.requests.size(), "an event reaction is a single short round");
+        List<LlmMessage> promptMessages = llm.requests.get(0).messages();
+        LlmMessage promptInput = promptMessages.get(promptMessages.size() - 1);
+        assertEquals(LlmMessageRole.USER, promptInput.role());
+        assertTrue(promptInput.content().contains("<event_data>\nsurface scan: alexandrite, void opals\n</event_data>"),
+                "event data is tagged in the LLM-visible prompt");
+        assertTrue(promptInput.content().contains(
+                        "<narration_instructions>\nReport the signals briefly.\n</narration_instructions>"),
+                "phrasing instructions are tagged separately");
         assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "the phrased line is voiced via speak");
-        assertEquals(1, memory.writes.size(), "only the spoken line is recorded - the raw sensor data is not");
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals("Fuel is running low, Commander.", spoken.content());
-        assertEquals(ConversationTopic.NAVIGATION, spoken.topic());
+        assertEquals(2, memory.writes.size(), "the stimulus and the reply are both recorded, in order");
+        MemoryEntry stimulus = memory.writes.get(0);
+        assertEquals(MemorySource.EVENT, stimulus.source(), "the stimulus is an EVENT turn (rendered as user)");
+        assertEquals("surface scan: alexandrite, void opals", stimulus.content(),
+                "the clean event data is recorded, not the phrasing instructions");
+        assertEquals(ConversationTopic.EXPLORATION, stimulus.topic());
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals("Signals detected on the ring, Commander.", reply.content());
     }
 
     @Test
-    void narrationThoughtVoicesOnlyTheFirstSpeakWhenTheModelEmitsTwo() {
-        // A model that splits the callout into two speak invocations must be read once, not twice: only the
-        // first speak is voiced and remembered, the extra one is dropped.
+    void eventReactionVoicesOnlyTheFirstSpeakWhenTheModelEmitsTwo() {
+        // A small model sometimes splits its line into two speak calls in one round. Only the first is voiced and
+        // recorded; the extra is dropped, so the reaction stays a single clean user->assistant pair.
         llm.scripted.add(ok(
-                call(SpeakFunction.ID, text("Fuel is running low, Commander.")),
-                call(SpeakFunction.ID, text("Consider refuelling."))));
+                call(SpeakFunction.ID, text("Signals on the ring.")),
+                call(SpeakFunction.ID, text("Alexandrite and void opals."))));
 
-        Thought.sensorNarration(Urgency.NORMAL, "fuel reserve 12%", ConversationTopic.NAVIGATION, ctx()).run();
+        Thought.eventReaction(Urgency.NORMAL, "surface scan: alexandrite, void opals",
+                "Report the signals briefly.", ConversationTopic.EXPLORATION, dependencies()).run();
 
         assertEquals(List.of(SpeakFunction.ID), execution.toolNames(), "only the first speak is voiced");
-        assertEquals(1, memory.writes.size(), "only the first line is recorded - the extra speak is dropped");
-        assertEquals("Fuel is running low, Commander.", memory.writes.get(0).content());
+        assertEquals(2, memory.writes.size(), "still one clean user->assistant pair, the extra speak is dropped");
+        assertEquals("Signals on the ring.", memory.writes.get(1).content(),
+                "the first speak is the recorded reply");
     }
 
     @Test
-    void verbatimNarrationRecordsThenVoicesTheLineWithoutLlm() {
-        // A curated announcement already carries finished text: remember it, then voice it verbatim, no LLM.
-        Thought.verbatimNarration(Urgency.URGENT, "Target material detected, Commander.",
-                ConversationTopic.MINING, ctx()).run();
+    void eventVerbatimRecordsSourceIdThenPhraseWithoutLlm() {
+        // A verbatim result: no LLM. The short source id is the user turn (never raw data), the finished phrase is
+        // voiced and recorded as the companion's reply - the same clean user->assistant order as narration.
+        Thought.eventVerbatim(Urgency.URGENT, "SAAScanComplete", "Surface scan complete, Commander.",
+                ConversationTopic.EXPLORATION, dependencies()).run();
 
-        assertTrue(llm.requests.isEmpty(), "verbatim narration never engages the LLM");
-        assertEquals(1, memory.writes.size(), "the curated line is remembered as the companion's words");
-        MemoryEntry spoken = memory.writes.get(0);
-        assertEquals(MemorySource.COMPANION, spoken.source());
-        assertEquals(ConversationTopic.MINING, spoken.topic());
-        assertEquals("Target material detected, Commander.", spoken.content());
-        assertEquals(List.of("Target material detected, Commander."),
+        assertTrue(llm.requests.isEmpty(), "verbatim never engages the LLM");
+        assertEquals(2, memory.writes.size(), "the source id and the phrase are both recorded, in order");
+        MemoryEntry stimulus = memory.writes.get(0);
+        assertEquals(MemorySource.EVENT, stimulus.source());
+        assertEquals("SAAScanComplete", stimulus.content(), "the user turn is the short source id, not raw data");
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals("Surface scan complete, Commander.", reply.content());
+        assertEquals(ConversationTopic.EXPLORATION, reply.topic());
+        assertEquals(List.of("Surface scan complete, Commander."),
                 speech.requests.stream().map(SpeechRequest::text).toList(), "and voiced verbatim");
-    }
-
-    @Test
-    void verbatimNarrationCompletesSpokenSignalWhenPlaybackEnds() {
-        // A bridged synchronous caller (e.g. a macro SPEAK step) blocks on this signal until playback finishes.
-        CompletableFuture<Void> signal = new CompletableFuture<>();
-
-        Thought.verbatimNarration(Urgency.URGENT, "Reminder set, Commander.",
-                ConversationTopic.NAVIGATION, ctx(), signal).run();
-
-        assertTrue(signal.isDone() && !signal.isCompletedExceptionally(),
-                "the signal completes when the gateway reports playback finished");
-    }
-
-    @Test
-    void verbatimNarrationCompletesSpokenSignalEvenIfVoicingFails() {
-        // If voicing cannot even start, the caller must not be stranded for its full timeout.
-        SpeechGateway throwing = request -> { throw new RuntimeException("tts down"); };
-        ThoughtContext failingCtx = new ThoughtContext(llm, throwing, execution, memory,
-                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator);
-        CompletableFuture<Void> signal = new CompletableFuture<>();
-
-        assertThrows(RuntimeException.class, () -> Thought.verbatimNarration(Urgency.URGENT, "boom",
-                ConversationTopic.NAVIGATION, failingCtx, signal).run());
-
-        assertTrue(signal.isCompletedExceptionally(),
-                "a startup failure completes the signal (exceptionally) instead of stranding the caller");
     }
 
     @Test
     void commanderInvalidResponseRecordsUnresolvedAndSpeaks() {
         llm.scripted.add(invalid());
 
-        Thought.commander(Urgency.NORMAL, "do the thing", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "do the thing", dependencies()).run();
 
         assertEquals(1, memory.writes.size());
         MemoryEntry entry = memory.writes.get(0);
@@ -357,7 +352,7 @@ class ThoughtTest {
     void providerFailureIsTreatedAsInvalid() {
         llm.failWith = new RuntimeException("provider down");
 
-        Thought.commander(Urgency.NORMAL, "anything", ctx()).run();
+        Thought.commander(Urgency.NORMAL, "anything", dependencies()).run();
 
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, memory.writes.get(0).topic());
         assertEquals(1, speech.requests.size());
@@ -369,12 +364,17 @@ class ThoughtTest {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
         llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
-        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::confirm);
+        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", dependencies()), coordinator::confirm);
 
         assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
         assertFalse(speech.requests.isEmpty(), "the thought voices a confirmation prompt before running it");
         assertTrue(hasContent("dangerous action requires confirmation"));
         assertTrue(hasContent("dangerous action confirmed"));
+        // The confirmation is recorded as its own user turn (a <confirmed/> marker) so the executed outcome pairs
+        // with it as a distinct exchange rather than trailing the confirmation prompt as a second assistant line.
+        assertTrue(memory.writes.stream().anyMatch(
+                        e -> e.source() == MemorySource.COMMANDER && "<confirmed/>".equals(e.content())),
+                "the commander's confirmation is filed as a distinct user turn");
     }
 
     @Test
@@ -382,7 +382,7 @@ class ThoughtTest {
         dangerousPolicy = invocation -> "self_destruct".equals(invocation.name());
         llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
-        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", ctx()), coordinator::cancel);
+        runResolving(Thought.commander(Urgency.NORMAL, "self destruct", dependencies()), coordinator::cancel);
 
         assertFalse(execution.toolNames().contains("self_destruct"), "cancelled dangerous action must not run");
         assertTrue(hasContent("dangerous action cancelled"));
@@ -394,7 +394,7 @@ class ThoughtTest {
         coordinator.open(); // occupy the single confirmation slot
         llm.scripted.add(ok(call("self_destruct", new JsonObject())));
 
-        Thought.commander(Urgency.NORMAL, "self destruct", ctx()).run(); // open() returns null -> no blocking
+        Thought.commander(Urgency.NORMAL, "self destruct", dependencies()).run(); // open() returns null -> no blocking
 
         assertFalse(execution.toolNames().contains("self_destruct"));
         assertTrue(hasContent("dangerous action cancelled"));
@@ -403,7 +403,7 @@ class ThoughtTest {
     @Test
     void interruptWhileWaitingOnLlmSafeFlushesUnresolvedInput() throws InterruptedException {
         llm.blockForever = true; // the thought will block on the LLM future until interrupted
-        Thought thought = Thought.commander(Urgency.NORMAL, "do something", ctx());
+        Thought thought = Thought.commander(Urgency.NORMAL, "do something", dependencies());
         Thread worker = new Thread(thought::run, "thought-test");
         worker.start();
         waitUntil(() -> !llm.requests.isEmpty()); // it has submitted and is now blocked
@@ -415,6 +415,66 @@ class ThoughtTest {
         MemoryEntry flushed = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, flushed.source());
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
+    }
+
+    @Test
+    void interruptedDetachedCommandDiscardsItsLateOutcome() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_command", new JsonObject())));
+        CompletableFuture<JsonObject> startedHandler = new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                return false; // a started game handler may continue, but its owning thought must ignore the result
+            }
+        };
+        execution.futuresByTool.put("slow_command", startedHandler);
+        IntelActionTypeResolver asCommand = new IntelActionTypeResolver(
+                id -> "slow_command".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "start the slow command", dependencies(asCommand));
+        Thread worker = new Thread(thought::run, "thought-detached-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_command"));
+
+        thought.interrupt();
+        JsonObject late = outcomeText("late completion must stay silent");
+        startedHandler.complete(late);
+        worker.join(2000);
+
+        assertFalse(worker.isAlive(), "the thought completes when its non-cancellable handler eventually returns");
+        assertTrue(memory.writes.stream().noneMatch(e -> late.get("text_to_speech_response").getAsString()
+                        .equals(e.content())),
+                "an interrupted thought never records its handler's late outcome");
+        assertTrue(speech.requests.stream().noneMatch(r -> "late completion must stay silent".equals(r.text())),
+                "an interrupted thought never voices its handler's late outcome");
+    }
+
+    @Test
+    void detachedQueryClosesItsTurnBeforeAppendingTheLateCallResultPair() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> slowQuery = new CompletableFuture<>();
+        execution.futuresByTool.put("slow_query", slowQuery);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-query-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_query"));
+        waitUntil(() -> memory.writes.stream()
+                .anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
+
+        assertTrue(memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())),
+                "the next commander turn sees a closed processing boundary while the query is pending");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null),
+                "a pending query is not replayed with a synthetic result");
+
+        slowQuery.complete(outcomeText("system inspected"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
+                "the query CALL is appended once the real result exists");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isResult()
+                        && "system inspected".equals(e.content())),
+                "the matching RESULT is appended with the delayed CALL");
     }
 
     // --- helpers ---
@@ -507,8 +567,9 @@ class ThoughtTest {
     }
 
     private static final class FakeExecution implements ExecutionGateway {
-        final List<ExecutionRequest> requests = new ArrayList<>();
+        final List<ExecutionRequest> requests = new CopyOnWriteArrayList<>();
         final Map<String, JsonObject> resultsByTool = new HashMap<>();
+        final Map<String, CompletableFuture<JsonObject>> futuresByTool = new HashMap<>();
         CompanionState stateToMutate;
 
         @Override public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
@@ -519,6 +580,10 @@ class ThoughtTest {
                 if (topic != null) {
                     stateToMutate.setGlobalTopic(topic);
                 }
+            }
+            CompletableFuture<JsonObject> deferred = futuresByTool.get(request.toolName());
+            if (deferred != null) {
+                return deferred;
             }
             return CompletableFuture.completedFuture(resultsByTool.getOrDefault(request.toolName(), new JsonObject()));
         }
@@ -539,6 +604,7 @@ class ThoughtTest {
 
     private static final class FakeMemory implements MemoryGateway {
         final List<MemoryEntry> writes = new ArrayList<>();
+        SemanticQuery lastSemanticQuery;
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
@@ -546,6 +612,10 @@ class ThoughtTest {
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
         @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
+            lastSemanticQuery = semanticQuery;
+            return recallCandidates(query, limit);
+        }
         @Override public String longTermSummary() { return ""; }
         @Override public void replaceLongTermSummary(String summary) { }
         @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
@@ -554,11 +624,26 @@ class ThoughtTest {
 
     private static final class RecordingReducer implements CompanionActionReducer {
         Set<IntelActionCategory> lastCategories;
+        SemanticQuery lastSemanticQuery;
+        GameStateSnapshot lastGameStateSnapshot;
         List<LlmToolDefinition> tools = List.of();
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
             lastCategories = allowedCategories;
             return tools;
+        }
+
+        @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories,
+                                                              String currentInput, SemanticQuery semanticQuery) {
+            lastSemanticQuery = semanticQuery;
+            return selectTools(allowedCategories, currentInput);
+        }
+
+        @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories,
+                                                              String currentInput, SemanticQuery semanticQuery,
+                                                              GameStateSnapshot gameStateSnapshot) {
+            lastGameStateSnapshot = gameStateSnapshot;
+            return selectTools(allowedCategories, currentInput, semanticQuery);
         }
     }
 }

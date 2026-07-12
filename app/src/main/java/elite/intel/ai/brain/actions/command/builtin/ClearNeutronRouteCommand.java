@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -17,7 +16,10 @@ import elite.intel.util.StringUtls;
 public final class ClearNeutronRouteCommand implements IntelCommand {
     public static final String ID = "clear_neutron_route";
 
-    @Override public String llmDescription() { return "Clear the plotted neutron-star route."; }
+    @Override
+    public String llmDescription() {
+        return "Clear the stored neutron-star route waypoints.";
+    }
 
 
     private final NeutronStarRouteManager manager = NeutronStarRouteManager.getInstance();
@@ -34,8 +36,8 @@ public final class ClearNeutronRouteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         manager.clear();
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.neutronRoute.cleared")));
+        return StringUtls.localizedLlm("handler.neutronRoute.cleared");
     }
 }

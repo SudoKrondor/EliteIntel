@@ -16,7 +16,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeLocalOutfittingQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_local_outfitting";
 
-    @Override public String llmDescription() { return "Report the outfitting modules available at the current station."; }
+    @Override
+    public String llmDescription() {
+        return "Report the outfitting modules available for purchase at the current station.";
+    }
 
 
     @Override public String id() { return ID; }

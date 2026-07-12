@@ -11,10 +11,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,7 +19,10 @@ import java.util.regex.Pattern;
 public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_stellar_objects";
 
-    @Override public String llmDescription() { return "Report the stellar bodies in the current system."; }
+    @Override
+    public String llmDescription() {
+        return "Report the stellar bodies in the current system, or details of one named body: type, landability, gravity, atmosphere, temperature, rings, bio signals, and discovery/mapping status. Also answers whole-system counts (how many planets/moons/landable).";
+    }
 
 
     @Override public String id() { return ID; }
@@ -70,17 +70,128 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
         return sb.toString();
     }
 
+    // Spoken/STT forms that collapse to a body-name token: NATO letters -> letter, number words ->
+    // digit, plus common STT confusions ("for" -> "4"). Used to normalise both the commander's
+    // utterance and each body's short name to the same compact form for matching.
+    private static final Map<String, String> SPOKEN_TO_TOKEN = Map.ofEntries(
+            Map.entry("alpha", "a"), Map.entry("bravo", "b"), Map.entry("charlie", "c"),
+            Map.entry("charly", "c"), Map.entry("delta", "d"), Map.entry("echo", "e"),
+            Map.entry("foxtrot", "f"), Map.entry("golf", "g"), Map.entry("hotel", "h"),
+            Map.entry("india", "i"), Map.entry("juliet", "j"), Map.entry("juliett", "j"),
+            Map.entry("kilo", "k"), Map.entry("lima", "l"), Map.entry("mike", "m"),
+            Map.entry("november", "n"), Map.entry("oscar", "o"), Map.entry("papa", "p"),
+            Map.entry("quebec", "q"), Map.entry("romeo", "r"), Map.entry("sierra", "s"),
+            Map.entry("tango", "t"), Map.entry("uniform", "u"), Map.entry("victor", "v"),
+            Map.entry("whiskey", "w"), Map.entry("xray", "x"), Map.entry("yankee", "y"),
+            Map.entry("zulu", "z"),
+            Map.entry("zero", "0"), Map.entry("one", "1"), Map.entry("two", "2"),
+            Map.entry("three", "3"), Map.entry("four", "4"), Map.entry("for", "4"),
+            Map.entry("five", "5"), Map.entry("six", "6"), Map.entry("seven", "7"),
+            Map.entry("eight", "8"), Map.entry("nine", "9"), Map.entry("ten", "10"),
+            Map.entry("eleven", "11"), Map.entry("twelve", "12")
+    );
+
+    /**
+     * Break a phrase into atomic body-name tokens - single letters and number strings - preserving word
+     * boundaries. "B 1 a" -> [b,1,a]; "is planet b one landable" -> [b,1]; "b1" -> [b,1]. A pure-letter
+     * word is only kept when it is a body designator: a NATO word ("bravo"->b) or a lone letter. Plain
+     * multi-letter English words ("and", "landable") are dropped so they cannot contribute stray letters
+     * to a match. Glued alphanumerics ("b1", "3b", "ab1b") are split into their letter/digit runs.
+     */
+    static List<String> tokenize(String s) {
+        List<String> out = new ArrayList<>();
+        if (s == null || s.isBlank()) return out;
+        for (String word : s.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (word.isEmpty()) continue;
+            String mapped = SPOKEN_TO_TOKEN.get(word);
+            if (mapped != null) {                       // NATO letter or number word
+                out.add(mapped);
+                continue;
+            }
+            boolean hasDigit = word.chars().anyMatch(Character::isDigit);
+            if (!hasDigit) {                            // pure letters, not NATO
+                if (word.length() == 1) out.add(word);  // a lone letter can be a body designator
+                continue;                               // multi-letter English word -> noise, drop it
+            }
+            // pure digits or a glued letter+digit body token: split into letter/digit runs
+            Matcher m = Pattern.compile("[a-z]+|[0-9]+").matcher(word);
+            while (m.find()) {
+                String seg = m.group();
+                if (Character.isDigit(seg.charAt(0))) {
+                    out.add(seg);
+                } else {
+                    for (char c : seg.toCharArray()) out.add(String.valueOf(c));
+                }
+            }
+        }
+        return out;
+    }
+
+    private static boolean containsSubsequence(List<String> haystack, List<String> needle) {
+        if (needle.isEmpty() || needle.size() > haystack.size()) return false;
+        outer:
+        for (int i = 0; i <= haystack.size() - needle.size(); i++) {
+            for (int j = 0; j < needle.size(); j++) {
+                if (!haystack.get(i + j).equals(needle.get(j))) continue outer;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Deterministically resolve the single body the commander named, so a small local model is never
+     * asked to find one boolean in a 30-body dump (and never falls back to the whole-system aggregate).
+     * Both the utterance and each body's short name are tokenised the same way; a body matches when its
+     * token sequence appears contiguously in the utterance's tokens. Only bodies with a digit token are
+     * eligible so bare stars A/B/C/D can't match stray letters. Longest token match wins; a tie at the
+     * winning length is ambiguous (more than one body named) and returns null so the LLM path handles it.
+     */
+    static LocationData resolveNamedBody(String userInput, List<LocationData> bodies) {
+        List<String> input = tokenize(userInput);
+        if (input.isEmpty()) return null;
+        LocationData best = null;
+        int bestLen = 0;
+        boolean tie = false;
+        for (LocationData b : bodies) {
+            String name = b.stellarObjectName();
+            if (name == null || name.isBlank()) continue;
+            List<String> key = tokenize(name);
+            if (key.stream().noneMatch(t -> Character.isDigit(t.charAt(0)))) continue;
+            if (!containsSubsequence(input, key)) continue;
+            if (key.size() > bestLen) {
+                best = b;
+                bestLen = key.size();
+                tie = false;
+            } else if (key.size() == bestLen && !name.equals(best.stellarObjectName())) {
+                tie = true;
+            }
+        }
+        return tie ? null : best;
+    }
+
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing stelar objects data. Stand by."));
 
         StellarObjectsData<List<LocationData>, String> data = toLocationList(locationManager.findAllBySystemAddress(playerSession.getLocationData().getSystemAddress()));
 
-        String instructions = """
+        // If the commander named one specific body, resolve it here and hand the model ONLY that body
+        // with no whole-system aggregate. Drops the prompt from ~5700 tokens to a few hundred and removes
+        // any generic count a weak model could answer with instead of the body it was actually asked about.
+        LocationData focus = resolveNamedBody(originalUserInput, data.getObjectList());
+        String summaryField = focus != null ? null : data.getSummary();
+        List<LocationData> listField = focus != null ? List.of(focus) : data.getObjectList();
+        String focusInstruction = focus == null ? "" :
+                "The commander asked specifically about the body \"" + focus.stellarObjectName() + "\". "
+                + "It is the ONLY entry in detailedStellarObjectList. Answer strictly from its fields; "
+                + "for \"is it landable\" answer a plain yes or no from isLandable. Do not mention other bodies or any counts.\n\n";
+
+        String instructions = focusInstruction + """
                 Answer ONLY the specific question asked. Do not give an overview or summary unless the user explicitly asks for one.
                 The input comes via STT, do not expect exact matches. 'AB 1 B' could be 'ab-1-b'. User may employ NATO alphabet: 'Alpha 2' means 'A 2', 'Alpha Charlie 3 Bravo' means 'AC 3b'. STT can confuse '4' with 'for'.
                 Data fields:
-                - summary: pre-computed counts (stars, planets, moons, stations, landable, bio signals, scoopable stars). Use this for any count or summary question.
-                - detailedStellarObjectList: full list of stellar objects with per-object data:
+                - summary: pre-computed AGGREGATE counts for the WHOLE system (stars, planets, moons, stations, landable, bio signals, scoopable stars). Use ONLY for whole-system "how many / are there any" questions, NEVER to answer about a single named body.
+                - detailedStellarObjectList: full list of stellar objects with per-object data. This is the authoritative source for any question about a specific body:
                   - stellarObjectName: short canonical name (e.g. "AB 1 B")
                   - stellarObjectPhonetic: NATO phonetic expansion (e.g. "Alpha Bravo 1 Bravo") - match STT input against this field; accept partial/variant NATO words (e.g. "Charly"/"Charlie")
                   - objectClass: STAR, PLANET, MOON, STATION
@@ -99,10 +210,17 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                   - hasMarkets: true if this location has a market
 
                 Rules:
+                - FIRST decide whether the user named a SPECIFIC body (e.g. "B 1", "Alpha 1", "is that moon landable").
+                  Bodies are always referred to by SHORT name ("B 1"), never the full system-prefixed name.
+                  - If a specific body IS named: this is NOT a count/summary question. Find that one body in
+                    detailedStellarObjectList (match stellarObjectPhonetic first, then stellarObjectName; accept
+                    fuzzy/variant/partial STT matches, e.g. "Charly"/"Charlie", "for"/"4") and answer ONLY about it.
+                    For "is X landable" give a plain yes or no read directly from that body's isLandable field.
+                    NEVER answer a specific-body question with an aggregate count from summary. If you cannot find the
+                    named body in the list, say so and ask the commander to repeat it - do not fall back to counts.
+                  - If NO specific body is named (e.g. "how many landable planets", "are there any bio signals"):
+                    use summary directly. Do not recount from the list.
                 - IF data shows 0 planets, 0 moons, 0 stations etc., it means you do not have enough data to answer this question and scans may be required.
-                - ELSE
-                - For count or summary questions: use summary directly. Do not recount from the list.
-                - For specific object questions: match user input against stellarObjectPhonetic first, then stellarObjectName. Accept fuzzy/variant matches.
                 - Do not invent data not present in the provided fields.
                 """;
 
@@ -110,8 +228,8 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
                 new AiDataStruct(
                         instructions,
                         new DataDto(
-                                data.getSummary(),
-                                data.getObjectList()
+                                summaryField,
+                                listField
                         )
                 ),
                 originalUserInput
@@ -176,7 +294,7 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
 
         String summary = """
                 Star System contains: %d stars, %d planets, %d moons, %d stations.
-                PRE-COMPUTED FACTS (authoritative, do not recount from the detail list):
+                WHOLE-SYSTEM AGGREGATE COUNTS (use ONLY for "how many / are there any" questions about the whole system; NEVER to answer whether one specific named body is landable/etc - use detailedStellarObjectList for that):
                 Landable moons: %d
                 Landable planets: %d
                 Moons with bio signals: %d

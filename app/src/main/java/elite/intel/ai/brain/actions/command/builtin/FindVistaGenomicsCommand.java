@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
@@ -28,7 +29,10 @@ import java.util.Optional;
 public final class FindVistaGenomicsCommand implements IntelCommand {
     public static final String ID = "find_vista_genomics";
 
-    @Override public String llmDescription() { return "Find the nearest Vista Genomics to sell exobiology data."; }
+    @Override
+    public String llmDescription() {
+        return "Find and plot a route to the nearest Vista Genomics facility to sell exobiology / organic scan data.";
+    }
 
 
     @Override
@@ -43,9 +47,9 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 250);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.vistaGenomics.searching")));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.vistaGenomics.searching"), false);
 
 
         VistaSearchCriteria criteria = new VistaSearchCriteria();
@@ -70,8 +74,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
 
         List<VistaGenomicsLocationDto.Result> results = VistaGenomicsSearch.findVistaGenomics(criteria);
         if (results == null || results.isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.vistaGenomics.notFound")));
-            return;
+            return StringUtls.localizedLlm("handler.vistaGenomics.notFound");
         }
 
         Optional<VistaGenomicsLocationDto.Result> first = results.stream().findFirst();
@@ -80,7 +83,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
 
         String announcement = StringUtls.localizedLlm("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
         ReminderManager.getInstance().setReminder(result.getSystemName(), announcement);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(announcement));
-        routePlotter.plotRoute(result.getSystemName());
+        CompanionRuntime.narrator().filler(announcement, false);
+        return routePlotter.plotRoute(result.getSystemName());
     }
 }

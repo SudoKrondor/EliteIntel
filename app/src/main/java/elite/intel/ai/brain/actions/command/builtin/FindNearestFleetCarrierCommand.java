@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
@@ -26,7 +27,10 @@ import elite.intel.util.json.GetNumberFromParam;
 public final class FindNearestFleetCarrierCommand implements IntelCommand {
     public static final String ID = "find_nearest_fleet_carrier";
 
-    @Override public String llmDescription() { return "Find and report the nearest fleet carrier."; }
+    @Override
+    public String llmDescription() {
+        return "Find and report the nearest fleet carrier other than the commander's own, within range.";
+    }
 
 
     @Override
@@ -41,11 +45,11 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
 
 
         Number range = GetNumberFromParam.extractRangeParameter(params, 500);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue())));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue()), false);
 
         PlayerSession playerSession = PlayerSession.getInstance();
         FleetCarrierSearchResultsDto fleetCarriers = FleetCarrierSearch.getInstance()
@@ -62,8 +66,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         }
 
         if (fleetCarriers == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable")));
-            return;
+            return StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable");
         }
 
         final String finalPlayerCarrierCallSign = playerCarrierCallSign;
@@ -75,10 +78,11 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
                             RoutePlotter routePlotter = new RoutePlotter();
                             String dateAsString = result.getUpdatedAt();
                             String timeAgo = TimeUtils.transformToYMDHtimeAgo(dateAsString, TimeUtils.LOCAL_DATE_TIME);
-                            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo)));
+                            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo), false);
                             routePlotter.plotRoute(result.getSystemName());
                         },
-                        () -> GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.fleetCarrier.notFound")))
+                        () -> CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.notFound"), false)
                 );
+        return null;
     }
 }

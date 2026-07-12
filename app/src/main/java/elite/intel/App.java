@@ -7,6 +7,11 @@ import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
+import elite.intel.diagnostics.DiagnosticsInputTailer;
+import elite.intel.diagnostics.DiagnosticsLog;
+import elite.intel.diagnostics.DiagnosticsLogWriter;
+import elite.intel.diagnostics.DiagnosticsMode;
+import elite.intel.diagnostics.DiagnosticsPacer;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;
@@ -40,6 +45,18 @@ public class App {
         MemoryFactSourceRegistry.getInstance().load();
         // Warm the ship-make cache off the EDT so the fleet table never triggers the first DB read while painting.
         ShipMakeManager.getInstance();
+
+        // File-driven diagnostics harness: when a phrase input file is present, feed it as commander input and
+        // mirror the SYSTEM LOG to a session log so an automated tester can drive and observe the companion.
+        if (DiagnosticsMode.isEnabled()) {
+            DiagnosticsLog.open();
+            // Must precede service start: the companion's semantic reducer freezes the language at construction.
+            DiagnosticsMode.applyBootLanguage();
+            DiagnosticsPacer.getInstance().start();
+            new DiagnosticsLogWriter().start();
+            new DiagnosticsInputTailer().start();
+            log.info("Diagnostics mode enabled");
+        }
 
         // change the debug log level when we have version 1.0
         Configurator.setRootLevel(Level.ALL);

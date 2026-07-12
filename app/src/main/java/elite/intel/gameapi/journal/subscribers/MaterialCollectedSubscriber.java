@@ -1,7 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.db.util.Database;
@@ -54,7 +55,7 @@ public class MaterialCollectedSubscriber {
                     ? pending.getFirst()
                     : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
-            GameEventBus.publish(new MiningAnnouncementEvent(announcement));
+            CompanionRuntime.narrator().announce("mining", announcement, "MINING", false);
         }
     }
 

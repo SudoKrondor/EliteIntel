@@ -17,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,6 +52,7 @@ class MistralLlmAdapterTest {
         assertEquals("speak", function.get("name").getAsString());
         JsonObject schema = function.getAsJsonObject("parameters");
         assertEquals("object", schema.get("type").getAsString());
+        assertFalse(schema.get("additionalProperties").getAsBoolean(), "tool schemas must be closed");
         assertEquals("string", schema.getAsJsonObject("properties").getAsJsonObject("text").get("type").getAsString());
         assertEquals("text", schema.getAsJsonArray("required").get(0).getAsString());
 
@@ -63,9 +65,10 @@ class MistralLlmAdapterTest {
     void rendersAssistantToolCallsAndToolResult() {
         JsonObject args = new JsonObject();
         args.addProperty("text", "hi");
+        String originalId = "da2ea247-86cc-45d2-a272-9e99af14a88d";
         LlmRequest req = new LlmRequest("req-2",
-                List.of(LlmMessage.assistantToolCalls(List.of(new LlmToolInvocation("call-1", "speak", args))),
-                        LlmMessage.toolResult("call-1", "{\"status\":\"spoken\"}")),
+                List.of(LlmMessage.assistantToolCalls(List.of(new LlmToolInvocation(originalId, "speak", args))),
+                        LlmMessage.toolResult(originalId, "{\"status\":\"spoken\"}")),
                 List.of(), PromptCacheProfile.COMMANDER);
 
         JsonObject json = JsonParser.parseString(adapter.buildRequestBody(req)).getAsJsonObject();
@@ -74,7 +77,9 @@ class MistralLlmAdapterTest {
         JsonObject assistant = messages.get(0).getAsJsonObject();
         assertEquals("assistant", assistant.get("role").getAsString());
         JsonObject call = assistant.getAsJsonArray("tool_calls").get(0).getAsJsonObject();
-        assertEquals("call-1", call.get("id").getAsString());
+        String wireId = call.get("id").getAsString();
+        assertTrue(wireId.matches("[A-Za-z0-9]{9}"));
+        assertNotEquals(originalId, wireId);
         assertEquals("function", call.get("type").getAsString());
         JsonObject function = call.getAsJsonObject("function");
         assertEquals("speak", function.get("name").getAsString());
@@ -84,7 +89,7 @@ class MistralLlmAdapterTest {
 
         JsonObject tool = messages.get(1).getAsJsonObject();
         assertEquals("tool", tool.get("role").getAsString());
-        assertEquals("call-1", tool.get("tool_call_id").getAsString());
+        assertEquals(wireId, tool.get("tool_call_id").getAsString());
     }
 
     @Test
@@ -110,6 +115,12 @@ class MistralLlmAdapterTest {
     @Test
     void rejectsResponseWithoutToolCalls() {
         assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(responseWithText("just text, no tool call")).status());
+    }
+
+    @Test
+    void rejectsNonObjectToolArguments() {
+        assertEquals(LlmResult.Status.INVALID_RESPONSE,
+                adapter.parse(responseWithToolCall("speak", "null")).status());
     }
 
     @Test

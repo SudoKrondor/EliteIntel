@@ -17,7 +17,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeFsdTargetQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_fsd_target";
 
-    @Override public String llmDescription() { return "Report the current frame shift drive jump target."; }
+    @Override
+    public String llmDescription() {
+        return "Report information about the currently targeted FSD jump destination: the next system/star, its class, and whether it is fuel-scoopable.";
+    }
 
 
     @Override public String id() { return ID; }
