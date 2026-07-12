@@ -138,6 +138,12 @@ public class CommanderTabPanel extends JPanel {
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private JTextField playerAltNameField;
+    private JCheckBox discoveryAnnouncementBox;
+    private JCheckBox routeAnnouncementBox;
+    private JCheckBox radarContactAnnouncementBox;
+    private JCheckBox miningAnnouncementBox;
+    private JCheckBox navigationAnnouncementBox;
+    private JCheckBox radioTransmissionBox;
     private JTable fleetTable;
     private FleetTableModel fleetTableModel;
     /** Per-voice quality tier label (enum name -> localized "HD"/"Standard") for the current language, filled off-EDT. */
@@ -177,15 +183,53 @@ public class CommanderTabPanel extends JPanel {
         content.add(profileSection);
         content.add(Box.createVerticalStrut(HUD_GAP));
 
-        GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
-        HudSection shipOptionsSection = HudSection.flat(getText("popup.shipOptions"), new GridBagLayout());
-        JPanel shipOptions = shipOptionsSection.body();
+        JTabbedPane optionTabs = AppTheme.makeSectionTabs();
+        optionTabs.setTabPlacement(JTabbedPane.TOP);
+        optionTabs.addTab(getText("player.tab.shipOptions"), buildShipOptionsTab());
+        optionTabs.addTab(getText("player.tab.announcements"), buildAnnouncementsTab());
 
-        GridBagConstraints sc = new GridBagConstraints();
-        sc.fill = GridBagConstraints.HORIZONTAL;
-        sc.anchor = GridBagConstraints.WEST;
-        sc.weightx = 1.0;
-        sc.insets = new Insets(4, 6, 4, 6);
+        content.add(optionTabs);
+        content.add(Box.createVerticalStrut(HUD_GAP));
+
+        HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
+
+        fleetTableModel = new FleetTableModel(playerSession);
+        fleetTable = new JTable(fleetTableModel);
+        HudTable.style(fleetTable);
+        fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
+        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setCellRenderer(new HudTable.ValueCellRenderer());
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(this::voiceLabel));
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
+        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
+        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
+
+        fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(200);
+        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setPreferredWidth(150);
+        fleetTable.getColumnModel().getColumn(COL_VOICE).setPreferredWidth(160);
+        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setPreferredWidth(160);
+        TableColumn gearCol = fleetTable.getColumnModel().getColumn(COL_GEAR);
+        gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
+        gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
+
+        fleetSection.body().add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
+
+        add(content, BorderLayout.NORTH);
+        add(fleetSection, BorderLayout.CENTER);
+
+        refreshVoiceQualityLabels(); // initial HD/Standard tiers for the fleet voice list
+    }
+
+    /**
+     * Ship automation toggles, all backed by {@link GlobalSettingsManager}.
+     */
+    private JPanel buildShipOptionsTab() {
+        GlobalSettingsManager mgr = GlobalSettingsManager.getInstance();
+        JPanel shipOptions = transparentPanel(new GridBagLayout());
+        shipOptions.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
+
+        GridBagConstraints sc = optionGbc();
 
         sc.gridx = 0; sc.gridy = 0;
         JCheckBox cb1 = makeCheckBox(getText("automation.autoSpeedUpForFtl"), mgr.getAutoSpeedUpForFtl());
@@ -265,42 +309,96 @@ public class CommanderTabPanel extends JPanel {
         cb15.addActionListener(e -> mgr.setAnnounceFuelAvailable(cb15.isSelected()));
         shipOptions.add(cb15, sc);
 
-        content.add(shipOptionsSection);
-        content.add(Box.createVerticalStrut(HUD_GAP));
+        return shipOptions;
+    }
 
-        HudSection fleetSection = HudSection.flat(getText("player.section.fleetVoice"), new BorderLayout());
+    /**
+     * Spoken-announcement toggles, backed by {@link PlayerSession}. These are the same categories the
+     * {@code toggle_all_announcements} voice command flips, so {@link #initData()} re-reads them from the
+     * session: a voice command may have changed a category while the tab was not visible.
+     */
+    private JPanel buildAnnouncementsTab() {
+        JPanel announcements = transparentPanel(new GridBagLayout());
+        announcements.setBorder(new EmptyBorder(HUD_GAP, HUD_GAP, HUD_GAP, HUD_GAP));
 
-        fleetTableModel = new FleetTableModel(playerSession);
-        fleetTable = new JTable(fleetTableModel);
-        HudTable.style(fleetTable);
-        fleetTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        GridBagConstraints ac = optionGbc();
 
-        fleetTable.getColumnModel().getColumn(COL_SHIP).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setCellRenderer(new HudTable.ValueCellRenderer());
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setCellRenderer(new ComboColumnRenderer(this::voiceLabel));
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setCellRenderer(new ComboColumnRenderer(CommanderTabPanel::personalityLabel));
-        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellRenderer(new GearButtonRenderer());
-        fleetTable.getColumnModel().getColumn(COL_GEAR).setCellEditor(new GearButtonEditor());
+        ac.gridx = 0;
+        ac.gridy = 0;
+        discoveryAnnouncementBox = makeCheckBox(
+                getText("announcements.discovery"), playerSession.isDiscoveryAnnouncementOn());
+        discoveryAnnouncementBox.addActionListener(
+                e -> playerSession.setDiscoveryAnnouncementOn(discoveryAnnouncementBox.isSelected()));
+        announcements.add(discoveryAnnouncementBox, ac);
 
-        fleetTable.getColumnModel().getColumn(COL_SHIP).setPreferredWidth(200);
-        fleetTable.getColumnModel().getColumn(COL_SHIP_MAKE).setPreferredWidth(150);
-        fleetTable.getColumnModel().getColumn(COL_VOICE).setPreferredWidth(160);
-        fleetTable.getColumnModel().getColumn(COL_PERSONALITY).setPreferredWidth(160);
-        TableColumn gearCol = fleetTable.getColumnModel().getColumn(COL_GEAR);
-        gearCol.setPreferredWidth(HUD_TABLE_ROW_HEIGHT + 4);
-        gearCol.setMaxWidth(HUD_TABLE_ROW_HEIGHT + 10);
+        ac.gridy = 1;
+        routeAnnouncementBox = makeCheckBox(
+                getText("announcements.route"), playerSession.isRouteAnnouncementOn());
+        routeAnnouncementBox.addActionListener(
+                e -> playerSession.setRouteAnnouncementOn(routeAnnouncementBox.isSelected()));
+        announcements.add(routeAnnouncementBox, ac);
 
-        fleetSection.body().add(HudTable.dataPlaneScrollPane(fleetTable), BorderLayout.CENTER);
+        ac.gridy = 2;
+        radarContactAnnouncementBox = makeCheckBox(
+                getText("announcements.radarContact"), playerSession.isRadarContactAnnouncementOn());
+        radarContactAnnouncementBox.addActionListener(
+                e -> playerSession.setRadarContactAnnouncementOn(radarContactAnnouncementBox.isSelected()));
+        announcements.add(radarContactAnnouncementBox, ac);
 
-        add(content, BorderLayout.NORTH);
-        add(fleetSection, BorderLayout.CENTER);
+        ac.gridx = 1;
+        ac.gridy = 0;
+        miningAnnouncementBox = makeCheckBox(
+                getText("announcements.mining"), playerSession.isMiningAnnouncementOn());
+        miningAnnouncementBox.addActionListener(
+                e -> playerSession.setMiningAnnouncementOn(miningAnnouncementBox.isSelected()));
+        announcements.add(miningAnnouncementBox, ac);
 
-        refreshVoiceQualityLabels(); // initial HD/Standard tiers for the fleet voice list
+        ac.gridy = 1;
+        navigationAnnouncementBox = makeCheckBox(
+                getText("announcements.navigation"), playerSession.isNavigationAnnouncementOn());
+        navigationAnnouncementBox.addActionListener(
+                e -> playerSession.setNavigationAnnouncementOn(navigationAnnouncementBox.isSelected()));
+        announcements.add(navigationAnnouncementBox, ac);
+
+        ac.gridy = 2;
+        radioTransmissionBox = makeCheckBox(
+                getText("announcements.radioTransmissions"), playerSession.isRadioTransmissionOn());
+        radioTransmissionBox.addActionListener(
+                e -> playerSession.setRadioTransmissionOn(radioTransmissionBox.isSelected()));
+        announcements.add(radioTransmissionBox, ac);
+
+        // Filler so the two-column checkbox grid stays top-left aligned like the Ship Options tab.
+        ac.gridx = 2;
+        ac.gridy = 0;
+        ac.weightx = 1.0;
+        announcements.add(Box.createHorizontalGlue(), ac);
+
+        return announcements;
+    }
+
+    /**
+     * Shared grid geometry for the two-column checkbox grids of both option tabs.
+     */
+    private static GridBagConstraints optionGbc() {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(4, 6, 4, 6);
+        return gbc;
     }
 
     public void initData() {
         playerAltNameField.setText(
                 playerSession.getAlternativeName() != null ? playerSession.getAlternativeName() : "");
+
+        // A voice command (toggle_all_announcements and friends) can flip these behind the UI's back.
+        discoveryAnnouncementBox.setSelected(playerSession.isDiscoveryAnnouncementOn());
+        routeAnnouncementBox.setSelected(playerSession.isRouteAnnouncementOn());
+        radarContactAnnouncementBox.setSelected(playerSession.isRadarContactAnnouncementOn());
+        miningAnnouncementBox.setSelected(playerSession.isMiningAnnouncementOn());
+        navigationAnnouncementBox.setSelected(playerSession.isNavigationAnnouncementOn());
+        radioTransmissionBox.setSelected(playerSession.isRadioTransmissionOn());
 
         String commanderName = playerSession.getInGameName();
         List<ShipDao.Ship> ships = (commanderName != null && !commanderName.isBlank())
