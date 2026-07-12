@@ -61,8 +61,6 @@ public final class CommanderThought extends Thought {
 
     /** How long a frozen dangerous set waits for the commander's confirmation before discard (§7.2 setting). */
     private static final long CONFIRMATION_TIMEOUT_SECONDS = 30;
-    /** Existing llm.properties key for the COMMANDER service phrase spoken on an unrecoverable LLM response. */
-    private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
     /** llm.properties key for the fixed, code-voiced dangerous-action confirmation prompt (§2.13). */
     private static final String CONFIRM_DANGEROUS_KEY = "handler.common.confirmDangerousAction";
 
@@ -346,7 +344,7 @@ public final class CommanderThought extends Thought {
         }
         return execution.handle((result, failure) -> {
             try {
-                if (isStopped() || execution.isCancelled()) {
+                if (isStopped()) {
                     CompanionDiagnostics.debug(trace(), "settle", inv.name() + " late result discarded");
                     return null;
                 }
@@ -529,7 +527,9 @@ public final class CommanderThought extends Thought {
             writeMemory(new MemoryEntry(Instant.now(), ConversationTopic.UNRESOLVED_COMMANDER_INPUT,
                     MemorySource.COMMANDER, context.memoryInput()));
         }
-        dependencies.speechGateway().submit(new SpeechRequest(newId(), cannotExecutePhrase(), urgency()));
+        String phrase = executionFailurePhrase();
+        dependencies.speechGateway().submit(new SpeechRequest(newId(), phrase, urgency()));
+        recordCompanionSpeech(phrase);
     }
 
     /**
@@ -552,12 +552,6 @@ public final class CommanderThought extends Thought {
         } else {
             recordTurnBoundary(TurnBoundaryMarkers.INTERRUPTED);
         }
-    }
-
-    /** The fixed, code-generated "cannot execute" phrase in the commander's language (no LLM). */
-    private static String cannotExecutePhrase() {
-        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return LlmTextProvider.getText(language, CANNOT_EXECUTE_KEY);
     }
 
     /** The fixed, code-generated dangerous-action confirmation prompt in the commander's language (no LLM). */

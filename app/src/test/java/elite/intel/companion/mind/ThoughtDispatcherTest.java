@@ -589,10 +589,16 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("second");
         dispatcher.stop();
 
-        // The lane survived the first failure to process the second, and neither left a memory hole.
-        assertEquals(2, memory.writes.size());
-        assertTrue(memory.writes.stream()
+        // The lane survived the first failure to process the second, and neither left a memory hole. Each failed
+        // turn now also records the service reply that was spoken to the commander.
+        assertEquals(4, memory.writes.size());
+        List<MemoryEntry> unresolvedInputs = memory.writes.stream()
+                .filter(e -> e.source() == MemorySource.COMMANDER)
+                .toList();
+        assertEquals(List.of("first", "second"), unresolvedInputs.stream().map(MemoryEntry::content).toList());
+        assertTrue(unresolvedInputs.stream()
                 .allMatch(e -> e.topic() == ConversationTopic.UNRESOLVED_COMMANDER_INPUT));
+        assertEquals(2, memory.writes.stream().filter(e -> e.source() == MemorySource.COMPANION).count());
     }
 
     // --- helpers ---

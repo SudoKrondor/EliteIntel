@@ -151,6 +151,36 @@ class ThoughtTest {
     }
 
     @Test
+    void commanderCommandFailureKeepsImmediateAckAndReportsFailure() throws InterruptedException {
+        llm.scripted.add(ok(call("close_panel", new JsonObject())));
+        CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
+        execution.futuresByTool.put("close_panel", failedCommand);
+        Thought thought = Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes()));
+        Thread worker = new Thread(thought::run, "thought-command-failure-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("close_panel") && speech.requests.size() == 1);
+
+        String acknowledgement = speech.requests.get(0).text();
+        assertFalse(acknowledgement.isBlank(), "the intention acknowledgement must not wait for execution");
+
+        failedCommand.completeExceptionally(new IllegalStateException("binding missing"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertEquals(2, speech.requests.size(), "a failed command receives a second, explicit outcome reply");
+        String failureReply = speech.requests.get(1).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && acknowledgement.equals(e.content())),
+                "the immediate acknowledgement remains the first companion reply");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && failureReply.equals(e.content())),
+                "the failure reply is persisted instead of leaving the acknowledged command silently failed");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("binding missing")),
+                "internal execution details stay in diagnostics, not in companion memory");
+    }
+
+    @Test
     void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
         // A turn that runs both a QUERY and a COMMAND: the commander input is filed (as it is for every turn now),
         // the query records its call/result pair keeping that preceding user turn (else it replays as an assistant
@@ -191,6 +221,26 @@ class ThoughtTest {
     }
 
     @Test
+    void reflexCommandFailureIsRecordedAndVoiced() {
+        CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
+        failedCommand.completeExceptionally(new IllegalStateException("input binding missing"));
+        execution.futuresByTool.put("close_panel", failedCommand);
+
+        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", dependencies(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty());
+        assertEquals(1, speech.requests.size());
+        String failureReply = speech.requests.get(0).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
+                        && "close the panel".equals(e.content())),
+                "a failed reflex command now keeps the imperative it answers");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && failureReply.equals(e.content())),
+                "a failed reflex command receives the same visible outcome as an LLM-selected command");
+    }
+
+    @Test
     void commanderQueryAnswerIsRecordedAsResultAndVoicedDirectly() {
         // The query answer is in the execution result: recordOutcome records it as the call's RESULT and voices
         // it directly - no AiVoxResponseEvent / CompanionAnnouncementBridge detour (that event is system-only now).
@@ -211,6 +261,35 @@ class ThoughtTest {
         assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
                         && e.toolLink() != null && e.toolLink().isCall() && "scan_system".equals(e.toolLink().toolName())),
                 "the query call is recorded for pair replay");
+    }
+
+    @Test
+    void detachedQueryFailureIsRecordedAndVoiced() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> failedQuery = new CompletableFuture<>();
+        execution.futuresByTool.put("slow_query", failedQuery);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-query-failure-test");
+        worker.start();
+        waitUntil(() -> memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
+
+        failedQuery.completeExceptionally(new IllegalStateException("query backend unavailable"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertEquals(1, speech.requests.size(), "a failed query must not end as a silent processing turn");
+        String failureReply = speech.requests.get(0).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
+                        && e.toolLink() != null && e.toolLink().isResult() && failureReply.equals(e.content())),
+                "the failure is the query's linked tool result");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isCall()
+                        && "slow_query".equals(e.toolLink().toolName())),
+                "the failed query keeps its matching call for replay");
+        assertTrue(memory.writes.stream().noneMatch(e -> TurnBoundaryMarkers.NO_ANSWER.equals(e.content())),
+                "a reported query failure is an answer, not an omitted reply");
     }
 
     @Test
@@ -339,12 +418,16 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "do the thing", dependencies()).run();
 
-        assertEquals(1, memory.writes.size());
+        assertEquals(2, memory.writes.size());
         MemoryEntry entry = memory.writes.get(0);
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, entry.topic());
         assertEquals(1, speech.requests.size(), "commander hears a service phrase");
         assertNotNull(speech.requests.get(0).text());
         assertFalse(speech.requests.get(0).text().isBlank());
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals(speech.requests.get(0).text(), reply.content(),
+                "the service failure is also recorded as the companion's reply");
         assertTrue(execution.toolNames().isEmpty());
     }
 
@@ -594,7 +677,7 @@ class ThoughtTest {
     }
 
     private static final class FakeSpeech implements SpeechGateway {
-        final List<SpeechRequest> requests = new ArrayList<>();
+        final List<SpeechRequest> requests = new CopyOnWriteArrayList<>();
 
         @Override public CompletableFuture<Void> submit(SpeechRequest request) {
             requests.add(request);
@@ -603,7 +686,7 @@ class ThoughtTest {
     }
 
     private static final class FakeMemory implements MemoryGateway {
-        final List<MemoryEntry> writes = new ArrayList<>();
+        final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
         SemanticQuery lastSemanticQuery;
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }

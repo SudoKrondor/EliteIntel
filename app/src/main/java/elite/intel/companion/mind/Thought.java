@@ -2,6 +2,8 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
@@ -18,6 +20,9 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.prompt.PromptXml;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.companion.tools.SystemFunctionResultFields;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +57,8 @@ public abstract class Thought {
 
     /** Monotonic sequence backing the short per-thought {@link #trace} id, so concurrent lanes are told apart in the log. */
     private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
+    /** Existing localized service phrase for a command/query/macro execution that could not complete. */
+    private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
 
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
@@ -430,8 +437,9 @@ public abstract class Thought {
      * A <b>command</b> declares its outcome in the result too (its {@code execute} return value, wrapped by
      * {@code IntelCommand#handle}); a command turn files no call to pair with, so its outcome is remembered as a
      * free-standing companion line. A <b>macro</b> stays
-     * self-narrating (its SPEAK steps carry completion futures), so its outcome is not handled here. {@code SYSTEM}
-     * functions leave no timeline entry.
+     * self-narrating (its SPEAK steps carry completion futures), so only its failure is handled here. A failed
+     * command/query/macro receives a fixed localized failure reply when its handler provided no own text.
+     * {@code SYSTEM} functions leave no timeline entry.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
                                  String toolCallId) {
@@ -440,20 +448,28 @@ public abstract class Thought {
         }
         switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
-                String answer = spokenTextOf(result);
+                String answer = spokenOutcomeText(result);
                 if (!answer.isBlank()) {
                     recordToolResult(toolCallId, answer);  // RESULT half, paired with the recorded CALL
                     voice(answer, false);
                 }
             }
             case COMMAND -> {
-                String outcome = spokenTextOf(result);
+                String outcome = spokenOutcomeText(result);
                 if (!outcome.isBlank()) {
                     recordCompanionSpeech(outcome);        // free-standing line: a command turn files no call to pair
                     voice(outcome, false);
                 }
             }
-            case MACRO -> { /* self-narrating: SPEAK steps carry completion futures; handled on their own path */ }
+            case MACRO -> {
+                // Successful macros narrate their own SPEAK steps. A failed macro otherwise has no user-visible
+                // completion at all, so publish the shared failure phrase instead.
+                if (isExecutionFailure(result)) {
+                    String failure = spokenOutcomeText(result);
+                    recordCompanionSpeech(failure);
+                    voice(failure, false);
+                }
+            }
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }
@@ -500,7 +516,7 @@ public abstract class Thought {
         if (!isRuntimeActive()) {
             return false;
         }
-        String answer = spokenTextOf(result);
+        String answer = spokenOutcomeText(result);
         if (answer.isBlank()) {
             return false;
         }
@@ -512,7 +528,27 @@ public abstract class Thought {
 
     /** The handler-provided spoken text in a tool result, or empty when absent. */
     protected static String spokenTextOf(JsonObject result) {
-        return JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+        return result == null ? "" : JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+    }
+
+    /**
+     * Returns the handler-provided reply, or the localized failure phrase for an error result that supplied no
+     * speakable text. This keeps execution details in diagnostics while the commander always receives a clear
+     * outcome.
+     */
+    protected static String spokenOutcomeText(JsonObject result) {
+        String handlerText = spokenTextOf(result);
+        return !handlerText.isBlank() || !isExecutionFailure(result) ? handlerText : executionFailurePhrase();
+    }
+
+    private static boolean isExecutionFailure(JsonObject result) {
+        return result != null && result.has(SystemFunctionResultFields.ERROR);
+    }
+
+    /** Returns the fixed localized phrase used when a command, query, or macro execution fails. */
+    protected static String executionFailurePhrase() {
+        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return LlmTextProvider.getText(language, CANNOT_EXECUTE_KEY);
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */
