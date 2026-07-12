@@ -13,8 +13,8 @@ import elite.intel.db.managers.ShipManager;
 import elite.intel.db.managers.ShipSettingsManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
-import elite.intel.i18n.Language;
 import elite.intel.gameapi.journal.events.dto.shiploadout.LoadoutConverter;
+import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.event.AppLogEvent;
@@ -311,11 +311,12 @@ public class CommanderTabPanel extends JPanel {
         fleetTableModel.setShips(ships);
         fleetTableModel.fireTableDataChanged();
 
-        // Voice options depend on current TTS provider; rebuild editor on every call.
+        // Voice options depend on current TTS provider; rebuild editor on every call. Ship voices are
+        // female-only (radio transmissions keep the full voice set), so the male voices are filtered out.
         boolean useLocal = SystemSession.getInstance().useLocalTTS();
         String[] voiceOptions = useLocal
-                ? Arrays.stream(KokoroVoices.values()).map(Enum::name).toArray(String[]::new)
-                : Arrays.stream(GoogleVoices.values()).map(Enum::name).toArray(String[]::new);
+                ? Arrays.stream(KokoroVoices.values()).filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new)
+                : Arrays.stream(GoogleVoices.values()).filter(v -> !v.isMale()).map(Enum::name).toArray(String[]::new);
         // labelFn shows "DisplayName - accent"; getCellEditorValue() still returns the raw enum name to store.
         fleetTable.getColumnModel().getColumn(COL_VOICE)
                 .setCellEditor(new HudComboCellEditor(new HudComboBox<>(voiceOptions, this::voiceLabel)));
@@ -328,6 +329,18 @@ public class CommanderTabPanel extends JPanel {
                         new HudComboBox<>(personalityOptions, CommanderTabPanel::personalityLabel)));
 
         refreshVoiceQualityLabels(); // provider/language may have changed; recompute the HD/Standard tiers
+    }
+
+    /**
+     * Normalizes a stored ship voice to a female voice for the active TTS provider. Ship voices are
+     * female-only, so a legacy male (or otherwise invalid) stored voice resolves to the provider's default
+     * female — keeping the fleet grid's displayed/selected voice a valid, female dropdown option and in step
+     * with what {@link SystemSession#getKokoroVoice()} / {@link SystemSession#getGoogleVoice()} actually speak.
+     */
+    static String normalizeVoiceToFemale(String voiceName) {
+        return SystemSession.getInstance().useLocalTTS()
+                ? KokoroVoices.femaleOrDefault(voiceName).name()
+                : GoogleVoices.femaleOrDefault(voiceName).name();
     }
 
     static String displayShipName(ShipDao.Ship ship) {
@@ -397,7 +410,7 @@ public class CommanderTabPanel extends JPanel {
             return switch (col) {
                 case COL_SHIP -> displayShipName(ship);
                 case COL_SHIP_MAKE -> shipMakeName(ship);
-                case COL_VOICE -> ship.getVoice();
+                case COL_VOICE -> normalizeVoiceToFemale(ship.getVoice());
                 case COL_PERSONALITY -> ship.getPersonality();
                 case COL_GEAR -> ship;
                 default -> null;

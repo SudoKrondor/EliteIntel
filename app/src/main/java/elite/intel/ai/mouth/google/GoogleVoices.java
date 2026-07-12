@@ -23,6 +23,28 @@ public enum GoogleVoices {
     STEVE("Steve", true, "American male", "Algenib"),           // en-US-Chirp3-HD-Algenib
     ;
 
+    /**
+     * Default female voice. Ship voices are female-only (see {@link #femaleOrDefault(String)}); a ship with
+     * no stored voice, an unknown voice, or a legacy male voice resolves to this.
+     */
+    public static final GoogleVoices DEFAULT_FEMALE = MARY;
+
+    /**
+     * Resolves a stored ship-voice name to a female voice: the named voice when it is a valid female voice,
+     * otherwise {@link #DEFAULT_FEMALE}. Ship voices are female-only, so a male name (a legacy selection from
+     * before that constraint), a name valid only for the other TTS provider, or a {@code null} name collapses
+     * to the default female.
+     */
+    public static GoogleVoices femaleOrDefault(String name) {
+        if (name == null) return DEFAULT_FEMALE;
+        try {
+            GoogleVoices v = valueOf(name);
+            return v.isMale() ? DEFAULT_FEMALE : v;
+        } catch (IllegalArgumentException e) {
+            return DEFAULT_FEMALE;
+        }
+    }
+
     private final String name;
     private final boolean isMale;
     private final String description;

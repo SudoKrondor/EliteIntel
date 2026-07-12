@@ -6,11 +6,7 @@ import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
-import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.MainVoicePlaybackGate;
-import elite.intel.ai.mouth.MouthInterface;
-import elite.intel.ai.mouth.RadioFilter;
-import elite.intel.ai.mouth.VocalisationHandle;
+import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
@@ -588,18 +584,20 @@ public class KokoroTTS implements MouthInterface {
     // -- Engine construction ---------------------------------------------------
 
     /**
-     * NOTE: Kokoro will speak other languages but with accent.
-     * Hindi hi
-     * Italian it
-     * Japanese ja
-     * Portuguese (Brazilian) pt-br
-     * Chinese (Mandarin) zh
+     * The espeak-ng phonemizer language Kokoro reads the text with. This is what decides pronunciation, and
+     * it is separate from the voice: a language with no native Kokoro voice (German) is still phonemized
+     * correctly here and merely spoken with the accent of whatever voice is selected. Getting this wrong is
+     * worse than an accent — German text read with "en-us" rules is mangled, not accented.
+     * <p>
+     * Cyrillic (RU/UK) has no entry on purpose: it cannot be phonemized at all, so those sessions are
+     * answered in English upstream (see {@code AiResponseLanguagePolicy}) and land on the default.
      */
     private static String kokoroLangCode(Language language) {
         return switch (language) {
             case FR -> "fr";
             case ES -> "es";
             case IT -> "it";
+            case DE -> "de";
             // Kokoro ships Brazilian Portuguese only, so European Portuguese speaks with a Brazilian accent.
             case PT, PTBZ -> "pt-br";
             default -> "en-us";

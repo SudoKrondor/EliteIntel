@@ -63,6 +63,12 @@ public final class DisplayFleetCarrierManagementPanelCommand implements IntelCom
                     GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_UI_UP.getGameBinding()),
                     GameInputStep.delay(100),
+                    GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.delay(100),
+                    GameInputStep.bindingTap(BINDING_UI_LEFT.getGameBinding()),
+                    GameInputStep.delay(100),
+
+                    GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_UI_DOWN.getGameBinding()),
                     GameInputStep.delay(100),
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())

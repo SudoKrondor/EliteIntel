@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
@@ -39,7 +38,7 @@ public class VocalisationRouter {
 
     @Subscribe
     public void onRadioTransmissionEvent(RadioTransmissionEvent event) {
-        boolean isCyrillic = systemSession.getLanguage() == Language.RU || systemSession.getLanguage() == Language.UK;
+        boolean isCyrillic = systemSession.getLanguage().isCyrillicScript();
         if (playerSession.isRadioTransmissionOn() && !isCyrillic) {
             // Radio is always voiced by Kokoro (even when Google is the main mouth), on a distinct
             // random voice from the commander's own voice so the two speakers sound different.

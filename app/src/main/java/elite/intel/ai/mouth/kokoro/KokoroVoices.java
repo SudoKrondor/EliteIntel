@@ -95,6 +95,29 @@ public enum KokoroVoices {
     ZH_YUNXIA(51, false, "Yunxia", "Chinese female"),
     ZH_YUNYANG(52, true, "Yunyang", "Chinese male");
 
+    /**
+     * Default female voice. Ship voices are female-only (see {@link #femaleOrDefault(String)}); a ship with
+     * no stored voice, an unknown voice, or a legacy male voice resolves to this. Radio transmissions are a
+     * separate channel and still draw from the full {@link #values()} set (male and female alike).
+     */
+    public static final KokoroVoices DEFAULT_FEMALE = BELLA;
+
+    /**
+     * Resolves a stored ship-voice name to a female voice: the named voice when it is a valid female voice,
+     * otherwise {@link #DEFAULT_FEMALE}. Ship voices are female-only, so a male name (a legacy selection from
+     * before that constraint) or an unknown/{@code null} name collapses to the default female. This is the
+     * ship-voice seam only; radio picks from {@link #values()} directly and must not route through here.
+     */
+    public static KokoroVoices femaleOrDefault(String name) {
+        if (name == null) return DEFAULT_FEMALE;
+        try {
+            KokoroVoices v = valueOf(name);
+            return v.isMale() ? DEFAULT_FEMALE : v;
+        } catch (IllegalArgumentException e) {
+            return DEFAULT_FEMALE;
+        }
+    }
+
     private final int sid;
     private final boolean male;
     private final String displayName;

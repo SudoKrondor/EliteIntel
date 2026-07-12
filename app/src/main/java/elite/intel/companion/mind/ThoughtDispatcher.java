@@ -1,6 +1,5 @@
 package elite.intel.companion.mind;
 
-import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
@@ -55,8 +54,11 @@ public final class ThoughtDispatcher implements ManagedService {
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
-    /** Production input canonicalizer: the legacy synonym map ("combat mode" -> "switch to combat mode"). */
-    private static final Function<String, String> DEFAULT_NORMALIZER = InputNormalizer.getInstance()::normalize;
+    /**
+     * Production input canonicalizer: identity. The legacy synonym-map normalizer was removed once it became a
+     * no-op; the {@link #inputNormalizer} seam is retained so a test can still inject a canonicalizing function.
+     */
+    private static final Function<String, String> DEFAULT_NORMALIZER = Function.identity();
 
     private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
@@ -78,8 +80,8 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /**
      * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
-     * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
-     * recognized the same way the legacy router recognizes it.
+     * memory keeps the raw words. Identity in production (the legacy synonym-map normalizer was removed);
+     * kept as an injectable seam so a test can pin a canonicalizing function.
      */
     private final Function<String, String> inputNormalizer;
     private final long watchdogTimeoutMillis;
