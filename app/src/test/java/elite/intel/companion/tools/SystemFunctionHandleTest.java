@@ -79,6 +79,18 @@ class SystemFunctionHandleTest {
     }
 
     @Test
+    void requestInputHandleIsMetadataOnly() {
+        JsonObject p = params("action_id", "set_speed");
+        p.addProperty("parameter_name", "amount");
+        p.addProperty("question", "By how much?");
+
+        JsonObject result = new RequestInputFunction().handle(RequestInputFunction.ID, p, "");
+
+        assertEquals("input_requested", result.get("status").getAsString());
+        assertEquals(0, spoken.size(), "CommanderThought owns validated clarification speech");
+    }
+
+    @Test
     void classifyTurnSetsTopicAndStampsImportance() {
         JsonObject p = params("topic", "navigation");
         p.addProperty("importance", "high");

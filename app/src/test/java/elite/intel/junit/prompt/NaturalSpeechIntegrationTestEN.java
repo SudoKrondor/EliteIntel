@@ -3,12 +3,19 @@ package elite.intel.junit.prompt;
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.companion.input.CompanionRoutingHarness;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 /**
@@ -225,6 +232,69 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> optimalSpeed() {
         return Stream.of("set optimal speed", "optimal approach speed");
+    }
+
+    // =========================================================================
+    // Missing-parameter clarification / continuation
+    // =========================================================================
+
+    @Test
+    @Order(28)
+    void missingSpeedAmountIsAppliedFromNextTurn() throws Exception {
+        harness.restart();
+        List<String> firstTurn = harness.routeWithActionVisible("increase speed", IncreaseSpeedCommand.ID);
+
+        assertAll(
+                () -> assertFalse(firstTurn.contains(IncreaseSpeedCommand.ID),
+                        () -> "Incomplete command was dispatched: " + firstTurn),
+                () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                        () -> "Missing request_input dispatch: " + firstTurn),
+                () -> assertTrue(harness.lastTurnRequestedInput(IncreaseSpeedCommand.ID, "key"),
+                        () -> "Expected request_input for increase_speed.key; speech: "
+                                + harness.lastTurnSpeech()),
+                () -> assertFalse(harness.lastTurnSpeech().isEmpty(),
+                        "The commander was not asked for the missing amount")
+        );
+
+        List<String> secondTurn = harness.routeWithActionVisible("by 10", IncreaseSpeedCommand.ID);
+
+        assertAll(
+                () -> assertTrue(secondTurn.contains(IncreaseSpeedCommand.ID),
+                        () -> "Clarification reply dispatched " + secondTurn
+                                + " instead of " + IncreaseSpeedCommand.ID),
+                () -> assertEquals("10", harness.lastArgument(IncreaseSpeedCommand.ID, "key").orElse("<missing>"),
+                        "The clarification value was not applied to increase_speed.key")
+        );
+    }
+
+    @Test
+    @Order(29)
+    void newCommandSupersedesPendingClarification() throws Exception {
+        harness.restart();
+        try {
+            List<String> firstTurn = harness.routeWithActionVisible("increase speed", IncreaseSpeedCommand.ID);
+
+            assertAll(
+                    () -> assertFalse(firstTurn.contains(IncreaseSpeedCommand.ID),
+                            () -> "Incomplete command was dispatched: " + firstTurn),
+                    () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                            () -> "Missing request_input dispatch: " + firstTurn),
+                    () -> assertTrue(harness.lastTurnRequestedInput(IncreaseSpeedCommand.ID, "key"),
+                            () -> "Expected request_input for increase_speed.key; speech: "
+                                    + harness.lastTurnSpeech())
+            );
+
+            List<String> secondTurn = harness.routeWithActionVisible("full stop", SetSpeedZeroCommand.ID);
+
+            assertAll(
+                    () -> assertTrue(secondTurn.contains(SetSpeedZeroCommand.ID),
+                            () -> "New command dispatched " + secondTurn + " instead of " + SetSpeedZeroCommand.ID),
+                    () -> assertFalse(secondTurn.contains(IncreaseSpeedCommand.ID),
+                            () -> "Pending command was resumed instead of superseded: " + secondTurn)
+            );
+        } finally {
+            harness.restart();
+        }
     }
 
     // =========================================================================
@@ -671,7 +741,49 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> calculateNeutronRoute() {
-        return Stream.of("calculate neutron route with efficiency 20", "calculate neutron route");
+        return Stream.of(
+                "calculate neutron route with efficiency 20",
+                "calculate neutron star route at 60 efficiency"
+        );
+    }
+
+    @Test
+    @Order(86)
+    void calculateNeutronRouteAppliesMissingEfficiencyFromNextTurn() throws Exception {
+        harness.restart();
+        try {
+            List<String> firstTurn = harness.routeWithActionVisible(
+                    "calculate neutron route", CalculateNeutronStarRouteCommand.ID);
+
+            assertAll(
+                    () -> assertFalse(firstTurn.contains(CalculateNeutronStarRouteCommand.ID),
+                            () -> "Incomplete command was dispatched: " + firstTurn),
+                    () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                            () -> "Missing request_input dispatch: " + firstTurn
+                                    + "; speech: " + harness.lastTurnSpeech()),
+                    () -> assertTrue(harness.lastTurnRequestedInput(
+                                    CalculateNeutronStarRouteCommand.ID, "efficiency"),
+                            () -> "Expected request_input for calculate_neutron_star_route.efficiency; speech: "
+                                    + harness.lastTurnSpeech()),
+                    () -> assertFalse(harness.lastTurnSpeech().isEmpty(),
+                            "The commander was not asked for the missing efficiency")
+            );
+
+            List<String> secondTurn = harness.routeWithActionVisible(
+                    "20 percent", CalculateNeutronStarRouteCommand.ID);
+
+            assertAll(
+                    () -> assertTrue(secondTurn.contains(CalculateNeutronStarRouteCommand.ID),
+                            () -> "Clarification reply dispatched " + secondTurn
+                                    + " instead of " + CalculateNeutronStarRouteCommand.ID),
+                    () -> assertEquals("20", harness.lastArgument(
+                                    CalculateNeutronStarRouteCommand.ID, "efficiency").orElse("<missing>"),
+                            "The clarification value was not applied to "
+                                    + "calculate_neutron_star_route.efficiency")
+            );
+        } finally {
+            harness.restart();
+        }
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

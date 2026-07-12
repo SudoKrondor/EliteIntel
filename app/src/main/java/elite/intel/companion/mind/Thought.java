@@ -29,7 +29,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -203,7 +205,7 @@ public abstract class Thought {
      * System tools offered to the LLM for this thought. An LLM-driven thought overrides this; a memory-only
      * thought never composes a prompt, so it inherits the empty default.
      */
-    protected List<LlmToolDefinition> systemTools() {
+    protected List<LlmToolDefinition> systemTools(List<LlmToolDefinition> gameTools) {
         return List.of();
     }
 
@@ -274,7 +276,7 @@ public abstract class Thought {
         long reducerStartedNanos = System.nanoTime();
         List<LlmToolDefinition> gameTools = selectedGameTools();
         long reducerMillis = elapsedMillis(reducerStartedNanos);
-        List<LlmToolDefinition> sysTools = systemTools();
+        List<LlmToolDefinition> sysTools = systemTools(gameTools);
         long timelineStartedNanos = System.nanoTime();
         List<MemoryEntry> timeline = dependencies.memoryGateway().readShortTermTimeline();
         long timelineMillis = elapsedMillis(timelineStartedNanos);
@@ -283,7 +285,8 @@ public abstract class Thought {
         long factsMillis = elapsedMillis(factsStartedNanos);
         long promptStartedNanos = System.nanoTime();
         ComposedPrompt composed = dependencies.promptComposer().compose(
-                source(), context.matchInput(), gameTools, sysTools, timeline, candidates);
+                source(), context.matchInput(), gameTools, sysTools, timeline, candidates,
+                context.pendingClarification());
         long promptMillis = elapsedMillis(promptStartedNanos);
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
@@ -314,10 +317,32 @@ public abstract class Thought {
         return List.of();
     }
 
-    /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
+    /**
+     * The single point where game tools are formed. Normal candidates are reduced from the current input; a
+     * claimed clarification target is re-resolved by id against this turn's visibility snapshot and prepended.
+     */
     private List<LlmToolDefinition> selectedGameTools() {
-        return dependencies.reducer().selectTools(
-                allowedCategories(), context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
+        Set<IntelActionCategory> categories = allowedCategories();
+        List<LlmToolDefinition> selected = dependencies.reducer().selectTools(
+                categories, context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
+        var pending = context.pendingClarification();
+        if (pending == null) {
+            return selected;
+        }
+
+        var target = dependencies.reducer().findToolById(
+                categories, pending.actionId(), context.gameStateSnapshot());
+        if (target.isEmpty()) {
+            CompanionDiagnostics.debug(trace, "clarify",
+                    "target unavailable in current state: " + pending.actionId());
+            return selected;
+        }
+
+        Map<String, LlmToolDefinition> merged = new LinkedHashMap<>();
+        merged.put(target.get().name(), target.get());
+        selected.forEach(tool -> merged.putIfAbsent(tool.name(), tool));
+        CompanionDiagnostics.debug(trace, "clarify", "re-offered target " + pending.actionId());
+        return List.copyOf(merged.values());
     }
 
     private static long elapsedMillis(long startedNanos) {
@@ -342,11 +367,22 @@ public abstract class Thought {
         }
         long executionStartedNanos = System.nanoTime();
         CompletableFuture<JsonObject> future = dependencies.executionGateway()
-                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput(),
+                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), executionInputFor(inv),
                         dependencies.runtimeGeneration().generationId()));
         future.whenComplete((ignored, failure) -> CompanionDiagnostics.debug(trace, "exec-time",
                 inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms"));
         return future;
+    }
+
+    /**
+     * Gives a resumed target both the originating order and the terse parameter reply. A superseding action sees
+     * only the current words, so handler-level fallback parsing cannot accidentally inherit the abandoned order.
+     */
+    private String executionInputFor(LlmToolInvocation inv) {
+        var pending = context.pendingClarification();
+        return pending != null && pending.actionId().equals(inv.name())
+                ? pending.originalInput() + "\n" + context.currentInput()
+                : context.currentInput();
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */

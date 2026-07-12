@@ -22,18 +22,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class SystemFunctionProviderTest {
 
     private final SystemFunctionProvider provider = new SystemFunctionProvider();
+    private static final LlmToolDefinition REQUIRED_GAME_TOOL = new LlmToolDefinition(
+            "set_speed", "Set speed", "set speed",
+            List.of(new ActionParameterSpec(
+                    "key", "number", true, "Required speed value", List.of("10"), null)));
 
     private static Set<String> names(List<LlmToolDefinition> tools) {
         return tools.stream().map(LlmToolDefinition::name).collect(Collectors.toSet());
     }
 
+    private List<LlmToolDefinition> commanderFunctions() {
+        return provider.systemFunctions(ThoughtSource.COMMANDER, List.of(REQUIRED_GAME_TOOL));
+    }
+
     @Test
     void commanderToolsCoverEveryFunctionWithDescriptionsAndNoPhrases() {
-        List<LlmToolDefinition> tools = provider.systemFunctions(ThoughtSource.COMMANDER);
+        List<LlmToolDefinition> tools = commanderFunctions();
 
-        assertEquals(2, tools.size());
+        assertEquals(3, tools.size());
         assertEquals(
-                Set.of("speak", "classify_turn"),
+                Set.of("speak", "request_input", "classify_turn"),
                 names(tools));
         for (LlmToolDefinition tool : tools) {
             assertFalse(tool.description() == null || tool.description().isBlank(), tool.name() + " description");
@@ -46,26 +54,38 @@ class SystemFunctionProviderTest {
 
     @Test
     void toolsAreInDeterministicLeadThenAlphabeticalOrder() {
-        List<String> commander = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
+        List<String> commander = commanderFunctions().stream()
                 .map(LlmToolDefinition::name).toList();
         assertEquals(
-                List.of("speak", "classify_turn"),
+                List.of("speak", "request_input", "classify_turn"),
                 commander);
 
-        List<String> event = provider.systemFunctions(ThoughtSource.EVENT).stream()
+        List<String> event = provider.systemFunctions(ThoughtSource.EVENT, List.of()).stream()
                 .map(LlmToolDefinition::name).toList();
         assertEquals(List.of("speak"), event);
     }
 
     @Test
     void eventToolsAreReadOnlySubset() {
-        Set<String> eventNames = names(provider.systemFunctions(ThoughtSource.EVENT));
+        Set<String> eventNames = names(provider.systemFunctions(ThoughtSource.EVENT, List.of()));
         assertEquals(Set.of("speak"), eventNames);
     }
 
     @Test
+    void requestInputIsOmittedForParameterlessGameTool() {
+        LlmToolDefinition openMap = new LlmToolDefinition(
+                "open_map", "Open map", "open map", List.of());
+
+        Set<String> commanderNames = names(provider.systemFunctions(
+                ThoughtSource.COMMANDER, List.of(openMap)));
+
+        assertEquals(Set.of(SpeakFunction.ID, ClassifyTurnFunction.ID), commanderNames);
+        assertFalse(commanderNames.contains(RequestInputFunction.ID));
+    }
+
+    @Test
     void speakDeclaresOnlyText() {
-        LlmToolDefinition speak = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
+        LlmToolDefinition speak = commanderFunctions().stream()
                 .filter(t -> t.name().equals("speak")).findFirst().orElseThrow();
 
         Set<String> params = speak.parameters().stream().map(ActionParameterSpec::getName).collect(Collectors.toSet());
@@ -74,13 +94,28 @@ class SystemFunctionProviderTest {
 
     @Test
     void speakDescriptionDefersToMatchingFunctions() {
-        LlmToolDefinition speak = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
+        LlmToolDefinition speak = commanderFunctions().stream()
                 .filter(tool -> tool.name().equals(SpeakFunction.ID))
                 .findFirst()
                 .orElseThrow();
 
         assertTrue(speak.description().contains("only when no offered action, query, or macro matches"));
+        assertTrue(speak.description().contains("call request_input instead"));
         assertTrue(speak.description().contains("Never use it to acknowledge, promise, or describe"));
         assertTrue(speak.description().contains("call that function instead"));
+    }
+
+    @Test
+    void requestInputDeclaresTypedContinuationFields() {
+        LlmToolDefinition requestInput = commanderFunctions().stream()
+                .filter(tool -> tool.name().equals(RequestInputFunction.ID))
+                .findFirst()
+                .orElseThrow();
+
+        Set<String> params = requestInput.parameters().stream()
+                .map(ActionParameterSpec::getName)
+                .collect(Collectors.toSet());
+        assertEquals(Set.of("action_id", "parameter_name", "question"), params);
+        assertTrue(requestInput.parameters().stream().allMatch(ActionParameterSpec::isRequired));
     }
 }

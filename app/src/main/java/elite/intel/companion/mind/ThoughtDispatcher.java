@@ -2,6 +2,7 @@ package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.i18n.PhoneticInputNormalizer;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.GameStateSnapshot;
@@ -152,6 +153,8 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         long acceptedAtNanos = System.nanoTime();
+        PendingClarification pendingClarification = dependencies.clarificationCoordinator()
+                .claim().orElse(null);
         // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
         // must never re-read a changing player_status row independently.
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
@@ -165,7 +168,8 @@ public final class ThoughtDispatcher implements ManagedService {
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(
-                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot);
+                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot)
+                .withPendingClarification(pendingClarification);
         dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
         // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
@@ -201,6 +205,12 @@ public final class ThoughtDispatcher implements ManagedService {
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (pendingClarification != null) {
+            String disposition = reflexCommand.isPresent() ? "superseded by reflex" : "claimed for continuation";
+            CompanionDiagnostics.debug(thought.trace(), "clarify",
+                    pendingClarification.actionId() + "." + pendingClarification.parameterName()
+                            + " " + disposition);
+        }
         if (semanticReflexMillis >= 0) {
             CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
         }
@@ -312,6 +322,7 @@ public final class ThoughtDispatcher implements ManagedService {
 
     @Override
     public synchronized void stop() {
+        dependencies.clarificationCoordinator().cancel();
         ScheduledExecutorService currentWatchdog = watchdog;
         watchdog = null;
         if (currentWatchdog != null) {

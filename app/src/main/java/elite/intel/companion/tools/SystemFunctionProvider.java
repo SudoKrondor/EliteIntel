@@ -8,7 +8,9 @@ import java.util.List;
 
 /**
  * Provides the native tool specs for the system functions available to a thought, selected by source
- * via {@link SystemFunctionRegistry}. System functions are always present in the prompt.
+ * via {@link SystemFunctionRegistry} and by the current offered game-tool schemas. Most source-eligible
+ * functions are always present; {@code request_input} is omitted when no offered game tool has a required
+ * parameter that could legitimately be requested.
  * <p>
  * Each {@link SystemFunction} self-describes its id, parameter schema and English model-facing
  * {@code llmDescription()}; this provider only packages the result as a provider-neutral
@@ -23,7 +25,7 @@ public final class SystemFunctionProvider {
      * churn the request and the prompt cache, so the order is fixed here. New functions not listed
      * here automatically sort into the alphabetical tail - no central list to keep in sync.
      */
-    private static final List<String> LEAD_ORDER = List.of(SpeakFunction.ID);
+    private static final List<String> LEAD_ORDER = List.of(SpeakFunction.ID, RequestInputFunction.ID);
 
     private final SystemFunctionRegistry registry;
 
@@ -37,12 +39,22 @@ public final class SystemFunctionProvider {
         this.registry = registry;
     }
 
-    /** Returns the system function tool specs available to the given source. */
-    public List<LlmToolDefinition> systemFunctions(ThoughtSource source) {
+    /**
+     * Returns the system functions available to the source for this exact offered game-tool snapshot.
+     * {@code request_input} is exposed only when at least one offered game tool has a required parameter.
+     */
+    public List<LlmToolDefinition> systemFunctions(
+            ThoughtSource source,
+            List<LlmToolDefinition> offeredGameTools
+    ) {
         if (registry.byId().isEmpty()) {
             registry.load();
         }
+        boolean canRequestInput = offeredGameTools.stream()
+                .flatMap(tool -> tool.parameters().stream())
+                .anyMatch(parameter -> parameter.isRequired());
         return registry.forSource(source).stream()
+                .filter(function -> canRequestInput || !RequestInputFunction.ID.equals(function.id()))
                 .sorted(Comparator
                         .comparingInt((SystemFunction f) -> leadRank(f.id()))
                         .thenComparing(SystemFunction::id))

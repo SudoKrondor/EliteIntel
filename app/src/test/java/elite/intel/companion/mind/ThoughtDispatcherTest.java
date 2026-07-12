@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.clarify.ClarificationCoordinator;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
@@ -117,6 +118,42 @@ class ThoughtDispatcherTest {
 
         assertEquals(List.of("open_nav"), executed, "the reflex ran the resolved command directly");
         assertTrue(memory.writes.isEmpty(), "a silent reflex command (blank outcome) files nothing to memory");
+    }
+
+    @Test
+    void confidentNewReflexClaimsAndSupersedesPendingClarification() throws InterruptedException {
+        ClarificationCoordinator clarification = new ClarificationCoordinator();
+        clarification.open("set_speed", "amount", "increase speed", "By how much?");
+        List<String> executed = new CopyOnWriteArrayList<>();
+        LlmGateway failIfCalled = new LlmGateway() {
+            @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new AssertionError("a new exact reflex must supersede pending state before the LLM");
+            }
+            @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ThoughtDependencies dependencies = new ThoughtDependencies(
+                failIfCalled, new FakeSpeech(), request -> {
+                    executed.add(request.toolName());
+                    return CompletableFuture.completedFuture(new JsonObject());
+                }, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(), clarification,
+                new IntelActionTypeResolver(id -> IntelActionTypeResolver.IntelActionType.COMMAND));
+        ReflexResolver reflex = new ReflexResolver(
+                () -> List.of(new ReflexResolver.CommandPhrase("open_nav", "navigation", true)),
+                invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependencies, UrgencyPolicy.normalOnly(), reflex);
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("navigation");
+        waitUntil(() -> !executed.isEmpty());
+
+        assertTrue(clarification.peek().isEmpty(), "the new command owns the reply and abandons old pending state");
+        assertEquals(List.of("open_nav"), executed);
+        dispatcher.stop();
     }
 
     @Test

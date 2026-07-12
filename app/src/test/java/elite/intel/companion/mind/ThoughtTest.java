@@ -2,12 +2,15 @@ package elite.intel.companion.mind;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.clarify.ClarificationCoordinator;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
@@ -30,6 +33,7 @@ import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.ClassifyTurnFunction;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
@@ -63,17 +67,18 @@ class ThoughtTest {
     private final CompanionState state = new CompanionState();
     private DangerousActionPolicy dangerousPolicy = invocation -> false;
     private final ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
+    private final ClarificationCoordinator clarificationCoordinator = new ClarificationCoordinator();
 
     private ThoughtDependencies dependencies() {
         return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator);
+                reducer, state, dangerousPolicy, coordinator, clarificationCoordinator);
     }
 
     private ThoughtDependencies dependencies(IntelActionTypeResolver resolver) {
         return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator, resolver);
+                reducer, state, dangerousPolicy, coordinator, clarificationCoordinator, resolver);
     }
 
     @Test
@@ -94,6 +99,108 @@ class ThoughtTest {
         assertEquals(MemorySource.COMPANION, spoken.source(), "the companion's reply is recorded as COMPANION");
         assertEquals("on it", spoken.content(), "the spoken words are recorded, not a {status:spoken} ack");
         assertEquals(ConversationTopic.SOCIAL, spoken.topic());
+    }
+
+    @Test
+    void requestInputOpensContinuationAndReoffersItsTargetOnTheReplyTurn() {
+        LlmToolDefinition setSpeed = new LlmToolDefinition(
+                "set_speed", "Increase speed by an amount", "increase speed",
+                List.of(new ActionParameterSpec(
+                        "amount", "number", true, "Relative speed increase", List.of("10"), null)));
+        reducer.tools = List.of(setSpeed);
+        reducer.catalog = List.of(setSpeed);
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "set_speed".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        JsonObject requestArgs = new JsonObject();
+        requestArgs.addProperty(RequestInputFunction.PARAM_ACTION_ID, "set_speed");
+        requestArgs.addProperty(RequestInputFunction.PARAM_PARAMETER_NAME, "amount");
+        requestArgs.addProperty(RequestInputFunction.PARAM_QUESTION, "By how much?");
+        llm.scripted.add(ok(call(RequestInputFunction.ID, requestArgs)));
+
+        Thought.commander(Urgency.NORMAL, "increase speed", dependencies(types)).run();
+
+        PendingClarification pending = clarificationCoordinator.peek().orElseThrow();
+        assertEquals("increase speed", pending.originalInput());
+        assertEquals(List.of("By how much?"), speech.requests.stream().map(SpeechRequest::text).toList());
+        assertTrue(execution.toolNames().isEmpty(), "request_input must not enter the execution gateway");
+        assertTrue(llm.requests.get(0).tools().stream()
+                        .anyMatch(tool -> RequestInputFunction.ID.equals(tool.name())),
+                "a required game parameter makes request_input available");
+
+        PendingClarification claimed = clarificationCoordinator.claim().orElseThrow();
+        reducer.tools = List.of(); // "by 10" has no standalone reducer match
+        JsonObject speedArgs = new JsonObject();
+        speedArgs.addProperty("amount", 10);
+        llm.scripted.add(ok(call("set_speed", speedArgs)));
+        ThoughtContext replyContext = ThoughtContext.commander(Urgency.NORMAL, "by 10", "by 10")
+                .withPendingClarification(claimed);
+
+        Thought.commander(replyContext, dependencies(types)).run();
+
+        LlmRequest continuationRequest = llm.requests.get(1);
+        assertTrue(continuationRequest.tools().stream().anyMatch(tool -> "set_speed".equals(tool.name())),
+                "the pending target is re-offered even when the new phrase does not reduce to it");
+        String continuationInput = continuationRequest.messages().get(
+                continuationRequest.messages().size() - 1).content();
+        assertTrue(continuationInput.contains("<pending_clarification>"));
+        assertTrue(continuationInput.contains("<original_command>increase speed</original_command>"));
+        assertEquals(List.of("set_speed"), execution.toolNames());
+        assertEquals(10, execution.requests.get(0).arguments().get("amount").getAsInt());
+        assertEquals("increase speed\nby 10", execution.requests.get(0).commanderInput(),
+                "handler fallback parsing sees the originating order and the terse answer");
+        assertTrue(clarificationCoordinator.peek().isEmpty());
+    }
+
+    @Test
+    void parameterlessGameToolDoesNotOfferRequestInput() {
+        LlmToolDefinition openMap = new LlmToolDefinition(
+                "open_map", "Open the system map", "open map", List.of());
+        reducer.tools = List.of(openMap);
+        reducer.catalog = List.of(openMap);
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "open_map".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+        llm.scripted.add(ok(call("open_map", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "open map", dependencies(types)).run();
+
+        List<LlmToolDefinition> offered = llm.requests.get(0).tools();
+        assertTrue(offered.stream().anyMatch(tool -> "open_map".equals(tool.name())));
+        assertFalse(offered.stream().anyMatch(tool -> RequestInputFunction.ID.equals(tool.name())),
+                "a parameterless game tool leaves nothing for request_input to ask");
+        assertEquals(List.of("open_map"), execution.toolNames());
+        assertTrue(clarificationCoordinator.peek().isEmpty());
+    }
+
+    @Test
+    void aDifferentActionOnTheReplyTurnSupersedesPendingContext() {
+        LlmToolDefinition setSpeed = new LlmToolDefinition(
+                "set_speed", "Increase speed by an amount", "increase speed",
+                List.of(new ActionParameterSpec(
+                        "amount", "number", true, "Relative speed increase", List.of("10"), null)));
+        LlmToolDefinition openMap = new LlmToolDefinition(
+                "open_map", "Open the system map", "open map", List.of());
+        reducer.tools = List.of(openMap);
+        reducer.catalog = List.of(setSpeed, openMap);
+        PendingClarification claimed = clarificationCoordinator
+                .open("set_speed", "amount", "increase speed", "By how much?");
+        assertSame(claimed, clarificationCoordinator.claim().orElseThrow());
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id -> switch (id) {
+            case "set_speed", "open_map" -> IntelActionType.COMMAND;
+            default -> IntelActionType.SYSTEM;
+        });
+        llm.scripted.add(ok(call("open_map", new JsonObject())));
+        ThoughtContext replyContext = ThoughtContext.commander(Urgency.NORMAL, "open map", "open map")
+                .withPendingClarification(claimed);
+
+        Thought.commander(replyContext, dependencies(types)).run();
+
+        assertEquals(List.of("open_map"), execution.toolNames());
+        assertEquals("open map", execution.requests.get(0).commanderInput(),
+                "a new action must not inherit the abandoned speed order");
+        assertTrue(llm.requests.get(0).tools().stream().anyMatch(tool -> "set_speed".equals(tool.name())),
+                "the model can compare the pending target with normal candidates before superseding it");
+        assertTrue(clarificationCoordinator.peek().isEmpty());
     }
 
     @Test
@@ -710,6 +817,7 @@ class ThoughtTest {
         SemanticQuery lastSemanticQuery;
         GameStateSnapshot lastGameStateSnapshot;
         List<LlmToolDefinition> tools = List.of();
+        List<LlmToolDefinition> catalog = List.of();
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
             lastCategories = allowedCategories;
@@ -727,6 +835,12 @@ class ThoughtTest {
                                                               GameStateSnapshot gameStateSnapshot) {
             lastGameStateSnapshot = gameStateSnapshot;
             return selectTools(allowedCategories, currentInput, semanticQuery);
+        }
+
+        @Override public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories,
+                                                                  String actionId,
+                                                                  GameStateSnapshot gameStateSnapshot) {
+            return catalog.stream().filter(tool -> actionId.equals(tool.name())).findFirst();
         }
     }
 }

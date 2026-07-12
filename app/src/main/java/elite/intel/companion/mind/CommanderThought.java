@@ -1,8 +1,10 @@
 package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
@@ -23,6 +25,7 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionResultFields;
 import elite.intel.util.json.JsonUtils;
@@ -36,6 +39,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -190,8 +194,8 @@ public final class CommanderThought extends Thought {
     // Game-tool categories are the access policy's default for COMMANDER (QUERY/ACTION/MACRO); inherited.
 
     @Override
-    protected List<LlmToolDefinition> systemTools() {
-        return dependencies.systemFunctionProvider().systemFunctions(source());
+    protected List<LlmToolDefinition> systemTools(List<LlmToolDefinition> gameTools) {
+        return dependencies.systemFunctionProvider().systemFunctions(source(), gameTools);
     }
 
     /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
@@ -285,6 +289,10 @@ public final class CommanderThought extends Thought {
         boolean suppressSpeak = shouldSuppressSpeak(invocations);
         List<CompletableFuture<Void>> detached = new ArrayList<>();
         for (LlmToolInvocation inv : invocations) {
+            if (RequestInputFunction.ID.equals(inv.name())) {
+                handleInputRequest(inv, tools);
+                continue;
+            }
             if (SpeakFunction.ID.equals(inv.name())) {
                 if (suppressSpeak) {
                     // A game action already owns the spoken outcome this turn, so the LLM's speak fires no TTS -
@@ -317,6 +325,53 @@ public final class CommanderThought extends Thought {
         return detached.isEmpty()
                 ? CompletableFuture.completedFuture(null)
                 : CompletableFuture.allOf(detached.toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Validates and opens one cross-turn clarification without keeping this thought alive. Only a game tool from
+     * this exact prompt snapshot and one of its required parameters can become pending execution context.
+     */
+    private void handleInputRequest(LlmToolInvocation inv, List<LlmToolDefinition> tools) {
+        String actionId = JsonUtils.getAsStringOrEmpty(inv.arguments(), RequestInputFunction.PARAM_ACTION_ID);
+        String parameterName = JsonUtils.getAsStringOrEmpty(
+                inv.arguments(), RequestInputFunction.PARAM_PARAMETER_NAME);
+        String question = JsonUtils.getAsStringOrEmpty(inv.arguments(), RequestInputFunction.PARAM_QUESTION);
+
+        Optional<LlmToolDefinition> target = tools.stream()
+                .filter(tool -> actionId.equals(tool.name()))
+                .filter(tool -> dependencies.actionTypeResolver().resolve(tool.name()).isGameAction())
+                .findFirst();
+        Optional<ActionParameterSpec> requestedParameter = target.stream()
+                .flatMap(tool -> tool.parameters().stream())
+                .filter(parameter -> parameterName.equals(parameter.getName()))
+                .filter(ActionParameterSpec::isRequired)
+                .findFirst();
+
+        if (target.isEmpty() || requestedParameter.isEmpty() || question.isBlank()) {
+            CompanionDiagnostics.debug(trace(), "clarify",
+                    "rejected request_input target=" + actionId + " parameter=" + parameterName);
+            String failure = executionFailurePhrase();
+            voice(failure, false);
+            recordCompanionSpeech(failure);
+            return;
+        }
+
+        PendingClarification parent = context.pendingClarification();
+        String originalInput = parent != null && actionId.equals(parent.actionId())
+                ? parent.originalInput()
+                : context.memoryInput();
+        if (!isRuntimeActive()) {
+            return;
+        }
+        CompanionDiagnostics.info(trace(), "settle",
+                "request_input " + actionId + "." + parameterName
+                        + " \"" + CompanionDiagnostics.truncate(question) + "\"");
+        voice(question, false);
+        if (!isRuntimeActive()) {
+            return;
+        }
+        dependencies.clarificationCoordinator().open(actionId, parameterName, originalInput, question);
+        recordCompanionSpeech(question);
     }
 
     /** Dispatches one game handler and owns its late result without retaining the commander cognitive worker. */
@@ -373,10 +428,13 @@ public final class CommanderThought extends Thought {
         });
     }
 
-    /** Whether the round emitted a non-blank {@code speak} - i.e. the companion actually said something this turn. */
+    /** Whether the round emitted a non-blank direct reply ({@code speak} or an input-request question). */
     private static boolean spokeToCommander(List<LlmToolInvocation> invocations) {
         return invocations.stream()
-                .anyMatch(inv -> SpeakFunction.ID.equals(inv.name()) && !spokenTextOf(inv).isBlank());
+                .anyMatch(inv -> (SpeakFunction.ID.equals(inv.name()) && !spokenTextOf(inv).isBlank())
+                        || (RequestInputFunction.ID.equals(inv.name())
+                        && !JsonUtils.getAsStringOrEmpty(
+                        inv.arguments(), RequestInputFunction.PARAM_QUESTION).isBlank()));
     }
 
     /**

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -135,6 +136,19 @@ public final class SemanticActionReducer implements CompanionActionReducer {
             DiagnosticsLog.write("DIAG reducer-candidates=" + CompanionDiagnostics.names(selected));
         }
         return selected;
+    }
+
+    /** Rehydrates a clarification target directly from the current visible catalog, without embedding it again. */
+    @Override
+    public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories, String actionId,
+                                                    GameStateSnapshot gameStateSnapshot) {
+        if (actionId == null || actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return candidateSource.apply(allowedCategories, gameStateSnapshot).stream()
+                .filter(candidate -> actionId.equals(candidate.id()))
+                .map(GameToolCandidates.Candidate::tool)
+                .findFirst();
     }
 
     private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput,
