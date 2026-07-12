@@ -2,11 +2,13 @@ package elite.intel.ui.theme;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.font.GlyphVector;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
 /**
  * HUD icon and glyph primitives: image loading/tinting helpers, flat vector glyph painters
- * (arrows, info, close, vertical ellipsis, warning, checkbox marker) and the {@link Icon}
+ * (arrows, info, close, vertical ellipsis, warning, checkbox marker, text caret) and the {@link Icon}
  * factories that wrap them. Split out of {@link AppTheme} so the painting code lives apart
  * from palette tokens and component factories.
  */
@@ -23,6 +25,29 @@ public final class HudGlyphs {
     @FunctionalInterface
     public interface Painter {
         void paint(Graphics2D g2, int x, int y, int w, int h, Color color);
+    }
+
+    /** Visual anchor used to align the prompt caret with the conversation's chevron marker. */
+    private static final String CARET_ALIGNMENT_GLYPH = "»";
+
+    /**
+     * Draws the blinking typewriter caret centered on the visual bounds of the conversation prompt marker.
+     * This avoids treating the font ascent as the marker's visible height, which would raise the caret above it.
+     *
+     * @param g2        graphics context (not disposed by this method)
+     * @param x         caret left edge
+     * @param baselineY text baseline shared with the prompt or message line
+     * @param fm        metrics of the font currently used to render the line
+     * @param color     caret colour
+     */
+    public static void paintHudTextCaret(Graphics2D g2, int x, int baselineY, FontMetrics fm, Color color) {
+        Font font = fm.getFont();
+        GlyphVector glyph = font.createGlyphVector(g2.getFontRenderContext(), CARET_ALIGNMENT_GLYPH);
+        Rectangle2D visualBounds = glyph.getVisualBounds();
+        int caretHeight = Math.max(1, fm.getAscent() - fm.getDescent());
+        int caretY = baselineY + (int) Math.round(visualBounds.getCenterY() - caretHeight / 2.0);
+        g2.setColor(color);
+        g2.fillRect(x, caretY, HudPalette.HUD_CARET_WIDTH, caretHeight);
     }
 
     /**

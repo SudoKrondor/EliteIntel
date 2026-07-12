@@ -1,6 +1,7 @@
 package elite.intel.ui.widget;
 
 import elite.intel.ui.theme.HudPalette;
+import elite.intel.ui.theme.HudGlyphs;
 
 import javax.swing.*;
 import java.awt.*;
@@ -371,7 +372,7 @@ public class HudLogArea extends JPanel {
                     int cx = textX + fm.stringWidth(lastLine);
                     int cy = y + (lines.size() - 1) * fm.getHeight();
                     if ((System.currentTimeMillis() / 500) % 2 == 0) {
-                        drawCaret(g2, cx + 1, cy + fm.getAscent(), fm, style.textColor);
+                        HudGlyphs.paintHudTextCaret(g2, cx + 1, cy + fm.getAscent(), fm, style.textColor);
                     }
                 }
 
@@ -517,11 +518,16 @@ public class HudLogArea extends JPanel {
                 g2.drawString(activeLines.get(li), promptTextX, blockTop + li * m.lineH() + fm.getAscent());
             }
             int cx = promptTextX + fm.stringWidth(activeLines.get(n - 1));
-            if ((System.currentTimeMillis() / 500) % 2 == 0) drawCaret(g2, cx + 1, inputBaseline, fm, style.textColor);
+            if ((System.currentTimeMillis() / 500) % 2 == 0) {
+                HudGlyphs.paintHudTextCaret(g2, cx + 1, inputBaseline, fm, style.textColor);
+            }
         } else {
             g2.setColor(style.markerColor);
             g2.drawString(style.marker, PAD_X, inputBaseline);
-            if (caretVisible) drawCaret(g2, promptTextX, inputBaseline, fm, HudPalette.HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT);
+            if (caretVisible) {
+                HudGlyphs.paintHudTextCaret(g2, promptTextX, inputBaseline, fm,
+                        HudPalette.HUD_COLOR_ROLE_USER_INPUT_LOG_TEXT);
+            }
         }
     }
 
@@ -571,15 +577,6 @@ public class HudLogArea extends JPanel {
     /** Returns {@code base} with the given alpha, so rails/highlights derive from a canon role, not a literal hue. */
     private static Color withAlpha(Color base, int alpha) {
         return new Color(base.getRed(), base.getGreen(), base.getBlue(), alpha);
-    }
-
-    /**
-     * Draws the thin 2-px vertical caret shared by idle and typewriter cursor states.
-     * Vertically aligned to the given baseline using the same +3 nudge as the idle prompt.
-     */
-    private void drawCaret(Graphics2D g2, int x, int baselineY, FontMetrics fm, Color color) {
-        g2.setColor(color);
-        g2.fillRect(x, baselineY - fm.getAscent() + 3, 2, fm.getAscent() - 3);
     }
 
     private static List<String> wrapText(String text, FontMetrics fm, int maxW) {

@@ -120,6 +120,8 @@ public final class HudPalette {
     public static final int HUD_BORDER_THICKNESS = 1;
     /** Thickness for high-visibility accent borders - modal dialogs and similar prominent frames. */
     public static final int HUD_BORDER_THICKNESS_ACCENT = 2;
+    /** Width of the blinking typewriter caret shared by the conversation view and stream overlay. */
+    public static final int HUD_CARET_WIDTH = HUD_BORDER_THICKNESS_ACCENT;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
