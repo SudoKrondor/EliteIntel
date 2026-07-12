@@ -39,8 +39,8 @@ public final class MergedFactCandidates {
     }
 
     /**
-     * The same per-turn fact merge, preserving a semantic query prepared during intake for the memory core only.
-     * Plugin fact sources continue to receive the domain-only {@link MemoryFactContext}.
+     * The same per-turn fact merge, preserving a semantic query prepared during intake for durable-memory recall.
+     * Each ambient source owns its deterministic relevance check; no source consumes the prepared embedding.
      */
     public static List<Fact> forInput(MemoryGateway memory, MemoryFactContext context, SemanticQuery semanticQuery) {
         return forInput(memory, context, MemoryFactGatherer.gather(context), semanticQuery);

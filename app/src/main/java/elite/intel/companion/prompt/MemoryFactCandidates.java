@@ -23,8 +23,10 @@ import java.util.List;
  *   <li>drop {@link MemorySource#COMPANION} - the companion's own words are never a durable fact (recorded at
  *       LOW; see {@code recordCompanionSpeech}), and its acks/echoes/hedges are exactly the noise to exclude;</li>
  *   <li>keep {@link MemorySource#EVENT} facts (curated at capture, and already relevance-gated by recall);</li>
- *   <li>keep a {@link MemorySource#COMMANDER} statement at {@link MemoryImportance#NORMAL} or above - a stated
- *       fact (name, codeword, plan, target, agreement); only LOW idle banter drops out.</li>
+ *   <li>keep a {@link MemorySource#COMMANDER} statement only when it is {@link MemoryImportance#HIGH} with
+ *       host-grounded fact text (canonical, or the raw HIGH input when the model copied another turn), or
+ *       {@link MemoryImportance#MAX} (an explicit remember order, kept verbatim). Routine
+ *       NORMAL commands/exchanges and LOW chatter/questions remain timeline context, never trusted facts.</li>
  * </ul>
  * Recall already applies its own relevance floor, so every returned entry is a real match; this only removes
  * noise and caps the count. Empty result -&gt; no block is added to the prompt.
@@ -59,8 +61,7 @@ public final class MemoryFactCandidates {
         List<Fact> facts = new ArrayList<>();
         for (MemoryEntry entry : memory.recallCandidates(input, CANDIDATE_POOL, semanticQuery)) {
             if (isTier2(entry)) {
-                // The clean canonical restatement when present, else the verbatim content, tagged by provenance.
-                facts.add(new Fact(entry.embeddingText(), sourceLabel(entry.source())));
+                facts.add(new Fact(candidateText(entry), sourceLabel(entry.source())));
                 if (facts.size() >= MAX_CANDIDATES) {
                     break;
                 }
@@ -74,6 +75,13 @@ public final class MemoryFactCandidates {
         return source == MemorySource.EVENT ? "event" : "commander";
     }
 
+    /** HIGH uses its host-grounded fact text; MAX is an explicit verbatim-memory order. */
+    private static String candidateText(MemoryEntry entry) {
+        return entry.source() == MemorySource.COMMANDER && entry.importance() == MemoryImportance.MAX
+                ? entry.content()
+                : entry.embeddingText();
+    }
+
     /** Whether an entry is a durable, safe answer fact (see class doc). */
     private static boolean isTier2(MemoryEntry entry) {
         return switch (entry.source()) {
@@ -81,9 +89,11 @@ public final class MemoryFactCandidates {
             case TOOL_RESULT, SYSTEM -> false;
             // Curated at capture and already relevance-gated by recall.
             case EVENT -> true;
-            // The commander's own words: a stated fact even at NORMAL (docking-code callsign, field name, plan);
-            // LOW idle banter and questions (recorded at LOW so the dialogue history alternates) both drop out.
-            case COMMANDER -> entry.importance().compareTo(MemoryImportance.NORMAL) >= 0;
+            // HIGH is trusted only with the model's clean fact restatement; MAX is the explicit verbatim path.
+            // NORMAL ordinary commands/exchanges and LOW chatter/questions stay only in dialogue history.
+            case COMMANDER -> entry.importance() == MemoryImportance.MAX
+                    || (entry.importance() == MemoryImportance.HIGH
+                    && entry.canonicalFact() != null && !entry.canonicalFact().isBlank());
             // The companion's own lines are never a durable fact (recorded at LOW; see recordCompanionSpeech) -
             // its acks/echoes/hedges are exactly the self-poisoning noise this filter exists to exclude.
             case COMPANION -> false;

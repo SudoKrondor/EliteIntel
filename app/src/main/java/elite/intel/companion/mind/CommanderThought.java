@@ -3,6 +3,7 @@ package elite.intel.companion.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
@@ -36,10 +37,12 @@ import elite.intel.util.StringUtls;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -81,7 +84,7 @@ public final class CommanderThought extends Thought {
     /** Whether classify_turn flagged this turn as a question; a question is still recorded, but stamped LOW so it is not a fact candidate. */
     private boolean turnIsQuestion;
 
-    /** The clean canonical fact the consciousness stated for this turn via classify_turn (empty when none). */
+    /** Host-grounded HIGH fact text for this turn; empty for every other importance, questions, and game actions. */
     private String turnCanonicalFact = "";
 
     /** Topic frozen for this turn before slow execution detaches from the ordered commander cognitive lane. */
@@ -147,8 +150,9 @@ public final class CommanderThought extends Thought {
             // turn included: its imperative ("optimal speed", "request docking") is remembered as the user turn,
             // paired with the companion's spoken reply (the handler outcome, or the immediate acknowledgement when
             // the command returns none). A question is stamped LOW in applyClassification and filtered out of
-            // fact-recall candidates; a statement keeps its rated importance. (A command's call echo is still
-            // dropped - see gameToolCallId - so the pair replays as plain dialogue, not a tool-call.)
+            // fact-recall candidates; routine statements/commands remain timeline-only unless classify_turn marks
+            // a clean HIGH fact (MAX stays verbatim). A command's call echo is still dropped - see gameToolCallId -
+            // so the pair replays as plain dialogue, not a tool-call.
             recordCurrentInput();
             // Mark the input handled either way - filed, or deliberately skipped for a command turn - so an
             // interrupt/error does not fall back to re-filing it as unresolved input.
@@ -213,12 +217,14 @@ public final class CommanderThought extends Thought {
 
     /**
      * COMMANDER pre-execution step (§2.5/§1.5.17): if the response calls {@code classify_turn}, apply it now,
-     * before the input is filed - read its importance into the turn's importance (so the recorded input and
-     * outcome are stamped with it), read its {@code is_question} flag (a question is still recorded, but forced
-     * to LOW so it never becomes a fact candidate), and run its handle, which moves the global topic (so the
-     * input is tagged with the new topic). Returns the pre-executed result keyed by its invocation so the main
-     * loop does not run it twice. An absent or unknown importance leaves the turn at {@code NORMAL}; an absent
-     * flag leaves it a non-question; an absent {@code classify_turn} leaves the topic unchanged.
+     * before the input is filed - read its importance into the turn's importance (so the recorded input and outcome
+     * are stamped with it), force questions to LOW, and retain {@code canonical_fact} only for a non-question HIGH
+     * fact with no game action. The host also verifies that the canonical text shares a concrete token with the
+     * current input; an ungrounded model copy is replaced by the verbatim current input. This prevents a canonical
+     * string on a routine command, question, MAX order, or unrelated prior turn from becoming trusted memory. The
+     * handle then moves the global topic. Returns the pre-executed
+     * result keyed by invocation so the main loop does not run it twice. Unknown importance stays NORMAL; absent
+     * {@code classify_turn} leaves the topic unchanged.
      */
     private Map<LlmToolInvocation, JsonObject> applyClassification(List<LlmToolInvocation> invocations) {
         Map<LlmToolInvocation, JsonObject> preExecuted = new IdentityHashMap<>();
@@ -236,8 +242,9 @@ public final class CommanderThought extends Thought {
                     // fact-recall candidate (the MemoryMergedFactCandidates filter drops LOW commander lines).
                     turnImportance = MemoryImportance.LOW;
                 }
-                turnCanonicalFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
+                String classifiedFact = cleanCanonicalFact(JsonUtils.getAsStringOrEmpty(
                         inv.arguments(), ClassifyTurnFunction.PARAM_CANONICAL_FACT));
+                turnCanonicalFact = validatedCanonicalFact(classifiedFact, invocations);
                 JsonObject classified = execute(inv); // runs classify_turn's handle before this turn is filed
                 preExecuted.put(inv, classified);
                 ConversationTopic selectedTopic = ConversationTopic.fromSelectableId(
@@ -256,6 +263,45 @@ public final class CommanderThought extends Thought {
             }
         }
         return preExecuted;
+    }
+
+    /** Applies the host's durable-fact contract to the model's proposed canonical text. */
+    private String validatedCanonicalFact(String classifiedFact, List<LlmToolInvocation> invocations) {
+        if (turnIsQuestion || turnImportance != MemoryImportance.HIGH || classifiedFact.isBlank()) {
+            return "";
+        }
+        boolean handlesGameIntent = invocations.stream().anyMatch(inv -> RequestInputFunction.ID.equals(inv.name())
+                || dependencies.actionTypeResolver().resolve(inv.name()).isGameAction());
+        if (handlesGameIntent) {
+            return "";
+        }
+        String currentInput = context.memoryInput() == null ? "" : context.memoryInput().strip();
+        if (currentInput.isBlank()) {
+            return "";
+        }
+        // A small model may copy an earlier fact while correctly marking this turn HIGH. The raw commander input is
+        // the safe ground truth when that proposed restatement contains none of this turn's concrete tokens.
+        return canonicalFactGroundedInInput(classifiedFact, currentInput) ? classifiedFact : currentInput;
+    }
+
+    /** Exact meaningful-token overlap: fuzzy "код"/"кодовое" must not validate a copied docking code. */
+    private static boolean canonicalFactGroundedInInput(String canonicalFact, String currentInput) {
+        Set<String> inputTokens = factTokens(currentInput);
+        return factTokens(canonicalFact).stream().anyMatch(inputTokens::contains);
+    }
+
+    private static Set<String> factTokens(String text) {
+        if (text == null || text.isBlank()) {
+            return Set.of();
+        }
+        Set<String> stopWords = InputNormalizerLocalizations.stopWords();
+        Set<String> tokens = new LinkedHashSet<>();
+        for (String token : text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+")) {
+            if (token.length() >= 2 && !stopWords.contains(token)) {
+                tokens.add(token);
+            }
+        }
+        return Set.copyOf(tokens);
     }
 
     /**

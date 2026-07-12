@@ -67,6 +67,42 @@ class MemoryFactGathererTest {
         assertEquals(List.of(new Fact("searched", "q")), MemoryFactGatherer.gatherForSearch(ctx(), List.of(searchable)));
     }
 
+    @Test
+    void gatherRelevantDelegatesTheDecisionToEachSource() {
+        MemoryFactSource relevant = new MemoryFactSource() {
+            @Override public String id() { return "relevant"; }
+            @Override public boolean isRelevant(MemoryFactContext context) { return true; }
+            @Override public List<String> factsFor(MemoryFactContext context) { return List.of("included"); }
+        };
+        MemoryFactSource irrelevant = new MemoryFactSource() {
+            @Override public String id() { return "irrelevant"; }
+            @Override public boolean isRelevant(MemoryFactContext context) { return false; }
+            @Override public List<String> factsFor(MemoryFactContext context) {
+                throw new AssertionError("factsFor must not run for an irrelevant source");
+            }
+        };
+
+        assertEquals(List.of(new Fact("included", "relevant")),
+                MemoryFactGatherer.gatherRelevant(ctx(), List.of(relevant, irrelevant)));
+    }
+
+    @Test
+    void gatherRelevantIsolatesAThrowingRelevanceCheck() {
+        MemoryFactSource broken = new MemoryFactSource() {
+            @Override public String id() { return "broken"; }
+            @Override public boolean isRelevant(MemoryFactContext context) { throw new IllegalStateException("boom"); }
+            @Override public List<String> factsFor(MemoryFactContext context) { return List.of("must not appear"); }
+        };
+        MemoryFactSource healthy = new MemoryFactSource() {
+            @Override public String id() { return "healthy"; }
+            @Override public boolean isRelevant(MemoryFactContext context) { return true; }
+            @Override public List<String> factsFor(MemoryFactContext context) { return List.of("ok"); }
+        };
+
+        assertEquals(List.of(new Fact("ok", "healthy")),
+                MemoryFactGatherer.gatherRelevant(ctx(), List.of(broken, healthy)));
+    }
+
     private static MemoryFactContext ctx() {
         return MemoryFactContext.forQuery("q");
     }

@@ -417,7 +417,8 @@ class ThoughtTest {
     @Test
     void classifyTurnAppliedBeforeInputIsRecorded() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high"))));
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("navigation", "high", false, "routes are the subject"))));
 
         Thought.commander(Urgency.NORMAL, "let's talk routes", dependencies()).run();
 
@@ -426,14 +427,70 @@ class ThoughtTest {
         // the chosen importance.
         assertEquals(ConversationTopic.NAVIGATION, memory.writes.get(0).topic());
         assertEquals(MemoryImportance.HIGH, memory.writes.get(0).importance());
+        assertEquals("routes are the subject", memory.writes.get(0).canonicalFact());
         assertEquals(1, execution.toolNames().stream().filter(ClassifyTurnFunction.ID::equals).count(),
                 "classify_turn runs once (pre-execution result reused, not run twice)");
     }
 
     @Test
+    void routineAndMaxTurnsCannotStoreModelSuppliedCanonicalFacts() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("combat", "normal", false, "target the drives"))));
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("navigation", "max", false, "docking code is sierra nine"))));
+
+        Thought.commander(Urgency.NORMAL, "target the drives", dependencies()).run();
+        Thought.commander(Urgency.NORMAL, "remember verbatim: docking code sierra nine", dependencies()).run();
+
+        List<MemoryEntry> inputs = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .toList();
+        assertEquals(2, inputs.size());
+        assertNull(inputs.get(0).canonicalFact(), "NORMAL commands stay timeline-only");
+        assertEquals(MemoryImportance.NORMAL, inputs.get(0).importance());
+        assertNull(inputs.get(1).canonicalFact(), "MAX keeps the original input verbatim");
+        assertEquals(MemoryImportance.MAX, inputs.get(1).importance());
+        assertEquals("remember verbatim: docking code sierra nine", inputs.get(1).content());
+    }
+
+    @Test
+    void highTurnFallsBackToCurrentInputWhenCanonicalFactWasCopiedFromAnotherTurn() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("combat", "high", false, "docking code is sierra nine"))));
+
+        String current = "if pirates corner us, retreat codeword is granite";
+        Thought.commander(Urgency.NORMAL, current, dependencies()).run();
+
+        MemoryEntry input = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .findFirst().orElseThrow();
+        assertEquals(MemoryImportance.HIGH, input.importance());
+        assertEquals(current, input.canonicalFact(), "ungrounded prior-turn text is replaced by current ground truth");
+    }
+
+    @Test
+    void gameActionTurnCannotBecomeAHighFact() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID, classifyArgs("combat", "high", false, "target the drives")),
+                call("close_panel", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "target the drives", dependencies(actionTypes())).run();
+
+        MemoryEntry input = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .findFirst().orElseThrow();
+        assertEquals(MemoryImportance.HIGH, input.importance(), "classification still stamps timeline importance");
+        assertNull(input.canonicalFact(), "a called game action never becomes trusted fact context");
+    }
+
+    @Test
     void questionTurnInputIsFiledAtLowSoItIsNotAFactCandidate() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                        classifyArgs("navigation", "normal", true, "fuel is forty percent")),
                 call(SpeakFunction.ID, text("forty percent"))));
 
         Thought.commander(Urgency.NORMAL, "how much fuel is left", dependencies()).run();
@@ -446,6 +503,7 @@ class ThoughtTest {
         assertEquals(MemorySource.COMMANDER, input.source());
         assertEquals("how much fuel is left", input.content());
         assertEquals(MemoryImportance.LOW, input.importance(), "a question is forced LOW so it is not a fact candidate");
+        assertNull(input.canonicalFact(), "questions cannot store model-supplied canonical facts");
         MemoryEntry spoken = memory.writes.get(1);
         assertEquals(MemorySource.COMPANION, spoken.source());
         assertEquals("forty percent", spoken.content());
@@ -725,10 +783,15 @@ class ThoughtTest {
     }
 
     private static JsonObject classifyArgs(String topic, String importance, boolean isQuestion) {
+        return classifyArgs(topic, importance, isQuestion, "");
+    }
+
+    private static JsonObject classifyArgs(String topic, String importance, boolean isQuestion, String canonicalFact) {
         JsonObject o = new JsonObject();
         o.addProperty("topic", topic);
         o.addProperty("importance", importance);
         o.addProperty("is_question", isQuestion);
+        o.addProperty("canonical_fact", canonicalFact);
         return o;
     }
 
