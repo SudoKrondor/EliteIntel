@@ -1,7 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ProspectedAsteroidEvent;
 import elite.intel.session.PlayerSession;
@@ -36,8 +37,8 @@ public class ProspectorSubscriber {
                 }
             }
 
-            if (foundTargetMaterial) {
-                GameEventBus.publish(new MiningAnnouncementEvent(sb.toString()));
+            if (foundTargetMaterial && playerSession.isMiningAnnouncementOn()) {
+                CompanionRuntime.narrator().announce("mining", sb.toString(), "MINING", false);
             }
         });
     }

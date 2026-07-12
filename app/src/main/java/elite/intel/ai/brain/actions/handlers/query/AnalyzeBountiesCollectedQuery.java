@@ -12,7 +12,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeBountiesCollectedQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_total_bounties";
 
-    @Override public String llmDescription() { return "Report the total bounties the commander has collected."; }
+    @Override
+    public String llmDescription() {
+        return "Report the total bounty vouchers/credits the commander has collected this session.";
+    }
 
 
     @Override public String id() { return ID; }

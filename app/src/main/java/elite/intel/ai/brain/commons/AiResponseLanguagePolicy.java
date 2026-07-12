@@ -15,26 +15,24 @@ public final class AiResponseLanguagePolicy {
      * Resolves the effective AI response language based on the system session configuration
      * and available Text-to-Speech (TTS) settings.
      * <p>
-     * KOKORO Supports English, French, Spanish, Portuguese, and Italian.
+     * Google TTS voices every language we ship, so it imposes nothing. The local Kokoro TTS constrains
+     * only Cyrillic: its phonemizer cannot read the script at all, so RU/UK have to be answered in
+     * English or they would not be spoken. Every other language is Latin-script and Kokoro speaks it,
+     * using its nearest voice where it has no native one — German is voiced with an accent, which beats
+     * answering a German commander in English.
      *
      * @param systemSession the session containing system language and TTS configuration details
-     * @return the resolved language for AI responses; it will be the session's language if Google TTS
-     * is configured and usable, or defaults to English unless the session's language is French, Spanish,
-     * Portuguese, or Italian
+     * @return the session's language, except when the local TTS would have to voice Cyrillic, in which
+     * case English
      */
     public static Language resolveEffectiveAiResponseLanguage(SystemSession systemSession) {
-        boolean isGoogle = isGoogleTtsConfiguredAndUsable(systemSession);
-
-        if (isGoogle) {
-            return systemSession.getLanguage();
-        }
-
         Language sessionLanguage = systemSession.getLanguage();
-        if (sessionLanguage == Language.FR || sessionLanguage == Language.ES || sessionLanguage == Language.PT || sessionLanguage == Language.IT) {
+
+        if (isGoogleTtsConfiguredAndUsable(systemSession)) {
             return sessionLanguage;
         }
 
-        return Language.EN;
+        return sessionLanguage.isCyrillicScript() ? Language.EN : sessionLanguage;
     }
 
     public static boolean isGoogleTtsConfiguredAndUsable(SystemSession systemSession) {

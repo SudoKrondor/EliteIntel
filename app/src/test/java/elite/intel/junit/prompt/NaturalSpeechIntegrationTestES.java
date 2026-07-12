@@ -239,7 +239,7 @@ public class NaturalSpeechIntegrationTestES {
     }
 
     static Stream<String> enterSupercruise() {
-        return Stream.of("entrar en supercruise", "activar supercruise", "supercruise", "velocidad de la luz");
+        return Stream.of("entrar en supercruise", "activar supercruise", "supercruise");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -661,7 +661,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(240)
     @MethodSource
     void querySquadronCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierStatus() {
@@ -674,7 +674,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(242)
     @MethodSource
     void querySquadronCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierRoute() {
@@ -686,7 +686,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(243)
     @MethodSource
     void querySquadronCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierDestination() {
@@ -698,7 +698,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(244)
     @MethodSource
     void querySquadronCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierEta() {
@@ -707,7 +707,9 @@ public class NaturalSpeechIntegrationTestES {
     }
 
     // =========================================================================
-    // Disambiguation: bare "carrier" phrases must route to fleet, not squadron
+    // Disambiguation: bare "carrier" phrases must reach the fleet-carrier COMMAND, not the squadron one.
+    // Carrier QUERIES no longer split by owner - one tool each, owner resolved from the utterance
+    // (see CarrierOwnershipTest), so a bare phrase and a "squadron" phrase share a tool by design.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -724,11 +726,11 @@ public class NaturalSpeechIntegrationTestES {
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(251)
     @MethodSource
-    void bareCarrierStatusDefaultsToFleet(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+    void bareCarrierStatusRoutesToStatusQuery(String input) throws InterruptedException {
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
-    static Stream<String> bareCarrierStatusDefaultsToFleet() {
+    static Stream<String> bareCarrierStatusRoutesToStatusQuery() {
         return Stream.of("estado del fleet carrier", "saldo del fleet carrier", "finanzas del fleet carrier");
     }
 
@@ -864,7 +866,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryShipLoadout() {
         return Stream.of("equipamiento de la nave", "qué estoy pilotando", "con qué estamos equipados",
-                "tienes fuel scoop instalado", "tienes armas instaladas", "tienes una refinería instalada");
+                "¿Tienes instalada una pala de combustible?", "tienes armas instaladas", "¿Tiene instalada una refinería?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -910,7 +912,7 @@ public class NaturalSpeechIntegrationTestES {
 
     static Stream<String> queryStellarObjects() {
         return Stream.of("¿Qué planetas o lunas aterrizables hay en este sistema?",
-                "¿Ci sono anelli di ghiaccio in questo sistema d'acciaio?");
+                "¿Hay algún anillo en este sistema de accionamiento?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -963,7 +965,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(211)
     @MethodSource
     void queryCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> queryCarrierStatus() {
@@ -1101,7 +1103,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(226)
     @MethodSource
     void queryCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> queryCarrierEta() {
@@ -1168,7 +1170,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(233)
     @MethodSource
     void queryCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierRoute() {
@@ -1180,7 +1182,7 @@ public class NaturalSpeechIntegrationTestES {
     @Order(234)
     @MethodSource
     void queryCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierDestination() {

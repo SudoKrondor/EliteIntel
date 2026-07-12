@@ -2,13 +2,25 @@ package elite.intel.ui.event;
 
 public class ServicesStateEvent {
 
-    private boolean isRunning;
-
-    public ServicesStateEvent(boolean isRunning) {
-        this.isRunning = isRunning;
+    public enum State {
+        STOPPED,
+        STARTING,
+        RUNNING,
+        STOPPING
     }
 
+    private final State state;
+
+    public ServicesStateEvent(State state) {
+        this.state = state;
+    }
+
+    /** Convenience for the common "are services fully up?" check. */
     public boolean isRunning() {
-        return isRunning;
+        return state == State.RUNNING;
+    }
+
+    public State state() {
+        return state;
     }
 }

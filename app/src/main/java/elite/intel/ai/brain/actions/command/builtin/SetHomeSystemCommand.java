@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
@@ -20,7 +19,10 @@ import elite.intel.util.StringUtls;
 public final class SetHomeSystemCommand implements IntelCommand {
     public static final String ID = "set_home_system";
 
-    @Override public String llmDescription() { return "Set the commander's home system."; }
+    @Override
+    public String llmDescription() {
+        return "Set the commander's current star system as the home system.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -38,18 +40,17 @@ public final class SetHomeSystemCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
         if (coordinates == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.noCoords")));
-            return;
+            return StringUtls.localizedLlm("handler.homeSystem.noCoords");
         }
         LocationDto newHome = locationManager.findPrimaryStar(coordinates.primaryStar());
         if (newHome == null || newHome.getSystemAddress() < 1) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar())));
-            return;
+            return StringUtls.localizedLlm("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar());
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.homeSystem.setting", coordinates.primaryStar())));
+
         playerSession.setHomeSystem(newHome);
+        return StringUtls.localizedLlm("handler.homeSystem.setting", coordinates.primaryStar());
     }
 }

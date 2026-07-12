@@ -1,6 +1,7 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
@@ -24,8 +25,8 @@ import java.util.function.Supplier;
  * Session-only: nothing is persisted to disk.
  * <p>
  * Thread-safety: the public methods are {@code synchronized} because writers arrive from several threads -
- * the EVENT/NARRATION lane workers and the bounded pool of COMMANDER lane workers (several commander
- * thoughts run at once). The internal stores are plain collections, so all access is serialized here; reads
+ * the EVENT worker, ordered COMMANDER cognition, and detached command/query completions. The internal stores
+ * are plain collections, so all access is serialized here; reads
  * return snapshots ({@code List.copyOf}), so a caller iterates outside the lock safely.
  */
 public final class SessionMemoryGateway implements MemoryGateway {
@@ -87,20 +88,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
             oversizedListener.onOversized(entry);
             return;
         }
-        // Stored lower-cased: case carries no recall signal (search lower-cases anyway) and it keeps the
-        // inlined timeline uniform. The meaning-vector is computed here, once, on the lower-cased text so
-        // semantic recall reads it for free. New entries land in short-term first; whatever overflows the
-        // count/token bounds is moved into mid-term topic memory by topic (never duplicated across both levels).
-        MemoryEntry stored = entry;
-        if (entry.content() != null) {
-            // Store both texts lower-cased (case carries no recall signal), then embed the clean candidate text
-            // (MemoryEntry.embeddingText: the canonical fact when present, else the verbatim content).
-            String lowerContent = entry.content().toLowerCase(Locale.ROOT);
-            String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
-            MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
-                    entry.importance(), null, lowerCanonical);
-            stored = lowered.withEmbedding(embed(lowered.embeddingText()));
-        }
+        // Stored lower-cased with its meaning-vector attached once (see prepareForStore). New entries land in
+        // short-term first; whatever overflows the count/token bounds is moved into mid-term topic memory by
+        // topic (never duplicated across both levels).
+        MemoryEntry stored = prepareForStore(entry);
         // Collapse a fact that is already in memory under near-identical meaning into one fresh copy, so a
         // re-stated or re-asked fact (commander fact + the companion's echo, repeated questions, repeated
         // "I didn't find it" replies) does not pile up near-duplicate entries that later crowd out recall.
@@ -152,8 +143,13 @@ public final class SessionMemoryGateway implements MemoryGateway {
 
     @Override
     public List<MemoryEntry> recallCandidates(String query, int limit) {
+        return recallCandidates(query, limit, null);
+    }
+
+    @Override
+    public List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
         // Diagnostic emitted outside the lock, for the same reason as recallMatching.
-        List<MemoryEntry> hits = recallCandidatesLocked(query, limit);
+        List<MemoryEntry> hits = recallCandidatesLocked(query, limit, semanticQuery);
         // The query here is the turn's input, already echoed by the intake line; log only the outcome, spelled out
         // so it reads on its own: how many remembered facts were pulled in to ground this turn's answer. Grouped
         // under the "memory" stage with the record lines. The facts themselves appear as the compose "facts:" lines.
@@ -161,11 +157,12 @@ public final class SessionMemoryGateway implements MemoryGateway {
         return hits;
     }
 
-    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit) {
+    private synchronized List<MemoryEntry> recallCandidatesLocked(String query, int limit,
+                                                                    SemanticQuery semanticQuery) {
         // Same ranking/sources as recallMatching, but returns entries (with source/importance) for the
         // pre-turn candidate filter; a given entry lives in exactly one area, so no double-count.
         return MemorySearch.recallEntries(query, limit, shortTerm.timeline(), midTerm.allEntries(),
-                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource);
+                longTermSummaryAsSearchable(), longTerm.pinnedFacts(), matcherSource, semanticQuery);
     }
 
     /**
@@ -290,6 +287,23 @@ public final class SessionMemoryGateway implements MemoryGateway {
         if (!shortTerm.remove(entry)) {
             midTerm.remove(entry);
         }
+    }
+
+    /**
+     * Normalizes an entry for storage (used by {@link #write}): both texts are stored
+     * lower-cased (case carries no recall signal; search lower-cases anyway) and the meaning-vector is computed
+     * once here on the clean candidate text ({@link MemoryEntry#embeddingText}: the canonical fact when present,
+     * else the verbatim content), so semantic recall reads it for free. A null-content entry is returned as-is.
+     */
+    private MemoryEntry prepareForStore(MemoryEntry entry) {
+        if (entry.content() == null) {
+            return entry;
+        }
+        String lowerContent = entry.content().toLowerCase(Locale.ROOT);
+        String lowerCanonical = entry.canonicalFact() == null ? null : entry.canonicalFact().toLowerCase(Locale.ROOT);
+        MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
+                entry.importance(), null, lowerCanonical, entry.toolLink());
+        return lowered.withEmbedding(embed(lowered.embeddingText()));
     }
 
     /**

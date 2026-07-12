@@ -1,9 +1,9 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
-import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
-import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
+import elite.intel.companion.CompanionNarrator;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.gameapi.journal.events.ShipyardBuyEvent;
 import elite.intel.gameapi.journal.subscribers.NewShipPurchasedHandler;
 import org.junit.jupiter.api.AfterEach;
@@ -15,21 +15,17 @@ import static org.junit.jupiter.api.Assertions.*;
 class NewShipPurchasedHandlerTest {
 
     private final NewShipPurchasedHandler handler = new NewShipPurchasedHandler();
-    private SensorDataEvent capturedEvent;
+    private final CapturingNarrator narrator = new CapturingNarrator();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @BeforeEach
-    void registerOnBus() {
-        GameEventBus.register(this);
+    void installNarrator() {
+        runtimeGraph = CompanionRuntimeTestSupport.installNarrator(narrator);
     }
 
     @AfterEach
-    void unregisterFromBus() {
-        GameEventBus.unregister(this);
-    }
-
-    @Subscribe
-    public void onSensorData(SensorDataEvent event) {
-        capturedEvent = event;
+    void clearNarrator() {
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private ShipyardBuyEvent buyEvent(String shipType) {
@@ -53,28 +49,37 @@ class NewShipPurchasedHandlerTest {
     void usesLocalisedNameDirectlyWhenPresent() {
         // Codename absent from the seed table: only the journal's localised value can supply the name.
         handler.onNewShipPurchased(buyEvent("brandnewmake_nx", "Brand New Make"));
-        assertNotNull(capturedEvent);
-        assertTrue(capturedEvent.getSensorData().contains("Brand New Make"),
-                "Expected localised name in message but got: " + capturedEvent.getSensorData());
-        assertFalse(capturedEvent.getSensorData().contains("brandnewmake_nx"));
+        assertNotNull(narrator.data);
+        assertTrue(narrator.data.contains("Brand New Make"),
+                "Expected localised name in message but got: " + narrator.data);
+        assertFalse(narrator.data.contains("brandnewmake_nx"));
     }
 
     @Test
     void resolvesSeededShipTypeToDisplayName() {
         handler.onNewShipPurchased(buyEvent("type9_military"));
-        assertNotNull(capturedEvent);
-        assertTrue(capturedEvent.getSensorData().contains("Type-10 Defender"),
-                "Expected display name in message but got: " + capturedEvent.getSensorData());
-        assertFalse(capturedEvent.getSensorData().contains("type9_military"));
+        assertNotNull(narrator.data);
+        assertTrue(narrator.data.contains("Type-10 Defender"),
+                "Expected display name in message but got: " + narrator.data);
+        assertFalse(narrator.data.contains("type9_military"));
     }
 
     @Test
     void titleCasesUnknownShipType() {
         handler.onNewShipPurchased(buyEvent("unknownship"));
-        assertNotNull(capturedEvent);
-        assertTrue(capturedEvent.getSensorData().contains("Unknownship"),
-                "Expected title-cased name but got: " + capturedEvent.getSensorData());
-        assertFalse(capturedEvent.getSensorData().contains("unknownship"),
+        assertNotNull(narrator.data);
+        assertTrue(narrator.data.contains("Unknownship"),
+                "Expected title-cased name but got: " + narrator.data);
+        assertFalse(narrator.data.contains("unknownship"),
                 "Raw lowercase codename should not appear in message");
+    }
+
+    /** Captures the data the handler hands the companion to narrate, so the test can assert on the message. */
+    private static final class CapturingNarrator implements CompanionNarrator {
+        String data;
+
+        @Override public void filler(String text, boolean urgent) { }
+        @Override public void narrate(String data, String instructions, String topic) { this.data = data; }
+        @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) { }
     }
 }

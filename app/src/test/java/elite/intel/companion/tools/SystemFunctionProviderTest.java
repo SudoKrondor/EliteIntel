@@ -71,4 +71,16 @@ class SystemFunctionProviderTest {
         Set<String> params = speak.parameters().stream().map(ActionParameterSpec::getName).collect(Collectors.toSet());
         assertEquals(Set.of("text"), params);
     }
+
+    @Test
+    void speakDescriptionDefersToMatchingFunctions() {
+        LlmToolDefinition speak = provider.systemFunctions(ThoughtSource.COMMANDER).stream()
+                .filter(tool -> tool.name().equals(SpeakFunction.ID))
+                .findFirst()
+                .orElseThrow();
+
+        assertTrue(speak.description().contains("only when no offered action, query, or macro matches"));
+        assertTrue(speak.description().contains("Never use it to acknowledge, promise, or describe"));
+        assertTrue(speak.description().contains("call that function instead"));
+    }
 }

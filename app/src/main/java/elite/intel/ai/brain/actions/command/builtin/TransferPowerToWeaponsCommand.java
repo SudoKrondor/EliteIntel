@@ -21,7 +21,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class TransferPowerToWeaponsCommand implements IntelCommand {
     public static final String ID = "transfer_power_to_weapons";
 
-    @Override public String llmDescription() { return "Divert power to weapons."; }
+    @Override
+    public String llmDescription() {
+        return "Divert maximum power pips to weapons (WEP).";
+    }
 
 
     private static final Logger log = LogManager.getLogger(TransferPowerToWeaponsCommand.class);
@@ -38,7 +41,7 @@ public final class TransferPowerToWeaponsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -48,6 +51,7 @@ public final class TransferPowerToWeaponsCommand implements IntelCommand {
         if (status.isInSrv()) {
             powerToWeaponsSRV();
         }
+        return null;
     }
 
     private void powerToWeaponsSRV() {

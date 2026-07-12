@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
@@ -17,7 +16,10 @@ import elite.intel.util.StringUtls;
 public final class ClearMiningTargetsCommand implements IntelCommand {
     public static final String ID = "clear_mining_targets";
 
-    @Override public String llmDescription() { return "Clear the mining target list."; }
+    @Override
+    public String llmDescription() {
+        return "Clear all commodities from the mining prospector target list.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -34,9 +36,9 @@ public final class ClearMiningTargetsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         playerSession.clearMiningTargets();
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetsCleared")));
         playerSession.setMiningAnnouncementOn(true);
+        return StringUtls.localizedLlm("handler.mining.targetsCleared");
     }
 }

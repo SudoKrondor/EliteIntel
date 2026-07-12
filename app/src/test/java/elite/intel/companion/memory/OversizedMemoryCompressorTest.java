@@ -1,6 +1,7 @@
 package elite.intel.companion.memory;
 
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
@@ -8,15 +9,21 @@ import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.ToolLink;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -53,6 +60,59 @@ class OversizedMemoryCompressorTest {
     }
 
     @Test
+    void preservesToolLinkSoACompressedResultStaysPairedWithItsCall() {
+        llm.scripted = "res sites and a conflict zone";
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a very long system briefing that would bloat the prompt timeline",
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-7"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry gist = memory.writes.get(0);
+        assertEquals("res sites and a conflict zone", gist.content());
+        assertNotNull(gist.toolLink(), "the gist keeps the call linkage so it replays as the call's RESULT");
+        assertTrue(gist.toolLink().isResult());
+        assertEquals("call-7", gist.toolLink().toolCallId());
+    }
+
+    @Test
+    void keepsTheTruncatedGistWhenTheModelsSummaryStaysOverTheCap() {
+        // A small local model may echo an over-cap "gist". Its truncated form - the purpose-built summary, not the
+        // raw head of the original - is kept, still paired with the call.
+        llm.scripted = "z".repeat(CompanionConfig.memoryEntryMaxChars() + 1);
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a".repeat(CompanionConfig.memoryEntryMaxChars() + 500),
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-9"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size(), "the linked result is kept, not dropped");
+        MemoryEntry stored = memory.writes.get(0);
+        assertTrue(stored.content().length() <= CompanionConfig.memoryEntryMaxChars(), "fits the cap");
+        assertTrue(stored.content().startsWith("z"),
+                "the model's summary attempt is kept (truncated), not the raw head of the original");
+        assertNotNull(stored.toolLink(), "stays paired with its call");
+        assertEquals("call-9", stored.toolLink().toolCallId());
+    }
+
+    @Test
+    void fallsBackToTheOriginalHeadOnlyWhenCompressionReturnsNothing() {
+        // The model produced nothing usable: keep a truncated copy of the original so the pair still survives.
+        llm.scripted = null;
+        MemoryEntry longResult = new MemoryEntry(Instant.now(), ConversationTopic.EXPLORATION,
+                MemorySource.TOOL_RESULT, "a".repeat(CompanionConfig.memoryEntryMaxChars() + 500),
+                MemoryImportance.NORMAL, null, null, ToolLink.result("call-10"));
+
+        compressor.onOversized(longResult);
+
+        assertEquals(1, memory.writes.size());
+        MemoryEntry stored = memory.writes.get(0);
+        assertTrue(stored.content().startsWith("a"), "with no gist, the truncated original head is kept");
+        assertNotNull(stored.toolLink(), "stays paired with its call");
+    }
+
+    @Test
     void dropsEmptyOrOversizedOutputWithoutWriting() {
         llm.scripted = null; // the model produced nothing
         compressor.onOversized(longEntry(MemoryImportance.NORMAL));
@@ -61,6 +121,23 @@ class OversizedMemoryCompressorTest {
         llm.scripted = "z".repeat(CompanionConfig.memoryEntryMaxChars() + 1); // still over the cap
         compressor.onOversized(longEntry(MemoryImportance.NORMAL));
         assertTrue(memory.writes.isEmpty(), "nothing is written when the gist is still over the cap");
+    }
+
+    @Test
+    void closeDiscardsACompressionThatCompletesAfterShutdown() throws Exception {
+        RecordingMemory delayedMemory = new RecordingMemory();
+        BlockingLlm delayedLlm = new BlockingLlm();
+        ExecutorService worker = Executors.newSingleThreadExecutor();
+        OversizedMemoryCompressor delayedCompressor = new OversizedMemoryCompressor(
+                delayedMemory, delayedLlm, new CompanionRuntimeGeneration(), worker);
+
+        delayedCompressor.onOversized(longEntry(MemoryImportance.HIGH));
+        assertTrue(delayedLlm.started.await(1, TimeUnit.SECONDS));
+        delayedCompressor.close();
+        delayedLlm.result.complete("late gist");
+        assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
+
+        assertTrue(delayedMemory.writes.isEmpty(), "an expired generation must not re-write memory");
     }
 
     /** LlmGateway fake: scripted compression result; submit unused. */
@@ -75,6 +152,20 @@ class OversizedMemoryCompressorTest {
         @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
             calls++;
             return CompletableFuture.completedFuture(scripted);
+        }
+    }
+
+    private static final class BlockingLlm implements LlmGateway {
+        private final CountDownLatch started = new CountDownLatch(1);
+        private final CompletableFuture<String> result = new CompletableFuture<>();
+
+        @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            started.countDown();
+            return result;
         }
     }
 

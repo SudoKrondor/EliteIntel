@@ -27,9 +27,9 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     public String staticRules(ThoughtSource source) {
         return switch (source) {
             case COMMANDER -> CommanderPrompt.render();
-            case NARRATION -> NarrationPrompt.render();
-            // EVENT thoughts are memory-only (see EventThought); they never compose a prompt.
-            case EVENT -> throw new IllegalArgumentException("EVENT thoughts do not compose a prompt");
+            // A reactive EVENT thought phrases pre-digested subscriber data and speaks it - a lean task, so it
+            // uses the lean narration-style rules.
+            case EVENT -> NarrationPrompt.render();
         };
     }
 
@@ -41,7 +41,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     /**
      * The language the companion SPEAKS, named in the templates' language rule as {@code {language}}. This is the
      * TTS-bound effective response language, which can differ from what the commander speaks (e.g. local Kokoro
-     * cannot voice ru/uk/de, so those downgrade to English output) - see {@link AiResponseLanguagePolicy}.
+     * cannot voice Cyrillic, so ru/uk downgrade to English output) - see {@link AiResponseLanguagePolicy}.
      */
     static String languageName() {
         return effectiveLanguage().displayName();

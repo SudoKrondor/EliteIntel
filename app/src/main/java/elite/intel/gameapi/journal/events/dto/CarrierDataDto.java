@@ -312,9 +312,19 @@ public class CarrierDataDto implements ToJsonConvertible {
         this.fuelReserve = fuelReserve;
     }
 
+    /**
+     * Range in light years once the reserve is drawn on as well.
+     */
     public int getRange() {
         int totalFuelAvailable = getFuelLevel() + getFuelReserve();
         return (totalFuelAvailable / MAX_FUEL_PER_JUMP) * MAX_CARRIER_SINGLE_JUMP_RANGE;
+    }
+
+    /**
+     * Range in light years on the supply depot alone, leaving the reserve untouched.
+     */
+    public int getRangeExcludingReserve() {
+        return (getFuelLevel() / MAX_FUEL_PER_JUMP) * MAX_CARRIER_SINGLE_JUMP_RANGE;
     }
 
     public int getFundedOperation() {

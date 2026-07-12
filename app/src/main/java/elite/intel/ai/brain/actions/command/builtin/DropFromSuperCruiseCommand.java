@@ -19,7 +19,7 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Drop out of supercruise.";
+        return "Drop out of supercruise into normal space (e.g. to arrive at a station or signal source).";
     }
 
 
@@ -34,11 +34,8 @@ public final class DropFromSuperCruiseCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
-        GameControllerBus.publish(
-                GameInputSequenceEvent.single(
-                        GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())
-                )
-        );
+    public String execute(JsonObject params, String responseText) {
+        GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())));
+        return null;
     }
 }

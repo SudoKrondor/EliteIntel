@@ -54,10 +54,7 @@ public final class MemorySearchQuery extends BaseQueryAnalyzer implements IntelQ
 
     @Override
     public String llmDescription() {
-        return "Search the companion's own session memory and report EVERY matching thing it remembers about a "
-                + "subject. Use when the commander explicitly asks to recall, list, or count things from memory "
-                + "(e.g. every station we docked at, everything said about a plan) - it returns the full set, "
-                + "unlike the few facts already shown. Pass the subject to look up as the query.";
+        return "Search the companion's session memory and return every remembered item matching a subject (e.g. every station docked at, everything said about a plan). Use when the commander asks to recall, list, or count things from memory; pass the subject as the query.";
     }
 
     @Override

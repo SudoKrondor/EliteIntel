@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class SetSpeed25Command extends SimpleTapCommand {
     public static final String ID = "set_speed_25";
 
-    @Override public String llmDescription() { return "Set the throttle to 25 percent."; }
+    @Override
+    public String llmDescription() {
+        return "Set the throttle to 25%.";
+    }
 
     public SetSpeed25Command() {
         super(ID, Bindings.GameCommand.BINDING_SET_SPEED25.getGameBinding());

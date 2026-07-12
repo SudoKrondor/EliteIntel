@@ -17,7 +17,7 @@ public final class ShowFireGroupsPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the fire groups panel.";
+        return "Open the fire groups configuration panel.";
     }
 
 
@@ -35,7 +35,8 @@ public final class ShowFireGroupsPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.FIRE_GROUPS);
+        return null;
     }
 }

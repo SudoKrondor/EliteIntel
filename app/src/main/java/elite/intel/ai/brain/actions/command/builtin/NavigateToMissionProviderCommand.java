@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.managers.HuntingGroundManager;
@@ -32,7 +33,10 @@ import java.util.Map;
 public final class NavigateToMissionProviderCommand implements IntelCommand {
     public static final String ID = "navigate_to_mission_provider";
 
-    @Override public String llmDescription() { return "Plot a route to the mission provider."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the mission-provider system for the active pirate-massacre missions.";
+    }
 
 
     private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
@@ -51,7 +55,7 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = huntingGroundManager.findInProviderForTargetStarSystem(currentLocation.getStarName(), null);
@@ -75,10 +79,12 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
             List<MissionProvider> providers = pair.getMissionProvider();
 
             int size = providers.size();
+            // Non-terminal announcement: provider resolution below must still run, so voice the line via
+            // CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
             if (size == 1) {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem())));
+                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem()), false);
             } else {
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem())));
+                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem()), false);
             }
 
             provider = providers.stream().filter(p -> p.getMissionProviderFaction() == null).findFirst().orElse(null);
@@ -88,10 +94,9 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
 
         if (provider == null) {
             if (tryConfirmedMissionProvider()) {
-                return;
+                return null;
             }
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noProviderForTarget", targetStarSystemName)));
-            return;
+            return StringUtls.localizedLlm("handler.pirate.noProviderForTarget", targetStarSystemName);
         }
 
         huntingGrounds.stream().filter(
@@ -99,14 +104,15 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget);
 
         String starSystem = provider.getStarSystem();
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.plottingToProvider", starSystem, targetStarSystemName)));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.plottingToProvider", starSystem, targetStarSystemName), false);
 
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(starSystem);
+        String result = plotter.plotRoute(starSystem);
         ReminderManager.getInstance().setReminder(
                 StringUtls.localizedLlm("handler.pirate.seekProviderReminder", targetStarSystemName),
                 targetStarSystemName
         );
+        return result;
     }
 
     private boolean tryConfirmedMissionProvider() {
@@ -123,13 +129,13 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         }
 
         if (location.getStarName().equalsIgnoreCase(targetSystem)) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem)));
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem), false);
         } else {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem)));
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem), false);
         }
 
         if (destination == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.noKnowingProviders")));
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.noKnowingProviders"), false);
             GameEventBus.publish(new UserInputEvent(" find hunting grounds"));
             return false;
         } else {

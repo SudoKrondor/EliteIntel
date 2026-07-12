@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class WingNavLockCommand extends SimpleTapCommand {
     public static final String ID = "wing_nav_lock";
 
-    @Override public String llmDescription() { return "Engage wing navigation lock to follow a wing-mate."; }
+    @Override
+    public String llmDescription() {
+        return "Engage wing navigation lock to lock onto and follow a wing-mate's frame shift drive (follow into supercruise/jump).";
+    }
 
     public WingNavLockCommand() {
         super(ID, Bindings.GameCommand.BINDING_WING_NAV_LOCK.getGameBinding());

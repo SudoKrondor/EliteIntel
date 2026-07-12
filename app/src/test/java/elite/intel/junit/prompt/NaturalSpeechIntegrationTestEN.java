@@ -700,7 +700,7 @@ public class NaturalSpeechIntegrationTestEN {
     @Order(240)
     @MethodSource
     void querySquadronCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierStatus() {
@@ -713,19 +713,22 @@ public class NaturalSpeechIntegrationTestEN {
     @Order(242)
     @MethodSource
     void querySquadronCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierRoute() {
-        return Stream.of("squadron carrier route", "how many jumps on the squadron carrier route",
-                "squadron carrier route");
+        return Stream.of(
+                "squadron carrier route",
+                "how many jumps on the squadron carrier route",
+                "squadron carrier route"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(243)
     @MethodSource
     void querySquadronCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierDestination() {
@@ -737,7 +740,7 @@ public class NaturalSpeechIntegrationTestEN {
     @Order(244)
     @MethodSource
     void querySquadronCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierEta() {
@@ -746,7 +749,9 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     // =========================================================================
-    // Disambiguation: bare "carrier" phrases must route to fleet, not squadron
+    // Disambiguation: bare "carrier" phrases must reach the fleet-carrier COMMAND, not the squadron one.
+    // Carrier QUERIES no longer split by owner - one tool each, owner resolved from the utterance
+    // (see CarrierOwnershipTest), so a bare phrase and a "squadron" phrase share a tool by design.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -763,11 +768,11 @@ public class NaturalSpeechIntegrationTestEN {
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(251)
     @MethodSource
-    void bareCarrierStatusDefaultsToFleet(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+    void bareCarrierStatusRoutesToStatusQuery(String input) throws InterruptedException {
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
-    static Stream<String> bareCarrierStatusDefaultsToFleet() {
+    static Stream<String> bareCarrierStatusRoutesToStatusQuery() {
         return Stream.of("fleet carrier status", "fleet carrier balance", "fleet carrier funds");
     }
 
@@ -960,8 +965,13 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryStellarSignals() {
-        return Stream.of("What signals are in this system?", "What signals do you see?", "Any interesting signals?",
-                "System signals?", "What's in this system?");
+        return Stream.of(
+                "What signals are in this system?",
+                "What signals do you see?",
+                "Are there resource sites in this system?",
+                "System signals?",
+                "What's in this system?"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -984,7 +994,7 @@ public class NaturalSpeechIntegrationTestEN {
 
     static Stream<String> queryExobiologySamples() {
         return Stream.of("What bio scans have we completed?", "What organics do we still have to scan?",
-                "What organics or biology is on this planet");
+                "What organics or biology is we still need to scan on this planet");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1002,13 +1012,19 @@ public class NaturalSpeechIntegrationTestEN {
     @Order(211)
     @MethodSource
     void queryCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> queryCarrierStatus() {
-        return Stream.of("What is our fleet carrier range?", "What's my fleet carrier fuel status",
-                "How long can we operate on current funds?", "How far can carrier we jump with current tritium?",
-                "carrier tritium status", "carrier fuel status", "tritium level");
+        return Stream.of(
+                "What is our fleet carrier range?",
+                "What's my fleet carrier fuel status",
+                "How long can fleet carrier operate on current funds?",
+                "How far can carrier we jump with current tritium?",
+                "what is carrier tritium status",
+                "what is carrier fuel status",
+                "tritium level"
+        );
     }
 
 
@@ -1141,11 +1157,11 @@ public class NaturalSpeechIntegrationTestEN {
     @Order(226)
     @MethodSource
     void queryCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> queryCarrierEta() {
-        return Stream.of("What's the ETA for our fleet carrier jump?");
+        return Stream.of("What's the ETA for our fleet carrier?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1200,26 +1216,29 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     static Stream<String> queryLastBioSample() {
-        return Stream.of("Last bio-sample location and distance.", "How far are we from the last bio-sample?");
+        return Stream.of("What is the distance to last bio sample?", "How far are we from the last bio-sample?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(233)
     @MethodSource
     void queryCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierRoute() {
-        return Stream.of("What's on the carrier route?", "What's the route for our fleet carrier?",
-                "How many jump on the carrier route?");
+        return Stream.of(
+                "Analyze carrier route",
+                "What's the route for our fleet carrier?",
+                "How many jump on the carrier route?"
+        );
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(233)
     @MethodSource
     void queryCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierDestination() {

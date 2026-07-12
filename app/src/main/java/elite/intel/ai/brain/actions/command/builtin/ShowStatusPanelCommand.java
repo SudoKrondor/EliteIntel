@@ -17,7 +17,7 @@ public final class ShowStatusPanelCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the status panel.";
+        return "Open the status panel (ranks, reputation and commander status).";
     }
 
 
@@ -35,7 +35,8 @@ public final class ShowStatusPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         navigator.openAndNavigate(StatusFlags.GuiFocus.INTERNAL_PANEL, RightPanel.STATUS);
+        return null;
     }
 }

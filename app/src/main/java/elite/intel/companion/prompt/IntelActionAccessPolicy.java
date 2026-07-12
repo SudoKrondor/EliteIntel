@@ -20,9 +20,8 @@ public final class IntelActionAccessPolicy {
     public Set<IntelActionCategory> allowedCategories(ThoughtSource source) {
         return switch (source) {
             case COMMANDER -> EnumSet.of(IntelActionCategory.QUERY, IntelActionCategory.ACTION, IntelActionCategory.MACRO);
-            case EVENT -> EnumSet.of(IntelActionCategory.QUERY);
-            // Subscriber-prepared narration gets no game tools: the data is already calculated and filtered.
-            case NARRATION -> EnumSet.noneOf(IntelActionCategory.class);
+            // A reactive EVENT thought gets no game tools: the subscriber already calculated and filtered the data.
+            case EVENT -> EnumSet.noneOf(IntelActionCategory.class);
         };
     }
 }

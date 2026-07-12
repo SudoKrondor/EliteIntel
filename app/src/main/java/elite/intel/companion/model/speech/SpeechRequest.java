@@ -13,4 +13,17 @@ public record SpeechRequest(
         String requestId,
         String text,
         Urgency urgency
-) {}
+) {
+    /** Rejects speech that cannot be correlated or vocalized before it reaches the asynchronous Mouth pipeline. */
+    public SpeechRequest {
+        if (requestId == null || requestId.isBlank()) {
+            throw new IllegalArgumentException("Speech request id must not be blank");
+        }
+        if (text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Speech text must not be blank");
+        }
+        if (urgency == null) {
+            throw new IllegalArgumentException("Speech urgency must not be null");
+        }
+    }
+}

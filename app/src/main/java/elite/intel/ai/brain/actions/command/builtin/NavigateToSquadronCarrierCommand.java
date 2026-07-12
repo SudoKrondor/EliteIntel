@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -20,7 +19,10 @@ import elite.intel.util.StringUtls;
 public final class NavigateToSquadronCarrierCommand implements IntelCommand {
     public static final String ID = "navigate_to_squadron_carrier";
 
-    @Override public String llmDescription() { return "Plot a route to the squadron carrier."; }
+    @Override
+    public String llmDescription() {
+        return "Plot a route to the squadron's fleet carrier (not the commander's personal carrier).";
+    }
 
 
     @Override
@@ -35,16 +37,15 @@ public final class NavigateToSquadronCarrierCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         PlayerSession playerSession = PlayerSession.getInstance();
         CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
         if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable")));
-            return;
+            return StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable");
         }
 
         RoutePlotter plotter = new RoutePlotter();
-        plotter.plotRoute(squadronCarrier.getStarName());
+        return plotter.plotRoute(squadronCarrier.getStarName());
     }
 }

@@ -1,6 +1,7 @@
 package elite.intel.companion.model.llm;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Unit of work handed to {@code LlmGateway}. The gateway never sees a {@code Thought}; it only knows
@@ -21,6 +22,12 @@ public record LlmRequest(
         PromptCacheProfile profile,
         String trace
 ) {
+    /** Freezes the request collections before asynchronous render/send/validate processing starts. */
+    public LlmRequest {
+        messages = List.copyOf(Objects.requireNonNull(messages, "messages"));
+        tools = List.copyOf(Objects.requireNonNull(tools, "tools"));
+    }
+
     /** Back-compat constructor for call sites that carry no diagnostic trace (compression, key generation, tests). */
     public LlmRequest(String requestId, List<LlmMessage> messages, List<LlmToolDefinition> tools, PromptCacheProfile profile) {
         this(requestId, messages, tools, profile, null);

@@ -19,7 +19,10 @@ import elite.intel.session.ui.UINavigator;
 public final class RequestDockingCommand implements IntelCommand {
     public static final String ID = "request_docking";
 
-    @Override public String llmDescription() { return "Request docking permission at the current station."; }
+    @Override
+    public String llmDescription() {
+        return "Request docking permission at the nearby station or outpost (contact traffic control for a landing pad).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -37,7 +40,7 @@ public final class RequestDockingCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if(status.isInMainShip()){
             navigator.assumeDefaultState(StatusFlags.GuiFocus.EXTERNAL_PANEL);
             // Open contacts before navigating to the station docking request.
@@ -64,5 +67,6 @@ public final class RequestDockingCommand implements IntelCommand {
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding())
             ));
         }
+        return null;
     }
 }

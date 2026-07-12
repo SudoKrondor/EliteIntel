@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MiningAnnouncementEvent;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.PlayerSession;
@@ -25,7 +23,10 @@ import static elite.intel.util.StringUtls.capitalizeWords;
 public final class AddMiningTargetCommand implements IntelCommand {
     public static final String ID = "add_mining_target";
 
-    @Override public String llmDescription() { return "Add a commodity to the mining target list."; }
+    @Override
+    public String llmDescription() {
+        return "Add a mineable commodity (in 'key', e.g. Platinum, Painite) to the mining prospector target list so it is called out while prospecting.";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -61,12 +62,11 @@ public final class AddMiningTargetCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         playerSession.setMiningAnnouncementOn(true);
         JsonElement key = params.get(PARAM_KEY);
         if(key == null){
-            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.didNotCatch")));
-            return;
+            return StringUtls.localizedLlm("handler.mining.didNotCatch");
         }
         String target = capitalizeWords(
                 FuzzySearch.fuzzyCommodityMatch(
@@ -75,11 +75,10 @@ public final class AddMiningTargetCommand implements IntelCommand {
                 );
 
         if (target == null || target.isEmpty()) {
-            GameEventBus.publish(new MiningAnnouncementEvent(StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString())));
-            return;
-        } else {
-            playerSession.addMiningTarget(target);
+            return StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString());
         }
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.mining.targetSet", target)));
+
+        playerSession.addMiningTarget(target);
+        return StringUtls.localizedLlm("handler.mining.targetSet", target);
     }
 }

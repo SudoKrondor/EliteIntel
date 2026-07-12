@@ -19,7 +19,10 @@ import java.util.List;
 public class AnalyzeCarriersQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_carriers";
 
-    @Override public String llmDescription() { return "Report known fleet carriers and their details."; }
+    @Override
+    public String llmDescription() {
+        return "Report the fleet carriers currently present in this star system (count, names, and whether they have markets/services).";
+    }
 
 
     @Override public String id() { return ID; }

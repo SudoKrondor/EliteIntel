@@ -21,7 +21,7 @@ public final class DeployFighterCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Launch a ship-launched fighter from the fighter bay while flying in normal space. Not an undock of the ship and not an SRV/Nomad surface vehicle.";
+        return "Launch a ship-launched fighter (SLF) from the fighter bay while flying the main ship; not an SRV, Nomad, or ship undock.";
     }
 
 
@@ -46,7 +46,7 @@ public final class DeployFighterCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip()) {
             List<GameInputStep> steps = new ArrayList<>();
             steps.add(GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()));
@@ -79,5 +79,6 @@ public final class DeployFighterCommand implements IntelCommand {
             GameControllerBus.publish(new GameInputSequenceEvent(steps));
             status.setOkToAnnounceLoadout(false);
         }
+        return null;
     }
 }

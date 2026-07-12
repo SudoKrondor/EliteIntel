@@ -14,7 +14,10 @@ import elite.intel.session.Status;
 public final class ClearActiveMissionsCommand implements IntelCommand {
     public static final String ID = "clear_active_missions";
 
-    @Override public String llmDescription() { return "Clear the tracked active missions."; }
+    @Override
+    public String llmDescription() {
+        return "Clear the app's tracked list of active missions (does not abandon missions in-game).";
+    }
 
 
     private final MissionManager missionManager = MissionManager.getInstance();
@@ -31,7 +34,8 @@ public final class ClearActiveMissionsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         missionManager.clear();
+        return null;
     }
 }

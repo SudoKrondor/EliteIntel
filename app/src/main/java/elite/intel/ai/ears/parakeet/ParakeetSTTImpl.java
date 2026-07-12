@@ -8,7 +8,6 @@ import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.BargeInEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -80,11 +79,10 @@ public class ParakeetSTTImpl implements EarsInterface {
     // ambient floor does. Provides amplitude hysteresis on top of the time-based
     // EXIT_SILENCE_FRAMES guard.
     private static final double GATE_CLOSE_FRACTION = 0.5;
-    // Minimum acceptable separation between gate-open and noise floor, as a ratio
-    // (~6 dB). Mirrors AudioCalibrator; below this the user is warned at startup.
-    private static final double MIN_GATE_TO_NOISE_RATIO = 2.0;
-    // Absolute sanity floor for the gate-open level (very quiet rooms).
-    private static final double MIN_GATE_OPEN_ABS = 250;
+    // Whether a persisted gate is usable is decided by AudioCalibrator.gateClearsNoiseFloor, so the
+    // startup warning cannot drift from the calibration that produced the value. Copies of the
+    // thresholds used to live here and had already drifted (an absolute floor of 250 against the
+    // calibrator's 120), which warned about perfectly good gates from quiet rooms.
     private Thread processingThread;
     private Mixer.Info inputMixerInfo;
 
@@ -133,7 +131,7 @@ public class ParakeetSTTImpl implements EarsInterface {
 
         if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationRequired")));
-        } else if (RMS_THRESHOLD_HIGH < MIN_GATE_OPEN_ABS || RMS_THRESHOLD_HIGH < NOISE_FLOOR * MIN_GATE_TO_NOISE_RATIO) {
+        } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabled")));
@@ -509,21 +507,16 @@ public class ParakeetSTTImpl implements EarsInterface {
         if (isSpeaking.get()) {
             if (pttCapture) {
                 log.info("PTT: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
-                GameEventBus.publish(new TTSInterruptEvent());
-                GameEventBus.publish(new BargeInEvent()); // commander barged in: also interrupt the live companion thought
             } else if (isInterruptPhrase(transcript)) {
                 log.info("Interrupt phrase detected during TTS playback: {}", transcript);
-                GameEventBus.publish(new TTSInterruptEvent());
                 GameEventBus.publish(new BargeInEvent());
                 return;
-            } else if (!CompanionConfig.dropHotMicTranscriptsWhileCompanionSpeaks()) {
-                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
-                GameEventBus.publish(new TTSInterruptEvent());
-                GameEventBus.publish(new BargeInEvent());
             } else {
-                log.debug("Ignoring transcript while TTS is speaking: {}", transcript);
-                return;
+                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
             }
+            // BargeInController is the sole fan-out owner: it emits one TTS interrupt and interrupts thoughts.
+            // Recognition stays active during playback; every non-control transcript continues as normal input.
+            GameEventBus.publish(new BargeInEvent());
         } else {
             GameEventBus.publish(new TTSInterruptEvent());
         }
@@ -544,7 +537,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         return false;
     }
 
-    /** Tracks TTS playback state to gate non-interrupt transcripts while the app is speaking. */
+    /** Tracks TTS lifecycle only to identify barge-in; recognition and normal command dispatch stay active. */
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
         isSpeaking.set(event.isSpeaking());
@@ -616,7 +609,8 @@ public class ParakeetSTTImpl implements EarsInterface {
             case RU -> "ru";
             case UK -> "uk";
             case IT -> "it";
-            case PT -> "pt";
+            // Parakeet takes ISO 639-1 only: both Portuguese variants transcribe as "pt".
+            case PT, PTBZ -> "pt";
         };
     }
 

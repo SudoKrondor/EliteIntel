@@ -1,0 +1,52 @@
+{
+  "language": "RU",
+  "count": 3,
+  "mode": "targeted-verify",
+  "timestamp": "2026-07-08T18:24:00Z",
+  "notes": "Fresh targeted pass after alias + prompt fixes. Recall fixes confirmed (6 intents), speak-drift prompt fix confirmed (stellar_objects, squadron_eta, disembark, and the previously-failing bounty/route speak cases). Residual, out-of-scope: fleet/squadron bare-carrier default, enter_super_cruise vs jump on 'уходим', query_total_bounties recall gap 'премия за поимку'.",
+  "records": [
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"сделай хонк по системе","dispatched":"run_discovery_scan","pass":true},
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"дай гудок","dispatched":"run_discovery_scan","pass":true},
+    {"intent":"run_discovery_scan","expectedId":"run_discovery_scan","utterance":"запусти обзорное сканирование","dispatched":"run_discovery_scan","pass":true},
+
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"зажги внешние огни","dispatched":"toggle_lights_on_off","pass":true},
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"включи огни корабля","dispatched":"toggle_lights_on_off","pass":true},
+    {"intent":"toggle_lights_on_off","expectedId":"toggle_lights_on_off","utterance":"врубай внешние огни","dispatched":"toggle_lights_on_off","pass":true},
+
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"пипсы в движки","dispatched":"transfer_power_to_engines","pass":true},
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"всё в движки","dispatched":"transfer_power_to_engines","pass":true},
+    {"intent":"transfer_power_to_engines","expectedId":"transfer_power_to_engines","utterance":"энергию в двигатели","dispatched":"transfer_power_to_engines","pass":true},
+
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"выровняй пипсы","dispatched":"equalize_power","pass":true},
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"сбрось пипсы","dispatched":"equalize_power","pass":true},
+    {"intent":"equalize_power","expectedId":"equalize_power","utterance":"разровняй распределение энергии","dispatched":"equalize_power","pass":true},
+
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"какая цель рамочно-сместительного двигателя","dispatched":"query_fsd_target","pass":true},
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"цель РСД","dispatched":"query_fsd_target","pass":true},
+    {"intent":"query_fsd_target","expectedId":"query_fsd_target","utterance":"что за цель фсд сейчас","dispatched":"query_fsd_target","pass":true},
+
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"разгоняй до сверхсвета","dispatched":"enter_super_cruise","pass":true},
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"уходим в сверхсвет","dispatched":"jump_to_hyperspace","pass":false},
+    {"intent":"enter_super_cruise","expectedId":"enter_super_cruise","utterance":"врубай сверхсвет","dispatched":"enter_super_cruise","pass":true},
+
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"есть ли тут ледяные кольца","dispatched":"query_stellar_objects","pass":true},
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"есть ли в системе планеты с посадкой","dispatched":"query_stellar_objects","pass":true},
+    {"intent":"query_stellar_objects","expectedId":"query_stellar_objects","utterance":"какие небесные тела вокруг","dispatched":"query_stellar_objects","pass":true},
+
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"какая общая сумма баунти","dispatched":"query_total_bounties","pass":true},
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"сколько всего премий за поимку","dispatched":"speak","pass":false},
+    {"intent":"query_total_bounties","expectedId":"query_total_bounties","utterance":"на сколько наград я наохотился","dispatched":"speak","pass":false},
+
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"сколько ждать авианосец эскадрильи","dispatched":"query_squadron_carrier_eta","pass":true},
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"через сколько прибудет носитель эскадрильи","dispatched":"query_squadron_carrier_eta","pass":true},
+    {"intent":"query_squadron_carrier_eta","expectedId":"query_squadron_carrier_eta","utterance":"когда доберётся карриер эскадры","dispatched":"query_squadron_carrier_eta","pass":true},
+
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"какой курс проложен у флотоносца","dispatched":"query_fleet_carrier_route","pass":true},
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"что на маршруте нашего авианосца","dispatched":"query_squadron_carrier_route","pass":false},
+    {"intent":"query_fleet_carrier_route","expectedId":"query_fleet_carrier_route","utterance":"покажи маршрут флотского карриера","dispatched":"query_fleet_carrier_route","pass":true},
+
+    {"intent":"disembark","expectedId":"disembark","utterance":"высаживаюсь","dispatched":"disembark","pass":true},
+    {"intent":"disembark","expectedId":"disembark","utterance":"выхожу наружу пешком","dispatched":"disembark","pass":true},
+    {"intent":"disembark","expectedId":"disembark","utterance":"покидаю борт","dispatched":"disembark","pass":true}
+  ]
+}

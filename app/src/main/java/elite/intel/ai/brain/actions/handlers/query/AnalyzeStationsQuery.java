@@ -19,7 +19,10 @@ import java.util.List;
 public class AnalyzeStationsQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_stations";
 
-    @Override public String llmDescription() { return "Report the stations in the current system."; }
+    @Override
+    public String llmDescription() {
+        return "Report the stations, starports, outposts and settlements available for docking in the current star system.";
+    }
 
 
     @Override public String id() { return ID; }

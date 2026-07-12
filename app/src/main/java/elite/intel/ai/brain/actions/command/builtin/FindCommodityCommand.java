@@ -1,11 +1,12 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeProfileManager;
@@ -32,7 +33,10 @@ import static elite.intel.util.StringUtls.getIntSafely;
 public final class FindCommodityCommand implements IntelCommand {
     public static final String ID = "find_commodity";
 
-    @Override public String llmDescription() { return "Find where a commodity can be bought or sold nearby."; }
+    @Override
+    public String llmDescription() {
+        return "Find where to buy the commodity in 'key' within 'max_distance' ly and plot a route to it; 'state' true = nearest market, false = best-price market.";
+    }
 
 
     private static final String PARAM_KEY = "key";
@@ -83,7 +87,7 @@ public final class FindCommodityCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         JsonElement key = params.get(PARAM_KEY);
         JsonElement maxGalacticDistance = params.get(PARAM_MAX_DISTANCE);
         JsonElement stateEl = params.get(PARAM_STATE);
@@ -93,8 +97,7 @@ public final class FindCommodityCommand implements IntelCommand {
         String starName = playerSession.getPrimaryStarName();
 
         if (key == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.specify")));
-            return;
+            return StringUtls.localizedLlm("handler.commodity.specify");
         }
 
         String commodity =
@@ -105,22 +108,19 @@ public final class FindCommodityCommand implements IntelCommand {
                 );
 
         if (commodity == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString())));
-            return;
+            return StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString());
         }
 
         String searchMode = StringUtls.localizedLlm(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance)));
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance), false);
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
         if (cargoCapacity == 0) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noCargoCapacity")));
-            return;
+            return StringUtls.localizedLlm("handler.commodity.noCargoCapacity");
         }
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
         if (maxDistanceFromArrival == 0) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.maxDistanceFromArrivalNoSet")));
-            return;
+            return StringUtls.localizedLlm("handler.commodity.maxDistanceFromArrivalNoSet");
         }
         List<CommoditySearchResult> results = EdsmCommoditySearch.search(
                 commodity,
@@ -131,16 +131,16 @@ public final class FindCommodityCommand implements IntelCommand {
                 returnClosest
         );
         if (results.isEmpty()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.commodity.noMatch")));
-            return;
+            return StringUtls.localizedLlm("handler.commodity.noMatch");
         }
         ReminderManager reminderManager = ReminderManager.getInstance();
         CommoditySearchResult result = results.getFirst();
         String reminder = StringUtls.localizedLlm("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(reminder));
+        CompanionRuntime.narrator().filler(reminder, false);
         reminderManager.setReminder(reminder, result.getStarSystem());
 
         RoutePlotter plotter = new RoutePlotter();
         plotter.plotRoute(result.getStarSystem());
+        return null;
     }
 }

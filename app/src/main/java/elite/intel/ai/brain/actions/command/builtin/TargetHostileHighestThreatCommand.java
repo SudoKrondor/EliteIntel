@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class TargetHostileHighestThreatCommand extends SimpleTapCommand {
     public static final String ID = "target_hostile_highest_threat";
 
-    @Override public String llmDescription() { return "Target the highest-threat hostile."; }
+    @Override
+    public String llmDescription() {
+        return "Target the highest-threat hostile ship in range (priority combat target).";
+    }
 
     /** Combat targeting: in a combat vehicle (ship/fighter) flying in normal space. */
     @Override

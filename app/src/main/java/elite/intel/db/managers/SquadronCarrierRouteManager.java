@@ -81,10 +81,13 @@ public class SquadronCarrierRouteManager {
         });
     }
 
+    /**
+     * The plotted leg that ends at the given system, or null when the system is not on the route.
+     */
     public CarrierJump findByPrimaryStar(String starSystem) {
         return Database.withDao(SquadronCarrierRouteDao.class, dao -> {
             SquadronCarrierRouteDao.SquadronCarrierRouteLeg leg = dao.findByPrimaryStarName(starSystem);
-            return entityToDto(leg);
+            return leg == null ? null : entityToDto(leg);
         });
     }
 
@@ -94,7 +97,6 @@ public class SquadronCarrierRouteManager {
 
     private static CarrierJump entityToDto(SquadronCarrierRouteDao.SquadronCarrierRouteLeg leg) {
         CarrierJump jump = new CarrierJump();
-        if (leg == null) return jump;
         jump.setLeg(leg.getLeg());
         jump.setDistance(leg.getDistance());
         jump.setFuelUsed(leg.getFuelUsed());

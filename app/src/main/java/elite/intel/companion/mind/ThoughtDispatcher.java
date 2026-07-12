@@ -1,18 +1,14 @@
 package elite.intel.companion.mind;
 
-import elite.intel.ai.brain.InputNormalizer;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
-import elite.intel.companion.input.EventTopicMap;
-import elite.intel.companion.input.SensorInputFormatter;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.SensorDataEvent;
-import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
 import org.apache.logging.log4j.LogManager;
@@ -30,39 +26,41 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
- * {@link ThoughtSource}, so at most one COMMANDER, one EVENT, and one NARRATION thought are live at a time
- * (they may run concurrently); a lane's deque is that source's thought queue. It assigns urgency at thought
- * birth and drives preemption, but does not interpret meaning or know a thought's internal state (§2.3).
+ * The accounting/scheduling node of the consciousness. Owns one ordered {@link ThoughtLane} per
+ * {@link ThoughtSource}; a lane's deque is that source's cognitive queue. COMMANDER cognition is serialized, but
+ * completed cognitive stages may leave detached handlers live while the worker accepts later turns. It assigns
+ * urgency at thought birth and drives preemption without interpreting a thought's meaning (§2.3).
  * <p>
  * The lanes are held in one source-keyed map, published as a single volatile reference: cross-cutting
  * operations (start/stop, interrupt, watchdog, idle) iterate the lanes, while a submit targets the lane of
- * its source. A separate NARRATION lane keeps the slow LLM narration round off the EVENT lane, so the
- * memory-only event "knowing" channel records without queuing behind it.
+ * its source. The EVENT lane carries subscriber-driven reactions (a reaction to a game event); it is kept off
+ * the commander lane so a slow reaction never blocks live commander input, and vice versa.
  * <p>
  * Urgency (§1.1.4/§1.7.29): a normal thought queues at its lane's tail; an urgent thought interrupts every
  * live thought (regardless of its origin) and jumps to its lane's head. The urgent-phrase /
- * urgent-event-type matchers are a tunable concern (§7.1); by the default policy nothing is urgent yet,
- * except subscriber narration, which is born urgent.
+ * urgent-event-type matchers are a tunable concern (§7.1).
  * <p>
  * A watchdog periodically force-interrupts a thought that overruns the timeout (§2.3). Barge-in reaches
  * the live thoughts via {@link #interruptLiveThoughts()}.
  */
-public final class ThoughtDispatcher implements ManagedService, VerbatimNarrationSink {
+public final class ThoughtDispatcher implements ManagedService {
 
     private static final Logger log = LogManager.getLogger(ThoughtDispatcher.class);
 
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
-    private static final long WATCHDOG_TIMEOUT_MILLIS = 60_000;
+    private static final long WATCHDOG_TIMEOUT_MILLIS = CompanionConfig.thoughtWatchdogTimeout().toMillis();
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
-    /** Production input canonicalizer: the legacy synonym map ("combat mode" -> "switch to combat mode"). */
-    private static final Function<String, String> DEFAULT_NORMALIZER = InputNormalizer.getInstance()::normalize;
+    /**
+     * Production input canonicalizer: identity. The legacy synonym-map normalizer was removed once it became a
+     * no-op; the {@link #inputNormalizer} seam is retained so a test can still inject a canonicalizing function.
+     */
+    private static final Function<String, String> DEFAULT_NORMALIZER = Function.identity();
 
-    private final ThoughtContext ctx;
+    private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
     /**
@@ -82,8 +80,8 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
 
     /**
      * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
-     * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
-     * recognized the same way the legacy router recognizes it.
+     * memory keeps the raw words. Identity in production (the legacy synonym-map normalizer was removed);
+     * kept as an injectable seam so a test can pin a canonicalizing function.
      */
     private final Function<String, String> inputNormalizer;
     private final long watchdogTimeoutMillis;
@@ -93,47 +91,47 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     private volatile Map<ThoughtSource, ThoughtLane> lanes;
     private volatile ScheduledExecutorService watchdog;
 
-    public ThoughtDispatcher(ThoughtContext ctx) {
-        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies) {
+        this(dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Wires the dispatcher with an explicit reflex resolver (production wiring, or a test pinning the gate). */
-    public ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver and the input normalizer to exercise canonicalization routing. */
-    ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
+    ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy to exercise preemption. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy) {
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver to exercise reflex-vs-commander routing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
-        this(ctx, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
+        this(dependencies, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy and watchdog timing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 watchdogTimeoutMillis, watchdogIntervalMillis);
     }
 
     /** Canonical constructor: all collaborators, the input normalizer, and watchdog timing explicit. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
                       Function<String, String> inputNormalizer,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this.ctx = ctx;
+        this.dependencies = dependencies;
         this.urgencyPolicy = urgencyPolicy;
         this.reflexResolver = reflexResolver;
         this.inputNormalizer = inputNormalizer;
@@ -153,6 +151,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         if (input == null || input.isBlank()) {
             return;
         }
+        long acceptedAtNanos = System.nanoTime();
+        // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
+        // must never re-read a changing player_status row independently.
+        GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
@@ -162,36 +164,48 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         // recorded from `input`, never from this normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
-        ctx.state().setLastCommanderMatchInput(matchInput);
-        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
+        ThoughtContext context = ThoughtContext.commander(
+                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot);
+        dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
+        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
         // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
         // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
         // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
         // deterministic reflex for a phrase the commander said verbatim.
-        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped);
+        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
         if (reflexCommand.isEmpty()) {
-            reflexCommand = reflexResolver.resolve(matchInput);
+            reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
         }
         // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
         // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
         // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
         String reflexKind = reflexCommand.isPresent() ? "exact" : null;
+        long semanticReflexMillis = -1;
         if (reflexCommand.isEmpty()) {
             // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
-            reflexCommand = semanticReflexResolver.resolve(matchInput);
+            long semanticReflexStartedNanos = System.nanoTime();
+            SemanticReflexResolver.Resolution semanticResolution =
+                    semanticReflexResolver.resolveWithSemanticQuery(matchInput, gameStateSnapshot);
+            semanticReflexMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - semanticReflexStartedNanos);
+            reflexCommand = semanticResolution.actionId();
+            context = context.withSemanticQuery(semanticResolution.semanticQuery());
             if (reflexCommand.isPresent()) {
                 reflexKind = "semantic";
             }
         }
+        ThoughtContext finalContext = context;
         Thought thought = reflexCommand
-                .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
-                .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+                .map(actionId -> Thought.reflex(finalContext, actionId, dependencies))
+                .orElseGet(() -> Thought.commander(finalContext, dependencies));
         String route = reflexCommand.isPresent()
                 ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (semanticReflexMillis >= 0) {
+            CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
+        }
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
             CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
@@ -224,117 +238,82 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
     }
 
     /**
-     * Accepts a filtered game event. An event with a readable {@link BaseEvent#memorySummary()} becomes a
-     * memory-only EVENT thought queued on the event lane (it records that summary; the LLM is never engaged, see
-     * {@code EventThought}). An event with no summary is a no-op: it is logged and dropped here without queuing.
+     * Accepts a gameplay subscriber's request to <b>react out loud</b> (a {@code CompanionReactionEvent}) and
+     * queues a reactive {@link EventThought} on the EVENT lane. The subscriber pre-digested the data, so the
+     * thought only phrases {@code stimulus} and speaks it; the stimulus is recorded as a {@code user} turn and
+     * the reply as the companion's own words, keeping a clean two-party dialogue. {@code instructions} steer only
+     * this turn's phrasing and are not remembered.
      */
-    public void submitEvent(BaseEvent event) {
-        if (event == null) {
+    public void submitEventReaction(String stimulus, String instructions, String topic, Urgency urgency) {
+        if (stimulus == null || stimulus.isBlank()) {
             return;
         }
-        ConversationTopic topic = EventTopicMap.topicFor(event);
-        String summary = event.memorySummary();
-        // A no-summary event is a pure no-op for the memory-only EventThought (it would record nothing): log one
-        // line and drop it here, instead of spawning a lane thought that would only log start/done for no effect.
-        if (summary == null || summary.isBlank()) {
-            CompanionDiagnostics.debug(CompanionDiagnostics.SYSTEM, "event",
-                    "no-op (no summary) type=" + event.getEventType() + " topic=" + topic);
-            return;
-        }
-        Urgency urgency = urgencyPolicy.forEvent(event);
-        Thought thought = Thought.event(urgency, summary, topic, ctx);
-        CompanionDiagnostics.debug(thought.trace(), "event",
-                "\"" + CompanionDiagnostics.truncate(summary) + "\" type=" + event.getEventType() + " topic=" + topic);
+        ConversationTopic conversationTopic = topicFrom(topic);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, dependencies);
+        CompanionDiagnostics.debug(thought.trace(), "event", "reaction topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
-     * Accepts subscriber-prepared sensor narration, creates a NARRATION thought, and queues it on the
-     * narration lane. SensorDataEvent is trusted output from gameplay subscribers: they already applied
-     * settings, filtering, and calculations. The thought is queued at normal urgency under the topic
-     * provided by that layer, so a burst of sensor callouts plays in order instead of each one cutting off
-     * the line before it.
+     * Accepts a gameplay subscriber's <b>finished phrase</b> to voice verbatim (no LLM) and queues a verbatim
+     * {@link EventThought} on the EVENT lane. The phrase is recorded as the companion's reply, paired with the
+     * short {@code sourceId} as the {@code user} turn (never the raw data), so the timeline keeps a clean
+     * two-party dialogue. A blank phrase is ignored.
      */
-    public void submitSensorData(SensorDataEvent event) {
-        if (event == null) {
+    public void submitEventVerbatim(String sourceId, String phrase, String topic, Urgency urgency) {
+        if (phrase == null || phrase.isBlank()) {
             return;
         }
-        Urgency urgency = Urgency.NORMAL;
-        ConversationTopic topic = sensorTopic(event);
-        Thought thought = Thought.sensorNarration(urgency, SensorInputFormatter.format(event), topic, ctx);
-        CompanionDiagnostics.debug(thought.trace(), "narration", "sensor topic=" + topic);
-        enqueue(ThoughtSource.NARRATION, thought, urgency);
-    }
-
-    /**
-     * Accepts a curated announcement that already carries finished text (mining/discovery/route/
-     * navigation), creates a verbatim NARRATION thought, and queues it on the narration lane at normal
-     * urgency, so a burst of announcements plays in order instead of each one cutting off the line before
-     * it. A caller that must preempt current speech (radar contact, mission-critical) uses the explicit
-     * urgency overload. The line is remembered and voiced verbatim in the companion's voice - no LLM
-     * phrasing.
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic) {
-        submitVerbatimNarration(text, topic, Urgency.NORMAL, null);
-    }
-
-    /**
-     * Verbatim narration with an explicit urgency and an optional {@code spokenSignal} completed when playback
-     * ends - used to bridge a command/macro's own narration ({@code AiVoxResponseEvent}/
-     * {@code MissionCriticalAnnouncementEvent}) so a synchronous caller waits the same as on the legacy path.
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
-                                        java.util.concurrent.CompletableFuture<Void> spokenSignal) {
-        submitVerbatimNarration(text, topic, urgency, spokenSignal, null);
-    }
-
-    /**
-     * As above, but attributes the line to a model tool-call ({@code toolCallId}), so it is remembered as that
-     * call's tool result rather than free-standing companion speech (see {@code VerbatimNarrationThought}).
-     */
-    @Override
-    public void submitVerbatimNarration(String text, ConversationTopic topic, Urgency urgency,
-                                        java.util.concurrent.CompletableFuture<Void> spokenSignal, String toolCallId) {
-        if (text == null || text.isBlank()) {
-            if (spokenSignal != null) {
-                spokenSignal.complete(null); // never strand a caller blocked on an empty line
-            }
-            return;
-        }
-        Thought thought = Thought.verbatimNarration(urgency, text, topic, ctx, spokenSignal, toolCallId);
-        CompanionDiagnostics.debug(thought.trace(), "narration",
-                "verbatim topic=" + topic + ": \"" + CompanionDiagnostics.truncate(text) + "\"");
-        enqueue(ThoughtSource.NARRATION, thought, urgency);
+        ConversationTopic conversationTopic = topicFrom(topic);
+        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, dependencies);
+        CompanionDiagnostics.debug(thought.trace(), "event", "verbatim topic=" + conversationTopic);
+        enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
+        Map<ThoughtSource, ThoughtLane> newlyStartedLanes = null;
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            // Commander lane is a bounded pool: a long synchronous command/query occupies a worker, so several
-            // let new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
-            // stay single-worker (no slow handlers there).
-            built.put(ThoughtSource.COMMANDER,
-                    new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
-            built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
-            built.put(ThoughtSource.NARRATION, new ThoughtLane("companion-narration", 1));
-            lanes = built; // single volatile publish of the fully-built lane set
+            try {
+                // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
+                // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
+                // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
+                built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
+                built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
+                lanes = built; // single volatile publish of the fully-built lane set
+                newlyStartedLanes = built;
+            } catch (RuntimeException | Error startupFailure) {
+                built.values().forEach(lane -> lane.shutdown(0));
+                throw startupFailure;
+            }
         }
         if (watchdog == null) {
-            watchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "companion-watchdog");
-                thread.setDaemon(true);
-                return thread;
-            });
-            watchdog.scheduleAtFixedRate(this::checkWatchdog,
-                    watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+            ScheduledExecutorService newlyStartedWatchdog = null;
+            try {
+                newlyStartedWatchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                    Thread thread = new Thread(runnable, "companion-watchdog");
+                    thread.setDaemon(true);
+                    return thread;
+                });
+                newlyStartedWatchdog.scheduleAtFixedRate(this::checkWatchdog,
+                        watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+                watchdog = newlyStartedWatchdog;
+            } catch (RuntimeException | Error startupFailure) {
+                if (newlyStartedWatchdog != null) {
+                    newlyStartedWatchdog.shutdownNow();
+                }
+                if (newlyStartedLanes != null && lanes == newlyStartedLanes) {
+                    lanes = null;
+                    newlyStartedLanes.values().forEach(lane -> lane.shutdown(0));
+                }
+                throw startupFailure;
+            }
         }
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
         ScheduledExecutorService currentWatchdog = watchdog;
         watchdog = null;
         if (currentWatchdog != null) {
@@ -399,9 +378,10 @@ public final class ThoughtDispatcher implements ManagedService, VerbatimNarratio
         lane.interruptStuck(watchdogTimeoutMillis);
     }
 
-    private static ConversationTopic sensorTopic(SensorDataEvent event) {
+    /** Maps a neutral topic tag (a {@code ConversationTopic} name) to the enum, falling back to SYSTEM when unknown/blank. */
+    private static ConversationTopic topicFrom(String topic) {
         try {
-            return ConversationTopic.valueOf(event.getTopic().trim().toUpperCase(Locale.ROOT));
+            return ConversationTopic.valueOf(topic.trim().toUpperCase(Locale.ROOT));
         } catch (RuntimeException invalidTopic) {
             return ConversationTopic.SYSTEM;
         }

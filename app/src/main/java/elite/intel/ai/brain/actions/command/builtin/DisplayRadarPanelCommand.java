@@ -18,7 +18,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL
 public final class DisplayRadarPanelCommand implements IntelCommand {
     public static final String ID = "display_radar_panel";
 
-    @Override public String llmDescription() { return "Open the radar / sensors panel."; }
+    @Override
+    public String llmDescription() {
+        return "Open the radar / sensors (role) panel.";
+    }
 
 
     @Override
@@ -32,7 +35,7 @@ public final class DisplayRadarPanelCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
 
         if (status.isInMainShip()) {
@@ -42,5 +45,6 @@ public final class DisplayRadarPanelCommand implements IntelCommand {
         if (status.isInSrv()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding())));
         }
+        return null;
     }
 }

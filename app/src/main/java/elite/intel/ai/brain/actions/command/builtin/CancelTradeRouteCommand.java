@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TradeRouteManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -17,7 +16,10 @@ import elite.intel.util.StringUtls;
 public final class CancelTradeRouteCommand implements IntelCommand {
     public static final String ID = "cancel_trade_route";
 
-    @Override public String llmDescription() { return "Cancel the current trade route."; }
+    @Override
+    public String llmDescription() {
+        return "Clear and abort the currently planned commodity trade route.";
+    }
 
 
     private final TradeRouteManager tradeRouteManager = TradeRouteManager.getInstance();
@@ -34,8 +36,8 @@ public final class CancelTradeRouteCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         tradeRouteManager.clear();
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.tradeRoute.cancelled")));
+        return StringUtls.localizedLlm("handler.tradeRoute.cancelled");
     }
 }

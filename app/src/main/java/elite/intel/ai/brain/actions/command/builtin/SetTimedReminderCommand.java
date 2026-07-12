@@ -5,8 +5,6 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.TimedReminderManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -23,7 +21,10 @@ import java.util.Objects;
 public final class SetTimedReminderCommand implements IntelCommand {
     public static final String ID = "set_timed_reminder";
 
-    @Override public String llmDescription() { return "Set a reminder that triggers after a specified time."; }
+    @Override
+    public String llmDescription() {
+        return "Schedule a reminder (text in 'key') to be announced after the number of minutes in 'minutes' (a countdown timer).";
+    }
 
 
     private static final String PARAM_KEY = "key";
@@ -64,32 +65,28 @@ public final class SetTimedReminderCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         JsonElement keyEl = params.get(PARAM_KEY);
         JsonElement minutesEl = params.get(PARAM_MINUTES);
 
         if (isValidReminder(keyEl, minutesEl)) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidText")));
-            return;
+            return StringUtls.localizedLlm("handler.reminder.invalidText");
         }
 
         int minutes;
         try {
             minutes = Integer.parseInt(minutesEl.getAsString().trim());
         } catch (NumberFormatException e) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.invalidDuration")));
-            return;
+            return StringUtls.localizedLlm("handler.reminder.invalidDuration");
         }
 
         if (minutes <= 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.reminder.durationZero")));
-            return;
+            return StringUtls.localizedLlm("handler.reminder.durationZero");
         }
 
         String text = keyEl.getAsString();
         TimedReminderManager.getInstance().schedule(text, minutes);
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(
-                StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes)));
+        return StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes);
     }
 
     private static boolean isValidReminder(JsonElement keyEl, JsonElement minutesEl) {

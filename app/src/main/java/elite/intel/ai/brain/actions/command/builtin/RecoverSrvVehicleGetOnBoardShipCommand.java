@@ -18,7 +18,10 @@ import elite.intel.session.ui.UINavigator;
 public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelCommand {
     public static final String ID = "recover_srv_vehicle_get_on_board_ship";
 
-    @Override public String llmDescription() { return "Recall the SRV and board the ship."; }
+    @Override
+    public String llmDescription() {
+        return "Recall the SRV to the ship and board it (return the buggy to the ship's vehicle hangar).";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -34,7 +37,7 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         String ui_left = Bindings.GameCommand.BINDING_UI_LEFT.getGameBinding();
         String ui_up = Bindings.GameCommand.BINDING_UI_UP.getGameBinding();
         String ui_down = Bindings.GameCommand.BINDING_UI_DOWN.getGameBinding();
@@ -55,5 +58,6 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
                 GameInputStep.bindingTap(activate)
         ));
         navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+        return null;
     }
 }

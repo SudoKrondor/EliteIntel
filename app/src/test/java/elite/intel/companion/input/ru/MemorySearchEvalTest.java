@@ -53,9 +53,8 @@ class MemorySearchEvalTest {
     void enumeratesEveryDockedStationFromMemory() throws Exception {
         // Record five docking events into memory, interleaved with chatter and a command so they are scattered
         // through the timeline. The events are written straight to the gateway (the real write path: embedding +
-        // dedup) rather than published, to skip GameEventFilter's per-type real-time cooldown - in actual play
-        // dockings at five stations are minutes apart and all land; here they would fire within one cooldown
-        // window. This targets memory_search enumeration, not the event filter.
+        // dedup) rather than replayed as live gameplay - in actual play dockings at five stations are minutes
+        // apart and all land; here they are recorded back-to-back. This targets memory_search enumeration.
         dock(STATIONS.get(0));
         h.say("красиво тут, полюбуемся немного");
         dock(STATIONS.get(1));

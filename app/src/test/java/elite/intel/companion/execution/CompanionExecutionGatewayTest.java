@@ -3,24 +3,28 @@ package elite.intel.companion.execution;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.companion.CompanionNarrator;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.tools.SystemFunction;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
-
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Verifies tool-call routing and result shaping with fake handler maps and a synchronous executor:
@@ -36,10 +40,12 @@ class CompanionExecutionGatewayTest {
     private static final class RecordingCommand implements IntelAction {
         volatile boolean invoked;
         volatile JsonObject seenArgs;
+        volatile String seenText;
         @Override public String id() { return "nav"; }
         @Override public JsonObject handle(String action, JsonObject params, String text) {
             invoked = true;
             seenArgs = params;
+            seenText = text;
             return null; // commands are side-effect only
         }
     }
@@ -98,6 +104,19 @@ class CompanionExecutionGatewayTest {
     }
 
     @Test
+    void commanderUtteranceReachesHandleAsOriginalUserInput() throws Exception {
+        // Regression: the gateway used to pass "" as originalUserInput, so handlers that match a spoken
+        // body name (e.g. "is B 1 landable") never saw the words and fell back to a whole-system answer.
+        RecordingCommand command = new RecordingCommand();
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("nav", command), Map.of(), Map.of(), SYNC, SYNC);
+
+        gateway.submit(new ExecutionRequest("r1", "nav", new JsonObject(), "is planet b one landable")).get();
+
+        assertEquals("is planet b one landable", command.seenText);
+    }
+
+    @Test
     void unknownToolFailsTheFuture() {
         CompanionExecutionGateway gateway = new CompanionExecutionGateway(Map.of(), Map.of(), Map.of(), SYNC, SYNC);
 
@@ -122,5 +141,89 @@ class CompanionExecutionGatewayTest {
 
         assertFalse(command.invoked, "cancelled-before-start work must be skipped");
         assertTrue(future.isCancelled());
+    }
+
+    @Test
+    void closeCancelsQueuedWorkAndRejectsLaterSubmissions() {
+        RecordingCommand command = new RecordingCommand();
+        AtomicReference<Runnable> pending = new AtomicReference<>();
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("nav", command), Map.of(), Map.of(), pending::set, SYNC);
+
+        CompletableFuture<JsonObject> queued = gateway.submit(
+                new ExecutionRequest("r1", "nav", new JsonObject()));
+        gateway.close();
+        pending.get().run();
+
+        assertTrue(queued.isCancelled());
+        assertFalse(command.invoked);
+        ExecutionException rejected = assertThrows(ExecutionException.class, () -> gateway.submit(
+                new ExecutionRequest("r2", "nav", new JsonObject())).get());
+        assertInstanceOf(java.util.concurrent.RejectedExecutionException.class, rejected.getCause());
+    }
+
+    @Test
+    void closeDoesNotInterruptAnAlreadyStartedAction() throws Exception {
+        CountDownLatch handlerStarted = new CountDownLatch(1);
+        CountDownLatch allowCompletion = new CountDownLatch(1);
+        AtomicBoolean handlerInterrupted = new AtomicBoolean();
+        IntelAction blockingCommand = new IntelAction() {
+            @Override public String id() { return "nav"; }
+            @Override public JsonObject handle(String action, JsonObject params, String text) {
+                handlerStarted.countDown();
+                try {
+                    allowCompletion.await();
+                } catch (InterruptedException interrupted) {
+                    handlerInterrupted.set(true);
+                    Thread.currentThread().interrupt();
+                }
+                return null;
+            }
+        };
+        ExecutorService actionLane = Executors.newSingleThreadExecutor();
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("nav", blockingCommand), Map.of(), Map.of(), actionLane, SYNC);
+
+        CompletableFuture<JsonObject> result = gateway.submit(
+                new ExecutionRequest("r1", "nav", new JsonObject()));
+        assertTrue(handlerStarted.await(1, TimeUnit.SECONDS));
+        CompletableFuture<Void> closing = CompletableFuture.runAsync(gateway::close);
+        allowCompletion.countDown();
+
+        assertEquals("completed_by_executor", result.get(1, TimeUnit.SECONDS).get("status").getAsString());
+        closing.get(1, TimeUnit.SECONDS);
+        assertFalse(handlerInterrupted.get(), "started game actions must not be force-interrupted");
+    }
+
+    @Test
+    void oldRequestGenerationCannotRouteStaticSpeechIntoTheCurrentRuntime() throws Exception {
+        CompanionRuntimeGraph oldRuntime = CompanionRuntimeTestSupport.installNarrator(CompanionNarrator.NO_OP);
+        long oldGenerationId = oldRuntime.runtimeGeneration().generationId();
+        CompanionRuntimeTestSupport.uninstall(oldRuntime);
+        AtomicInteger currentNarratorCalls = new AtomicInteger();
+        CompanionNarrator currentNarrator = new CompanionNarrator() {
+            @Override public void filler(String text, boolean urgent) { currentNarratorCalls.incrementAndGet(); }
+            @Override public void narrate(String data, String instructions, String topic) { }
+            @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) { }
+        };
+        CompanionRuntimeGraph currentRuntime = CompanionRuntimeTestSupport.installNarrator(currentNarrator);
+        IntelAction oldHandler = new IntelAction() {
+            @Override public String id() { return "old_handler"; }
+            @Override public JsonObject handle(String action, JsonObject params, String text) {
+                elite.intel.companion.CompanionRuntime.narrator().filler("late result", false);
+                return null;
+            }
+        };
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("old_handler", oldHandler), Map.of(), Map.of(), SYNC, SYNC);
+
+        try {
+            gateway.submit(new ExecutionRequest(
+                    "r1", "old_handler", new JsonObject(), "", oldGenerationId)).get();
+            assertEquals(0, currentNarratorCalls.get());
+        } finally {
+            gateway.close();
+            CompanionRuntimeTestSupport.uninstall(currentRuntime);
+        }
     }
 }

@@ -16,7 +16,10 @@ import elite.intel.session.Status;
 public final class InterruptCommand implements IntelCommand {
     public static final String ID = "interrupt";
 
-    @Override public String llmDescription() { return "Interrupt the companion's current speech or action."; }
+    @Override
+    public String llmDescription() {
+        return "Interrupt and immediately stop the companion's current speech.";
+    }
 
 
     @Override
@@ -31,7 +34,8 @@ public final class InterruptCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         GameEventBus.publish(new TTSInterruptEvent());
+        return null;
     }
 }

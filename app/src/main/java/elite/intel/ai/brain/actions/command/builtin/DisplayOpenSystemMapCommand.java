@@ -18,7 +18,10 @@ import static elite.intel.ai.hands.Bindings.GameCommand.*;
 public final class DisplayOpenSystemMapCommand implements IntelCommand {
     public static final String ID = "display_open_system_map";
 
-    @Override public String llmDescription() { return "Open the system map."; }
+    @Override
+    public String llmDescription() {
+        return "Open the system (local) map.";
+    }
 
 
     private final UINavigator navigator = new UINavigator();
@@ -35,7 +38,7 @@ public final class DisplayOpenSystemMapCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         navigator.closeOpenPanel();
         Status status = Status.getInstance();
         if (status.isInMainShip() || status.isInFighter()) {
@@ -49,5 +52,6 @@ public final class DisplayOpenSystemMapCommand implements IntelCommand {
         if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_SYSTEM_MAP_HUMANOID.getGameBinding())));
         }
+        return null;
     }
 }

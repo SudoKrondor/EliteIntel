@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
@@ -21,7 +20,10 @@ import elite.intel.util.StringUtls;
 public final class ConfirmHuntingGroundCommand implements IntelCommand {
     public static final String ID = "confirm_hunting_ground";
 
-    @Override public String llmDescription() { return "Confirm the current location as a hunting ground."; }
+    @Override
+    public String llmDescription() {
+        return "Confirm the current star system as a verified pirate-massacre hunting ground (resource extraction site).";
+    }
 
 
     private final HuntingGroundManager missionDataManager = HuntingGroundManager.getInstance();
@@ -44,9 +46,9 @@ public final class ConfirmHuntingGroundCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         missionDataManager.confirmTargetReconResourceSite(location.getStarName());
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.pirate.huntingGroundConfirmed")));
+        return StringUtls.localizedLlm("handler.pirate.huntingGroundConfirmed");
     }
 }

@@ -89,50 +89,6 @@ public class PromptFactory implements AiPromptFactory {
         return sb.toString();
     }
 
-    @Override
-    public String generateSensorPrompt() {
-        StringBuilder sb = new StringBuilder();
-        youAre(sb);
-        sb.append(responseLanguageRule());
-        sb.append(ttsResponseRules());
-        sb.append("""
-                Instructions:
-                Event data is provided in the sensorData field below.
-                
-                Summarise ONLY the important concrete readings and events that are ACTUALLY present in the provided sensorData.
-                Use ONLY the data inside sensorData and the event-specific instructions below (if any).
-                Ignore everything else: timestamps, eventName, endOfLife, metadata, status flags, non-essential fields, etc.
-                
-                STRICT RULES - MUST FOLLOW EVERY ONE:
-                - Output EXACTLY this JSON structure and NOTHING else - no extra text, no explanations, no markdown:
-                  {"text_to_speech_response": "summary here"}
-                - text_to_speech_response must be pure natural-language summary of facts only.
-                - NEVER use future/intention verbs: no will, going to, have to, need to, should, must.
-                - NEVER mention the user, notification, reporting, telling, or any communication act.
-                - NEVER write meta-statements like "this is", "here is", "notifying about", "detected and will inform".
-                - Spell out all numerals (twenty-one, not 21).
-                - DO NOT invent, guess or estimate any values not explicitly present in the YAML. Absence of data is intel.
-                - Be concise. Only state observable facts that matter.
-                - Do not mention the data format or where it came from.
-                
-                Examples of FORBIDDEN styles:
-                - "Fuel is low, notifying user" → wrong
-                - "The following happened:" → wrong
-                
-                Correct style examples:
-                - "Fuel level is critical."
-                - "Mission objective achieved."
-                - "High-grade emissions detected within twelve kilometers."
-                - "Connection successful."
-                
-                Respond with ONLY the JSON object.
-                """);
-
-        appendCadenceAndPersonality(sb);
-        sb.append(closingLanguageReinforcement());
-        return sb.toString();
-    }
-
     private void appendCadenceAndPersonality(StringBuilder sb) {
         ShipPersonality aiPersonality = systemSession.getAIPersonality();
         sb.append(" Personality: ");

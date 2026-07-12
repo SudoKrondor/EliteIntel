@@ -18,7 +18,10 @@ import java.util.List;
 public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     public static final String ID = "toggle_radar_announcements";
 
-    @Override public String llmDescription() { return "Toggle radar contact announcements on or off."; }
+    @Override
+    public String llmDescription() {
+        return "Turn radar-contact announcements on or off ('state').";
+    }
 
 
     private static final String PARAM_STATE = "state";
@@ -52,8 +55,9 @@ public final class ToggleRadarAnnouncementsCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession.getInstance().setRadarContactAnnouncementOn(isOn);
+        return null;
     }
 }

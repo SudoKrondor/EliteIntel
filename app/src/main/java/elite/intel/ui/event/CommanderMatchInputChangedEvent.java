@@ -1,4 +1,6 @@
 package elite.intel.ui.event;
 
-/** Published when the companion computes a new commander match input for action reduction. */
-public record CommanderMatchInputChangedEvent(String text) {}
+import elite.intel.companion.model.GameStateSnapshot;
+
+/** Published when the companion freezes a commander's match input and visibility state for action reduction. */
+public record CommanderMatchInputChangedEvent(String text, GameStateSnapshot gameStateSnapshot) {}

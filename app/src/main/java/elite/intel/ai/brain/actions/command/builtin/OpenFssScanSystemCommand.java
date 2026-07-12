@@ -5,7 +5,6 @@ import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
@@ -23,7 +22,7 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Open the Full-Spectrum System (FSS) scanner tool to resolve individual bodies in detail. This is the detailed scanner, NOT the preliminary discovery-scan 'honk' - use run_discovery_scan to fire the discovery scanner and map the system first.";
+        return "Open the Full-Spectrum System (FSS) scanner to resolve bodies in detail; requires supercruise. This is the detailed scanner, not the discovery-scan 'honk'.";
     }
 
 
@@ -40,15 +39,13 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         if (status.isScoopingFuel()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.scooping")));
-            return;
+            return StringUtls.localizedLlm("handler.supercruise.scooping");
         }
 
         if (!status.isInSupercruise()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise")));
-            return;
+            return StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise");
         }
 
         String stop = BINDING_SET_SPEED_ZERO.getGameBinding();
@@ -59,5 +56,6 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
                 GameInputStep.delay(200),
                 GameInputStep.bindingTap(fssControl)
         ));
+        return null;
     }
 }

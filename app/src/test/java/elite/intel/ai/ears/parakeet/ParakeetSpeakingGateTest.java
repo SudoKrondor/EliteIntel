@@ -2,10 +2,11 @@ package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.BargeInEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.UserInputEvent;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,9 +23,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ParakeetSpeakingGateTest {
     private final Recorder recorder = new Recorder();
     private ParakeetSTTImpl stt;
+    private Language previousLanguage;
 
     @BeforeEach
     void setUp() throws Exception {
+        previousLanguage = SystemSession.getInstance().getLanguage();
+        SystemSession.getInstance().setLanguage(Language.EN);
         stt = new ParakeetSTTImpl();
         Field field = ParakeetSTTImpl.class.getDeclaredField("isSpeaking");
         field.setAccessible(true);
@@ -34,6 +38,7 @@ class ParakeetSpeakingGateTest {
 
     @AfterEach
     void tearDown() {
+        SystemSession.getInstance().setLanguage(previousLanguage);
         GameEventBus.unregister(recorder);
         if (stt != null) {
             GameEventBus.unregister(stt);
@@ -41,12 +46,11 @@ class ParakeetSpeakingGateTest {
     }
 
     @Test
-    void hotMicTranscriptInterruptsAndDispatchesWhileCompanionSpeaks() throws Exception {
-        assertFalse(CompanionConfig.dropHotMicTranscriptsWhileCompanionSpeaks());
-
+    void hotMicTranscriptUsesSingleBargeInOwnerAndStillDispatchesWhileCompanionSpeaks() throws Exception {
         sendToAi("plot route home", false);
 
-        assertTrue(recorder.has(TTSInterruptEvent.class));
+        assertFalse(recorder.has(TTSInterruptEvent.class),
+                "Parakeet must not duplicate the TTS interrupt owned by BargeInController");
         assertTrue(recorder.has(BargeInEvent.class));
         assertTrue(recorder.has(UserInputEvent.class));
     }

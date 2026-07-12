@@ -23,11 +23,13 @@ final class ToolParameterSchema {
     }
 
     /**
-     * Standard JSON-Schema object ({@code {type:object, properties, required}}) for OpenAI-compatible and Anthropic.
+     * Closed JSON-Schema object ({@code {type:object, properties, required, additionalProperties:false}}) for
+     * OpenAI-compatible and Anthropic.
      */
     static JsonObject jsonSchemaObject(List<ActionParameterSpec> parameters) {
         JsonObject schema = new JsonObject();
         schema.addProperty("type", "object");
+        schema.addProperty("additionalProperties", false);
         JsonObject properties = new JsonObject();
         JsonArray required = new JsonArray();
         for (ActionParameterSpec p : parameters) {

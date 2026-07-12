@@ -630,7 +630,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(240)
     @MethodSource
     void querySquadronCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierStatus() {
@@ -645,7 +645,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(242)
     @MethodSource
     void querySquadronCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierRoute() {
@@ -657,7 +657,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(243)
     @MethodSource
     void querySquadronCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierDestination() {
@@ -668,7 +668,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(244)
     @MethodSource
     void querySquadronCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeSquadronCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> querySquadronCarrierEta() {
@@ -677,7 +677,9 @@ public class NaturalSpeechIntegrationTestDE {
     }
 
     // =========================================================================
-    // Disambiguation: bare "carrier" phrases must route to fleet, not squadron
+    // Disambiguation: bare "carrier" phrases must reach the fleet-carrier COMMAND, not the squadron one.
+    // Carrier QUERIES no longer split by owner - one tool each, owner resolved from the utterance
+    // (see CarrierOwnershipTest), so a bare phrase and a "squadron" phrase share a tool by design.
     // =========================================================================
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -694,11 +696,11 @@ public class NaturalSpeechIntegrationTestDE {
     @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(251)
     @MethodSource
-    void bareCarrierStatusDefaultsToFleet(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+    void bareCarrierStatusRoutesToStatusQuery(String input) throws InterruptedException {
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
-    static Stream<String> bareCarrierStatusDefaultsToFleet() {
+    static Stream<String> bareCarrierStatusRoutesToStatusQuery() {
         return Stream.of("carrier status", "carrier balance", "carrier kontostand");
     }
 
@@ -725,7 +727,7 @@ public class NaturalSpeechIntegrationTestDE {
     }
 
     static Stream<String> setReminder() {
-        return Stream.of("erinnere mich am nächsten stopp zu tanken");
+        return Stream.of("Erinnerung einstellen: Beim nächsten Halt tanken.");
     }
 
     // =========================================================================
@@ -932,7 +934,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(211)
     @MethodSource
     void queryCarrierStatus(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierDataQuery.ID);
+        assertRouted(input, AnalyzeCarrierStatusQuery.ID);
     }
 
     static Stream<String> queryCarrierStatus() {
@@ -1072,7 +1074,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(226)
     @MethodSource
     void queryCarrierEta(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierETAQuery.ID);
+        assertRouted(input, AnalyzeCarrierDepartureEtaQuery.ID);
     }
 
     static Stream<String> queryCarrierEta() {
@@ -1138,7 +1140,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(233)
     @MethodSource
     void queryCarrierRoute(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierRouteQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierRoute() {
@@ -1150,7 +1152,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(233)
     @MethodSource
     void queryCarrierDestination(String input) throws InterruptedException {
-        assertRouted(input, AnalyzeFleetCarrierFinalDestinationQuery.ID);
+        assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
     static Stream<String> queryCarrierDestination() {

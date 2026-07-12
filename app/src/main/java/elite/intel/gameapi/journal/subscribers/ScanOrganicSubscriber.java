@@ -1,11 +1,12 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.CodexEntryDao.CodexEntry;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.ScanOrganicEvent;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;
@@ -38,7 +39,7 @@ public class ScanOrganicSubscriber {
 
     private static void announce(String sb) {
         if (PlayerSession.getInstance().isDiscoveryAnnouncementOn()) {
-            GameEventBus.publish(new SensorDataEvent(sb, """
+            CompanionRuntime.narrator().narrate(sb, """
                         Use ONLY facts from sensorData-no invention, external knowledge, or additions like planet/system/payment/bonus/vehicles/scan stages.
                         Rephrase to natural, immersive speech:
                             - Key elements ONLY: genus/species logged, distance/completion if stated.
@@ -46,7 +47,7 @@ public class ScanOrganicSubscriber {
                             - If 'Remaining genus' listed, provide the exact and detailed list of genus, do not provide a vague reference. 
                             Output EXACTLY:
                                 {"text_to_speech_response": "your natural rephrase"}
-                    """));
+                    """);
         }
     }
 

@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.MissionCriticalAnnouncementEvent;
 import elite.intel.db.managers.MonetizeRouteManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TimedReminderManager;
@@ -19,7 +18,10 @@ import elite.intel.util.StringUtls;
 public final class ClearRemindersCommand implements IntelCommand {
     public static final String ID = "clear_reminders";
 
-    @Override public String llmDescription() { return "Clear all reminders."; }
+    @Override
+    public String llmDescription() {
+        return "Delete every reminder: the saved destination/target reminder, all timed reminders, and the monetize-route reminder.";
+    }
 
 
     private final ReminderManager destinationReminder = ReminderManager.getInstance();
@@ -37,10 +39,10 @@ public final class ClearRemindersCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         destinationReminder.clear();
         monetizeRouteManager.clear();
         TimedReminderManager.getInstance().clearAll();
-        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.reminder.cleared")));
+        return StringUtls.localizedLlm("handler.reminder.cleared");
     }
 }

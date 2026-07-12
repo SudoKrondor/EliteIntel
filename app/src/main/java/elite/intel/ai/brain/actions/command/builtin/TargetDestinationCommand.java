@@ -9,7 +9,10 @@ import elite.intel.session.Status;
 public final class TargetDestinationCommand extends SimpleTapCommand {
     public static final String ID = "target_destination";
 
-    @Override public String llmDescription() { return "Target the current navigation destination."; }
+    @Override
+    public String llmDescription() {
+        return "Select and target the next system on the plotted route as the FSD jump destination.";
+    }
 
     /** Route-target selection is a main-ship cockpit function. */
     @Override

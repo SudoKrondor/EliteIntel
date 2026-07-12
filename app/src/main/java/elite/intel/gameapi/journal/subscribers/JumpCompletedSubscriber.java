@@ -1,5 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
+import elite.intel.companion.CompanionRuntime;
+
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.dao.DestinationReminderDao;
@@ -8,7 +10,6 @@ import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.DiscoveryScanner;
-import elite.intel.gameapi.SensorDataEvent;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -122,21 +123,20 @@ public class JumpCompletedSubscriber {
 
             if (!event.isReplay()) {
                 if (playerSession.isRouteAnnouncementOn()) {
-                    //GameEventBus.publish(new RouteAnnouncementEvent(sb.toString()));
-                    GameEventBus.publish(new SensorDataEvent(sb.toString(), "Announce this route information.",
-                            SensorDataEvent.TOPIC_NAVIGATION));
+                    CompanionRuntime.narrator().narrate(sb.toString(), "Announce this route information.",
+                            "navigation");
                 }
                 if (isSellerSystem && station != null) {
-                    GameEventBus.publish(new SensorDataEvent(
+                    CompanionRuntime.narrator().narrate(
                             "Head to " + station.getSourceStationName() + " buy " + station.getSourceCommodity(),
                             "Remind the commander of their active trade route: state the station name and the commodity to buy.",
-                            SensorDataEvent.TOPIC_TRADE));
+                            "trade");
                 }
                 if (isBuyerSystem && station != null) {
-                    GameEventBus.publish(new SensorDataEvent(
+                    CompanionRuntime.narrator().narrate(
                             "Head to " + station.getDestinationStationName() + " sell " + station.getDestinationCommodity(),
                             "Remind the commander of their active trade route: state the station name and the commodity to sell.",
-                            SensorDataEvent.TOPIC_TRADE));
+                            "trade");
                 }
             }
 

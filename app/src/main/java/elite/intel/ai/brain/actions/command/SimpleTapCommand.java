@@ -36,7 +36,8 @@ public abstract class SimpleTapCommand implements IntelCommand {
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(binding)));
+        return null;
     }
 }

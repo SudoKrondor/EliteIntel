@@ -3,7 +3,6 @@ package elite.intel.ai.brain.actions.command.builtin;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.dao.CodexEntryDao;
 import elite.intel.db.managers.BioSamplesManager;
 import elite.intel.db.managers.CodexEntryManager;
@@ -30,7 +29,10 @@ import static elite.intel.util.NavigationUtils.calculateSurfaceDistance;
 public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand {
     public static final String ID = "navigate_to_bio_sample_codex_entry";
 
-    @Override public String llmDescription() { return "Plot a route to a saved biological sample codex entry."; }
+    @Override
+    public String llmDescription() {
+        return "Plot surface navigation to the nearest saved biological-sample / codex location on the current planet (guides to the next organism to scan).";
+    }
 
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
@@ -54,19 +56,17 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
     }
 
     @Override
-    public void execute(JsonObject params, String responseText) {
+    public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
 
         if (currentLocation == null || status.getStatus() == null) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.navigate.noLocation")));
-            return;
+            return StringUtls.localizedLlm("handler.navigate.noLocation");
         }
 
         List<CodexEntryDao.CodexEntry> codexEntries = getCodexEntries(currentLocation);
         if (codexEntries.isEmpty()) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.codex.notFound")));
-            return;
+            return StringUtls.localizedLlm("handler.codex.notFound");
         }
 
         double planetRadius = status.getStatus().getPlanetRadius();
@@ -76,8 +76,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         Tuple<CodexEntryDao.CodexEntry, String> target = findBestBioTarget(codexEntries, currentLocation.getPartialBioSamples(), playerLat, playerLon, planetRadius);
 
         if (target.getSample() == null) {
-            GameEventBus.publish(new AiVoxResponseEvent(target.getNote()));
-            return;
+            return target.getNote();
         }
 
         TargetLocation nav = new TargetLocation();
@@ -88,7 +87,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         playerSession.setTracking(nav);
         playerSession.setNavigationAnnouncementOn(true);
 
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.codex.heading", target.getSample().getEntryName())));
+        return StringUtls.localizedLlm("handler.codex.heading", target.getSample().getEntryName());
     }
 
     private List<CodexEntryDao.CodexEntry> getCodexEntries(LocationDto currentLocation) {

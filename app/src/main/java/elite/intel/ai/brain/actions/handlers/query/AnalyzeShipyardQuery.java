@@ -17,7 +17,10 @@ import elite.intel.util.yaml.YamlFactory;
 public class AnalyzeShipyardQuery extends BaseQueryAnalyzer implements IntelQuery {
     public static final String ID = "query_local_shipyard";
 
-    @Override public String llmDescription() { return "Report the ships available at the current station's shipyard."; }
+    @Override
+    public String llmDescription() {
+        return "Report the ships available for purchase at the current station's shipyard.";
+    }
 
 
     @Override public String id() { return ID; }
