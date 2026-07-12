@@ -71,14 +71,12 @@ public class HudLogArea extends JPanel {
     private static final float CHAT_BUBBLE_MAX_FRACTION = 0.72f;
     /** Accent rail thickness on the outer edge of a chat card. */
     private static final int CHAT_RAIL_W = HudPalette.HUD_BORDER_THICKNESS_ACCENT;
-    /** Gap between a card's rail and its text column. */
+    /** Minimum gap between a card's text column and its rail. */
     private static final int CHAT_RAIL_TEXT_GAP = 10;
     /** Vertical gap between adjacent chat cards. */
     private static final int CHAT_CARD_GAP = 14;
     /** Gap between a card's timestamp line and its first text line. */
     private static final int CHAT_TS_GAP = 2;
-    /** Arm length of the L-shaped corner brackets drawn around the active (speaking) AI card. */
-    private static final int CHAT_BRACKET_ARM = 14;
     /** Alpha of a normal card's rail; the active AI card draws its rail fully opaque. */
     private static final int CHAT_RAIL_ALPHA = 150;
     /** Alpha of the active AI card's background highlight at the rail edge (fades to transparent). */
@@ -422,8 +420,8 @@ public class HudLogArea extends JPanel {
      * Chat renderer: one merged, time-ordered stream of cards. Commander cards sit on the left with a green
      * rail; AI (Vega) cards sit on the right with a cyan rail. Each card shows a timestamp above its text.
      * The AI card that is still being written is the "active" card - it gets a fully-opaque rail, a faint
-     * left-fading highlight and L-shaped corner brackets instead of a typewriter caret. Its active treatment
-     * smoothly fades after the typewriter completes. The commander's own
+     * left-fading highlight and a fully opaque rail instead of a typewriter caret. Its active treatment smoothly
+     * fades after the typewriter completes. The commander's own
      * in-progress line types in the blinking bottom prompt row (its waiting cursor) before it posts.
      * This method orchestrates layout/scroll; each card kind is drawn by a dedicated painter.
      */
@@ -511,7 +509,7 @@ public class HudLogArea extends JPanel {
     }
 
     /** Right (Vega) card: cyan rail, timestamp, text right-anchored (single line) or column-aligned (wrapped);
-     *  the active card adds a left-fading highlight and corner brackets in place of a caret. */
+     *  the active card adds a left-fading highlight in place of a caret. */
     private void paintVegaCard(Graphics2D g2, Message msg, List<String> lines, float activityStrength,
                                int y, int cardH, ChatMetrics m) {
         boolean multiLine = lines.size() > 1;
@@ -532,8 +530,6 @@ public class HudLogArea extends JPanel {
             int lx = multiLine ? colLeft : m.rightTextEnd() - m.fm().stringWidth(line);
             g2.drawString(line, lx, textTop + li * m.lineH() + m.fm().getAscent());
         }
-        int bracketAlpha = Math.round(FULL_ALPHA * activityStrength);
-        if (bracketAlpha > 0) paintCornerBrackets(g2, colLeft, y, boxRight, cardH, bracketAlpha);
     }
 
     /** Left (commander) card: green rail, timestamp, left-aligned text. */
@@ -596,16 +592,6 @@ public class HudLogArea extends JPanel {
         g2.setPaint(new GradientPaint(right, top, withAlpha(c, alpha), left, top, withAlpha(c, 0)));
         g2.fillRect(left, top, right - left, cardH);
         g2.setPaint(old);
-    }
-
-    /** L-shaped corner brackets on the top-right and bottom-right of the active AI card. */
-    private void paintCornerBrackets(Graphics2D g2, int left, int top, int right, int cardH, int alpha) {
-        g2.setColor(withAlpha(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, alpha));
-        int t = CHAT_RAIL_W, arm = CHAT_BRACKET_ARM, bottom = top + cardH;
-        g2.fillRect(right - arm, top, arm, t);          // top-right horizontal
-        g2.fillRect(right - t, top, t, arm);            // top-right vertical
-        g2.fillRect(right - arm, bottom - t, arm, t);   // bottom-right horizontal
-        g2.fillRect(right - t, bottom - arm, t, arm);   // bottom-right vertical
     }
 
     /** Thin translucent scrollbar drawn when content overflows; shared by the log and chat renderers. */
