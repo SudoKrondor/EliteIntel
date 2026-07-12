@@ -2,10 +2,18 @@ package elite.intel.ai.brain.i18n.ru;
 
 import elite.intel.ai.brain.i18n.InputNormalizerProvider;
 
+import java.util.LinkedHashMap;
 import java.util.Set;
 
 /** Russian input filters; acoustic corrections can be added when Russian STT mishears are characterised. */
 public class RussianInputNormalizerRules implements InputNormalizerProvider {
+
+    @Override
+    public LinkedHashMap<String, String> buildPhoneticMap() {
+        LinkedHashMap<String, String> corrections = new LinkedHashMap<>();
+        corrections.put("деполи", "диполи");
+        return corrections;
+    }
 
     @Override
     public Set<String> stopWords() {
