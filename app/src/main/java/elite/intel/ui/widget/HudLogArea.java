@@ -6,11 +6,14 @@ import elite.intel.ui.theme.HudGlyphs;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.font.TextAttribute;
+import java.awt.font.TextLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.text.AttributedString;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -715,48 +718,35 @@ public class HudLogArea extends JPanel implements Scrollable {
 
     private void paintSystemLine(Graphics2D g2, Message message, RenderedLine line, FontMetrics fm) {
         SelectionRange selection = selectionRange(line);
-        if (selection != null) {
-            int startX = line.x() + fm.stringWidth(line.text().substring(0, selection.start()));
-            int endX = line.x() + fm.stringWidth(line.text().substring(0, selection.end()));
-            g2.setColor(HudPalette.HUD_COLOR_ROLE_SELECTION_BACKGROUND);
-            g2.fillRect(startX, line.topY(), Math.max(1, endX - startX), fm.getHeight());
-            drawSystemSegment(g2, message, line, fm, 0, selection.start(), false);
-            drawSystemSegment(g2, message, line, fm, selection.start(), selection.end(), true);
-            drawSystemSegment(g2, message, line, fm, selection.end(), line.text().length(), false);
-            return;
-        }
-        drawSystemSegment(g2, message, line, fm, 0, line.text().length(), false);
-    }
-
-    private void drawSystemSegment(Graphics2D g2, Message message, RenderedLine line, FontMetrics fm,
-                                   int from, int to, boolean selected) {
-        if (from >= to) return;
-        int x = line.x() + fm.stringWidth(line.text().substring(0, from));
-        String segment = line.text().substring(from, to);
-        if (selected) {
-            g2.setColor(HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT);
-            g2.drawString(segment, x, line.topY() + fm.getAscent());
-            return;
-        }
+        String text = line.text();
+        AttributedString attributed = new AttributedString(text);
+        attributed.addAttribute(TextAttribute.FONT, g2.getFont());
+        attributed.addAttribute(TextAttribute.FOREGROUND, style.textColor);
 
         if (style == Style.SYSTEM_LOG && line.lineIndex() == 0 && message.prefixLen > 0) {
-            int timestampEnd = Math.min(message.prefixLen, line.text().length());
-            if (from < timestampEnd) {
-                int split = Math.min(to, timestampEnd);
-                String timestamp = line.text().substring(from, split);
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT);
-                g2.drawString(timestamp, x, line.topY() + fm.getAscent());
-                x += fm.stringWidth(timestamp);
-                if (split == to) return;
-                segment = line.text().substring(split, to);
-            }
-            g2.setColor(style.textColor);
-            g2.drawString(segment, x, line.topY() + fm.getAscent());
-            return;
+            int timestampEnd = Math.min(message.prefixLen, text.length());
+            attributed.addAttribute(TextAttribute.FOREGROUND,
+                    HudPalette.HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT, 0, timestampEnd);
         }
 
-        g2.setColor(style.textColor);
-        g2.drawString(segment, x, line.topY() + fm.getAscent());
+        if (selection != null) {
+            attributed.addAttribute(TextAttribute.FOREGROUND,
+                    HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, selection.start(), selection.end());
+        }
+
+        TextLayout layout = new TextLayout(attributed.getIterator(), g2.getFontRenderContext());
+        float baseline = line.topY() + fm.getAscent();
+        if (selection != null) {
+            Graphics2D selectionGraphics = (Graphics2D) g2.create();
+            try {
+                selectionGraphics.translate(line.x(), baseline);
+                selectionGraphics.setColor(HudPalette.HUD_COLOR_ROLE_SELECTION_BACKGROUND);
+                selectionGraphics.fill(layout.getLogicalHighlightShape(selection.start(), selection.end()));
+            } finally {
+                selectionGraphics.dispose();
+            }
+        }
+        layout.draw(g2, line.x(), baseline);
     }
 
     /**
