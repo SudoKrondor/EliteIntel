@@ -5,6 +5,7 @@ import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 
 /**
@@ -23,6 +24,7 @@ public class HudSection extends HudPanel {
     private JComponent footer;
     private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+    private boolean topRightChamfered;
 
     /**
      * Creates a titled section with a supplied body layout.
@@ -142,6 +144,18 @@ public class HudSection extends HudPanel {
     }
 
     /**
+     * Toggles a HUD-style diagonal cut at the section's top-right corner.
+     *
+     * @param chamfered whether the top-right corner should be clipped diagonally
+     */
+    public void setTopRightChamfered(boolean chamfered) {
+        if (topRightChamfered == chamfered) return;
+        topRightChamfered = chamfered;
+        revalidate();
+        repaint();
+    }
+
+    /**
      * Updates the section header title while preserving the HUD header styling and uppercase convention.
      *
      * @param title localized section title
@@ -216,7 +230,17 @@ public class HudSection extends HudPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+        if (topRightChamfered) {
+            Graphics2D base = (Graphics2D) g.create();
+            try {
+                base.clip(sectionShape(0, 0, getWidth() - 1, getHeight() - 1));
+                super.paintComponent(base);
+            } finally {
+                base.dispose();
+            }
+        } else {
+            super.paintComponent(g);
+        }
         if (sectionVariant == Variant.FLAT) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
@@ -243,7 +267,9 @@ public class HudSection extends HudPanel {
             int arc = HudPalette.HUD_PANEL_ARC;
 
             Shape originalClip = g2.getClip();
-            g2.setClip(new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
+            g2.setClip(topRightChamfered
+                    ? sectionShape(1, 1, w - 2, h - 2)
+                    : new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
 
             Component header = getComponentCount() > 0 ? getComponent(0) : null;
             if (header != null) {
@@ -266,10 +292,45 @@ public class HudSection extends HudPanel {
 
             Color borderColor = (Color) getClientProperty(AppTheme.HUD_CARD_BORDER_COLOR);
             g2.setColor(borderColor == null ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : borderColor);
-            g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+            if (topRightChamfered) {
+                g2.draw(sectionShape(0, 0, w - 1, h - 1));
+            } else {
+                g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+            }
         } finally {
             g2.dispose();
         }
+    }
+
+    @Override
+    protected void paintChildren(Graphics g) {
+        if (!topRightChamfered) {
+            super.paintChildren(g);
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.clip(sectionShape(0, 0, getWidth() - 1, getHeight() - 1));
+            super.paintChildren(g2);
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    private Shape sectionShape(float x, float y, float width, float height) {
+        float right = x + Math.max(0, width);
+        float bottom = y + Math.max(0, height);
+        float cut = Math.min(HudPalette.HUD_GAP, Math.min(Math.max(0, width) / 2f, Math.max(0, height) / 2f));
+
+        Path2D.Float shape = new Path2D.Float();
+        shape.moveTo(x, y);
+        shape.lineTo(right - cut, y);
+        shape.lineTo(right, y + cut);
+        shape.lineTo(right, bottom);
+        shape.lineTo(x, bottom);
+        shape.closePath();
+        return shape;
     }
 
     @Override
