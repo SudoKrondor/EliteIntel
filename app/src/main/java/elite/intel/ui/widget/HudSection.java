@@ -21,6 +21,7 @@ public class HudSection extends HudPanel {
     private final JPanel header;
     private JComponent headerAction;
     private JComponent footer;
+    private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
 
     /**
@@ -118,6 +119,26 @@ public class HudSection extends HudPanel {
      */
     public JPanel body() {
         return body;
+    }
+
+    /**
+     * Applies one background surface to the section header and body while retaining the section frame.
+     * Passing {@code null} restores the default framed-section treatment.
+     *
+     * @param background surface colour, or {@code null} for the default HUD panel surface
+     */
+    public void setSurfaceBackground(Color background) {
+        if (background == null) {
+            headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+            body.setOpaque(false);
+        } else {
+            headerBackground = background;
+            body.setOpaque(true);
+            body.setBackground(background);
+        }
+        revalidate();
+        repaint();
+        body.repaint();
     }
 
     /**
@@ -227,7 +248,7 @@ public class HudSection extends HudPanel {
             Component header = getComponentCount() > 0 ? getComponent(0) : null;
             if (header != null) {
                 Rectangle bounds = header.getBounds();
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
+                g2.setColor(headerBackground);
                 g2.fillRect(1, 1, Math.max(0, w - 2), Math.max(0, bounds.height));
                 g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
                 g2.drawLine(1, bounds.y + bounds.height, Math.max(1, w - 2), bounds.y + bounds.height);

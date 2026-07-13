@@ -146,9 +146,9 @@ public class AiTabPanel extends JPanel {
         systemPanel = new HudLogArea(12, HudLogArea.Style.SYSTEM_LOG);
 
         // --- Main log area (conversation top, system below) ---
-        HudSection chatSection = logSection(getText("ai.section.conversation"), chatPanel);
+        HudSection chatSection = logSection(getText("ai.section.conversation"), hudApplicationScrollPane(chatPanel));
 
-        HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
+        HudSection systemSection = logSection(getText("ai.section.systemMessages"), hudApplicationScrollPane(systemPanel));
         systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
@@ -246,6 +246,7 @@ public class AiTabPanel extends JPanel {
 
     private HudSection logSection(String title, JComponent content) {
         HudSection section = new HudSection(title, new BorderLayout());
+        section.setSurfaceBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         section.body().add(content, BorderLayout.CENTER);
         return section;
     }

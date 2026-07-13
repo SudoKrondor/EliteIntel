@@ -49,7 +49,7 @@ public class AppTheme {
     /**
      * Opt-out client property for JScrollPane: when TRUE, applyDarkPalette does
      * NOT restyle this scroll pane (keeps its own viewport bg / border). Use for
-     * data-plane table scrolls that must keep the warm HUD_COLOR_ROLE_APPLICATION_BACKGROUND viewport instead of
+     * data-plane table scrolls and other HUD scroll panes that intentionally own a viewport background instead of
      * the cold HUD_COLOR_ROLE_PANEL_BACKGROUND that styleScrollPane applies. Mirrors
      * HUD_TABLE_STYLE_LOCKED for tables (ED_HUD_REFERENCE section 8.6).
      */
@@ -429,6 +429,19 @@ public class AppTheme {
      */
     public static JScrollPane hudScrollPane(Component view) {
         return new HudScrollPane(view);
+    }
+
+    /**
+     * Wraps a component in a HUD scroll pane whose viewport uses the application-shell background.
+     *
+     * @param view component displayed in the viewport
+     * @return styled scroll pane with an application-background viewport
+     */
+    public static JScrollPane hudApplicationScrollPane(Component view) {
+        JScrollPane scrollPane = new HudScrollPane(view);
+        scrollPane.getViewport().setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        scrollPane.putClientProperty(HUD_SCROLL_STYLE_LOCKED, Boolean.TRUE);
+        return scrollPane;
     }
 
     /**

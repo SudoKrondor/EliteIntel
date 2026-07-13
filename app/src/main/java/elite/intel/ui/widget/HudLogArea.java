@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * continuation lines indent to align with the message text, not the marker.
  * No title strip - intended to be placed inside a titled {@link HudSection}.
  */
-public class HudLogArea extends JPanel {
+public class HudLogArea extends JPanel implements Scrollable {
 
     /**
      * Visual style variant controlling the marker glyph, its color, and the body text color.
@@ -65,7 +65,6 @@ public class HudLogArea extends JPanel {
     private static final int PAD_X = 10;
     private static final int PAD_Y = 6;
     private static final int LINE_GAP = 4;
-    private static final int SCROLLBAR_W = 5;
     private static final int MARKER_GAP = 4;
     /** Chat bubbles wrap at this fraction of panel width so long lines don't span the whole panel. */
     private static final float CHAT_BUBBLE_MAX_FRACTION = 0.72f;
@@ -102,8 +101,6 @@ public class HudLogArea extends JPanel {
     /** Repaints the short post-typewriter fade while Vega's active-card treatment decays. */
     private final Timer activeCardTimer;
     private boolean caretVisible = false;
-    private int scrollOffset = 0;
-    private int totalContentHeight = 0;
 
     private static final class Message {
         final String fullText;
@@ -156,7 +153,7 @@ public class HudLogArea extends JPanel {
         this.style = style;
         this.chat = chat;
         setOpaque(true);
-        setBackground(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         typewriterTimer = new Timer(typewriterDelayMs, null);
         if (chat) {
             blinkTimer = new Timer(530, e -> {
@@ -170,13 +167,6 @@ public class HudLogArea extends JPanel {
             blinkTimer = null;
             activeCardTimer = null;
         }
-        addMouseWheelListener(e -> {
-            int lineHeight = getFontMetrics(hudFont()).getHeight();
-            // Negated: wheel-up -> older entries (higher scrollOffset), wheel-down -> newest/bottom
-            scrollOffset -= (int) (e.getPreciseWheelRotation() * lineHeight * 3);
-            clampScroll();
-            repaint();
-        });
     }
 
     @Override
@@ -239,12 +229,13 @@ public class HudLogArea extends JPanel {
         }
         typewriterTimer.stop();
         removeAllTimerListeners();
-        scrollOffset = 0;
         Message msg = new Message(text, prefixLen, msgStyle, align, timestamp);
         messages.add(msg);
         while (messages.size() > MAX_MESSAGES) messages.remove(0);
         startTypewriter(msg);
+        revalidate();
         repaint();
+        scrollToBottom();
     }
 
     /**
@@ -257,7 +248,9 @@ public class HudLogArea extends JPanel {
         messages.clear();
         transcript.clear();
         offscreen = null;
+        revalidate();
         repaint();
+        scrollToBottom();
     }
 
     /**
@@ -272,9 +265,106 @@ public class HudLogArea extends JPanel {
         return getFont().deriveFont(HudPalette.HUD_FONT_LOG_PANEL);
     }
 
-    private void clampScroll() {
-        int maxScroll = Math.max(0, totalContentHeight - getHeight());
-        scrollOffset = Math.max(0, Math.min(scrollOffset, maxScroll));
+    /** Returns the canvas size required by the current message stream for the viewport width. */
+    @Override
+    public Dimension getPreferredSize() {
+        int width = layoutWidth();
+        int contentHeight = calculateContentHeight(width);
+        return new Dimension(width, Math.max(contentHeight, viewportHeight()));
+    }
+
+    /** Supplies the preferred viewport size used by Swing when the HUD scroll pane is first laid out. */
+    @Override
+    public Dimension getPreferredScrollableViewportSize() {
+        return getPreferredSize();
+    }
+
+    /** Returns the wheel increment in logical HUD text rows. */
+    @Override
+    public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return Math.max(1, getFontMetrics(hudFont()).getHeight() * 3);
+    }
+
+    /** Returns a block increment that advances almost one visible viewport. */
+    @Override
+    public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+        return Math.max(getScrollableUnitIncrement(visibleRect, orientation, direction),
+                visibleRect.height - getFontMetrics(hudFont()).getHeight());
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportWidth() {
+        return true;
+    }
+
+    @Override
+    public boolean getScrollableTracksViewportHeight() {
+        return false;
+    }
+
+    private int layoutWidth() {
+        int width = getWidth();
+        if (width <= 0 && getParent() != null) width = getParent().getWidth();
+        return Math.max(1, width);
+    }
+
+    private int viewportHeight() {
+        Container parent = getParent();
+        if (parent instanceof JViewport viewport) return Math.max(0, viewport.getHeight());
+        return Math.max(0, getHeight());
+    }
+
+    private int calculateContentHeight(int width) {
+        Font font = hudFont();
+        if (!chat) {
+            FontMetrics fm = getFontMetrics(font);
+            int textX = PAD_X + fm.stringWidth(style.marker) + MARKER_GAP;
+            int maxW = Math.max(1, width - textX - PAD_X);
+            int height = PAD_Y;
+            for (Message message : messages) {
+                height += wrapText(message.complete ? message.fullText : message.visibleText, fm, maxW).size()
+                        * fm.getHeight() + LINE_GAP;
+            }
+            return height;
+        }
+
+        ChatMetrics metrics = chatMetrics(font, width);
+        Message newest = messages.isEmpty() ? null : messages.get(messages.size() - 1);
+        boolean cmdrAnimating = newest != null && !newest.complete && newest.align == Align.LEFT;
+        List<List<String>> wrapped = new ArrayList<>();
+        int historyCount = cmdrAnimating ? messages.size() - 1 : messages.size();
+        for (int i = 0; i < historyCount; i++) {
+            Message message = messages.get(i);
+            wrapped.add(wrapText(message.complete ? message.fullText : message.visibleText,
+                    metrics.fm(), metrics.wrapW()));
+        }
+
+        int activeRows = cmdrAnimating
+                ? wrapText(newest.visibleText, metrics.fm(), metrics.wrapW()).size()
+                : 1;
+        int height = PAD_Y + activeRows * metrics.lineH() + LINE_GAP;
+        for (List<String> lines : wrapped) height += cardHeight(lines, metrics) + CHAT_CARD_GAP;
+        return height;
+    }
+
+    private void scrollToBottom() {
+        SwingUtilities.invokeLater(() -> {
+            Container parent = getParent();
+            if (!(parent instanceof JViewport viewport)) return;
+            JScrollPane scrollPane = viewport.getParent() instanceof JScrollPane parentScroll
+                    ? parentScroll : null;
+            if (scrollPane == null) return;
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum() - vertical.getVisibleAmount());
+        });
+    }
+
+    private boolean isScrolledToBottom() {
+        Container parent = getParent();
+        if (!(parent instanceof JViewport viewport)) return true;
+        if (!(viewport.getParent() instanceof JScrollPane scrollPane)) return true;
+        JScrollBar vertical = scrollPane.getVerticalScrollBar();
+        return vertical.getValue() + vertical.getVisibleAmount() >= vertical.getMaximum() - 1;
     }
 
     private void removeAllTimerListeners() {
@@ -285,9 +375,12 @@ public class HudLogArea extends JPanel {
 
     private void startTypewriter(Message target) {
         typewriterTimer.addActionListener(e -> {
+            boolean wasAtBottom = isScrolledToBottom();
             if (target.complete) {
                 target.visibleText = target.fullText;
                 typewriterTimer.stop();
+                revalidate();
+                if (wasAtBottom) scrollToBottom();
                 paintImmediately(0, 0, getWidth(), getHeight());
                 return;
             }
@@ -301,6 +394,8 @@ public class HudLogArea extends JPanel {
                 typewriterTimer.stop();
                 retainVegaCardActivity(target);
             }
+            revalidate();
+            if (wasAtBottom) scrollToBottom();
             paintImmediately(0, 0, getWidth(), getHeight());
         });
         typewriterTimer.start();
@@ -335,7 +430,7 @@ public class HudLogArea extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
         g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        g2.setColor(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+        g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         g2.fillRect(0, 0, w, h);
 
         if (chat) {
@@ -349,7 +444,7 @@ public class HudLogArea extends JPanel {
         g2.setFont(font);
         FontMetrics fm = g2.getFontMetrics();
         int textX = PAD_X + fm.stringWidth(style.marker) + MARKER_GAP;
-        int maxW = w - textX - PAD_X - SCROLLBAR_W;
+        int maxW = w - textX - PAD_X;
 
         // Plain top-down log (SYSTEM_LOG): newest pinned to the bottom, older entries scroll up.
         if (!messages.isEmpty()) {
@@ -358,14 +453,7 @@ public class HudLogArea extends JPanel {
                 wrappedHistory.add(wrapText(m.complete ? m.fullText : m.visibleText, fm, maxW));
             }
 
-            int newTotalH = PAD_Y;
-            for (List<String> lines : wrappedHistory) {
-                newTotalH += lines.size() * fm.getHeight() + LINE_GAP;
-            }
-            totalContentHeight = newTotalH;
-            clampScroll();
-
-            int y = h - PAD_Y + scrollOffset;
+            int y = h - PAD_Y;
             for (int i = messages.size() - 1; i >= 0; i--) {
                 List<String> lines = wrappedHistory.get(i);
                 int blockH = lines.size() * fm.getHeight();
@@ -408,8 +496,6 @@ public class HudLogArea extends JPanel {
 
                 y -= LINE_GAP;
             }
-
-            if (totalContentHeight > h) drawScrollbar(g2, w, h);
         }
 
         g2.dispose();
@@ -446,15 +532,8 @@ public class HudLogArea extends JPanel {
             Message msg = messages.get(i);
             wrapped.add(wrapText(msg.complete ? msg.fullText : msg.visibleText, m.fm(), m.wrapW()));
         }
-        int total = PAD_Y + cursorZoneH;
-        for (List<String> lines : wrapped) {
-            total += cardHeight(lines, m) + CHAT_CARD_GAP;
-        }
-        totalContentHeight = total;
-        clampScroll();
-
         // Draw cards bottom-up: newest sits just above the prompt row, older cards extend upward.
-        int y = h - PAD_Y - cursorZoneH + scrollOffset;
+        int y = h - PAD_Y - cursorZoneH;
         for (int i = historyCount - 1; i >= 0; i--) {
             Message msg = messages.get(i);
             List<String> lines = wrapped.get(i);
@@ -470,8 +549,6 @@ public class HudLogArea extends JPanel {
             }
             y -= CHAT_CARD_GAP;
         }
-
-        if (totalContentHeight > h) drawScrollbar(g2, w, h);
         paintCommanderPrompt(g2, h, m, cmdrAnimating, activeLines);
     }
 
@@ -495,11 +572,20 @@ public class HudLogArea extends JPanel {
         Font tsFont = font.deriveFont(font.getSize2D() * 0.82f);
         FontMetrics fm = g2.getFontMetrics(font);
         FontMetrics tsFm = g2.getFontMetrics(tsFont);
-        int rightRailX = w - PAD_X - SCROLLBAR_W - CHAT_RAIL_W;
+        return chatMetrics(font, w, fm, tsFm);
+    }
+
+    private ChatMetrics chatMetrics(Font font, int w) {
+        Font tsFont = font.deriveFont(font.getSize2D() * 0.82f);
+        return chatMetrics(font, w, getFontMetrics(font), getFontMetrics(tsFont));
+    }
+
+    private ChatMetrics chatMetrics(Font font, int w, FontMetrics fm, FontMetrics tsFm) {
+        int rightRailX = w - PAD_X - CHAT_RAIL_W;
         int leftTextX = PAD_X + CHAT_RAIL_W + CHAT_RAIL_TEXT_GAP;
         int rightTextEnd = rightRailX - CHAT_RAIL_TEXT_GAP;
         int wrapW = Math.max(10, Math.min(rightTextEnd - leftTextX, Math.round(w * CHAT_BUBBLE_MAX_FRACTION)));
-        return new ChatMetrics(font, tsFont, fm, tsFm,
+        return new ChatMetrics(font, font.deriveFont(font.getSize2D() * 0.82f), fm, tsFm,
                 fm.getHeight(), tsFm.getHeight(), leftTextX, rightRailX, rightTextEnd, wrapW);
     }
 
@@ -592,20 +678,6 @@ public class HudLogArea extends JPanel {
         g2.setPaint(new GradientPaint(right, top, withAlpha(c, alpha), left, top, withAlpha(c, 0)));
         g2.fillRect(left, top, right - left, cardH);
         g2.setPaint(old);
-    }
-
-    /** Thin translucent scrollbar drawn when content overflows; shared by the log and chat renderers. */
-    private void drawScrollbar(Graphics2D g2, int w, int h) {
-        int barX = w - SCROLLBAR_W - 1;
-        int barTop = 2;
-        int barH = h - 4;
-        int thumbH = Math.max(16, (int) ((float) h / totalContentHeight * barH));
-        int maxScroll = Math.max(1, totalContentHeight - h);
-        int thumbY = barTop + (int) ((float) (maxScroll - scrollOffset) / maxScroll * (barH - thumbH));
-        g2.setColor(new Color(255, 255, 255, 30));
-        g2.fillRoundRect(barX, barTop, SCROLLBAR_W, barH, 3, 3);
-        g2.setColor(new Color(255, 255, 255, scrollOffset > 0 ? 100 : 55));
-        g2.fillRoundRect(barX, thumbY, SCROLLBAR_W, thumbH, 3, 3);
     }
 
     /** Returns {@code base} with the given alpha, so rails/highlights derive from a canon role, not a literal hue. */
