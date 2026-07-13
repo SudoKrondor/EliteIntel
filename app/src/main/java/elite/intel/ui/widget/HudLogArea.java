@@ -719,6 +719,7 @@ public class HudLogArea extends JPanel implements Scrollable {
     private void paintSystemLine(Graphics2D g2, Message message, RenderedLine line, FontMetrics fm) {
         SelectionRange selection = selectionRange(line);
         String text = line.text();
+        if (text.isEmpty()) return;
         AttributedString attributed = new AttributedString(text);
         attributed.addAttribute(TextAttribute.FONT, g2.getFont());
         attributed.addAttribute(TextAttribute.FOREGROUND, style.textColor);
