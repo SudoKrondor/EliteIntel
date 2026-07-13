@@ -23,6 +23,7 @@ public class HudSection extends HudPanel {
     private JComponent headerAction;
     private JComponent footer;
     private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+    private Color headerDividerColor;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
     private boolean topRightChamfered;
 
@@ -72,6 +73,9 @@ public class HudSection extends HudPanel {
         // HudSection owns the titled-card frame; HudPanel only supplies the dark rounded base fill.
         super(new BorderLayout(0, 0), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, Variant.FLAT);
         sectionVariant = variant == null ? Variant.FRAMED : variant;
+        headerDividerColor = sectionVariant == Variant.FLAT
+                ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION
+                : HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER;
         if (sectionVariant == Variant.FLAT) {
             setPaintBackgroundFill(false);
         }
@@ -141,6 +145,21 @@ public class HudSection extends HudPanel {
         revalidate();
         repaint();
         body.repaint();
+    }
+
+    /**
+     * Sets the separator colour between the section header and body.
+     * Passing {@code null} restores the default tone for this section variant.
+     *
+     * @param color separator colour, or {@code null} for the default
+     */
+    public void setHeaderDividerColor(Color color) {
+        headerDividerColor = color == null
+                ? (sectionVariant == Variant.FLAT
+                ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION
+                : HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER)
+                : color;
+        repaint();
     }
 
     /**
@@ -249,7 +268,7 @@ public class HudSection extends HudPanel {
                 Component header = getComponentCount() > 0 ? getComponent(0) : null;
                 if (header != null) {
                     Rectangle bounds = header.getBounds();
-                    g2.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
+                    g2.setColor(headerDividerColor);
                     g2.drawLine(1, bounds.y + bounds.height,
                                 Math.max(1, w - 2), bounds.y + bounds.height);
                 }
@@ -276,7 +295,7 @@ public class HudSection extends HudPanel {
                 Rectangle bounds = header.getBounds();
                 g2.setColor(headerBackground);
                 g2.fillRect(1, 1, Math.max(0, w - 2), Math.max(0, bounds.height));
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
+                g2.setColor(headerDividerColor);
                 g2.drawLine(1, bounds.y + bounds.height, Math.max(1, w - 2), bounds.y + bounds.height);
 
             }

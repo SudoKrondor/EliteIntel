@@ -252,6 +252,7 @@ public class AiTabPanel extends JPanel {
     private HudSection logSection(String title, JComponent content) {
         HudSection section = new HudSection(title, new BorderLayout());
         section.setSurfaceBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        section.setHeaderDividerColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
         section.setTopRightChamfered(true);
         section.body().add(content, BorderLayout.CENTER);
         return section;
