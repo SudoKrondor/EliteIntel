@@ -18,7 +18,6 @@ import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
-import elite.intel.util.json.JsonUtils;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -27,10 +26,11 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
-import elite.intel.util.Cypher;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
+import elite.intel.util.Cypher;
+import elite.intel.util.json.JsonUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -69,6 +69,8 @@ public final class CompanionRoutingHarness {
     private static final long FLAG_DOCKED = 1L;
     private static final long FLAG_LANDED = 2L;
     private static final long FLAG_SUPERCRUISE = 16L;
+    private static final long FLAG_IN_WING = 128L;
+    private static final long FLAG_HAS_LAT_LONG = 2_097_152L;
     private static final long FLAG_IN_MAIN_SHIP = 16_777_216L;
     private static final long FLAG_IN_SRV = 67_108_864L;
     private static final long FLAG2_ON_FOOT = 1L; // flags2
@@ -85,6 +87,8 @@ public final class CompanionRoutingHarness {
             {FLAG_IN_MAIN_SHIP | FLAG_LANDED, 0L},       // landed
             {FLAG_IN_SRV, 0L},                           // in the SRV
             {0L, FLAG2_ON_FOOT},                         // on foot
+            {FLAG_IN_MAIN_SHIP | FLAG_HAS_LAT_LONG, 0L}, // flying over a planetary surface
+            {FLAG_IN_MAIN_SHIP | FLAG_IN_WING, 0L},      // in a wing
     };
 
     private final Language language;
