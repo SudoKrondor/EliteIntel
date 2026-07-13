@@ -255,22 +255,25 @@ public class AiTabPanel extends JPanel {
     /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
     private HudGlyphButton buildClearLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudTrashGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */
     private HudGlyphButton buildSaveLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a memory-glyph button that dumps the companion's memory to a JSON file. */
     private HudGlyphButton buildDumpMemoryButton() {
         return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /**

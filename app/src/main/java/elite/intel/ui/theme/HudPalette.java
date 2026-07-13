@@ -104,6 +104,8 @@ public final class HudPalette {
     public static final int HUD_GAP = 8;
     /** Tight gap between adjacent compact controls (e.g. icon actions in a section header). */
     public static final int HUD_GAP_TIGHT = HUD_GAP / 2; // =4
+    /** Smaller gap between adjacent section-header icon actions. */
+    public static final int HUD_GAP_HEADER_ACTION = HUD_GAP_TIGHT / 2; // =2
     /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
     public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;
@@ -143,6 +145,8 @@ public final class HudPalette {
     public static final int HUD_ICON_NAV = 24;
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
+    /** Smaller glyph size for subdued section-header actions. */
+    public static final int HUD_ICON_HEADER_ACTION = HUD_ICON_TABLE - 2; // =16
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
     /** Row height of a stat readout ({@link elite.intel.ui.widget.HudStatCell}); reserves the emblem, label, value and bar. */
     public static final int HUD_STAT_CELL_HEIGHT = 72;

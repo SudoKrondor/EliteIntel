@@ -184,7 +184,7 @@ public class HudSection extends HudPanel {
             headerAction = null;
         }
         if (actions != null && actions.length > 0) {
-            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_TIGHT, 0));
+            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_HEADER_ACTION, 0));
             for (JComponent action : actions) {
                 strip.add(action);
             }
