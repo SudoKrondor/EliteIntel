@@ -72,6 +72,9 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
     public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
+    /** Semi-transparent selection surface derived from the standard HUD frame blue. */
+    public static final Color HUD_COLOR_ROLE_SELECTION_BACKGROUND = new Color(
+            HUD_COLOR_2D5C66.getRed(), HUD_COLOR_2D5C66.getGreen(), HUD_COLOR_2D5C66.getBlue(), 128);
     /** Bright accent painted on an input frame and its corner marks while it holds keyboard focus. */
     public static final Color HUD_COLOR_ROLE_INPUT_FOCUS = HUD_COLOR_FF822E;
     public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_6E4A28;
@@ -83,6 +86,9 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_FFB000;
     public static final Color HUD_COLOR_ROLE_DANGER = HUD_COLOR_D94F4F;
     public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_6E4A28;
+    /** More receded disabled tint for icon affordances, derived from the shared disabled role. */
+    public static final Color HUD_COLOR_ROLE_DISABLED_ICON = new Color(
+            HUD_COLOR_ROLE_DISABLED.getRed(), HUD_COLOR_ROLE_DISABLED.getGreen(), HUD_COLOR_ROLE_DISABLED.getBlue(), 128);
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_1A1206;
     public static final Color HUD_COLOR_ROLE_INFORMATION_MARK = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FFB000;

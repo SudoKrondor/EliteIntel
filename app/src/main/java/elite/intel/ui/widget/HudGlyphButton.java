@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Objects;
 
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_DISABLED_ICON;
 import static elite.intel.ui.theme.HudPalette.HUD_ICON_TABLE;
 import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
 
@@ -73,7 +74,7 @@ public final class HudGlyphButton extends JComponent {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                hover = true;
+                hover = isEnabled();
                 repaint();
             }
 
@@ -86,14 +87,14 @@ public final class HudGlyphButton extends JComponent {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
+                if (isEnabled() && SwingUtilities.isLeftMouseButton(e)) {
                     armed = true;
                 }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                boolean fire = armed && SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint());
+                boolean fire = isEnabled() && armed && SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint());
                 armed = false;
                 if (fire && onClick != null) {
                     onClick.run();
@@ -103,13 +104,25 @@ public final class HudGlyphButton extends JComponent {
     }
 
     @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (!enabled) {
+            hover = false;
+            armed = false;
+        }
+        setCursor(Cursor.getPredefinedCursor(enabled ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+        repaint();
+    }
+
+    @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             int gs = iconSize;
             int gx = (getWidth() - gs) / 2;
             int gy = (getHeight() - gs) / 2;
-            painter.paint(g2, gx, gy, gs, gs, hover ? hoverTint : restTint);
+            Color tint = !isEnabled() ? HUD_COLOR_ROLE_DISABLED_ICON : hover ? hoverTint : restTint;
+            painter.paint(g2, gx, gy, gs, gs, tint);
         } finally {
             g2.dispose();
         }

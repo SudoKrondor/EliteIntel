@@ -296,6 +296,40 @@ public final class HudGlyphs {
     }
 
     /**
+     * Draws the flat "copy" glyph centred within (x, y, w, h): two overlapping document outlines. Geometry is
+     * proportional so it scales with the box; caller chooses colour by state.
+     *
+     * @param g2    graphics context (not disposed by this method)
+     * @param x     left edge of the available area
+     * @param y     top edge of the available area
+     * @param w     width of the available area
+     * @param h     height of the available area
+     * @param color stroke colour for both document outlines
+     */
+    public static void paintHudCopyGlyph(Graphics2D g2, int x, int y, int w, int h, Color color) {
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Stroke oldStroke = g2.getStroke();
+        float strokeW = Math.max(2f, w / 9f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.setColor(color);
+
+        int backX = x + Math.round(w * 0.30f);
+        int backY = y + Math.round(h * 0.14f);
+        int backW = Math.round(w * 0.52f);
+        int backH = Math.round(h * 0.62f);
+        int frontX = x + Math.round(w * 0.14f);
+        int frontY = y + Math.round(h * 0.30f);
+        int frontW = Math.round(w * 0.52f);
+        int frontH = Math.round(h * 0.58f);
+        g2.drawRect(backX, backY, backW, backH);
+        g2.drawRect(frontX, frontY, frontW, frontH);
+
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
+    }
+
+    /**
      * Draws the flat "memory dump" glyph centred within (x, y, w, h): a database cylinder (a top rim ellipse, two
      * front band arcs, and the two side walls). It reads as "export the stored data", distinct from the save
      * glyph's arrow-into-tray, so the two header actions are not confused. All geometry is proportional so it

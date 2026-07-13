@@ -149,7 +149,11 @@ public class AiTabPanel extends JPanel {
         HudSection chatSection = logSection(getText("ai.section.conversation"), hudApplicationScrollPane(chatPanel));
 
         HudSection systemSection = logSection(getText("ai.section.systemMessages"), hudApplicationScrollPane(systemPanel));
-        systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
+        HudGlyphButton copyLogButton = buildCopyLogButton();
+        copyLogButton.setEnabled(false);
+        systemPanel.addPropertyChangeListener(HudLogArea.SELECTION_PROPERTY,
+                event -> copyLogButton.setEnabled(systemPanel.hasSelectedText()));
+        systemSection.setHeaderActions(copyLogButton, buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 chatSection,
@@ -250,6 +254,14 @@ public class AiTabPanel extends JPanel {
         section.setTopRightChamfered(true);
         section.body().add(content, BorderLayout.CENTER);
         return section;
+    }
+
+    /** Builds the SYSTEM LOG header action: copies the current text selection to the system clipboard. */
+    private HudGlyphButton buildCopyLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudCopyGlyph,
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.copy.tooltip"), systemPanel::copySelectedText,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
