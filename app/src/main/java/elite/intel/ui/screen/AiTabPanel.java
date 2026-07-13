@@ -159,7 +159,8 @@ public class AiTabPanel extends JPanel {
                 chatSection,
                 systemSection
         );
-        mainSplit.setResizeWeight(0.65);
+        // Keep the diagnostic log at 65% of its previous height: 35% -> 22.75% of the split.
+        mainSplit.setResizeWeight(0.7725);
 
         // --- Right sidebar ---
         JPanel sidebar = transparentPanel(new BorderLayout(0, HUD_GAP));
