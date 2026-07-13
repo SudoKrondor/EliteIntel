@@ -112,6 +112,8 @@ public final class HudPalette {
     public static final int HUD_GAP_TIGHT = HUD_GAP / 2; // =4
     /** Smaller gap between adjacent section-header icon actions. */
     public static final int HUD_GAP_HEADER_ACTION = HUD_GAP_TIGHT / 2; // =2
+    /** Width and height of the shared HUD scrollbars. */
+    public static final int HUD_SCROLLBAR_WIDTH = 7;
     /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
     public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;

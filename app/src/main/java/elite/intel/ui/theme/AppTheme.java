@@ -593,7 +593,7 @@ public class AppTheme {
     }
 
     public static void styleScrollBar(JScrollBar scrollBar) {
-        scrollBar.setPreferredSize(new Dimension(9, 9));
+        scrollBar.setPreferredSize(new Dimension(HUD_SCROLLBAR_WIDTH, HUD_SCROLLBAR_WIDTH));
         scrollBar.setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         scrollBar.setUnitIncrement(16);
         scrollBar.setUI(new BasicScrollBarUI() {
