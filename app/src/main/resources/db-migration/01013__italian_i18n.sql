@@ -60,7 +60,7 @@ SET name_it      = 'Niobio'
 WHERE LOWER(name) = LOWER('Niobium');
 
 UPDATE material_names
-SET name_it      = 'FFosforo'
+SET name_it = 'Fosforo'
 WHERE LOWER(name) = LOWER('Phosphorus');
 
 UPDATE material_names
@@ -1809,3 +1809,14 @@ WHERE LOWER(commodity) = LOWER('Wine');
 -- UPDATE commodities
 -- SET commodity_it = ''
 -- WHERE LOWER(commodity) = LOWER('Zeessze Ant Grub Glue');
+
+-- These base commodities were missing from this file entirely (no stub in the English diff). Translate before merge.
+-- UPDATE commodities
+-- SET commodity_it = ''
+-- WHERE LOWER(commodity) = LOWER('Chemicals');
+-- UPDATE commodities
+-- SET commodity_it = ''
+-- WHERE LOWER(commodity) = LOWER('Legal Drugs');
+-- UPDATE commodities
+-- SET commodity_it = ''
+-- WHERE LOWER(commodity) = LOWER('Weapons');
