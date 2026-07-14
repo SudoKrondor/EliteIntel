@@ -20,7 +20,7 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
 
     @Override
     public String llmDescription() {
-        return "Recall the SRV to the ship and board it (return the buggy to the ship's vehicle hangar).";
+        return "Return the deployed SRV or buggy to the main ship and board it, placing the vehicle in the ship's hangar. The SRV goes to the ship; this does not call the ship to the commander.";
     }
 
 

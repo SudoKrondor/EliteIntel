@@ -24,7 +24,7 @@ public final class ReturnToSurfaceCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Recall the ship to your location to pick you up while in the SRV or on foot.";
+        return "Recall the main ship to the commander's current location for pickup while the commander is in an SRV or on foot. The ship comes to the commander; this does not return the SRV or buggy to the ship.";
     }
 
 
