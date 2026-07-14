@@ -4,7 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.llm.CompanionLlmGateway;
@@ -55,10 +56,11 @@ class CompanionConversationIntegrationTest {
     private final SessionMemoryGateway memory = new SessionMemoryGateway(() -> null);
     private final CompanionState state = new CompanionState();
     private final RecordingSpeech speech = new RecordingSpeech();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @AfterEach
     void clearRuntime() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     @Test
@@ -67,16 +69,19 @@ class CompanionConversationIntegrationTest {
 
         // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
         transport.scripted.add(response(
-                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\"}"),
+                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\","
+                        + "\"is_question\":false,\"canonical_fact\":\"\"}"),
                 call("c2", "speak", "{\"text\":\"Course plotted.\"}")));
         // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
         transport.scripted.add(response(
-                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\"}"),
+                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\","
+                        + "\"is_question\":false,\"canonical_fact\":\"The hull is solid.\"}"),
                 call("c6", "speak", "{\"text\":\"Noted.\"}")));
         // Turn 3: the stated fact is injected as a "Relevant remembered fact" before the turn, so the companion
         // answers from it in one round (no in-turn lookup).
         transport.scripted.add(response(
-                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\"}"),
+                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\","
+                        + "\"is_question\":true,\"canonical_fact\":\"\"}"),
                 call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
 
         // Submit the conversation as a real burst. The commander cognitive lane must preserve intake order, so
@@ -112,10 +117,10 @@ class CompanionConversationIntegrationTest {
         DangerousActionPolicy notDangerous = invocation -> false;
         ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
-        CompanionRuntime.install(llm, speech, execution, memory, reducer, state);
+        runtimeGraph = CompanionRuntimeTestSupport.install(llm, speech, execution, memory, reducer, state);
         ThoughtDependencies dependencies = new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
-                notDangerous, coordinator);
+                notDangerous, coordinator, runtimeGraph.runtimeGeneration());
         // Pin the reflex gate off this run (no game tools / no commands), so every turn stays LLM-driven.
         return new ThoughtDispatcher(dependencies, new ReflexResolver(() -> List.of(), notDangerous));
     }

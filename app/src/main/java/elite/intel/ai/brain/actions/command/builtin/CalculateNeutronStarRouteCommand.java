@@ -1,16 +1,14 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.NeutronStarRouteManager;
 import elite.intel.db.managers.ShipLoadoutManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.shiploadout.ShipLoadOutDto;
 import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
@@ -84,7 +82,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         Integer efficiency = getIntSafely(key.getAsString());
         if (efficiency != null && efficiency < 1 || efficiency > 100) {
-            return StringUtls.localizedLlm("handler.neutronRoute.efficiency");
+            efficiency = 50; // Default if none provided.
         }
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());

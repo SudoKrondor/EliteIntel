@@ -120,7 +120,7 @@ public final class EventThought extends Thought {
      * be narrated, so it is voiced unconditionally. Unused in verbatim mode (no prompt is composed).
      */
     @Override
-    protected List<LlmToolDefinition> systemTools() {
-        return dependencies.systemFunctionProvider().systemFunctions(source());
+    protected List<LlmToolDefinition> systemTools(List<LlmToolDefinition> gameTools) {
+        return dependencies.systemFunctionProvider().systemFunctions(source(), gameTools);
     }
 }

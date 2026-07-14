@@ -100,6 +100,29 @@ class SemanticActionReducerTest {
     }
 
     @Test
+    void clarificationTargetLookupUsesFreshSnapshotWithoutEmbedding() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        AtomicBoolean matcherRequested = new AtomicBoolean();
+        SemanticActionReducer snapshotReducer = new SemanticActionReducer(
+                (allowed, snapshot) -> {
+                    observed.set(snapshot);
+                    return snapshot == turnState ? catalog : List.of();
+                },
+                () -> {
+                    matcherRequested.set(true);
+                    return null;
+                },
+                (categories, input) -> List.of());
+
+        LlmToolDefinition target = snapshotReducer.findToolById(ALL, "navigate", turnState).orElseThrow();
+
+        assertEquals("navigate", target.name());
+        assertSame(turnState, observed.get());
+        assertTrue(!matcherRequested.get(), "id rehydration must not embed the terse continuation reply");
+    }
+
+    @Test
     void reusesNonReflexSemanticQueryForTheSameTurn() {
         AtomicInteger queryEmbeds = new AtomicInteger();
         TextEmbedder counting = new TextEmbedder() {

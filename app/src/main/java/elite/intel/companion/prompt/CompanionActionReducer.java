@@ -6,6 +6,7 @@ import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -53,5 +54,21 @@ public interface CompanionActionReducer {
                                                 SemanticQuery semanticQuery,
                                                 GameStateSnapshot gameStateSnapshot) {
         return selectTools(allowedCategories, currentInput, semanticQuery);
+    }
+
+    /**
+     * Resolves one action id against the current turn's visible catalog, bypassing semantic narrowing. This is
+     * used only to re-offer a previously validated clarification target; implementations should still apply the
+     * supplied live-state visibility snapshot. The default preserves compatibility with simple test reducers by
+     * using their blank-input "offer all" behavior.
+     */
+    default Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories, String actionId,
+                                                     GameStateSnapshot gameStateSnapshot) {
+        if (actionId == null || actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return selectTools(allowedCategories, "", null, gameStateSnapshot).stream()
+                .filter(tool -> actionId.equals(tool.name()))
+                .findFirst();
     }
 }

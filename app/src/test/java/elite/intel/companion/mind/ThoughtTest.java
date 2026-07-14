@@ -2,12 +2,15 @@ package elite.intel.companion.mind;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.clarify.ClarificationCoordinator;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
@@ -30,6 +33,7 @@ import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.ClassifyTurnFunction;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
 import elite.intel.eventbus.GameEventBus;
@@ -63,17 +67,18 @@ class ThoughtTest {
     private final CompanionState state = new CompanionState();
     private DangerousActionPolicy dangerousPolicy = invocation -> false;
     private final ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
+    private final ClarificationCoordinator clarificationCoordinator = new ClarificationCoordinator();
 
     private ThoughtDependencies dependencies() {
         return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator);
+                reducer, state, dangerousPolicy, coordinator, clarificationCoordinator);
     }
 
     private ThoughtDependencies dependencies(IntelActionTypeResolver resolver) {
         return new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
-                reducer, state, dangerousPolicy, coordinator, resolver);
+                reducer, state, dangerousPolicy, coordinator, clarificationCoordinator, resolver);
     }
 
     @Test
@@ -94,6 +99,108 @@ class ThoughtTest {
         assertEquals(MemorySource.COMPANION, spoken.source(), "the companion's reply is recorded as COMPANION");
         assertEquals("on it", spoken.content(), "the spoken words are recorded, not a {status:spoken} ack");
         assertEquals(ConversationTopic.SOCIAL, spoken.topic());
+    }
+
+    @Test
+    void requestInputOpensContinuationAndReoffersItsTargetOnTheReplyTurn() {
+        LlmToolDefinition setSpeed = new LlmToolDefinition(
+                "set_speed", "Increase speed by an amount", "increase speed",
+                List.of(new ActionParameterSpec(
+                        "amount", "number", true, "Relative speed increase", List.of("10"), null)));
+        reducer.tools = List.of(setSpeed);
+        reducer.catalog = List.of(setSpeed);
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "set_speed".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        JsonObject requestArgs = new JsonObject();
+        requestArgs.addProperty(RequestInputFunction.PARAM_ACTION_ID, "set_speed");
+        requestArgs.addProperty(RequestInputFunction.PARAM_PARAMETER_NAME, "amount");
+        requestArgs.addProperty(RequestInputFunction.PARAM_QUESTION, "By how much?");
+        llm.scripted.add(ok(call(RequestInputFunction.ID, requestArgs)));
+
+        Thought.commander(Urgency.NORMAL, "increase speed", dependencies(types)).run();
+
+        PendingClarification pending = clarificationCoordinator.peek().orElseThrow();
+        assertEquals("increase speed", pending.originalInput());
+        assertEquals(List.of("By how much?"), speech.requests.stream().map(SpeechRequest::text).toList());
+        assertTrue(execution.toolNames().isEmpty(), "request_input must not enter the execution gateway");
+        assertTrue(llm.requests.get(0).tools().stream()
+                        .anyMatch(tool -> RequestInputFunction.ID.equals(tool.name())),
+                "a required game parameter makes request_input available");
+
+        PendingClarification claimed = clarificationCoordinator.claim().orElseThrow();
+        reducer.tools = List.of(); // "by 10" has no standalone reducer match
+        JsonObject speedArgs = new JsonObject();
+        speedArgs.addProperty("amount", 10);
+        llm.scripted.add(ok(call("set_speed", speedArgs)));
+        ThoughtContext replyContext = ThoughtContext.commander(Urgency.NORMAL, "by 10", "by 10")
+                .withPendingClarification(claimed);
+
+        Thought.commander(replyContext, dependencies(types)).run();
+
+        LlmRequest continuationRequest = llm.requests.get(1);
+        assertTrue(continuationRequest.tools().stream().anyMatch(tool -> "set_speed".equals(tool.name())),
+                "the pending target is re-offered even when the new phrase does not reduce to it");
+        String continuationInput = continuationRequest.messages().get(
+                continuationRequest.messages().size() - 1).content();
+        assertTrue(continuationInput.contains("<pending_clarification>"));
+        assertTrue(continuationInput.contains("<original_command>increase speed</original_command>"));
+        assertEquals(List.of("set_speed"), execution.toolNames());
+        assertEquals(10, execution.requests.get(0).arguments().get("amount").getAsInt());
+        assertEquals("increase speed\nby 10", execution.requests.get(0).commanderInput(),
+                "handler fallback parsing sees the originating order and the terse answer");
+        assertTrue(clarificationCoordinator.peek().isEmpty());
+    }
+
+    @Test
+    void parameterlessGameToolDoesNotOfferRequestInput() {
+        LlmToolDefinition openMap = new LlmToolDefinition(
+                "open_map", "Open the system map", "open map", List.of());
+        reducer.tools = List.of(openMap);
+        reducer.catalog = List.of(openMap);
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "open_map".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+        llm.scripted.add(ok(call("open_map", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "open map", dependencies(types)).run();
+
+        List<LlmToolDefinition> offered = llm.requests.get(0).tools();
+        assertTrue(offered.stream().anyMatch(tool -> "open_map".equals(tool.name())));
+        assertFalse(offered.stream().anyMatch(tool -> RequestInputFunction.ID.equals(tool.name())),
+                "a parameterless game tool leaves nothing for request_input to ask");
+        assertEquals(List.of("open_map"), execution.toolNames());
+        assertTrue(clarificationCoordinator.peek().isEmpty());
+    }
+
+    @Test
+    void aDifferentActionOnTheReplyTurnSupersedesPendingContext() {
+        LlmToolDefinition setSpeed = new LlmToolDefinition(
+                "set_speed", "Increase speed by an amount", "increase speed",
+                List.of(new ActionParameterSpec(
+                        "amount", "number", true, "Relative speed increase", List.of("10"), null)));
+        LlmToolDefinition openMap = new LlmToolDefinition(
+                "open_map", "Open the system map", "open map", List.of());
+        reducer.tools = List.of(openMap);
+        reducer.catalog = List.of(setSpeed, openMap);
+        PendingClarification claimed = clarificationCoordinator
+                .open("set_speed", "amount", "increase speed", "By how much?");
+        assertSame(claimed, clarificationCoordinator.claim().orElseThrow());
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id -> switch (id) {
+            case "set_speed", "open_map" -> IntelActionType.COMMAND;
+            default -> IntelActionType.SYSTEM;
+        });
+        llm.scripted.add(ok(call("open_map", new JsonObject())));
+        ThoughtContext replyContext = ThoughtContext.commander(Urgency.NORMAL, "open map", "open map")
+                .withPendingClarification(claimed);
+
+        Thought.commander(replyContext, dependencies(types)).run();
+
+        assertEquals(List.of("open_map"), execution.toolNames());
+        assertEquals("open map", execution.requests.get(0).commanderInput(),
+                "a new action must not inherit the abandoned speed order");
+        assertTrue(llm.requests.get(0).tools().stream().anyMatch(tool -> "set_speed".equals(tool.name())),
+                "the model can compare the pending target with normal candidates before superseding it");
+        assertTrue(clarificationCoordinator.peek().isEmpty());
     }
 
     @Test
@@ -151,6 +258,36 @@ class ThoughtTest {
     }
 
     @Test
+    void commanderCommandFailureKeepsImmediateAckAndReportsFailure() throws InterruptedException {
+        llm.scripted.add(ok(call("close_panel", new JsonObject())));
+        CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
+        execution.futuresByTool.put("close_panel", failedCommand);
+        Thought thought = Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes()));
+        Thread worker = new Thread(thought::run, "thought-command-failure-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("close_panel") && speech.requests.size() == 1);
+
+        String acknowledgement = speech.requests.get(0).text();
+        assertFalse(acknowledgement.isBlank(), "the intention acknowledgement must not wait for execution");
+
+        failedCommand.completeExceptionally(new IllegalStateException("binding missing"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertEquals(2, speech.requests.size(), "a failed command receives a second, explicit outcome reply");
+        String failureReply = speech.requests.get(1).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && acknowledgement.equals(e.content())),
+                "the immediate acknowledgement remains the first companion reply");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && failureReply.equals(e.content())),
+                "the failure reply is persisted instead of leaving the acknowledged command silently failed");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("binding missing")),
+                "internal execution details stay in diagnostics, not in companion memory");
+    }
+
+    @Test
     void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
         // A turn that runs both a QUERY and a COMMAND: the commander input is filed (as it is for every turn now),
         // the query records its call/result pair keeping that preceding user turn (else it replays as an assistant
@@ -191,6 +328,26 @@ class ThoughtTest {
     }
 
     @Test
+    void reflexCommandFailureIsRecordedAndVoiced() {
+        CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
+        failedCommand.completeExceptionally(new IllegalStateException("input binding missing"));
+        execution.futuresByTool.put("close_panel", failedCommand);
+
+        Thought.reflex(Urgency.NORMAL, "close the panel", "close_panel", dependencies(actionTypes())).run();
+
+        assertTrue(llm.requests.isEmpty());
+        assertEquals(1, speech.requests.size());
+        String failureReply = speech.requests.get(0).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
+                        && "close the panel".equals(e.content())),
+                "a failed reflex command now keeps the imperative it answers");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
+                        && failureReply.equals(e.content())),
+                "a failed reflex command receives the same visible outcome as an LLM-selected command");
+    }
+
+    @Test
     void commanderQueryAnswerIsRecordedAsResultAndVoicedDirectly() {
         // The query answer is in the execution result: recordOutcome records it as the call's RESULT and voices
         // it directly - no AiVoxResponseEvent / CompanionAnnouncementBridge detour (that event is system-only now).
@@ -214,6 +371,35 @@ class ThoughtTest {
     }
 
     @Test
+    void detachedQueryFailureIsRecordedAndVoiced() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> failedQuery = new CompletableFuture<>();
+        execution.futuresByTool.put("slow_query", failedQuery);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-query-failure-test");
+        worker.start();
+        waitUntil(() -> memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
+
+        failedQuery.completeExceptionally(new IllegalStateException("query backend unavailable"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertEquals(1, speech.requests.size(), "a failed query must not end as a silent processing turn");
+        String failureReply = speech.requests.get(0).text();
+        assertFalse(failureReply.isBlank());
+        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.TOOL_RESULT
+                        && e.toolLink() != null && e.toolLink().isResult() && failureReply.equals(e.content())),
+                "the failure is the query's linked tool result");
+        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isCall()
+                        && "slow_query".equals(e.toolLink().toolName())),
+                "the failed query keeps its matching call for replay");
+        assertTrue(memory.writes.stream().noneMatch(e -> TurnBoundaryMarkers.NO_ANSWER.equals(e.content())),
+                "a reported query failure is an answer, not an omitted reply");
+    }
+
+    @Test
     void commanderCommandSettlesTurnInOneRound() {
         // A command is self-narrating and terminal: it settles the turn in its own round, so the scripted
         // second round is never reached (the companion turn is single-round by design).
@@ -231,7 +417,8 @@ class ThoughtTest {
     @Test
     void classifyTurnAppliedBeforeInputIsRecorded() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "high"))));
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("navigation", "high", false, "routes are the subject"))));
 
         Thought.commander(Urgency.NORMAL, "let's talk routes", dependencies()).run();
 
@@ -240,14 +427,70 @@ class ThoughtTest {
         // the chosen importance.
         assertEquals(ConversationTopic.NAVIGATION, memory.writes.get(0).topic());
         assertEquals(MemoryImportance.HIGH, memory.writes.get(0).importance());
+        assertEquals("routes are the subject", memory.writes.get(0).canonicalFact());
         assertEquals(1, execution.toolNames().stream().filter(ClassifyTurnFunction.ID::equals).count(),
                 "classify_turn runs once (pre-execution result reused, not run twice)");
     }
 
     @Test
+    void routineAndMaxTurnsCannotStoreModelSuppliedCanonicalFacts() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("combat", "normal", false, "target the drives"))));
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("navigation", "max", false, "docking code is sierra nine"))));
+
+        Thought.commander(Urgency.NORMAL, "target the drives", dependencies()).run();
+        Thought.commander(Urgency.NORMAL, "remember verbatim: docking code sierra nine", dependencies()).run();
+
+        List<MemoryEntry> inputs = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .toList();
+        assertEquals(2, inputs.size());
+        assertNull(inputs.get(0).canonicalFact(), "NORMAL commands stay timeline-only");
+        assertEquals(MemoryImportance.NORMAL, inputs.get(0).importance());
+        assertNull(inputs.get(1).canonicalFact(), "MAX keeps the original input verbatim");
+        assertEquals(MemoryImportance.MAX, inputs.get(1).importance());
+        assertEquals("remember verbatim: docking code sierra nine", inputs.get(1).content());
+    }
+
+    @Test
+    void highTurnFallsBackToCurrentInputWhenCanonicalFactWasCopiedFromAnotherTurn() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                classifyArgs("combat", "high", false, "docking code is sierra nine"))));
+
+        String current = "if pirates corner us, retreat codeword is granite";
+        Thought.commander(Urgency.NORMAL, current, dependencies()).run();
+
+        MemoryEntry input = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .findFirst().orElseThrow();
+        assertEquals(MemoryImportance.HIGH, input.importance());
+        assertEquals(current, input.canonicalFact(), "ungrounded prior-turn text is replaced by current ground truth");
+    }
+
+    @Test
+    void gameActionTurnCannotBecomeAHighFact() {
+        execution.stateToMutate = state;
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID, classifyArgs("combat", "high", false, "target the drives")),
+                call("close_panel", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "target the drives", dependencies(actionTypes())).run();
+
+        MemoryEntry input = memory.writes.stream()
+                .filter(entry -> entry.source() == MemorySource.COMMANDER)
+                .findFirst().orElseThrow();
+        assertEquals(MemoryImportance.HIGH, input.importance(), "classification still stamps timeline importance");
+        assertNull(input.canonicalFact(), "a called game action never becomes trusted fact context");
+    }
+
+    @Test
     void questionTurnInputIsFiledAtLowSoItIsNotAFactCandidate() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID, classifyArgs("navigation", "normal", true)),
+        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
+                        classifyArgs("navigation", "normal", true, "fuel is forty percent")),
                 call(SpeakFunction.ID, text("forty percent"))));
 
         Thought.commander(Urgency.NORMAL, "how much fuel is left", dependencies()).run();
@@ -260,6 +503,7 @@ class ThoughtTest {
         assertEquals(MemorySource.COMMANDER, input.source());
         assertEquals("how much fuel is left", input.content());
         assertEquals(MemoryImportance.LOW, input.importance(), "a question is forced LOW so it is not a fact candidate");
+        assertNull(input.canonicalFact(), "questions cannot store model-supplied canonical facts");
         MemoryEntry spoken = memory.writes.get(1);
         assertEquals(MemorySource.COMPANION, spoken.source());
         assertEquals("forty percent", spoken.content());
@@ -339,12 +583,16 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "do the thing", dependencies()).run();
 
-        assertEquals(1, memory.writes.size());
+        assertEquals(2, memory.writes.size());
         MemoryEntry entry = memory.writes.get(0);
         assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, entry.topic());
         assertEquals(1, speech.requests.size(), "commander hears a service phrase");
         assertNotNull(speech.requests.get(0).text());
         assertFalse(speech.requests.get(0).text().isBlank());
+        MemoryEntry reply = memory.writes.get(1);
+        assertEquals(MemorySource.COMPANION, reply.source());
+        assertEquals(speech.requests.get(0).text(), reply.content(),
+                "the service failure is also recorded as the companion's reply");
         assertTrue(execution.toolNames().isEmpty());
     }
 
@@ -535,10 +783,15 @@ class ThoughtTest {
     }
 
     private static JsonObject classifyArgs(String topic, String importance, boolean isQuestion) {
+        return classifyArgs(topic, importance, isQuestion, "");
+    }
+
+    private static JsonObject classifyArgs(String topic, String importance, boolean isQuestion, String canonicalFact) {
         JsonObject o = new JsonObject();
         o.addProperty("topic", topic);
         o.addProperty("importance", importance);
         o.addProperty("is_question", isQuestion);
+        o.addProperty("canonical_fact", canonicalFact);
         return o;
     }
 
@@ -594,7 +847,7 @@ class ThoughtTest {
     }
 
     private static final class FakeSpeech implements SpeechGateway {
-        final List<SpeechRequest> requests = new ArrayList<>();
+        final List<SpeechRequest> requests = new CopyOnWriteArrayList<>();
 
         @Override public CompletableFuture<Void> submit(SpeechRequest request) {
             requests.add(request);
@@ -603,7 +856,7 @@ class ThoughtTest {
     }
 
     private static final class FakeMemory implements MemoryGateway {
-        final List<MemoryEntry> writes = new ArrayList<>();
+        final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
         SemanticQuery lastSemanticQuery;
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
@@ -627,6 +880,7 @@ class ThoughtTest {
         SemanticQuery lastSemanticQuery;
         GameStateSnapshot lastGameStateSnapshot;
         List<LlmToolDefinition> tools = List.of();
+        List<LlmToolDefinition> catalog = List.of();
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput) {
             lastCategories = allowedCategories;
@@ -644,6 +898,12 @@ class ThoughtTest {
                                                               GameStateSnapshot gameStateSnapshot) {
             lastGameStateSnapshot = gameStateSnapshot;
             return selectTools(allowedCategories, currentInput, semanticQuery);
+        }
+
+        @Override public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories,
+                                                                  String actionId,
+                                                                  GameStateSnapshot gameStateSnapshot) {
+            return catalog.stream().filter(tool -> actionId.equals(tool.name())).findFirst();
         }
     }
 }

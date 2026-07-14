@@ -187,6 +187,19 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
         return result;
     }
 
+    /** Rehydrates a clarification target directly from the current visible catalog, without overlap narrowing. */
+    @Override
+    public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories, String actionId,
+                                                    GameStateSnapshot gameStateSnapshot) {
+        if (actionId == null || actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return candidateSource.apply(allowedCategories, gameStateSnapshot).stream()
+                .filter(candidate -> actionId.equals(candidate.id()))
+                .map(GameToolCandidates.Candidate::tool)
+                .findFirst();
+    }
+
     private record Scored(GameToolCandidates.Candidate candidate, double score) {}
 
     /** Whether the input word matches any of a command's training-phrase words (inflection-tolerant or exact). */

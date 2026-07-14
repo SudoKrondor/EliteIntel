@@ -212,8 +212,11 @@ abstract class OpenAiCompatibleLlmAdapter implements LlmProviderAdapter {
 
     /** The protocol sends arguments as a JSON string; tolerate an already-parsed object too. */
     private JsonObject parseArguments(JsonElement arguments) {
-        if (arguments == null || arguments.isJsonNull()) {
+        if (arguments == null) {
             return new JsonObject();
+        }
+        if (arguments.isJsonNull()) {
+            throw new IllegalArgumentException("Tool arguments must be a JSON object");
         }
         if (arguments.isJsonObject()) {
             return arguments.getAsJsonObject();

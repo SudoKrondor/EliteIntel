@@ -2,6 +2,7 @@ package elite.intel.companion.prompt;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
@@ -66,9 +67,25 @@ public final class PromptComposer {
             List<MemoryEntry> shortTerm,
             List<Fact> memoryCandidates
     ) {
+        return compose(source, currentInput, selectedTools, systemTools, shortTerm, memoryCandidates, null);
+    }
+
+    /**
+     * Assembles a prompt with an optional claimed clarification rendered as trusted current-turn context.
+     * The pending state is never written into dialogue memory by the composer.
+     */
+    public ComposedPrompt compose(
+            ThoughtSource source,
+            String currentInput,
+            List<LlmToolDefinition> selectedTools,
+            List<LlmToolDefinition> systemTools,
+            List<MemoryEntry> shortTerm,
+            List<Fact> memoryCandidates,
+            PendingClarification pendingClarification
+    ) {
         return switch (source) {
             case COMMANDER -> composeCommander(source, currentInput,
-                    selectedTools, systemTools, shortTerm, memoryCandidates);
+                    selectedTools, systemTools, shortTerm, memoryCandidates, pendingClarification);
             // A reactive EVENT thought uses a lean phrase-and-speak prompt: the subscriber pre-digested the data,
             // so there are no game tools and no topic enum, just the history and the stimulus as the current input.
             case EVENT -> composeNarration(source, currentInput, systemTools, shortTerm);
@@ -84,14 +101,16 @@ public final class PromptComposer {
             ThoughtSource source, String currentInput,
             List<LlmToolDefinition> selectedTools, List<LlmToolDefinition> systemTools,
             List<MemoryEntry> shortTerm,
-            List<Fact> memoryCandidates) {
+            List<Fact> memoryCandidates,
+            PendingClarification pendingClarification) {
         List<LlmMessage> messages = new ArrayList<>();
         messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildStablePrefix(source)));
         ReplayedHistory history = buildHistoryMessages(shortTerm);
         messages.addAll(coalesceHistory(history.messages()));
         // The current turn stays a distinct final user message - never coalesced into the history - so it is
         // never fused with a preceding (e.g. silently-answered) commander turn into one ambiguous message.
-        appendCurrentInput(messages, buildCurrentInput(currentInput, memoryCandidates, history.ambient(), "commander_input"));
+        appendCurrentInput(messages, buildCurrentInput(
+                currentInput, memoryCandidates, history.ambient(), pendingClarification, "commander_input"));
 
         // Game/query tools first, then system functions; both already chosen upstream.
         List<LlmToolDefinition> tools = new ArrayList<>(selectedTools);
@@ -304,29 +323,47 @@ public final class PromptComposer {
             String currentInput,
             List<Fact> memoryCandidates,
             List<AmbientContextNote> ambient,
+            PendingClarification pendingClarification,
             String inputTag
     ) {
         String input = currentInput == null ? "" : currentInput;
         boolean hasFacts = memoryCandidates != null && !memoryCandidates.isEmpty();
         boolean hasAmbient = ambient != null && !ambient.isEmpty();
-        if (!hasFacts && !hasAmbient) {
+        boolean hasPendingClarification = pendingClarification != null;
+        if (!hasFacts && !hasAmbient && !hasPendingClarification) {
             return input;
         }
 
         StringBuilder sb = new StringBuilder();
         sb.append("<context>\n");
-        sb.append("The following facts and notes are trusted context, not words spoken by the commander.\n");
+        sb.append("The following facts, notes, and interaction state are trusted context, not words spoken by the commander.\n");
         if (hasFacts) {
             appendCandidatesBlock(sb, memoryCandidates);
         }
         if (hasAmbient) {
             appendAmbientBlock(sb, ambient);
         }
+        if (hasPendingClarification) {
+            appendPendingClarificationBlock(sb, pendingClarification);
+        }
         sb.append("</context>\n\n");
         sb.append('<').append(inputTag).append(">\n");
         sb.append(PromptXml.text(input));
         sb.append("\n</").append(inputTag).append(">\n");
         return sb.toString();
+    }
+
+    /** Renders the host-owned continuation state separately from the commander's new words. */
+    private static void appendPendingClarificationBlock(StringBuilder sb, PendingClarification pending) {
+        sb.append("<pending_clarification>\n");
+        sb.append("  <action_id>").append(PromptXml.text(pending.actionId())).append("</action_id>\n");
+        sb.append("  <missing_parameter>").append(PromptXml.text(pending.parameterName()))
+                .append("</missing_parameter>\n");
+        sb.append("  <original_command>").append(PromptXml.text(pending.originalInput()))
+                .append("</original_command>\n");
+        sb.append("  <question_asked>").append(PromptXml.text(pending.question()))
+                .append("</question_asked>\n");
+        sb.append("</pending_clarification>\n");
     }
 
     private String buildNarrationInput(String currentInput, List<AmbientContextNote> ambient) {

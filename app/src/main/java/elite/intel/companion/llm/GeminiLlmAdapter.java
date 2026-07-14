@@ -259,7 +259,10 @@ public final class GeminiLlmAdapter implements LlmProviderAdapter {
                 if (name.isBlank()) {
                     return invalid(finishReason, droppedText);
                 }
-                JsonObject args = functionCall.has("args") && functionCall.get("args").isJsonObject()
+                if (functionCall.has("args") && !functionCall.get("args").isJsonObject()) {
+                    return invalid(finishReason, droppedText);
+                }
+                JsonObject args = functionCall.has("args")
                         ? functionCall.getAsJsonObject("args") : new JsonObject();
                 // Gemini issues no call id; the id carries the function name (for result linkage) plus the
                 // thinking model's per-call thought signature (which must be replayed verbatim next turn).

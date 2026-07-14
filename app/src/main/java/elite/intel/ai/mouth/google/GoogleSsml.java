@@ -6,9 +6,8 @@ package elite.intel.ai.mouth.google;
  * <p>
  * The neural voices phrase flatly on bare punctuation, so this escapes the text for XML, normalizes "!" to "."
  * (its exclamatory intonation sounds unnatural), and inserts explicit {@code <break>} pauses after sentence ends
- * and ellipses to improve rhythm. The other punctuation marks are kept so the voice still gets its intonation cue;
- * a {@code <break>} can only add a pause, never remove one the voice inserts on its own. Pause durations are
- * tuning constants, adjusted by ear.
+ * and ellipses to improve rhythm. Sentence punctuation is kept for its intonation cue, while commas remain intact
+ * for the model's native phrasing. Pause durations are tuning constants, adjusted by ear.
  */
 final class GoogleSsml {
 
@@ -16,7 +15,6 @@ final class GoogleSsml {
     private static final String SENTENCE_BREAK = "300ms";
     /** Pause for an ellipsis ("..."). */
     private static final String ELLIPSIS_BREAK = "300ms";
-
     private GoogleSsml() {
     }
 
@@ -54,8 +52,8 @@ final class GoogleSsml {
 
     /**
      * Inserts a {@code <break>} after punctuation. Ellipsis is handled before the single-dot rule so "..." yields
-     * one ellipsis pause rather than three sentence pauses; the sentence and clause rules only fire when the mark
-     * is followed by whitespace or end of text, so decimals ("3.5") and abbreviations are left intact.
+     * one ellipsis pause rather than three sentence pauses; the sentence rule only fires when the mark is followed
+     * by whitespace or end of text, so decimals ("3.5") and abbreviations are left intact.
      */
     private static String insertBreaks(String s) {
         return s
@@ -66,4 +64,5 @@ final class GoogleSsml {
     private static String breakTag(String time) {
         return "<break time=\"" + time + "\"/>";
     }
+
 }

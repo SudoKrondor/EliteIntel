@@ -592,6 +592,10 @@ public class PlayerSession {
         });
     }
 
+    public Boolean isNavigationAnnouncementOn() {
+        return Database.withDao(PlayerDao.class, dao -> dao.get().isNavigationAnnouncementOn());
+    }
+
     public void setNavigationAnnouncementOn(Boolean navigationAnnouncementOn) {
         Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();

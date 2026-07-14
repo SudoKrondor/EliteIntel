@@ -8,7 +8,6 @@ import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.input.BargeInEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -508,21 +507,16 @@ public class ParakeetSTTImpl implements EarsInterface {
         if (isSpeaking.get()) {
             if (pttCapture) {
                 log.info("PTT: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
-                GameEventBus.publish(new TTSInterruptEvent());
-                GameEventBus.publish(new BargeInEvent()); // commander barged in: also interrupt the live companion thought
             } else if (isInterruptPhrase(transcript)) {
                 log.info("Interrupt phrase detected during TTS playback: {}", transcript);
-                GameEventBus.publish(new TTSInterruptEvent());
                 GameEventBus.publish(new BargeInEvent());
                 return;
-            } else if (!CompanionConfig.dropHotMicTranscriptsWhileCompanionSpeaks()) {
-                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
-                GameEventBus.publish(new TTSInterruptEvent());
-                GameEventBus.publish(new BargeInEvent());
             } else {
-                log.debug("Ignoring transcript while TTS is speaking: {}", transcript);
-                return;
+                log.info("Barge-in: interrupting TTS to dispatch transcript: {}", transcript.replace("computer", ""));
             }
+            // BargeInController is the sole fan-out owner: it emits one TTS interrupt and interrupts thoughts.
+            // Recognition stays active during playback; every non-control transcript continues as normal input.
+            GameEventBus.publish(new BargeInEvent());
         } else {
             GameEventBus.publish(new TTSInterruptEvent());
         }
@@ -543,7 +537,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         return false;
     }
 
-    /** Tracks TTS playback state to gate non-interrupt transcripts while the app is speaking. */
+    /** Tracks TTS lifecycle only to identify barge-in; recognition and normal command dispatch stay active. */
     @Subscribe
     public void onIsSpeakingEvent(IsSpeakingEvent event) {
         isSpeaking.set(event.isSpeaking());

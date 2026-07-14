@@ -2,6 +2,7 @@ package elite.intel.ai.brain.inference.lmstudio;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -61,6 +62,17 @@ public class LMStudioClient extends BaseAiClient implements Client {
         return err;
     }
 
+    /** Sends a companion request without converting a transport failure into legacy speech JSON. */
+    public synchronized AiTransportResult sendCompanionRequest(String request) {
+        long t0 = System.nanoTime();
+        UiBus.publish(new AppLogEvent("LM Studio request -> model: " + requestedModel(request)));
+        AiTransportResult outcome = sendTransportRequest(buildRequest(request));
+        if (outcome instanceof AiTransportResult.Success success) {
+            reportResponse(success.response(), System.nanoTime() - t0);
+        }
+        return outcome;
+    }
+
     @Override
     public synchronized JsonObject sendJsonRequest(String request) {
         long t0 = System.nanoTime();
@@ -68,7 +80,11 @@ public class LMStudioClient extends BaseAiClient implements Client {
         // model when the requested name is unknown, so the response's model name alone can't confirm this).
         UiBus.publish(new AppLogEvent("LM Studio request -> model: " + requestedModel(request)));
         JsonObject response = super.sendJsonRequest(buildRequest(request));
-        long elapsed = System.nanoTime() - t0;
+        reportResponse(response, System.nanoTime() - t0);
+        return response;
+    }
+
+    private void reportResponse(JsonObject response, long elapsed) {
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
         UiBus.publish(new AppLogEvent("LM Studio: " + LlmMetadata.describe(meta)));
         if (meta != null && meta.usage() != null) {
@@ -77,7 +93,6 @@ public class LMStudioClient extends BaseAiClient implements Client {
                     meta.usage().promptTokens(), meta.usage().completionTokens(), 0, 0,
                     wallClockTps(elapsed, meta.usage().completionTokens())));
         }
-        return response;
     }
 
     /**

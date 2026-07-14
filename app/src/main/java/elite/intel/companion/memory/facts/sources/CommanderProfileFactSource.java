@@ -1,5 +1,6 @@
 package elite.intel.companion.memory.facts.sources;
 
+import elite.intel.companion.memory.facts.LocalizedFactRelevance;
 import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.memory.facts.MemoryFactSource;
 import elite.intel.companion.memory.facts.RegisterMemoryFactSource;
@@ -11,21 +12,27 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Always-on fact source for who the commander is, grounding the companion in the person it serves: name, allegiance,
+ * Query-relevant fact source for who the commander is, grounding the companion in the person it serves: name, allegiance,
  * the career ranks (combat, exploration, exobiology, mercenary), any powerplay pledge, and current credit balance.
- * It ignores the query, contributes a single compact, length-capped line, and stays silent when the commander name is
- * unknown. Rank fields default to the journal's {@code "unknown"} placeholder and are then dropped, so an early
- * session (no rank data yet) still yields a clean name-only line.
+ * The source admits itself for player-profile/rank subjects. It contributes one compact, length-capped line
+ * and stays silent when the commander name is unknown. Rank fields default to the journal's {@code "unknown"}
+ * placeholder and are then dropped, so an early session still yields a clean name-only line.
  */
 @RegisterMemoryFactSource
 public final class CommanderProfileFactSource implements MemoryFactSource {
 
     /** Provenance label for the {@code <fact source="...">} attribute. */
     private static final String ID = "commander";
+    private static final List<String> RELEVANCE_ALIAS_KEYS = List.of("query_player_profile_rank_progress");
 
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isRelevant(MemoryFactContext context) {
+        return LocalizedFactRelevance.matches(context, 2, RELEVANCE_ALIAS_KEYS);
     }
 
     @Override

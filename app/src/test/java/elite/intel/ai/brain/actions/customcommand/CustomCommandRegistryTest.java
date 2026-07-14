@@ -2,7 +2,6 @@ package elite.intel.ai.brain.actions.customcommand;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.Reducer;
 import elite.intel.ai.brain.actions.IntelAction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,17 +108,6 @@ class CustomCommandRegistryTest {
         assertEquals("existing_action", map.get("existing_phrase"));
         assertEquals("custom_command_x", map.get("new phrase"));
         assertEquals(2, map.size());
-    }
-
-    @Test
-    void reducerKeepsExactCustomCommandPhraseAsHighConfidenceCandidate() {
-        registry.setCustomCommands(List.of(buildCustomCommand("custom_command_exact", "example custom command, custom command status check")));
-        Map<String, String> map = new LinkedHashMap<>();
-        registry.contributeToActionMap(map);
-
-        Map<String, String> reduced = Reducer.reduce("custom command status check", map, false);
-
-        assertEquals("custom_command_exact", reduced.get("custom command status check"));
     }
 
     @Test

@@ -42,6 +42,9 @@ final class ReflexThought extends Thought {
     /** Starts the reflex handler without retaining the ordered commander cognitive worker. */
     @Override
     CompletableFuture<Void> startLifecycle() {
+        if (isStopped()) {
+            return CompletableFuture.completedFuture(null);
+        }
         try {
             return beginReflex();
         } catch (Throwable failure) {
@@ -64,12 +67,12 @@ final class ReflexThought extends Thought {
                 recordTurnBoundary(TurnBoundaryMarkers.PROCESSING);
             }
             inFlight = execution;
-            if (interrupted) {
+            if (isStopped()) {
                 execution.cancel(true);
             }
             return execution.handle((result, failure) -> {
                 try {
-                    if (interrupted || execution.isCancelled()) {
+                    if (isStopped()) {
                         return null;
                     }
                     JsonObject settled = failure == null
@@ -94,18 +97,18 @@ final class ReflexThought extends Thought {
         // id to pair a result with.
         CompletableFuture<JsonObject> execution = submitExecution(inv);
         inFlight = execution;
-        if (interrupted) {
+        if (isStopped()) {
             execution.cancel(true);
         }
         return execution.handle((result, failure) -> {
             try {
-                if (interrupted || execution.isCancelled()) {
+                if (isStopped()) {
                     return null;
                 }
                 JsonObject settled = failure == null
                         ? (result == null ? new JsonObject() : result)
                         : executionError(inv.name(), failure);
-                if (!spokenTextOf(settled).isBlank()) {
+                if (!spokenOutcomeText(settled).isBlank()) {
                     recordCurrentInput();
                 }
                 recordOutcome(inv, settled, List.of(), null);

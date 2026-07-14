@@ -1,6 +1,7 @@
 package elite.intel.companion.mind;
 
 import elite.intel.companion.CompanionNarrator;
+import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.speech.SpeechGateway;
@@ -18,15 +19,21 @@ public final class DispatcherCompanionNarrator implements CompanionNarrator {
 
     private final ThoughtDispatcher dispatcher;
     private final SpeechGateway speech;
+    private final CompanionRuntimeGeneration runtimeGeneration;
 
-    public DispatcherCompanionNarrator(ThoughtDispatcher dispatcher, SpeechGateway speech) {
+    public DispatcherCompanionNarrator(
+            ThoughtDispatcher dispatcher,
+            SpeechGateway speech,
+            CompanionRuntimeGeneration runtimeGeneration
+    ) {
         this.dispatcher = dispatcher;
         this.speech = speech;
+        this.runtimeGeneration = runtimeGeneration;
     }
 
     @Override
     public void filler(String text, boolean urgent) {
-        if (text == null || text.isBlank()) {
+        if (!runtimeGeneration.isActive() || text == null || text.isBlank()) {
             return;
         }
         // Start-of-processing throwaway line: straight to TTS, no thought and no memory (it carries no
@@ -36,12 +43,16 @@ public final class DispatcherCompanionNarrator implements CompanionNarrator {
 
     @Override
     public void narrate(String data, String instructions, String topic) {
-        dispatcher.submitEventReaction(data, instructions, topic, Urgency.NORMAL);
+        if (runtimeGeneration.isActive()) {
+            dispatcher.submitEventReaction(data, instructions, topic, Urgency.NORMAL);
+        }
     }
 
     @Override
     public void announce(String sourceId, String phrase, String topic, boolean urgent) {
-        dispatcher.submitEventVerbatim(sourceId, phrase, topic, urgency(urgent));
+        if (runtimeGeneration.isActive()) {
+            dispatcher.submitEventVerbatim(sourceId, phrase, topic, urgency(urgent));
+        }
     }
 
     private static Urgency urgency(boolean urgent) {

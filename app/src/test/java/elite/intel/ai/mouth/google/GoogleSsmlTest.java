@@ -8,8 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Guards {@link GoogleSsml#wrap(String)}: it must produce well-formed SSML, escape XML metacharacters from the
- * source text, flatten "!" to a declarative ".", and insert a single {@code <break>} after sentence ends and
- * ellipses while leaving decimals and abbreviations intact.
+ * source text, flatten "!" to a declarative ".", and insert explicit {@code <break>} pauses after sentence ends
+ * and ellipses while preserving commas, decimals, and abbreviations.
  */
 class GoogleSsmlTest {
 
@@ -52,8 +52,7 @@ class GoogleSsmlTest {
     }
 
     @Test
-    void commaAloneAddsNoBreak() {
-        // No break is added after a comma; it is left to the voice's own pausing.
+    void commaRemainsWithoutAnExplicitPause() {
         assertEquals("<speak>Yes, ready</speak>", GoogleSsml.wrap("Yes, ready"));
     }
 
@@ -70,5 +69,10 @@ class GoogleSsmlTest {
     void decimalPointIsNotTreatedAsSentenceEnd() {
         // "3.5" has no whitespace after the dot, so no break is inserted and the number stays intact.
         assertEquals("<speak>It is 3.5 units</speak>", GoogleSsml.wrap("It is 3.5 units"));
+    }
+
+    @Test
+    void decimalCommaIsNotTreatedAsClauseEnd() {
+        assertEquals("<speak>It is 3,5 units</speak>", GoogleSsml.wrap("It is 3,5 units"));
     }
 }

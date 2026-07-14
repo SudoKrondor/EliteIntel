@@ -163,6 +163,16 @@ class GeminiLlmAdapterTest {
     }
 
     @Test
+    void rejectsNonObjectFunctionArguments() {
+        JsonObject response = responseWithFunctionCall("speak", new JsonObject());
+        response.getAsJsonArray("candidates").get(0).getAsJsonObject()
+                .getAsJsonObject("content").getAsJsonArray("parts").get(0).getAsJsonObject()
+                .getAsJsonObject("functionCall").addProperty("args", "not-an-object");
+
+        assertEquals(LlmResult.Status.INVALID_RESPONSE, adapter.parse(response).status());
+    }
+
+    @Test
     void parsesTextPartForCompression() {
         assertEquals("a compact summary", adapter.parseText(responseWithText("  a compact summary  ")));
     }

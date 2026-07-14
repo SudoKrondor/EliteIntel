@@ -2,6 +2,8 @@ package elite.intel.companion.tools;
 
 import com.google.gson.JsonObject;
 import elite.intel.companion.CompanionRuntime;
+import elite.intel.companion.CompanionRuntimeGraph;
+import elite.intel.companion.CompanionRuntimeTestSupport;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Verifies the executable system-function {@code handle}s drive the companion services reached statically
@@ -32,10 +35,11 @@ class SystemFunctionHandleTest {
     private final java.util.List<SpeechRequest> spoken = new java.util.ArrayList<>();
     private final RecordingMemory memory = new RecordingMemory();
     private final CompanionState state = new CompanionState();
+    private CompanionRuntimeGraph runtimeGraph;
 
     @BeforeEach
     void install() {
-        CompanionRuntime.install(
+        runtimeGraph = CompanionRuntimeTestSupport.install(
                 null,
                 request -> {
                     spoken.add(request);
@@ -49,7 +53,7 @@ class SystemFunctionHandleTest {
 
     @AfterEach
     void clear() {
-        CompanionRuntime.clear();
+        CompanionRuntimeTestSupport.uninstall(runtimeGraph);
     }
 
     private static JsonObject params(String key, String value) {
@@ -65,6 +69,25 @@ class SystemFunctionHandleTest {
         assertEquals(1, spoken.size());
         assertEquals("docking now", spoken.get(0).text());
         assertEquals("spoken", result.get("status").getAsString());
+    }
+
+    @Test
+    void speakRejectsBlankTextBeforeSubmittingToTts() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new SpeakFunction().handle("speak", params("text", "   "), ""));
+        assertEquals(0, spoken.size());
+    }
+
+    @Test
+    void requestInputHandleIsMetadataOnly() {
+        JsonObject p = params("action_id", "set_speed");
+        p.addProperty("parameter_name", "amount");
+        p.addProperty("question", "By how much?");
+
+        JsonObject result = new RequestInputFunction().handle(RequestInputFunction.ID, p, "");
+
+        assertEquals("input_requested", result.get("status").getAsString());
+        assertEquals(0, spoken.size(), "CommanderThought owns validated clarification speech");
     }
 
     @Test

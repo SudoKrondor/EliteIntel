@@ -41,7 +41,7 @@ public final class CompanionSystemPromptPart implements SystemPromptText {
     /**
      * The language the companion SPEAKS, named in the templates' language rule as {@code {language}}. This is the
      * TTS-bound effective response language, which can differ from what the commander speaks (e.g. local Kokoro
-     * cannot voice ru/uk/de, so those downgrade to English output) - see {@link AiResponseLanguagePolicy}.
+     * cannot voice Cyrillic, so ru/uk downgrade to English output) - see {@link AiResponseLanguagePolicy}.
      */
     static String languageName() {
         return effectiveLanguage().displayName();

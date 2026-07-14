@@ -1,5 +1,6 @@
 package elite.intel.companion.memory.facts.sources;
 
+import elite.intel.companion.memory.facts.LocalizedFactRelevance;
 import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.memory.facts.MemoryFactSource;
 import elite.intel.companion.memory.facts.RegisterMemoryFactSource;
@@ -20,15 +21,20 @@ import java.util.Set;
  * Context-gated fact source for the body the commander is at: it contributes only when the current situation is at or
  * near a body (landed, gliding, in orbit, on a ring, in an SRV, or on foot on a planet), classified by
  * {@link Status#getSituation}. When active it grounds the companion in the body's character (class, landable, gravity,
- * atmosphere, temperature, bio/geo signals, terraformable, rings) as one compact, length-capped line; it ignores the
- * query and stays silent away from a body. Coexists with {@link CurrentSystemFactSource}: both are bounded by the
- * block's per-source and total caps.
+ * atmosphere, temperature, bio/geo signals, terraformable, rings) as one compact, length-capped line. The ambient
+ * source admits itself for location, stellar-body, biome, or surface-material subjects; it stays silent away from a
+ * body and coexists with {@link CurrentSystemFactSource} under the block's per-source and total caps.
  */
 @RegisterMemoryFactSource
 public final class CurrentBodyFactSource implements MemoryFactSource {
 
     /** Provenance label for the {@code <fact source="...">} attribute. */
     private static final String ID = "body";
+    private static final List<String> RELEVANCE_ALIAS_KEYS = List.of(
+            "query_current_location",
+            "query_distance_to_body",
+            "query_biome_analysis",
+            "query_planet_materials");
 
     /** The situations that count as being at or near a body; away from these the source stays silent. */
     private static final Set<PlayerSituation> AT_BODY = EnumSet.of(
@@ -42,6 +48,11 @@ public final class CurrentBodyFactSource implements MemoryFactSource {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isRelevant(MemoryFactContext context) {
+        return LocalizedFactRelevance.matches(context, 2, RELEVANCE_ALIAS_KEYS);
     }
 
     @Override

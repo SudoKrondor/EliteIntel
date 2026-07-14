@@ -33,8 +33,11 @@ class PortugueseVariantsIndependenceTest {
      * Keys the Brazilian bundles carry that the European ones do not yet. {@code *_pt.properties} is owned by the
      * European localizer and is not edited here, so this is expected debt rather than a defect: until the key
      * lands there, a European commander sees the English label. Shrink this list; never grow it.
+     * <p>
+     * Now empty: every Brazilian key has a European counterpart, seeded with the English text the European
+     * bundle already carries elsewhere, so the localizer translates rather than first having to discover the key.
      */
-    private static final List<String> PENDING_IN_EUROPEAN_BUNDLES = List.of("language.portugueseBrazilian");
+    private static final List<String> PENDING_IN_EUROPEAN_BUNDLES = List.of();
 
     private static Properties load(String baseName, String suffix) {
         String path = "/i18n/" + baseName + suffix + ".properties";
