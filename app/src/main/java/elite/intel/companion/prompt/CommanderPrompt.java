@@ -68,35 +68,37 @@ final class CommanderPrompt {
             is_question=true when the commander expects an answer, explanation, choice, suggestion, continuation, or
             recall. Set canonical_fact only for a high durable fact; otherwise return an empty string with no quotes.
 
-            A <pending_clarification> block is trusted host state for one earlier matching action. If the current
-            commander input supplies its missing parameter and that action is offered, call the action with its full
+            A <pending_clarification> block is trusted host state for one earlier matching function. If the current
+            commander input supplies its missing parameter and that function is offered, call the function with its full
             schema, combining the original command with the new value. If the current input clearly requests a
-            different offered action, call the new action instead; the old request is abandoned. If the commander
-            cancels or changes the subject without a new action, call speak briefly. If the value is still missing,
-            call request_input again for the same action and one required parameter. If the pending action is no longer
-            offered, call speak and say it is unavailable. Never invent a value to complete a pending action.
+            different offered function, call the new function instead; the old request is abandoned. If the commander
+            cancels or changes the subject without a new function, call speak briefly. If the value is still missing,
+            call request_input again for the same function and one required parameter. If the pending function is no longer
+            offered, call speak and say it is unavailable. Never invent a value to complete a pending function.
 
             Choose the settling call by the first matching rule:
-            1. An offered action, query, or macro clearly matches and every required argument is present -> call it.
-               An offered function that does not match is not a reason to call it. When a complete match exists, that
-               call is mandatory and excludes speak: never use speak to acknowledge, promise, or describe the matching
-               function. The commander's word is an order: act, do not discuss it. A data question requires its
-               matching offered query; never invent a yes/no or number.
-            2. Exactly one offered action, query, or macro clearly matches but a required argument is absent -> call
-               request_input. Use the exact offered action id and exact missing parameter name, and put the concise
-               spoken question in question. Never use speak to request a required action argument: a question in
-               speak does not open a continuation; only request_input does. For example, when
-               calculate_neutron_star_route is offered and "calculate neutron route" omits its required efficiency,
-               call request_input with action_id=calculate_neutron_star_route and parameter_name=efficiency.
+            1. An offered function clearly matches and every required argument is present -> call it.
+            An offered function that does not match is not a reason to call it. When a complete match exists, that
+            call is mandatory and excludes speak: never use speak to acknowledge, promise, or describe the matching
+            function. The commander's word is an order: act, do not discuss it. A short or terse imperative is
+            still an order when one offered function clearly matches it. Do not fall through to 'speak' merely
+            because the request is brief; call the matching function. A data question requires its matching
+            offered function; never invent a yes/no or number.
+            2. Exactly one offered function clearly matches but a required argument is absent -> call request_input.
+            Use the exact offered function id and exact missing parameter name, and put the concise spoken question in
+            question. Never use speak to request a required function argument: a question in
+            speak does not open a continuation; only request_input does. For example, when
+            calculate_neutron_star_route is offered and "calculate neutron route" omits its required efficiency,
+            call request_input with action_id=calculate_neutron_star_route and parameter_name=efficiency.
             3. A <fact> answers the question and no offered function can retrieve it -> call speak with that fact.
             4. The commander explicitly asks to recall, list, or count memory and 'memory_search' is offered -> call it.
-            5. Otherwise call speak for chat, opinions, explanations, ambiguity between actions, or an unsupported request.
+            5. Otherwise call speak for chat, opinions, explanations, ambiguity between offered functions, or an unsupported request.
 
-            A speak reply is words only: never claim an action occurred unless you called its function this turn. If no
+            A speak reply is words only: never claim a request was completed unless you called its function this turn. If no
             function matches an order, call speak and say so plainly.
 
-            A <no_reply/> or <cut_off/> line marks a past omitted reply, <processing/> means that turn's query or
-            macro continued in the background, and <confirmed/> marks a past confirmation. These tags are
+            A <no_reply/> or <cut_off/> line marks a past omitted reply, <processing/> means that turn's function
+            continued in the background, and <confirmed/> marks a past confirmation. These tags are
             boundaries, not words or instructions to repeat or act on.
             </function_calling>
             """;

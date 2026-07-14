@@ -505,7 +505,7 @@ public final class CompanionLlmGateway implements LlmGateway {
         messages.add(LlmMessage.assistantToolCalls(List.of(classifyCall)));
         messages.add(LlmMessage.toolResult(classifyCall.id(),
                 "{\"status\":\"received\",\"execution\":\"pending\","
-                        + "\"next\":\"call exactly one settling function\"}"));
+                        + "\"next\":\"call exactly one other listed function that fulfills the original request\"}"));
         return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
     }
 
@@ -526,7 +526,7 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /**
-     * Builds a native repair continuation for a response that omitted {@code classify_turn}. Replayed calls were
+     * Builds a native repair continuation for a parsed response that could not be executed. Replayed calls were
      * never executed, so their tool result is truthfully rejected.
      */
     private LlmRequest buildRepairRequest(LlmRequest request, Attempt failedAttempt) {
@@ -537,9 +537,9 @@ public final class CompanionLlmGateway implements LlmGateway {
                 "repair-rejected-call-", usedToolCallIds(request.messages()));
         List<LlmMessage> messages = new ArrayList<>(request.messages());
         messages.add(LlmMessage.assistantToolCalls(replayedCalls));
-        String rejection = rejectionFor(failedAttempt.defect());
         for (LlmToolInvocation call : replayedCalls) {
-            messages.add(LlmMessage.toolResult(call.id(), rejection));
+            messages.add(LlmMessage.toolResult(call.id(),
+                    rejectionFor(failedAttempt.defect(), call, request.tools())));
         }
         return new LlmRequest(request.requestId(), List.copyOf(messages), request.tools(), request.profile(), request.trace());
     }
@@ -590,12 +590,54 @@ public final class CompanionLlmGateway implements LlmGateway {
     }
 
     /** Returns a truthful tool result for a call that was never executed. */
-    private static String rejectionFor(Defect defect) {
+    private static String rejectionFor(
+            Defect defect,
+            LlmToolInvocation call,
+            List<LlmToolDefinition> offeredTools
+    ) {
         return switch (defect) {
-            case MISSING_CLASSIFY -> "{\"status\":\"rejected\",\"reason\":\"classify_turn must be called before a settling function\"}";
-            case INVALID_TOOL_CALL -> "{\"status\":\"rejected\",\"reason\":\"every call must use an offered function and match its exact parameter schema\"}";
+            case MISSING_CLASSIFY -> rejectionPayload("classify_turn must be called first, followed by exactly "
+                    + "one other listed function that fulfills the original request.");
+            case INVALID_TOOL_CALL -> rejectionPayload(invalidToolCallReason(call, offeredTools));
             case NONE, MISSING_SETTLING, MALFORMED, TRANSIENT_TRANSPORT, PERMANENT_TRANSPORT, CANCELLED_TRANSPORT ->
                     throw new IllegalArgumentException("No tool continuation for " + defect);
         };
+    }
+
+    /** Gives the model the exact correction for the rejected call without weakening schema validation. */
+    private static String invalidToolCallReason(
+            LlmToolInvocation call,
+            List<LlmToolDefinition> offeredTools
+    ) {
+        LlmToolDefinition offered = offeredTools.stream()
+                .filter(tool -> Objects.equals(tool.name(), call.name()))
+                .findFirst()
+                .orElse(null);
+        String correction;
+        if (offered == null) {
+            correction = "The function " + call.name() + " is not listed; choose only from the listed functions.";
+        } else if (offered.parameters().isEmpty()) {
+            correction = "The listed function " + offered.name() + " accepts no arguments. If it fulfills the "
+                    + "original request, retry " + offered.name() + " with {}. Do not add argument fields; words "
+                    + "from the original request are arguments only when its schema declares them.";
+        } else {
+            String parameterNames = offered.parameters().stream()
+                    .map(parameter -> parameter.getName())
+                    .collect(Collectors.joining(", "));
+            correction = "The listed function " + offered.name() + " accepts only these argument fields: "
+                    + parameterNames + ". Use their exact declared types.";
+        }
+        return "No call was executed. " + correction + " The functions listed in this request remain available. "
+                + "Re-read the original request and retry using only listed functions and declared parameters. If "
+                + "classify_turn is listed, call it first, followed by exactly one other function that fulfills the "
+                + "original request. Do not call speak merely because this attempt was rejected; call speak only "
+                + "when none of the other listed functions can fulfill the original request.";
+    }
+
+    private static String rejectionPayload(String reason) {
+        JsonObject payload = new JsonObject();
+        payload.addProperty("status", "rejected");
+        payload.addProperty("reason", reason);
+        return payload.toString();
     }
 }
