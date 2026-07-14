@@ -3,6 +3,7 @@ package elite.intel.ai.brain.inference.xai;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -107,10 +108,24 @@ public class GrokClient extends BaseAiClient implements Client {
         return error;
     }
 
+    /** Sends a companion request without converting a transport failure into legacy speech JSON. */
+    public AiTransportResult sendCompanionRequest(String request) {
+        long t0 = System.nanoTime();
+        AiTransportResult outcome = sendTransportRequest(buildRequest(request));
+        if (outcome instanceof AiTransportResult.Success success) {
+            reportResponse(success.response(), System.nanoTime() - t0);
+        }
+        return outcome;
+    }
+
     @Override public JsonObject sendJsonRequest(String request) {
         long t0 = System.nanoTime();
         JsonObject response = super.sendJsonRequest(buildRequest(request));
-        long elapsed = System.nanoTime() - t0;
+        reportResponse(response, System.nanoTime() - t0);
+        return response;
+    }
+
+    private void reportResponse(JsonObject response, long elapsed) {
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
         UiBus.publish(new AppLogEvent("LLM: " + meta));
         if (meta != null && meta.usage() != null) {
@@ -120,7 +135,6 @@ public class GrokClient extends BaseAiClient implements Client {
                     meta.usage().promptTokens(), meta.usage().completionTokens(), cached, 0,
                     wallClockTps(elapsed, meta.usage().completionTokens())));
         }
-        return response;
     }
 
     HttpRequest buildRequest(String body) {

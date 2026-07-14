@@ -72,6 +72,9 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_FRAME_BORDER = HUD_COLOR_2D5C66;
     public static final Color HUD_COLOR_ROLE_SECONDARY_BORDER = HUD_COLOR_24313A;
     public static final Color HUD_COLOR_ROLE_CONTROL_DECORATION = HUD_COLOR_B85A14;
+    /** Semi-transparent selection surface derived from the standard HUD frame blue. */
+    public static final Color HUD_COLOR_ROLE_SELECTION_BACKGROUND = new Color(
+            HUD_COLOR_2D5C66.getRed(), HUD_COLOR_2D5C66.getGreen(), HUD_COLOR_2D5C66.getBlue(), 128);
     /** Bright accent painted on an input frame and its corner marks while it holds keyboard focus. */
     public static final Color HUD_COLOR_ROLE_INPUT_FOCUS = HUD_COLOR_FF822E;
     public static final Color HUD_COLOR_ROLE_PANEL_SEPARATOR = HUD_COLOR_6E4A28;
@@ -83,6 +86,9 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_WARNING = HUD_COLOR_FFB000;
     public static final Color HUD_COLOR_ROLE_DANGER = HUD_COLOR_D94F4F;
     public static final Color HUD_COLOR_ROLE_DISABLED = HUD_COLOR_6E4A28;
+    /** More receded disabled tint for icon affordances, derived from the shared disabled role. */
+    public static final Color HUD_COLOR_ROLE_DISABLED_ICON = new Color(
+            HUD_COLOR_ROLE_DISABLED.getRed(), HUD_COLOR_ROLE_DISABLED.getGreen(), HUD_COLOR_ROLE_DISABLED.getBlue(), 128);
     public static final Color HUD_COLOR_ROLE_TABLE_CELL_HOVER_BACKGROUND = HUD_COLOR_1A1206;
     public static final Color HUD_COLOR_ROLE_INFORMATION_MARK = HUD_COLOR_33D7E8;
     public static final Color HUD_COLOR_ROLE_MAIN_TAB_ACTIVE_BACKGROUND = HUD_COLOR_FFB000;
@@ -104,6 +110,10 @@ public final class HudPalette {
     public static final int HUD_GAP = 8;
     /** Tight gap between adjacent compact controls (e.g. icon actions in a section header). */
     public static final int HUD_GAP_TIGHT = HUD_GAP / 2; // =4
+    /** Smaller gap between adjacent section-header icon actions. */
+    public static final int HUD_GAP_HEADER_ACTION = HUD_GAP_TIGHT / 2; // =2
+    /** Width and height of the shared HUD scrollbars. */
+    public static final int HUD_SCROLLBAR_WIDTH = 7;
     /** Unified side inset for body and footer of all modals (see HudModalScaffold). */
     public static final int HUD_DIALOG_BODY_INSET = HUD_GAP * 2; // =16
     public static final int SHELL_GAP = 10;
@@ -120,6 +130,12 @@ public final class HudPalette {
     public static final int HUD_BORDER_THICKNESS = 1;
     /** Thickness for high-visibility accent borders - modal dialogs and similar prominent frames. */
     public static final int HUD_BORDER_THICKNESS_ACCENT = 2;
+    /** Width of the blinking typewriter caret shared by the conversation view and stream overlay. */
+    public static final int HUD_CARET_WIDTH = HUD_BORDER_THICKNESS_ACCENT;
+    /** Milliseconds over which a completed Vega response fades from its active conversation treatment. */
+    public static final int HUD_CHAT_ACTIVE_HOLD_MS = 1_200;
+    /** Repaint cadence for the short active-Vega fade in the conversation view. */
+    public static final int HUD_CHAT_ACTIVE_FADE_FRAME_MS = 33;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
@@ -137,6 +153,8 @@ public final class HudPalette {
     public static final int HUD_ICON_NAV = 24;
     public static final int HUD_ICON_SMALL = 28;
     public static final int HUD_ICON_TABLE = 18;
+    /** Smaller glyph size for subdued section-header actions. */
+    public static final int HUD_ICON_HEADER_ACTION = HUD_ICON_TABLE - 2; // =16
     public static final int HUD_FORM_ROW_HEIGHT_COMPACT = 22;
     /** Row height of a stat readout ({@link elite.intel.ui.widget.HudStatCell}); reserves the emblem, label, value and bar. */
     public static final int HUD_STAT_CELL_HEIGHT = 72;

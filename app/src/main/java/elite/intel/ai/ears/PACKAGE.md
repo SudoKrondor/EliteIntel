@@ -87,9 +87,20 @@ Two-phase calibration over ~13 seconds total. Uses TTS to guide the user (locali
 2. **Speech phase** (5s counting aloud): records frames whose RMS exceeds
    `noiseFloor × 1.3`, averages them.
 
-VAD trigger = midpoint between noise floor and average speech. Falls back to
-`noiseFloor × 1.3 + 50` when the gap is less than 150 RMS units. Results are stored in `SystemSession` (
-`rmsThresholdHigh`, `rmsThresholdLow`) and returned as `RmsTupple<Double, Double>`.
+VAD trigger (`AudioCalibrator.gateOpenLevel`) =
+`GATE_BELOW_SPEECH_DB` under average speech, but never nearer the ambient floor than
+`MIN_GATE_ABOVE_NOISE_DB`. Both bounds are **ratios in dB
+**, so the gate tracks the room rather than any hardcoded amplitude. Speech is the anchor because it is the stable reference; interpolating between floor and speech instead makes the gate a hostage to the noise floor, landing ~6 dB under speech in a noisy room and 20+ dB under it in a treated one.
+
+Room quality is judged **solely** by `separationDb(noiseFloor, avgSpeechRMS)` against
+`MIN_SPEECH_TO_NOISE_DB` (the sum of the two bounds — below it they cross and the gate has nowhere legal to sit). Never against an absolute amplitude: a quiet room with a good microphone legitimately produces a low noise floor
+**and** a low gate, and that is a healthy calibration. `ParakeetSTTImpl`'s startup warning reuses
+`gateClearsNoiseFloor` for exactly this reason, so it cannot drift from the calibration that produced the value.
+`DEGENERATE_GATE_FALLBACK` applies only to a failed measurement
+(muted mic, or speech that never rose above ambient).
+
+Results are stored in `SystemSession` (`rmsThresholdHigh`, `rmsThresholdLow`) and returned as
+`RmsTupple<Double, Double>`.
 
 ---
 
@@ -279,7 +290,10 @@ While the app is speaking (`isSpeaking == true`):
 | `MIN_AUDIO_MS` | `1500` ms | `ParakeetSTTImpl` |
 | `INFERENCE_TIMEOUT_SEC` | `4` s | `ParakeetSTTImpl` |
 | `NOISE_PERCENTILE` | `0.75` | `AudioCalibrator` |
-| `GATE_MIDPOINT_FACTOR` | `0.5` | `AudioCalibrator` |
+| `GATE_BELOW_SPEECH_DB` | `12.0` dB (gate anchor, under average speech) | `AudioCalibrator` |
+| `MIN_GATE_ABOVE_NOISE_DB` | `6.0` dB (gate never nearer the ambient floor) | `AudioCalibrator` |
+| `MIN_SPEECH_TO_NOISE_DB` | `18.0` dB (derived: sum of the two above) | `AudioCalibrator` |
+| `DEGENERATE_GATE_FALLBACK` | `120.0` (failed measurement only) | `AudioCalibrator` |
 | `FFT_SIZE` | `512` (~32ms) | `SpectralNoiseReducer` |
 | `TARGET_DBFS` (Amplifier) | `-3.0` dBFS | `Amplifier` |
 | `TARGET_DBFS` (StreamNormalizer) | `-18.0` dBFS | `StreamNormalizer` |

@@ -1,5 +1,6 @@
 package elite.intel.companion.memory;
 
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.ConversationTopic;
 
@@ -48,6 +49,14 @@ public interface MemoryGateway {
      * @param limit maximum entries to return
      */
     List<MemoryEntry> recallCandidates(String query, int limit);
+
+    /**
+     * The same candidate recall, optionally reusing a semantic query prepared by the live thought. Implementations
+     * that do not own semantic recall retain the plain-text behavior.
+     */
+    default List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
+        return recallCandidates(query, limit);
+    }
 
     /** The single session-wide long-term summary, always added to the prompt. */
     String longTermSummary();

@@ -5,7 +5,6 @@ import elite.intel.eventbus.AudioBeepCueBus;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.SystemSession;
-import elite.intel.ui.event.NotificationVolumeChangedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -21,14 +20,13 @@ public final class AudioPlayer {
     public static final String BEEP_3 = "/beep3.wav";
 
     private static final Logger log = LogManager.getLogger(AudioPlayer.class);
+    private final SystemSession systemSession = SystemSession.getInstance();
     private static AudioPlayer instance;
-    private static float volume = 0.8f;
 
     private AudioPlayer() {
         UiBus.register(this);
         GameEventBus.register(this);
         AudioBeepCueBus.register(this);
-        volume = SystemSession.getInstance().getBeepVolume();
     }
 
     public static AudioPlayer getInstance() {
@@ -38,15 +36,6 @@ public final class AudioPlayer {
         return instance;
     }
 
-
-    @Subscribe
-    public void onVolumeChangedEvent(NotificationVolumeChangedEvent event) {
-        float value = event.getVolume();
-        if (volume < 0.0f || volume > 1.0f) {
-            throw new IllegalArgumentException("Volume must be between 0.0 and 1.0");
-        }
-        AudioPlayer.volume = value;
-    }
 
     @Subscribe
     public void onPlayBeepEvent(PlayBeepEvent event) {
@@ -80,7 +69,7 @@ public final class AudioPlayer {
             if (clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
                 FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
                 float range = gainControl.getMaximum() - gainControl.getMinimum();
-                float gain = (range * volume) + gainControl.getMinimum();
+                float gain = (range * systemSession.getBeepVolume()) + gainControl.getMinimum();
                 gainControl.setValue(gain);
             }
             clip.start();

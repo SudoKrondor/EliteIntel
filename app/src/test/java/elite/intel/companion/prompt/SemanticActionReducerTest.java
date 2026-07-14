@@ -1,9 +1,14 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.TextEmbedder;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.session.PlayerSituation;
+import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
@@ -11,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,8 +34,13 @@ class SemanticActionReducerTest {
     private static final Set<IntelActionCategory> ALL = EnumSet.allOf(IntelActionCategory.class);
 
     private static GameToolCandidates.Candidate candidate(String id, String phraseKey) {
+        return candidate(id, phraseKey, List.of());
+    }
+
+    private static GameToolCandidates.Candidate candidate(String id, String phraseKey,
+                                                          List<ActionParameterSpec> parameters) {
         return new GameToolCandidates.Candidate(id, phraseKey,
-                new LlmToolDefinition(id, "desc", phraseKey, List.of()));
+                new LlmToolDefinition(id, "desc", phraseKey, parameters));
     }
 
     private final List<GameToolCandidates.Candidate> catalog = List.of(
@@ -88,6 +100,73 @@ class SemanticActionReducerTest {
     }
 
     @Test
+    void clarificationTargetLookupUsesFreshSnapshotWithoutEmbedding() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        AtomicBoolean matcherRequested = new AtomicBoolean();
+        SemanticActionReducer snapshotReducer = new SemanticActionReducer(
+                (allowed, snapshot) -> {
+                    observed.set(snapshot);
+                    return snapshot == turnState ? catalog : List.of();
+                },
+                () -> {
+                    matcherRequested.set(true);
+                    return null;
+                },
+                (categories, input) -> List.of());
+
+        LlmToolDefinition target = snapshotReducer.findToolById(ALL, "navigate", turnState).orElseThrow();
+
+        assertEquals("navigate", target.name());
+        assertSame(turnState, observed.get());
+        assertTrue(!matcherRequested.get(), "id rehydration must not embed the terse continuation reply");
+    }
+
+    @Test
+    void reusesNonReflexSemanticQueryForTheSameTurn() {
+        AtomicInteger queryEmbeds = new AtomicInteger();
+        TextEmbedder counting = new TextEmbedder() {
+            @Override public float[] embed(String text) {
+                if ("GO_NAV".equals(text)) {
+                    queryEmbeds.incrementAndGet();
+                }
+                return VECTORS.getOrDefault(text, new float[]{1, 1, 1});
+            }
+            @Override public int dimensions() {
+                return 3;
+            }
+        };
+        SemanticPhraseMatcher matcher = new SemanticPhraseMatcher(counting);
+        List<GameToolCandidates.Candidate> parameterizedCatalog = List.of(
+                candidate("navigate", "navigate, plot course", List.of(
+                        new ActionParameterSpec("destination", "string", true, "Destination", List.of(), null))),
+                catalog.get(1), catalog.get(2));
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> reflexState = new AtomicReference<>();
+        AtomicReference<GameStateSnapshot> reducerState = new AtomicReference<>();
+        SemanticReflexResolver reflex = new SemanticReflexResolver(
+                (allowed, snapshot) -> {
+                    reflexState.set(snapshot);
+                    return parameterizedCatalog;
+                }, () -> matcher, invocation -> false);
+        SemanticActionReducer reducer = new SemanticActionReducer(
+                (allowed, snapshot) -> {
+                    reducerState.set(snapshot);
+                    return parameterizedCatalog;
+                }, () -> matcher, unusedFallback(new AtomicBoolean()));
+
+        SemanticReflexResolver.Resolution resolution = reflex.resolveWithSemanticQuery("GO_NAV", turnState);
+        List<LlmToolDefinition> tools = reducer.selectTools(
+                ALL, "GO_NAV", resolution.semanticQuery(), turnState);
+
+        assertTrue(resolution.actionId().isEmpty(), "a parameterized match must continue to the LLM path");
+        assertEquals(List.of("navigate"), ids(tools));
+        assertEquals(1, queryEmbeds.get(), "the reducer must reuse the semantic reflex query vector");
+        assertSame(turnState, reflexState.get(), "semantic reflex must use the owning turn's visibility state");
+        assertSame(turnState, reducerState.get(), "the reducer must receive that exact same state instance");
+    }
+
+    @Test
     void belowFloorOffersNoTools() {
         // An input far from every candidate (best cosine under the floor) yields no game tools.
         List<LlmToolDefinition> tools = reducer(unusedFallback(new AtomicBoolean())).selectTools(ALL, "unrelated");
@@ -121,6 +200,31 @@ class SemanticActionReducerTest {
         List<LlmToolDefinition> sentinel = List.of(catalog.get(1).tool());
         SemanticActionReducer r = reducerWith(() -> null, (categories, input) -> sentinel);
         assertSame(sentinel, r.selectTools(ALL, "GO_NAV"), "a null matcher degrades to word-overlap");
+    }
+
+    @Test
+    void unavailableMatcherKeepsTheTurnSnapshotForFallback() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        List<LlmToolDefinition> sentinel = List.of(catalog.get(1).tool());
+        CompanionActionReducer fallback = new CompanionActionReducer() {
+            @Override
+            public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> categories, String input) {
+                return sentinel;
+            }
+
+            @Override
+            public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> categories, String input,
+                                                       SemanticQuery semanticQuery,
+                                                       GameStateSnapshot gameStateSnapshot) {
+                observed.set(gameStateSnapshot);
+                return sentinel;
+            }
+        };
+        SemanticActionReducer reducer = reducerWith(() -> null, fallback);
+
+        assertSame(sentinel, reducer.selectTools(ALL, "GO_NAV", null, turnState));
+        assertSame(turnState, observed.get(), "degradation must not return to live visibility state");
     }
 
     @Test

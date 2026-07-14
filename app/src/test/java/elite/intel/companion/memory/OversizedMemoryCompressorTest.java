@@ -1,6 +1,7 @@
 package elite.intel.companion.memory;
 
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
@@ -15,7 +16,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -118,6 +123,23 @@ class OversizedMemoryCompressorTest {
         assertTrue(memory.writes.isEmpty(), "nothing is written when the gist is still over the cap");
     }
 
+    @Test
+    void closeDiscardsACompressionThatCompletesAfterShutdown() throws Exception {
+        RecordingMemory delayedMemory = new RecordingMemory();
+        BlockingLlm delayedLlm = new BlockingLlm();
+        ExecutorService worker = Executors.newSingleThreadExecutor();
+        OversizedMemoryCompressor delayedCompressor = new OversizedMemoryCompressor(
+                delayedMemory, delayedLlm, new CompanionRuntimeGeneration(), worker);
+
+        delayedCompressor.onOversized(longEntry(MemoryImportance.HIGH));
+        assertTrue(delayedLlm.started.await(1, TimeUnit.SECONDS));
+        delayedCompressor.close();
+        delayedLlm.result.complete("late gist");
+        assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
+
+        assertTrue(delayedMemory.writes.isEmpty(), "an expired generation must not re-write memory");
+    }
+
     /** LlmGateway fake: scripted compression result; submit unused. */
     private static final class FakeLlm implements LlmGateway {
         volatile String scripted;
@@ -130,6 +152,20 @@ class OversizedMemoryCompressorTest {
         @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
             calls++;
             return CompletableFuture.completedFuture(scripted);
+        }
+    }
+
+    private static final class BlockingLlm implements LlmGateway {
+        private final CountDownLatch started = new CountDownLatch(1);
+        private final CompletableFuture<String> result = new CompletableFuture<>();
+
+        @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+            started.countDown();
+            return result;
         }
     }
 

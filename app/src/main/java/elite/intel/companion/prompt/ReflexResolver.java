@@ -4,10 +4,12 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -35,23 +37,29 @@ public final class ReflexResolver {
      */
     public record CommandPhrase(String id, String phraseGroup, boolean parameterless) {}
 
-    private final Supplier<List<CommandPhrase>> commandSource;
+    private final Function<GameStateSnapshot, List<CommandPhrase>> commandSource;
     private final DangerousActionPolicy dangerousActionPolicy;
 
-    /** Production: visible commands from the live registries, danger via the command's own flag. */
+    /** Production: commands from the live registries, visibility from the turn snapshot, danger from the command. */
     public ReflexResolver() {
         this(new CommandFlagDangerousActionPolicy());
     }
 
     /** Production reusing a shared danger policy (e.g. the dispatcher's own instance). */
     public ReflexResolver(DangerousActionPolicy dangerousActionPolicy) {
-        // Lazy per-resolve: the live registries/status/language are read at resolve time, not at construction,
-        // so merely constructing the resolver (e.g. inside the dispatcher) touches no game-state singletons.
+        // Lazy per-resolve: registries/language are read at resolve time, while visibility comes from the immutable
+        // state supplied by the owning commander turn. Construction itself touches no game-state singleton.
         this(ReflexResolver::collectVisibleCommands, dangerousActionPolicy);
     }
 
     /** Test/advanced seam: supply the eligible commands and the danger policy directly. */
     public ReflexResolver(Supplier<List<CommandPhrase>> commandSource, DangerousActionPolicy dangerousActionPolicy) {
+        this(snapshot -> commandSource.get(), dangerousActionPolicy);
+    }
+
+    /** Test seam: derive eligible commands from the exact commander-turn visibility snapshot. */
+    public ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource,
+                          DangerousActionPolicy dangerousActionPolicy) {
         this.commandSource = commandSource;
         this.dangerousActionPolicy = dangerousActionPolicy;
     }
@@ -65,8 +73,18 @@ public final class ReflexResolver {
         if (input == null || input.isBlank()) {
             return Optional.empty();
         }
+        return resolve(input, GameStateSnapshot.capture());
+    }
+
+    /**
+     * Resolves an exact reflex using the immutable visibility state captured for the owning commander turn.
+     */
+    public Optional<String> resolve(String input, GameStateSnapshot gameStateSnapshot) {
+        if (input == null || input.isBlank()) {
+            return Optional.empty();
+        }
         String needle = canonicalizeForMatch(input);
-        List<CommandPhrase> matches = commandSource.get().stream()
+        List<CommandPhrase> matches = commandSource.apply(Objects.requireNonNull(gameStateSnapshot)).stream()
                 .filter(command -> matchesVerbatim(command.phraseGroup(), needle))
                 .toList();
         if (matches.size() != 1) {
@@ -117,10 +135,12 @@ public final class ReflexResolver {
     }
 
     /**
-     * Visible commands AND queries from the live registries, projected onto the reflex matching surface.
+     * Commands and queries from the live registries, gated by the turn snapshot and projected onto the reflex
+     * matching surface.
      */
-    private static List<CommandPhrase> collectVisibleCommands() {
-        return new GameToolCandidates().collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
+    private static List<CommandPhrase> collectVisibleCommands(GameStateSnapshot gameStateSnapshot) {
+        return new GameToolCandidates(gameStateSnapshot)
+                .collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
                 .map(candidate -> new CommandPhrase(
                         candidate.id(), candidate.phraseKey(), candidate.tool().parameters().isEmpty()))
                 .toList();

@@ -26,6 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class CompanionSpeechGatewayBusIntegrationTest {
 
+    private record SubmitSpeechEvent() {
+    }
+
     /** Minimal stand-in for the real Mouth: records the utterance and completes its future on interrupt. */
     private static final class FakeMouth {
         volatile VocalisationRequestEvent received;
@@ -33,6 +36,7 @@ class CompanionSpeechGatewayBusIntegrationTest {
 
         @Subscribe
         public void onSpeak(VocalisationRequestEvent event) {
+            event.handle().claimForPlayback();
             received = event;
         }
 
@@ -46,16 +50,33 @@ class CompanionSpeechGatewayBusIntegrationTest {
         }
     }
 
+    private static final class NestedSpeechSubmitter {
+        private final CompanionSpeechGateway gateway;
+        private volatile CompletableFuture<Void> completion;
+
+        private NestedSpeechSubmitter(CompanionSpeechGateway gateway) {
+            this.gateway = gateway;
+        }
+
+        @Subscribe
+        public void onSubmit(SubmitSpeechEvent event) {
+            completion = gateway.submit(new SpeechRequest("nested", "startup complete", Urgency.NORMAL));
+        }
+    }
+
     private final FakeMouth mouth = new FakeMouth();
     private final CompanionSpeechGateway gateway = new CompanionSpeechGateway();
+    private final NestedSpeechSubmitter nestedSubmitter = new NestedSpeechSubmitter(gateway);
 
     @BeforeEach
     void register() {
         GameEventBus.register(mouth);
+        GameEventBus.register(nestedSubmitter);
     }
 
     @AfterEach
     void unregister() {
+        GameEventBus.unregister(nestedSubmitter);
         GameEventBus.unregister(mouth);
     }
 
@@ -67,14 +88,18 @@ class CompanionSpeechGatewayBusIntegrationTest {
         assertSame(result, mouth.received.getCompletionFuture(), "Mouth must receive the caller's future");
         assertTrue(mouth.received.canBeInterrupted(), "companion speech must be interruptible");
         assertFalse(mouth.interrupted, "normal speech must not preempt");
+        mouth.received.handle().complete();
     }
 
     @Test
     void urgentSpeechPreemptsBeforeReachingMouth() {
-        gateway.submit(new SpeechRequest("r1", "collision warning", Urgency.URGENT));
+        CompletableFuture<Void> result = gateway.submit(
+                new SpeechRequest("r1", "collision warning", Urgency.URGENT));
 
         assertTrue(mouth.interrupted, "urgent speech must emit an interrupt the Mouth sees");
         assertNotNull(mouth.received, "urgent speech must still be enqueued after the interrupt");
+        mouth.received.handle().complete();
+        assertTrue(result.isDone());
     }
 
     @Test
@@ -86,5 +111,16 @@ class CompanionSpeechGatewayBusIntegrationTest {
         GameEventBus.publish(new TTSInterruptEvent());
 
         assertTrue(result.isDone(), "barge-in must resolve the speech future the caller is waiting on");
+    }
+
+    @Test
+    void speechSubmittedReentrantlyIsClaimedBeforeTheNoMouthCheck() {
+        GameEventBus.publish(new SubmitSpeechEvent());
+
+        assertNotNull(nestedSubmitter.completion);
+        assertNotNull(mouth.received);
+        assertFalse(nestedSubmitter.completion.isDone(),
+                "the queued Mouth event must run before the unclaimed-request check");
+        mouth.received.handle().complete();
     }
 }

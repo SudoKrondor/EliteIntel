@@ -3,6 +3,7 @@ package elite.intel.companion.model.llm;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Provider-neutral definition of one callable function offered to the LLM in the native tool-calling
@@ -22,4 +23,9 @@ public record LlmToolDefinition(
         String description,
         String localizedTrainingPhrases,
         List<ActionParameterSpec> parameters
-) {}
+) {
+    /** Freezes the parameter list so rendering and response validation observe the same per-request schema. */
+    public LlmToolDefinition {
+        parameters = List.copyOf(Objects.requireNonNull(parameters, "parameters"));
+    }
+}

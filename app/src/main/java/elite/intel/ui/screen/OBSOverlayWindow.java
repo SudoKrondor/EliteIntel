@@ -7,6 +7,7 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.AiResponseLogEvent;
+import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
@@ -234,8 +235,7 @@ public class OBSOverlayWindow extends JFrame {
                     int cx = PAD_X + fm.stringWidth(lastLine);
                     int cy = y + (lines.size() - 1) * fm.getHeight();
                     if ((System.currentTimeMillis() / 500) % 2 == 0) {
-                        g2.setColor(msg.color);
-                        g2.fillRect(cx + 1, cy + 3, 2, fm.getAscent() - 3);
+                        HudGlyphs.paintHudTextCaret(g2, cx + 1, cy + fm.getAscent(), fm, msg.color);
                     }
                 }
 

@@ -1,9 +1,11 @@
 package elite.intel.companion.mind;
 
-import elite.intel.ai.brain.InputNormalizer;
+import elite.intel.ai.brain.i18n.PhoneticInputNormalizer;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
@@ -26,10 +28,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * The accounting/scheduling node of the consciousness. Owns one serialized {@link ThoughtLane} per
- * {@link ThoughtSource}, so at most one COMMANDER and one EVENT thought are live at a time (they may run
- * concurrently); a lane's deque is that source's thought queue. It assigns urgency at thought birth and drives
- * preemption, but does not interpret meaning or know a thought's internal state (§2.3).
+ * The accounting/scheduling node of the consciousness. Owns one ordered {@link ThoughtLane} per
+ * {@link ThoughtSource}; a lane's deque is that source's cognitive queue. COMMANDER cognition is serialized, but
+ * completed cognitive stages may leave detached handlers live while the worker accepts later turns. It assigns
+ * urgency at thought birth and drives preemption without interpreting a thought's meaning (§2.3).
  * <p>
  * The lanes are held in one source-keyed map, published as a single volatile reference: cross-cutting
  * operations (start/stop, interrupt, watchdog, idle) iterate the lanes, while a submit targets the lane of
@@ -50,14 +52,17 @@ public final class ThoughtDispatcher implements ManagedService {
     /** Grace period for a lane to drain on stop before its live thoughts are force-interrupted. */
     private static final long SHUTDOWN_WAIT_MILLIS = 5000;
     /** A thought running longer than this is force-interrupted by the watchdog (§2.3 / §7.2 setting). */
-    private static final long WATCHDOG_TIMEOUT_MILLIS = 60_000;
+    private static final long WATCHDOG_TIMEOUT_MILLIS = CompanionConfig.thoughtWatchdogTimeout().toMillis();
     /** How often the watchdog checks the live thoughts. */
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
-    /** Production input canonicalizer: the legacy synonym map ("combat mode" -> "switch to combat mode"). */
-    private static final Function<String, String> DEFAULT_NORMALIZER = InputNormalizer.getInstance()::normalize;
+    /**
+     * Production input canonicalizer: only per-language acoustic STT corrections. The {@link #inputNormalizer}
+     * seam is retained so a test can still inject a canonicalizing function.
+     */
+    private static final Function<String, String> DEFAULT_NORMALIZER = PhoneticInputNormalizer::normalize;
 
-    private final ThoughtContext ctx;
+    private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
     /**
@@ -76,9 +81,8 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     /**
-     * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
-     * memory keeps the raw words. Reuses the legacy {@link InputNormalizer} owner so a synonym phrase is
-     * recognized the same way the legacy router recognizes it.
+     * Canonicalizes commander input for command matching, LLM prompting, and conversational memory.
+     * Production applies only per-language acoustic STT corrections; the seam remains injectable for tests.
      */
     private final Function<String, String> inputNormalizer;
     private final long watchdogTimeoutMillis;
@@ -88,47 +92,47 @@ public final class ThoughtDispatcher implements ManagedService {
     private volatile Map<ThoughtSource, ThoughtLane> lanes;
     private volatile ScheduledExecutorService watchdog;
 
-    public ThoughtDispatcher(ThoughtContext ctx) {
-        this(ctx, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies) {
+        this(dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Wires the dispatcher with an explicit reflex resolver (production wiring, or a test pinning the gate). */
-    public ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
+    public ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver and the input normalizer to exercise canonicalization routing. */
-    ThoughtDispatcher(ThoughtContext ctx, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
-        this(ctx, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
+    ThoughtDispatcher(ThoughtDependencies dependencies, ReflexResolver reflexResolver, Function<String, String> inputNormalizer) {
+        this(dependencies, UrgencyPolicy.normalOnly(), reflexResolver, inputNormalizer,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy to exercise preemption. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy) {
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the reflex resolver to exercise reflex-vs-commander routing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
-        this(ctx, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver) {
+        this(dependencies, urgencyPolicy, reflexResolver, DEFAULT_NORMALIZER,
                 WATCHDOG_TIMEOUT_MILLIS, WATCHDOG_INTERVAL_MILLIS);
     }
 
     /** Test seam: inject the urgency policy and watchdog timing. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this(ctx, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
+        this(dependencies, urgencyPolicy, new ReflexResolver(), DEFAULT_NORMALIZER,
                 watchdogTimeoutMillis, watchdogIntervalMillis);
     }
 
     /** Canonical constructor: all collaborators, the input normalizer, and watchdog timing explicit. */
-    ThoughtDispatcher(ThoughtContext ctx, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
+    ThoughtDispatcher(ThoughtDependencies dependencies, UrgencyPolicy urgencyPolicy, ReflexResolver reflexResolver,
                       Function<String, String> inputNormalizer,
                       long watchdogTimeoutMillis, long watchdogIntervalMillis) {
-        this.ctx = ctx;
+        this.dependencies = dependencies;
         this.urgencyPolicy = urgencyPolicy;
         this.reflexResolver = reflexResolver;
         this.inputNormalizer = inputNormalizer;
@@ -138,9 +142,9 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /**
      * Accepts a commander reply and queues it on the commander lane. The input is first canonicalized by the
-     * {@link #inputNormalizer} (synonym map) - this is the form used for command matching only: the reflex
-     * gate and, on the LLM path, the reducer and the prompt's current-input. The raw words are passed through
-     * unchanged for memory. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
+     * {@link #inputNormalizer} (acoustic corrections only) - this is the form used for the reflex gate and, on
+     * the LLM path, the reducer, prompt current-input, and conversational memory. The raw words are retained for
+     * execution and intake diagnostics. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
      * matches a training phrase verbatim and resolves to exactly one safe, parameterless command becomes a
      * deterministic {@code ReflexThought} (no LLM); everything else becomes a full {@code CommanderThought}.
      */
@@ -148,45 +152,68 @@ public final class ThoughtDispatcher implements ManagedService {
         if (input == null || input.isBlank()) {
             return;
         }
+        long acceptedAtNanos = System.nanoTime();
+        PendingClarification pendingClarification = dependencies.clarificationCoordinator()
+                .claim().orElse(null);
+        // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
+        // must never re-read a changing player_status row independently.
+        GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
-        // reflex fast-path and the LLM path (the reducer and the prompt's current-input). The name carries no
+        // reflex fast-path and the LLM path (the reducer, prompt current-input, and memory). The name carries no
         // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
-        // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
-        // recorded from `input`, never from this normalized match text.
+        // routed fine without it fell to a bare classify_turn with it. Raw STT stays only in intake diagnostics
+        // and the execution request; the dialogue remembers the normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
-        ctx.state().setLastCommanderMatchInput(matchInput);
-        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput));
-        // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
-        // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
-        // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
-        // deterministic reflex for a phrase the commander said verbatim.
-        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped);
+        ThoughtContext context = ThoughtContext.commander(
+                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot)
+                .withPendingClarification(pendingClarification);
+        dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
+        UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
+        // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
+        // phrase keeps a deliberately authored alias authoritative if a correction ever overlaps with it.
+        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
         if (reflexCommand.isEmpty()) {
-            reflexCommand = reflexResolver.resolve(matchInput);
+            reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
         }
         // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
         // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
         // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
         String reflexKind = reflexCommand.isPresent() ? "exact" : null;
+        long semanticReflexMillis = -1;
         if (reflexCommand.isEmpty()) {
             // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
             // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
-            reflexCommand = semanticReflexResolver.resolve(matchInput);
+            long semanticReflexStartedNanos = System.nanoTime();
+            SemanticReflexResolver.Resolution semanticResolution =
+                    semanticReflexResolver.resolveWithSemanticQuery(matchInput, gameStateSnapshot);
+            semanticReflexMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - semanticReflexStartedNanos);
+            reflexCommand = semanticResolution.actionId();
+            context = context.withSemanticQuery(semanticResolution.semanticQuery());
             if (reflexCommand.isPresent()) {
                 reflexKind = "semantic";
             }
         }
+        ThoughtContext finalContext = context;
         Thought thought = reflexCommand
-                .map(actionId -> Thought.reflex(urgency, input, actionId, ctx))
-                .orElseGet(() -> Thought.commander(urgency, input, matchInput, ctx));
+                .map(actionId -> Thought.reflex(finalContext, actionId, dependencies))
+                .orElseGet(() -> Thought.commander(finalContext, dependencies));
         String route = reflexCommand.isPresent()
                 ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (pendingClarification != null) {
+            String disposition = reflexCommand.isPresent() ? "superseded by reflex" : "claimed for continuation";
+            CompanionDiagnostics.debug(thought.trace(), "clarify",
+                    pendingClarification.actionId() + "." + pendingClarification.parameterName()
+                            + " " + disposition);
+        }
+        if (semanticReflexMillis >= 0) {
+            CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
+        }
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.
             CompanionDiagnostics.debug(thought.trace(), "intake", "match text: \"" + CompanionDiagnostics.truncate(matchInput) + "\"");
@@ -230,7 +257,7 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, ctx);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, dependencies);
         CompanionDiagnostics.debug(thought.trace(), "event", "reaction topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
@@ -246,36 +273,56 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, ctx);
+        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, dependencies);
         CompanionDiagnostics.debug(thought.trace(), "event", "verbatim topic=" + conversationTopic);
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     @Override
-    public void start() {
+    public synchronized void start() {
+        Map<ThoughtSource, ThoughtLane> newlyStartedLanes = null;
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
-            // Commander lane is a bounded pool: a long synchronous command/query occupies a worker, so several
-            // let new commander input run meanwhile instead of blocking; the rest queue (§1.2). EVENT/NARRATION
-            // stay single-worker (no slow handlers there).
-            built.put(ThoughtSource.COMMANDER,
-                    new ThoughtLane("companion-commander", CompanionConfig.maxParallelCommanderThoughts()));
-            built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
-            lanes = built; // single volatile publish of the fully-built lane set
+            try {
+                // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
+                // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
+                // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
+                built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
+                built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
+                lanes = built; // single volatile publish of the fully-built lane set
+                newlyStartedLanes = built;
+            } catch (RuntimeException | Error startupFailure) {
+                built.values().forEach(lane -> lane.shutdown(0));
+                throw startupFailure;
+            }
         }
         if (watchdog == null) {
-            watchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
-                Thread thread = new Thread(runnable, "companion-watchdog");
-                thread.setDaemon(true);
-                return thread;
-            });
-            watchdog.scheduleAtFixedRate(this::checkWatchdog,
-                    watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+            ScheduledExecutorService newlyStartedWatchdog = null;
+            try {
+                newlyStartedWatchdog = Executors.newSingleThreadScheduledExecutor(runnable -> {
+                    Thread thread = new Thread(runnable, "companion-watchdog");
+                    thread.setDaemon(true);
+                    return thread;
+                });
+                newlyStartedWatchdog.scheduleAtFixedRate(this::checkWatchdog,
+                        watchdogIntervalMillis, watchdogIntervalMillis, TimeUnit.MILLISECONDS);
+                watchdog = newlyStartedWatchdog;
+            } catch (RuntimeException | Error startupFailure) {
+                if (newlyStartedWatchdog != null) {
+                    newlyStartedWatchdog.shutdownNow();
+                }
+                if (newlyStartedLanes != null && lanes == newlyStartedLanes) {
+                    lanes = null;
+                    newlyStartedLanes.values().forEach(lane -> lane.shutdown(0));
+                }
+                throw startupFailure;
+            }
         }
     }
 
     @Override
-    public void stop() {
+    public synchronized void stop() {
+        dependencies.clarificationCoordinator().cancel();
         ScheduledExecutorService currentWatchdog = watchdog;
         watchdog = null;
         if (currentWatchdog != null) {

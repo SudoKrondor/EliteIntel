@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install4j version="12.0.3" transformSequenceNumber="12">
   <directoryPresets config="./distribution/models" />
-  <application name="Elite Intel" applicationId="8421-9013-2300-6747" mediaDir="./installers" lzmaCompression="true" commonExternalFiles="true" shortName="elite-intel" publisher="Elite Intel Open Source" publisherWeb="https://www.elite-intel.org/" version="installer" allPathsRelative="true" macVolumeId="8da79e0e0cf3964f" javaMinVersion="21" javaMaxVersion="25">
+  <application name="Elite Intel" applicationId="8421-9013-2300-6747" mediaDir="./installers" lzmaCompression="true" commonExternalFiles="true" shortName="elite-intel" publisher="Elite Intel Open Source" publisherWeb="https://www.elite-intel.org/" version="V1.1" allPathsRelative="true" macVolumeId="8da79e0e0cf3964f" javaMinVersion="21" javaMaxVersion="25">
     <jreBundles jdkProviderId="Corretto" release="25/25.0.2.10.1" />
   </application>
   <files>

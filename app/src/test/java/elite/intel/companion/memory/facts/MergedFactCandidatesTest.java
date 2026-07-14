@@ -1,5 +1,8 @@
 package elite.intel.companion.memory.facts;
 
+import elite.intel.ai.embed.AngleEmbedder;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.model.ConversationTopic;
@@ -11,8 +14,10 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MergedFactCandidatesTest {
@@ -69,6 +74,17 @@ class MergedFactCandidatesTest {
         assertTrue(MergedFactCandidates.forInput(new FakeMemory(List.of()), ctx(""), List.of()).isEmpty());
     }
 
+    @Test
+    void sendsPreparedSemanticQueryOnlyToTheMemoryCore() {
+        FakeMemory memory = new FakeMemory(List.of(commander("mem fact")));
+        SemanticQuery prepared = new SemanticPhraseMatcher(new AngleEmbedder(Map.of("q", 0.0)))
+                .embedQueryContext("q");
+
+        MergedFactCandidates.forInput(memory, ctx("q"), prepared);
+
+        assertSame(prepared, memory.semanticQuery);
+    }
+
     private static MemoryFactContext ctx(String query) {
         return MemoryFactContext.forQuery(query);
     }
@@ -76,12 +92,13 @@ class MergedFactCandidatesTest {
     /** A stated commander fact (survives the tier-2 filter of the memory core). */
     private static MemoryEntry commander(String content) {
         return new MemoryEntry(Instant.now(), ConversationTopic.SOCIAL, MemorySource.COMMANDER,
-                content, MemoryImportance.HIGH, null, null);
+                content, MemoryImportance.HIGH, null, content);
     }
 
     /** Minimal gateway returning a fixed candidate list; the other operations are unused by these tests. */
     private static final class FakeMemory implements MemoryGateway {
         private final List<MemoryEntry> candidates;
+        private SemanticQuery semanticQuery;
 
         private FakeMemory(List<MemoryEntry> candidates) {
             this.candidates = candidates;
@@ -89,6 +106,10 @@ class MergedFactCandidatesTest {
 
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return candidates; }
+        @Override public List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
+            this.semanticQuery = semanticQuery;
+            return candidates;
+        }
         @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }

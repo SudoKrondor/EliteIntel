@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CustomCommandKeyGeneratorTest {
 
@@ -77,6 +79,26 @@ class CustomCommandKeyGeneratorTest {
         LlmGateway gateway = gatewayReturning(request -> null);
         assertThrows(CustomCommandKeyGenerator.KeyGenerationException.class,
                 () -> CustomCommandKeyGenerator.generate(gateway, "go to mission", List.of()));
+    }
+
+    @Test
+    void gatewayDeadlineKeepsTheSpecificTimeoutMessage() {
+        LlmGateway gateway = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                throw new UnsupportedOperationException("not used");
+            }
+
+            @Override
+            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.failedFuture(new TimeoutException("logical deadline"));
+            }
+        };
+
+        CustomCommandKeyGenerator.KeyGenerationException failure = assertThrows(
+                CustomCommandKeyGenerator.KeyGenerationException.class,
+                () -> CustomCommandKeyGenerator.generate(gateway, "go to mission", List.of()));
+        assertTrue(failure.getMessage().contains("did not respond in time"));
     }
 
     @Test

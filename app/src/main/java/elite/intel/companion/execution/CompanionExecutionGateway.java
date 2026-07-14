@@ -5,6 +5,8 @@ import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.brain.actions.handlers.QueryHandlerFactory;
 import elite.intel.ai.brain.actions.query.IntelQuery;
+import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
@@ -12,8 +14,13 @@ import elite.intel.companion.tools.SystemFunctionResultFields;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * {@link ExecutionGateway} that runs tool-calls by reusing the single execution contract every tool shares:
@@ -23,12 +30,10 @@ import java.util.concurrent.Executors;
  * {@code Thought} decides what is spoken (via the {@code speak} system function), and the raw result flows
  * back as a tool result.
  * <p>
- * Threading: every tool runs on a parallel pool so a slow handler (e.g. a multi-minute Spansh search) never
- * blocks another tool's {@code handle()} - a commander can drop out of supercruise or shift power while a
- * route calculates. The gateway does not serialize game-input commands itself: the hands layer already does
- * (a keystroke command only publishes a {@code GameInputSequenceEvent}, and {@code InputSequenceExecutor}
- * drains those on a single thread), so the actual key presses stay sequential regardless of dispatch order.
- * System functions are not game input; the speech/memory gateways they call own their own ordering.
+ * Threading: commands/macros run on one serialized action lane, so multi-step game/session side effects retain
+ * submission order. Read-only queries run on a bounded parallel pool, so a slow lookup does not block unrelated
+ * queries or the next commander's cognitive turn. Small companion system functions execute on the caller's
+ * cognitive thread; they dispatch metadata/speech and are not remote game handlers.
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
@@ -39,22 +44,26 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
     /** Dispatch-status result for a side-effect tool; the gateway-only "tool" field names which one ran. */
     private static final String TOOL = "tool";
     private static final String STATUS_COMPLETED = "completed_by_executor";
+    private static final long EXECUTOR_SHUTDOWN_WAIT_MILLIS = 1000;
 
     private final Map<String, IntelAction> commandHandlers;
     private final Map<String, IntelQuery> queryHandlers;
     private final Map<String, SystemFunction> systemFunctions;
     private final Executor actionLane;
     private final Executor queryLane;
+    private final Map<CompletableFuture<JsonObject>, AtomicBoolean> submittedOperations = new ConcurrentHashMap<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Production: handler maps + system-function registry; parallel pools so no slow handler blocks another.
+     * Production: handler maps + system-function registry, a serialized action lane, and a bounded query pool.
      */
     public CompanionExecutionGateway() {
         this(CommandHandlerFactory.getInstance().registerCommandHandlers(),
                 QueryHandlerFactory.getInstance().registerQueryHandlers(),
                 loadedSystemFunctions(),
-                Executors.newCachedThreadPool(daemon("companion-action")),
-                Executors.newCachedThreadPool(daemon("companion-query")));
+                Executors.newSingleThreadExecutor(daemon("companion-action")),
+                Executors.newFixedThreadPool(CompanionConfig.maxParallelQueryExecutions(),
+                        daemon("companion-query")));
     }
 
     /** Test seam: inject handler/system-function maps and executors (e.g. synchronous). */
@@ -72,6 +81,10 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
 
     @Override
     public CompletableFuture<JsonObject> submit(ExecutionRequest request) {
+        if (closed.get()) {
+            return CompletableFuture.failedFuture(
+                    new RejectedExecutionException("Companion execution gateway is closed"));
+        }
         String toolName = request.toolName();
         // Command precedence mirrors ResponseRouter; ids do not collide across registries.
         IntelAction command = commandHandlers.get(toolName);
@@ -84,7 +97,7 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
         }
         IntelAction systemFunction = systemFunctions.get(toolName);
         if (systemFunction != null) {
-            return run(queryLane, systemFunction, request);
+            return run(Runnable::run, systemFunction, request);
         }
         return CompletableFuture.failedFuture(
                 new IllegalArgumentException("Unknown companion tool: " + toolName));
@@ -95,24 +108,64 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
      */
     private CompletableFuture<JsonObject> run(Executor lane, IntelAction tool, ExecutionRequest request) {
         CompletableFuture<JsonObject> future = new CompletableFuture<>();
-        lane.execute(() -> {
-            if (future.isCancelled()) {
-                return; // cancelled while queued: skip (an already-started action/macro is never interrupted)
-            }
-            try {
-                future.complete(execute(tool, request));
-            } catch (Throwable t) {
-                future.completeExceptionally(t);
+        AtomicBoolean started = new AtomicBoolean();
+        submittedOperations.put(future, started);
+        future.whenComplete((ignored, failure) -> submittedOperations.remove(future));
+        try {
+            lane.execute(() -> {
+                if (future.isDone() || closed.get()) {
+                    future.cancel(false); // cancelled/closed while queued: never enter the handler
+                    return;
+                }
+                started.set(true);
+                if (future.isDone()) {
+                    return; // close raced with the start marker and cancelled this still-unentered operation
+                }
+                try {
+                    future.complete(execute(tool, request));
+                } catch (Throwable failure) {
+                    future.completeExceptionally(failure);
+                }
+            });
+        } catch (RuntimeException rejected) {
+            future.completeExceptionally(rejected);
+        }
+        return future;
+    }
+
+    /**
+     * Rejects new work, cancels operations that have not entered a handler, and gracefully shuts down owned
+     * lanes. Started actions are allowed to return naturally and are never force-interrupted.
+     */
+    @Override
+    public void close() {
+        if (!closed.compareAndSet(false, true)) {
+            return;
+        }
+        submittedOperations.forEach((future, started) -> {
+            if (!started.get()) {
+                future.cancel(false);
             }
         });
-        return future;
+
+        long shutdownDeadline = System.nanoTime()
+                + TimeUnit.MILLISECONDS.toNanos(EXECUTOR_SHUTDOWN_WAIT_MILLIS);
+        shutdownExecutor(actionLane);
+        if (queryLane != actionLane) {
+            shutdownExecutor(queryLane);
+        }
+        awaitExecutor(actionLane, shutdownDeadline);
+        if (queryLane != actionLane) {
+            awaitExecutor(queryLane, shutdownDeadline);
+        }
     }
 
     /** Single execution path: a non-null handle result is the payload; null means a side-effect dispatch. */
     private JsonObject execute(IntelAction tool, ExecutionRequest request) throws Exception {
         // Pass the commander's raw utterance as originalUserInput so handlers that match a spoken name
         // (e.g. AnalyzeStellarObjectsQuery resolving "is B 1 landable") receive it instead of "".
-        JsonObject result = tool.handle(request.toolName(), request.arguments(), request.commanderInput());
+        JsonObject result = CompanionRuntime.callWithinGeneration(request.runtimeGenerationId(),
+                () -> tool.handle(request.toolName(), request.arguments(), request.commanderInput()));
         if (result != null) {
             return result;
         }
@@ -136,5 +189,26 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
             thread.setDaemon(true);
             return thread;
         };
+    }
+
+    private static void shutdownExecutor(Executor executor) {
+        if (executor instanceof ExecutorService executorService) {
+            executorService.shutdown();
+        }
+    }
+
+    private static void awaitExecutor(Executor executor, long shutdownDeadline) {
+        if (!(executor instanceof ExecutorService executorService)) {
+            return;
+        }
+        long remainingNanos = shutdownDeadline - System.nanoTime();
+        if (remainingNanos <= 0) {
+            return;
+        }
+        try {
+            executorService.awaitTermination(remainingNanos, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

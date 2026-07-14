@@ -273,13 +273,16 @@ class PromptComposerTest {
     }
 
     @Test
-    void boundarySystemNotesReplayAsAssistantPlaceholders() {
+    void boundaryRepliesReplayAsAssistant() {
+        // A turn that drew no reply records a <no_reply/> boundary as the companion's (assistant-side) omitted
+        // reply - a COMPANION entry - so it replays as a plain assistant message that keeps role alternation,
+        // with no SYSTEM-to-assistant indirection.
         List<LlmMessage> messages = composeCommander(List.of(
                 entry(MemorySource.COMMANDER, ConversationTopic.NAVIGATION, "status"),
-                entry(MemorySource.SYSTEM, ConversationTopic.SYSTEM, "<no_reply/>"))).messages();
+                entry(MemorySource.COMPANION, ConversationTopic.NAVIGATION, "<no_reply/>"))).messages();
 
         assertEquals(4, messages.size());
-        assertEquals(1, systemCount(messages), "boundary notes must not create mid-dialogue system messages");
+        assertEquals(1, systemCount(messages), "a boundary reply must not create a mid-dialogue system message");
         assertEquals(LlmMessageRole.USER, messages.get(1).role());
         assertEquals(LlmMessageRole.ASSISTANT, messages.get(2).role());
         assertEquals("<no_reply/>", messages.get(2).content());

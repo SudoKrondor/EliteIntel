@@ -1,6 +1,5 @@
 package elite.intel.companion.speech;
 
-import elite.intel.ai.ears.IsSpeakingEvent;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
 import elite.intel.ai.mouth.subscribers.events.VocalisationRequestEvent;
@@ -18,12 +17,9 @@ import java.util.function.Consumer;
  * (Google or Kokoro) completes when playback finishes (or when speech is interrupted/drained); that
  * future is returned to the caller, so the gateway is provider-agnostic and never touches the audio.
  * <p>
- * STT suppression: the gateway brackets each utterance with {@link IsSpeakingEvent} (true before, false
- * after), mirroring how {@code VocalisationRouter} guards normal AI responses, so voice recognition does
- * not pick up the companion's own voice.
- * <p>
  * Interruption: {@code URGENT} speech preempts whatever is currently playing via a {@link TTSInterruptEvent}
- * before enqueueing. Cancelling the returned future best-effort stops current speech the same way.
+ * before enqueueing. Cancelling the returned future targets that exact request. The active Mouth owns the
+ * authoritative speaking-state transitions after it synchronously claims the published request.
  */
 public final class CompanionSpeechGateway implements SpeechGateway {
 
@@ -45,20 +41,28 @@ public final class CompanionSpeechGateway implements SpeechGateway {
     @Override
     public CompletableFuture<Void> submit(SpeechRequest request) {
         CompletableFuture<Void> done = new CompletableFuture<>();
-        publisher.accept(new IsSpeakingEvent(true));
-        // Lift the speaking guard when playback ends; a cancel also hard-stops any current speech.
         done.whenComplete((v, ex) -> {
-            publisher.accept(new IsSpeakingEvent(false));
-            if (ex instanceof CancellationException) {
-                publisher.accept(new TTSInterruptEvent());
+            if (done.isCancelled() || ex instanceof CancellationException) {
+                publisher.accept(new TTSInterruptEvent(request.requestId()));
             }
         });
         // Urgent speech jumps ahead of whatever is currently playing.
         if (request.urgency() == Urgency.URGENT) {
             publisher.accept(new TTSInterruptEvent());
         }
-        // Interruptible so barge-in / urgent preemption can clear it; the Mouth completes `done` when finished.
-        publisher.accept(new VocalisationRequestEvent(request.text(), ORIGIN, true, done));
+        VocalisationRequestEvent event = VocalisationRequestEvent.tracked(
+                request.requestId(), request.text(), ORIGIN, true, done);
+        try {
+            // Same-thread EventBus delivery may still be reentrant/queued. Check after the complete current
+            // dispatch so a Mouth receiving this from inside another subscriber gets its chance to claim.
+            publisher.accept(event);
+            GameEventBus.afterCurrentDispatch(() -> event.handle().rejectIfUnclaimed(new IllegalStateException(
+                    "No active Mouth accepted speech request " + request.requestId())));
+        } catch (RuntimeException failure) {
+            if (!event.handle().rejectIfUnclaimed(failure)) {
+                event.handle().fail(failure);
+            }
+        }
         return done;
     }
 }

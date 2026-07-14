@@ -6,6 +6,7 @@ import elite.intel.ai.brain.i18n.es.SpanishInputNormalizerRules;
 import elite.intel.ai.brain.i18n.fr.FrenchInputNormalizerRules;
 import elite.intel.ai.brain.i18n.it.ItalianInputNormalizerRules;
 import elite.intel.ai.brain.i18n.pt.PortugueseInputNormalizerRules;
+import elite.intel.ai.brain.i18n.ptbz.BrazilianPortugueseInputNormalizerRules;
 import elite.intel.ai.brain.i18n.ru.RussianInputNormalizerRules;
 import elite.intel.ai.brain.i18n.uk.UkrainianInputNormalizerRules;
 import elite.intel.i18n.Language;
@@ -18,7 +19,7 @@ import java.util.Set;
 
 /**
  * Factory that supplies the correct {@link InputNormalizerProvider} for the current
- * session language and caches the built synonym map per language.
+ * session language and caches its active input rules per language.
  * <p>
  * Mirrors the structure of {@link AiActionLocalizations} so each language lives in
  * its own file and two localizers can work on different languages simultaneously
@@ -31,12 +32,9 @@ public final class InputNormalizerLocalizations {
     private InputNormalizerLocalizations() {
     }
 
-    public static LinkedHashMap<String, String> synonymMap() {
-        return rules().synonymMap;
-    }
-
-    public static String noiseWordPattern() {
-        return rules().noiseWordPattern;
+    /** Returns the ordered acoustic STT corrections for the current session language. */
+    public static LinkedHashMap<String, String> phoneticMap() {
+        return rules().phoneticMap;
     }
 
     public static List<String> trashPhrases() {
@@ -62,13 +60,14 @@ public final class InputNormalizerLocalizations {
             case ES -> new SpanishInputNormalizerRules();
             case IT -> new ItalianInputNormalizerRules();
             case PT -> new PortugueseInputNormalizerRules();
+            case PTBZ -> new BrazilianPortugueseInputNormalizerRules();
         };
     }
 
-    private record CachedRules(LinkedHashMap<String, String> synonymMap, String noiseWordPattern,
+    private record CachedRules(LinkedHashMap<String, String> phoneticMap,
                                List<String> trashPhrases, Set<String> stopWords) {
         CachedRules(InputNormalizerProvider provider) {
-            this(provider.buildSynonymMap(), provider.noiseWordPattern(), provider.trashPhrases(), provider.stopWords());
+            this(provider.buildPhoneticMap(), provider.trashPhrases(), provider.stopWords());
         }
     }
 }

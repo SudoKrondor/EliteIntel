@@ -6,6 +6,7 @@ import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.BindBean;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jdbi.v3.sqlobject.transaction.Transaction;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -15,8 +16,8 @@ import java.util.List;
 public interface FleetCarrierRouteDao {
 
     @SqlUpdate("""
-    INSERT INTO fleet_carrier_route 
-            (leg, distance, systemName, fuelUsed, remainingFuel, hasIcyRing, isPristine, x, y, z) 
+            INSERT INTO fleet_carrier_route
+                    (leg, distance, systemName, fuelUsed, remainingFuel, hasIcyRing, isPristine, x, y, z)
             VALUES (:leg, :distance, :systemName, :fuelUsed, :remainingFuel, :hasIcyRing, :pristine, :x, :y, :z)
     """)
     void save(@BindBean FleetCarrierRouteLeg leg);
@@ -24,21 +25,28 @@ public interface FleetCarrierRouteDao {
     @SqlQuery("SELECT * FROM fleet_carrier_route")
     List<FleetCarrierRouteDao.FleetCarrierRouteLeg> getAll();
 
-    @SqlUpdate("DELETE FROM fleet_carrier_route where systemName = :starSystem")
-    void delete(String starSystem);
-
     @SqlUpdate("DELETE FROM fleet_carrier_route")
     void clear();
 
-    @SqlQuery("select sum(fuelUsed) as fuelRequired from fleet_carrier_route")
-    Integer getTotalFuelRequired();
+    /**
+     * The route table only ever holds the legs still to fly, so every change to it is a whole-table
+     * replacement. Transactional: a crash between the delete and the inserts would otherwise leave
+     * the commander with no route at all.
+     */
+    @Transaction
+    default void replaceAll(List<FleetCarrierRouteLeg> legs) {
+        clear();
+        for (FleetCarrierRouteLeg leg : legs) {
+            save(leg);
+        }
+    }
 
-    @SqlQuery("select systemName from fleet_carrier_route where id = (select max(id) from fleet_carrier_route);")
-    String getDestinationSystemName();
-
-
-
-    @SqlQuery("SELECT * FROM fleet_carrier_route WHERE systemName = :starSystem")
+    /**
+     * WHY TRIM and NOCASE: the stored name comes from Spansh and the name looked up comes from the
+     * journal. They name the same system but need not agree on case or padding, and an exact match
+     * that misses reads an arrival as off-route.
+     */
+    @SqlQuery("SELECT * FROM fleet_carrier_route WHERE TRIM(systemName) COLLATE NOCASE = :starSystem")
     FleetCarrierRouteLeg findByPrimaryStarName(String starSystem);
 
 

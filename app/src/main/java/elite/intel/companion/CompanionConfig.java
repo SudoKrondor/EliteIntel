@@ -4,14 +4,14 @@ import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * The single place for the companion's settings. The companion-mode toggle is DB-backed (parallel to
- * conversation mode) and read through {@link SystemSession}; the confirmation code word is still a
- * hardcoded placeholder pending its own GUI/DB-backed value.
+ * The single place for the companion's settings. The companion is the application's only command mode; the
+ * confirmation code word is still a hardcoded placeholder pending its own GUI/DB-backed value.
  */
 public final class CompanionConfig {
 
@@ -30,8 +30,12 @@ public final class CompanionConfig {
     private static final int SHORT_TERM_MEMORY_SIZE = 30;
     /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
     private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
-    /** Max commander thoughts that may run concurrently on the commander lane. */
-    private static final int MAX_PARALLEL_COMMANDER_THOUGHTS = 5;
+    /** Max read-only query handlers that may execute concurrently after their commander turns are classified. */
+    private static final int MAX_PARALLEL_QUERY_EXECUTIONS = 4;
+    /** Hard lifecycle ceiling for a live thought. */
+    private static final Duration THOUGHT_WATCHDOG_TIMEOUT = Duration.ofSeconds(60);
+    /** One deadline for queue wait plus all physical attempts of a logical LLM request. */
+    private static final Duration LLM_LOGICAL_DEADLINE = Duration.ofSeconds(50);
     /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
     private static final double SEMANTIC_RECALL_FLOOR = 0.85;
     /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
@@ -44,12 +48,6 @@ public final class CompanionConfig {
      * channel is still pending; set to {@code false} to keep only the per-turn headlines.
      */
     private static final boolean DIAGNOSTICS_VERBOSE = true;
-    /**
-     * If true, non-PTT microphone transcripts are dropped while companion speech is active. Keep false to let
-     * commander barge-in speech interrupt the current narration and route as a normal command.
-     */
-    private static final boolean DROP_HOT_MIC_TRANSCRIPTS_WHILE_COMPANION_SPEAKS = false;
-
     private CompanionConfig() {
     }
 
@@ -76,13 +74,6 @@ public final class CompanionConfig {
         return List.copyOf(forms);
     }
 
-    /**
-     * Whether companion mode replaces the legacy command mode. DB-backed (defaults off).
-     */
-    public static boolean companionModeOn() {
-        return SystemSession.getInstance().companionModeOn();
-    }
-
     /** The spoken code word that confirms a frozen dangerous action (§2.13). */
     public static String confirmationCodeWord() {
         return CONFIRMATION_CODE_WORD;
@@ -103,9 +94,19 @@ public final class CompanionConfig {
         return MID_TERM_MEMORY_SIZE_PER_TOPIC;
     }
 
-    /** Max commander thoughts that may run concurrently on the commander lane. */
-    public static int maxParallelCommanderThoughts() {
-        return MAX_PARALLEL_COMMANDER_THOUGHTS;
+    /** Max read-only query handlers that may execute concurrently. */
+    public static int maxParallelQueryExecutions() {
+        return MAX_PARALLEL_QUERY_EXECUTIONS;
+    }
+
+    /** Hard lifecycle ceiling for a live thought. */
+    public static Duration thoughtWatchdogTimeout() {
+        return THOUGHT_WATCHDOG_TIMEOUT;
+    }
+
+    /** Total LLM request deadline, deliberately shorter than {@link #thoughtWatchdogTimeout()}. */
+    public static Duration llmLogicalDeadline() {
+        return LLM_LOGICAL_DEADLINE;
     }
 
     /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */
@@ -128,8 +129,4 @@ public final class CompanionConfig {
         return DIAGNOSTICS_VERBOSE;
     }
 
-    /** Whether hot-mic transcripts are suppressed while companion speech is active. */
-    public static boolean dropHotMicTranscriptsWhileCompanionSpeaks() {
-        return DROP_HOT_MIC_TRANSCRIPTS_WHILE_COMPANION_SPEAKS;
-    }
 }

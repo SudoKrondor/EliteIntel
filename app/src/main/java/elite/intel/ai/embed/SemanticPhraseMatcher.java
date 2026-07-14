@@ -36,6 +36,14 @@ public final class SemanticPhraseMatcher {
         }
     }
 
+    /**
+     * Embeds a fresh query and keeps the matcher/text identity beside its vector so adjacent turn stages can safely
+     * reuse the same inference.
+     */
+    public SemanticQuery embedQueryContext(String text) {
+        return new SemanticQuery(text, this, embedQuery(text));
+    }
+
     /** The best-matching phrase: its index in the queried list and its cosine. {@code index == -1} when none. */
     public record Match(int index, double score) {}
 

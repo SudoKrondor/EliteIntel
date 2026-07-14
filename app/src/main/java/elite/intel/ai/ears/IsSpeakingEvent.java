@@ -1,8 +1,8 @@
 package elite.intel.ai.ears;
 
 /**
- * Published on the EventBus when the application starts or finishes speaking via TTS.
- * Subscribers (e.g. STT) use this to suppress voice recognition while the AI is speaking.
+ * Published by the active Mouth when the process transitions between zero and at least one accepted TTS request.
+ * Subscribers use it to detect barge-in and observe playback lifecycle; STT remains active while it is true.
  */
 public class IsSpeakingEvent {
     boolean isSpeaking;

@@ -27,8 +27,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_FIELD_HEIGHT;
 
 /**
  * COMMON settings shown above the SETTINGS sub-tabs (settings shared across all of them):
- * command language and journal directory (left, wider column) plus the conversation-mode toggle
- * (right column). Moved here from the now-removed CUSTOM tab. FLAT section (section 9).
+ * command language and journal directory. Moved here from the now-removed CUSTOM tab. FLAT section (section 9).
  */
 public class CommonSettingsPanel extends JPanel {
 
@@ -36,16 +35,7 @@ public class CommonSettingsPanel extends JPanel {
     private final PlayerSession playerSession = PlayerSession.getInstance();
 
     private HudComboBox<LanguageOption> languageCombo;
-    // Mode toggles hidden while testers are forced onto companion mode (companion ON, conversation OFF).
-    // Kept commented out (not deleted) pending the final decision to completely remove the legacy LLM
-    // pipeline; if that pipeline is ever reinstated, uncomment these and the wiring below.
-    // private JCheckBox conversationModeCheckBox;
-    // private JCheckBox companionModeCheckBox;
     private JTextField journalDirField;
-    /**
-     * Conversation-mode state captured before companion mode forced it on, so it can be restored.
-     */
-    // private boolean conversationModeBeforeCompanion;
 
     public CommonSettingsPanel() {
         buildUi();
@@ -59,7 +49,7 @@ public class CommonSettingsPanel extends JPanel {
         JPanel body = section.body();
         int fieldHeight = HUD_FIELD_HEIGHT;
 
-        // Row 0 - command language (wide first column, cols 0-2) + conversation mode (right, col 3).
+        // Row 0 - command language (wide first column, cols 0-2).
         GridBagConstraints g = baseGbc();
         addLabel(body, getText("player.commandLanguage"), g);
 
@@ -81,39 +71,6 @@ public class CommonSettingsPanel extends JPanel {
         g.weightx = 1.0;
         g.fill = GridBagConstraints.HORIZONTAL;
         body.add(languageCombo, g);
-
-        // Conversation- and companion-mode toggles hidden: companion mode is forced ON and
-        // conversation mode forced OFF (see initData) while the legacy pipeline is retired. Kept
-        // commented out in case the toggles need to return.
-        // conversationModeCheckBox = makeCheckBox(getText("player.conversationMode"), false);
-        // conversationModeCheckBox.addActionListener(e ->
-        //         systemSession.setConversationalMode(conversationModeCheckBox.isSelected()));
-        // GridBagConstraints cg = baseGbc();
-        // cg.gridx = 3;
-        // cg.gridy = 0;
-        // cg.weightx = 0;
-        // cg.fill = GridBagConstraints.NONE;
-        // cg.anchor = GridBagConstraints.WEST;
-        // cg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
-        // body.add(conversationModeCheckBox, cg);
-        //
-        // // Companion mode toggle, right column under conversation mode (row 1, col 3).
-        // companionModeCheckBox = makeCheckBox(getText("player.companionMode"), false);
-        // companionModeCheckBox.addActionListener(e -> {
-        //     systemSession.setCompanionMode(companionModeCheckBox.isSelected());
-        //     applyCompanionModeToConversation(companionModeCheckBox.isSelected());
-        //     // Companion vs command mode is decided when the service registry is built, so the whole
-        //     // set must be rebuilt for the toggle to take effect at runtime (no-op if not running).
-        //     UiBus.publish(new RestartServicesEvent());
-        // });
-        // GridBagConstraints mg = baseGbc();
-        // mg.gridx = 3;
-        // mg.gridy = 1;
-        // mg.weightx = 0;
-        // mg.fill = GridBagConstraints.NONE;
-        // mg.anchor = GridBagConstraints.WEST;
-        // mg.insets = new Insets(6, HUD_GAP * 3, 6, 6);
-        // body.add(companionModeCheckBox, mg);
 
         // Row 1 - journal directory under language (label + field + compact picker).
         GridBagConstraints jg = baseGbc();
@@ -137,30 +94,6 @@ public class CommonSettingsPanel extends JPanel {
         add(section, BorderLayout.CENTER);
     }
 
-    /**
-     * Companion mode forces conversation mode on and locks the toggle. Turning companion mode off
-     * re-enables the toggle and restores the conversation-mode state the user had before companion
-     * forced it on, so toggling companion never changes the user's conversation-mode preference.
-     */
-    // Retained (commented out) alongside the hidden mode toggles - see initData for the forced
-    // companion-ON / conversation-OFF wiring that replaces it.
-    // private void applyCompanionModeToConversation(boolean companionOn) {
-    //     if (companionOn) {
-    //         conversationModeBeforeCompanion = conversationModeCheckBox.isSelected();
-    //         if (!conversationModeCheckBox.isSelected()) {
-    //             conversationModeCheckBox.setSelected(true);
-    //             systemSession.setConversationalMode(true);
-    //         }
-    //         conversationModeCheckBox.setEnabled(false);
-    //     } else {
-    //         conversationModeCheckBox.setEnabled(true);
-    //         if (conversationModeCheckBox.isSelected() != conversationModeBeforeCompanion) {
-    //             conversationModeCheckBox.setSelected(conversationModeBeforeCompanion);
-    //             systemSession.setConversationalMode(conversationModeBeforeCompanion);
-    //         }
-    //     }
-    // }
-
     private void chooseJournalDir() {
         JFileChooser chooser = new JFileChooser();
         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -178,13 +111,6 @@ public class CommonSettingsPanel extends JPanel {
 
     public void initData() {
         selectLanguage(systemSession.getLanguage());
-        // Mode toggles are hidden while testers are forced onto companion mode (companion ON,
-        // conversation OFF) ahead of retiring the legacy LLM pipeline. The values are hardcoded at
-        // the SystemSession getters, so there is nothing to seed from the DB here.
-        // conversationModeCheckBox.setSelected(systemSession.conversationalModeOn());
-        // companionModeCheckBox.setSelected(systemSession.companionModeOn());
-        // conversationModeBeforeCompanion = conversationModeCheckBox.isSelected();
-        // applyCompanionModeToConversation(systemSession.companionModeOn());
         journalDirField.setText(playerSession.getJournalPath().toString());
     }
 
@@ -197,7 +123,8 @@ public class CommonSettingsPanel extends JPanel {
                 new LanguageOption(getText("language.french"), Language.FR),
                 new LanguageOption(getText("language.spanish"), Language.ES),
                 new LanguageOption(getText("language.italian"), Language.IT),
-                new LanguageOption(getText("language.portuguese"), Language.PT)
+                new LanguageOption(getText("language.portuguese"), Language.PT),
+                new LanguageOption(getText("language.portugueseBrazilian"), Language.PTBZ)
         });
         selectLanguage(combo, selected);
         return combo;

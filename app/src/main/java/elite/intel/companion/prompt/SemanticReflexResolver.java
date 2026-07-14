@@ -2,13 +2,16 @@ package elite.intel.companion.prompt;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
+import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.DangerousActionPolicy;
+import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -41,21 +44,42 @@ public final class SemanticReflexResolver {
      */
     private static final double GAP = parseDouble("elite.intel.companion.semreflex.gap", 0.05);
 
-    private final Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource;
+    private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource;
     private final Supplier<SemanticPhraseMatcher> matcherSupplier;
     private final DangerousActionPolicy dangerousActionPolicy;
 
     /**
-     * Production: visible candidates from the live registries/status, the shared embedder, the command danger flag.
+     * Result of semantic-reflex analysis: an optional direct action plus the reusable embedding of the normalized
+     * input. When no direct reflex is safe, the dispatcher carries the query into the LLM thought's turn context.
+     */
+    public record Resolution(Optional<String> actionId, SemanticQuery semanticQuery) {
+        public Resolution {
+            actionId = actionId == null ? Optional.empty() : actionId;
+        }
+    }
+
+    /**
+     * Production: candidates from live registries, visibility from the turn snapshot, the shared embedder and the
+     * command danger flag.
      */
     public SemanticReflexResolver() {
-        this(new GameToolCandidates()::collect, SemanticSearchProvider::matcher, new CommandFlagDangerousActionPolicy());
+        this((categories, snapshot) -> new GameToolCandidates(snapshot).collect(categories),
+                SemanticSearchProvider::matcher, new CommandFlagDangerousActionPolicy());
     }
 
     /**
      * Test seam: inject the candidate source, the matcher supplier (may return {@code null}), and the danger policy.
      */
     SemanticReflexResolver(Function<Set<IntelActionCategory>, List<GameToolCandidates.Candidate>> candidateSource,
+                           Supplier<SemanticPhraseMatcher> matcherSupplier,
+                           DangerousActionPolicy dangerousActionPolicy) {
+        this((categories, snapshot) -> candidateSource.apply(categories), matcherSupplier, dangerousActionPolicy);
+    }
+
+    /** Test seam whose candidates can assert or vary by the supplied commander-turn state. */
+    SemanticReflexResolver(BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
+            List<GameToolCandidates.Candidate>> candidateSource,
                            Supplier<SemanticPhraseMatcher> matcherSupplier,
                            DangerousActionPolicy dangerousActionPolicy) {
         this.candidateSource = candidateSource;
@@ -78,19 +102,39 @@ public final class SemanticReflexResolver {
      * parameterized/dangerous), in which case it takes the normal LLM path.
      */
     public Optional<String> resolve(String input) {
+        return resolveWithSemanticQuery(input).actionId();
+    }
+
+    /**
+     * Resolves a semantic reflex and retains its query embedding for the reducer when the input must continue down
+     * the LLM path. The returned query is valid only for this normalized input and this matcher instance.
+     */
+    public Resolution resolveWithSemanticQuery(String input) {
         if (input == null || input.isBlank()) {
-            return Optional.empty();
+            return new Resolution(Optional.empty(), null);
+        }
+        return resolveWithSemanticQuery(input, GameStateSnapshot.capture());
+    }
+
+    /**
+     * Resolves against the same immutable visibility state used by exact reflex and the later reducer.
+     */
+    public Resolution resolveWithSemanticQuery(String input, GameStateSnapshot gameStateSnapshot) {
+        if (input == null || input.isBlank()) {
+            return new Resolution(Optional.empty(), null);
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
-            return Optional.empty(); // no embedder: defer to the LLM path (documented degradation)
+            return new Resolution(Optional.empty(), null); // no embedder: defer to the LLM path
         }
         List<GameToolCandidates.Candidate> candidates =
-                candidateSource.apply(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY));
+                candidateSource.apply(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY),
+                        Objects.requireNonNull(gameStateSnapshot));
         if (candidates.isEmpty()) {
-            return Optional.empty();
+            return new Resolution(Optional.empty(), null);
         }
-        float[] query = matcher.embedQuery(input);
+        SemanticQuery semanticQuery = matcher.embedQueryContext(input);
+        float[] query = semanticQuery.vectorFor(input, matcher);
         GameToolCandidates.Candidate best = null;
         double bestScore = -1.0;
         double secondScore = -1.0;
@@ -106,12 +150,12 @@ public final class SemanticReflexResolver {
             }
         }
         if (best == null || bestScore < FLOOR || (bestScore - secondScore) < GAP) {
-            return Optional.empty(); // nothing confident, or a close second => ambiguous => let the LLM decide
+            return new Resolution(Optional.empty(), semanticQuery); // nothing confident, or a close second
         }
         if (!best.tool().parameters().isEmpty() || isDangerous(best.id())) {
-            return Optional.empty(); // parameters need the LLM; dangerous keeps its confirmation flow
+            return new Resolution(Optional.empty(), semanticQuery); // parameters/danger keep their own flow
         }
-        return Optional.of(best.id());
+        return new Resolution(Optional.of(best.id()), semanticQuery);
     }
 
     private boolean isDangerous(String actionId) {

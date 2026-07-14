@@ -1,7 +1,7 @@
 # `elite.intel.ai.mouth` - Developer Reference
 
 The mouth package owns everything from a
-`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via one of two backends (offline Kokoro or Google Cloud), and gates the microphone while audio is playing.
+`VocalisationRequestEvent` to speaker output. It normalises the various vox event types produced by other packages, synthesises speech via one of two backends (offline Kokoro or Google Cloud), and publishes an authoritative playback lifecycle while STT remains active for barge-in.
 
 ---
 
@@ -16,7 +16,7 @@ AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
                           - normalise all types to VocalisationRequestEvent
                           - gate: optional per event type (radar, discovery, …)
                           - RadioTransmissionEvent: pick random non-session voice, isRadio=true
-                          - AiVoxResponseEvent: publish IsSpeakingEvent true (wraps CompletableFuture)
+                          - every request carries one request-scoped VocalisationHandle
                                        │
                           VocalisationRequestEvent (main EventBus)
                                        │
@@ -39,7 +39,7 @@ AiVoxResponseEvent  NavigationVocalisationEvent  RadioTransmissionEvent  …
                         └─────────────┬──────────────┘
                                        ▼
                                    Speaker
-                          IsSpeakingEvent(false) published when done
+                          handle completion updates shared IsSpeakingEvent state
 ```
 
 ---
@@ -73,7 +73,8 @@ does not touch it.
 | `voiceName` | `String` (nullable) | Override voice; null = use session-default voice |
 | `canBeInterrupted` | `boolean` | Whether `TTSInterruptEvent` mid-playback should abort this utterance |
 | `isRadio` | `boolean` | Apply `RadioFilter` during synthesis |
-| `completionFuture` | `CompletableFuture<Void>` (nullable) | Completed when last sentence finishes; used to block SPEAK custom commands |
+| `handle` | `VocalisationHandle` | Request id, interruptibility, ownership, and exactly-once completion |
+| `completionFuture` | `CompletableFuture<Void>` | The handle's non-null future; completed after final playback or another terminal outcome |
 
 ---
 
@@ -83,10 +84,7 @@ does not touch it.
 `VocalisationRequestEvent` on the main EventBus.
 
 **`AiVoxResponseEvent` special handling**: If the event carries a
-`CompletableFuture`, `VocalisationRouter` wraps it in a new
-`VocalisationRequestEvent`. If no future is present, the router creates one, publishes
-`IsSpeakingEvent(true)`, and attaches a `whenComplete` callback that publishes
-`IsSpeakingEvent(false)`. This is the authoritative pair that gates the STT microphone.
+`CompletableFuture`, `VocalisationRouter` passes it through to `VocalisationRequestEvent`; otherwise the request creates its own future. The eligible active Mouth claims the request's `VocalisationHandle` during the same EventBus dispatch. Guava queues reentrant posts, so the no-Mouth check runs through `GameEventBus.afterCurrentDispatch` only after the outer post has drained; checking immediately after a nested `publish` would reject the request before a Mouth sees it. Only the handle publishes `IsSpeakingEvent`, using a process-wide active-request count, so overlapping requests cannot report a false idle state. STT continues listening while the state is true and treats a commander transcript as barge-in.
 
 **`RadioTransmissionEvent` special handling**: The router uses `getRandomVoice()`
 on the active voice provider (Kokoro or Google), selecting any voice that is NOT the current session voice. Sets
@@ -106,9 +104,10 @@ public interface MouthInterface extends ManagedService {
 }
 ```
 
-`ManagedService` provides `start()` and `stop()`. Implementations register themselves on the EventBus (
-`EventBusManager.register(this)`) in their constructor so
-`@Subscribe` is live immediately, and launch their daemon threads in `start()`.
+An eligible running backend must call `event.handle().claimForPlayback()` before enqueueing work. A backend that does not own the event (Google for radio, or radio-role Kokoro for main speech) leaves it unclaimed for the correct backend. A claimed handle must be completed or failed on every terminal path.
+
+`ManagedService` provides `start()` and `stop()`. Implementations initialize their engine/workers and register
+on `GameEventBus` during `start()`, then unregister and settle owned handles during `stop()`.
 
 Current implementations: `KokoroTTS` (offline), `GoogleTTSImpl` (cloud).
 
@@ -204,6 +203,8 @@ The `canBeInterrupted` field on `VocalisationRequestEvent` controls whether
 
 `GoogleTTSImpl` is a singleton that calls the Google Cloud TTS API using an API key from
 `systemSession.getTtsApiKey()`. Audio is returned as 24kHz LINEAR16 PCM. The API key is never logged and must not be transmitted outside the Cloud TTS endpoint.
+Legacy `Chirp-HD` voices receive plain-text input because their API rejects SSML; Chirp3-HD and Standard voices
+retain punctuation-aware SSML pauses.
 
 ### Queue Pipeline
 
@@ -349,37 +350,34 @@ Singleton, implements `VoiceProvider<VoiceSelectionParams>`.
 
 ---
 
-## 8. `CompletableFuture` Completion Contract
+## 8. `VocalisationHandle` Completion Contract
 
-The `SPEAK` custom command blocks the command executor thread until TTS finishes. This is implemented via
-`CompletableFuture<Void>`:
+The `SPEAK` custom command blocks the command executor thread on the handle's `CompletableFuture<Void>`:
 
-1. `AiVoxResponseEvent` carries an optional `CompletableFuture`.
-2. If present, `VocalisationRouter` passes it through to `VocalisationRequestEvent`.
-3. The synthesis thread (Kokoro) or the vocalization thread (Google) completes the future after the **last
-   ** sentence's audio finishes writing to the line.
-4.
-`interruptAndClear()` completes all pending futures immediately (with null) so the command executor is never left blocked.
-
-If `AiVoxResponseEvent` carries no future, `VocalisationRouter` creates one and attaches
-`IsSpeakingEvent` true/false publication to it instead.
+1. Every `VocalisationRequestEvent` owns one non-null `VocalisationHandle`; an optional caller future is reused.
+2. Exactly one eligible Mouth claims the handle synchronously before queue admission. If companion publication returns unclaimed, the future fails immediately instead of hanging without a Mouth.
+3. Every sentence task carries the same handle and marks only the final sentence as terminal. Successful final playback completes it.
+4. Blank text after sanitization, synthesis/device/playback errors, cancellation, queue interruption, and service stop all settle the handle exactly once.
+5. Targeted cancellation uses `requestId`; urgent speech and barge-in interrupt all interruptible requests.
+6. The first claimed handle publishes `IsSpeakingEvent(true)` and the last settled handle publishes `false`. STT uses this only to identify barge-in and never disables recognition.
 
 ---
 
 ## 9. Adding a New TTS Backend
 
 1. Create a class (or sub-package) and implement `MouthInterface`.
-2. Call `EventBusManager.register(this)` in the constructor.
+2. Register on `GameEventBus` only after successful initialization in `start()`, and unregister in `stop()`.
 3. In `start()`, open a
    `SourceDataLine` at 24000 Hz, 16-bit, mono, signed LE. Keep the line open for the session lifetime; do not reopen per sentence.
 4. In `onVoiceProcessEvent()`:
+    - Ignore events owned by another backend, then claim `event.handle()` before queueing.
     - Split text with the sentence regex.
     - If `event.isRadio()`, apply `RadioFilter.apply(pcm)` after synthesis.
     - Call `AudioDeClicker.sanitize(pcm, fadeMs)` on each sentence chunk before write.
-    - Complete `event.getCompletionFuture()` (if non-null) after the last sentence.
-5. Implement `interruptAndClear()`: drain queues, complete pending futures, flush the `SourceDataLine`.
-6. Subscribe to `TTSInterruptEvent` and call `interruptAndClear()` only when
-   `event.hasAiReference()` matches your backend or when `canBeInterrupted` is true.
+    - Carry the handle through every task and complete it after the last sentence.
+5. Implement `interruptAndClear()`: settle interruptible handles, drain queues, and flush the `SourceDataLine`.
+6. Subscribe to `TTSInterruptEvent`: a non-null `requestId` cancels only that handle; a global event settles all
+   interruptible queued/current handles and flushes active interruptible playback.
 7. Wire the new implementation in `ApiFactory` / `AppController` alongside the existing provider selection logic.
 
 ---
@@ -389,6 +387,7 @@ If `AiVoxResponseEvent` carries no future, `VocalisationRouter` creates one and 
 | Class | Role |
 |---|---|
 | `MouthInterface` | Extension point for TTS backends |
+| `VocalisationHandle` | Request ownership, correlation, completion, and authoritative speaking-state count |
 | `subscribers/VocalisationRouter` | Normalises all vox events to `VocalisationRequestEvent` |
 | `kokoro/KokoroTTS` | Offline backend; sherpa-onnx kokoro-multi-lang-v1_0 |
 | `kokoro/KokoroVoices` | 53 Kokoro voice enum with sid values |
@@ -398,9 +397,9 @@ If `AiVoxResponseEvent` carries no future, `VocalisationRouter` creates one and 
 | `google/VoiceProvider<T>` | Interface for voice provider implementations |
 | `AudioDeClicker` | Fade-in + volume scaling on PCM-16 LE |
 | `RadioFilter` | Bandpass + static noise shortwave radio effect |
-| `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, future) |
+| `subscribers/events/VocalisationRequestEvent` | Normalised TTS event (origin, voice, flags, handle) |
 | `subscribers/events/AiVoxResponseEvent` | LLM spoken answer; carries optional CompletableFuture |
-| `subscribers/events/TTSInterruptEvent` | Interrupt signal; `hasAiReference` field |
+| `subscribers/events/TTSInterruptEvent` | Global or request-id-targeted interrupt signal |
 | `subscribers/events/VocalisationSuccessfulEvent` | Per-sentence completion event (Google only) |
 
 ## Key Constants

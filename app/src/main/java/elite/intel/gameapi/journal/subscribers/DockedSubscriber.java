@@ -46,14 +46,29 @@ public class DockedSubscriber {
                 LocationDto.LocationType locationType = LocationDto.determineType(event.getStationType().toLowerCase(Locale.ROOT), false);
                 if (FLEET_CARRIER == locationType) {
                     location.setLocationType(FLEET_CARRIER);
+                    CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+                    // WHY the callsign check: the galaxy is full of other commanders' carriers, and
+                    // docking at one used to move OUR carrier onto their system. The station name of
+                    // a fleet carrier is its callsign, so it says whose deck this is.
+                    String ourCallSign = carrierData.getCallSign();
+                    boolean callSignKnown = ourCallSign != null && !ourCallSign.isBlank();
+                    boolean ourCarrier = callSignKnown && ourCallSign.equalsIgnoreCase(event.getStationName());
+                    boolean foreignCarrier = callSignKnown && !ourCarrier;
+
                     LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
-                    if (coordinates != null) {
-                        CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+                    if (!foreignCarrier && coordinates != null) {
                         carrierData.setX(coordinates.x());
                         carrierData.setY(coordinates.y());
                         carrierData.setZ(coordinates.z());
                         carrierData.setStarName(event.getStarSystem());
                         playerSession.setFleetCarrierData(carrierData);
+                    }
+
+                    if (ourCarrier) {
+                        // Standing on our own carrier's deck is first-hand evidence of where it is.
+                        // WHY positive proof rather than absence of a mismatch: this field decides
+                        // which legs the route drops, so a carrier we cannot name must not move it.
+                        playerSession.setLastKnownCarrierLocation(event.getStarSystem());
                     }
                 } else {
                     location.setLocationType(STATION);

@@ -10,9 +10,9 @@ package elite.intel.ai.mouth;
  * main mouth there is a single engine and radio is serialised through its own queue, so the gate is
  * never contended.
  * <p>
- * // WHY: this covers only the legacy TTS mouth. In companion mode narration is voiced by the
- * companion's own speech gateway (the legacy mouth stays silent, so the gate is never incremented),
- * and a radio transmission can overlap companion speech. That overlap is accepted.
+ * Companion speech reaches the same active Mouth through {@code VocalisationRequestEvent}, so it is bracketed
+ * here as main-voice playback too. A dedicated radio-role Kokoro engine therefore waits behind both system and
+ * companion speech.
  */
 public final class MainVoicePlaybackGate {
 

@@ -93,6 +93,11 @@ class CarrierOwnershipTest {
                 Arguments.of(Language.PT, "status do carrier do esquadrão", SQUADRON),
                 Arguments.of(Language.PT, "rota do carrier do esquadrão", SQUADRON),
 
+                Arguments.of(Language.PTBZ, "status do carrier", FLEET),
+                Arguments.of(Language.PTBZ, "rumo do carrier", FLEET),
+                Arguments.of(Language.PTBZ, "status do carrier do esquadrão", SQUADRON),
+                Arguments.of(Language.PTBZ, "rota do carrier do esquadrão", SQUADRON),
+
                 Arguments.of(Language.RU, "статус авианосца", FLEET),
                 Arguments.of(Language.RU, "куда летит авианосец", FLEET),
                 Arguments.of(Language.RU, "дальность прыжка авианосца", FLEET),

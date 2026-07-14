@@ -971,7 +971,7 @@ public class NaturalSpeechIntegrationTestPT {
     }
 
     static Stream<String> queryBioScanProgress() {
-        return Stream.of("Quais planetas ainda precisam de escaneamento biológico ou orgânico?");
+        return Stream.of("Quais planetas ainda precisam de escaneamento biológico ou orgânico?", "Quais escaneamentos biológicos concluímos?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -982,7 +982,7 @@ public class NaturalSpeechIntegrationTestPT {
     }
 
     static Stream<String> queryExobiologySamples() {
-        return Stream.of("Quais escaneamentos biológicos concluímos?", "Quais orgânicos ainda temos que escanear?",
+        return Stream.of("Quais orgânicos ainda temos que escanear?",
                 "Quais orgânicos ou biologia há neste planeta");
     }
 

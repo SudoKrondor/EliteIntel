@@ -1,5 +1,6 @@
 package elite.intel.companion.memory.facts.sources;
 
+import elite.intel.companion.memory.facts.LocalizedFactRelevance;
 import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.memory.facts.MemoryFactSource;
 import elite.intel.companion.memory.facts.RegisterMemoryFactSource;
@@ -18,15 +19,18 @@ import java.util.Set;
  * Context-gated fact source for the station the commander is at: it contributes only when the current situation is
  * docked or on foot in a station (classified by {@link Status#getSituation}), and grounds the companion in that
  * station's character (type, economy, controlling faction, number of services) as one compact, length-capped line.
- * It reads the current location record ({@link LocationManager}) the same way {@code query_station_details} does,
- * ignores the query, and stays silent away from a station. Coexists with {@link CurrentSystemFactSource} (which
- * shrinks to a grounding line while docked); both are bounded by the block's per-source and total caps.
+ * It reads the current location record ({@link LocationManager}) the same way {@code query_station_details} does.
+ * The source admits itself for station-detail/location subjects; it stays silent away from a station and
+ * coexists with {@link CurrentSystemFactSource} under the block's per-source and total caps.
  */
 @RegisterMemoryFactSource
 public final class CurrentStationFactSource implements MemoryFactSource {
 
     /** Provenance label for the {@code <fact source="...">} attribute. */
     private static final String ID = "station";
+    private static final List<String> RELEVANCE_ALIAS_KEYS = List.of(
+            "query_current_location",
+            "query_station_details");
 
     /** The situations that count as being at a station; away from these the source stays silent. */
     private static final Set<PlayerSituation> AT_STATION = EnumSet.of(
@@ -38,6 +42,11 @@ public final class CurrentStationFactSource implements MemoryFactSource {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isRelevant(MemoryFactContext context) {
+        return LocalizedFactRelevance.matches(context, 2, RELEVANCE_ALIAS_KEYS);
     }
 
     @Override

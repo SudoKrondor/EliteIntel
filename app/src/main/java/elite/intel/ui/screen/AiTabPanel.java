@@ -146,16 +146,21 @@ public class AiTabPanel extends JPanel {
         systemPanel = new HudLogArea(12, HudLogArea.Style.SYSTEM_LOG);
 
         // --- Main log area (conversation top, system below) ---
-        HudSection chatSection = logSection(getText("ai.section.conversation"), chatPanel);
+        HudSection chatSection = logSection(getText("ai.section.conversation"), hudApplicationScrollPane(chatPanel));
 
-        HudSection systemSection = logSection(getText("ai.section.systemMessages"), systemPanel);
-        systemSection.setHeaderActions(buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
+        HudSection systemSection = logSection(getText("ai.section.systemMessages"), hudApplicationScrollPane(systemPanel));
+        HudGlyphButton copyLogButton = buildCopyLogButton();
+        copyLogButton.setEnabled(false);
+        systemPanel.addPropertyChangeListener(HudLogArea.SELECTION_PROPERTY,
+                event -> copyLogButton.setEnabled(systemPanel.hasSelectedText()));
+        systemSection.setHeaderActions(copyLogButton, buildSaveLogButton(), buildDumpMemoryButton(), buildClearLogButton());
         HudSplitPane mainSplit = new HudSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
                 chatSection,
                 systemSection
         );
-        mainSplit.setResizeWeight(0.65);
+        // Keep the diagnostic log at 65% of its previous height: 35% -> 22.75% of the split.
+        mainSplit.setResizeWeight(0.7725);
 
         // --- Right sidebar ---
         JPanel sidebar = transparentPanel(new BorderLayout(0, HUD_GAP));
@@ -246,29 +251,43 @@ public class AiTabPanel extends JPanel {
 
     private HudSection logSection(String title, JComponent content) {
         HudSection section = new HudSection(title, new BorderLayout());
+        section.setSurfaceBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        section.setHeaderDividerColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
+        section.setTopRightChamfered(true);
         section.body().add(content, BorderLayout.CENTER);
         return section;
+    }
+
+    /** Builds the SYSTEM LOG header action: copies the current text selection to the system clipboard. */
+    private HudGlyphButton buildCopyLogButton() {
+        return new HudGlyphButton(HudGlyphs::paintHudCopyGlyph,
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.copy.tooltip"), systemPanel::copySelectedText,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a trash-glyph button that clears the panel and its export transcript. */
     private HudGlyphButton buildClearLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudTrashGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.clear.tooltip"), systemPanel::clear,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */
     private HudGlyphButton buildSaveLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /** Builds the SYSTEM LOG header action: a memory-glyph button that dumps the companion's memory to a JSON file. */
     private HudGlyphButton buildDumpMemoryButton() {
         return new HudGlyphButton(HudGlyphs::paintHudMemoryGlyph,
-                HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory);
+                HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
+                getText("ai.section.systemMessages.dump.tooltip"), this::dumpCompanionMemory,
+                HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
     /**

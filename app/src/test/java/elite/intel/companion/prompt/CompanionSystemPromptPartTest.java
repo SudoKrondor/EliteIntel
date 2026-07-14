@@ -42,10 +42,28 @@ class CompanionSystemPromptPartTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         // Grounding: do not invent facts.
         assertTrue(text.contains("Never invent game facts"));
-        // Every turn must settle - a response that is only the metadata-only classify_turn is invalid.
-        assertTrue(text.contains("you MUST always add the settling call"));
-        // The no-reply / cut-off boundary markers are explained so the model does not repeat the omission.
+        // A turn requests classify_turn plus exactly one settling call in one assistant message.
+        assertTrue(text.contains("Each commander turn MUST contain exactly two calls"));
+        assertTrue(text.contains("the same assistant tool-call message"));
+        assertTrue(text.contains("Never emit 'classify_turn' alone"));
+        assertTrue(text.contains("never wait for its tool result"));
+        assertTrue(text.contains("one missing call for protocol completion"));
+        assertTrue(text.contains("exactly that requested call and no other call"));
+        // Omitted/pending boundaries are explained so the model neither repeats them nor treats them as speech.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
+        assertTrue(text.contains("<processing/> means that turn's query"));
+    }
+
+    @Test
+    void commanderPromptRequiresBothCallsInTheSameAssistantMessage() {
+        String text = prompt.staticRules(ThoughtSource.COMMANDER);
+
+        assertTrue(text.contains("first 'classify_turn', then exactly one settling"));
+        assertTrue(text.contains("never move the settling call to a later assistant message"));
+        assertTrue(text.contains("same-message rules apply to the initial"));
+        assertFalse(text.contains("wait for its tool result, then emit"));
+        assertTrue(text.contains("never use speak to acknowledge, promise, or describe the matching"));
+        assertTrue(text.contains("speak does not open a continuation; only request_input does"));
     }
 
     @Test
@@ -60,7 +78,7 @@ class CompanionSystemPromptPartTest {
     void commanderBranchCarriesFunctionCallingAndExcludesNarration() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("<function_calling>"));
-        assertTrue(text.contains("that settles the turn"));
+        assertTrue(text.contains("then exactly one settling"));
         // The commander branch is not the narration report-only task.
         assertFalse(text.contains("<narration>"));
     }
