@@ -11,6 +11,8 @@ ALTER TABLE material_names
     ADD COLUMN name_ru TEXT;
 ALTER TABLE material_names
     ADD COLUMN name_uk TEXT;
+ALTER TABLE material_names
+    ADD COLUMN name_it TEXT;
 
 -- raw.csv
 INSERT OR IGNORE INTO material_names (name, materialType)
@@ -20,7 +22,8 @@ SET materialType = 'Raw',
     name_de      = 'Antimon',
     name_es      = 'Antimonio',
     name_fr      = 'Antimoine',
-    name_ru      = 'Сурьма'
+    name_ru      = 'Сурьма',
+    name_it      = 'Antimonio'
 WHERE LOWER(name) = LOWER('Antimony');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Arsenic', 'Raw');
@@ -29,7 +32,8 @@ SET materialType = 'Raw',
     name_de      = 'Arsen',
     name_es      = 'Arsénico',
     name_fr      = 'Arsenic',
-    name_ru      = 'Мышьяк'
+    name_ru      = 'Мышьяк',
+    name_it      = 'Arsenico'
 WHERE LOWER(name) = LOWER('Arsenic');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Boron', 'Raw');
@@ -38,7 +42,8 @@ SET materialType = 'Raw',
     name_de      = 'Bor',
     name_es      = 'Boro',
     name_fr      = 'Bore',
-    name_ru      = 'Бор'
+    name_ru      = 'Бор',
+    name_it      = 'Boro'
 WHERE LOWER(name) = LOWER('Boron');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Cadmium', 'Raw');
@@ -47,7 +52,8 @@ SET materialType = 'Raw',
     name_de      = 'Kadmium',
     name_es      = 'Cadmio',
     name_fr      = 'Cadmium',
-    name_ru      = 'Кадмий'
+    name_ru      = 'Кадмий',
+    name_it      = 'Cadmio'
 WHERE LOWER(name) = LOWER('Cadmium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Carbon', 'Raw');
@@ -56,7 +62,8 @@ SET materialType = 'Raw',
     name_de      = 'Kohlenstoff',
     name_es      = 'Carbono',
     name_fr      = 'Carbone',
-    name_ru      = 'Углерод'
+    name_ru      = 'Углерод',
+    name_it      = 'Carbonio'
 WHERE LOWER(name) = LOWER('Carbon');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chromium', 'Raw');
@@ -65,7 +72,8 @@ SET materialType = 'Raw',
     name_de      = 'Chrom',
     name_es      = 'Cromo',
     name_fr      = 'Chrome',
-    name_ru      = 'Хром'
+    name_ru      = 'Хром',
+    name_it      = 'Cromo'
 WHERE LOWER(name) = LOWER('Chromium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Germanium', 'Raw');
@@ -73,7 +81,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Germanio',
     name_fr      = 'Germanium',
-    name_ru      = 'Германий'
+    name_ru      = 'Германий',
+    name_it      = 'Germanio'
 WHERE LOWER(name) = LOWER('Germanium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Iron', 'Raw');
@@ -82,7 +91,8 @@ SET materialType = 'Raw',
     name_de      = 'Eisen',
     name_es      = 'Hierro',
     name_fr      = 'Fer',
-    name_ru      = 'Железо'
+    name_ru      = 'Железо',
+    name_it      = 'Ferro'
 WHERE LOWER(name) = LOWER('Iron');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Lead', 'Raw');
@@ -91,7 +101,8 @@ SET materialType = 'Raw',
     name_de      = 'Blei',
     name_es      = 'Plomo',
     name_fr      = 'Plomb',
-    name_ru      = 'Свинец'
+    name_ru      = 'Свинец',
+    name_it      = 'Piombo'
 WHERE LOWER(name) = LOWER('Lead');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Manganese', 'Raw');
@@ -100,7 +111,8 @@ SET materialType = 'Raw',
     name_de      = 'Mangan',
     name_es      = 'Manganeso',
     name_fr      = 'Manganèse',
-    name_ru      = 'Марганец'
+    name_ru      = 'Марганец',
+    name_it      = 'Manganese'
 WHERE LOWER(name) = LOWER('Manganese');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Mercury', 'Raw');
@@ -109,7 +121,8 @@ SET materialType = 'Raw',
     name_de      = 'Quecksilber',
     name_es      = 'Mercurio',
     name_fr      = 'Mercure',
-    name_ru      = 'Ртуть'
+    name_ru      = 'Ртуть',
+    name_it      = 'Mercurio'
 WHERE LOWER(name) = LOWER('Mercury');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Molybdenum', 'Raw');
@@ -118,7 +131,8 @@ SET materialType = 'Raw',
     name_de      = 'Molibdän',
     name_es      = 'Molibdeno',
     name_fr      = 'Molybdène',
-    name_ru      = 'Молибден'
+    name_ru      = 'Молибден',
+    name_it      = 'Molibdeno'
 WHERE LOWER(name) = LOWER('Molybdenum');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Nickel', 'Raw');
@@ -126,7 +140,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Níquel',
     name_fr      = 'Nickel',
-    name_ru      = 'Никель'
+    name_ru      = 'Никель',
+    name_it      = 'Nichel'
 WHERE LOWER(name) = LOWER('Nickel');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Niobium', 'Raw');
@@ -134,7 +149,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Niobio',
     name_fr      = 'Niobium',
-    name_ru      = 'Ниобий'
+    name_ru      = 'Ниобий',
+    name_it      = 'Niobio'
 WHERE LOWER(name) = LOWER('Niobium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Phosphorus', 'Raw');
@@ -143,7 +159,8 @@ SET materialType = 'Raw',
     name_de      = 'Phosphor',
     name_es      = 'Fósforo',
     name_fr      = 'Phosphore',
-    name_ru      = 'Фосфор'
+    name_ru      = 'Фосфор',
+    name_it      = 'Fosforo'
 WHERE LOWER(name) = LOWER('Phosphorus');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Polonium', 'Raw');
@@ -151,7 +168,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Polonio',
     name_fr      = 'Polonium',
-    name_ru      = 'Полоний'
+    name_ru      = 'Полоний',
+    name_it      = 'Polonio'
 WHERE LOWER(name) = LOWER('Polonium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Rhenium', 'Raw');
@@ -159,7 +177,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Renio',
     name_fr      = 'Rhénium',
-    name_ru      = 'Рений'
+    name_ru      = 'Рений',
+    name_it      = 'Renio'
 WHERE LOWER(name) = LOWER('Rhenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Ruthenium', 'Raw');
@@ -167,7 +186,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Rutenio',
     name_fr      = 'Ruthénium',
-    name_ru      = 'Рутений'
+    name_ru      = 'Рутений',
+    name_it      = 'Rutenio'
 WHERE LOWER(name) = LOWER('Ruthenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Selenium', 'Raw');
@@ -176,7 +196,8 @@ SET materialType = 'Raw',
     name_de      = 'Selen',
     name_es      = 'Selenio',
     name_fr      = 'Sélénium',
-    name_ru      = 'Селен'
+    name_ru      = 'Селен',
+    name_it      = 'Selenio'
 WHERE LOWER(name) = LOWER('Selenium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Sulphur', 'Raw');
@@ -185,7 +206,8 @@ SET materialType = 'Raw',
     name_de      = 'Schwefel',
     name_es      = 'Azufre',
     name_fr      = 'Soufre',
-    name_ru      = 'Сера'
+    name_ru      = 'Сера',
+    name_it      = 'Zolfo'
 WHERE LOWER(name) = LOWER('Sulphur');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Technetium', 'Raw');
@@ -193,7 +215,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Tecnecio',
     name_fr      = 'Technétium',
-    name_ru      = 'Технеций'
+    name_ru      = 'Технеций',
+    name_it      = 'Tecnezio'
 WHERE LOWER(name) = LOWER('Technetium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tellurium', 'Raw');
@@ -202,7 +225,8 @@ SET materialType = 'Raw',
     name_de      = 'Tellur',
     name_es      = 'Teluro',
     name_fr      = 'Tellure',
-    name_ru      = 'Теллур'
+    name_ru      = 'Теллур',
+    name_it      = 'Tellurio'
 WHERE LOWER(name) = LOWER('Tellurium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tin', 'Raw');
@@ -211,7 +235,8 @@ SET materialType = 'Raw',
     name_de      = 'Zinn',
     name_es      = 'Estaño',
     name_fr      = 'Étain',
-    name_ru      = 'Олово'
+    name_ru      = 'Олово',
+    name_it      = 'Stagno'
 WHERE LOWER(name) = LOWER('Tin');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Tungsten', 'Raw');
@@ -220,7 +245,8 @@ SET materialType = 'Raw',
     name_de      = 'Wolfram',
     name_es      = 'Tungsteno',
     name_fr      = 'Tungstène',
-    name_ru      = 'Вольфрам'
+    name_ru      = 'Вольфрам',
+    name_it      = 'Tungsteno'
 WHERE LOWER(name) = LOWER('Tungsten');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Unknown', 'Raw');
@@ -229,7 +255,8 @@ SET materialType = 'Raw',
     name_de      = 'Unbekannt',
     name_es      = 'Desconocido',
     name_fr      = 'Inconnu',
-    name_ru      = 'Неизвестно'
+    name_ru      = 'Неизвестно',
+    name_it      = 'Sconosciuto'
 WHERE LOWER(name) = LOWER('Unknown');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Vanadium', 'Raw');
@@ -237,7 +264,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Vanadio',
     name_fr      = 'Vanadium',
-    name_ru      = 'Ванадий'
+    name_ru      = 'Ванадий',
+    name_it      = 'Vanadio'
 WHERE LOWER(name) = LOWER('Vanadium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Yttrium', 'Raw');
@@ -245,7 +273,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Ytrio',
     name_fr      = 'Yttrium',
-    name_ru      = 'Иттрий'
+    name_ru      = 'Иттрий',
+    name_it      = 'Ittrio'
 WHERE LOWER(name) = LOWER('Yttrium');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Zinc', 'Raw');
@@ -254,7 +283,8 @@ SET materialType = 'Raw',
     name_de      = 'Zink',
     name_es      = 'Zinc',
     name_fr      = 'Zinc',
-    name_ru      = 'Цинк'
+    name_ru      = 'Цинк',
+    name_it      = 'Zinco'
 WHERE LOWER(name) = LOWER('Zinc');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Zirconium', 'Raw');
@@ -262,7 +292,8 @@ UPDATE material_names
 SET materialType = 'Raw',
     name_es      = 'Circonio',
     name_fr      = 'Zirconium',
-    name_ru      = 'Цирконий'
+    name_ru      = 'Цирконий',
+    name_it      = 'Zirconio'
 WHERE LOWER(name) = LOWER('Zirconium');
 
 -- encoded.csv
@@ -721,7 +752,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemiedestillerie',
     name_es      = 'Destilería química',
     name_fr      = 'Distillerie chimique',
-    name_ru      = 'Оборудование для перегонки химикатов'
+    name_ru      = 'Оборудование для перегонки химикатов',
+    name_it      = 'Distilleria chimica'
 WHERE LOWER(name) = LOWER('Chemical Distillery');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Manipulators', 'Manufactured');
@@ -730,7 +762,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemische Manipulatoren',
     name_es      = 'Manipuladores químicos',
     name_fr      = 'Manipulateurs chimiques',
-    name_ru      = 'Манипуляторы для работы с химикатами'
+    name_ru      = 'Манипуляторы для работы с химикатами',
+    name_it      = 'Manipolatori chimici'
 WHERE LOWER(name) = LOWER('Chemical Manipulators');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Processors', 'Manufactured');
@@ -739,7 +772,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Chemische Prozessoren',
     name_es      = 'Procesadores químicos',
     name_fr      = 'Processeurs chimiques',
-    name_ru      = 'Оборудование для химобработки'
+    name_ru      = 'Оборудование для химобработки',
+    name_it      = 'Processori chimici'
 WHERE LOWER(name) = LOWER('Chemical Processors');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Chemical Storage Units', 'Manufactured');
@@ -748,7 +782,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Lagerungseinheiten für Chemiestoffe',
     name_es      = 'Unidades de almacenamiento químico',
     name_fr      = 'Unités de stockage chimique',
-    name_ru      = 'Контейнеры для химикатов'
+    name_ru      = 'Контейнеры для химикатов',
+    name_it      = 'Unità di stoccaggio chimico'
 WHERE LOWER(name) = LOWER('Chemical Storage Units');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Compact Composites', 'Manufactured');
@@ -757,7 +792,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Kompaktkomposite',
     name_es      = 'Compuestos compactos',
     name_fr      = 'Composites compacts',
-    name_ru      = 'Спрессованные композиты'
+    name_ru      = 'Спрессованные композиты',
+    name_it      = 'Compositi compatti'
 WHERE LOWER(name) = LOWER('Compact Composites');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Compound Shielding', 'Manufactured');
@@ -775,7 +811,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Elektrokeramiken',
     name_es      = 'Cerámicas conductivas',
     name_fr      = 'Conducteurs en céramique',
-    name_ru      = 'Проводящая керамика'
+    name_ru      = 'Проводящая керамика',
+    name_it      = 'Ceramiche conduttive'
 WHERE LOWER(name) = LOWER('Conductive Ceramics');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Conductive Components', 'Manufactured');
@@ -784,7 +821,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Leitfähige Komponenten',
     name_es      = 'Componentes conductivos',
     name_fr      = 'Composants conducteurs',
-    name_ru      = 'Проводящие компоненты'
+    name_ru      = 'Проводящие компоненты',
+    name_it      = 'Componenti conduttivi'
 WHERE LOWER(name) = LOWER('Conductive Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Conductive Polymers', 'Manufactured');
@@ -793,7 +831,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Leitfähige Polymere',
     name_es      = 'Polímeros conductivos',
     name_fr      = 'Conducteurs en polymères',
-    name_ru      = 'Проводящие полимеры'
+    name_ru      = 'Проводящие полимеры',
+    name_it      = 'Polimeri conduttivi'
 WHERE LOWER(name) = LOWER('Conductive Polymers');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Configurable Components', 'Manufactured');
@@ -802,7 +841,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Konfigurierbare Komponenten',
     name_es      = 'Componentes configurables',
     name_fr      = 'Composants paramétrables',
-    name_ru      = 'Настраиваемые компоненты'
+    name_ru      = 'Настраиваемые компоненты',
+    name_it      = 'Componenti configurabili'
 WHERE LOWER(name) = LOWER('Configurable Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Crystal Shards', 'Manufactured');
@@ -811,7 +851,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Kristallscherben',
     name_es      = 'Piedras de cristal',
     name_fr      = 'Éclats de cristal',
-    name_ru      = 'Осколки кристаллов'
+    name_ru      = 'Осколки кристаллов',
+    name_it      = 'Frammenti di cristallo'
 WHERE LOWER(name) = LOWER('Crystal Shards');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Electrochemical Arrays', 'Manufactured');
@@ -1081,7 +1122,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Polymerkondensatoren',
     name_es      = 'Capacitadores de polímeros',
     name_fr      = 'Condensateurs en polymères',
-    name_ru      = 'Полимерные конденсаторы'
+    name_ru      = 'Полимерные конденсаторы',
+    name_it      = 'Condensatori polimerici'
 WHERE LOWER(name) = LOWER('Polymer Capacitors');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Precipitated Alloys', 'Manufactured');
@@ -1198,7 +1240,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Thargoiden-Krustenschale',
     name_es      = 'Caparazón Thargoide',
     name_fr      = 'Carapace thargoid',
-    name_ru      = 'Таргоидский панцирь'
+    name_ru      = 'Таргоидский панцирь',
+    name_it      = 'Carapace Thargoid'
 WHERE LOWER(name) = LOWER('Thargoid Carapace');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Energy Cell', 'Manufactured');
@@ -1207,7 +1250,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Thargoiden-Energiezelle',
     name_es      = 'Célula de energía Thargoide',
     name_fr      = 'Cellule d’énergie thargoid',
-    name_ru      = 'Таргоидская энергоячейка'
+    name_ru      = 'Таргоидская энергоячейка',
+    name_it      = 'Cella di energia Thargoid'
 WHERE LOWER(name) = LOWER('Thargoid Energy Cell');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Sensor Fragment', 'Manufactured');
@@ -1216,7 +1260,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Sensorenfragment',
     name_es      = 'Fragmento de sensor',
     name_fr      = 'Fragment de capteur',
-    name_ru      = 'Обломок сенсора'
+    name_ru      = 'Обломок сенсора',
+    name_it      = 'Frammento di sensore'
 WHERE LOWER(name) = LOWER('Sensor Fragment');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Organic Circuitry', 'Manufactured');
@@ -1225,7 +1270,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Organischer Schaltkreis der Thargoiden',
     name_es      = 'Circuitería orgánica Thargoide',
     name_fr      = 'Circuits organiques thargoids',
-    name_ru      = 'Таргоидская органическая схема'
+    name_ru      = 'Таргоидская органическая схема',
+    name_it      = 'Circuiti organici Thargoid'
 WHERE LOWER(name) = LOWER('Thargoid Organic Circuitry');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Thargoid Technological Components', 'Manufactured');
@@ -1234,7 +1280,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Technologiekomponenten der Thargoiden',
     name_es      = 'Componentes tecnológicos Thargoides',
     name_fr      = 'Composants technologiques thargoids',
-    name_ru      = 'Компоненты таргоидской техники'
+    name_ru      = 'Компоненты таргоидской техники',
+    name_it      = 'Componenti tecnologici Thargoid'
 WHERE LOWER(name) = LOWER('Thargoid Technological Components');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Worn Shield Emitters', 'Manufactured');
@@ -1261,7 +1308,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Schubantriebelemente',
     name_es      = 'Elementos de propulsión',
     name_fr      = 'Éléments de propulsion',
-    name_ru      = 'Реактивные элементы'
+    name_ru      = 'Реактивные элементы',
+    name_it      = 'Elementi di propulsione'
 WHERE LOWER(name) = LOWER('Propulsion Elements (Thargoid)');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Weapon Parts (Thargoid)', 'Manufactured');
@@ -1270,7 +1318,8 @@ SET materialType = 'Manufactured',
     name_de      = 'Waffenteile',
     name_es      = 'Piezas de armamento',
     name_fr      = 'Pièces d’armement',
-    name_ru      = 'Детали вооружения'
+    name_ru      = 'Детали вооружения',
+    name_it      = 'Componenti di armamento'
 WHERE LOWER(name) = LOWER('Weapon Parts (Thargoid)');
 INSERT OR IGNORE INTO material_names (name, materialType)
 VALUES ('Wreckage Components (Thargoid)', 'Manufactured');
@@ -1346,6 +1395,8 @@ ALTER TABLE commodities
     ADD COLUMN commodity_ru TEXT;
 ALTER TABLE commodities
     ADD COLUMN commodity_uk TEXT;
+ALTER TABLE commodities
+    ADD COLUMN commodity_it TEXT;
 
 -- commodity.csv
 INSERT OR IGNORE INTO commodities (commodity)
@@ -1458,7 +1509,8 @@ UPDATE commodities
 SET commodity_de = 'Alexandrit',
     commodity_es = 'Alejandrita',
     commodity_fr = 'Alexandrite',
-    commodity_ru = 'Александрит'
+    commodity_ru = 'Александрит',
+    commodity_it = 'Alessandrite'
 WHERE LOWER(commodity) = LOWER('Alexandrite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Algae');
@@ -1466,7 +1518,8 @@ UPDATE commodities
 SET commodity_de = 'Algen',
     commodity_es = 'Algas',
     commodity_fr = 'Algue(s)',
-    commodity_ru = 'Водоросли'
+    commodity_ru = 'Водоросли',
+    commodity_it = 'Alghe'
 WHERE LOWER(commodity) = LOWER('Algae');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Leathery Eggs');
@@ -1513,7 +1566,8 @@ VALUES ('Aluminium');
 UPDATE commodities
 SET commodity_es = 'Aluminio',
     commodity_fr = 'Aluminium',
-    commodity_ru = 'Алюминий'
+    commodity_ru = 'Алюминий',
+    commodity_it = 'Alluminio'
 WHERE LOWER(commodity) = LOWER('Aluminium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Alya Body Soap');
@@ -1537,7 +1591,8 @@ UPDATE commodities
 SET commodity_de = 'Uralter Schlüssel',
     commodity_es = 'Llave antigua',
     commodity_fr = 'Clé antique',
-    commodity_ru = 'Древний ключ'
+    commodity_ru = 'Древний ключ',
+    commodity_it = 'Chiave antica'
 WHERE LOWER(commodity) = LOWER('Ancient Key (Guardian)');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Guardian Orb');
@@ -1553,7 +1608,8 @@ UPDATE commodities
 SET commodity_de = 'Guardian-Relikt',
     commodity_es = 'Reliquia guardián',
     commodity_fr = 'Relique des Guardians',
-    commodity_ru = 'Реликвия Стражей'
+    commodity_ru = 'Реликвия Стражей',
+    commodity_it = 'Reliquia dei Guardians'
 WHERE LOWER(commodity) = LOWER('Guardian Relic');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Unclassified Relic');
@@ -1561,7 +1617,8 @@ UPDATE commodities
 SET commodity_de = 'Nicht klassifiziertes Relikt',
     commodity_es = 'Reliquia no clasificada',
     commodity_fr = 'Relique non classée',
-    commodity_ru = 'Неопознанная реликвия'
+    commodity_ru = 'Неопознанная реликвия',
+    commodity_it = 'Reliquia non classificata'
 WHERE LOWER(commodity) = LOWER('Unclassified Relic');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Guardian Tablet');
@@ -1569,7 +1626,8 @@ UPDATE commodities
 SET commodity_de = 'Guardiantafel',
     commodity_es = 'Tablilla guardián',
     commodity_fr = 'Tablette des Guardians',
-    commodity_ru = 'Табличка Стражей'
+    commodity_ru = 'Табличка Стражей',
+    commodity_it = 'Tavoletta dei Guardians'
 WHERE LOWER(commodity) = LOWER('Guardian Tablet');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Guardian Totem');
@@ -1577,7 +1635,8 @@ UPDATE commodities
 SET commodity_de = 'Guardian-Totem',
     commodity_es = 'Tótem guardián',
     commodity_fr = 'Totem des Guardians',
-    commodity_ru = 'Тотем Стражей'
+    commodity_ru = 'Тотем Стражей',
+    commodity_it = 'Totem dei Guardians'
 WHERE LOWER(commodity) = LOWER('Guardian Totem');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Guardian Urn');
@@ -1585,7 +1644,8 @@ UPDATE commodities
 SET commodity_de = 'Guardian-Urne',
     commodity_es = 'Urna guardián',
     commodity_fr = 'Urne des Guardians',
-    commodity_ru = 'Урна Стражей'
+    commodity_ru = 'Урна Стражей',
+    commodity_it = 'Urna dei Guardians'
 WHERE LOWER(commodity) = LOWER('Guardian Urn');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Anduliga Fire Works');
@@ -1608,7 +1668,8 @@ UPDATE commodities
 SET commodity_de = 'Tierfleisch',
     commodity_es = 'Carne de animales',
     commodity_fr = 'Viande',
-    commodity_ru = 'Мясо животных'
+    commodity_ru = 'Мясо животных',
+    commodity_it = 'Carne animale'
 WHERE LOWER(commodity) = LOWER('Animal Meat');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Animal Monitors');
@@ -1632,7 +1693,8 @@ UPDATE commodities
 SET commodity_de = 'Antiker Schmuck',
     commodity_es = 'Joyería antigua',
     commodity_fr = 'Bijoux antiques',
-    commodity_ru = 'Древние ювелирные украшения'
+    commodity_ru = 'Древние ювелирные украшения',
+    commodity_it = 'Gioielli antichi'
 WHERE LOWER(commodity) = LOWER('Antique Jewellery');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Antiquities');
@@ -1640,7 +1702,8 @@ UPDATE commodities
 SET commodity_de = 'Antiquitäten',
     commodity_es = 'Antigüedades',
     commodity_fr = 'Antiquités',
-    commodity_ru = 'Древние реликвии'
+    commodity_ru = 'Древние реликвии',
+    commodity_it = 'Antichità'
 WHERE LOWER(commodity) = LOWER('Antiquities');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Any Na Coffee');
@@ -1685,7 +1748,7 @@ UPDATE commodities
 SET commodity_de = 'Angriffspläne',
     commodity_es = 'Planes de asalto',
     commodity_fr = 'Plans d’assaut',
-    commodity_ru = 'Планы атак'
+    commodity_it = 'Piani d’assalto'
 WHERE LOWER(commodity) = LOWER('Assault Plans');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Atmospheric Processors');
@@ -1693,7 +1756,8 @@ UPDATE commodities
 SET commodity_de = 'Atmosphärenprozessoren',
     commodity_es = 'Procesadores atmosféricos',
     commodity_fr = 'Processeurs atmosphériques',
-    commodity_ru = 'Атмосферный процессор'
+    commodity_ru = 'Атмосферный процессор',
+    commodity_it = 'Processori atmosferici'
 WHERE LOWER(commodity) = LOWER('Atmospheric Processors');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Auto-Fabricators');
@@ -1749,7 +1813,8 @@ UPDATE commodities
 SET commodity_de = 'Drogen',
     commodity_es = 'Narcóticos',
     commodity_fr = 'Narcotique(s)',
-    commodity_ru = 'Наркотики'
+    commodity_ru = 'Наркотики',
+    commodity_it = 'Narcotici'
 WHERE LOWER(commodity) = LOWER('Narcotics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bast Snake Gin');
@@ -1764,7 +1829,8 @@ UPDATE commodities
 SET commodity_de = 'Kriegswaffen',
     commodity_es = 'Armas de batalla',
     commodity_fr = 'Armes militaires',
-    commodity_ru = 'Военное оружие'
+    commodity_ru = 'Военное оружие',
+    commodity_it = 'Armi da battaglia'
 WHERE LOWER(commodity) = LOWER('Battle Weapons');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bauxite');
@@ -1772,7 +1838,8 @@ UPDATE commodities
 SET commodity_de = 'Bauxit',
     commodity_es = 'Bauxita',
     commodity_fr = 'Bauxite',
-    commodity_ru = 'Боксит'
+    commodity_ru = 'Боксит',
+    commodity_it = 'Bauxite'
 WHERE LOWER(commodity) = LOWER('Bauxite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Beer');
@@ -1780,7 +1847,8 @@ UPDATE commodities
 SET commodity_de = 'Bier',
     commodity_es = 'Cerveza',
     commodity_fr = 'Bière',
-    commodity_ru = 'Пиво'
+    commodity_ru = 'Пиво',
+    commodity_it = 'Birra'
 WHERE LOWER(commodity) = LOWER('Beer');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Belalans Ray Leather');
@@ -1796,7 +1864,7 @@ UPDATE commodities
 SET commodity_de = 'Benitoit',
     commodity_es = 'Benitoíta',
     commodity_fr = 'Bénitoïte',
-    commodity_ru = 'Бенитоит'
+    commodity_it = 'Benitoite'
 WHERE LOWER(commodity) = LOWER('Benitoite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bertrandite');
@@ -1804,14 +1872,16 @@ UPDATE commodities
 SET commodity_de = 'Bertrandit',
     commodity_es = 'Bertrandita',
     commodity_fr = 'Bertrandite',
-    commodity_ru = 'Бертрандит'
+    commodity_ru = 'Бертрандит',
+    commodity_it = 'Bertrandite'
 WHERE LOWER(commodity) = LOWER('Bertrandite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Beryllium');
 UPDATE commodities
 SET commodity_es = 'Berilio',
     commodity_fr = 'Béryllium',
-    commodity_ru = 'Бериллий'
+    commodity_ru = 'Бериллий',
+    commodity_it = 'Berillio'
 WHERE LOWER(commodity) = LOWER('Beryllium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bioreducing Lichen');
@@ -1827,7 +1897,8 @@ UPDATE commodities
 SET commodity_de = 'Biomüll',
     commodity_es = 'Residuos biológicos',
     commodity_fr = 'Biodéchets',
-    commodity_ru = 'Биоотходы'
+    commodity_ru = 'Биоотходы',
+    commodity_it = 'Rifiuti biologici'
 WHERE LOWER(commodity) = LOWER('Biowaste');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bismuth');
@@ -1835,7 +1906,8 @@ UPDATE commodities
 SET commodity_de = 'Bismut',
     commodity_es = 'Bismuto',
     commodity_fr = 'Bismuth',
-    commodity_ru = 'Висмут'
+    commodity_ru = 'Висмут',
+    commodity_it = 'Bismuto'
 WHERE LOWER(commodity) = LOWER('Bismuth');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Azure Milk');
@@ -1851,7 +1923,8 @@ UPDATE commodities
 SET commodity_de = 'Schmuggelschnaps',
     commodity_es = 'Licor de caña',
     commodity_fr = 'Liqueur de contrebande',
-    commodity_ru = 'Самогон'
+    commodity_ru = 'Самогон',
+    commodity_it = 'Liquore di contrabbando'
 WHERE LOWER(commodity) = LOWER('Bootleg Liquor');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Borasetani Pathogenetics');
@@ -1867,7 +1940,8 @@ UPDATE commodities
 SET commodity_de = 'Bromellit',
     commodity_es = 'Bromellita',
     commodity_fr = 'Bromellite',
-    commodity_ru = 'Бромеллит'
+    commodity_ru = 'Бромеллит',
+    commodity_it = 'Bromellite'
 WHERE LOWER(commodity) = LOWER('Bromellite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Buckyball Beer Mats');
@@ -1913,7 +1987,8 @@ UPDATE commodities
 SET commodity_de = 'Keramik-Verbundwerkstoffe',
     commodity_es = 'Compuestos cerámicos',
     commodity_fr = 'Composés en céramique',
-    commodity_ru = 'Керамокомпозиты'
+    commodity_ru = 'Керамокомпозиты',
+    commodity_it = 'Compositi ceramici'
 WHERE LOWER(commodity) = LOWER('Ceramic Composites');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Ceremonial Heike Tea');
@@ -1960,7 +2035,8 @@ UPDATE commodities
 SET commodity_de = 'Chemiemüll',
     commodity_es = 'Residuos químicos',
     commodity_fr = 'Déchets chimiques',
-    commodity_ru = 'Радиоактивные материалы'
+    commodity_ru = 'Радиоактивные материалы',
+    commodity_it = 'Rifiuti chimici'
 WHERE LOWER(commodity) = LOWER('Chemical Waste');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Cherbones Blood Crystals');
@@ -1992,7 +2068,8 @@ UPDATE commodities
 SET commodity_de = 'Kleidung',
     commodity_es = 'Ropa',
     commodity_fr = 'Vêtements',
-    commodity_ru = 'Одежда'
+    commodity_ru = 'Одежда',
+    commodity_it = 'Vestiti'
 WHERE LOWER(commodity) = LOWER('Clothing');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('CMM Composite');
@@ -2007,7 +2084,8 @@ VALUES ('Cobalt');
 UPDATE commodities
 SET commodity_es = 'Cobalto',
     commodity_fr = 'Cobalt',
-    commodity_ru = 'Кобальт'
+    commodity_ru = 'Кобальт',
+    commodity_it = 'Cobalto'
 WHERE LOWER(commodity) = LOWER('Cobalt');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Coffee');
@@ -2015,14 +2093,16 @@ UPDATE commodities
 SET commodity_de = 'Kaffee',
     commodity_es = 'Café',
     commodity_fr = 'Café(s)',
-    commodity_ru = 'Кофе'
+    commodity_ru = 'Кофе',
+    commodity_it = 'Caffè'
 WHERE LOWER(commodity) = LOWER('Coffee');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Coltan');
 UPDATE commodities
 SET commodity_es = 'Coltán',
     commodity_fr = 'Coltan',
-    commodity_ru = 'Колтан'
+    commodity_ru = 'Колтан',
+    commodity_it = 'Coltan'
 WHERE LOWER(commodity) = LOWER('Coltan');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Combat Stabilisers');
@@ -2030,7 +2110,8 @@ UPDATE commodities
 SET commodity_de = 'Kampfstabilisatoren',
     commodity_es = 'Estabilizadores de combate',
     commodity_fr = 'Stabilisateurs de combat',
-    commodity_ru = 'Боевые стабилизаторы'
+    commodity_ru = 'Боевые стабилизаторы',
+    commodity_it = 'Stabilizzatori da combattimento'
 WHERE LOWER(commodity) = LOWER('Combat Stabilisers');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Commercial Samples');
@@ -2038,7 +2119,8 @@ UPDATE commodities
 SET commodity_de = 'Werbeproben',
     commodity_es = 'Muestras comerciales',
     commodity_fr = 'Échantillons commerciaux',
-    commodity_ru = 'Рекламные образцы'
+    commodity_ru = 'Рекламные образцы',
+    commodity_it = 'Campioni commerciali'
 WHERE LOWER(commodity) = LOWER('Commercial Samples');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Computer Components');
@@ -2046,7 +2128,8 @@ UPDATE commodities
 SET commodity_de = 'Computerteile',
     commodity_es = 'Componentes informáticos',
     commodity_fr = 'Composants d’Ordinateur',
-    commodity_ru = 'Компьютерные компоненты'
+    commodity_ru = 'Компьютерные компоненты',
+    commodity_it = 'Componenti per computer'
 WHERE LOWER(commodity) = LOWER('Computer Components');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Conductive Fabrics');
@@ -2054,7 +2137,8 @@ UPDATE commodities
 SET commodity_de = 'Leitfähige Stoffe',
     commodity_es = 'Tejidos conductivos',
     commodity_fr = 'Tissus conducteurs',
-    commodity_ru = 'Проводящая ткань'
+    commodity_ru = 'Проводящая ткань',
+    commodity_it = 'Tessuti conduttivi'
 WHERE LOWER(commodity) = LOWER('Conductive Fabrics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Consumer Technology');
@@ -2062,7 +2146,8 @@ UPDATE commodities
 SET commodity_de = 'Unterhaltungselektronik',
     commodity_es = 'Tecnología de consumo',
     commodity_fr = 'Électronique grand public',
-    commodity_ru = 'Потребительские товары'
+    commodity_ru = 'Потребительские товары',
+    commodity_it = 'Tecnologia di consumo'
 WHERE LOWER(commodity) = LOWER('Consumer Technology');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Micro-weave Cooling Hoses');
@@ -2078,7 +2163,8 @@ UPDATE commodities
 SET commodity_de = 'Kupfer',
     commodity_es = 'Cobre',
     commodity_fr = 'Cuivre',
-    commodity_ru = 'Медь'
+    commodity_ru = 'Медь',
+    commodity_it = 'Rame'
 WHERE LOWER(commodity) = LOWER('Copper');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Coquim Spongiform Victuals');
@@ -2116,7 +2202,8 @@ UPDATE commodities
 SET commodity_de = 'Kriolyth',
     commodity_es = 'Criolita',
     commodity_fr = 'Cyolite',
-    commodity_ru = 'Криолит'
+    commodity_ru = 'Криолит',
+    commodity_it = 'Criolite'
 WHERE LOWER(commodity) = LOWER('Cryolite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Crystalline Spheres');
@@ -2124,7 +2211,8 @@ UPDATE commodities
 SET commodity_de = 'Kristallkugeln',
     commodity_es = 'Esferas cristalinas',
     commodity_fr = 'Sphères cristallines',
-    commodity_ru = 'Прозрачные сферы'
+    commodity_ru = 'Прозрачные сферы',
+    commodity_it = 'Sfere cristalline'
 WHERE LOWER(commodity) = LOWER('Crystalline Spheres');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Damaged Escape Pod');
@@ -2148,7 +2236,8 @@ UPDATE commodities
 SET commodity_de = 'Datenkern',
     commodity_es = 'Núcleo de datos',
     commodity_fr = 'Centre de données',
-    commodity_ru = 'Ядро данных'
+    commodity_ru = 'Ядро данных',
+    commodity_it = 'Nucleo dati'
 WHERE LOWER(commodity) = LOWER('Data Core');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Delta Phoenicis Palms');
@@ -2196,7 +2285,8 @@ UPDATE commodities
 SET commodity_de = 'Haushaltsgeräte',
     commodity_es = 'Electrodomésticos',
     commodity_fr = 'Équipement ménager',
-    commodity_ru = 'Бытовая техника'
+    commodity_ru = 'Бытовая техника',
+    commodity_it = 'Elettrodomestici'
 WHERE LOWER(commodity) = LOWER('Domestic Appliances');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Limpets');
@@ -2217,7 +2307,8 @@ UPDATE commodities
 SET commodity_de = 'Erdrelikte',
     commodity_es = 'Reliquias de la vieja Tierra',
     commodity_fr = 'Reliques de la Terre',
-    commodity_ru = 'Реликвии с Земли'
+    commodity_ru = 'Реликвии с Земли',
+    commodity_it = 'Reliquie della Terra'
 WHERE LOWER(commodity) = LOWER('Earth Relics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Eleu Thermals');
@@ -2233,7 +2324,8 @@ UPDATE commodities
 SET commodity_de = 'Notfall-Energiezellen',
     commodity_es = 'Células energía auxiliar',
     commodity_fr = 'Cellules d’énergie de secours',
-    commodity_ru = 'Аварийные энергоячейки'
+    commodity_ru = 'Аварийные энергоячейки',
+    commodity_it = 'Celle di energia di emergenza'
 WHERE LOWER(commodity) = LOWER('Emergency Power Cells');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Encrypted Data Storage');
@@ -2328,7 +2420,8 @@ UPDATE commodities
 SET commodity_de = 'Fisch',
     commodity_es = 'Pescado',
     commodity_fr = 'Poisson(s)',
-    commodity_ru = 'Рыба'
+    commodity_ru = 'Рыба',
+    commodity_it = 'Pesce'
 WHERE LOWER(commodity) = LOWER('Fish');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Food Cartridges');
@@ -2352,7 +2445,8 @@ UPDATE commodities
 SET commodity_de = 'Obst und Gemüse',
     commodity_es = 'Frutas y verduras',
     commodity_fr = 'Fruits et légumes',
-    commodity_ru = 'Фрукты и овощи'
+    commodity_ru = 'Фрукты и овощи',
+    commodity_it = 'Frutta e verdura'
 WHERE LOWER(commodity) = LOWER('Fruit and Vegetables');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Fujin Tea');
@@ -2376,14 +2470,16 @@ UPDATE commodities
 SET commodity_de = 'Gallit',
     commodity_es = 'Galita',
     commodity_fr = 'Gallite',
-    commodity_ru = 'Галлит'
+    commodity_ru = 'Галлит',
+    commodity_it = 'Gallite'
 WHERE LOWER(commodity) = LOWER('Gallite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Gallium');
 UPDATE commodities
 SET commodity_es = 'Galio',
     commodity_fr = 'Gallium',
-    commodity_ru = 'Галлий'
+    commodity_ru = 'Галлий',
+    commodity_it = 'Gallio'
 WHERE LOWER(commodity) = LOWER('Gallium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Geawen Dance Dust');
@@ -2415,7 +2511,8 @@ UPDATE commodities
 SET commodity_de = 'Geologische Proben',
     commodity_es = 'Muestras geológicas',
     commodity_fr = 'Échantillons géologiques',
-    commodity_ru = 'Образцы породы'
+    commodity_ru = 'Образцы породы',
+    commodity_it = 'Campioni geologici'
 WHERE LOWER(commodity) = LOWER('Geological Samples');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Gerasian Gueuze Beer');
@@ -2454,7 +2551,8 @@ VALUES ('Gold');
 UPDATE commodities
 SET commodity_es = 'Oro',
     commodity_fr = 'Or',
-    commodity_ru = 'Золото'
+    commodity_ru = 'Золото',
+    commodity_it = 'Oro'
 WHERE LOWER(commodity) = LOWER('Gold');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Goman Yaupon Coffee');
@@ -2469,7 +2567,8 @@ UPDATE commodities
 SET commodity_de = 'Goslarit',
     commodity_es = 'Goslarita',
     commodity_fr = 'Goslarite',
-    commodity_ru = 'Госларит'
+    commodity_ru = 'Госларит',
+    commodity_it = 'Goslarite'
 WHERE LOWER(commodity) = LOWER('Goslarite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Grain');
@@ -2477,7 +2576,8 @@ UPDATE commodities
 SET commodity_de = 'Getreide',
     commodity_es = 'Grano',
     commodity_fr = 'Céréales',
-    commodity_ru = 'Зерно'
+    commodity_ru = 'Зерно',
+    commodity_it = 'Grano'
 WHERE LOWER(commodity) = LOWER('Grain');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Grandidierite');
@@ -2485,7 +2585,8 @@ UPDATE commodities
 SET commodity_de = 'Grandidierit',
     commodity_es = 'Grandidierita',
     commodity_fr = 'Grandidiérite',
-    commodity_ru = 'Грандидьерит'
+    commodity_ru = 'Грандидьерит',
+    commodity_it = 'Grandidierite'
 WHERE LOWER(commodity) = LOWER('Grandidierite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Grom Counter Intelligence');
@@ -2508,14 +2609,16 @@ VALUES ('Haematite');
 UPDATE commodities
 SET commodity_es = 'Hematita',
     commodity_fr = 'Haematite',
-    commodity_ru = 'Гематит'
+    commodity_ru = 'Гематит',
+    commodity_it = 'Ematite'
 WHERE LOWER(commodity) = LOWER('Haematite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Hafnium 178');
 UPDATE commodities
 SET commodity_es = 'Hafnio 178',
     commodity_fr = 'Hafnium 178',
-    commodity_ru = 'Гафний-178'
+    commodity_ru = 'Гафний-178',
+    commodity_it = 'Afnio 178'
 WHERE LOWER(commodity) = LOWER('Hafnium 178');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Haiden Black Brew');
@@ -2697,14 +2800,16 @@ UPDATE commodities
 SET commodity_de = 'Indit',
     commodity_es = 'Indita',
     commodity_fr = 'Indite',
-    commodity_ru = 'Индит'
+    commodity_ru = 'Индит',
+    commodity_it = 'Indite'
 WHERE LOWER(commodity) = LOWER('Indite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Indium');
 UPDATE commodities
 SET commodity_es = 'Indio',
     commodity_fr = 'Indium',
-    commodity_ru = 'Индий'
+    commodity_ru = 'Индий',
+    commodity_it = 'Indio'
 WHERE LOWER(commodity) = LOWER('Indium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Insulating Membrane');
@@ -2728,7 +2833,8 @@ UPDATE commodities
 SET commodity_de = 'Jadeit',
     commodity_es = 'Jadeíta',
     commodity_fr = 'Jadéite',
-    commodity_ru = 'Жадеит'
+    commodity_ru = 'Жадеит',
+    commodity_it = 'Giadeite'
 WHERE LOWER(commodity) = LOWER('Jadeite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Jaques Quinentian Still');
@@ -2905,7 +3011,8 @@ UPDATE commodities
 SET commodity_de = 'Leder',
     commodity_es = 'Cuero',
     commodity_fr = 'Cuir',
-    commodity_ru = 'Кожа'
+    commodity_ru = 'Кожа',
+    commodity_it = 'Pelle'
 WHERE LOWER(commodity) = LOWER('Leather');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Leestian Evil Juice');
@@ -2921,7 +3028,8 @@ UPDATE commodities
 SET commodity_de = 'Lepidolith',
     commodity_es = 'Lepidolita',
     commodity_fr = 'Lépidolite',
-    commodity_ru = 'Лепидолит'
+    commodity_ru = 'Лепидолит',
+    commodity_it = 'Lepidolite'
 WHERE LOWER(commodity) = LOWER('Lepidolite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Void Extract Coffee');
@@ -2953,14 +3061,16 @@ UPDATE commodities
 SET commodity_de = 'Spirituosen',
     commodity_es = 'Licores',
     commodity_fr = 'Spiritueux',
-    commodity_ru = 'Спиртное'
+    commodity_ru = 'Спиртное',
+    commodity_it = 'Liquore'
 WHERE LOWER(commodity) = LOWER('Liquor');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Lithium');
 UPDATE commodities
 SET commodity_es = 'Litio',
     commodity_fr = 'Lithium',
-    commodity_ru = 'Литий'
+    commodity_ru = 'Литий',
+    commodity_it = 'Litio'
 WHERE LOWER(commodity) = LOWER('Lithium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Lithium Hydroxide');
@@ -2968,7 +3078,8 @@ UPDATE commodities
 SET commodity_de = 'Lithiumhydroxid',
     commodity_es = 'Hidróxido de litio',
     commodity_fr = 'Hydroxyde de lithium',
-    commodity_ru = 'Гидроксид лития'
+    commodity_ru = 'Гидроксид лития',
+    commodity_it = 'Idrossido di litio'
 WHERE LOWER(commodity) = LOWER('Lithium Hydroxide');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Live Hecate Sea Worms');
@@ -3190,7 +3301,8 @@ UPDATE commodities
 SET commodity_de = 'Moissanit',
     commodity_es = 'Moissanita',
     commodity_fr = 'Carbure de silicium',
-    commodity_ru = 'Муассанит'
+    commodity_ru = 'Муассанит',
+    commodity_it = 'Moissanite'
 WHERE LOWER(commodity) = LOWER('Moissanite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Mokojing Beast Feast');
@@ -3214,7 +3326,8 @@ UPDATE commodities
 SET commodity_de = 'Monazit',
     commodity_es = 'Monacita',
     commodity_fr = 'Monazite',
-    commodity_ru = 'Монацит'
+    commodity_ru = 'Монацит',
+    commodity_it = 'Monazite'
 WHERE LOWER(commodity) = LOWER('Monazite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Motrona Experience Jelly');
@@ -3245,7 +3358,8 @@ UPDATE commodities
 SET commodity_de = 'Musgravit',
     commodity_es = 'Musgravita',
     commodity_fr = 'Musgravite',
-    commodity_ru = 'Мусгравит'
+    commodity_ru = 'Мусгравит',
+    commodity_it = 'Musgravite'
 WHERE LOWER(commodity) = LOWER('Musgravite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Muon Imager');
@@ -3277,7 +3391,8 @@ UPDATE commodities
 SET commodity_de = 'Nanomedikamente',
     commodity_es = 'Nanomedicinas',
     commodity_fr = 'Nanomédicaments',
-    commodity_ru = 'Нанолекарства'
+    commodity_ru = 'Нанолекарства',
+    commodity_it = 'Nanomedicine'
 WHERE LOWER(commodity) = LOWER('Nanomedicines');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Natural Fabrics');
@@ -3285,7 +3400,8 @@ UPDATE commodities
 SET commodity_de = 'Naturfasern',
     commodity_es = 'Tejidos naturales',
     commodity_fr = 'Fibre(s) textile(s) naturelle(s)',
-    commodity_ru = 'Натуральная ткань'
+    commodity_ru = 'Натуральная ткань',
+    commodity_it = 'Tessuti naturali'
 WHERE LOWER(commodity) = LOWER('Natural Fabrics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Neofabric Insulation');
@@ -3443,7 +3559,8 @@ VALUES ('Osmium');
 UPDATE commodities
 SET commodity_es = 'Osmio',
     commodity_fr = 'Osmium',
-    commodity_ru = 'Осмий'
+    commodity_ru = 'Осмий',
+    commodity_it = 'Osmio'
 WHERE LOWER(commodity) = LOWER('Osmium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Out Of Date Goods');
@@ -3465,14 +3582,16 @@ UPDATE commodities
 SET commodity_de = 'Painit',
     commodity_es = 'Painita',
     commodity_fr = 'Painite',
-    commodity_ru = 'Пейнит'
+    commodity_ru = 'Пейнит',
+    commodity_it = 'Painite'
 WHERE LOWER(commodity) = LOWER('Painite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Palladium');
 UPDATE commodities
 SET commodity_es = 'Paladio',
     commodity_fr = 'Palladium',
-    commodity_ru = 'Палладий'
+    commodity_ru = 'Палладий',
+    commodity_it = 'Palladio'
 WHERE LOWER(commodity) = LOWER('Palladium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Pantaa Prayer Sticks');
@@ -3544,7 +3663,8 @@ UPDATE commodities
 SET commodity_de = 'Pestizide',
     commodity_es = 'Pesticidas',
     commodity_fr = 'Pesticide(s)',
-    commodity_ru = 'Пестициды'
+    commodity_ru = 'Пестициды',
+    commodity_it = 'Pesticidi'
 WHERE LOWER(commodity) = LOWER('Pesticides');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Platinum');
@@ -3552,7 +3672,8 @@ UPDATE commodities
 SET commodity_de = 'Platin',
     commodity_es = 'Platino',
     commodity_fr = 'Platine',
-    commodity_ru = 'Платина'
+    commodity_ru = 'Платина',
+    commodity_it = 'Platino'
 WHERE LOWER(commodity) = LOWER('Platinum');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Platinum Alloy');
@@ -3560,7 +3681,8 @@ UPDATE commodities
 SET commodity_de = 'Platinlegierung',
     commodity_es = 'Aleación de platino',
     commodity_fr = 'Alliage de platine',
-    commodity_ru = 'Платиновый сплав'
+    commodity_ru = 'Платиновый сплав',
+    commodity_it = 'Lega di platino'
 WHERE LOWER(commodity) = LOWER('Platinum Alloy');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Political Prisoners');
@@ -3568,7 +3690,8 @@ UPDATE commodities
 SET commodity_de = 'Politische Gefangene',
     commodity_es = 'Prisioneros políticos',
     commodity_fr = 'Prisonniers politiques',
-    commodity_ru = 'Политзаключенные'
+    commodity_ru = 'Политзаключенные',
+    commodity_it = 'Prigionieri politici'
 WHERE LOWER(commodity) = LOWER('Political Prisoners');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Polymers');
@@ -3576,7 +3699,8 @@ UPDATE commodities
 SET commodity_de = 'Polymere',
     commodity_es = 'Polímeros',
     commodity_fr = 'Polymère(s)',
-    commodity_ru = 'Полимеры'
+    commodity_ru = 'Полимеры',
+    commodity_it = 'Polimeri'
 WHERE LOWER(commodity) = LOWER('Polymers');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Power Converter');
@@ -3584,7 +3708,8 @@ UPDATE commodities
 SET commodity_de = 'Energiekonverter',
     commodity_es = 'Convertidor de energía',
     commodity_fr = 'Convertisseur d’énergie',
-    commodity_ru = 'Преобразователь энергии'
+    commodity_ru = 'Преобразователь энергии',
+    commodity_it = 'Convertitore di energia'
 WHERE LOWER(commodity) = LOWER('Power Converter');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Power Generators');
@@ -3592,7 +3717,8 @@ UPDATE commodities
 SET commodity_de = 'Stromerzeuger',
     commodity_es = 'Generadores de energía',
     commodity_fr = 'Générateurs',
-    commodity_ru = 'Электрогенераторы'
+    commodity_ru = 'Электрогенераторы',
+    commodity_it = 'Generatori di energia'
 WHERE LOWER(commodity) = LOWER('Power Generators');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Energy Grid Assembly');
@@ -3616,7 +3742,8 @@ UPDATE commodities
 SET commodity_de = 'Praseodym',
     commodity_es = 'Praseodimio',
     commodity_fr = 'Praséodyme',
-    commodity_ru = 'Празеодим'
+    commodity_ru = 'Празеодим',
+    commodity_it = 'Praseodimio'
 WHERE LOWER(commodity) = LOWER('Praseodymium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Precious Gems');
@@ -3624,7 +3751,8 @@ UPDATE commodities
 SET commodity_de = 'Edelsteine',
     commodity_es = 'Piedras preciosas',
     commodity_fr = 'Pierres précieuses',
-    commodity_ru = 'Драгоценные камни'
+    commodity_ru = 'Драгоценные камни',
+    commodity_it = 'Gemme preziose'
 WHERE LOWER(commodity) = LOWER('Precious Gems');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Progenitor Cells');
@@ -3632,7 +3760,8 @@ UPDATE commodities
 SET commodity_de = 'Vorläuferzellen',
     commodity_es = 'Células madre',
     commodity_fr = 'Cellules souches',
-    commodity_ru = 'Прогениторные клетки'
+    commodity_ru = 'Прогениторные клетки',
+    commodity_it = 'Cellule progenitrici'
 WHERE LOWER(commodity) = LOWER('Progenitor Cells');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Prohibited Research Materials');
@@ -3640,7 +3769,8 @@ UPDATE commodities
 SET commodity_de = 'Verbotene Forschungsmaterialien',
     commodity_es = 'Materiales de investigación prohibida',
     commodity_fr = 'Matériaux de recherches interdits',
-    commodity_ru = 'Запретные материалы исследований'
+    commodity_ru = 'Запретные материалы исследований',
+    commodity_it = 'Materiali di ricerca proibiti'
 WHERE LOWER(commodity) = LOWER('Prohibited Research Materials');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Pyrophyllite');
@@ -3648,7 +3778,8 @@ UPDATE commodities
 SET commodity_de = 'Pyrophyllit',
     commodity_es = 'Pirofilita',
     commodity_fr = 'Pyrophyllite',
-    commodity_ru = 'Пирофиллит'
+    commodity_ru = 'Пирофиллит',
+    commodity_it = 'Pirofillite'
 WHERE LOWER(commodity) = LOWER('Pyrophyllite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Radiation Baffle');
@@ -3656,7 +3787,8 @@ UPDATE commodities
 SET commodity_de = 'Strahlungsabweiser',
     commodity_es = 'Deflector de radiación',
     commodity_fr = 'Écran antiradiation',
-    commodity_ru = 'Отражатель излучения'
+    commodity_ru = 'Отражатель излучения',
+    commodity_it = 'Schermo antiradiazioni'
 WHERE LOWER(commodity) = LOWER('Radiation Baffle');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Rajukru Multi-Stoves');
@@ -3736,7 +3868,8 @@ UPDATE commodities
 SET commodity_de = 'Rhodplumsit',
     commodity_es = 'Rhodplumsita',
     commodity_fr = 'Rhodplumsite',
-    commodity_ru = 'Родплумсайт'
+    commodity_ru = 'Родплумсайт',
+    commodity_it = 'Rhodplumsite'
 WHERE LOWER(commodity) = LOWER('Rhodplumsite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Robotics');
@@ -3744,7 +3877,8 @@ UPDATE commodities
 SET commodity_de = 'Roboter',
     commodity_es = 'Robótica',
     commodity_fr = 'Robots',
-    commodity_ru = 'Роботы'
+    commodity_ru = 'Роботы',
+    commodity_it = 'Robotica'
 WHERE LOWER(commodity) = LOWER('Robotics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Rockforth Fertiliser');
@@ -3767,7 +3901,8 @@ UPDATE commodities
 SET commodity_de = 'Rutil',
     commodity_es = 'Rutilo',
     commodity_fr = 'Rutile',
-    commodity_ru = 'Рутил'
+    commodity_ru = 'Рутил',
+    commodity_it = 'Rutilo'
 WHERE LOWER(commodity) = LOWER('Rutile');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Pod Outer Tissue');
@@ -3830,7 +3965,8 @@ VALUES ('Samarium');
 UPDATE commodities
 SET commodity_es = 'Samario',
     commodity_fr = 'Samarium',
-    commodity_ru = 'Самарий'
+    commodity_ru = 'Самарий',
+    commodity_it = 'Samario'
 WHERE LOWER(commodity) = LOWER('Samarium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Sanuma Decorative Meat');
@@ -3878,7 +4014,8 @@ UPDATE commodities
 SET commodity_de = 'Schrott',
     commodity_es = 'Chatarra',
     commodity_fr = 'Ferraille',
-    commodity_ru = 'Утильсырье'
+    commodity_ru = 'Утильсырье',
+    commodity_it = 'Rottami'
 WHERE LOWER(commodity) = LOWER('Scrap');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Semiconductors');
@@ -3886,7 +4023,8 @@ UPDATE commodities
 SET commodity_de = 'Halbleiter',
     commodity_es = 'Semiconductores',
     commodity_fr = 'Semi-conducteur(s)',
-    commodity_ru = 'Полупроводники'
+    commodity_ru = 'Полупроводники',
+    commodity_it = 'Semiconduttori'
 WHERE LOWER(commodity) = LOWER('Semiconductors');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Serendibite');
@@ -3894,7 +4032,8 @@ UPDATE commodities
 SET commodity_de = 'Serendibit',
     commodity_es = 'Serendibita',
     commodity_fr = 'Serendibite',
-    commodity_ru = 'Серендибит'
+    commodity_ru = 'Серендибит',
+    commodity_it = 'Serendibite'
 WHERE LOWER(commodity) = LOWER('Serendibite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Shan’s Charis Orchid');
@@ -3910,7 +4049,8 @@ UPDATE commodities
 SET commodity_de = 'Silber',
     commodity_es = 'Plata',
     commodity_fr = 'Argent',
-    commodity_ru = 'Серебро'
+    commodity_ru = 'Серебро',
+    commodity_it = 'Argento'
 WHERE LOWER(commodity) = LOWER('Silver');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Sirius Corporate Contracts');
@@ -3950,7 +4090,8 @@ UPDATE commodities
 SET commodity_de = 'Sklaven',
     commodity_es = 'Esclavos',
     commodity_fr = 'Esclaves',
-    commodity_ru = 'Рабы'
+    commodity_ru = 'Рабы',
+    commodity_it = 'Schiavi'
 WHERE LOWER(commodity) = LOWER('Slaves');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Small Survey Data Cache');
@@ -3989,7 +4130,8 @@ VALUES ('Steel');
 UPDATE commodities
 SET commodity_es = 'Acero',
     commodity_fr = 'Acier',
-    commodity_ru = 'Сталь'
+    commodity_ru = 'Сталь',
+    commodity_it = 'Acciaio'
 WHERE LOWER(commodity) = LOWER('Steel');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Structural Regulators');
@@ -4005,7 +4147,8 @@ UPDATE commodities
 SET commodity_de = 'Supraleiter',
     commodity_es = 'Superconductores',
     commodity_fr = 'Supraconducteur(s)',
-    commodity_ru = 'Сверхпроводники'
+    commodity_ru = 'Сверхпроводники',
+    commodity_it = 'Superconduttori'
 WHERE LOWER(commodity) = LOWER('Superconductors');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Surface Stabilisers');
@@ -4013,7 +4156,8 @@ UPDATE commodities
 SET commodity_de = 'Oberflächenstabilisierer',
     commodity_es = 'Estabilizadores de superficie',
     commodity_fr = 'Stabilisateurs de surface',
-    commodity_ru = 'Стабилизаторы поверхности'
+    commodity_ru = 'Стабилизаторы поверхности',
+    commodity_it = 'Stabilizzatori di superficie'
 WHERE LOWER(commodity) = LOWER('Surface Stabilisers');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Survival Equipment');
@@ -4021,7 +4165,8 @@ UPDATE commodities
 SET commodity_de = 'Überlebensausrüstung',
     commodity_es = 'Equipamiento de supervivencia',
     commodity_fr = 'Équipement de survie',
-    commodity_ru = 'Снаряжение для выживания'
+    commodity_ru = 'Снаряжение для выживания',
+    commodity_it = 'Equipaggiamento di sopravvivenza'
 WHERE LOWER(commodity) = LOWER('Survival Equipment');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Synthetic Fabrics');
@@ -4029,7 +4174,8 @@ UPDATE commodities
 SET commodity_de = 'Chemiefasern',
     commodity_es = 'Tejidos sintéticos',
     commodity_fr = 'Tissu(s) synthétique(s)',
-    commodity_ru = 'Синтетическая ткань'
+    commodity_ru = 'Синтетическая ткань',
+    commodity_it = 'Tessuti sintetici'
 WHERE LOWER(commodity) = LOWER('Synthetic Fabrics');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Synthetic Meat');
@@ -4037,7 +4183,8 @@ UPDATE commodities
 SET commodity_de = 'Künstliches Fleisch',
     commodity_es = 'Carne sintética',
     commodity_fr = 'Viande synthétique',
-    commodity_ru = 'Синтетическое мясо'
+    commodity_ru = 'Синтетическое мясо',
+    commodity_it = 'Carne sintetica'
 WHERE LOWER(commodity) = LOWER('Synthetic Meat');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Synthetic Reagents');
@@ -4045,7 +4192,8 @@ UPDATE commodities
 SET commodity_de = 'Synthetische Reagenzstoffe',
     commodity_es = 'Reagentes sintéticos',
     commodity_fr = 'Réactifs synthétiques',
-    commodity_ru = 'Синтетические реагенты'
+    commodity_ru = 'Синтетические реагенты',
+    commodity_it = 'Reagenti sintetici'
 WHERE LOWER(commodity) = LOWER('Synthetic Reagents');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Taaffeite');
@@ -4053,7 +4201,8 @@ UPDATE commodities
 SET commodity_de = 'Taaffeit',
     commodity_es = 'Taaffeíta',
     commodity_fr = 'Taafféite',
-    commodity_ru = 'Тааффеит'
+    commodity_ru = 'Тааффеит',
+    commodity_it = 'Taaffeite'
 WHERE LOWER(commodity) = LOWER('Taaffeite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Tactical Data');
@@ -4061,7 +4210,8 @@ UPDATE commodities
 SET commodity_de = 'Aufklärungsdaten',
     commodity_es = 'Datos tácticos',
     commodity_fr = 'Données tactiques',
-    commodity_ru = 'Тактические данные'
+    commodity_ru = 'Тактические данные',
+    commodity_it = 'Dati tattici'
 WHERE LOWER(commodity) = LOWER('Tactical Data');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Tanmark Tranquil Tea');
@@ -4077,7 +4227,8 @@ UPDATE commodities
 SET commodity_de = 'Tantal',
     commodity_es = 'Tantalio',
     commodity_fr = 'Tantale',
-    commodity_ru = 'Тантал'
+    commodity_ru = 'Тантал',
+    commodity_it = 'Tantalio'
 WHERE LOWER(commodity) = LOWER('Tantalum');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Tarach Spice');
@@ -4100,7 +4251,8 @@ UPDATE commodities
 SET commodity_de = 'Tee',
     commodity_es = 'Té',
     commodity_fr = 'Thé(s)',
-    commodity_ru = 'Чай'
+    commodity_ru = 'Чай',
+    commodity_it = 'Tè'
 WHERE LOWER(commodity) = LOWER('Tea');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Telemetry Suite');
@@ -4131,14 +4283,16 @@ VALUES ('Thallium');
 UPDATE commodities
 SET commodity_es = 'Talio',
     commodity_fr = 'Thallium',
-    commodity_ru = 'Таллий'
+    commodity_ru = 'Таллий',
+    commodity_it = 'Tallio'
 WHERE LOWER(commodity) = LOWER('Thallium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Bone Fragments');
 UPDATE commodities
 SET commodity_es = 'Fragmentos de Hueso',
     commodity_fr = 'Fragments d''os',
-    commodity_ru = 'Фрагменты кости'
+    commodity_ru = 'Фрагменты кости',
+    commodity_it = 'Frammenti di osso'
 WHERE LOWER(commodity) = LOWER('Bone Fragments');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Cyst Specimen');
@@ -4160,14 +4314,16 @@ UPDATE commodities
 SET commodity_de = 'Thargoidenherz',
     commodity_es = 'Corazón Thargoide',
     commodity_fr = 'Cœur thargoid',
-    commodity_ru = 'Таргоидское «сердце»'
+    commodity_ru = 'Таргоидское «сердце»',
+    commodity_it = 'Cuore Thargoid'
 WHERE LOWER(commodity) = LOWER('Thargoid Heart');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Organ Sample');
 UPDATE commodities
 SET commodity_es = 'Muestra de Órgano',
     commodity_fr = 'Échantillon d''organe',
-    commodity_ru = 'Образец органа'
+    commodity_ru = 'Образец органа',
+    commodity_it = 'Campione di organo'
 WHERE LOWER(commodity) = LOWER('Organ Sample');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Thargoid Bio-storage Capsule');
@@ -4307,7 +4463,8 @@ VALUES ('Thorium');
 UPDATE commodities
 SET commodity_es = 'Torio',
     commodity_fr = 'Thorium',
-    commodity_ru = 'Торий'
+    commodity_ru = 'Торий',
+    commodity_it = 'Torio'
 WHERE LOWER(commodity) = LOWER('Thorium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Thrutis Cream');
@@ -4330,7 +4487,8 @@ UPDATE commodities
 SET commodity_de = 'Zeitkapsel',
     commodity_es = 'Capsulas del tiempo',
     commodity_fr = 'Capsule temporelle',
-    commodity_ru = 'Мемориальная капсула'
+    commodity_ru = 'Мемориальная капсула',
+    commodity_it = 'Capsula del tempo'
 WHERE LOWER(commodity) = LOWER('Time Capsule');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Tiolce Waste2Paste Units');
@@ -4346,7 +4504,8 @@ UPDATE commodities
 SET commodity_de = 'Titan',
     commodity_es = 'Titanio',
     commodity_fr = 'Titane',
-    commodity_ru = 'Титан'
+    commodity_ru = 'Титан',
+    commodity_it = 'Titanio'
 WHERE LOWER(commodity) = LOWER('Titanium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Tobacco');
@@ -4354,7 +4513,8 @@ UPDATE commodities
 SET commodity_de = 'Tabak',
     commodity_es = 'Tabaco',
     commodity_fr = 'Tabac',
-    commodity_ru = 'Табак'
+    commodity_ru = 'Табак',
+    commodity_it = 'Tabacco'
 WHERE LOWER(commodity) = LOWER('Tobacco');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Torval Trade Agreements');
@@ -4385,7 +4545,8 @@ UPDATE commodities
 SET commodity_de = 'Giftmüll',
     commodity_es = 'Residuos tóxicos',
     commodity_fr = 'Déchets toxiques',
-    commodity_ru = 'Токсичные отходы'
+    commodity_ru = 'Токсичные отходы',
+    commodity_it = 'Rifiuti tossici'
 WHERE LOWER(commodity) = LOWER('Toxic Waste');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Lucan Onionhead');
@@ -4407,7 +4568,8 @@ VALUES ('Tritium');
 UPDATE commodities
 SET commodity_es = 'Tritio',
     commodity_fr = 'Tritium',
-    commodity_ru = 'Тритий'
+    commodity_ru = 'Тритий',
+    commodity_it = 'Tritio'
 WHERE LOWER(commodity) = LOWER('Tritium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Grom Underground Support');
@@ -4431,7 +4593,8 @@ UPDATE commodities
 SET commodity_de = 'Thargoidensensor',
     commodity_es = 'Sensor Thargoide',
     commodity_fr = 'Capteur thargoid',
-    commodity_ru = 'Таргоидский сенсор'
+    commodity_ru = 'Таргоидский сенсор',
+    commodity_it = 'Sensore Thargoid'
 WHERE LOWER(commodity) = LOWER('Thargoid Sensor');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Thargoid Probe');
@@ -4439,7 +4602,8 @@ UPDATE commodities
 SET commodity_de = 'Thargoidensonde',
     commodity_es = 'Sonda Thargoide',
     commodity_fr = 'Sonde thargoid',
-    commodity_ru = 'Таргоидский зонд'
+    commodity_ru = 'Таргоидский зонд',
+    commodity_it = 'Sonda Thargoid'
 WHERE LOWER(commodity) = LOWER('Thargoid Probe');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Thargoid Link');
@@ -4475,7 +4639,8 @@ UPDATE commodities
 SET commodity_de = 'Thargoidenharz',
     commodity_es = 'Resina Thargoide',
     commodity_fr = 'Résine thargoid',
-    commodity_ru = 'Таргоидская смола'
+    commodity_ru = 'Таргоидская смола',
+    commodity_it = 'Resina Thargoid'
 WHERE LOWER(commodity) = LOWER('Thargoid Resin');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Protective Membrane Scrap');
@@ -4522,7 +4687,8 @@ UPDATE commodities
 SET commodity_de = 'Uraninit',
     commodity_es = 'Uraninita',
     commodity_fr = 'Uraninite',
-    commodity_ru = 'Уранинит'
+    commodity_ru = 'Уранинит',
+    commodity_it = 'Uraninite'
 WHERE LOWER(commodity) = LOWER('Uraninite');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Uranium');
@@ -4530,7 +4696,8 @@ UPDATE commodities
 SET commodity_de = 'Uran',
     commodity_es = 'Uranio',
     commodity_fr = 'Uranium',
-    commodity_ru = 'Уран'
+    commodity_ru = 'Уран',
+    commodity_it = 'Uranio'
 WHERE LOWER(commodity) = LOWER('Uranium');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Ancient Artefact');
@@ -4538,14 +4705,16 @@ UPDATE commodities
 SET commodity_de = 'Uraltes Artefakt',
     commodity_es = 'Artefactos antiguos',
     commodity_fr = 'Relique antique',
-    commodity_ru = 'Древний артефакт'
+    commodity_ru = 'Древний артефакт',
+    commodity_it = 'Artefatto antico'
 WHERE LOWER(commodity) = LOWER('Ancient Artefact');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Black Box');
 UPDATE commodities
 SET commodity_es = 'Cajas negras',
     commodity_fr = 'Boîte noire',
-    commodity_ru = 'Черный ящик'
+    commodity_ru = 'Черный ящик',
+    commodity_it = 'Scatola nera'
 WHERE LOWER(commodity) = LOWER('Black Box');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Experimental Chemicals');
@@ -4561,7 +4730,8 @@ UPDATE commodities
 SET commodity_de = 'Militärpläne',
     commodity_es = 'Planes militares',
     commodity_fr = 'Plans militaires',
-    commodity_ru = 'Военные планы'
+    commodity_ru = 'Военные планы',
+    commodity_it = 'Piani militari'
 WHERE LOWER(commodity) = LOWER('Military Plans');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Prototype Tech');
@@ -4569,7 +4739,8 @@ UPDATE commodities
 SET commodity_de = 'Prototyp-Technologien',
     commodity_es = 'Prototipos tecnológicos',
     commodity_fr = 'Prototype technologique',
-    commodity_ru = 'Экспериментальная техника'
+    commodity_ru = 'Экспериментальная техника',
+    commodity_it = 'Prototipo tecnologico'
 WHERE LOWER(commodity) = LOWER('Prototype Tech');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Rare Artwork');
@@ -4577,7 +4748,8 @@ UPDATE commodities
 SET commodity_de = 'Seltene Kunstgegenstände',
     commodity_es = 'Arte poco común',
     commodity_fr = 'Œuvre d’art',
-    commodity_ru = 'Редкие произведения искусства'
+    commodity_ru = 'Редкие произведения искусства',
+    commodity_it = 'Opera d’arte rara'
 WHERE LOWER(commodity) = LOWER('Rare Artwork');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Rebel Transmissions');
@@ -4585,7 +4757,8 @@ UPDATE commodities
 SET commodity_de = 'Rebellenübertragungen',
     commodity_es = 'Transmisiones rebeldes',
     commodity_fr = 'Transmissions rebelles',
-    commodity_ru = 'Переговоры повстанцев'
+    commodity_ru = 'Переговоры повстанцев',
+    commodity_it = 'Trasmissioni ribelli'
 WHERE LOWER(commodity) = LOWER('Rebel Transmissions');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Technical Blueprints');
@@ -4593,7 +4766,8 @@ UPDATE commodities
 SET commodity_de = 'Technische Baupläne',
     commodity_es = 'Planos técnicos',
     commodity_fr = 'Plans industriels',
-    commodity_ru = 'Промышленные чертежи'
+    commodity_ru = 'Промышленные чертежи',
+    commodity_it = 'Progetti tecnici'
 WHERE LOWER(commodity) = LOWER('Technical Blueprints');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Trade Data');
@@ -4601,7 +4775,8 @@ UPDATE commodities
 SET commodity_de = 'Handelsdaten',
     commodity_es = 'Datos comerciales',
     commodity_fr = 'Données commerciales',
-    commodity_ru = 'Торговая информация'
+    commodity_ru = 'Торговая информация',
+    commodity_it = 'Dati commerciali'
 WHERE LOWER(commodity) = LOWER('Trade Data');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Uszaian Tree Grub');
@@ -4697,7 +4872,8 @@ UPDATE commodities
 SET commodity_de = 'Wasser',
     commodity_es = 'Agua',
     commodity_fr = 'Eau',
-    commodity_ru = 'Вода'
+    commodity_ru = 'Вода',
+    commodity_it = 'Acqua'
 WHERE LOWER(commodity) = LOWER('Water');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Water Purifiers');
@@ -4705,7 +4881,8 @@ UPDATE commodities
 SET commodity_de = 'Wasserreiniger',
     commodity_es = 'Purificadores de agua',
     commodity_fr = 'Purificateurs d’eau',
-    commodity_ru = 'Водоочистители'
+    commodity_ru = 'Водоочистители',
+    commodity_it = 'Purificatori d’acqua'
 WHERE LOWER(commodity) = LOWER('Water Purifiers');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('The Waters Of Shintara');
@@ -4729,7 +4906,8 @@ UPDATE commodities
 SET commodity_de = 'Wein',
     commodity_es = 'Vino',
     commodity_fr = 'Vin',
-    commodity_ru = 'Вино'
+    commodity_ru = 'Вино',
+    commodity_it = 'Vino'
 WHERE LOWER(commodity) = LOWER('Wine');
 INSERT OR IGNORE INTO commodities (commodity)
 VALUES ('Witchhaul Kobe Beef');
