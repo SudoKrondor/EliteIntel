@@ -379,7 +379,34 @@ class CompanionLlmGatewayTest {
         LlmMessage rejection = repairedMessages.get(repairIndex + 1);
         assertEquals(LlmMessageRole.TOOL, rejection.role());
         assertTrue(rejection.content().contains("\"status\":\"rejected\""));
-        assertTrue(rejection.content().contains("exact parameter schema"));
+        assertTrue(rejection.content().contains("accepts only these argument fields: target"));
+        assertTrue(rejection.content().contains("listed functions and declared parameters"));
+    }
+
+    @Test
+    void metadataArgumentsOnParameterlessToolReceiveActionableRepairInstructions() throws Exception {
+        LlmRequest request = requestOffering("query_status", "speak", "classify_turn");
+        JsonObject invalidArguments = new JsonObject();
+        invalidArguments.addProperty("description", "Query status description copied from the tool schema");
+        invalidArguments.addProperty("tool_name", "query_status");
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                ok("query_status", invalidArguments), ok("classify_turn", "query_status"));
+
+        LlmResult result = run(adapter, request);
+
+        assertTrue(result.isValid());
+        assertEquals(List.of("classify_turn", "query_status"),
+                result.toolInvocations().stream().map(LlmToolInvocation::name).toList());
+        assertEquals(2, sends.get());
+        int repairIndex = request.messages().size();
+        LlmMessage rejection = adapter.lastRequest.messages().get(repairIndex + 1);
+        assertEquals(LlmMessageRole.TOOL, rejection.role());
+        assertTrue(rejection.content().contains("No call was executed"));
+        assertTrue(rejection.content().contains("query_status accepts no arguments"));
+        assertTrue(rejection.content().contains("retry query_status with {}"));
+        assertTrue(rejection.content().contains("functions listed in this request remain available"));
+        assertTrue(rejection.content().contains("Do not call speak merely because this attempt was rejected"));
+        assertTrue(rejection.content().contains("none of the other listed functions"));
     }
 
     @Test
@@ -698,7 +725,7 @@ class CompanionLlmGatewayTest {
         assertEquals(classifyCallId, tool.toolCallId());
         assertTrue(tool.content().contains("\"status\":\"received\""));
         assertTrue(tool.content().contains("\"execution\":\"pending\""));
-        assertTrue(tool.content().contains("call exactly one settling function"));
+        assertTrue(tool.content().contains("call exactly one other listed function"));
         assertFalse(tool.content().contains("rejected"));
     }
 
