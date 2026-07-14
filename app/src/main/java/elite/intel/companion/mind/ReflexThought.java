@@ -72,7 +72,7 @@ final class ReflexThought extends Thought {
             }
             return execution.handle((result, failure) -> {
                 try {
-                    if (isStopped() || execution.isCancelled()) {
+                    if (isStopped()) {
                         return null;
                     }
                     JsonObject settled = failure == null
@@ -102,13 +102,13 @@ final class ReflexThought extends Thought {
         }
         return execution.handle((result, failure) -> {
             try {
-                if (isStopped() || execution.isCancelled()) {
+                if (isStopped()) {
                     return null;
                 }
                 JsonObject settled = failure == null
                         ? (result == null ? new JsonObject() : result)
                         : executionError(inv.name(), failure);
-                if (!spokenTextOf(settled).isBlank()) {
+                if (!spokenOutcomeText(settled).isBlank()) {
                     recordCurrentInput();
                 }
                 recordOutcome(inv, settled, List.of(), null);

@@ -92,7 +92,7 @@ class MergedFactCandidatesTest {
     /** A stated commander fact (survives the tier-2 filter of the memory core). */
     private static MemoryEntry commander(String content) {
         return new MemoryEntry(Instant.now(), ConversationTopic.SOCIAL, MemorySource.COMMANDER,
-                content, MemoryImportance.HIGH, null, null);
+                content, MemoryImportance.HIGH, null, content);
     }
 
     /** Minimal gateway returning a fixed candidate list; the other operations are unused by these tests. */

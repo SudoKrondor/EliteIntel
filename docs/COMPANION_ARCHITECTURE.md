@@ -4,10 +4,20 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.25**.
+Версия **v0.27**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.27 (2026-07-12).** Уточнение обязательного аргумента стало типизированным межходовым состоянием.
+> - **Не через `speak`:** COMMANDER-only `request_input(action_id, parameter_name, question)` — единственный способ открыть ожидание. Он добавляется в tool snapshot только когда хотя бы один offered game-tool имеет обязательный параметр. `CommanderThought` принимает его только для game-tool из точного offered snapshot и реально обязательного параметра, озвучивает/помнит вопрос и завершает thought без исполнения действия.
+> - **Runtime-owned continuation:** `ClarificationCoordinator` хранит один `PendingClarification` максимум 60 секунд. Следующая непустая реплика атомарно claim'ит его; два хода не могут продолжить одну команду, stop очищает slot, а `speak`, новая команда или невалидный ход не переоткрывают уже claim'нутое состояние.
+> - **Свежая видимость:** continuation несёт только стабильный action id, имя параметра, исходную команду и заданный вопрос. На новом ходу target заново резолвится через reducer catalog по свежему `GameStateSnapshot` и добавляется к обычным кандидатам новой фразы; исчезнувшее действие не возвращается. Prompt различает заполнение параметра, новую команду, отмену/смену темы и повторный `request_input`.
+
+> **v0.26 (2026-07-12).** HTTP-результат LLM отделён от model/protocol parsing и от пользовательской речи.
+> - **Типизированный transport outcome:** `AiTransportResult` различает success, transient, permanent, malformed 2xx response и cancellation. `400`/`401`/`403` не становятся обычным JSON-ответом модели и не входят в protocol repair.
+> - **Один ограниченный resend:** только network/IO, `429` и `5xx` получают одну повторную физическую отправку с jitter `250–750 ms`; она использует тот же body/tools snapshot и остаётся внутри общего 50-секундного logical deadline. Ошибка malformed `2xx` остаётся model/protocol defect и получает обычный один repair.
+> - **Без технической речи:** companion использует typed provider methods, а не legacy `sendJsonRequest`; поэтому низкоуровневый HTTP текст не публикуется как `AiVoxResponseEvent`. В речи остаётся обычный локализованный service-failure outcome, детали — только в diagnostics.
 
 > **v0.25 (2026-07-11).** Жизненный цикл речи принадлежит активному Mouth и коррелируется с конкретной заявкой.
 > - **Один owner speaking-state:** каждый `VocalisationRequestEvent` несёт `VocalisationHandle`; ровно один подходящий запущенный Mouth синхронно claim'ит его перед постановкой в очередь. Только handle публикует `IsSpeakingEvent`, причём лишь на переходах общего счётчика `0→1` и `1→0`, поэтому завершение реплики A не сообщает тишину, пока заявка B ещё активна.
@@ -154,7 +164,7 @@
 **Hard architectural boundary** — граница, которую должен обеспечивать runtime/lifecycle:
 
 * `EventThought` получает **нулевой** набор game-tools в обоих режимах (subscriber уже посчитал и отфильтровал данные); в verbatim-режиме он к тому же не строит промпт и не зовёт ЛЛМ. Action/macro-tools физически доступны только `CommanderThought`;
-* retry не пересобирает prompt/tools и использует исходный immutable tools snapshot;
+* protocol repair и transient transport resend не пересобирают prompt/tools и используют исходный immutable tools snapshot;
 * `LlmGateway`, `SpeechGateway` и `ExecutionModule` не получают объект `Thought` и не callback'ают в него;
 * `MemoryConsolidator` не является `Thought` и не использует consciousness prompt/tools;
 * `MemoryGateway` — единственная дверь к памяти.
@@ -179,8 +189,8 @@
 
 ### §1.1. Режим и входные потоки
 
-1. **`companionModeOn` — главный gate режима.**
-   Флаг в `SystemSession` решает, кто обслуживает вход: старый `CommandEndPoint` или компаньон.
+1. **Компаньон — единственный command mode.**
+   `CompanionSubsystemGate` всегда принимает командирский ввод; переключателя на старый `CommandEndPoint` нет.
 
 2. **Компаньон получает два входа.**
 
@@ -477,12 +487,10 @@
 ```text
 STT / PTT
 → UserInputEvent
-→ companionModeOn gate
+→ CompanionSubsystemGate
 → ThoughtDispatcher
 → COMMANDER thought
 ```
-
-Если `companionModeOn = false`, голосовой ввод обслуживает старый command mode.
 
 #### Событийный вход — единственная дверь `CompanionNarrator`
 
@@ -509,7 +517,7 @@ subscriber (проверил тумблер, напр. isMiningAnnouncementOn)
 → ThoughtDispatcher.submitEventVerbatim → EventThought (verbatim)
 ```
 
-Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются в самом subscriber'е до вызова. Legacy `VocalisationRouter` этих объявлений больше не маршрутизирует (их события удалены); radio-трансмиссия остаётся на legacy-пути и в память не попадает. Если `companionModeOn = false`, наррратор — `NO_OP`, реакция просто отбрасывается.
+Тумблеры объявлений (`isMiningAnnouncementOn`, `isDiscoveryAnnouncementOn`, `isRouteAnnouncementOn`, `isRadarContactAnnouncementOn`) проверяются в самом subscriber'е до вызова. Legacy `VocalisationRouter` этих объявлений больше не маршрутизирует (их события удалены); radio-трансмиссия остаётся на legacy-пути и в память не попадает.
 
 ---
 
@@ -613,7 +621,7 @@ gameStateSnapshot = flags + flags2 + fighterOut (COMMANDER)
 
 #### COMMANDER thought
 
-Каждый ход командира LLM вызывает `classify_turn` ровно один раз: он несёт `topic` (тема хода) и `importance` (важность хода для памяти). Тема — глобальная и липкая, меняется **только** через `classify_turn`; важность — пер-ход (штампует записи этого хода, не сохраняется как state). Реплики командира пишутся в память под текущей глобальной темой и с выбранной важностью.
+Каждый ход командира LLM вызывает `classify_turn` ровно один раз: он несёт `topic`, `importance`, `is_question` и `canonical_fact`. Тема — глобальная и липкая, меняется **только** через `classify_turn`; важность — пер-ход. Host оставляет fact text только у не-вопроса с `importance=HIGH`, если этот ход не вызвал game action и модель прислала непустой canonical. Canonical обязан иметь exact meaningful-token overlap с текущей репликой; при ungrounded copy host использует исходную HIGH-реплику. `NORMAL`/`LOW`, вопросы и game-action turns получают пустой canonical независимо от ответа модели. `MAX` хранит исходную реплику дословно.
 
 Если `classify_turn(validTopic, importance)`:
 
@@ -802,7 +810,9 @@ Repair/retry может использовать только исходный r
 * queued cancelled request → удалить/пропустить;
 * in-flight cancelled request → прервать физическую задачу и HTTP exchange;
 * transport завершился в гонке с отменой → discard result, diagnostics;
-* один 50-секундный logical deadline покрывает очередь и все repair/continuation attempts вместе;
+* transient network/IO, `429` или `5xx` → одна повторная отправка с jitter; `400`/`401`/`403` → terminal `INVALID_RESPONSE` без protocol repair;
+* malformed `2xx` body → обычный model/protocol repair, а не transport resend;
+* один 50-секундный logical deadline покрывает очередь, все repair/continuation attempts и transient resend вместе;
 * result cancelled request не попадает:
 
     * в Thought;
@@ -810,6 +820,12 @@ Repair/retry может использовать только исходный r
     * в SpeechGateway;
     * в MemoryGateway;
     * в TopicModel.
+
+#### Transport failure
+
+`LlmGateway` получает от provider transport не error-JSON, а `AiTransportResult`.
+Только transient network/IO, `429` и `5xx` получают одну jittered повторную отправку; auth, authorization и request-shape
+ошибки не повторяются и не превращаются в model repair. Низкоуровневый текст transport-ошибки не озвучивается.
 
 #### Invalid response
 
@@ -1590,13 +1606,16 @@ COMMANDER thought получает:
 
 ```text
 speak
+request_input
 search_in_memory
 classify_turn
 ```
 
+`request_input` добавляется условно: только если хотя бы один reducer-selected game-tool этого хода содержит параметр с `required=true`. Для набора только из беспараметрических или optional-only tools модель его не видит.
+
 #### `speak`
 
-Озвучить текст через SpeechGateway — сообщить/ответить или **задать вопрос** командиру (его ответ приходит следующей репликой). Отдельной функции `clarify` больше нет: уточнение — это `speak` с вопросом; ожидание ответа (suspend хода до реплики командира) — будущая фича уровня thought/dispatcher, а не отдельный tool.
+Озвучить текст через SpeechGateway — сообщить/ответить, выразить мнение, разобрать неоднозначность между действиями или честно отказаться от неподдерживаемой просьбы. Обычный `speak` никогда не открывает ожидание следующей реплики: вопрос в его тексте не является машинным control-сигналом.
 
 Может иметь marker:
 
@@ -1605,6 +1624,26 @@ confirmation_request
 ```
 
 Только такой speak проходит сразу при frozen dangerous set.
+
+#### `request_input`
+
+COMMANDER-only settling function для ровно одного отсутствующего обязательного аргумента уже подобранного game-tool:
+
+```text
+request_input(action_id, parameter_name, question)
+```
+
+`action_id` обязан совпасть с game-tool из точного offered snapshot этого хода, `parameter_name` — с его обязательным параметром, `question` — непустая реплика на активном языке. Даже после условной выдачи это остаётся обязательной host-side проверкой: model output не считается доверенным. Валидация и переход состояния принадлежат `CommanderThought`; сам `RequestInputFunction.handle` metadata-only и не имеет side effect. При успехе thought озвучивает и записывает вопрос, открывает один `PendingClarification(actionId, parameterName, originalInput, question, expiresAt)` и нормально завершается — cognitive worker не блокируется.
+
+Следующая непустая реплика атомарно забирает pending в свой `ThoughtContext`. Обычный reducer по-прежнему подбирает новые команды из новой фразы; прежний target отдельно заново находится по id в текущем видимом каталоге и, если ещё доступен, добавляется к tool snapshot. В prompt pending передаётся как trusted `<pending_clarification>`, отдельно от `<commander_input>`:
+
+- ответ содержит параметр → вызвать прежний target с полной схемой;
+- новая команда явно совпала с другим offered tool → вызвать её, прежний pending считается вытесненным;
+- отмена/смена темы → `speak`, pending закрыт;
+- данных всё ещё недостаточно → новый `request_input`, заменяющий slot;
+- target больше не видим → `speak` о недоступности, без исполнения.
+
+Pending живёт не более 60 секунд, принадлежит одной runtime generation и не хранится как conversation memory. История хранит только реальные слова командира и вопрос компаньона.
 
 #### `search_in_memory`
 
@@ -1733,8 +1772,15 @@ Timeout/interrupted:
 ### §5.4. Invalid LLM flow
 
 ```text
-LlmGateway receives invalid model response
-→ retry/repair once if token cost below threshold
+LlmGateway receives transient HTTP/network failure
+→ resend once with jitter
+→ if still failed: INVALID_RESPONSE
+
+LlmGateway receives permanent HTTP failure
+→ INVALID_RESPONSE without protocol repair
+
+LlmGateway receives invalid model response or malformed 2xx body
+→ protocol repair once if token cost below threshold
 → if still invalid: INVALID_RESPONSE
 ```
 
@@ -1813,7 +1859,6 @@ In-flight cancelled requests:
 
 ### §6.2. Новое
 
-* `companionModeOn` gate.
 * `ThoughtDispatcher` (lane на источник, `EnumMap`) + `ThoughtLane`.
 * `Thought` (abstract) + `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы).
 * рефлекс-гейт: `ReflexResolver` (`submitCommanderInput`: дословная безопасная беспараметрная команда → `ReflexThought` без ЛЛМ).
@@ -1846,7 +1891,6 @@ In-flight cancelled requests:
 
 ### §7.1. Под read-only разведку кода
 
-* Где лучше поставить `companionModeOn` gate на текущей EventBus-схеме.
 * Какие `BaseEvent` типы пропускать через `EventFilter`.
 * Какие event types считать urgent.
 * Какие voice phrases считать urgent commander phrases.
@@ -1909,14 +1953,13 @@ In-flight cancelled requests:
 ```text
 STT/PTT
 → UserInputEvent
-→ companionModeOn gate
+→ CompanionSubsystemGate
 → ThoughtDispatcher
 → COMMANDER thought
 
 Journal/Status events
-→ companionModeOn gate
-→ EventFilter
-→ ThoughtDispatcher
+→ gameplay subscriber
+→ CompanionNarrator
 → EVENT thought
 
 Thought
@@ -2032,7 +2075,7 @@ v0.13 основана на прогоне правдоподобных сцен
 
 | Концепт в документе | Класс в коде | Пакет |
 |---|---|---|
-| companionModeOn gate | `CompanionSubsystemGate` | `companion.input` |
+| commander input gate / lifecycle owner | `CompanionSubsystemGate` | `companion.input` |
 | дверь событий (filler/narrate/announce) | `CompanionNarrator` (интерфейс) / `DispatcherCompanionNarrator` (impl) | `companion` / `companion.mind` |
 | origin мысли | `ThoughtSource` (COMMANDER/EVENT) | `companion.model` |
 | вид мысли (один на источник) | `CommanderThought` / `ReflexThought` / `EventThought` (narration/verbatim режимы) (abstract `Thought`) | `companion.mind` |
@@ -2085,6 +2128,8 @@ elite.intel.companion
 ├─ execution            ExecutionGateway, CompanionExecutionGateway, GenerationBoundExecutionGateway
 ├─ memory               MemoryGateway, SessionMemoryGateway,
 │                       ShortTermMemory, MidTermTopicMemory, LongTermMemory, LlmMemory, MidTermToLongTermConsolidator
+│  └─ facts             MemoryFactSource, LocalizedFactRelevance, MemoryFactGatherer,
+│                       MergedFactCandidates, current-state fact sources
 └─ confirm              DangerousActionConfirmedEvent
 ```
 
@@ -2103,6 +2148,7 @@ elite.intel.companion
   * **Описание игрового tool — авторская английская суть (`llmDescription`) + английские тренировочные фразы.** Описание для провайдера = `IntelAction.llmDescription()` (короткая английская фраза назначения) **плюс английские тренировочные фразы команды** (из английской alias-карты, `{key:…}`-аннотации срезаются) — конкретные образцы для сопоставления (`GameToolCandidates.appendEnglishPhrases`). Английское описание стабилизирует схему и кэш, но `CommanderPrompt` требует выбирать функцию по исходной формулировке командира и не переводить её на английский. **Локализованные** фразы в описание не идут — они через `phraseKey` кандидата кормят только **редьюсер**. Системные функции описываются так же через `llmDescription()`; тренировочных фраз у них нет. Параметры: `examples`/`extractionHint` из `ActionParameterSpec` сворачиваются в `description` параметра JSON-схемы (`OpenAiCompatibleLlmAdapter`) — иначе модель их не видит (был баг: `target drive` уходил в уточняющий вопрос вместо команды). Синтетический префикс «Game action `<id>`» убран.
 * **System-prompt steering (`CommanderPrompt`).** COMMANDER-промпт требует только tool calls: initial `assistant(tool_calls)` должен содержать сначала `classify_turn`, затем ровно один settling call; metadata-only результат классификации не нужен для выбора settling call, поэтому ждать его запрещено. Отдельный tool-result может явно запросить ровно один отсутствующий protocol call; это request-local fallback `CompanionLlmGateway` для classify-only или settling-only provider deviation, а не обычный initial flow. Лестница выбора берёт первый подходящий пункт: (1) offered action/query/macro, который явно соответствует намерению; (2) уже инлайненный `<fact>`, если никакой offered tool не может получить ответ; (3) `memory_search`, если командир явно просит вспомнить, перечислить или посчитать память и query offered; (4) `speak` для разговора, пояснения, неоднозначности или неподдерживаемого запроса. `CommanderThought` однораундовый: `memory_search`, как любой QUERY, озвучивает свой data-grounded outcome напрямую через `recordOutcome`, без второго LLM-раунда.
 * **Semantic routing and reduction.** `ThoughtDispatcher` сначала пробует точный `ReflexResolver`, затем `SemanticReflexResolver`. Обе стадии получают один `GameStateSnapshot`; уверенный безопасный беспараметрный матч создаёт `ReflexThought`, а во всех остальных случаях snapshot и входной `SemanticQuery` остаются в `ThoughtContext`. `SemanticActionReducer` использует тот же snapshot для видимости и тот же вектор для shortlist игровых tools; pre-turn memory recall использует вектор для fact candidates. Если embedding недоступен или inference падает, reducer передаёт snapshot своему `WordOverlapActionReducer` fallback, а recall деградирует к word-only пути. EVENT не получает игровых tools.
+* **Pre-turn facts — только релевантный trusted context.** `MemoryFactCandidates` допускает из командирской памяти только `HIGH` с непустым host-grounded fact text и дословный `MAX`; обычные `NORMAL` команды/обмены и любые game-action turns остаются в timeline, но не превращаются в `<fact>`. Ungrounded HIGH canonical заменяется текущей исходной репликой, а не чужим remembered fact. `EVENT` сохраняет прежний relevance-ranked путь. Current-state plugins больше не unconditional: каждый зарегистрированный `MemoryFactSource` сам реализует `isRelevant(MemoryFactContext)` и выбирает существующие локализованные query-alias groups, которые описывают его предметную область. `MemoryFactGatherer` ничего не знает о system/station/body и только спрашивает источники; `LocalizedFactRelevance` — общий phrase-matching primitive без каталога sources и без source-specific property keys. Semantic similarity не может добавить trusted context: compressed score band давал false positives на обычной болтовне. При неуверенности ambient fact пропускается; дополнительных embedding/LLM-round нет. `MergedFactCandidates` затем объединяет ambient facts с durable memory под прежними caps/dedup.
 * **LLM provider seam:** провайдер-специфичный рендер/разбор — `LlmProviderAdapter`. Общий OpenAI-совместимый рендер/парсинг живёт в базовом `OpenAiCompatibleLlmAdapter`; тонкие per-provider impl'ы задают только модель, `tool_choice` и `prompt_cache_key`: `MistralLlmAdapter` (cloud — `any`, с cache key) и `LmStudioLlmAdapter` (local LM Studio — `required`, без cache key). Это бывш. `CompanionLlmDialect`/`MistralToolCallDialect`, переименованы. У `LlmGateway` две операции: `submit` (tool-calling сознания) и `compressMidTermMemory(LlmRequest) → CompletableFuture<String>` (текстовый ответ для сжатия памяти; адаптер даёт `parseText`, тело — тот же `buildRequestBody` с пустыми `tools`).
 * **Long-term память реализована:** `LongTermMemory` (холдер), `MidTermTopicMemory.evictOverflow` (per-topic cap), `MidTermEvictionListener` (гейтвей отдаёт overflow, сам LLM не зовёт) и `MidTermToLongTermConsolidator` (буфер→порог→`compressMidTermMemory`→валидация `SUMMARY_MAX_CHARS`→atomic `replaceLongTermSummary`; провал → буфер потерян, summary цела, `SpeechGateway` system-notification). Все лимиты памяти — в `CompanionMemoryLimits`. Подключение listener'а к гейтвею — при bootstrap (`CompanionSubsystemGate`).
 * **Итог tool-call по типу действия (`Thought.recordOutcome`).** Тип резолвит `IntelActionTypeResolver` (`companion.tools`, инжектируемый тест-сим) → `COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN`. `recordOutcome` озвучивает исход **напрямую** (без `AiVoxResponseEvent` — это событие теперь только системное). **COMMAND** получает immediate accepted-ack, исполняется на serialized action lane, а непустой поздний outcome озвучивается/пишется `[COMPANION]` под frozen topic. **QUERY** исполняется в bounded parallel pool; пока pending, исходный turn закрыт `<processing/>`, затем CALL и `[TOOL_RESULT]` добавляются одной completion-секцией. **MACRO** — serialized action lane и свои SPEAK-шаги. **SYSTEM/UNKNOWN** — речь и timeline не трогаем. После interrupt late result отбрасывается. `silentInCompanion()` удалён.

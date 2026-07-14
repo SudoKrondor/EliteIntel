@@ -2,6 +2,7 @@ package elite.intel.ai.brain.inference.ollama;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -109,6 +110,17 @@ public class OllamaClient extends BaseAiClient implements Client {
                 .build();
     }
 
+    /** Sends an OpenAI-compatible companion request without converting a transport failure into legacy speech JSON. */
+    public synchronized AiTransportResult sendCompanionOpenAiChatRequest(String request) {
+        long t0 = System.nanoTime();
+        UiBus.publish(new AppLogEvent("Ollama request -> model: " + requestedModel(request)));
+        AiTransportResult outcome = sendTransportRequest(buildOpenAiCompatibleRequest(request));
+        if (outcome instanceof AiTransportResult.Success success) {
+            reportOpenAiCompatibleResponse(success.response(), System.nanoTime() - t0);
+        }
+        return outcome;
+    }
+
     /**
      * Sends an OpenAI-compatible chat-completions body to Ollama's {@code /v1/chat/completions} endpoint and
      * returns the raw OpenAI-shaped response. Companion mode uses this (not the native {@code /api/chat} path
@@ -121,7 +133,11 @@ public class OllamaClient extends BaseAiClient implements Client {
         // confirm the configured value was honoured).
         UiBus.publish(new AppLogEvent("Ollama request -> model: " + requestedModel(request)));
         JsonObject response = super.sendJsonRequest(buildOpenAiCompatibleRequest(request));
-        long elapsed = System.nanoTime() - t0;
+        reportOpenAiCompatibleResponse(response, System.nanoTime() - t0);
+        return response;
+    }
+
+    private void reportOpenAiCompatibleResponse(JsonObject response, long elapsed) {
         LlmMetadata meta = GsonFactory.getGson().fromJson(response, LlmMetadata.class);
         UiBus.publish(new AppLogEvent("Ollama: " + LlmMetadata.describe(meta)));
         if (meta != null && meta.usage() != null) {
@@ -130,7 +146,6 @@ public class OllamaClient extends BaseAiClient implements Client {
                     meta.usage().promptTokens(), meta.usage().completionTokens(), 0, 0,
                     wallClockTps(elapsed, meta.usage().completionTokens())));
         }
-        return response;
     }
 
     /**

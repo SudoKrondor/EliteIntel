@@ -63,6 +63,7 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("same-message rules apply to the initial"));
         assertFalse(text.contains("wait for its tool result, then emit"));
         assertTrue(text.contains("never use speak to acknowledge, promise, or describe the matching"));
+        assertTrue(text.contains("speak does not open a continuation; only request_input does"));
     }
 
     @Test

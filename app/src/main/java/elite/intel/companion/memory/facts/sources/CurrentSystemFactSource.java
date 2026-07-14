@@ -1,5 +1,6 @@
 package elite.intel.companion.memory.facts.sources;
 
+import elite.intel.companion.memory.facts.LocalizedFactRelevance;
 import elite.intel.companion.memory.facts.MemoryFactContext;
 import elite.intel.companion.memory.facts.MemoryFactSource;
 import elite.intel.companion.memory.facts.RegisterMemoryFactSource;
@@ -16,18 +17,21 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Always-on fact source for the current star system, grounding the companion in where the commander is. While
+ * Query-relevant fact source for the current star system, grounding the companion in where the commander is. While
  * travelling the system (supercruise or deep space) it gives the system's full character (allegiance, security,
  * economy, population, controlling power); once focused on a body or station - where {@link CurrentBodyFactSource}
  * (and later a station source) carry the detail - it shrinks to a short grounding line (system, allegiance, security)
- * so the two coexist without crowding the lean block. It ignores the query, contributes a single compact,
- * length-capped line, and stays silent when the current system is unknown.
+ * so the two coexist without crowding the lean block. The source admits itself for current-location/system-security
+ * subjects; it contributes a single compact line and stays silent when the current system is unknown.
  */
 @RegisterMemoryFactSource
 public final class CurrentSystemFactSource implements MemoryFactSource {
 
     /** Provenance label for the {@code <fact source="...">} attribute. */
     private static final String ID = "system";
+    private static final List<String> RELEVANCE_ALIAS_KEYS = List.of(
+            "query_current_location",
+            "query_system_security");
 
     /**
      * Situations where the system itself is the commander's frame, so the full system line is warranted. Anything else
@@ -44,6 +48,11 @@ public final class CurrentSystemFactSource implements MemoryFactSource {
     @Override
     public String id() {
         return ID;
+    }
+
+    @Override
+    public boolean isRelevant(MemoryFactContext context) {
+        return LocalizedFactRelevance.matches(context, 2, RELEVANCE_ALIAS_KEYS);
     }
 
     @Override

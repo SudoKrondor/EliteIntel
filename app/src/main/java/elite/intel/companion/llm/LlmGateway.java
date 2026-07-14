@@ -7,8 +7,9 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The single door to the language models for companion mode. Queues {@code LlmRequest}s (never
- * {@code Thought}s), performs native tool-calling, and enforces the tool-call-only contract with a
- * single repair/retry before reporting {@code INVALID_RESPONSE}.
+ * {@code Thought}s), performs native tool-calling, and enforces the tool-call-only contract with one protocol
+ * repair for invalid model output. A transient HTTP failure gets at most one jittered resend; permanent
+ * transport failures report {@code INVALID_RESPONSE} without a protocol repair.
  * <p>
  * Threading: implementations are asynchronous and return immediately with a future.
  * <p>

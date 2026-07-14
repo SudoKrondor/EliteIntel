@@ -74,12 +74,12 @@ public final class ClassifyTurnFunction implements SystemFunction {
                         List.of(), null),
                 new ActionParameterSpec(PARAM_CANONICAL_FACT, "string", true,
                         "A short clean sentence in the commander's language stating a durable fact from the "
-                                + "commander's current phrase, for later recall - use it for any fact worth recalling "
-                                + "(a name, plan, target, codeword, agreement, place, or role), whatever importance you "
-                                + "assigned. Return an empty string, nothing else (no quote characters), for "
-                                + "chatter, questions, action commands, "
-                                + "acknowledgements, and 'max' remember-word-for-word orders (a max fact is kept "
-                                + "verbatim). Never copy or summarise your own earlier replies. Never include "
+                                + "commander's current phrase, for later recall. Set it only when importance is 'high' "
+                                + "and the phrase states a durable fact (a name, plan, target, codeword, agreement, "
+                                + "place, or role). Return an empty string, nothing else (no quote characters), for "
+                                + "low, normal, or max importance, questions, chatter, action commands, and "
+                                + "acknowledgements. A max remember-word-for-word order is kept verbatim from the "
+                                + "original input. Never copy or summarise your own earlier replies. Never include "
                                 + "acknowledgement words like 'understood' or 'noted'. Do not invent names, numbers, "
                                 + "codes, locations, or values. If unsure, leave it empty.",
                         List.of(), null)

@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Theme (Russian): the current-system fact source. Seeds a known current system (Sol, Federation, high security) into
  * the live game state, then asks the companion about it. Recorder-style: hard-asserts only that the live model was
- * reached and the source produced a fact directly; traces the registered-source count, the source output, whether the
- * fact reached the {@code <facts>} block, and whether the model answered from it or via a {@code query_*}. Opt-in;
+ * reached and the source produced a fact directly; traces whether relevance selection keeps the system fact while
+ * dropping the unrelated commander profile, and whether the model answers from it or via a {@code query_*}. Opt-in;
  * LM Studio must be up, and (per localIntegrationTest) the app DB is the real one, so the seed is best-effort.
  */
 @Tag("local-integration")
@@ -60,6 +60,7 @@ class LocationFactsEvalTest {
         // The fact reaches the prompt via the same path PromptComposer inlines: memory core + gathered source facts.
         List<Fact> blockFacts = MergedFactCandidates.forInput(h.memory(), MemoryFactContext.forQuery("в какой мы системе"));
         boolean inBlock = blockFacts.stream().anyMatch(f -> f.text().toLowerCase(Locale.ROOT).contains("current system sol"));
+        boolean profileInBlock = blockFacts.stream().anyMatch(f -> "commander".equals(f.source()));
 
         h.beginTurn();
         h.say("в какой мы сейчас системе и насколько тут безопасно?");
@@ -69,12 +70,15 @@ class LocationFactsEvalTest {
         boolean queried = tools.stream().anyMatch(t -> t.startsWith("query_"));
 
         block.append(String.format("registered sources=%d%n source output=%s%n reaches <facts> block=%s (%s)%n"
+                        + "unrelated commander profile in block=%s%n"
                         + "injected <facts>(last body)=%s%n tools=%s | queried=%s%n -> %s%n",
-                registered, sourceFacts, inBlock, blockFacts, injected, tools, queried, h.spokenTexts()));
+                registered, sourceFacts, inBlock, blockFacts, profileInBlock,
+                injected, tools, queried, h.spokenTexts()));
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
         assertTrue(inBlock, "the current-system fact did not reach the <facts> candidate block: " + blockFacts);
+        assertFalse(profileInBlock, "an unrelated commander profile reached the system question: " + blockFacts);
     }
 
     private void seedSol() {

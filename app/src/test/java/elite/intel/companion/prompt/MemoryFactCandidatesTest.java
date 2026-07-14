@@ -17,19 +17,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MemoryFactCandidatesTest {
 
     @Test
-    void keepsCommanderFromNormalUpAndEventsWhileDroppingCompanionAndTraces() {
+    void keepsHighCanonicalMaxVerbatimAndEventsWhileDroppingRoutineCommanderLines() {
         MemoryGateway memory = new FakeMemory(List.of(
-                entry(MemorySource.COMMANDER, MemoryImportance.NORMAL, "поле зовётся бедлам", null),
+                entry(MemorySource.COMMANDER, MemoryImportance.NORMAL,
+                        "целься в двигатели", "целься в двигатели"),
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH,
+                        "наш связной — дельгадо", "связной — дельгадо"),
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH,
+                        "план пока не сформулирован", null),
+                entry(MemorySource.COMMANDER, MemoryImportance.MAX,
+                        "запомни дословно: сьерра девять", "код — сьерра девять"),
                 entry(MemorySource.COMMANDER, MemoryImportance.LOW, "тихо тут, красота", null),
                 entry(MemorySource.COMPANION, MemoryImportance.HIGH, "понял. поле бедлам. записано.", null),
                 entry(MemorySource.EVENT, MemoryImportance.NORMAL, "прибыли в систему вольф", null),
                 entry(MemorySource.TOOL_RESULT, MemoryImportance.MAX, "command add_mining_target executed", null),
                 entry(MemorySource.SYSTEM, MemoryImportance.NORMAL, "long-term summary", null)));
 
-        // Keep COMMANDER at NORMAL+ and EVENT; drop COMMANDER LOW banter, COMPANION acks, TOOL_RESULT, SYSTEM.
-        // Each surviving fact carries its provenance: a commander statement vs a game event.
         assertEquals(
-                List.of(new Fact("поле зовётся бедлам", "commander"),
+                List.of(new Fact("связной — дельгадо", "commander"),
+                        new Fact("запомни дословно: сьерра девять", "commander"),
                         new Fact("прибыли в систему вольф", "event")),
                 MemoryFactCandidates.forInput(memory, "что помним"));
     }
@@ -47,10 +53,10 @@ class MemoryFactCandidatesTest {
     @Test
     void capsAtThreeCandidates() {
         MemoryGateway memory = new FakeMemory(List.of(
-                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт один", null),
-                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт два", null),
-                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт три", null),
-                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт четыре", null)));
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт один", "факт один"),
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт два", "факт два"),
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт три", "факт три"),
+                entry(MemorySource.COMMANDER, MemoryImportance.HIGH, "факт четыре", "факт четыре")));
 
         assertEquals(3, MemoryFactCandidates.forInput(memory, "факты").size());
     }

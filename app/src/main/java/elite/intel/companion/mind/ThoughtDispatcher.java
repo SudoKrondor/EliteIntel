@@ -1,6 +1,8 @@
 package elite.intel.companion.mind;
 
+import elite.intel.ai.brain.i18n.PhoneticInputNormalizer;
 import elite.intel.companion.CompanionConfig;
+import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.GameStateSnapshot;
@@ -55,10 +57,10 @@ public final class ThoughtDispatcher implements ManagedService {
     private static final long WATCHDOG_INTERVAL_MILLIS = 5_000;
 
     /**
-     * Production input canonicalizer: identity. The legacy synonym-map normalizer was removed once it became a
-     * no-op; the {@link #inputNormalizer} seam is retained so a test can still inject a canonicalizing function.
+     * Production input canonicalizer: only per-language acoustic STT corrections. The {@link #inputNormalizer}
+     * seam is retained so a test can still inject a canonicalizing function.
      */
-    private static final Function<String, String> DEFAULT_NORMALIZER = Function.identity();
+    private static final Function<String, String> DEFAULT_NORMALIZER = PhoneticInputNormalizer::normalize;
 
     private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
@@ -79,9 +81,8 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     /**
-     * Canonicalizes commander input for command matching only (the reflex gate and the reducer/LLM prompt);
-     * memory keeps the raw words. Identity in production (the legacy synonym-map normalizer was removed);
-     * kept as an injectable seam so a test can pin a canonicalizing function.
+     * Canonicalizes commander input for command matching, LLM prompting, and conversational memory.
+     * Production applies only per-language acoustic STT corrections; the seam remains injectable for tests.
      */
     private final Function<String, String> inputNormalizer;
     private final long watchdogTimeoutMillis;
@@ -141,9 +142,9 @@ public final class ThoughtDispatcher implements ManagedService {
 
     /**
      * Accepts a commander reply and queues it on the commander lane. The input is first canonicalized by the
-     * {@link #inputNormalizer} (synonym map) - this is the form used for command matching only: the reflex
-     * gate and, on the LLM path, the reducer and the prompt's current-input. The raw words are passed through
-     * unchanged for memory. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
+     * {@link #inputNormalizer} (acoustic corrections only) - this is the form used for the reflex gate and, on
+     * the LLM path, the reducer, prompt current-input, and conversational memory. The raw words are retained for
+     * execution and intake diagnostics. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
      * matches a training phrase verbatim and resolves to exactly one safe, parameterless command becomes a
      * deterministic {@code ReflexThought} (no LLM); everything else becomes a full {@code CommanderThought}.
      */
@@ -152,26 +153,27 @@ public final class ThoughtDispatcher implements ManagedService {
             return;
         }
         long acceptedAtNanos = System.nanoTime();
+        PendingClarification pendingClarification = dependencies.clarificationCoordinator()
+                .claim().orElse(null);
         // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
         // must never re-read a changing player_status row independently.
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
-        // reflex fast-path and the LLM path (the reducer and the prompt's current-input). The name carries no
+        // reflex fast-path and the LLM path (the reducer, prompt current-input, and memory). The name carries no
         // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
-        // routed fine without it fell to a bare classify_turn with it. Memory still keeps the raw words: they are
-        // recorded from `input`, never from this normalized match text.
+        // routed fine without it fell to a bare classify_turn with it. Raw STT stays only in intake diagnostics
+        // and the execution request; the dialogue remembers the normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(
-                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot);
+                urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot)
+                .withPendingClarification(pendingClarification);
         dependencies.state().setLastCommanderMatchInput(matchInput); // observer snapshot only; this turn owns context
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
-        // Exact-alias reflex: try the commander's actual words FIRST, then the normalized form. The synonym
-        // normalizer canonicalizes for the reducer/LLM but can rewrite an exact alias into a phrase that is not
-        // itself an alias ("where are we" -> "what is our current location"), which would otherwise defeat the
-        // deterministic reflex for a phrase the commander said verbatim.
+        // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
+        // phrase keeps a deliberately authored alias authoritative if a correction ever overlaps with it.
         Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
         if (reflexCommand.isEmpty()) {
             reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
@@ -203,6 +205,12 @@ public final class ThoughtDispatcher implements ManagedService {
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
+        if (pendingClarification != null) {
+            String disposition = reflexCommand.isPresent() ? "superseded by reflex" : "claimed for continuation";
+            CompanionDiagnostics.debug(thought.trace(), "clarify",
+                    pendingClarification.actionId() + "." + pendingClarification.parameterName()
+                            + " " + disposition);
+        }
         if (semanticReflexMillis >= 0) {
             CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
         }
@@ -314,6 +322,7 @@ public final class ThoughtDispatcher implements ManagedService {
 
     @Override
     public synchronized void stop() {
+        dependencies.clarificationCoordinator().cancel();
         ScheduledExecutorService currentWatchdog = watchdog;
         watchdog = null;
         if (currentWatchdog != null) {

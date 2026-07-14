@@ -2,6 +2,8 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
+import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
+import elite.intel.ai.brain.i18n.LlmTextProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.IntelActionCategory;
@@ -18,13 +20,18 @@ import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
 import elite.intel.companion.prompt.PromptXml;
 import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.companion.tools.SystemFunctionResultFields;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
@@ -52,6 +59,8 @@ public abstract class Thought {
 
     /** Monotonic sequence backing the short per-thought {@link #trace} id, so concurrent lanes are told apart in the log. */
     private static final AtomicInteger TRACE_SEQ = new AtomicInteger();
+    /** Existing localized service phrase for a command/query/macro execution that could not complete. */
+    private static final String CANNOT_EXECUTE_KEY = "handler.common.cantDoNow";
 
     /** Stable per-thought diagnostic tag ({@code SOURCE#n}), correlating every SYSTEM LOG line of this one thought. */
     private final String trace;
@@ -94,8 +103,8 @@ public abstract class Thought {
     }
 
     /**
-     * As above, but with a separate canonical {@code matchInput} (e.g. the synonym-normalized form) used for
-     * tool selection and as the LLM-visible current input; memory still records the raw {@code input}.
+     * As above, but with a separate canonical {@code matchInput} (e.g. an STT-corrected form) used for
+     * tool selection, the LLM-visible current input, and commander memory; raw {@code input} stays with execution.
      */
     public static Thought commander(Urgency urgency, String input, String matchInput, ThoughtDependencies dependencies) {
         return commander(ThoughtContext.commander(urgency, input, matchInput), dependencies);
@@ -196,7 +205,7 @@ public abstract class Thought {
      * System tools offered to the LLM for this thought. An LLM-driven thought overrides this; a memory-only
      * thought never composes a prompt, so it inherits the empty default.
      */
-    protected List<LlmToolDefinition> systemTools() {
+    protected List<LlmToolDefinition> systemTools(List<LlmToolDefinition> gameTools) {
         return List.of();
     }
 
@@ -267,7 +276,7 @@ public abstract class Thought {
         long reducerStartedNanos = System.nanoTime();
         List<LlmToolDefinition> gameTools = selectedGameTools();
         long reducerMillis = elapsedMillis(reducerStartedNanos);
-        List<LlmToolDefinition> sysTools = systemTools();
+        List<LlmToolDefinition> sysTools = systemTools(gameTools);
         long timelineStartedNanos = System.nanoTime();
         List<MemoryEntry> timeline = dependencies.memoryGateway().readShortTermTimeline();
         long timelineMillis = elapsedMillis(timelineStartedNanos);
@@ -276,7 +285,8 @@ public abstract class Thought {
         long factsMillis = elapsedMillis(factsStartedNanos);
         long promptStartedNanos = System.nanoTime();
         ComposedPrompt composed = dependencies.promptComposer().compose(
-                source(), context.matchInput(), gameTools, sysTools, timeline, candidates);
+                source(), context.matchInput(), gameTools, sysTools, timeline, candidates,
+                context.pendingClarification());
         long promptMillis = elapsedMillis(promptStartedNanos);
         // The game-tool count and list are already owned by the reduce line (kept=N -> [...]) and the total sent is
         // owned by the llm request line (tools=N); compose reports only what it adds to the prompt - the system
@@ -307,10 +317,32 @@ public abstract class Thought {
         return List.of();
     }
 
-    /** The single point where game tools are formed: the thought's allowed categories reduced by the input. */
+    /**
+     * The single point where game tools are formed. Normal candidates are reduced from the current input; a
+     * claimed clarification target is re-resolved by id against this turn's visibility snapshot and prepended.
+     */
     private List<LlmToolDefinition> selectedGameTools() {
-        return dependencies.reducer().selectTools(
-                allowedCategories(), context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
+        Set<IntelActionCategory> categories = allowedCategories();
+        List<LlmToolDefinition> selected = dependencies.reducer().selectTools(
+                categories, context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
+        var pending = context.pendingClarification();
+        if (pending == null) {
+            return selected;
+        }
+
+        var target = dependencies.reducer().findToolById(
+                categories, pending.actionId(), context.gameStateSnapshot());
+        if (target.isEmpty()) {
+            CompanionDiagnostics.debug(trace, "clarify",
+                    "target unavailable in current state: " + pending.actionId());
+            return selected;
+        }
+
+        Map<String, LlmToolDefinition> merged = new LinkedHashMap<>();
+        merged.put(target.get().name(), target.get());
+        selected.forEach(tool -> merged.putIfAbsent(tool.name(), tool));
+        CompanionDiagnostics.debug(trace, "clarify", "re-offered target " + pending.actionId());
+        return List.copyOf(merged.values());
     }
 
     private static long elapsedMillis(long startedNanos) {
@@ -335,11 +367,22 @@ public abstract class Thought {
         }
         long executionStartedNanos = System.nanoTime();
         CompletableFuture<JsonObject> future = dependencies.executionGateway()
-                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), context.currentInput(),
+                .submit(new ExecutionRequest(newId(), inv.name(), inv.arguments(), executionInputFor(inv),
                         dependencies.runtimeGeneration().generationId()));
         future.whenComplete((ignored, failure) -> CompanionDiagnostics.debug(trace, "exec-time",
                 inv.name() + "=" + elapsedMillis(executionStartedNanos) + " ms"));
         return future;
+    }
+
+    /**
+     * Gives a resumed target both the originating order and the terse parameter reply. A superseding action sees
+     * only the current words, so handler-level fallback parsing cannot accidentally inherit the abandoned order.
+     */
+    private String executionInputFor(LlmToolInvocation inv) {
+        var pending = context.pendingClarification();
+        return pending != null && pending.actionId().equals(inv.name())
+                ? pending.originalInput() + "\n" + context.currentInput()
+                : context.currentInput();
     }
 
     /** Runs one tool-call via the execution gateway; a failed call becomes an error result the LLM can read. */
@@ -363,23 +406,23 @@ public abstract class Thought {
         return error;
     }
 
-    /** Records the current input (verbatim ground truth) under the resolved topic before tool-calls run (§2.6). */
+    /** Records the memory-visible input under the resolved topic before tool-calls run (§2.6). */
     protected void recordCurrentInput() {
         if (!isRuntimeActive()) {
             return;
         }
         String canonical = memoryCanonicalFact();
-        // The verbatim input is already shown by the intake line; log only that it was filed and under which stamp.
+        // The raw intake is already shown by the intake line; commander memory keeps its STT-corrected wording.
         CompanionDiagnostics.debug(trace, "memory",
                 "record input [" + memoryTopic() + "/" + memoryImportance() + "]");
         writeMemory(new MemoryEntry(
-                Instant.now(), memoryTopic(), memorySource(), context.currentInput(), memoryImportance(),
+                Instant.now(), memoryTopic(), memorySource(), context.memoryInput(), memoryImportance(),
                 null, canonical == null || canonical.isBlank() ? null : canonical));
     }
 
     /**
      * Optional clean one-line restatement of a durable fact stated this turn, used only as the memory
-     * candidate/embedding text (the verbatim input stays the ground truth). Empty by default; a COMMANDER
+     * candidate/embedding text (the memory-visible input remains the normalized commander wording). Empty by default; a COMMANDER
      * thought supplies it from {@code classify_turn}.
      */
     protected String memoryCanonicalFact() {
@@ -430,8 +473,9 @@ public abstract class Thought {
      * A <b>command</b> declares its outcome in the result too (its {@code execute} return value, wrapped by
      * {@code IntelCommand#handle}); a command turn files no call to pair with, so its outcome is remembered as a
      * free-standing companion line. A <b>macro</b> stays
-     * self-narrating (its SPEAK steps carry completion futures), so its outcome is not handled here. {@code SYSTEM}
-     * functions leave no timeline entry.
+     * self-narrating (its SPEAK steps carry completion futures), so only its failure is handled here. A failed
+     * command/query/macro receives a fixed localized failure reply when its handler provided no own text.
+     * {@code SYSTEM} functions leave no timeline entry.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
                                  String toolCallId) {
@@ -440,20 +484,28 @@ public abstract class Thought {
         }
         switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
-                String answer = spokenTextOf(result);
+                String answer = spokenOutcomeText(result);
                 if (!answer.isBlank()) {
                     recordToolResult(toolCallId, answer);  // RESULT half, paired with the recorded CALL
                     voice(answer, false);
                 }
             }
             case COMMAND -> {
-                String outcome = spokenTextOf(result);
+                String outcome = spokenOutcomeText(result);
                 if (!outcome.isBlank()) {
                     recordCompanionSpeech(outcome);        // free-standing line: a command turn files no call to pair
                     voice(outcome, false);
                 }
             }
-            case MACRO -> { /* self-narrating: SPEAK steps carry completion futures; handled on their own path */ }
+            case MACRO -> {
+                // Successful macros narrate their own SPEAK steps. A failed macro otherwise has no user-visible
+                // completion at all, so publish the shared failure phrase instead.
+                if (isExecutionFailure(result)) {
+                    String failure = spokenOutcomeText(result);
+                    recordCompanionSpeech(failure);
+                    voice(failure, false);
+                }
+            }
             case SYSTEM, UNKNOWN -> { /* no speech, no timeline entry; the result only feeds the flow */ }
         }
     }
@@ -500,7 +552,7 @@ public abstract class Thought {
         if (!isRuntimeActive()) {
             return false;
         }
-        String answer = spokenTextOf(result);
+        String answer = spokenOutcomeText(result);
         if (answer.isBlank()) {
             return false;
         }
@@ -512,7 +564,27 @@ public abstract class Thought {
 
     /** The handler-provided spoken text in a tool result, or empty when absent. */
     protected static String spokenTextOf(JsonObject result) {
-        return JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+        return result == null ? "" : JsonUtils.getAsStringOrEmpty(result, AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+    }
+
+    /**
+     * Returns the handler-provided reply, or the localized failure phrase for an error result that supplied no
+     * speakable text. This keeps execution details in diagnostics while the commander always receives a clear
+     * outcome.
+     */
+    protected static String spokenOutcomeText(JsonObject result) {
+        String handlerText = spokenTextOf(result);
+        return !handlerText.isBlank() || !isExecutionFailure(result) ? handlerText : executionFailurePhrase();
+    }
+
+    private static boolean isExecutionFailure(JsonObject result) {
+        return result != null && result.has(SystemFunctionResultFields.ERROR);
+    }
+
+    /** Returns the fixed localized phrase used when a command, query, or macro execution fails. */
+    protected static String executionFailurePhrase() {
+        Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
+        return LlmTextProvider.getText(language, CANNOT_EXECUTE_KEY);
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */

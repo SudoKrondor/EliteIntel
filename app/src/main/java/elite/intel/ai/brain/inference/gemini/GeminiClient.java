@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.inference.gemini;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.BaseAiClient;
 import elite.intel.ai.brain.Client;
 import elite.intel.eventbus.UiBus;
@@ -62,11 +63,26 @@ public class GeminiClient extends BaseAiClient implements Client {
         return sendJsonRequest(request);
     }
 
+    /** Sends a companion request for the supplied model without converting a transport failure into legacy speech JSON. */
+    public AiTransportResult sendCompanionRequest(String request, String model) {
+        this.currentModel = model;
+        long t0 = System.nanoTime();
+        AiTransportResult outcome = sendTransportRequest(buildRequest(request));
+        if (outcome instanceof AiTransportResult.Success success) {
+            reportResponse(success.response(), System.nanoTime() - t0);
+        }
+        return outcome;
+    }
+
     @Override
     public JsonObject sendJsonRequest(String request) {
         long t0 = System.nanoTime();
         JsonObject response = super.sendJsonRequest(buildRequest(request));
-        long elapsed = System.nanoTime() - t0;
+        reportResponse(response, System.nanoTime() - t0);
+        return response;
+    }
+
+    private void reportResponse(JsonObject response, long elapsed) {
         if (response != null && response.has("usageMetadata")) {
             JsonObject usage = response.getAsJsonObject("usageMetadata");
             int promptTokens = usage.has("promptTokenCount") ? usage.get("promptTokenCount").getAsInt() : 0;
@@ -77,7 +93,6 @@ public class GeminiClient extends BaseAiClient implements Client {
             UiBus.publish(new LlmUsageEvent("Gemini", currentModel, promptTokens, candidateTokens, cachedTokens, 0,
                     wallClockTps(elapsed, candidateTokens)));
         }
-        return response;
     }
 
     private HttpRequest buildRequest(String body) {

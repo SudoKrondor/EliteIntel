@@ -3,6 +3,7 @@ package elite.intel.companion.llm;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
@@ -115,6 +116,26 @@ class CompanionLlmGatewayTest {
         return new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
     }
 
+    private static LlmTransport outcomeTransport(AtomicInteger calls, AiTransportResult... scriptedOutcomes) {
+        Deque<AiTransportResult> outcomes = new ArrayDeque<>(List.of(scriptedOutcomes));
+        return new LlmTransport() {
+            @Override
+            public JsonObject send(String requestBody) {
+                throw new UnsupportedOperationException("Typed transport outcome is required");
+            }
+
+            @Override
+            public AiTransportResult sendOutcome(String requestBody) {
+                calls.incrementAndGet();
+                AiTransportResult next = outcomes.pollFirst();
+                if (next == null) {
+                    throw new AssertionError("Unexpected extra transport call");
+                }
+                return next;
+            }
+        };
+    }
+
     private LlmResult run(LlmProviderAdapter adapter) throws Exception {
         return run(adapter, request());
     }
@@ -144,6 +165,48 @@ class CompanionLlmGatewayTest {
         assertFalse(result.isValid());
         assertEquals(LlmResult.Status.INVALID_RESPONSE, result.status());
         assertEquals(2, sends.get());
+    }
+
+    @Test
+    void permanentTransportFailureDoesNotEnterProtocolRepair() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = outcomeTransport(calls,
+                AiTransportResult.failure(AiTransportResult.FailureKind.PERMANENT, 401, "invalid API key"));
+
+        LlmResult result = new CompanionLlmGateway(
+                new ScriptedAdapter(ok("speak")), transport, Runnable::run).submit(request()).get();
+
+        assertFalse(result.isValid());
+        assertEquals(1, calls.get(), "an authentication failure must not be retried as malformed model output");
+    }
+
+    @Test
+    void transientTransportFailureRetriesOnceBeforeParsingTheResponse() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = outcomeTransport(calls,
+                AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, 429, "rate limited"),
+                AiTransportResult.success(new JsonObject()));
+
+        LlmResult result = new CompanionLlmGateway(
+                new ScriptedAdapter(ok("speak")), transport, Runnable::run).submit(request()).get();
+
+        assertTrue(result.isValid());
+        assertEquals(2, calls.get(), "a transient transport failure receives exactly one delayed retry");
+    }
+
+    @Test
+    void malformedTransportResponseUsesTheExistingProtocolRepair() throws Exception {
+        AtomicInteger calls = new AtomicInteger();
+        LlmTransport transport = outcomeTransport(calls,
+                AiTransportResult.failure(AiTransportResult.FailureKind.MALFORMED_RESPONSE, 200,
+                        "response is not a JSON object"),
+                AiTransportResult.success(new JsonObject()));
+
+        LlmResult result = new CompanionLlmGateway(
+                new ScriptedAdapter(ok("speak")), transport, Runnable::run).submit(request()).get();
+
+        assertTrue(result.isValid());
+        assertEquals(2, calls.get(), "a malformed successful response still follows protocol repair");
     }
 
     @Test

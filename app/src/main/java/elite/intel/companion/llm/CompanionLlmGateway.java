@@ -1,6 +1,7 @@
 package elite.intel.companion.llm;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.llm.*;
@@ -22,14 +23,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * Provider-neutral {@link LlmGateway}: orchestrates render -> send -> parse via the injected
- * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does a
- * single repair/retry before reporting {@link LlmResult.Status#INVALID_RESPONSE}. A response is valid only when
- * it is one or more tool-calls whose names and arguments match the exact tool snapshot offered this turn.
+ * {@link LlmProviderAdapter} and {@link LlmTransport}, enforces the tool-call-only contract, and does one
+ * protocol repair for an invalid model response before reporting {@link LlmResult.Status#INVALID_RESPONSE}.
+ * A transient transport failure gets one jittered resend, while a permanent transport failure skips protocol
+ * repair. A response is valid only when it is one or more tool-calls whose names and arguments match the exact
+ * tool snapshot offered this turn.
  * <p>
  * It also enforces the classify-first protocol: when {@code classify_turn} is among the offered tools (a
  * classifying turn - narration never offers it), the completed logical result must contain exactly one
@@ -38,20 +42,22 @@ import java.util.stream.Collectors;
  * A provider may split either side of that pair into a second native tool-call round. A response containing only
  * {@code classify_turn}, or only one valid offered settling call, is therefore not repaired or executed. The
  * gateway replays that call with a truthful pending result, requests only the missing call, and returns the
- * expected classify-first pair to the thought. Other incomplete responses retain the single repair/retry. Every
+ * expected classify-first pair to the thought. Other incomplete responses retain the single protocol repair. Every
  * local protocol transcript is request-local and is never written to durable memory.
  * <p>
  * Threading: requests run on a single-thread executor (consciousness is serialized); {@link #submit}
  * returns immediately with a future. Cancelling that future interrupts the exact executor task and, through
  * the provider client's interruptible HTTP wait, cancels the physical exchange. One logical deadline covers
- * queue wait plus every repair/continuation attempt, so a stalled call cannot retain the sole worker beyond
- * the thought watchdog.
+ * queue wait plus every repair, continuation, and bounded transport resend, so a stalled call cannot retain the
+ * sole worker beyond the thought watchdog.
  */
 public final class CompanionLlmGateway implements LlmGateway {
 
     private static final Logger log = LogManager.getLogger(CompanionLlmGateway.class);
 
     private static final LlmResult INVALID = new LlmResult(LlmResult.Status.INVALID_RESPONSE, List.of());
+    private static final long TRANSIENT_RETRY_MIN_DELAY_MILLIS = 250;
+    private static final long TRANSIENT_RETRY_MAX_DELAY_MILLIS = 750;
     private final LlmProviderAdapter adapter;
     private final LlmTransport transport;
     private final Executor executor;
@@ -98,9 +104,12 @@ public final class CompanionLlmGateway implements LlmGateway {
             ensureActive();
             String body = adapter.buildRequestBody(request);
             ensureActive();
-            JsonObject response = transport.send(body);
+            AiTransportResult outcome = sendTransportWithTransientRetry(request, body, 1);
             ensureActive();
-            return adapter.parseText(response);
+            if (outcome instanceof AiTransportResult.Success success) {
+                return adapter.parseText(success.response());
+            }
+            return null;
         });
     }
 
@@ -180,7 +189,8 @@ public final class CompanionLlmGateway implements LlmGateway {
 
     /** What is wrong with a parsed response. {@link #NONE} means the response is ready for execution. */
     private enum Defect {
-        NONE, MISSING_CLASSIFY, MISSING_SETTLING, INVALID_TOOL_CALL, MALFORMED
+        NONE, MISSING_CLASSIFY, MISSING_SETTLING, INVALID_TOOL_CALL, MALFORMED,
+        TRANSIENT_TRANSPORT, PERMANENT_TRANSPORT, CANCELLED_TRANSPORT
     }
 
     /** Which tool-call shape the current physical LLM round must produce. */
@@ -190,12 +200,19 @@ public final class CompanionLlmGateway implements LlmGateway {
         CLASSIFY_AFTER_SETTLING
     }
 
-    /** A single send/parse round paired with the defect it was found to have. */
-    private record Attempt(LlmResult result, Defect defect) {}
+    /** A single send/parse round paired with its protocol defect or typed transport failure. */
+    private record Attempt(LlmResult result, Defect defect, AiTransportResult.Failure transportFailure) {
+        private boolean hasTransportFailure() {
+            return transportFailure != null;
+        }
+    }
 
     private LlmResult process(LlmRequest request) {
         ensureActive();
         Attempt firstAttempt = attempt(request, 1, RoundExpectation.INITIAL);
+        if (firstAttempt.hasTransportFailure()) {
+            return transportFailureResult(request, firstAttempt);
+        }
         if (firstAttempt.defect() == Defect.NONE) {
             return firstAttempt.result();
         }
@@ -220,6 +237,10 @@ public final class CompanionLlmGateway implements LlmGateway {
         LlmRequest repairedRequest = buildRepairRequest(request, firstAttempt);
         Attempt secondAttempt = attempt(repairedRequest, 2, RoundExpectation.INITIAL);
 
+        if (secondAttempt.hasTransportFailure()) {
+            return transportFailureResult(repairedRequest, secondAttempt);
+        }
+
         if (secondAttempt.defect() == Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#2 ok");
             return secondAttempt.result();
@@ -236,7 +257,7 @@ public final class CompanionLlmGateway implements LlmGateway {
         return INVALID;
     }
 
-    /** Runs one physical provider request and validates it for the expected position in the local tool flow. */
+    /** Runs one logical provider attempt and validates it for the expected position in the local tool flow. */
     private Attempt attempt(LlmRequest request, int attemptNumber, RoundExpectation expectation) {
         long attemptStartedNanos = System.nanoTime();
         String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
@@ -247,9 +268,16 @@ public final class CompanionLlmGateway implements LlmGateway {
             ensureActive();
             long renderMillis = elapsedMillis(renderStartedNanos);
             long httpStartedNanos = System.nanoTime();
-            JsonObject response = transport.send(body);
+            AiTransportResult outcome = sendTransportWithTransientRetry(request, body, attemptNumber);
             ensureActive();
             long httpMillis = elapsedMillis(httpStartedNanos);
+            if (outcome instanceof AiTransportResult.Failure failure) {
+                if (failure.kind() == AiTransportResult.FailureKind.MALFORMED_RESPONSE) {
+                    return new Attempt(INVALID, Defect.MALFORMED, null);
+                }
+                return new Attempt(INVALID, transportDefect(failure), failure);
+            }
+            JsonObject response = ((AiTransportResult.Success) outcome).response();
             long parseStartedNanos = System.nanoTime();
             LlmResult result = adapter.parse(response);
             ensureActive();
@@ -260,12 +288,61 @@ public final class CompanionLlmGateway implements LlmGateway {
                             + " http=" + httpMillis + " ms"
                             + " parse=" + parseMillis + " ms"
                             + " total=" + elapsedMillis(attemptStartedNanos) + " ms");
-            return new Attempt(result, defectOf(result, request, expectation));
+            return new Attempt(result, defectOf(result, request, expectation), null);
         } catch (RuntimeException failure) {
             CompanionDiagnostics.debug(trace, "llm-http",
                     "attempt=" + attemptNumber + " failed after " + elapsedMillis(attemptStartedNanos) + " ms");
             throw failure;
         }
+    }
+
+    /** Runs one delayed retry only for a typed transient transport failure, within the owning logical deadline. */
+    private AiTransportResult sendTransportWithTransientRetry(LlmRequest request, String body, int attemptNumber) {
+        AiTransportResult firstOutcome = transport.sendOutcome(body);
+        if (!(firstOutcome instanceof AiTransportResult.Failure failure)
+                || failure.kind() != AiTransportResult.FailureKind.TRANSIENT) {
+            return firstOutcome;
+        }
+        long delayMillis = ThreadLocalRandom.current().nextLong(
+                TRANSIENT_RETRY_MIN_DELAY_MILLIS, TRANSIENT_RETRY_MAX_DELAY_MILLIS + 1);
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        CompanionDiagnostics.debug(trace, "llm-http", "attempt=" + attemptNumber + " transient transport"
+                + transportStatus(failure) + " -> retry in " + delayMillis + " ms");
+        try {
+            Thread.sleep(delayMillis);
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new CancellationException("LLM request interrupted during transport retry delay");
+        }
+        ensureActive();
+        return transport.sendOutcome(body);
+    }
+
+    /** Turns a non-parseable transport outcome into the gateway's terminal protocol result. */
+    private LlmResult transportFailureResult(LlmRequest request, Attempt attempt) {
+        AiTransportResult.Failure failure = attempt.transportFailure();
+        if (failure.kind() == AiTransportResult.FailureKind.CANCELLED) {
+            throw new CancellationException("LLM transport request was cancelled");
+        }
+        String trace = request.trace() != null ? request.trace() : CompanionDiagnostics.SYSTEM;
+        CompanionDiagnostics.debug(trace, "llm-http", "transport " + failure.kind()
+                + transportStatus(failure) + " -> INVALID without protocol repair");
+        log.warn("LLM transport failed with {}{}; returning INVALID_RESPONSE without protocol repair",
+                failure.kind(), transportStatus(failure));
+        return INVALID;
+    }
+
+    private static Defect transportDefect(AiTransportResult.Failure failure) {
+        return switch (failure.kind()) {
+            case TRANSIENT -> Defect.TRANSIENT_TRANSPORT;
+            case PERMANENT -> Defect.PERMANENT_TRANSPORT;
+            case CANCELLED -> Defect.CANCELLED_TRANSPORT;
+            case MALFORMED_RESPONSE -> Defect.MALFORMED;
+        };
+    }
+
+    private static String transportStatus(AiTransportResult.Failure failure) {
+        return failure.statusCode() == null ? "" : " HTTP " + failure.statusCode();
     }
 
     private static long elapsedMillis(long startedNanos) {
@@ -346,6 +423,9 @@ public final class CompanionLlmGateway implements LlmGateway {
         LlmRequest continuationRequest = buildSettlingContinuationRequest(request, replayedClassifyCall);
         Attempt settlingAttempt = attempt(
                 continuationRequest, attemptNumber, RoundExpectation.SETTLING_AFTER_CLASSIFY);
+        if (settlingAttempt.hasTransportFailure()) {
+            return transportFailureResult(continuationRequest, settlingAttempt);
+        }
         if (settlingAttempt.defect() != Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " settling continuation "
                     + settlingAttempt.defect() + " calls="
@@ -382,6 +462,9 @@ public final class CompanionLlmGateway implements LlmGateway {
         LlmRequest continuationRequest = buildClassificationContinuationRequest(request, replayedSettlingCall);
         Attempt classificationAttempt = attempt(
                 continuationRequest, attemptNumber, RoundExpectation.CLASSIFY_AFTER_SETTLING);
+        if (classificationAttempt.hasTransportFailure()) {
+            return transportFailureResult(continuationRequest, classificationAttempt);
+        }
         if (classificationAttempt.defect() != Defect.NONE) {
             CompanionDiagnostics.debug(trace, "llm", "attempt#" + attemptNumber + " classify continuation "
                     + classificationAttempt.defect() + " calls="
@@ -511,7 +594,8 @@ public final class CompanionLlmGateway implements LlmGateway {
         return switch (defect) {
             case MISSING_CLASSIFY -> "{\"status\":\"rejected\",\"reason\":\"classify_turn must be called before a settling function\"}";
             case INVALID_TOOL_CALL -> "{\"status\":\"rejected\",\"reason\":\"every call must use an offered function and match its exact parameter schema\"}";
-            case NONE, MISSING_SETTLING, MALFORMED -> throw new IllegalArgumentException("No tool continuation for " + defect);
+            case NONE, MISSING_SETTLING, MALFORMED, TRANSIENT_TRANSPORT, PERMANENT_TRANSPORT, CANCELLED_TRANSPORT ->
+                    throw new IllegalArgumentException("No tool continuation for " + defect);
         };
     }
 }
