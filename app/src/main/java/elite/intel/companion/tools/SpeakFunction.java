@@ -34,8 +34,8 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Speak only when no offered action, query, or macro matches the commander's request. Use it for "
-                + "conversation, a grounded answer, ambiguity between actions, or an unsupported request. Never "
+        return "Speak only when no offered function matches the commander's request. Use it for conversation, a "
+                + "grounded answer, ambiguity between functions, or an unsupported request. Never "
                 + "use it to request a missing required argument; call request_input instead. Never use it to "
                 + "acknowledge, promise, or describe a matching function; call that function instead.";
     }

@@ -70,14 +70,14 @@ public final class ClassifyTurnFunction implements SystemFunction {
                 new ActionParameterSpec(PARAM_IS_QUESTION, "boolean", true,
                         "Required. True if the commander expects an answer, explanation, decision, or memory recall. "
                                 + "This includes questions and requests like 'tell me', 'remind me', or 'repeat'. "
-                                + "False for new facts, action commands, remember/write-down orders, acknowledgements, or banter.",
+                                + "False for new facts, function requests, remember/write-down orders, acknowledgements, or banter.",
                         List.of(), null),
                 new ActionParameterSpec(PARAM_CANONICAL_FACT, "string", true,
                         "A short clean sentence in the commander's language stating a durable fact from the "
                                 + "commander's current phrase, for later recall. Set it only when importance is 'high' "
                                 + "and the phrase states a durable fact (a name, plan, target, codeword, agreement, "
                                 + "place, or role). Return an empty string, nothing else (no quote characters), for "
-                                + "low, normal, or max importance, questions, chatter, action commands, and "
+                                + "low, normal, or max importance, questions, chatter, function requests, and "
                                 + "acknowledgements. A max remember-word-for-word order is kept verbatim from the "
                                 + "original input. Never copy or summarise your own earlier replies. Never include "
                                 + "acknowledgement words like 'understood' or 'noted'. Do not invent names, numbers, "
