@@ -101,6 +101,8 @@ public final class CompanionRoutingHarness {
     // Timing diagnostics are emitted through UiBus in production; capture just the latency-related subset here
     // so Gradle/IDE local-integration output can show it through stdout.
     private final List<String> turnLatencyDiagnostics = new CopyOnWriteArrayList<>();
+    // A failed assertion needs every model attempt made during THIS route, including retry/continuation calls.
+    private final List<String> turnLlmTranscript = new CopyOnWriteArrayList<>();
     private final Map<String, IntelAction> actionsById = new HashMap<>();
     private final AtomicLong firstToolNanos = new AtomicLong();
 
@@ -237,6 +239,7 @@ public final class CompanionRoutingHarness {
         turnSpeech.clear();
         turnClarificationDiagnostics.clear();
         turnLatencyDiagnostics.clear();
+        turnLlmTranscript.clear();
         firstToolNanos.set(0L);
         lastMatchInput = "";
         lastGameStateSnapshot = null;
@@ -262,6 +265,7 @@ public final class CompanionRoutingHarness {
         boolean settled = dispatcher.isIdle();
         lastTurnTiming = new TurnTiming(firstToolMillis, idleMillis, settled);
         printTurnLatency(input, lastTurnTiming);
+        captureLlmTranscript(input);
         return List.copyOf(turnTools);
     }
 
@@ -335,6 +339,30 @@ public final class CompanionRoutingHarness {
                 || line.contains(" done:"));
     }
 
+    /** Retains every model-facing diagnostic emitted during the completed turn for a later assertion failure. */
+    private void captureLlmTranscript(String input) {
+        List<String> llmLines = turnLatencyDiagnostics.stream()
+                .filter(CompanionRoutingHarness::isLlmDiagnostic)
+                .toList();
+        if (llmLines.isEmpty()) {
+            return;
+        }
+        turnLlmTranscript.add("=== LLM turn: \"" + input + "\" ===");
+        turnLlmTranscript.addAll(llmLines);
+    }
+
+    private static boolean isLlmDiagnostic(String line) {
+        return line != null && (line.contains(" compose:")
+                || line.contains(" llm:")
+                || line.contains(" llm-http:"));
+    }
+
+    private String llmTranscript() {
+        return turnLlmTranscript.isEmpty()
+                ? "<no LLM calls in current turn>"
+                : String.join(System.lineSeparator(), turnLlmTranscript);
+    }
+
     private void printTurnLatency(String input, TurnTiming timing) {
         System.out.printf("%n=== Companion turn latency: \"%s\" ===%n", input);
         turnLatencyDiagnostics.forEach(System.out::println);
@@ -357,7 +385,9 @@ public final class CompanionRoutingHarness {
             fail("Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction
                     + "\"; reducer selected " + reducerSelection()
                     + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech))
-                    + System.lineSeparator() + "Timing: " + lastTurnTiming);
+                    + System.lineSeparator() + "Timing: " + lastTurnTiming
+                    + System.lineSeparator() + "LLM transcript for current turn:"
+                    + System.lineSeparator() + llmTranscript());
         }
     }
 
