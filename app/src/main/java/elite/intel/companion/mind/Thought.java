@@ -15,6 +15,7 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
+import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
@@ -29,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +74,8 @@ public abstract class Thought {
     protected volatile boolean interrupted;
     /** The currently owned LLM, confirmation, or detached-handler future, or null. */
     protected volatile CompletableFuture<?> inFlight;
+    /** Linearizes a completed memory publication against interruption of this thought. */
+    private final Object settlementPublicationLock = new Object();
     /** Lane-thread-confined marker used to report the latency until this turn first begins tool execution. */
     private boolean firstToolStarted;
 
@@ -408,9 +412,10 @@ public abstract class Thought {
     }
 
     /**
-     * Records a standalone memory-visible input for a structured tool exchange (currently QUERY) or an EVENT
-     * workflow. Ordinary commander conversation is committed only through {@link #recordDialoguePair(String)} so
-     * memory never observes a user turn before its LLM reply exists.
+     * Records a standalone memory-visible input for an EVENT workflow. Ordinary commander conversation is
+     * committed only through {@link #recordDialoguePair(String)}, and QUERY is committed only through
+     * {@link #publishCompletedQuery(LlmToolInvocation, JsonObject, String, boolean)}, so memory never observes a
+     * commander turn before its matching reply/result exists.
      */
     protected void recordCurrentInput() {
         if (!isRuntimeActive()) {
@@ -444,10 +449,8 @@ public abstract class Thought {
                 null, canonical == null || canonical.isBlank() ? null : canonical);
         MemoryEntry companion = new MemoryEntry(
                 now, topic, MemorySource.COMPANION, reply, MemoryImportance.LOW);
-        boolean recorded = dependencies.runtimeGeneration().runIfActive(() -> {
-            dependencies.memoryGateway().write(input);
-            dependencies.memoryGateway().write(companion);
-        });
+        boolean recorded = publishSettlement(() ->
+                dependencies.memoryGateway().writeBatch(List.of(input, companion)));
         if (recorded) {
             CompanionDiagnostics.debug(trace, "memory",
                     "record dialogue pair [" + topic + "/" + importance + "]");
@@ -482,18 +485,6 @@ public abstract class Thought {
                 Instant.now(), memoryTopic(), MemorySource.COMPANION, text, MemoryImportance.LOW));
     }
 
-    /**
-     * Records an assistant-side boundary for a turn that has no immediate spoken reply. The marker prevents the
-     * next commander input from merging with this turn while detached work is still running.
-     */
-    protected void recordTurnBoundary(String marker) {
-        if (!isRuntimeActive()) {
-            return;
-        }
-        writeMemory(new MemoryEntry(Instant.now(), memoryTopic(), MemorySource.COMPANION,
-                marker, MemoryImportance.LOW));
-    }
-
     /** The text a {@code speak} invocation carries (the words to vocalize), or empty when absent. */
     protected static String spokenTextOf(LlmToolInvocation speak) {
         return JsonUtils.getAsStringOrEmpty(speak.arguments(), SpeakFunction.PARAM_TEXT);
@@ -502,7 +493,8 @@ public abstract class Thought {
     /**
      * Records a tool outcome by action type, voicing it directly (no {@code AiVoxResponseEvent} detour - that
      * event is now system-only and the companion owns its own speech). A <b>query</b> answer is carried in the
-     * execution result and recorded as this call's tool RESULT (paired with the CALL {@link #recordCall} wrote).
+     * execution result and publishes the retained input plus linked CALL/RESULT as one completed batch via
+     * {@link #publishCompletedQuery}.
      * A <b>command</b> declares its outcome in the result too (its {@code execute} return value, wrapped by
      * {@code IntelCommand#handle}), but command execution is not dialogue: its outcome is voiced without entering
      * conversational memory. A <b>macro</b> stays self-narrating (its SPEAK steps carry completion futures); only
@@ -517,11 +509,7 @@ public abstract class Thought {
         }
         switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
-                String answer = spokenOutcomeText(result);
-                if (!answer.isBlank()) {
-                    recordToolResult(toolCallId, answer);  // RESULT half, paired with the recorded CALL
-                    voice(answer, false);
-                }
+                publishCompletedQuery(inv, result, toolCallId, false);
             }
             case COMMAND -> {
                 String outcome = spokenOutcomeText(result);
@@ -542,55 +530,51 @@ public abstract class Thought {
     }
 
     /**
-     * Records the model's tool-call as a {@code COMPANION} entry carrying a {@link ToolLink.Kind#CALL} link, so
-     * the timeline replays as an {@code assistant(tool_calls)} message paired with its {@code tool} result.
-     * Written before the call runs (LOW importance: a call is bookkeeping, never a durable fact).
-     */
-    protected void recordCall(String toolCallId, LlmToolInvocation inv) {
-        if (!isRuntimeActive()) {
-            return;
-        }
-        String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
-        writeMemory(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
-                null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
-    }
-
-    /**
-     * Records a tool result as a {@code TOOL_RESULT} entry linked to its call by {@code toolCallId} - the RESULT
-     * half of the replayed pair. A blank result is not recorded (the composer synthesizes one if the call has none).
-     */
-    protected void recordToolResult(String toolCallId, String text) {
-        if (!isRuntimeActive() || text == null || text.isBlank()) {
-            return;
-        }
-        // An over-long answer (e.g. a full system briefing) is handed by the gateway to background gist
-        // compression, which re-writes a shorter line carrying this same toolCallId - so the call stays paired
-        // once the gist lands (see OversizedMemoryCompressor), rather than being orphaned as "(no textual result)".
-        writeMemory(new MemoryEntry(
-                Instant.now(), memoryTopic(), MemorySource.TOOL_RESULT, text, memoryImportance(),
-                null, null, ToolLink.result(toolCallId)));
-    }
-
-    /**
-     * Publishes a completed query pair without exposing an intermediate CALL-without-RESULT snapshot for a
-     * normally stored result. The RESULT is deliberately written first: PromptComposer ignores an orphan result,
-     * then resolves it by id once the CALL appears. A non-blank answer is voiced after both writes return.
+     * Publishes a QUERY only after its non-blank result exists. Input, optional historical processing boundary,
+     * CALL and RESULT are built first and committed through one gateway batch; an interrupted, cancelled or blank
+     * query therefore leaves no conversational-memory trace. The same settlement lock linearizes this publication
+     * with {@link #interrupt()}, so a late handler cannot commit after interruption won the race.
      *
      * @return true when the query produced and published a textual answer
      */
-    protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId) {
-        if (!isRuntimeActive()) {
+    protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId,
+                                            boolean wasPending) {
+        if (toolCallId == null || toolCallId.isBlank()) {
             return false;
         }
         String answer = spokenOutcomeText(result);
         if (answer.isBlank()) {
             return false;
         }
-        recordToolResult(toolCallId, answer);
-        recordCall(toolCallId, inv);
-        voice(answer, false);
-        return true;
+        Instant now = Instant.now();
+        ConversationTopic topic = memoryTopic();
+        MemoryImportance importance = memoryImportance();
+        String canonical = memoryCanonicalFact();
+        List<MemoryEntry> contract = new ArrayList<>(wasPending ? 4 : 3);
+        contract.add(new MemoryEntry(
+                now, topic, memorySource(), context.memoryInput(), importance,
+                null, canonical == null || canonical.isBlank() ? null : canonical));
+        if (wasPending) {
+            contract.add(new MemoryEntry(
+                    now, topic, MemorySource.COMPANION, TurnBoundaryMarkers.PROCESSING, MemoryImportance.LOW));
+        }
+        String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
+        contract.add(new MemoryEntry(
+                now, topic, MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
+                null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
+        contract.add(new MemoryEntry(
+                now, topic, MemorySource.TOOL_RESULT, answer, importance,
+                null, null, ToolLink.result(toolCallId)));
+
+        boolean published = publishSettlement(() -> {
+            dependencies.memoryGateway().writeBatch(contract);
+            voice(answer, false);
+        });
+        if (published) {
+            CompanionDiagnostics.debug(trace, "memory",
+                    "record query contract [" + topic + "/" + importance + "] entries=" + contract.size());
+        }
+        return published;
     }
 
     /** The handler-provided spoken text in a tool result, or empty when absent. */
@@ -633,10 +617,23 @@ public abstract class Thought {
      * writes no memory itself; an incomplete commander turn has no pair to publish.
      */
     public final void interrupt() {
-        interrupted = true;
-        CompletableFuture<?> current = inFlight;
+        CompletableFuture<?> current;
+        synchronized (settlementPublicationLock) {
+            interrupted = true;
+            current = inFlight;
+        }
         if (current != null) {
             current.cancel(true);
+        }
+    }
+
+    /** Runs one all-or-nothing settlement publication unless interruption/runtime shutdown won first. */
+    private boolean publishSettlement(Runnable publication) {
+        synchronized (settlementPublicationLock) {
+            if (isStopped()) {
+                return false;
+            }
+            return dependencies.runtimeGeneration().runIfActive(publication);
         }
     }
 

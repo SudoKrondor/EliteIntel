@@ -16,7 +16,6 @@ import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.llm.PromptCacheProfile;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemoryProcessingState;
-import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.memory.facts.MergedFactCandidates;
 import elite.intel.companion.memory.facts.MemoryFactContext;
@@ -318,7 +317,6 @@ public final class CommanderThought extends Thought {
                                                  List<LlmToolInvocation> invocations,
                                                  Map<LlmToolInvocation, JsonObject> preExecuted) {
         boolean suppressSpeak = shouldSuppressSpeak(invocations);
-        boolean queryInputRecorded = false;
         List<CompletableFuture<Void>> detached = new ArrayList<>();
         for (LlmToolInvocation inv : invocations) {
             if (RequestInputFunction.ID.equals(inv.name())) {
@@ -342,12 +340,6 @@ public final class CommanderThought extends Thought {
             IntelActionType settledType = dependencies.actionTypeResolver().resolve(inv.name());
             if (settledType.isGameAction()) {
                 CompanionDiagnostics.info(trace(), "settle", settledType + " " + inv.name());
-                if (settledType == IntelActionType.QUERY && !queryInputRecorded) {
-                    // QUERY retains its native input + CALL/RESULT replay contract. A mixed QUERY+COMMAND turn
-                    // records this one user anchor, while the command side remains memory-silent.
-                    recordCurrentInput();
-                    queryInputRecorded = true;
-                }
                 detached.add(dispatchGameCall(inv, tools, settledType));
                 continue;
             }
@@ -419,12 +411,7 @@ public final class CommanderThought extends Thought {
 
         String toolCallId = gameToolCallId(inv);
         CompletableFuture<JsonObject> execution = submitExecution(inv);
-        boolean pendingQueryBoundary = settledType == IntelActionType.QUERY && !execution.isDone();
-        if (pendingQueryBoundary) {
-            // A detached query has no immediate companion line. Close its recorded user turn before the next
-            // cognitive turn; the linked CALL/RESULT pair is appended together when the result arrives.
-            recordTurnBoundary(TurnBoundaryMarkers.PROCESSING);
-        }
+        boolean queryWasPending = settledType == IntelActionType.QUERY && !execution.isDone();
         inFlight = execution;
         if (isStopped()) {
             execution.cancel(true);
@@ -444,10 +431,7 @@ public final class CommanderThought extends Thought {
                     settled = new JsonObject();
                 }
                 if (settledType == IntelActionType.QUERY) {
-                    boolean answered = publishCompletedQuery(inv, settled, toolCallId);
-                    if (!answered && !pendingQueryBoundary) {
-                        recordTurnBoundary(TurnBoundaryMarkers.NO_ANSWER);
-                    }
+                    publishCompletedQuery(inv, settled, toolCallId, queryWasPending);
                 } else {
                     recordOutcome(inv, settled, tools, toolCallId);
                 }
@@ -470,9 +454,9 @@ public final class CommanderThought extends Thought {
     }
 
     /**
-     * Settles one game tool-call: for a QUERY, record the model's call for pair replay; run it (reusing a pre-executed
-     * result when present), then record its outcome under the same tool-call id. Commands and macros run without
-     * conversational-memory writes.
+     * Settles one game tool-call: run it (reusing a pre-executed result when present), then apply its type-specific
+     * outcome policy. QUERY publishes input/CALL/RESULT only after the result exists; commands and macros run
+     * without conversational-memory writes.
      * A system function (classify_turn) gets no id and no CALL entry. Shared by the normal round and the
      * dangerous-confirmation round so execution sequencing lives in one place.
      * Returns the raw handle result after applying the type-specific speech/memory policy.
@@ -480,9 +464,6 @@ public final class CommanderThought extends Thought {
     private JsonObject settleGameCall(LlmToolInvocation inv, List<LlmToolDefinition> tools,
                                 Map<LlmToolInvocation, JsonObject> preExecuted) {
         String toolCallId = gameToolCallId(inv);
-        if (toolCallId != null) {
-            recordCall(toolCallId, inv);
-        }
         JsonObject result = preExecuted.containsKey(inv) ? preExecuted.get(inv) : execute(inv);
         recordOutcome(inv, result, tools, toolCallId);
         return result;
@@ -513,7 +494,7 @@ public final class CommanderThought extends Thought {
         return turnRanGameAction;
     }
 
-    // recordOutcome / recordCall / recordToolResult / voice now live on the base Thought - shared with the
+    // recordOutcome / transactional QUERY publication / voice live on the base Thought - shared with the
     // deterministic ReflexThought, which runs the same per-type outcome handling without an LLM round.
 
     /** The tool-calls in the validated set that require dangerous-action confirmation, in LLM order (empty when none) (§2.13). */

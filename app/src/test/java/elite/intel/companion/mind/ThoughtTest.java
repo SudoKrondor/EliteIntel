@@ -380,7 +380,8 @@ class ThoughtTest {
         Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
         Thread worker = new Thread(thought::run, "thought-query-failure-test");
         worker.start();
-        waitUntil(() -> memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
+        waitUntil(() -> execution.toolNames().contains("slow_query"));
+        assertTrue(memory.writes.isEmpty(), "a pending query has no completed contract to publish");
 
         failedQuery.completeExceptionally(new IllegalStateException("query backend unavailable"));
         worker.join(2000);
@@ -687,7 +688,35 @@ class ThoughtTest {
     }
 
     @Test
-    void detachedQueryClosesItsTurnBeforeAppendingTheLateCallResultPair() throws InterruptedException {
+    void interruptedDetachedQueryDiscardsItsEntireLateContract() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> startedHandler = new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                return false;
+            }
+        };
+        execution.futuresByTool.put("slow_query", startedHandler);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-detached-query-interrupt-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_query"));
+
+        assertTrue(memory.writes.isEmpty(), "pending QUERY publishes neither input nor processing marker");
+        thought.interrupt();
+        startedHandler.complete(outcomeText("late query answer"));
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertTrue(memory.writes.isEmpty(), "interrupted QUERY rolls back the whole semantic contract");
+        assertTrue(speech.requests.stream().noneMatch(r -> "late query answer".equals(r.text())),
+                "an interrupted QUERY never voices its late result");
+    }
+
+    @Test
+    void detachedQueryPublishesOnlyTheCompletedContract() throws InterruptedException {
         llm.scripted.add(ok(call("slow_query", new JsonObject())));
         CompletableFuture<JsonObject> slowQuery = new CompletableFuture<>();
         execution.futuresByTool.put("slow_query", slowQuery);
@@ -697,23 +726,57 @@ class ThoughtTest {
         Thread worker = new Thread(thought::run, "thought-query-test");
         worker.start();
         waitUntil(() -> execution.toolNames().contains("slow_query"));
-        waitUntil(() -> memory.writes.stream()
-                .anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())));
 
-        assertTrue(memory.writes.stream().anyMatch(e -> TurnBoundaryMarkers.PROCESSING.equals(e.content())),
-                "the next commander turn sees a closed processing boundary while the query is pending");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null),
-                "a pending query is not replayed with a synthetic result");
+        assertTrue(memory.writes.isEmpty(),
+                "a pending query is invisible until its input/CALL/RESULT contract is complete");
 
         slowQuery.complete(outcomeText("system inspected"));
         worker.join(2000);
 
         assertFalse(worker.isAlive());
-        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
-                "the query CALL is appended once the real result exists");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.toolLink() != null && e.toolLink().isResult()
-                        && "system inspected".equals(e.content())),
-                "the matching RESULT is appended with the delayed CALL");
+        assertEquals(4, memory.writes.size());
+        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
+        assertEquals("inspect the system", memory.writes.get(0).content());
+        assertEquals(TurnBoundaryMarkers.PROCESSING, memory.writes.get(1).content());
+        assertTrue(memory.writes.get(2).toolLink() != null && memory.writes.get(2).toolLink().isCall());
+        assertTrue(memory.writes.get(3).toolLink() != null && memory.writes.get(3).toolLink().isResult());
+        assertEquals("system inspected", memory.writes.get(3).content());
+    }
+
+    @Test
+    void blankDetachedQueryPublishesNothing() throws InterruptedException {
+        llm.scripted.add(ok(call("slow_query", new JsonObject())));
+        CompletableFuture<JsonObject> slowQuery = new CompletableFuture<>();
+        execution.futuresByTool.put("slow_query", slowQuery);
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "slow_query".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        Thought thought = Thought.commander(Urgency.NORMAL, "inspect the system", dependencies(asQuery));
+        Thread worker = new Thread(thought::run, "thought-blank-query-test");
+        worker.start();
+        waitUntil(() -> execution.toolNames().contains("slow_query"));
+
+        slowQuery.complete(new JsonObject());
+        worker.join(2000);
+
+        assertFalse(worker.isAlive());
+        assertTrue(memory.writes.isEmpty(), "a blank QUERY result forms no semantic contract");
+        assertTrue(speech.requests.isEmpty());
+    }
+
+    @Test
+    void reflexQueryPublishesItsCompleteContractWithoutLlm() {
+        IntelActionTypeResolver asQuery = new IntelActionTypeResolver(
+                id -> "scan_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+        execution.resultsByTool.put("scan_system", outcomeText("two stars"));
+
+        Thought.reflex(Urgency.NORMAL, "scan the system", "scan_system", dependencies(asQuery)).run();
+
+        assertTrue(llm.requests.isEmpty());
+        assertEquals(3, memory.writes.size());
+        assertEquals("scan the system", memory.writes.get(0).content());
+        assertTrue(memory.writes.get(1).toolLink() != null && memory.writes.get(1).toolLink().isCall());
+        assertTrue(memory.writes.get(2).toolLink() != null && memory.writes.get(2).toolLink().isResult());
+        assertEquals("two stars", memory.writes.get(2).content());
     }
 
     // --- helpers ---
@@ -847,6 +910,7 @@ class ThoughtTest {
         SemanticQuery lastSemanticQuery;
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public void writeBatch(List<MemoryEntry> entries) { writes.addAll(entries); }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }

@@ -4,10 +4,15 @@
 
 **Компонентная карта** режима: концепция, решения, компоненты, потоки, границы ответственности и lifecycle-правила между ними.
 
-Версия **v0.28**.
+Версия **v0.29**.
 
 > **Статус.** Рабочая версия в разработке. Приоритет — за текущей проработкой; этот файл её догоняет, не наоборот.
 > «Решение» = текущая согласованная картина, не застывший стандарт.
+
+> **v0.29 (2026-07-15).** QUERY memory стала атомарной по завершённому смысловому контракту.
+> - **До результата память не меняется:** input остаётся только в `ThoughtContext`; pending QUERY не публикует ни `[COMMANDER]`, ни `<processing/>`, ни CALL. Следующий prompt не получает незавершённый запрос как историю.
+> - **Одна публикация:** непустой outcome строит input + optional historical `<processing/>` + связанную CALL/RESULT-пару и передаёт весь список в `MemoryGateway.writeBatch`. `SessionMemoryGateway` держит один monitor на всю batch-запись, поэтому timeline/recall/snapshot не видят промежуточного состояния.
+> - **Interrupt против completion:** единый settlement-lock мысли допускает ровно один исход — полный batch + речь либо отсутствие памяти/речи. Blank/null result, watchdog, barge-in, cancellation и late completion оставляют ноль записей. Для atomic batch oversized-элемент синхронно ограничивается memory cap, а не уходит в отложенный compressor отдельно от пары.
 
 > **v0.28 (2026-07-15).** Командирская conversational memory теперь фиксируется только по завершённому смысловому контракту.
 > - **Диалог — только целой парой:** исходная реплика остаётся в immutable `ThoughtContext`, пока непустой LLM-`speak` не даст вторую половину. Тогда `CommanderThought` публикует `[COMMANDER]` + `[COMPANION]` вместе под frozen topic/importance. Отдельный mutable-флаг или `conversationalMemoryEnabled` не вводится.
@@ -585,7 +590,7 @@ Cross-cutting операции (start/stop, interrupt, watchdog, idle) итер�
 
 ### §2.4. Thought — база и виды
 
-`Thought` — **абстрактная база**, общая для всех видов: держит immutable `ThoughtContext` (`source`/`urgency`/сырой `currentInput`/канонический `matchInput`, командирский `GameStateSnapshot`, опциональный `SemanticQuery` и monotonic `acceptedAtNanos` только для latency diagnostics) и сервисный `ThoughtDependencies`; последний содержит gateways, состояние, политику безопасности и immutable owner-ссылку на `CompanionRuntimeGeneration`. `ThoughtContext` рождается в intake, живёт ровно один ход и не кэширует tools/facts или результаты ЛЛМ; snapshot хранит только входные сигналы видимости (`flags`/`flags2`/`fighterOut`). База несёт interrupt-механику (`interrupted` + `inFlight` + `interrupt()`), generation fence, `startLifecycle` для tracked detached completion и строительные блоки — `composeInitialPrompt`, `submitRound`, `submitExecution`, `recordDialoguePair`, структурированные `recordCurrentInput`/`recordCall`/`recordToolResult`, `recordCompanionSpeech` для EVENT, а также `recordOutcome` и `voice`. **Цикла мышления база не содержит**: его несёт каждый вид.
+`Thought` — **абстрактная база**, общая для всех видов: держит immutable `ThoughtContext` (`source`/`urgency`/сырой `currentInput`/канонический `matchInput`, командирский `GameStateSnapshot`, опциональный `SemanticQuery` и monotonic `acceptedAtNanos` только для latency diagnostics) и сервисный `ThoughtDependencies`; последний содержит gateways, состояние, политику безопасности и immutable owner-ссылку на `CompanionRuntimeGeneration`. `ThoughtContext` рождается в intake, живёт ровно один ход и не кэширует tools/facts или результаты ЛЛМ; snapshot хранит только входные сигналы видимости (`flags`/`flags2`/`fighterOut`). База несёт interrupt-механику (`interrupted` + `inFlight` + `interrupt()`), generation fence, `startLifecycle` для tracked detached completion и строительные блоки — `composeInitialPrompt`, `submitRound`, `submitExecution`, `recordDialoguePair`, `recordCurrentInput`/`recordCompanionSpeech` для EVENT, атомарный `publishCompletedQuery`, а также `recordOutcome` и `voice`. **Цикла мышления база не содержит**: его несёт каждый вид.
 
 ```text
 Thought (abstract)
@@ -664,12 +669,12 @@ memory tag = переданная subscriber'ом тема   # fallback: SYSTEM
 После `classify_turn` тема/важность заморожены, но eager-записи `currentInput` нет. Сам `ThoughtContext` служит ожидающей пользовательской половиной; тип settling call определяет, будет ли она опубликована:
 
 * непустой чистый `speak` → построить и записать `[COMMANDER]` + `[COMPANION]` как одну завершённую разговорную пару;
-* `QUERY` → один раз записать `[COMMANDER]`, при detached-выполнении закрыть его `<processing/>`, затем добавить связанную CALL/RESULT-пару;
+* `QUERY` → до результата ничего не писать; после непустого outcome атомарно записать input + optional historical `<processing/>` + связанную CALL/RESULT-пару;
 * `COMMAND`, `MACRO` и reflex-command → исполнить/озвучить без conversational memory;
 * `request_input`, dangerous confirmation, accepted-ack, handler failure, invalid/provider service phrase → runtime/TTS/diagnostics без памяти;
 * blank/bare response или interrupt до settlement → ничего не писать.
 
-Смешанный `QUERY+COMMAND` получает ровно один input-якорь от QUERY; командная часть остаётся memory-silent. Пара чистого разговора выглядит так:
+Смешанный `QUERY+COMMAND` получает input только внутри завершённого QUERY batch; командная часть остаётся memory-silent. Пара чистого разговора выглядит так:
 
 ```text
 [COMMANDER] commander input
@@ -680,10 +685,12 @@ memory tag = переданная subscriber'ом тема   # fallback: SYSTEM
 
 ```text
 [COMMANDER] question
-[COMPANION] <processing/>        # только если query ещё выполняется
-[COMPANION/CALL] query call      # CALL и RESULT публикуются по готовности результата
+[COMPANION] <processing/>        # historical marker, только если query был detached
+[COMPANION/CALL] query call
 [TOOL_RESULT] query result
 ```
+
+Весь этот блок становится видимым одной batch-публикацией только после готовности непустого result. Пока handler pending, ни одна строка блока не находится в memory.
 
 У EVENT-реакции сохраняется чистая пара `user`→`assistant`:
 
@@ -696,7 +703,7 @@ memory tag = переданная subscriber'ом тема   # fallback: SYSTEM
 
 ### §2.7. Interrupt незавершённого turn
 
-При interrupt `CommanderThought` не начинает новых действий и не пытается «дозаписать» вход. Если settlement ещё не создал разговорную пару или QUERY-якорь, `currentInput` просто исчезает вместе с `ThoughtContext`; причина остаётся в diagnostics.
+При interrupt `CommanderThought` не начинает новых действий и не пытается «дозаписать» вход. Если settlement ещё не создал разговорную пару или не закоммитил полный QUERY batch, `currentInput` просто исчезает вместе с `ThoughtContext`; причина остаётся в diagnostics.
 
 После dispatch owning thought остаётся live через detached future: queued execution отменяется, уже начатый handler может завершиться operationally, но его поздняя речь/память отбрасываются generation/interrupt fence. Далее мысль:
 
@@ -1653,7 +1660,7 @@ UserInputEvent
 → dispatch game handler and release commander cognitive worker
 → detached completion, still owned/tracked by the same Thought:
      COMMAND  → immediate accepted-ack; serialized action lane; speech only, no memory
-     QUERY    → bounded parallel query lane; pending <processing/>; CALL+RESULT appended together on completion
+     QUERY    → bounded parallel query lane; memory unchanged while pending; full input/CALL/RESULT batch on completion
      MACRO    → serialized action lane; own SPEAK steps carry completion futures; no memory here
      SYSTEM   → no speech, no timeline (result only feeds the flow)
      speak    → suppressed if game action this turn; else voice + complete commander/companion pair
@@ -2094,7 +2101,7 @@ elite.intel.companion
 * **Один класс мысли на источник.** `Thought` — тонкая общая база (`composeInitialPrompt`/`submitRound`/`submitExecution`/`recordDialoguePair`/структурированные memory helpers/`recordOutcome`/interrupt), **без цикла мышления**. `CommanderThought` владеет полным tool-calling-циклом и dangerous-confirmation; чистый непустой LLM-`speak` коммитит целую пару из ожидающего `ThoughtContext`, QUERY сохраняет input+CALL/RESULT, а command/macro/service paths memory-silent. `EventThought` озвучивает реакцию subscriber'а в двух режимах: narration — один короткий ЛЛМ-раунд фразирует переданные данные (лаконичный narration-промпт, только `speak`), verbatim — дословная озвучка готовой фразы без ЛЛМ и промпта; в обоих режимах пишется пара `user`→`[COMPANION]`. `ThoughtDispatcher` держит lane на каждый `ThoughtSource` в `EnumMap`; COMMANDER имеет один ordered cognitive worker, event — один worker. Detached handler futures остаются live/pending в `ThoughtLane`, не удерживая worker.
 * **`mode` → `PromptCacheProfile`** {COMMANDER, NARRATION, COMPRESSION, KEY_GENERATION}. У каждого стабильный `cacheKey()` → Mistral `prompt_cache_key` (свой кэш-префикс на профиль). `EVENT` narration-режим использует профиль `NARRATION` (собственный лаконичный промпт без topic enum / memory / safety); verbatim-режим промпт не строит и профиля не имеет. Признак «ждём tool-calls vs текст» выводится (consciousness vs COMPRESSION / `tools.isEmpty()`), отдельного флага нет.
 * **`LlmRequest` = `(requestId, messages, tools, profile)`.** Список `tools` и есть immutable snapshot: `LlmRequest` копирует коллекцию tools, а каждый `LlmToolDefinition` копирует свой список `ActionParameterSpec`, поэтому render и post-parse validation видят один контракт даже при параллельном UI refresh. `urgency` на запросе не нужен — приоритет/преемпция реализуются через interrupt на уровне `ThoughtDispatcher`.
-* **`ExecutionRequest` = `(requestId, toolName, arguments, commanderInput, runtimeGenerationId)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся. `commanderInput` — сырая реплика командира (`originalUserInput` для хендлера; `""` когда её нет). `runtimeGenerationId` не является tool-call id: он только связывает синхронный handler/static-runtime access с graph-владельцем и равен `0` вне runtime-тестов. Компонент `toolCallId` и прежний thread-scoped `ActiveToolCall` **удалены** (v0.19): спаривание CALL/RESULT в памяти держит только `ToolLink` (свой `toolCallId` внутри мысли через `recordCall`/`recordToolResult`).
+* **`ExecutionRequest` = `(requestId, toolName, arguments, commanderInput, runtimeGenerationId)`.** Lane (action/query) выводится при резолве `toolName` по реестрам; `operationType` в запросе не передаётся. `commanderInput` — сырая реплика командира (`originalUserInput` для хендлера; `""` когда её нет). `runtimeGenerationId` не является tool-call id: он только связывает синхронный handler/static-runtime access с graph-владельцем и равен `0` вне runtime-тестов. Компонент `toolCallId` и прежний thread-scoped `ActiveToolCall` **удалены** (v0.19): спаривание CALL/RESULT в памяти держит `ToolLink`, а обе половины строятся внутри `publishCompletedQuery` до единого batch commit.
 * **`SpeechRequest` = `(requestId, text, urgency)`.** Различие conscious / system-notification — забота вызывающей стороны, поля `source` нет.
 * **Tool-схема:** игровые tools строит companion-адаптер из существующих `IntelAction.id()/parameters()` (классы команд не зависят от companion); системные — из `SystemFunction`. Нейтральный носитель — `LlmToolDefinition` (имя, описание, локализованные тренировочные фразы из `AiActionLocalizations`, `ActionParameterSpec`); рендер в нативный JSON провайдера — в `LlmGateway`-bridge. Стандартный JSON Schema закрыт через `additionalProperties:false`. После parse `ToolCallValidator` сверяет **весь** response с тем же request-local snapshot: offered name, required-поля, точные JSON-типы без coercion, enum и отсутствие лишних полей. Required `null` невалиден; optional `null` — единственная compatibility-нормализация: после успешной проверки **всего** response поле атомарно удаляется, и handler видит его как omitted. При одном invalid call никакой частичной нормализации нет: весь response отклоняется до side effects; `CompanionLlmGateway` возвращает всем его ещё не исполненным calls truthful rejected tool-results и делает одну repair-попытку с неизменным tools snapshot/deadline. Неправильная provider-shape аргументов (не JSON object) становится `INVALID_RESPONSE` ещё в adapter parse.
   * **Категории и видимость:** `IntelCommand` → `ACTION`, `IntelQuery` → `QUERY`, user macro → `MACRO`. На intake командирского turn один раз снимается `GameStateSnapshot(flags, flags2, fighterOut)`; точный/семантический reflex и reducer проверяют `isVisibleForLLM(status) == true` на detached `Status` из этого snapshot. Поэтому все стадии одного turn видят один контекст, а новое live-состояние применяется со следующего turn. Перед исполнением второго visibility-gate нет. Наличие локализованной фразы **не** является условием включения: при native tool-calling LLM выбирает tool по `name`/`description`/`parameters`, поэтому action без фразы остаётся доступен — он лишь хуже сопоставляется с иноязычной репликой. Companion-нерелевантные fallback-id старого пути (general-conversation, ignore-nonsensical, connection-check) не включаются.
@@ -2104,6 +2111,6 @@ elite.intel.companion
 * **Pre-turn facts — только релевантный trusted context.** `MemoryFactCandidates` допускает из командирской памяти только `HIGH` с непустым host-grounded fact text и дословный `MAX`; обычные `NORMAL` разговорные пары не превращаются в `<fact>`, а game-action turns вообще не входят в conversational timeline. Ungrounded HIGH canonical заменяется текущей исходной репликой, а не чужим remembered fact. `EVENT` сохраняет прежний relevance-ranked путь. Current-state plugins больше не unconditional: каждый зарегистрированный `MemoryFactSource` сам реализует `isRelevant(MemoryFactContext)` и выбирает существующие локализованные query-alias groups, которые описывают его предметную область. `MemoryFactGatherer` ничего не знает о system/station/body и только спрашивает источники; `LocalizedFactRelevance` — общий phrase-matching primitive без каталога sources и без source-specific property keys. Semantic similarity не может добавить trusted context: compressed score band давал false positives на обычной болтовне. При неуверенности ambient fact пропускается; дополнительных embedding/LLM-round нет. `MergedFactCandidates` затем объединяет ambient facts с durable memory под прежними caps/dedup.
 * **LLM provider seam:** провайдер-специфичный рендер/разбор — `LlmProviderAdapter`. Общий OpenAI-совместимый рендер/парсинг живёт в базовом `OpenAiCompatibleLlmAdapter`; тонкие per-provider impl'ы задают только модель, `tool_choice` и `prompt_cache_key`: `MistralLlmAdapter` (cloud — `any`, с cache key) и `LmStudioLlmAdapter` (local LM Studio — `required`, без cache key). Это бывш. `CompanionLlmDialect`/`MistralToolCallDialect`, переименованы. У `LlmGateway` две операции: `submit` (tool-calling сознания) и `compressMidTermMemory(LlmRequest) → CompletableFuture<String>` (текстовый ответ для сжатия памяти; адаптер даёт `parseText`, тело — тот же `buildRequestBody` с пустыми `tools`).
 * **Long-term память реализована:** `LongTermMemory` (холдер), `MidTermTopicMemory.evictOverflow` (per-topic cap), `MidTermEvictionListener` (гейтвей отдаёт overflow, сам LLM не зовёт) и `MidTermToLongTermConsolidator` (буфер→порог→`compressMidTermMemory`→валидация `SUMMARY_MAX_CHARS`→atomic `replaceLongTermSummary`; провал → буфер потерян, summary цела, `SpeechGateway` system-notification). Все лимиты памяти — в `CompanionMemoryLimits`. Подключение listener'а к гейтвею — при bootstrap (`CompanionSubsystemGate`).
-* **Итог tool-call по типу действия (`Thought.recordOutcome`).** Тип резолвит `IntelActionTypeResolver` (`companion.tools`, инжектируемый тест-сим) → `COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN`. `recordOutcome` озвучивает исход **напрямую** (без `AiVoxResponseEvent` — это событие теперь только системное). **COMMAND** получает immediate accepted-ack, исполняется на serialized action lane, а непустой поздний outcome только озвучивается. **QUERY** исполняется в bounded parallel pool; пока pending, исходный turn закрыт `<processing/>`, затем CALL и `[TOOL_RESULT]` добавляются одной completion-секцией. **MACRO** — serialized action lane и свои SPEAK-шаги; failure озвучивается без memory. **SYSTEM/UNKNOWN** — речь и timeline не трогаем. После interrupt late result отбрасывается.
+* **Итог tool-call по типу действия (`Thought.recordOutcome`).** Тип резолвит `IntelActionTypeResolver` (`companion.tools`, инжектируемый тест-сим) → `COMMAND/QUERY/MACRO/SYSTEM/UNKNOWN`. `recordOutcome` озвучивает исход **напрямую** (без `AiVoxResponseEvent` — это событие теперь только системное). **COMMAND** получает immediate accepted-ack, исполняется на serialized action lane, а непустой поздний outcome только озвучивается. **QUERY** исполняется в bounded parallel pool и ничего не пишет, пока pending; непустой outcome публикует input + optional historical `<processing/>` + CALL + `[TOOL_RESULT]` одним `writeBatch`. **MACRO** — serialized action lane и свои SPEAK-шаги; failure озвучивается без memory. **SYSTEM/UNKNOWN** — речь и timeline не трогаем. После interrupt late result отбрасывается, batch не появляется.
 * **`MemoryProcessingState`** по-прежнему типизирует runtime-исход confirmation (`CONFIRMED`/`CANCELLED`/`TIMED_OUT`/`INTERRUPTED` и legacy values), но сам по себе больше не означает запись processing-marker в conversational memory.
 

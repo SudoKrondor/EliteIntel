@@ -16,7 +16,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,6 +54,29 @@ class SessionMemoryGatewayTest {
         }
     }
 
+    /** Pauses the second batch member while the gateway monitor is held. */
+    private static final class BlockingSecondEstimate implements TokenEstimator {
+        private final AtomicInteger calls = new AtomicInteger();
+        private final CountDownLatch secondEntered = new CountDownLatch(1);
+        private final CountDownLatch releaseSecond = new CountDownLatch(1);
+
+        @Override
+        public int estimate(String text) {
+            if (calls.incrementAndGet() == 2) {
+                secondEntered.countDown();
+                try {
+                    if (!releaseSecond.await(2, TimeUnit.SECONDS)) {
+                        throw new AssertionError("batch test did not release the second write");
+                    }
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new AssertionError(interrupted);
+                }
+            }
+            return 1;
+        }
+    }
+
     private static MemoryEntry entry(ConversationTopic topic, String content) {
         return new MemoryEntry(Instant.now(), topic, MemorySource.COMMANDER, content);
     }
@@ -72,6 +98,69 @@ class SessionMemoryGatewayTest {
         assertEquals("second", timeline.get(1).content());
         // Nothing evicted yet, so mid-term has no topics.
         assertTrue(midTermTopics(gateway).isEmpty());
+    }
+
+    @Test
+    void batchIsInvisibleToConcurrentReadersUntilEveryEntryIsStored() throws InterruptedException {
+        BlockingSecondEstimate estimator = new BlockingSecondEstimate();
+        SessionMemoryGateway gateway = new SessionMemoryGateway(estimator);
+        List<MemoryEntry> batch = List.of(
+                entry(ConversationTopic.NAVIGATION, "question"),
+                entry(ConversationTopic.NAVIGATION, "answer"));
+        AtomicReference<List<MemoryEntry>> observed = new AtomicReference<>();
+        CountDownLatch readerStarted = new CountDownLatch(1);
+        CountDownLatch readerFinished = new CountDownLatch(1);
+
+        Thread writer = new Thread(() -> gateway.writeBatch(batch), "memory-batch-writer-test");
+        writer.start();
+        assertTrue(estimator.secondEntered.await(1, TimeUnit.SECONDS));
+
+        Thread reader = new Thread(() -> {
+            readerStarted.countDown();
+            observed.set(gateway.readShortTermTimeline());
+            readerFinished.countDown();
+        }, "memory-batch-reader-test");
+        reader.start();
+        assertTrue(readerStarted.await(1, TimeUnit.SECONDS));
+        try {
+            assertFalse(readerFinished.await(100, TimeUnit.MILLISECONDS),
+                    "a reader must not observe the first half of an in-progress batch");
+        } finally {
+            estimator.releaseSecond.countDown();
+        }
+        writer.join(2000);
+        reader.join(2000);
+
+        assertFalse(writer.isAlive());
+        assertFalse(reader.isAlive());
+        assertEquals(List.of("question", "answer"),
+                observed.get().stream().map(MemoryEntry::content).toList());
+    }
+
+    @Test
+    void atomicBatchBoundsOversizedMemberWithoutDeferringPartOfTheContract() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(new FixedTokenEstimator(1));
+        List<MemoryEntry> deferred = new ArrayList<>();
+        gateway.setOversizedMemoryListener(deferred::add);
+        String longAnswer = "x".repeat(CompanionConfig.memoryEntryMaxChars() + 50);
+        ToolLink call = ToolLink.call("call-1", "query_inventory", "{}");
+        ToolLink result = ToolLink.result("call-1");
+
+        gateway.writeBatch(List.of(
+                entry(ConversationTopic.SHIP_STATUS, "how many purifiers"),
+                new MemoryEntry(Instant.now(), ConversationTopic.SHIP_STATUS, MemorySource.COMPANION,
+                        "query_inventory", MemoryImportance.LOW, null, null, call),
+                new MemoryEntry(Instant.now(), ConversationTopic.SHIP_STATUS, MemorySource.TOOL_RESULT,
+                        longAnswer, MemoryImportance.LOW, null, null, result)));
+
+        List<MemoryEntry> timeline = gateway.readShortTermTimeline();
+        assertEquals(3, timeline.size(), "the complete query contract is stored together");
+        assertTrue(deferred.isEmpty(), "a batch member cannot be deferred after the rest becomes visible");
+        MemoryEntry storedResult = timeline.get(2);
+        assertTrue(storedResult.content().length() <= CompanionConfig.memoryEntryMaxChars());
+        assertNotNull(storedResult.toolLink());
+        assertTrue(storedResult.toolLink().isResult());
+        assertEquals("call-1", storedResult.toolLink().toolCallId());
     }
 
     @Test

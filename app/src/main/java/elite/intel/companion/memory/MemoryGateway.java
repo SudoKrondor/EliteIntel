@@ -18,6 +18,13 @@ public interface MemoryGateway {
     /** Writes a normal entry. New entries land in short-term memory first. */
     void write(MemoryEntry entry);
 
+    /**
+     * Writes a completed semantic contract as one atomic batch. Concurrent readers must observe either the
+     * timeline before this call or the timeline containing every entry in {@code entries}, never a partial batch.
+     * Entries are stored in list order.
+     */
+    void writeBatch(List<MemoryEntry> entries);
+
     /** Returns the hot short-term timeline, oldest-to-newest, for the prompt context block. */
     List<MemoryEntry> readShortTermTimeline();
 

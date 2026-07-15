@@ -521,6 +521,68 @@ class ThoughtDispatcherTest {
     }
 
     @Test
+    void watchdogRollsBackAStuckDetachedQueryAndDiscardsItsLateResult() throws InterruptedException {
+        AtomicInteger querySubmissions = new AtomicInteger();
+        AtomicInteger cancelAttempts = new AtomicInteger();
+        CompletableFuture<JsonObject> startedQuery = new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                cancelAttempts.incrementAndGet();
+                return false;
+            }
+        };
+        LlmGateway querySelectingLlm = new LlmGateway() {
+            @Override
+            public CompletableFuture<LlmResult> submit(LlmRequest request) {
+                LlmToolInvocation query = new LlmToolInvocation(
+                        UUID.randomUUID().toString(), "slow_query", new JsonObject());
+                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(query)));
+            }
+
+            @Override
+            public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+                return CompletableFuture.completedFuture(null);
+            }
+        };
+        ExecutionGateway execution = request -> {
+            if ("slow_query".equals(request.toolName())) {
+                querySubmissions.incrementAndGet();
+                return startedQuery;
+            }
+            return CompletableFuture.completedFuture(new JsonObject());
+        };
+        FakeSpeech speech = new FakeSpeech();
+        IntelActionTypeResolver actionTypes = new IntelActionTypeResolver(id ->
+                "slow_query".equals(id)
+                        ? IntelActionTypeResolver.IntelActionType.QUERY
+                        : IntelActionTypeResolver.IntelActionType.SYSTEM);
+        ThoughtDependencies dependencies = new ThoughtDependencies(
+                querySelectingLlm, speech, execution, memory,
+                new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(),
+                (categories, currentInput) -> List.of(), new CompanionState(),
+                invocation -> false, new ConfirmationCoordinator(), actionTypes);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(
+                dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false),
+                Function.identity(), 50, 10);
+        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled());
+        dispatcher.start();
+
+        dispatcher.submitCommanderInput("stuck query");
+        waitUntil(() -> querySubmissions.get() == 1);
+        assertTrue(memory.writes.isEmpty(), "pending QUERY must not publish an input or processing marker");
+        waitUntil(() -> cancelAttempts.get() > 0);
+        JsonObject late = new JsonObject();
+        late.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, "late answer");
+        startedQuery.complete(late);
+        waitUntil(dispatcher::isIdle);
+        dispatcher.stop();
+
+        assertTrue(memory.writes.isEmpty(), "watchdog interruption leaves no QUERY contract in memory");
+        assertTrue(speech.requests.stream().noneMatch(request -> "late answer".equals(request.text())),
+                "the watchdog-discarded QUERY cannot voice its late result");
+    }
+
+    @Test
     void aSlowCommandDoesNotBlockTheNextCommanderCognitiveTurn() throws InterruptedException {
         CompletableFuture<JsonObject> slowResult = new CompletableFuture<>();
         AtomicInteger llmCalls = new AtomicInteger();
@@ -693,6 +755,7 @@ class ThoughtDispatcherTest {
         final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public void writeBatch(List<MemoryEntry> entries) { writes.addAll(entries); }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }

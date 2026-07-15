@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryImportance;
-import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.tools.IntelActionTypeResolver.IntelActionType;
 
 import java.util.List;
@@ -17,9 +16,9 @@ import java.util.concurrent.CompletableFuture;
  * {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking loop, no tool selection.
  * <p>
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
- * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes
- * its answer (via {@link #recordOutcome}) - so the reply is delivered from data, never a model's whim - and
- * records the input/call so the answer pairs with its turn on replay.
+ * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and, only once
+ * a non-blank answer exists, publishes input/CALL/RESULT together - so the reply is delivered from data, never a
+ * model's whim, and an interrupted query leaves no partial turn on replay.
  * <p>
  * The handler detaches exactly like an LLM-selected game call. A queued future is cancellable; a handler already
  * started may finish operationally, but interruption discards its late speech and memory result.
@@ -56,16 +55,11 @@ final class ReflexThought extends Thought {
         turnTopic = dependencies.state().globalTopic();
         LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, new JsonObject());
         if (dependencies.actionTypeResolver().resolve(actionId) == IntelActionType.QUERY) {
-            // A query reflex: file the input (a query turn keeps its user turn for pair replay), run the query's
-            // own data-grounded analysis path under a tool-call id, and publish the answer - the reply comes from
-            // the data, not the model.
-            recordCurrentInput();
+            // A query reflex runs its data-grounded path under a tool-call id. Nothing is filed until a non-blank
+            // result exists, when input/CALL/RESULT are published together - the reply comes from data, not the model.
             String toolCallId = newId();
             CompletableFuture<JsonObject> execution = submitExecution(inv);
-            boolean pendingBoundary = !execution.isDone();
-            if (pendingBoundary) {
-                recordTurnBoundary(TurnBoundaryMarkers.PROCESSING);
-            }
+            boolean queryWasPending = !execution.isDone();
             inFlight = execution;
             if (isStopped()) {
                 execution.cancel(true);
@@ -78,10 +72,7 @@ final class ReflexThought extends Thought {
                     JsonObject settled = failure == null
                             ? (result == null ? new JsonObject() : result)
                             : executionError(inv.name(), failure);
-                    boolean answered = publishCompletedQuery(inv, settled, toolCallId);
-                    if (!pendingBoundary && !answered) {
-                        recordTurnBoundary(TurnBoundaryMarkers.NO_ANSWER);
-                    }
+                    publishCompletedQuery(inv, settled, toolCallId, queryWasPending);
                     return null;
                 } finally {
                     if (inFlight == execution) {

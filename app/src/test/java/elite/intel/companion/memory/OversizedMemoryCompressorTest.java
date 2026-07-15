@@ -174,6 +174,7 @@ class OversizedMemoryCompressorTest {
         final List<MemoryEntry> writes = new ArrayList<>();
 
         @Override public void write(MemoryEntry entry) { writes.add(entry); }
+        @Override public void writeBatch(List<MemoryEntry> entries) { writes.addAll(entries); }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
