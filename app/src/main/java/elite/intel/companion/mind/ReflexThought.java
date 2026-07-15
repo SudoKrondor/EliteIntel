@@ -59,7 +59,6 @@ final class ReflexThought extends Thought {
             // result exists, when input/CALL/RESULT are published together - the reply comes from data, not the model.
             String toolCallId = newId();
             CompletableFuture<JsonObject> execution = submitExecution(inv);
-            boolean queryWasPending = !execution.isDone();
             inFlight = execution;
             if (isStopped()) {
                 execution.cancel(true);
@@ -72,7 +71,7 @@ final class ReflexThought extends Thought {
                     JsonObject settled = failure == null
                             ? (result == null ? new JsonObject() : result)
                             : executionError(inv.name(), failure);
-                    publishCompletedQuery(inv, settled, toolCallId, queryWasPending);
+                    publishCompletedQuery(inv, settled, toolCallId);
                     return null;
                 } finally {
                     if (inFlight == execution) {

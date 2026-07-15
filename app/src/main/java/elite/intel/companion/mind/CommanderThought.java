@@ -411,7 +411,6 @@ public final class CommanderThought extends Thought {
 
         String toolCallId = gameToolCallId(inv);
         CompletableFuture<JsonObject> execution = submitExecution(inv);
-        boolean queryWasPending = settledType == IntelActionType.QUERY && !execution.isDone();
         inFlight = execution;
         if (isStopped()) {
             execution.cancel(true);
@@ -431,7 +430,7 @@ public final class CommanderThought extends Thought {
                     settled = new JsonObject();
                 }
                 if (settledType == IntelActionType.QUERY) {
-                    publishCompletedQuery(inv, settled, toolCallId, queryWasPending);
+                    publishCompletedQuery(inv, settled, toolCallId);
                 } else {
                     recordOutcome(inv, settled, tools, toolCallId);
                 }

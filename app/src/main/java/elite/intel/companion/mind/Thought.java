@@ -15,7 +15,6 @@ import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.memory.ToolLink;
-import elite.intel.companion.model.memory.TurnBoundaryMarkers;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.ComposedPrompt;
 import elite.intel.companion.prompt.Fact;
@@ -30,7 +29,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -414,7 +412,7 @@ public abstract class Thought {
     /**
      * Records a standalone memory-visible input for an EVENT workflow. Ordinary commander conversation is
      * committed only through {@link #recordDialoguePair(String)}, and QUERY is committed only through
-     * {@link #publishCompletedQuery(LlmToolInvocation, JsonObject, String, boolean)}, so memory never observes a
+     * {@link #publishCompletedQuery(LlmToolInvocation, JsonObject, String)}, so memory never observes a
      * commander turn before its matching reply/result exists.
      */
     protected void recordCurrentInput() {
@@ -509,7 +507,7 @@ public abstract class Thought {
         }
         switch (dependencies.actionTypeResolver().resolve(inv.name())) {
             case QUERY -> {
-                publishCompletedQuery(inv, result, toolCallId, false);
+                publishCompletedQuery(inv, result, toolCallId);
             }
             case COMMAND -> {
                 String outcome = spokenOutcomeText(result);
@@ -530,15 +528,14 @@ public abstract class Thought {
     }
 
     /**
-     * Publishes a QUERY only after its non-blank result exists. Input, optional historical processing boundary,
-     * CALL and RESULT are built first and committed through one gateway batch; an interrupted, cancelled or blank
-     * query therefore leaves no conversational-memory trace. The same settlement lock linearizes this publication
-     * with {@link #interrupt()}, so a late handler cannot commit after interruption won the race.
+     * Publishes a QUERY only after its non-blank result exists. Input, CALL and RESULT are built first and committed
+     * through one gateway batch; an interrupted, cancelled or blank query therefore leaves no conversational-memory
+     * trace. The same settlement lock linearizes this publication with {@link #interrupt()}, so a late handler
+     * cannot commit after interruption won the race.
      *
      * @return true when the query produced and published a textual answer
      */
-    protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId,
-                                            boolean wasPending) {
+    protected boolean publishCompletedQuery(LlmToolInvocation inv, JsonObject result, String toolCallId) {
         if (toolCallId == null || toolCallId.isBlank()) {
             return false;
         }
@@ -550,21 +547,17 @@ public abstract class Thought {
         ConversationTopic topic = memoryTopic();
         MemoryImportance importance = memoryImportance();
         String canonical = memoryCanonicalFact();
-        List<MemoryEntry> contract = new ArrayList<>(wasPending ? 4 : 3);
-        contract.add(new MemoryEntry(
+        MemoryEntry input = new MemoryEntry(
                 now, topic, memorySource(), context.memoryInput(), importance,
-                null, canonical == null || canonical.isBlank() ? null : canonical));
-        if (wasPending) {
-            contract.add(new MemoryEntry(
-                    now, topic, MemorySource.COMPANION, TurnBoundaryMarkers.PROCESSING, MemoryImportance.LOW));
-        }
+                null, canonical == null || canonical.isBlank() ? null : canonical);
         String argumentsJson = GsonFactory.getGson().toJson(inv.arguments());
-        contract.add(new MemoryEntry(
+        MemoryEntry call = new MemoryEntry(
                 now, topic, MemorySource.COMPANION, inv.name(), MemoryImportance.LOW,
-                null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson)));
-        contract.add(new MemoryEntry(
+                null, null, ToolLink.call(toolCallId, inv.name(), argumentsJson));
+        MemoryEntry toolResult = new MemoryEntry(
                 now, topic, MemorySource.TOOL_RESULT, answer, importance,
-                null, null, ToolLink.result(toolCallId)));
+                null, null, ToolLink.result(toolCallId));
+        List<MemoryEntry> contract = List.of(input, call, toolResult);
 
         boolean published = publishSettlement(() -> {
             dependencies.memoryGateway().writeBatch(contract);

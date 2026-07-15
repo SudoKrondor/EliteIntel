@@ -49,9 +49,9 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("never wait for its tool result"));
         assertTrue(text.contains("one missing call for protocol completion"));
         assertTrue(text.contains("exactly that requested call and no other call"));
-        // Omitted/pending boundaries are explained so the model neither repeats them nor treats them as speech.
+        // Omitted boundaries are explained so the model neither repeats them nor treats them as speech.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
-        assertTrue(text.contains("<processing/> means that turn's function"));
+        assertFalse(text.contains("<processing/>"));
     }
 
     @Test

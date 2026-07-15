@@ -734,13 +734,12 @@ class ThoughtTest {
         worker.join(2000);
 
         assertFalse(worker.isAlive());
-        assertEquals(4, memory.writes.size());
+        assertEquals(3, memory.writes.size());
         assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
         assertEquals("inspect the system", memory.writes.get(0).content());
-        assertEquals(TurnBoundaryMarkers.PROCESSING, memory.writes.get(1).content());
-        assertTrue(memory.writes.get(2).toolLink() != null && memory.writes.get(2).toolLink().isCall());
-        assertTrue(memory.writes.get(3).toolLink() != null && memory.writes.get(3).toolLink().isResult());
-        assertEquals("system inspected", memory.writes.get(3).content());
+        assertTrue(memory.writes.get(1).toolLink() != null && memory.writes.get(1).toolLink().isCall());
+        assertTrue(memory.writes.get(2).toolLink() != null && memory.writes.get(2).toolLink().isResult());
+        assertEquals("system inspected", memory.writes.get(2).content());
     }
 
     @Test
