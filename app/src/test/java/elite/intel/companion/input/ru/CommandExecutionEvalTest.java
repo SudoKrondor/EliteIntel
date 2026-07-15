@@ -17,8 +17,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * for each phrase it scores, from the recorded tool-calls, whether the expected command tool was called and
  * (for parameterized commands) whether the extracted argument carries the requested value; for reflex cases it
  * additionally asserts the turn consumed zero LLM rounds (the {@code ReflexResolver} short-circuit) and for
- * LLM cases at least one. Game commands are recorded, never executed. Opt-in via the local-integration tag;
- * LM Studio must be up.
+ * LLM cases at least one. The harness records game-tool execution requests instead of performing their side
+ * effects; command turns themselves remain absent from conversational memory. Opt-in via the local-integration
+ * tag; LM Studio must be up.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

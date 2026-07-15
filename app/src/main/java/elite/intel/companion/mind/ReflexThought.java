@@ -90,11 +90,8 @@ final class ReflexThought extends Thought {
                 }
             });
         }
-        // A command reflex is a side effect, not dialogue, so its call echo is never filed. But a command that
-        // returns a spoken outcome (e.g. a calculated carrier route summary) is a real exchange: file the
-        // imperative as the user turn and voice+remember the outcome as the companion reply - a clean pair. A
-        // silent side-effect (blank outcome) files nothing. No CALL is filed either way, so there is no tool-call
-        // id to pair a result with.
+        // A command reflex is a side effect, not dialogue. Neither its imperative, call echo nor handler outcome
+        // enters conversational memory; a non-blank outcome is still voiced by recordOutcome.
         CompletableFuture<JsonObject> execution = submitExecution(inv);
         inFlight = execution;
         if (isStopped()) {
@@ -108,9 +105,6 @@ final class ReflexThought extends Thought {
                 JsonObject settled = failure == null
                         ? (result == null ? new JsonObject() : result)
                         : executionError(inv.name(), failure);
-                if (!spokenOutcomeText(settled).isBlank()) {
-                    recordCurrentInput();
-                }
                 recordOutcome(inv, settled, List.of(), null);
                 return null;
             } finally {

@@ -102,8 +102,9 @@ final class ThoughtContext {
     }
 
     /**
-     * The text retained in conversational memory: canonical commander wording, or the original event stimulus.
-     * Event match text may be an expanded LLM prompt rather than the stimulus itself, so it must not be stored.
+     * The text to retain if this turn reaches a memory-producing settlement: canonical commander wording, or the
+     * original event stimulus. Event match text may be an expanded LLM prompt rather than the stimulus itself, so
+     * it must not be stored.
      */
     String memoryInput() {
         return source == ThoughtSource.COMMANDER ? matchInput : currentInput;

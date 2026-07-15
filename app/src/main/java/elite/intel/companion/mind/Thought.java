@@ -149,8 +149,9 @@ public abstract class Thought {
     /**
      * Creates a reflex thought: a commander input the {@code ReflexResolver} matched verbatim to exactly one
      * safe, parameterless command. It runs on the commander lane like a {@link CommanderThought} but skips the
-     * LLM entirely - it just records the input, executes the resolved command, and voices/remembers its
-     * outcome ({@link #recordOutcome}). Anything ambiguous, parameterized or dangerous is never a reflex.
+     * LLM entirely - it executes the resolved command and voices a non-blank outcome without filing command
+     * execution as dialogue ({@link #recordOutcome}). Anything ambiguous, parameterized or dangerous is never a
+     * reflex.
      */
     public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtDependencies dependencies) {
         return reflex(ThoughtContext.commander(urgency, input, input), commandId, dependencies);
@@ -406,7 +407,11 @@ public abstract class Thought {
         return error;
     }
 
-    /** Records the memory-visible input under the resolved topic before tool-calls run (§2.6). */
+    /**
+     * Records a standalone memory-visible input for a structured tool exchange (currently QUERY) or an EVENT
+     * workflow. Ordinary commander conversation is committed only through {@link #recordDialoguePair(String)} so
+     * memory never observes a user turn before its LLM reply exists.
+     */
     protected void recordCurrentInput() {
         if (!isRuntimeActive()) {
             return;
@@ -421,6 +426,35 @@ public abstract class Thought {
     }
 
     /**
+     * Commits one complete conversational turn from the input retained by this thought's context and the LLM's
+     * non-blank spoken reply. Both entries are built before publication and admitted through one runtime-generation
+     * fence; command feedback, clarification prompts, and service phrases must not call this method because none is
+     * an LLM dialogue reply.
+     */
+    protected void recordDialoguePair(String reply) {
+        if (isStopped() || reply == null || reply.isBlank()) {
+            return;
+        }
+        Instant now = Instant.now();
+        ConversationTopic topic = memoryTopic();
+        MemoryImportance importance = memoryImportance();
+        String canonical = memoryCanonicalFact();
+        MemoryEntry input = new MemoryEntry(
+                now, topic, memorySource(), context.memoryInput(), importance,
+                null, canonical == null || canonical.isBlank() ? null : canonical);
+        MemoryEntry companion = new MemoryEntry(
+                now, topic, MemorySource.COMPANION, reply, MemoryImportance.LOW);
+        boolean recorded = dependencies.runtimeGeneration().runIfActive(() -> {
+            dependencies.memoryGateway().write(input);
+            dependencies.memoryGateway().write(companion);
+        });
+        if (recorded) {
+            CompanionDiagnostics.debug(trace, "memory",
+                    "record dialogue pair [" + topic + "/" + importance + "]");
+        }
+    }
+
+    /**
      * Optional clean one-line restatement of a durable fact stated this turn, used only as the memory
      * candidate/embedding text (the memory-visible input remains the normalized commander wording). Empty by default; a COMMANDER
      * thought supplies it from {@code classify_turn}.
@@ -430,14 +464,13 @@ public abstract class Thought {
     }
 
     /**
-     * Records what the companion actually said as its own {@code COMPANION} timeline entry - the spoken text
-     * itself, not a {@code {"status":"spoken"}} ack - so a future thought (which reads the past only through
-     * memory) knows it already answered. A blank utterance is not recorded.
+     * Records an EVENT thought's completed companion half as its own {@code COMPANION} timeline entry - the spoken
+     * text itself, not a {@code {"status":"spoken"}} marker. Commander conversation uses
+     * {@link #recordDialoguePair(String)} instead. A blank utterance is not recorded.
      * <p>
      * Stamped {@link MemoryImportance#LOW}, not the turn's importance: the companion's own words are never a
      * durable fact (only the commander's statements and events are). It stays in the recent timeline for
-     * continuity but never surfaces as a memory candidate, so a fact turn's reply/acknowledgement ("understood,
-     * noted...") cannot pollute recall.
+     * continuity but never surfaces as a memory candidate.
      */
     protected void recordCompanionSpeech(String text) {
         if (!isRuntimeActive() || text == null || text.isBlank()) {
@@ -471,10 +504,10 @@ public abstract class Thought {
      * event is now system-only and the companion owns its own speech). A <b>query</b> answer is carried in the
      * execution result and recorded as this call's tool RESULT (paired with the CALL {@link #recordCall} wrote).
      * A <b>command</b> declares its outcome in the result too (its {@code execute} return value, wrapped by
-     * {@code IntelCommand#handle}); a command turn files no call to pair with, so its outcome is remembered as a
-     * free-standing companion line. A <b>macro</b> stays
-     * self-narrating (its SPEAK steps carry completion futures), so only its failure is handled here. A failed
-     * command/query/macro receives a fixed localized failure reply when its handler provided no own text.
+     * {@code IntelCommand#handle}), but command execution is not dialogue: its outcome is voiced without entering
+     * conversational memory. A <b>macro</b> stays self-narrating (its SPEAK steps carry completion futures); only
+     * its failure is voiced here, likewise without a memory write. A failed command/query/macro receives a fixed
+     * localized failure reply when its handler provided no own text.
      * {@code SYSTEM} functions leave no timeline entry.
      */
     protected void recordOutcome(LlmToolInvocation inv, JsonObject result, List<LlmToolDefinition> tools,
@@ -493,7 +526,6 @@ public abstract class Thought {
             case COMMAND -> {
                 String outcome = spokenOutcomeText(result);
                 if (!outcome.isBlank()) {
-                    recordCompanionSpeech(outcome);        // free-standing line: a command turn files no call to pair
                     voice(outcome, false);
                 }
             }
@@ -502,7 +534,6 @@ public abstract class Thought {
                 // completion at all, so publish the shared failure phrase instead.
                 if (isExecutionFailure(result)) {
                     String failure = spokenOutcomeText(result);
-                    recordCompanionSpeech(failure);
                     voice(failure, false);
                 }
             }
@@ -599,7 +630,7 @@ public abstract class Thought {
     /**
      * Interrupts the thought from another thread (§2.7): raises the interrupt flag and cancels the awaited
      * future so the lane thread unblocks and dies. It never cancels a started action/macro (§1.9.41) and
-     * writes no memory itself - the owning thread owns any safe-flush.
+     * writes no memory itself; an incomplete commander turn has no pair to publish.
      */
     public final void interrupt() {
         interrupted = true;

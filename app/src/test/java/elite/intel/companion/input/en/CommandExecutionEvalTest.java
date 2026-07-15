@@ -15,8 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * For each phrase it scores, from the recorded tool-calls, whether the expected command tool was called and
  * (for parameterized commands) whether the extracted argument carries the requested value; for reflex cases it
  * additionally asserts the turn consumed zero LLM rounds (the {@code ReflexResolver} short-circuit) and for
- * LLM cases at least one. Each turn also dumps what it wrote to memory. Game commands are recorded, never
- * executed. Opt-in via the local-integration tag; LM Studio must be up.
+ * LLM cases at least one. Each turn also dumps its (normally empty) conversational-memory delta. The harness
+ * records game-tool execution requests instead of performing their side effects. Opt-in via the local-integration
+ * tag; LM Studio must be up.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -49,9 +50,8 @@ class CommandExecutionEvalTest {
             new Case("target drive", "target_subsystem", "drive", false),
             new Case("target power plant", "target_subsystem", "power", false),
             // Repeated-command regression (screen repro): the same direct command issued five times in a row.
-            // Memory accumulates across turns, so from turn 2 on the companion sees it "already targeted" earlier
-            // and must STILL re-execute target_subsystem every time - never chatter "we've already targeted it,
-            // shall we focus on another system?" and never refuse a repeated order.
+            // Command execution is memory-silent, so every turn must independently re-execute target_subsystem -
+            // never chatter "we've already targeted it, shall we focus on another system?" or refuse the order.
             new Case("target shield generator", "target_subsystem", "shield", false),
             new Case("target shield generator", "target_subsystem", "shield", false),
             new Case("target shield generator", "target_subsystem", "shield", false),

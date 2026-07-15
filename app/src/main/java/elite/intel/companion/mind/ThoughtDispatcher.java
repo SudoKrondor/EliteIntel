@@ -81,7 +81,7 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     /**
-     * Canonicalizes commander input for command matching, LLM prompting, and conversational memory.
+     * Canonicalizes commander input for command matching, LLM prompting, and any memory settlement this turn earns.
      * Production applies only per-language acoustic STT corrections; the seam remains injectable for tests.
      */
     private final Function<String, String> inputNormalizer;
@@ -161,10 +161,10 @@ public final class ThoughtDispatcher implements ManagedService {
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
-        // reflex fast-path and the LLM path (the reducer, prompt current-input, and memory). The name carries no
+        // reflex fast-path and the LLM path (the reducer, prompt current-input, and eligible memory). The name carries no
         // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
         // routed fine without it fell to a bare classify_turn with it. Raw STT stays only in intake diagnostics
-        // and the execution request; the dialogue remembers the normalized match text.
+        // and the execution request; a completed dialogue/query remembers the normalized match text.
         String rawStripped = stripLeadingCompanionName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(

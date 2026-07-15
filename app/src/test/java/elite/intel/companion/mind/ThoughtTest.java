@@ -51,8 +51,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * The consciousness loop: the happy path (single round, multi-round tool round-trip), the
- * classify_turn pre-execution step before the input is recorded, the EVENT memory tag with
- * query-only access and verbosity-gated speak, dangerous-action confirmation, interrupt/safe-flush, and
+ * classify_turn pre-execution step before a dialogue pair is recorded, the EVENT memory tag with
+ * query-only access and verbosity-gated speak, dangerous-action confirmation, interruption, and
  * the INVALID/provider-failure handling per source (§2.5/§2.6/§2.8/§2.9/§2.13/§5.1). Real
  * {@link PromptComposer}/{@link IntelActionAccessPolicy}/{@link SystemFunctionProvider}; the gateways are
  * hand-written fakes.
@@ -150,6 +150,8 @@ class ThoughtTest {
         assertEquals("increase speed\nby 10", execution.requests.get(0).commanderInput(),
                 "handler fallback parsing sees the originating order and the terse answer");
         assertTrue(clarificationCoordinator.peek().isEmpty());
+        assertTrue(memory.writes.isEmpty(),
+                "request_input and the completed command stay in transient clarification/execution state");
     }
 
     @Test
@@ -234,7 +236,7 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderSilentCommandTurnFilesInputAndAck() {
+    void commanderSilentCommandTurnFilesNoMemory() {
         llm.scripted.add(ok(call("close_panel", new JsonObject()),
                 call(SpeakFunction.ID, text("closing the panel"))));
 
@@ -244,21 +246,26 @@ class ThoughtTest {
                 "silent command runs; the co-occurring speak is withheld (never executed)");
         assertEquals(1, speech.requests.size(), "LLM-selected commands are acknowledged immediately before execution");
         assertFalse(speech.requests.get(0).text().isBlank(), "the immediate command ack is a spoken phrase");
-        // A command turn is remembered as a user->assistant pair: the commander imperative and the immediate
-        // acknowledgement (the silent command voiced no outcome of its own). The withheld speak and the command's
-        // call echo stay unrecorded.
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
-                        && "close the panel".equals(e.content())),
-                "the commander imperative is filed as the user turn");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
-                        && speech.requests.get(0).text().equals(e.content())),
-                "the immediate ack is filed as the companion reply, so the turn is not a dangling commander line");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null && e.toolLink().isCall()),
-                "the command records no call echo, and the withheld speak leaves no entry");
+        assertTrue(memory.writes.isEmpty(),
+                "command input, acknowledgement, call echo, and withheld speak are execution rather than dialogue");
     }
 
     @Test
-    void commanderCommandFailureKeepsImmediateAckAndReportsFailure() throws InterruptedException {
+    void repeatedCommandTurnsDoNotAccumulateConversationalMemory() {
+        llm.scripted.add(ok(call("close_panel", new JsonObject())));
+        llm.scripted.add(ok(call("close_panel", new JsonObject())));
+
+        Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes())).run();
+        Thought.commander(Urgency.NORMAL, "close the panel", dependencies(actionTypes())).run();
+
+        assertEquals(List.of("close_panel", "close_panel"), execution.toolNames(),
+                "the same command remains independently executable in one session");
+        assertTrue(memory.writes.isEmpty(),
+                "neither execution leaves history that could bias the next repeated command");
+    }
+
+    @Test
+    void commanderCommandFailureKeepsSpeechButFilesNoMemory() throws InterruptedException {
         llm.scripted.add(ok(call("close_panel", new JsonObject())));
         CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
         execution.futuresByTool.put("close_panel", failedCommand);
@@ -277,21 +284,15 @@ class ThoughtTest {
         assertEquals(2, speech.requests.size(), "a failed command receives a second, explicit outcome reply");
         String failureReply = speech.requests.get(1).text();
         assertFalse(failureReply.isBlank());
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
-                        && acknowledgement.equals(e.content())),
-                "the immediate acknowledgement remains the first companion reply");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
-                        && failureReply.equals(e.content())),
-                "the failure reply is persisted instead of leaving the acknowledged command silently failed");
-        assertTrue(memory.writes.stream().noneMatch(e -> e.content().contains("binding missing")),
-                "internal execution details stay in diagnostics, not in companion memory");
+        assertTrue(memory.writes.isEmpty(),
+                "command acknowledgement, failure reply, and internal execution details stay out of memory");
     }
 
     @Test
     void commanderMixedQueryAndCommandTurnKeepsInputSoTheQueryPairHasItsUserTurn() {
-        // A turn that runs both a QUERY and a COMMAND: the commander input is filed (as it is for every turn now),
-        // the query records its call/result pair keeping that preceding user turn (else it replays as an assistant
-        // tool-call with no user before it), and the co-occurring command still records no call echo.
+        // A turn that runs both a QUERY and a COMMAND: QUERY files the single commander input anchor and its
+        // call/result pair (else it would replay as an assistant tool-call with no user before it), while the
+        // co-occurring command still records no call echo or plain outcome.
         IntelActionTypeResolver mixed = new IntelActionTypeResolver(id -> switch (id) {
             case "scan_system" -> IntelActionType.QUERY;
             case "close_panel" -> IntelActionType.COMMAND;
@@ -311,6 +312,9 @@ class ThoughtTest {
         assertTrue(memory.writes.stream().noneMatch(e -> e.toolLink() != null && e.toolLink().isCall()
                         && "close_panel".equals(e.toolLink().toolName())),
                 "the co-occurring command still records no call echo");
+        assertTrue(memory.writes.stream().noneMatch(e -> e.source() == MemorySource.COMPANION
+                        && e.toolLink() == null),
+                "the co-occurring command acknowledgement/outcome is not recorded as plain dialogue");
     }
 
     @Test
@@ -328,7 +332,7 @@ class ThoughtTest {
     }
 
     @Test
-    void reflexCommandFailureIsRecordedAndVoiced() {
+    void reflexCommandFailureIsVoicedWithoutMemory() {
         CompletableFuture<JsonObject> failedCommand = new CompletableFuture<>();
         failedCommand.completeExceptionally(new IllegalStateException("input binding missing"));
         execution.futuresByTool.put("close_panel", failedCommand);
@@ -339,12 +343,8 @@ class ThoughtTest {
         assertEquals(1, speech.requests.size());
         String failureReply = speech.requests.get(0).text();
         assertFalse(failureReply.isBlank());
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER
-                        && "close the panel".equals(e.content())),
-                "a failed reflex command now keeps the imperative it answers");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMPANION
-                        && failureReply.equals(e.content())),
-                "a failed reflex command receives the same visible outcome as an LLM-selected command");
+        assertTrue(memory.writes.isEmpty(),
+                "a failed reflex command receives visible feedback without becoming dialogue memory");
     }
 
     @Test
@@ -415,10 +415,12 @@ class ThoughtTest {
     }
 
     @Test
-    void classifyTurnAppliedBeforeInputIsRecorded() {
+    void classifyTurnAppliedBeforeDialoguePairIsRecorded() {
         execution.stateToMutate = state; // the fake mirrors the classify_turn handle effect on the topic
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
-                classifyArgs("navigation", "high", false, "routes are the subject"))));
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID,
+                        classifyArgs("navigation", "high", false, "routes are the subject")),
+                call(SpeakFunction.ID, text("let's talk routes"))));
 
         Thought.commander(Urgency.NORMAL, "let's talk routes", dependencies()).run();
 
@@ -435,10 +437,14 @@ class ThoughtTest {
     @Test
     void routineAndMaxTurnsCannotStoreModelSuppliedCanonicalFacts() {
         execution.stateToMutate = state;
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
-                classifyArgs("combat", "normal", false, "target the drives"))));
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
-                classifyArgs("navigation", "max", false, "docking code is sierra nine"))));
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID,
+                        classifyArgs("combat", "normal", false, "target the drives")),
+                call(SpeakFunction.ID, text("understood"))));
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID,
+                        classifyArgs("navigation", "max", false, "docking code is sierra nine")),
+                call(SpeakFunction.ID, text("remembered"))));
 
         Thought.commander(Urgency.NORMAL, "target the drives", dependencies()).run();
         Thought.commander(Urgency.NORMAL, "remember verbatim: docking code sierra nine", dependencies()).run();
@@ -447,7 +453,7 @@ class ThoughtTest {
                 .filter(entry -> entry.source() == MemorySource.COMMANDER)
                 .toList();
         assertEquals(2, inputs.size());
-        assertNull(inputs.get(0).canonicalFact(), "NORMAL commands stay timeline-only");
+        assertNull(inputs.get(0).canonicalFact(), "NORMAL dialogue does not trust a model-supplied fact");
         assertEquals(MemoryImportance.NORMAL, inputs.get(0).importance());
         assertNull(inputs.get(1).canonicalFact(), "MAX keeps the original input verbatim");
         assertEquals(MemoryImportance.MAX, inputs.get(1).importance());
@@ -457,8 +463,10 @@ class ThoughtTest {
     @Test
     void highTurnFallsBackToCurrentInputWhenCanonicalFactWasCopiedFromAnotherTurn() {
         execution.stateToMutate = state;
-        llm.scripted.add(ok(call(ClassifyTurnFunction.ID,
-                classifyArgs("combat", "high", false, "docking code is sierra nine"))));
+        llm.scripted.add(ok(
+                call(ClassifyTurnFunction.ID,
+                        classifyArgs("combat", "high", false, "docking code is sierra nine")),
+                call(SpeakFunction.ID, text("understood"))));
 
         String current = "if pirates corner us, retreat codeword is granite";
         Thought.commander(Urgency.NORMAL, current, dependencies()).run();
@@ -471,7 +479,7 @@ class ThoughtTest {
     }
 
     @Test
-    void gameActionTurnCannotBecomeAHighFact() {
+    void gameActionTurnFilesNeitherDialogueNorHighFact() {
         execution.stateToMutate = state;
         llm.scripted.add(ok(
                 call(ClassifyTurnFunction.ID, classifyArgs("combat", "high", false, "target the drives")),
@@ -479,11 +487,8 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "target the drives", dependencies(actionTypes())).run();
 
-        MemoryEntry input = memory.writes.stream()
-                .filter(entry -> entry.source() == MemorySource.COMMANDER)
-                .findFirst().orElseThrow();
-        assertEquals(MemoryImportance.HIGH, input.importance(), "classification still stamps timeline importance");
-        assertNull(input.canonicalFact(), "a called game action never becomes trusted fact context");
+        assertTrue(memory.writes.isEmpty(),
+                "classification cannot turn a command execution into dialogue or trusted fact memory");
     }
 
     @Test
@@ -495,9 +500,9 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "how much fuel is left", dependencies()).run();
 
-        // Every commander turn is recorded so the dialogue history alternates user/assistant. A question carries
-        // no durable fact, so its input is stamped LOW (forced, even though classify_turn said "normal") - kept
-        // out of fact-recall - while the answer that carries the fact is recorded as the companion's own words.
+        // This question has a non-blank LLM answer, so the complete pair is recorded. The input is stamped LOW
+        // (forced, even though classify_turn said "normal") and stays out of fact recall; the answer is the
+        // companion half of the pair.
         assertEquals(2, memory.writes.size(), "both the question input and the answer are recorded");
         MemoryEntry input = memory.writes.get(0);
         assertEquals(MemorySource.COMMANDER, input.source());
@@ -578,21 +583,15 @@ class ThoughtTest {
     }
 
     @Test
-    void commanderInvalidResponseRecordsUnresolvedAndSpeaks() {
+    void commanderInvalidResponseSpeaksWithoutMemory() {
         llm.scripted.add(invalid());
 
         Thought.commander(Urgency.NORMAL, "do the thing", dependencies()).run();
 
-        assertEquals(2, memory.writes.size());
-        MemoryEntry entry = memory.writes.get(0);
-        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, entry.topic());
         assertEquals(1, speech.requests.size(), "commander hears a service phrase");
         assertNotNull(speech.requests.get(0).text());
         assertFalse(speech.requests.get(0).text().isBlank());
-        MemoryEntry reply = memory.writes.get(1);
-        assertEquals(MemorySource.COMPANION, reply.source());
-        assertEquals(speech.requests.get(0).text(), reply.content(),
-                "the service failure is also recorded as the companion's reply");
+        assertTrue(memory.writes.isEmpty(), "an invalid response forms no LLM dialogue pair");
         assertTrue(execution.toolNames().isEmpty());
     }
 
@@ -602,8 +601,8 @@ class ThoughtTest {
 
         Thought.commander(Urgency.NORMAL, "anything", dependencies()).run();
 
-        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, memory.writes.get(0).topic());
         assertEquals(1, speech.requests.size());
+        assertTrue(memory.writes.isEmpty(), "a provider failure forms no LLM dialogue pair");
     }
 
     @Test
@@ -616,13 +615,8 @@ class ThoughtTest {
 
         assertTrue(execution.toolNames().contains("self_destruct"), "dangerous action runs only after confirm");
         assertFalse(speech.requests.isEmpty(), "the thought voices a confirmation prompt before running it");
-        assertTrue(hasContent("dangerous action requires confirmation"));
-        assertTrue(hasContent("dangerous action confirmed"));
-        // The confirmation is recorded as its own user turn (a <confirmed/> marker) so the executed outcome pairs
-        // with it as a distinct exchange rather than trailing the confirmation prompt as a second assistant line.
-        assertTrue(memory.writes.stream().anyMatch(
-                        e -> e.source() == MemorySource.COMMANDER && "<confirmed/>".equals(e.content())),
-                "the commander's confirmation is filed as a distinct user turn");
+        assertTrue(memory.writes.isEmpty(),
+                "confirmation prompts, markers, and executed dangerous commands are runtime state, not dialogue");
     }
 
     @Test
@@ -633,7 +627,7 @@ class ThoughtTest {
         runResolving(Thought.commander(Urgency.NORMAL, "self destruct", dependencies()), coordinator::cancel);
 
         assertFalse(execution.toolNames().contains("self_destruct"), "cancelled dangerous action must not run");
-        assertTrue(hasContent("dangerous action cancelled"));
+        assertTrue(memory.writes.isEmpty(), "cancelled confirmation leaves no conversational memory");
     }
 
     @Test
@@ -645,11 +639,11 @@ class ThoughtTest {
         Thought.commander(Urgency.NORMAL, "self destruct", dependencies()).run(); // open() returns null -> no blocking
 
         assertFalse(execution.toolNames().contains("self_destruct"));
-        assertTrue(hasContent("dangerous action cancelled"));
+        assertTrue(memory.writes.isEmpty(), "overlapping confirmation leaves no conversational memory");
     }
 
     @Test
-    void interruptWhileWaitingOnLlmSafeFlushesUnresolvedInput() throws InterruptedException {
+    void interruptWhileWaitingOnLlmFilesNoPartialTurn() throws InterruptedException {
         llm.blockForever = true; // the thought will block on the LLM future until interrupted
         Thought thought = Thought.commander(Urgency.NORMAL, "do something", dependencies());
         Thread worker = new Thread(thought::run, "thought-test");
@@ -659,10 +653,7 @@ class ThoughtTest {
         worker.join(2000);
 
         assertFalse(worker.isAlive(), "interrupted thought must die");
-        assertEquals(1, memory.writes.size(), "safe-flush must not leave a memory hole");
-        MemoryEntry flushed = memory.writes.get(0);
-        assertEquals(MemorySource.COMMANDER, flushed.source());
-        assertEquals(ConversationTopic.UNRESOLVED_COMMANDER_INPUT, flushed.topic());
+        assertTrue(memory.writes.isEmpty(), "an interrupted thought has no complete dialogue pair to file");
     }
 
     @Test
@@ -726,10 +717,6 @@ class ThoughtTest {
     }
 
     // --- helpers ---
-
-    private boolean hasContent(String content) {
-        return memory.writes.stream().anyMatch(e -> content.equals(e.content()));
-    }
 
     private static void waitUntil(BooleanSupplier condition) throws InterruptedException {
         long deadline = System.currentTimeMillis() + 2000;
