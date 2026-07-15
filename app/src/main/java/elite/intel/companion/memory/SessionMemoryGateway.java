@@ -113,6 +113,30 @@ public final class SessionMemoryGateway implements MemoryGateway {
         }
     }
 
+    /**
+     * Publishes a complete semantic contract under the gateway monitor, so prompt/recall/snapshot readers cannot
+     * observe only part of it. Unlike an ordinary over-long write, a batch member cannot be deferred to the
+     * asynchronous compressor: that would expose the rest of the batch without this entry. Batch content is
+     * therefore deterministically capped before the first mutation; the full contract remains present and the
+     * existing per-entry prompt-bloat limit remains enforced.
+     */
+    @Override
+    public synchronized void writeBatch(List<MemoryEntry> entries) {
+        Objects.requireNonNull(entries, "entries");
+        if (entries.isEmpty()) {
+            return;
+        }
+        List<MemoryEntry> bounded = new ArrayList<>(entries.size());
+        for (MemoryEntry entry : entries) {
+            bounded.add(boundForAtomicBatch(Objects.requireNonNull(entry, "entry")));
+        }
+        // write() is synchronized on this same monitor and Java monitors are re-entrant. Holding the outer lock
+        // across the entire loop is the atomicity boundary seen by every synchronized gateway reader.
+        for (MemoryEntry entry : bounded) {
+            write(entry);
+        }
+    }
+
     @Override
     public synchronized List<MemoryEntry> readShortTermTimeline() {
         return shortTerm.timeline();
@@ -304,6 +328,23 @@ public final class SessionMemoryGateway implements MemoryGateway {
         MemoryEntry lowered = new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), lowerContent,
                 entry.importance(), null, lowerCanonical, entry.toolLink());
         return lowered.withEmbedding(embed(lowered.embeddingText()));
+    }
+
+    /** Keeps an atomic batch synchronous and complete without allowing one entry to exceed the prompt cap. */
+    private static MemoryEntry boundForAtomicBatch(MemoryEntry entry) {
+        String content = entry.content();
+        int max = CompanionConfig.memoryEntryMaxChars();
+        if (content == null || content.length() <= max) {
+            return entry;
+        }
+        String suffix = max >= 3 ? "..." : "";
+        int contentEnd = Math.max(0, max - suffix.length());
+        String bounded = content.substring(0, contentEnd).stripTrailing() + suffix;
+        if (bounded.length() > max) {
+            bounded = bounded.substring(0, max);
+        }
+        return new MemoryEntry(entry.timestamp(), entry.topic(), entry.source(), bounded,
+                entry.importance(), null, entry.canonicalFact(), entry.toolLink());
     }
 
     /**

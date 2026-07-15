@@ -151,6 +151,7 @@ class CompanionRuntimeGraphTest {
         INSTANCE;
 
         @Override public void write(MemoryEntry entry) { }
+        @Override public void writeBatch(List<MemoryEntry> entries) { }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
         @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
         @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
