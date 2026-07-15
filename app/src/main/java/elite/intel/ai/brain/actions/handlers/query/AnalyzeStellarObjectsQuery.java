@@ -21,7 +21,11 @@ public class AnalyzeStellarObjectsQuery extends BaseQueryAnalyzer implements Int
 
     @Override
     public String llmDescription() {
-        return "Report the stellar bodies in the current system, or details of one named body: type, landability, gravity, atmosphere, temperature, rings, bio signals, and discovery/mapping status. Also answers whole-system counts (how many planets/moons/landable).";
+        return "List stellar bodies in the current system, especially which planets or moons are landable. "
+                + "Use this query for body properties such as type, landability, gravity, atmosphere, temperature, "
+                + "rings, bio signals, and discovery/mapping status, including details of one named body and "
+                + "whole-system counts. Do not use it for FSS signal sources, resource extraction sites, "
+                + "conflict zones, mining hotspots, or other points of interest.";
     }
 
 

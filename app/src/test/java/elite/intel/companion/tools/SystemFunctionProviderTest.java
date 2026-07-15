@@ -99,7 +99,7 @@ class SystemFunctionProviderTest {
                 .findFirst()
                 .orElseThrow();
 
-        assertTrue(speak.description().contains("only when no offered action, query, or macro matches"));
+        assertTrue(speak.description().contains("only when no offered function matches"));
         assertTrue(speak.description().contains("call request_input instead"));
         assertTrue(speak.description().contains("Never use it to acknowledge, promise, or describe"));
         assertTrue(speak.description().contains("call that function instead"));
