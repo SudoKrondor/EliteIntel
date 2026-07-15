@@ -51,7 +51,7 @@ class CompanionSystemPromptPartTest {
         assertTrue(text.contains("exactly that requested call and no other call"));
         // Omitted/pending boundaries are explained so the model neither repeats them nor treats them as speech.
         assertTrue(text.contains("<no_reply/> or <cut_off/>"));
-        assertTrue(text.contains("<processing/> means that turn's query"));
+        assertTrue(text.contains("<processing/> means that turn's function"));
     }
 
     @Test
