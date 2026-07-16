@@ -81,7 +81,7 @@ class CompanionSystemPromptTest {
                 "ELSE: call speak for truthful text-only answers");
         assertTrue(normalized.contains("Only request_input opens a continuation"));
         assertTrue(normalized.contains("Combine its <original_command> with the current commander input"));
-        assertTrue(normalized.contains("A terse imperative is still a command"));
+        assertTrue(normalized.contains("Treat single-word or very short ship-context phrases as likely commands"));
         assertTrue(normalized.contains("Game-data questions require their matching function"));
         assertTrue(normalized.contains("decline only requests requiring unavailable external data or actions"));
     }
@@ -94,11 +94,13 @@ class CompanionSystemPromptTest {
     }
 
     @Test
-    void unmatchedTerseImperativeMustNotBeEchoed() {
+    void shortShipContextPhraseIsTreatedAsACommandAndNeverEchoed() {
         String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
 
-        assertTrue(normalized.contains("Otherwise ask for the action or target"));
-        assertTrue(normalized.contains("never echo or restate the input"));
+        assertTrue(normalized.contains("likely commands, not conversation"));
+        assertTrue(normalized.contains("If exactly one offered function fits, call it"));
+        assertTrue(normalized.contains("Otherwise ask for an action or target"));
+        assertTrue(normalized.contains("never echo or restate it"));
     }
 
     @Test
