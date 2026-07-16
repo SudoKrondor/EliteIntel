@@ -14,13 +14,29 @@ final class MidTermMemory {
     private final Map<MemoryKind, List<MemoryRecord>> retainedByKind = new EnumMap<>(MemoryKind.class);
     private final Map<MemoryKind, List<MemoryRecord>> pendingByKind = new EnumMap<>(MemoryKind.class);
 
-    /** Adds a record whose kind has retained-history storage. */
+    /** Adds a record whose kind has retained-history storage, collapsing whole-record duplicates. */
     void add(MemoryRecord record) {
         if (!record.kind().movesToMidTerm()) {
             throw new IllegalArgumentException("No mid-term storage for " + record.kind());
         }
-        insertChronologically(
-                retainedByKind.computeIfAbsent(record.kind(), ignored -> new ArrayList<>()), record);
+        List<MemoryRecord> pending = pendingByKind.getOrDefault(record.kind(), List.of());
+        if (pending.stream().anyMatch(existing -> isDuplicate(existing, record))) {
+            // Pending records belong to an already published consolidation transaction and must stay unchanged.
+            return;
+        }
+
+        List<MemoryRecord> retained = retainedByKind.computeIfAbsent(record.kind(), ignored -> new ArrayList<>());
+        MemoryRecord survivor = record;
+        for (int i = retained.size() - 1; i >= 0; i--) {
+            MemoryRecord existing = retained.get(i);
+            if (isDuplicate(existing, record)) {
+                retained.remove(i);
+                if (existing.timestamp().isAfter(survivor.timestamp())) {
+                    survivor = existing;
+                }
+            }
+        }
+        insertChronologically(retained, survivor);
     }
 
     /** Returns retained and pending records of one kind, oldest-to-newest. */
@@ -110,5 +126,24 @@ final class MidTermMemory {
             index--;
         }
         records.add(index, record);
+    }
+
+    private static boolean isDuplicate(MemoryRecord first, MemoryRecord second) {
+        if (first.kind() != second.kind()) {
+            return false;
+        }
+        if (first.kind() == MemoryKind.EVENT) {
+            return first.eventFact().equals(second.eventFact());
+        }
+        if (first.kind() != MemoryKind.DIALOGUE) {
+            return false;
+        }
+        double floor = CompanionMemoryPolicy.semanticDedupFloor();
+        for (int i = 0; i < first.entries().size(); i++) {
+            if (!MemorySearch.sameMeaning(first.entries().get(i), second.entries().get(i), floor)) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -1,5 +1,7 @@
 package elite.intel.companion.memory;
 
+import elite.intel.ai.embed.AngleEmbedder;
+import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.companion.model.memory.MemoryKind;
 import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
@@ -63,6 +65,25 @@ class SessionMemoryGatewayTest {
                 .get(0).entries().get(0).content());
         assertEquals("jump complete", snapshot.retainedByKind().get(MemoryKind.EVENT)
                 .get(0).entries().get(0).content());
+    }
+
+    @Test
+    void recentDialogueDuplicatesCollapseAtTheMidTermHandoff() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0,
+                () -> new SemanticPhraseMatcher(new AngleEmbedder(Map.of(
+                        "where are we", 0.0,
+                        "what system is this", 0.0,
+                        "we are in Sol", 90.0,
+                        "our system is Sol", 90.0))));
+        MemoryRecord first = dialogue(0, "where are we", "we are in Sol");
+        MemoryRecord newest = dialogue(1, "what system is this", "our system is Sol");
+        gateway.write(first);
+        gateway.write(newest);
+        for (int i = 2; i < CompanionMemoryPolicy.recentRecordLimit() + 2; i++) {
+            gateway.write(dialogue(i, "order " + i, "reply " + i));
+        }
+
+        assertEquals(List.of(newest), gateway.snapshot().retainedByKind().get(MemoryKind.DIALOGUE));
     }
 
     @Test
