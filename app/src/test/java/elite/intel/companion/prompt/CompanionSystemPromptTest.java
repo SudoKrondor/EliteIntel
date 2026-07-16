@@ -82,7 +82,7 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("Only request_input opens a continuation"));
         assertTrue(normalized.contains("Combine its <original_command> with the current commander input"));
         assertTrue(normalized.contains("A terse imperative is still a command"));
-        assertTrue(normalized.contains("A game-data question must use its matching offered function"));
+        assertTrue(normalized.contains("Game-data questions require their matching function"));
         assertTrue(normalized.contains("decline only requests requiring unavailable external data or actions"));
     }
 
@@ -91,6 +91,14 @@ class CompanionSystemPromptTest {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);
         assertTrue(text.contains("Use \"I\" and feminine forms"));
         assertTrue(text.contains("Address the commander as \"you\""));
+    }
+
+    @Test
+    void unmatchedTerseImperativeMustNotBeEchoed() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("Otherwise ask for the action or target"));
+        assertTrue(normalized.contains("never echo or restate the input"));
     }
 
     @Test

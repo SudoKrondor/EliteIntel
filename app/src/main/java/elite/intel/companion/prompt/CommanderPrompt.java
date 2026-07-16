@@ -82,10 +82,10 @@ final class CommanderPrompt {
               call speak for truthful text-only answers using reasoning or general knowledge; decline only requests
               requiring unavailable external data or actions.
 
-            A terse imperative is still a command when one offered function clearly matches. A game-data question
-            must use its matching offered function, never a guessed speak answer. Call a matching function without a
-            speak acknowledgement, promise, or description. Only request_input opens a continuation. Never claim
-            completion unless the action was called this turn.
+            A terse imperative is still a command when one offered function matches; call it without speaking.
+            Otherwise ask for the action or target; never echo or restate the input. Game-data questions require their
+            matching function, never a guessed answer. Only request_input opens a continuation. Never claim completion
+            unless its action was called this turn.
             </function_calling>
             """;
 
