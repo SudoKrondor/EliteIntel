@@ -11,8 +11,8 @@ import java.util.UUID;
 /**
  * Production {@link CompanionNarrator}: routes a subscriber's voicing request to the right owner - a
  * start-of-processing filler straight to the {@link SpeechGateway} (voiced, not remembered), and a narrated or
- * verbatim result to the {@link ThoughtDispatcher}'s EVENT lane (voiced and remembered as a {@code user ->
- * assistant} pair). It holds no state of its own; it is the thin composition point installed into
+ * verbatim result to the {@link ThoughtDispatcher}'s EVENT lane (voiced and stored as a completed EVENT record).
+ * It holds no state of its own; it is the thin composition point installed into
  * {@code CompanionRuntime} so gameplay subscribers reach the companion through one door.
  */
 public final class DispatcherCompanionNarrator implements CompanionNarrator {
@@ -42,16 +42,16 @@ public final class DispatcherCompanionNarrator implements CompanionNarrator {
     }
 
     @Override
-    public void narrate(String data, String instructions, String topic) {
+    public void narrate(String data, String instructions) {
         if (runtimeGeneration.isActive()) {
-            dispatcher.submitEventReaction(data, instructions, topic, Urgency.NORMAL);
+            dispatcher.submitEventReaction(data, instructions, Urgency.NORMAL);
         }
     }
 
     @Override
-    public void announce(String sourceId, String phrase, String topic, boolean urgent) {
+    public void announce(String phrase, boolean urgent) {
         if (runtimeGeneration.isActive()) {
-            dispatcher.submitEventVerbatim(sourceId, phrase, topic, urgency(urgent));
+            dispatcher.submitEventVerbatim(phrase, urgency(urgent));
         }
     }
 

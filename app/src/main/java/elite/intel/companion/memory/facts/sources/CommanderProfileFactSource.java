@@ -22,7 +22,7 @@ import java.util.Locale;
 public final class CommanderProfileFactSource implements MemoryFactSource {
 
     /** Provenance label for the {@code <fact source="...">} attribute. */
-    private static final String ID = "commander";
+    private static final String ID = "commander_profile";
     private static final List<String> RELEVANCE_ALIAS_KEYS = List.of("query_player_profile_rank_progress");
 
     @Override

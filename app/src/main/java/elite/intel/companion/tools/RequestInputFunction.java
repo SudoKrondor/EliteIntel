@@ -30,10 +30,7 @@ public final class RequestInputFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Ask the commander for exactly one missing required parameter of an offered function that clearly "
-                + "matches the order. Use only when the function cannot be called without inventing that value. "
-                + "action_id and parameter_name must exactly match the offered function schema. Do not use for chat, "
-                + "unsupported requests, or ambiguity between different functions.";
+        return "Ask the commander for one missing required parameter of an offered game function.";
     }
 
     @Override

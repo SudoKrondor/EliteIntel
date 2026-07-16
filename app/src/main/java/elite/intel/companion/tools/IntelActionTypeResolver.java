@@ -8,10 +8,8 @@ import java.util.function.Function;
 
 /**
  * Resolves a tool-call id to its {@link IntelActionType}, so a {@code Thought} can tell what kind of thing
- * the LLM invoked. A {@code COMMAND}/{@code QUERY} has a handler-owned spoken outcome (its
- * {@code text_to_speech_response} is voiced when present, and the LLM's own {@code speak} is withheld for
- * the turn); a {@code MACRO}, {@code SYSTEM} function or {@code UNKNOWN} id is not a handler outcome (it
- * neither vocalizes here nor withholds the LLM's speak).
+ * the LLM invoked. Commands and queries have handler-owned outcomes, macros narrate their own steps, and system
+ * functions apply their individual interaction policy.
  * <p>
  * The resolution is a registry lookup; it is injected (a test seam) so unit tests need not load the
  * command/query/macro/system-function registries.
@@ -26,15 +24,15 @@ public final class IntelActionTypeResolver {
         QUERY,
         /** User-defined macro (custom command). */
         MACRO,
-        /** Companion system function (speak, classify_turn, memory_search). */
+        /** Companion system function such as {@code speak} or {@code request_input}. */
         SYSTEM,
         /** Id not found in any registry. */
         UNKNOWN;
 
         /**
          * Whether this is a game action the LLM invoked - a command, query or macro - as opposed to a companion
-         * system function or an unknown id. Game actions get a tool-call id (for pair replay), withhold the LLM's
-         * own {@code speak} for the turn, and are the turn's settling headline. The single owner of that grouping.
+         * system function or an unknown id. Queries receive a tool-call id for completed-record replay, and every
+         * game action is reported as the turn's execution outcome. The single owner of that grouping.
          */
         public boolean isGameAction() {
             return this == COMMAND || this == QUERY || this == MACRO;

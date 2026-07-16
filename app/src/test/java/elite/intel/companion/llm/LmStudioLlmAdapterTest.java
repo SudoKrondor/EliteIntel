@@ -31,7 +31,7 @@ class LmStudioLlmAdapterTest {
 
         assertEquals("gemma-3", json.get("model").getAsString());
         assertEquals("required", json.get("tool_choice").getAsString());
-        assertTrue(json.get("parallel_tool_calls").getAsBoolean());
+        assertFalse(json.get("parallel_tool_calls").getAsBoolean());
         assertFalse(json.has("prompt_cache_key"), "Mistral's cache key must not be sent to LM Studio");
         // Local models accept a custom temperature, so it must be sent (the inverse of the OpenAI case).
         assertTrue(json.has("temperature"), "a custom temperature must be sent to LM Studio");
@@ -42,9 +42,9 @@ class LmStudioLlmAdapterTest {
     void closedValueParamRendersJsonSchemaEnumWhileFreeFormDoesNot() {
         LlmRequest request = new LlmRequest("req-2",
                 List.of(LlmMessage.of(LlmMessageRole.USER, "rate it")),
-                List.of(new LlmToolDefinition("classify_turn", "Rate", "",
+                List.of(new LlmToolDefinition("set_priority", "Set priority", "",
                         List.of(
-                                new ActionParameterSpec("importance", "string", true, "how important",
+                                new ActionParameterSpec("priority", "string", true, "priority level",
                                         List.of(), null, List.of("low", "normal", "high", "max")),
                                 new ActionParameterSpec("note", "string", false, "free text", List.of(), null)))),
                 PromptCacheProfile.COMMANDER);
@@ -54,10 +54,10 @@ class LmStudioLlmAdapterTest {
                 .getAsJsonObject("function").getAsJsonObject("parameters").getAsJsonObject("properties");
 
         // The closed-value param carries a JSON-Schema enum constraining the model to those values.
-        JsonObject importance = properties.getAsJsonObject("importance");
-        assertTrue(importance.has("enum"), "closed-value param must render an enum");
+        JsonObject priority = properties.getAsJsonObject("priority");
+        assertTrue(priority.has("enum"), "closed-value param must render an enum");
         assertEquals(List.of("low", "normal", "high", "max"),
-                importance.getAsJsonArray("enum").asList().stream().map(e -> e.getAsString()).toList());
+                priority.getAsJsonArray("enum").asList().stream().map(e -> e.getAsString()).toList());
         // The free-form param has no enum so the model is not constrained.
         assertFalse(properties.getAsJsonObject("note").has("enum"), "free-form param must not render an enum");
     }

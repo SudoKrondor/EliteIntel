@@ -10,9 +10,7 @@ import elite.intel.companion.model.Urgency;
  * <p>
  * Each ambient source decides its own relevance from {@link #query()}; after it opts in, its {@code factsFor}
  * implementation may ignore the query and only read live state. {@link #source()} and
- * {@link #urgency()} are the other turn-scoped signals available at this point. The turn kind
- * (question vs command) is intentionally absent: the model decides it mid-turn via {@code classify_turn}, after this
- * block is built, so it does not exist yet at fact-selection time.
+ * {@link #urgency()} are the other turn-scoped signals available at this point.
  *
  * @param query   the commander's current input (matchInput); blank selects no ambient sources
  * @param source  the thought source assembling the prompt (COMMANDER today)

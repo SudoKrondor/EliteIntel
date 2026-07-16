@@ -37,7 +37,7 @@ class CompanionExecutionGatewayTest {
     private static final Executor SYNC = Runnable::run;
 
     /** Records the last handle() invocation so the test can assert routing and arguments. */
-    private static final class RecordingCommand implements IntelAction {
+    private static class RecordingCommand implements IntelAction {
         volatile boolean invoked;
         volatile JsonObject seenArgs;
         volatile String seenText;
@@ -114,6 +114,23 @@ class CompanionExecutionGatewayTest {
         gateway.submit(new ExecutionRequest("r1", "nav", new JsonObject(), "is planet b one landable")).get();
 
         assertEquals("is planet b one landable", command.seenText);
+    }
+
+    @Test
+    void actionMaySelectTheCanonicalModelVisibleInput() throws Exception {
+        RecordingCommand command = new RecordingCommand() {
+            @Override public String executionInput(String originalInput, String matchInput) {
+                return matchInput;
+            }
+        };
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("nav", command), Map.of(), Map.of(), SYNC, SYNC);
+
+        gateway.submit(new ExecutionRequest(
+                "r1", "nav", new JsonObject(),
+                "remember my career", "remember my carrier", 0L)).get();
+
+        assertEquals("remember my carrier", command.seenText);
     }
 
     @Test
@@ -203,8 +220,8 @@ class CompanionExecutionGatewayTest {
         AtomicInteger currentNarratorCalls = new AtomicInteger();
         CompanionNarrator currentNarrator = new CompanionNarrator() {
             @Override public void filler(String text, boolean urgent) { currentNarratorCalls.incrementAndGet(); }
-            @Override public void narrate(String data, String instructions, String topic) { }
-            @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) { }
+            @Override public void narrate(String data, String instructions) { }
+            @Override public void announce(String phrase, boolean urgent) { }
         };
         CompanionRuntimeGraph currentRuntime = CompanionRuntimeTestSupport.installNarrator(currentNarrator);
         IntelAction oldHandler = new IntelAction() {

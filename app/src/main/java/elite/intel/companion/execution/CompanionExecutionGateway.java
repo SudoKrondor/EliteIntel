@@ -165,7 +165,8 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
         // Pass the commander's raw utterance as originalUserInput so handlers that match a spoken name
         // (e.g. AnalyzeStellarObjectsQuery resolving "is B 1 landable") receive it instead of "".
         JsonObject result = CompanionRuntime.callWithinGeneration(request.runtimeGenerationId(),
-                () -> tool.handle(request.toolName(), request.arguments(), request.commanderInput()));
+                () -> tool.handle(request.toolName(), request.arguments(),
+                        tool.executionInput(request.commanderInput(), request.matchInput())));
         if (result != null) {
             return result;
         }

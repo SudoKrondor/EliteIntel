@@ -140,7 +140,7 @@ class CommandExecutionEvalTest {
         }
 
         block.append(String.format("%nscore: %d / %d%n", hits, cases.size()));
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
@@ -148,7 +148,7 @@ class CommandExecutionEvalTest {
 
     /**
      * A command repeated verbatim must fire every single time: the companion never skips it as
-     * "already done" just because an identical command with its TOOL_RESULT already sits in the Visible
+     * "already done" just because an identical command appears in recent history
      * context. Says the unambiguous imperative "целься в двигатели" (target the drive) three times in one
      * conversation and asserts target_subsystem executed on every turn.
      */

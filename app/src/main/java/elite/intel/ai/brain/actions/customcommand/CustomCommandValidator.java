@@ -1,29 +1,23 @@
 package elite.intel.ai.brain.actions.customcommand;
 
-import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.IntelActionContext;
+import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
+import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Utility class for validating custom command definitions. Provides methods to validate
- * actionKey formatting, uniqueness, parameter integrity, and step configurations.
- * This class is used to enforce proper custom command rules both at the context-independent
- * level (individual command validation) and context-dependent level (cross-command validation).
- *
- * The following validation aspects are supported:
- * - Action key format: patterns, length constraints, and collision detection with built-in commands.
- * - Cross-reference validation: uniqueness of action keys, phrase collisions, and step parameter references.
- * - Parameter validation: parameter names, types, and declared usage in templates.
- *
- * The class is not instantiable.
- */
+/** Validates custom-command identity, aliases, parameters, steps, and delegation boundaries. */
 public final class CustomCommandValidator {
 
     /**
@@ -242,6 +236,10 @@ public final class CustomCommandValidator {
                     if (customCommandIds.contains(normalize(step.getActionId()))) {
                         errors.add(prefix + "RUN_COMMAND cannot target another custom command.");
                     }
+                    IntelAction builtIn = CommandRegistry.getInstance().byId().get(step.getActionId());
+                    if (builtIn != null && !builtIn.isAvailableIn(IntelActionContext.CUSTOM_COMMAND)) {
+                        errors.add(prefix + "RUN_COMMAND cannot target " + step.getActionId() + ".");
+                    }
                     step.getStepParams().forEach((key, template) ->
                             validateParamRefs(template, prefix, "stepParams[" + key + "]",
                                     declaredParamNames, errors));
@@ -286,21 +284,22 @@ public final class CustomCommandValidator {
     }
 
     private static Set<String> builtInPhrases() {
-        var full = AiActionsMap.getInstance().actionMap(true);
         Set<String> floating = Set.of(
                 GeneralConversationQuery.ID,
                 IgnoreNonsensicalInputCommand.ID,
                 ConnectionCheckQuery.ID);
-        Set<String> customKeys = new HashSet<>();
-        for (CustomCommandDefinition def : CustomCommandRegistry.getInstance().getCustomCommands()) {
-            customKeys.add(def.getActionKey());
-        }
+        Language language = SystemSession.getInstance().getLanguage();
         Set<String> phrases = new HashSet<>();
-        full.forEach((group, id) -> {
-            if (!floating.contains(id) && !customKeys.contains(id)) {
-                AiActionLocalizations.splitPhraseGroup(group).forEach(phrase -> phrases.add(normalize(phrase)));
+        List<IntelAction> builtIns = new ArrayList<>();
+        builtIns.addAll(CommandRegistry.getInstance().byId().values());
+        builtIns.addAll(QueryRegistry.getInstance().byId().values());
+        for (IntelAction action : builtIns) {
+            if (!floating.contains(action.id()) && AiActionAliasTextProvider.hasKey(language, action.id())) {
+                AiActionLocalizations.splitPhraseGroup(
+                                AiActionAliasTextProvider.getText(language, action.id()))
+                        .forEach(phrase -> phrases.add(normalize(phrase)));
             }
-        });
+        }
         return phrases;
     }
 

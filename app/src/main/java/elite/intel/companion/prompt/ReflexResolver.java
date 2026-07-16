@@ -142,7 +142,7 @@ public final class ReflexResolver {
         return new GameToolCandidates(gameStateSnapshot)
                 .collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
                 .map(candidate -> new CommandPhrase(
-                        candidate.id(), candidate.phraseKey(), candidate.tool().parameters().isEmpty()))
+                        candidate.id(), candidate.localizedAliasGroup(), candidate.tool().parameters().isEmpty()))
                 .toList();
     }
 }

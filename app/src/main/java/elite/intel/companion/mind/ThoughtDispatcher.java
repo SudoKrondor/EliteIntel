@@ -1,10 +1,10 @@
 package elite.intel.companion.mind;
 
 import elite.intel.ai.brain.i18n.PhoneticInputNormalizer;
+import elite.intel.companion.CompanionAddressing;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.clarify.PendingClarification;
 import elite.intel.companion.diag.CompanionDiagnostics;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
@@ -17,15 +17,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.EnumMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * The accounting/scheduling node of the consciousness. Owns one ordered {@link ThoughtLane} per
@@ -162,10 +159,9 @@ public final class ThoughtDispatcher implements ManagedService {
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
         // returns it, with no comma - "Vega all stop" / "Вега все стоп") before normalizing, for BOTH paths: the
         // reflex fast-path and the LLM path (the reducer, prompt current-input, and eligible memory). The name carries no
-        // routing signal, and a leading "Vega," in the current-input was throwing the model off - a command that
-        // routed fine without it fell to a bare classify_turn with it. Raw STT stays only in intake diagnostics
+        // routing signal and can distract the model from the command. Raw STT stays only in intake diagnostics
         // and the execution request; a completed dialogue/query remembers the normalized match text.
-        String rawStripped = stripLeadingCompanionName(input);
+        String rawStripped = CompanionAddressing.stripLeadingName(input);
         String matchInput = inputNormalizer.apply(rawStripped);
         ThoughtContext context = ThoughtContext.commander(
                 urgency, input, matchInput, acceptedAtNanos, gameStateSnapshot)
@@ -222,59 +218,29 @@ public final class ThoughtDispatcher implements ManagedService {
     }
 
     /**
-     * Removes a single leading vocative use of the companion's name (e.g. "Vega, ..." or, as STT usually returns
-     * it without a comma, "Vega ..." / "Вега ...") from the input, used for both the reflex fast-path and the LLM
-     * match text (reducer + prompt current-input). Any recognized name form
-     * ({@link CompanionConfig#companionNameForms()}: the canonical name plus transliterations) is matched as a
-     * whole leading word - a Unicode-aware {@code \b}, so a Cyrillic form matches too - so it is an address, not
-     * part of a longer word; any following separators/spaces are consumed (all optional, so a comma-less STT
-     * address still strips). If only the name remains (a bare address), the original input is returned unchanged.
-     */
-    private static String stripLeadingCompanionName(String input) {
-        String alternation = CompanionConfig.companionNameForms().stream()
-                .filter(form -> form != null && !form.isBlank())
-                .map(form -> Pattern.quote(form.trim()))
-                .collect(Collectors.joining("|"));
-        if (alternation.isEmpty()) {
-            return input;
-        }
-        Pattern leadingName = Pattern.compile(
-                "^\\s*(?:" + alternation + ")\\b[\\s,.:;!?-]*",
-                Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CHARACTER_CLASS);
-        String stripped = leadingName.matcher(input).replaceFirst("");
-        return stripped.isBlank() ? input : stripped;
-    }
-
-    /**
      * Accepts a gameplay subscriber's request to <b>react out loud</b> (a {@code CompanionReactionEvent}) and
-     * queues a reactive {@link EventThought} on the EVENT lane. The subscriber pre-digested the data, so the
-     * thought only phrases {@code stimulus} and speaks it; the stimulus is recorded as a {@code user} turn and
-     * the reply as the companion's own words, keeping a clean two-party dialogue. {@code instructions} steer only
-     * this turn's phrasing and are not remembered.
+     * queues a reactive {@link EventThought} on the EVENT lane. Event data and instructions exist only in the
+     * bounded narration request; after success, only the model's final spoken line becomes an EVENT fact.
      */
-    public void submitEventReaction(String stimulus, String instructions, String topic, Urgency urgency) {
+    public void submitEventReaction(String stimulus, String instructions, Urgency urgency) {
         if (stimulus == null || stimulus.isBlank()) {
             return;
         }
-        ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, conversationTopic, dependencies);
-        CompanionDiagnostics.debug(thought.trace(), "event", "reaction topic=" + conversationTopic);
+        Thought thought = Thought.eventReaction(urgency, stimulus, instructions, dependencies);
+        CompanionDiagnostics.debug(thought.trace(), "event", "reaction");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
     /**
      * Accepts a gameplay subscriber's <b>finished phrase</b> to voice verbatim (no LLM) and queues a verbatim
-     * {@link EventThought} on the EVENT lane. The phrase is recorded as the companion's reply, paired with the
-     * short {@code sourceId} as the {@code user} turn (never the raw data), so the timeline keeps a clean
-     * two-party dialogue. A blank phrase is ignored.
+     * {@link EventThought} on the EVENT lane. The finished phrase itself becomes the single EVENT fact.
      */
-    public void submitEventVerbatim(String sourceId, String phrase, String topic, Urgency urgency) {
+    public void submitEventVerbatim(String phrase, Urgency urgency) {
         if (phrase == null || phrase.isBlank()) {
             return;
         }
-        ConversationTopic conversationTopic = topicFrom(topic);
-        Thought thought = Thought.eventVerbatim(urgency, sourceId, phrase, conversationTopic, dependencies);
-        CompanionDiagnostics.debug(thought.trace(), "event", "verbatim topic=" + conversationTopic);
+        Thought thought = Thought.eventVerbatim(urgency, phrase, dependencies);
+        CompanionDiagnostics.debug(thought.trace(), "event", "verbatim");
         enqueue(ThoughtSource.EVENT, thought, urgency);
     }
 
@@ -284,8 +250,8 @@ public final class ThoughtDispatcher implements ManagedService {
         if (lanes == null) {
             Map<ThoughtSource, ThoughtLane> built = new EnumMap<>(ThoughtSource.class);
             try {
-                // Commander cognition is one ordered stream: prompt, classification, topic change and input commit
-                // follow intake order. Slow game handlers detach while the lane keeps their lifecycle live,
+                // Commander cognition is one ordered stream: prompt and tool selection follow intake order. Slow
+                // game handlers detach while the lane keeps their lifecycle live,
                 // so this worker accepts the next turn immediately after dispatch. EVENT remains single-worker too.
                 built.put(ThoughtSource.COMMANDER, new ThoughtLane("companion-commander", 1));
                 built.put(ThoughtSource.EVENT, new ThoughtLane("companion-event", 1));
@@ -387,12 +353,4 @@ public final class ThoughtDispatcher implements ManagedService {
         lane.interruptStuck(watchdogTimeoutMillis);
     }
 
-    /** Maps a neutral topic tag (a {@code ConversationTopic} name) to the enum, falling back to SYSTEM when unknown/blank. */
-    private static ConversationTopic topicFrom(String topic) {
-        try {
-            return ConversationTopic.valueOf(topic.trim().toUpperCase(Locale.ROOT));
-        } catch (RuntimeException invalidTopic) {
-            return ConversationTopic.SYSTEM;
-        }
-    }
 }

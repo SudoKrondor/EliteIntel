@@ -8,13 +8,16 @@ import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySearchResult;
 import elite.intel.companion.memory.MemorySnapshot;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemorySearchMatch;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
@@ -22,7 +25,6 @@ import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.prompt.ReflexResolver;
 import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
-import elite.intel.companion.tools.ClassifyTurnFunction;
 import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.SpeakFunction;
 import elite.intel.companion.tools.SystemFunctionProvider;
@@ -32,6 +34,7 @@ import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -77,9 +80,10 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         // The fake speak settles the turn as one complete commander/companion pair.
-        assertEquals(2, memory.writes.size());
-        assertEquals(MemorySource.COMMANDER, memory.writes.get(0).source());
-        assertEquals(MemorySource.COMPANION, memory.writes.get(1).source());
+        assertEquals(1, memory.writes.size());
+        assertEquals(MemoryKind.DIALOGUE, memory.writes.get(0).kind());
+        assertEquals(List.of(MemorySource.COMMANDER, MemorySource.COMPANION),
+                memory.writes.get(0).entries().stream().map(MemoryEntry::source).toList());
     }
 
     @Test
@@ -336,7 +340,7 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         assertTrue(llm.requests.size() >= 1, "a non-reflex commander input engages the LLM");
-        assertTrue(memory.writes.stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
+        assertTrue(memory.entries().stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
     }
 
     @Test
@@ -353,20 +357,19 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("open fleet career management panel");
         dispatcher.stop();
 
-        assertTrue(memory.writes.stream().anyMatch(
+        assertTrue(memory.entries().stream().anyMatch(
                         e -> e.source() == MemorySource.COMMANDER
                                 && "open fleet carrier management panel".equals(e.content())),
                 "memory keeps the canonical form used for matching and prompting");
-        assertTrue(memory.writes.stream().noneMatch(
+        assertTrue(memory.entries().stream().noneMatch(
                         e -> e.source() == MemorySource.COMMANDER
                                 && "open fleet career management panel".equals(e.content())),
                 "memory must not retain the broken STT wording");
     }
 
     @Test
-    void eventReactionRecordsStimulusThenReplyAndOffersOnlySpeak() {
-        // A subscriber-driven reaction: one short round offering only speak; the stimulus is recorded as an
-        // EVENT (user) turn and the spoken reply as the companion's words, keeping a clean two-party dialogue.
+    void eventReactionStoresOnlyTheFinalNarrationAndOffersOnlySpeak() {
+        // Source data is transient: it reaches the isolated EVENT prompt, while only the valid final line is stored.
         List<LlmRequest> requests = new CopyOnWriteArrayList<>();
         LlmGateway llm = new LlmGateway() {
             @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
@@ -382,8 +385,7 @@ class ThoughtDispatcherTest {
         };
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
         dispatcher.start();
-        dispatcher.submitEventReaction("surface scan: alexandrite", "Report it briefly.",
-                "EXPLORATION", Urgency.NORMAL);
+        dispatcher.submitEventReaction("surface scan: alexandrite", "Report it briefly.", Urgency.NORMAL);
         dispatcher.stop();
 
         assertEquals(1, requests.size(), "an event reaction is a single short round");
@@ -396,12 +398,12 @@ class ThoughtDispatcherTest {
         assertEquals(Set.of(SpeakFunction.ID),
                 requests.get(0).tools().stream().map(tool -> tool.name()).collect(java.util.stream.Collectors.toSet()),
                 "an event reaction offers only speak");
-        assertEquals(2, memory.writes.size(), "the stimulus and the reply are both recorded, in order");
-        assertEquals(MemorySource.EVENT, memory.writes.get(0).source());
-        assertEquals("surface scan: alexandrite", memory.writes.get(0).content());
-        assertEquals(MemorySource.COMPANION, memory.writes.get(1).source());
-        assertEquals("Signals detected on the ring, Commander.", memory.writes.get(1).content());
-        assertEquals(ConversationTopic.EXPLORATION, memory.writes.get(1).topic());
+        assertEquals(1, memory.writes.size(), "the completed event is one atomic record");
+        MemoryRecord event = memory.writes.get(0);
+        assertEquals(MemoryKind.EVENT, event.kind());
+        assertEquals(1, event.entryCount());
+        assertEquals(MemorySource.EVENT, event.entries().get(0).source());
+        assertEquals("Signals detected on the ring, Commander.", event.entries().get(0).content());
     }
 
     @Test
@@ -438,7 +440,7 @@ class ThoughtDispatcherTest {
         dispatcher.start();
         dispatcher.submitCommanderInput("   ");
         dispatcher.submitCommanderInput(null);
-        dispatcher.submitEventReaction(null, null, "SYSTEM", Urgency.NORMAL);
+        dispatcher.submitEventReaction(null, null, Urgency.NORMAL);
         dispatcher.stop();
 
         assertTrue(memory.writes.isEmpty());
@@ -483,9 +485,9 @@ class ThoughtDispatcherTest {
         dispatcher.stop();
 
         assertTrue(llm.calls.get() >= 2, "the urgent thought ran after preempting the normal one");
-        assertTrue(memory.writes.stream().noneMatch(e -> "slow task".equals(e.content())),
+        assertTrue(memory.entries().stream().noneMatch(e -> "slow task".equals(e.content())),
                 "the preempted thought leaves no partial memory turn");
-        assertTrue(memory.writes.stream().anyMatch(e -> "urgent stop".equals(e.content())),
+        assertTrue(memory.entries().stream().anyMatch(e -> "urgent stop".equals(e.content())),
                 "the completed urgent turn is committed as dialogue");
     }
 
@@ -569,7 +571,7 @@ class ThoughtDispatcherTest {
 
         dispatcher.submitCommanderInput("stuck query");
         waitUntil(() -> querySubmissions.get() == 1);
-        assertTrue(memory.writes.isEmpty(), "pending QUERY must not publish an input or processing marker");
+        assertTrue(memory.writes.isEmpty(), "pending QUERY must not publish a partial record");
         waitUntil(() -> cancelAttempts.get() > 0);
         JsonObject late = new JsonObject();
         late.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, "late answer");
@@ -591,14 +593,6 @@ class ThoughtDispatcherTest {
             @Override
             public CompletableFuture<LlmResult> submit(LlmRequest request) {
                 int callNumber = llmCalls.incrementAndGet();
-                String topic = callNumber == 1 ? "navigation" : "ship_status";
-                JsonObject classifyArgs = new JsonObject();
-                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_TOPIC, topic);
-                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_IMPORTANCE, "normal");
-                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_IS_QUESTION, false);
-                classifyArgs.addProperty(ClassifyTurnFunction.PARAM_CANONICAL_FACT, "");
-                LlmToolInvocation classify = new LlmToolInvocation(UUID.randomUUID().toString(),
-                        ClassifyTurnFunction.ID, classifyArgs);
                 LlmToolInvocation settling;
                 if (callNumber == 1) {
                     settling = new LlmToolInvocation(UUID.randomUUID().toString(), "slow_command", new JsonObject());
@@ -607,8 +601,7 @@ class ThoughtDispatcherTest {
                     speakArgs.addProperty(SpeakFunction.PARAM_TEXT, "quick reply");
                     settling = new LlmToolInvocation(UUID.randomUUID().toString(), SpeakFunction.ID, speakArgs);
                 }
-                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK,
-                        List.of(classify, settling)));
+                return CompletableFuture.completedFuture(new LlmResult(LlmResult.Status.OK, List.of(settling)));
             }
 
             @Override
@@ -617,12 +610,6 @@ class ThoughtDispatcherTest {
             }
         };
         ExecutionGateway execution = request -> {
-            if (ClassifyTurnFunction.ID.equals(request.toolName())) {
-                ConversationTopic topic = ConversationTopic.fromSelectableId(
-                        request.arguments().get(ClassifyTurnFunction.PARAM_TOPIC).getAsString());
-                state.setGlobalTopic(topic);
-                return CompletableFuture.completedFuture(new JsonObject());
-            }
             if ("slow_command".equals(request.toolName())) {
                 return slowResult;
             }
@@ -645,22 +632,21 @@ class ThoughtDispatcherTest {
         dispatcher.submitCommanderInput("slow one");
         waitUntil(() -> llmCalls.get() == 1 && !dispatcher.isIdle());
         dispatcher.submitCommanderInput("quick one");
-        waitUntil(() -> memory.writes.stream().anyMatch(e -> "quick one".equals(e.content())));
+        waitUntil(() -> memory.entries().stream().anyMatch(e -> "quick one".equals(e.content())));
 
-        List<MemoryEntry> commanderInputs = memory.writes.stream()
+        List<MemoryEntry> commanderInputs = memory.entries().stream()
                 .filter(e -> e.source() == MemorySource.COMMANDER)
                 .toList();
         assertEquals(List.of("quick one"),
                 commanderInputs.stream().map(MemoryEntry::content).toList(),
                 "only the completed LLM dialogue is committed");
-        assertEquals(ConversationTopic.SHIP_STATUS, commanderInputs.get(0).topic());
         assertFalse(dispatcher.isIdle(), "the detached slow command remains owned by the dispatcher");
 
         JsonObject completed = new JsonObject();
         completed.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, "slow complete");
         slowResult.complete(completed);
         waitUntil(dispatcher::isIdle);
-        assertTrue(memory.writes.stream().noneMatch(e -> "slow complete".equals(e.content())),
+        assertTrue(memory.entries().stream().noneMatch(e -> "slow complete".equals(e.content())),
                 "the late command result is voiced execution feedback, not memory");
         dispatcher.stop();
     }
@@ -752,19 +738,26 @@ class ThoughtDispatcherTest {
     }
 
     private static final class FakeMemory implements MemoryGateway {
-        final List<MemoryEntry> writes = new CopyOnWriteArrayList<>();
+        final List<MemoryRecord> writes = new CopyOnWriteArrayList<>();
 
-        @Override public void write(MemoryEntry entry) { writes.add(entry); }
-        @Override public void writeBatch(List<MemoryEntry> entries) { writes.addAll(entries); }
-        @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
-        @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
-        @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
-        @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
-        @Override public String longTermSummary() { return ""; }
-        @Override public void replaceLongTermSummary(String summary) { }
-        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
-        @Override public void addLongTermPinned(MemoryEntry fact) { }
+        @Override public void write(MemoryRecord record) { writes.add(record); }
+        @Override public List<MemoryRecord> readRecentHistory() { return List.of(); }
+        @Override public MemorySearchResult recallMatching(String query, int limit) {
+            return MemorySearchResult.empty();
+        }
+        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
+        @Override public Map<MemoryKind, String> longTermSummaries() { return Map.of(); }
+        @Override public void commitConsolidation(
+                MemoryKind kind, List<MemoryRecord> batch, String summary
+        ) { }
+        @Override public List<MemoryRecord> savedTextRecords() { return List.of(); }
+        @Override public MemorySnapshot snapshot() {
+            return new MemorySnapshot(List.of(), Map.of(), Map.of(), Map.of(), List.of());
+        }
+
+        List<MemoryEntry> entries() {
+            return writes.stream().flatMap(record -> record.entries().stream()).toList();
+        }
     }
 
     private static final class FakeSpeech implements SpeechGateway {

@@ -10,12 +10,9 @@ package elite.intel.companion;
  * <ul>
  *   <li>{@link #filler} - a throwaway line at the <em>start</em> of processing (an ack while work runs); voiced
  *       and immediately forgotten (never enters memory, no LLM);</li>
- *   <li>{@link #narrate} - the <em>result</em> as raw-but-digested data plus phrasing instructions; the companion
- *       compresses it through one LLM round, voices it, and remembers the exchange as a {@code user -> assistant}
- *       pair;</li>
- *   <li>{@link #announce} - the <em>result</em> as a finished phrase; voiced verbatim (no LLM) and remembered as a
- *       {@code user -> assistant} pair, where the {@code user} turn is a short {@code sourceId} (never the raw
- *       data, which could be a huge list that would bloat the prompt).</li>
+ *   <li>{@link #narrate} - event data plus phrasing instructions; the data exists only for that LLM round, while
+ *       the successful narration is voiced and stored as the EVENT fact;</li>
+ *   <li>{@link #announce} - a finished phrase voiced verbatim and stored as the EVENT fact.</li>
  * </ul>
  * When the companion subsystem is not running, {@link CompanionRuntime#narrator()} returns {@link #NO_OP}, so a
  * subscriber can call unconditionally without guarding on companion mode.
@@ -26,33 +23,25 @@ public interface CompanionNarrator {
     void filler(String text, boolean urgent);
 
     /**
-     * Voices the digested result data phrased by one LLM round and remembers the exchange.
+     * Voices event data phrased by one LLM round and remembers only the successful final narration.
      *
-     * @param data         digested (not raw) event data - recorded as the {@code user} turn and phrased by the LLM
-     * @param instructions how to phrase it this turn (prompt-only, never remembered)
-     * @param topic        a neutral topic tag (a {@code ConversationTopic} name; blank falls back to system)
+     * @param data         event data used only in the current LLM request
+     * @param instructions how to phrase it this turn
      */
-    void narrate(String data, String instructions, String topic);
-
-    /** {@link #narrate(String, String, String)} under the default system topic. */
-    default void narrate(String data, String instructions) {
-        narrate(data, instructions, "");
-    }
+    void narrate(String data, String instructions);
 
     /**
-     * Voices a finished phrase verbatim (no LLM) and remembers it as the companion's reply.
+     * Voices a finished phrase verbatim and remembers it as the EVENT fact.
      *
-     * @param sourceId a short source/event id recorded as the {@code user} turn (never the raw data)
-     * @param phrase   the finished line to voice and remember as the {@code assistant} turn
-     * @param topic    a neutral topic tag (a {@code ConversationTopic} name; blank falls back to system)
-     * @param urgent   whether the line preempts current speech (e.g. a fresh radar contact)
+     * @param phrase the finished line to voice and remember
+     * @param urgent whether the line preempts current speech
      */
-    void announce(String sourceId, String phrase, String topic, boolean urgent);
+    void announce(String phrase, boolean urgent);
 
     /** No-op narrator returned when the companion subsystem is not running, so callers never need a mode guard. */
     CompanionNarrator NO_OP = new CompanionNarrator() {
         @Override public void filler(String text, boolean urgent) { }
-        @Override public void narrate(String data, String instructions, String topic) { }
-        @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) { }
+        @Override public void narrate(String data, String instructions) { }
+        @Override public void announce(String phrase, boolean urgent) { }
     };
 }

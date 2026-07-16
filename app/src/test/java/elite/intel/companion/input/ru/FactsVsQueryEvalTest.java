@@ -18,9 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Theme (Russian): the settling-ladder arbitration between remembered facts and offered game functions -
+ * Russian arbitration probe for the ordered commander policy.
  * a focused version of the failing MemoryEvalTest "recall событий" cases. Seeds ten facts (five HIGH game
- * events and five commander statements), then EVICTS them from the hot short-term timeline with filler
+ * events and five commander statements), then evicts them from recent prompt history with filler
  * banter before probing - verified by a hard assertion - so each probe can be answered only via the
  * injected {@code <facts>} candidates, never from the replayed conversation. Ten memory probes follow
  * (the eval DB has no tracked missions/scans, so a query would answer "nothing"), plus one live-state
@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * and the control must still route to a game function (rule 2 not over-suppressed).
  * <p>
  * Recorder-style: per probe it traces the executed tools, the injected fact candidates, and the spoken
- * reply; hard assertions are only that eviction succeeded and the live model was reached. Opt-in;
+ * reply; hard assertions cover both routing branches and the live-state control. Opt-in;
  * LM Studio must be up.
  */
 @Tag("local-integration")
@@ -118,35 +118,41 @@ class FactsVsQueryEvalTest {
         // of the facts count too). Guarantees the probes can only be answered via <facts> candidates.
         int fillerUsed = 0;
         for (String line : filler) {
-            if (keywordsInShortTerm().isEmpty()) {
+            if (keywordsInRecentMemory().isEmpty()) {
                 break;
             }
             h.say(line);
             fillerUsed++;
         }
-        List<String> leftover = keywordsInShortTerm();
-        block.append(String.format("filler turns used: %d | fact keywords still in short-term: %s%n", fillerUsed, leftover));
+        List<String> leftover = keywordsInRecentMemory();
+        block.append(String.format("filler turns used: %d | fact keywords still recent: %s%n", fillerUsed, leftover));
         for (Probe probe : probes) {
             block.append(String.format("  '%s' tier=%s%n", probe.keyword(), h.locateTier(probe.keyword())));
         }
         assertTrue(leftover.isEmpty(),
-                "facts must be evicted from short-term before probing, still hot: " + leftover);
+                "facts must leave recent memory before probing, still present: " + leftover);
 
-        // Phase 3: ten memory probes - the answers now exist only in mid-term, reachable via <facts>.
+        // Phase 3: live game questions prefer offered queries; private saved facts answer from memory.
         int hits = 0;
         int settledByQuery = 0;
-        for (Probe probe : probes) {
+        for (int i = 0; i < probes.size(); i++) {
+            Probe probe = probes.get(i);
             h.beginTurn();
             h.say(probe.question());
             boolean hit = h.spokenContains(probe.keyword());
             List<String> tools = h.turnToolNames();
-            // A query_* call on a memory question means rule 2 outran rule 1 (the failing mode under test).
             boolean queried = tools.stream().anyMatch(t -> t.startsWith("query_"));
             if (hit) {
                 hits++;
             }
             if (queried) {
                 settledByQuery++;
+            }
+            if (i < events.size()) {
+                assertTrue(queried, "an offered live game query must outrank a past EVENT fact");
+            } else {
+                assertTrue(hit, "a saved commander fact must be recalled: " + probe.keyword());
+                assertFalse(queried, "a private saved fact must not route to a game query");
             }
             block.append(String.format("[CMDR] %s%n   ждём '%s' | hit=%s | queried=%s | tools=%s%n   facts=%s%n   -> %s%n",
                     probe.question(), probe.keyword(), hit, queried, tools, h.recallResult(), h.spokenTexts()));
@@ -164,12 +170,14 @@ class FactsVsQueryEvalTest {
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
+        assertTrue(controlQueried, "the live-state control must use a query");
     }
 
-    /** Fact keywords still present anywhere in the hot short-term timeline (any source, echoes included). */
-    private List<String> keywordsInShortTerm() {
+    /** Fact keywords still present anywhere in recent memory (any source, echoes included). */
+    private List<String> keywordsInRecentMemory() {
         List<String> hot = new ArrayList<>();
-        List<MemoryEntry> timeline = h.memory().readShortTermTimeline();
+        List<MemoryEntry> timeline = h.memory().readRecentHistory().stream()
+                .flatMap(record -> record.entries().stream()).toList();
         for (Probe probe : probes) {
             String kw = probe.keyword().toLowerCase(Locale.ROOT);
             if (timeline.stream().anyMatch(e -> e.content() != null

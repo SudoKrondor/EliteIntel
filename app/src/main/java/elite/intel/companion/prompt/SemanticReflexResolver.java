@@ -139,8 +139,8 @@ public final class SemanticReflexResolver {
         double bestScore = -1.0;
         double secondScore = -1.0;
         for (GameToolCandidates.Candidate candidate : candidates) {
-            double score = matcher.bestSimilarity(query, AliasMatchSurface.phrases(
-                    candidate.phraseKey(), candidate.tool().parameters()));
+            double score = matcher.bestSimilarity(query, AliasEmbeddingText.phrases(
+                    candidate.localizedAliasGroup(), candidate.tool().parameters()));
             if (score > bestScore) {
                 secondScore = bestScore;
                 bestScore = score;

@@ -1,7 +1,6 @@
 package elite.intel.companion.input.ru;
 
 import elite.intel.companion.input.CompanionEvalHarness;
-import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.AfterAll;
@@ -18,15 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Theme (Russian): the comprehensive memory eval, mirrored to a Russian session and with twice the probes of
- * the English one. A believable Russian salvage-run conversation (terminology drawn from the RU Elite
- * Dangerous community) interleaves statements across many topics, explicit "запиши/запомни" instructions
- * (which the consciousness should rate {@code MAX}), routine chatter, and HIGH game events that land in
- * memory under their static topic. From one run it assesses filling &amp; recall (including after eviction),
- * importance distribution (explicit "запиши" -&gt; MAX and idle banter -&gt; LOW), topic distribution, events
- * in memory, coherence, and live-state query routing.
- * Mostly observational (the trace carries the scores and the full distribution); the hard assertions are only
- * that the model was reached and that recall works at all. Opt-in; LM Studio must be up.
+ * Comprehensive Russian memory evaluation, mirroring the English salvage-run session with additional probes.
+ * It covers recent and retained dialogue, trusted event facts, exact SAVED_TEXT phrases, multi-fact coherence, and
+ * live-state query routing. The trace carries record-kind placement and recall results; hard assertions require
+ * the live model and successful recall. Opt-in; LM Studio must be available.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -47,8 +41,8 @@ class MemoryEvalTest {
 
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-ru-memory-eval-trace.txt", Language.RU);
 
-    // 10 ASK turns are interleaved right after their fact, so the fact is still in the inlined short-term
-    // timeline when asked - scored as hot (in-conversation) recall that needs no memory_search.
+    // Ten ASK turns follow their facts immediately, while each fact remains in recent prompt history and needs no
+    // explicit memory_search.
     private final List<Turn> script = List.of(
             say("значит так, в этот рейс у нас тихая работа по утилю за Дециатом, держим всё мимо журналов"),
             say("запиши: код стыковки на станции — Сьерра Девять Четыре, понадобится на подходе"),
@@ -142,22 +136,9 @@ class MemoryEvalTest {
             ask("биосигналы какого рода мы обнаружили?", "светляк"),        // SAASignalsFound
             ask("сигнал бедствия с какого маяка мы засекли?", "циклоп"));   // FSSSignalDiscovered
 
-    // 10 idle-banter probes carrying no fact, name or command - the consciousness should rate each LOW.
-    private final List<String> lowProbes = List.of(
-            "ну и тишина сегодня, аж в ушах звенит",
-            "обожаю такие спокойные вылеты, душа отдыхает",
-            "как настроение, не заскучал там у себя?",
-            "красивая туманность за бортом, глаз не отвести",
-            "да я просто болтаю, чтоб тишину разбавить",
-            "ты вообще когда-нибудь отдыхаешь или всё на вахте?",
-            "за такие минуты покоя и люблю эту работу",
-            "кофе бы сейчас, да автомат опять чудит",
-            "хех, вспомнил тут одну байку, да ладно, потом",
-            "просто хотел услышать твой голос, всё нормально");
-
     /** System-function ids; any other executed tool is a real game query/action. */
     private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "classify_turn", "memory_search");
+            "speak", "request_input", "memory_search");
 
     @BeforeAll
     void boot() throws Exception {
@@ -198,8 +179,8 @@ class MemoryEvalTest {
                     block.append("    -> ждём '").append(turn.b()).append("' hot-hit=").append(hit).append(" | ").append(h.spokenTexts()).append("\n");
                 }
             }
-            block.append("    tools=").append(h.turnToolNames()).append("\n"); // shows classify_turn if called
-            block.append(h.memoryDeltaBlock()); // what this turn wrote: [source][topic][importance] content
+            block.append("    tools=").append(h.turnToolNames()).append("\n");
+            block.append(h.memoryDeltaBlock());
         }
 
         // Phase 2: recall probes after eviction.
@@ -278,23 +259,11 @@ class MemoryEvalTest {
             block.append(String.format("%-44s | tools=%s | routed-ok=%s%n", q, tools, ok));
         }
 
-        // Phase 6: idle small talk - the consciousness should rate banter LOW (no fact to keep).
-        block.append("\n---- болтовня -> LOW ----\n");
-        int lowHits = 0;
-        for (String line : lowProbes) {
-            h.beginTurn();
-            h.say(line);
-            String imp = h.assignedImportance();
-            if ("low".equalsIgnoreCase(imp)) {
-                lowHits++;
-            }
-            block.append(String.format("'%s' | importance=%s | %s%n", line, imp.isEmpty() ? "(none)" : imp, h.spokenTexts()));
-        }
-
-        // Did the explicit "запиши/запомни" facts get MAX importance from the AI?
-        long maxAssigned = h.allEntries().stream()
-                .filter(e -> e.importance() == MemoryImportance.MAX)
-                .filter(e -> e.content().contains("сьерра") || e.content().contains("хаттон") || e.content().contains("отлив"))
+        long pinnedCount = h.memory().savedTextRecords().stream()
+                .flatMap(record -> record.entries().stream())
+                .filter(entry -> entry.content().contains("сьерра")
+                        || entry.content().contains("хаттон")
+                        || entry.content().contains("отлив"))
                 .count();
 
         block.append("\n---- итоги ----\n");
@@ -304,10 +273,9 @@ class MemoryEvalTest {
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("recall событий:         %d / %d%n", eventRecallHits, eventRecallProbes.size()));
         block.append(String.format("маршрутизация:         %d / %d%n", routedOk, queryProbes.size()));
-        block.append(String.format("явное «запиши/запомни» -> MAX: %d (из 3)%n", maxAssigned));
-        block.append(String.format("болтовня -> LOW:       %d / %d%n", lowHits, lowProbes.size()));
+        block.append(String.format("явное «запиши/запомни» -> SAVED_TEXT: %d (из 3)%n", pinnedCount));
         block.append(h.memoryDistributionBlock());
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

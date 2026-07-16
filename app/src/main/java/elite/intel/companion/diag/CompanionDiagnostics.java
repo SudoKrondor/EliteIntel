@@ -22,21 +22,21 @@ import java.util.stream.Collectors;
  * <p>
  * Routing: {@link #info} lines are per-turn headlines the operator should always see (intake, settle outcome,
  * dangerous confirmation) and always render. {@link #debug} lines are internal detail (compose, LLM round,
- * classify, exec, voice, memory, thought lifecycle, watchdog) and render only in the detailed-log view - or, when
+ * exec, voice, memory, thought lifecycle, watchdog) and render only in the detailed-log view - or, when
  * {@link CompanionConfig#diagnosticsVerbose()} is on (the default while the detailed-log GUI toggle is pending),
  * they are promoted onto the always-visible channel.
  */
 public final class CompanionDiagnostics {
 
     /**
-     * Longest inlined free text (input, spoken line, canonical fact, injected fact) before it is elided. The SYSTEM
+     * Longest inlined free text (input, spoken line, injected fact) before it is elided. The SYSTEM
      * LOG panel word-wraps, so this only bounds runaway text; it is generous enough that a normal companion sentence
      * or a full injected fact is never cut.
      */
     private static final int MAX_TEXT = 400;
     /**
      * Longest rendered tool-call argument JSON before it is elided. Larger than {@link #MAX_TEXT} so a normal
-     * tool call (e.g. {@code classify_turn}) shows every field instead of being cut mid-field; the panel wraps
+     * tool call shows every field instead of being cut mid-field; the panel wraps
      * the extra onto the next row.
      */
     private static final int MAX_ARGS = 300;
@@ -108,7 +108,7 @@ public final class CompanionDiagnostics {
         return "[" + fact.source() + "] " + truncate(fact.text());
     }
 
-    /** Compact rendering of the LLM's tool-calls, e.g. {@code classify_turn{...}, speak{...}} ({@code none} when empty). */
+    /** Compact rendering of the LLM's tool calls, e.g. {@code speak{...}} ({@code none} when empty). */
     public static String calls(List<LlmToolInvocation> invocations) {
         if (invocations.isEmpty()) {
             return "none";

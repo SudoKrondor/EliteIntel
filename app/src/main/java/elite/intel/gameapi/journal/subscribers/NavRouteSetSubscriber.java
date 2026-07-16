@@ -14,7 +14,7 @@ public class NavRouteSetSubscriber {
     @Subscribe
     public void onNavRouteSetEvent(NavRouteEvent event) {
         if (PlayerSession.getInstance().isRouteAnnouncementOn()) {
-            CompanionRuntime.narrator().announce("route", localizedEvent("event.route.set"), "NAVIGATION", false);
+            CompanionRuntime.narrator().announce(localizedEvent("event.route.set"), false);
         }
     }
 }

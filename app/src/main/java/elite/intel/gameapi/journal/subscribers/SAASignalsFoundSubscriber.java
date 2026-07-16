@@ -32,7 +32,7 @@ public class SAASignalsFoundSubscriber {
                         If biological signals are present, name each genus and state the average projected payout.
                         If this is our first discovery, include the first-discovery bonus.
                     """;
-            CompanionRuntime.narrator().narrate(sb, instructions, "EXPLORATION");
+            CompanionRuntime.narrator().narrate(sb, instructions);
         }
     }
 

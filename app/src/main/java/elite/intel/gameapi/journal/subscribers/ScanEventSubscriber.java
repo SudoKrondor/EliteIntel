@@ -228,9 +228,9 @@ public class ScanEventSubscriber {
 
         if (!wasDiscovered && PLANET.equals(location.getLocationType())) {
             if (event.getTerraformState() != null && !event.getTerraformState().isEmpty()) {
-                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newTerraformable", shortName), "EXPLORATION", false);
+                CompanionRuntime.narrator().announce(localizedEvent("event.scan.newTerraformable", shortName), false);
             } else if (event.getPlanetClass() != null && valuablePlanetClasses.contains(event.getPlanetClass().toLowerCase())) {
-                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newDiscovery", event.getPlanetClass()), "EXPLORATION", false);
+                CompanionRuntime.narrator().announce(localizedEvent("event.scan.newDiscovery", event.getPlanetClass()), false);
             }
         }
 
@@ -241,7 +241,7 @@ public class ScanEventSubscriber {
                 log.info(sensorData);
             }
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
-            CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newSystem"), "EXPLORATION", false);
+            CompanionRuntime.narrator().announce(localizedEvent("event.scan.newSystem"), false);
         }
     }
 

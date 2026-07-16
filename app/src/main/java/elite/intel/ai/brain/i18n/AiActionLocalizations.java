@@ -40,6 +40,14 @@ public final class AiActionLocalizations {
         if (actionId == null || actionId.isBlank()) {
             return List.of();
         }
+        if (AiActionAliasTextProvider.hasKey(SystemSession.getInstance().getLanguage(), actionId)) {
+            return splitPhraseGroup(AiActionAliasTextProvider.getText(
+                            SystemSession.getInstance().getLanguage(), actionId)).stream()
+                    .distinct()
+                    .sorted(String.CASE_INSENSITIVE_ORDER)
+                    .toList();
+        }
+        // Custom commands are not resource-bundle entries, so retain the runtime map as their fallback source.
         Map<String, String> fullMap = AiActionsMap.getInstance().actionMap(true);
         return fullMap.entrySet().stream()
                 .filter(entry -> actionId.equalsIgnoreCase(entry.getValue()))

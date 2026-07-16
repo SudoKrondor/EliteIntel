@@ -1,4 +1,16 @@
 {
+  "remember": [
+    "remember that our docking code is Sierra Nine Four",
+    "save in memory that the rendezvous is Hutton Orbital",
+    "store in memory that the carrier code is Delta Seven",
+    "note down that the buyer is Halloran",
+    "record in memory that our fallback system is Sol",
+    "do not forget that the abort word is Granite",
+    "remember our wingmate is called Magpie",
+    "save in memory the name Wandering Albatross",
+    "note down our mining target is platinum",
+    "remember that we refuel at Spindle"
+  ],
   "target_subsystem": [
     "target the engines",
     "lock onto the FSD",

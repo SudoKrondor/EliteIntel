@@ -1,26 +1,41 @@
 package elite.intel.companion.memory;
 
-import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Immutable, read-only snapshot of every companion memory area at one instant, produced by
- * {@link MemoryGateway#snapshot()} for diagnostics/export. It carries the same {@link MemoryEntry entries}
- * the gateway holds internally (the gateway never leaks its live stores), so a caller can render or serialize
- * the whole memory without reaching past the single door.
+ * Immutable snapshot of every session-memory area.
  *
- * @param shortTerm       the hot short-term timeline, oldest-to-newest
- * @param midTermByTopic  mid-term entries grouped by their {@link ConversationTopic}, in natural enum order
- * @param longTermSummary the single session-wide long-term summary (empty string when none consolidated yet)
- * @param longTermPinned  the pinned MAX-importance facts, oldest-to-newest
+ * @param recent          completed records currently replayed in prompts
+ * @param retainedByKind retained DIALOGUE/EVENT records, grouped by their eviction policy
+ * @param pendingByKind  records still searchable while their long-term summary is being prepared
+ * @param summaries      long-term summaries grouped by retained kind
+ * @param savedTexts     explicitly saved verbatim text
  */
 public record MemorySnapshot(
-        List<MemoryEntry> shortTerm,
-        Map<ConversationTopic, List<MemoryEntry>> midTermByTopic,
-        String longTermSummary,
-        List<MemoryEntry> longTermPinned
+        List<MemoryRecord> recent,
+        Map<MemoryKind, List<MemoryRecord>> retainedByKind,
+        Map<MemoryKind, List<MemoryRecord>> pendingByKind,
+        Map<MemoryKind, String> summaries,
+        List<MemoryRecord> savedTexts
 ) {
+    public MemorySnapshot {
+        recent = List.copyOf(recent);
+        retainedByKind = immutableCopy(retainedByKind);
+        pendingByKind = immutableCopy(pendingByKind);
+        summaries = Map.copyOf(summaries);
+        savedTexts = List.copyOf(savedTexts);
+    }
+
+    private static Map<MemoryKind, List<MemoryRecord>> immutableCopy(
+            Map<MemoryKind, List<MemoryRecord>> source
+    ) {
+        Map<MemoryKind, List<MemoryRecord>> copy = new EnumMap<>(MemoryKind.class);
+        source.forEach((kind, records) -> copy.put(kind, List.copyOf(records)));
+        return Map.copyOf(copy);
+    }
 }

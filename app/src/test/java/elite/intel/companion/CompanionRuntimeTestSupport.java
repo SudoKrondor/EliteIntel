@@ -4,16 +4,19 @@ import com.google.gson.JsonObject;
 import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySearchResult;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemorySearchMatch;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.speech.SpeechGateway;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /** Complete-graph installer for tests that exercise static companion system-function boundaries. */
@@ -89,17 +92,18 @@ public final class CompanionRuntimeTestSupport {
     private enum NoOpMemoryGateway implements MemoryGateway {
         INSTANCE;
 
-        @Override public void write(MemoryEntry entry) { }
-        @Override public void writeBatch(List<MemoryEntry> entries) { }
+        @Override public void write(MemoryRecord record) { }
         @Override public MemorySnapshot snapshot() { throw unused(); }
-        @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
-        @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
-        @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
-        @Override public String longTermSummary() { return ""; }
-        @Override public void replaceLongTermSummary(String summary) { }
-        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
-        @Override public void addLongTermPinned(MemoryEntry fact) { }
+        @Override public List<MemoryRecord> readRecentHistory() { return List.of(); }
+        @Override public MemorySearchResult recallMatching(String query, int limit) {
+            return MemorySearchResult.empty();
+        }
+        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
+        @Override public Map<MemoryKind, String> longTermSummaries() { return Map.of(); }
+        @Override public void commitConsolidation(
+                MemoryKind kind, List<MemoryRecord> batch, String summary
+        ) { }
+        @Override public List<MemoryRecord> savedTextRecords() { return List.of(); }
 
         private static UnsupportedOperationException unused() {
             return new UnsupportedOperationException("Memory snapshot is not used by this test");

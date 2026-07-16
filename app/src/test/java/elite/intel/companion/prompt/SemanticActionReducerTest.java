@@ -33,14 +33,14 @@ class SemanticActionReducerTest {
 
     private static final Set<IntelActionCategory> ALL = EnumSet.allOf(IntelActionCategory.class);
 
-    private static GameToolCandidates.Candidate candidate(String id, String phraseKey) {
-        return candidate(id, phraseKey, List.of());
+    private static GameToolCandidates.Candidate candidate(String id, String localizedAliasGroup) {
+        return candidate(id, localizedAliasGroup, List.of());
     }
 
-    private static GameToolCandidates.Candidate candidate(String id, String phraseKey,
+    private static GameToolCandidates.Candidate candidate(String id, String localizedAliasGroup,
                                                           List<ActionParameterSpec> parameters) {
-        return new GameToolCandidates.Candidate(id, phraseKey,
-                new LlmToolDefinition(id, "desc", phraseKey, parameters));
+        return new GameToolCandidates.Candidate(id, localizedAliasGroup,
+                new LlmToolDefinition(id, "desc", localizedAliasGroup, parameters));
     }
 
     private final List<GameToolCandidates.Candidate> catalog = List.of(
@@ -171,6 +171,54 @@ class SemanticActionReducerTest {
         // An input far from every candidate (best cosine under the floor) yields no game tools.
         List<LlmToolDefinition> tools = reducer(unusedFallback(new AtomicBoolean())).selectTools(ALL, "unrelated");
         assertTrue(tools.isEmpty(), "nothing close enough in meaning -> no game tools");
+    }
+
+    @Test
+    void exactFreeFormTriggerSurvivesWhenSemanticMatchingIsUnavailable() {
+        ActionParameterSpec text = new ActionParameterSpec(
+                "text", "string", true, "Text to remember", List.of(), "Extract verbatim");
+        List<GameToolCandidates.Candidate> parameterized = List.of(
+                candidate("broad_reminder", "do not forget {text:X}", List.of(text)),
+                candidate("remember", "remember {text:X}, remember that {text:X}, do not forget that {text:X}",
+                        List.of(text)),
+                catalog.get(2));
+        AtomicBoolean matcherRequested = new AtomicBoolean();
+        SemanticActionReducer reducer = new SemanticActionReducer(
+                allowed -> parameterized,
+                () -> {
+                    matcherRequested.set(true);
+                    return null;
+                },
+                unusedFallback(new AtomicBoolean()));
+
+        List<LlmToolDefinition> tools = reducer.selectTools(
+                ALL, "do not forget that the docking code is Sierra Nine Four");
+
+        assertEquals(List.of("remember"), ids(tools));
+        assertTrue(matcherRequested.get(), "semantic competitors must still be considered");
+
+        assertEquals(List.of("remember"), ids(reducer.selectTools(ALL, "remember that")),
+                "an incomplete exact trigger must still expose the command for request_input");
+    }
+
+    @Test
+    void exactFreeFormTriggerDoesNotSuppressSemanticCompetitor() {
+        ActionParameterSpec text = new ActionParameterSpec(
+                "text", "string", true, "Text to remember", List.of(), "Extract verbatim");
+        List<GameToolCandidates.Candidate> candidates = List.of(
+                candidate("remember", "remember {text:X}, remember that {text:X}", List.of(text)),
+                candidate("set_reminder", "remember to request docking"));
+        String input = "remember to request docking";
+        SemanticPhraseMatcher matcher = new SemanticPhraseMatcher(embedder(Map.of(
+                input, new float[]{1, 0, 0},
+                "remember", new float[]{0, 1, 0},
+                "remember that", new float[]{0, 1, 0})));
+        SemanticActionReducer reducer = new SemanticActionReducer(
+                allowed -> candidates, () -> matcher, unusedFallback(new AtomicBoolean()));
+
+        List<LlmToolDefinition> tools = reducer.selectTools(ALL, input);
+
+        assertEquals(List.of("remember", "set_reminder"), ids(tools));
     }
 
     @Test

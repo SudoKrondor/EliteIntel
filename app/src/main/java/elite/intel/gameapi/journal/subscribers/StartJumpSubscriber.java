@@ -58,7 +58,7 @@ public class StartJumpSubscriber {
                                 - IF no deaths data is available, omit mentioning fatalities.
                             """;
                     SleepNoThrow.sleep(3000);
-                    CompanionRuntime.narrator().narrate(sb.toString(), instructions, "navigation");
+                    CompanionRuntime.narrator().narrate(sb.toString(), instructions);
                 }
             }); // end virtual thread
         }

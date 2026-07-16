@@ -1,89 +1,50 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.embed.SemanticQuery;
-import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemorySearchMatch;
+import elite.intel.companion.model.memory.MemoryRecord;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * The single door to the companion's session memory. Owns the memory areas (short-term, mid-term topic,
- * long_term_summary) and the transitions between them; no one accesses the internal memory levels directly.
- * <p>
- * The gateway is mechanical: it stores/retrieves but never interprets meaning, decides importance,
- * calls the LLM, summarizes, or changes topic.
+ * The single door to the companion's session memory. Callers publish only completed {@link MemoryRecord records};
+ * the gateway owns their storage, whole-record eviction, semantic indexing and recall.
  */
 public interface MemoryGateway {
 
-    /** Writes a normal entry. New entries land in short-term memory first. */
-    void write(MemoryEntry entry);
+    /** Atomically writes one completed record. SAVED_TEXT goes directly to long-term saved-text storage. */
+    void write(MemoryRecord record);
 
-    /**
-     * Writes a completed semantic contract as one atomic batch. Concurrent readers must observe either the
-     * timeline before this call or the timeline containing every entry in {@code entries}, never a partial batch.
-     * Entries are stored in list order.
-     */
-    void writeBatch(List<MemoryEntry> entries);
+    /** Returns recent completed records, oldest-to-newest, for role-valid prompt replay. */
+    List<MemoryRecord> readRecentHistory();
 
-    /** Returns the hot short-term timeline, oldest-to-newest, for the prompt context block. */
-    List<MemoryEntry> readShortTermTimeline();
+    /** Searches every memory area and returns bounded record-level matches with honest count metadata. */
+    MemorySearchResult recallMatching(String query, int limit);
 
-    /**
-     * Topic-scoped recall over mid-term memory (COMMANDER-only at the call site).
-     *
-     * @param topic  required topic to read
-     * @param query  optional plain-text filter within the topic (null/blank = latest entries)
-     * @param limit  maximum entries to return
-     */
-    List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit);
+    /** Returns only EVENT facts and SAVED_TEXT records suitable for prompt grounding. */
+    List<MemorySearchMatch> recallFactCandidates(String query, int limit);
 
-    /**
-     * Unified recall (the {@code memory_search} system function): searches all stored memory - the
-     * short-term timeline plus mid-term topic memory across every topic - for entries whose content matches the
-     * query, and returns the matches ranked by importance, then recency, at most {@code limit}.
-     *
-     * @param query plain-text filter; blank returns the most recent entries regardless of content
-     * @param limit maximum entries to return
-     */
-    List<String> recallMatching(String query, int limit);
-
-    /**
-     * The same unified recall as {@link #recallMatching}, but returns the ranked {@link MemoryEntry entries}
-     * (keeping each entry's {@code source}/{@code importance}) rather than labelled text. Feeds the pre-turn
-     * memory-candidate lookup, which filters the ranked matches down to a few clean answer facts for the prompt.
-     *
-     * @param query plain-text filter; blank returns the most recent entries regardless of content
-     * @param limit maximum entries to return
-     */
-    List<MemoryEntry> recallCandidates(String query, int limit);
-
-    /**
-     * The same candidate recall, optionally reusing a semantic query prepared by the live thought. Implementations
-     * that do not own semantic recall retain the plain-text behavior.
-     */
-    default List<MemoryEntry> recallCandidates(String query, int limit, SemanticQuery semanticQuery) {
-        return recallCandidates(query, limit);
+    /** Same trusted recall while optionally reusing the live turn's prepared query embedding. */
+    default List<MemorySearchMatch> recallFactCandidates(String query, int limit, SemanticQuery semanticQuery) {
+        return recallFactCandidates(query, limit);
     }
 
-    /** The single session-wide long-term summary, always added to the prompt. */
-    String longTermSummary();
+    /** Returns the long-term summaries by retained kind. */
+    Map<MemoryKind, String> longTermSummaries();
 
-    /** Atomically replaces the long-term summary (called by {@code MidTermToLongTermConsolidator}). */
-    void replaceLongTermSummary(String summary);
+    /** Returns one retained kind's summary, or an empty string when none exists. */
+    default String longTermSummary(MemoryKind kind) {
+        return longTermSummaries().getOrDefault(kind, "");
+    }
 
-    /**
-     * The pinned MAX-importance facts in long-term memory (verbatim, never compressed), always surfaced in the
-     * prompt. Oldest-to-newest.
-     */
-    List<MemoryEntry> longTermPinnedFacts();
+    /** Atomically stores a summary and removes exactly the pending records it covers. */
+    void commitConsolidation(MemoryKind kind, List<MemoryRecord> batch, String summary);
 
-    /** Pins a MAX-importance fact verbatim into long-term memory (called by {@code MidTermToLongTermConsolidator}). */
-    void addLongTermPinned(MemoryEntry fact);
+    /** Returns explicitly saved commander text, oldest-to-newest. */
+    List<MemoryRecord> savedTextRecords();
 
-    /**
-     * A read-only {@link MemorySnapshot} of every memory area (short-term, mid-term by topic, long-term summary
-     * and pinned facts) taken atomically, for diagnostics/export. The gateway stays the single door: internal
-     * stores are never exposed, only a copied snapshot.
-     */
+    /** Returns an immutable snapshot of every memory area for diagnostics/export. */
     MemorySnapshot snapshot();
 }

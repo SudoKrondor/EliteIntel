@@ -152,10 +152,8 @@ public final class CompanionRoutingHarness {
 
         // Routing-only execution. Game COMMANDS and QUERIES are recorded but NEVER executed - running them
         // would press keys (commands) or call third-party REST APIs (queries: EDSM/Spansh). But SYSTEM
-        // FUNCTIONS (classify_turn, speak, memory_search) are internal companion mechanics with no external
-        // side effect (speak only publishes an event and no TTS engine is started), and the turn flow depends
-        // on their real results - e.g. classify_turn returns isQuestion, which drives whether the companion
-        // dispatches a data query or just speaks - so they run for real. Every tool name is still recorded.
+        // FUNCTIONS are internal companion mechanics with no external game side effect, so they run for real.
+        // Every tool name is still recorded. memory_search is a game query and therefore remains recording-only.
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
             firstToolNanos.compareAndSet(0L, System.nanoTime());

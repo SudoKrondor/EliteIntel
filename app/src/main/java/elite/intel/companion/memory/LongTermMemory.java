@@ -1,50 +1,69 @@
 package elite.intel.companion.memory;
 
-import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemorySearchMatch;
+import elite.intel.companion.model.memory.MemoryRecord;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 
-/**
- * Long-term memory area in two parts: a single session-wide compact summary of old, evicted mid-term memory
- * (replaced atomically by {@code MidTermToLongTermConsolidator}), and an archive of pinned {@code MAX}-importance
- * facts carried verbatim - never summarized, never dropped (the commander explicitly asked to remember them).
- * Neither is force-fed into every prompt: both the summary and the archive are surfaced through
- * {@code memory_search} on demand, so they can grow without bloating the context.
- * Package-private internal of {@link SessionMemoryGateway}.
- */
-class LongTermMemory {
+/** Long-term summaries plus bounded explicitly saved text that is never compressed. */
+final class LongTermMemory {
 
-    // Empty until the consolidator fills it; replaced atomically as one reference write.
-    private volatile String summary = "";
-    // MAX-importance facts, kept verbatim and never compressed; an archive searched on demand, not always-on.
-    private final List<MemoryEntry> pinnedFacts = new CopyOnWriteArrayList<>();
+    private final Map<MemoryKind, LongTermSummary> summaries = new EnumMap<>(MemoryKind.class);
+    private final List<MemoryRecord> savedTexts = new ArrayList<>();
 
-    /** Current summary text (empty string when nothing has been consolidated yet). */
-    String get() {
-        return summary;
+    /** Current summary text by summarized memory kind. */
+    Map<MemoryKind, String> summaries() {
+        Map<MemoryKind, String> textByKind = new EnumMap<>(MemoryKind.class);
+        summaries.forEach((kind, summary) -> textByKind.put(kind, summary.text()));
+        return Map.copyOf(textByKind);
     }
 
-    /** Atomically replaces the summary; null is normalized to empty. */
-    void replace(String summary) {
-        this.summary = summary == null ? "" : summary;
+    /** Searchable summary entries dated by their newest source record. */
+    List<MemorySearchMatch> summaryMatches() {
+        return summaries.entrySet().stream()
+                .map(summary -> new MemorySearchMatch(
+                        summary.getKey(), summary.getValue().evidenceAt(), summary.getValue().entry()))
+                .toList();
     }
 
-    /** The pinned MAX-importance facts, in the order they were pinned (oldest-to-newest). */
-    List<MemoryEntry> pinnedFacts() {
-        return List.copyOf(pinnedFacts);
+    /** Timestamp of the newest source record represented by the current summary, or null when absent. */
+    Instant summaryEvidenceAt(MemoryKind kind) {
+        LongTermSummary summary = summaries.get(kind);
+        return summary == null ? null : summary.evidenceAt();
     }
 
-    /** Pins a MAX-importance fact verbatim; a null, or content already pinned, is ignored (no duplicates). */
-    void pin(MemoryEntry fact) {
-        if (fact == null || fact.content() == null) {
-            return;
+    /** Replaces the summary of one supported memory kind. */
+    void replaceSummary(MemoryKind kind, LongTermSummary summary) {
+        if (!kind.hasLongTermSummary()) {
+            throw new IllegalArgumentException("No long-term summary for " + kind);
         }
-        for (MemoryEntry existing : pinnedFacts) {
-            if (fact.content().equals(existing.content())) {
-                return; // the commander already had this exact fact pinned; do not archive it twice
+        summaries.put(kind, summary);
+    }
+
+    /** Explicitly saved texts in insertion order. */
+    List<MemoryRecord> savedTexts() {
+        return List.copyOf(savedTexts);
+    }
+
+    /** Saves one exact commander phrase; an exact duplicate is ignored. */
+    void saveText(MemoryRecord record) {
+        if (record.kind() != MemoryKind.SAVED_TEXT) {
+            throw new IllegalArgumentException("Only SAVED_TEXT records can enter explicitly saved memory");
+        }
+        String text = record.savedText();
+        for (MemoryRecord existing : savedTexts) {
+            if (existing.savedText().equals(text)) {
+                return;
             }
         }
-        pinnedFacts.add(fact);
+        if (savedTexts.size() >= CompanionMemoryPolicy.savedTextRecordLimit()) {
+            throw new IllegalStateException("Saved-text session limit reached");
+        }
+        savedTexts.add(record);
     }
 }

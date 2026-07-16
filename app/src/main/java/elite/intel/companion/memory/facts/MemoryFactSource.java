@@ -15,7 +15,7 @@ import java.util.List;
  */
 public interface MemoryFactSource {
 
-    /** Stable provenance label rendered in the {@code <fact source="...">} attribute and used in logs (e.g. "ship"). */
+    /** Lowercase provenance id ({@code [a-z][a-z0-9_]*}) used in the fact attribute and logs. */
     String id();
 
     /**

@@ -1,0 +1,52 @@
+package elite.intel.companion.memory;
+
+import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryRecord;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/** Recent completed records replayed in the prompt; overflow is evicted only as whole records. */
+final class RecentMemory {
+
+    private final TokenEstimator tokenEstimator;
+    private final List<MemoryRecord> records = new ArrayList<>();
+    private int estimatedTokens;
+
+    RecentMemory(TokenEstimator tokenEstimator) {
+        this.tokenEstimator = tokenEstimator;
+    }
+
+    /** Appends one already-completed record. */
+    void add(MemoryRecord record) {
+        records.add(record);
+        estimatedTokens += cost(record);
+    }
+
+    /** Current recent history, oldest-to-newest. */
+    List<MemoryRecord> records() {
+        return List.copyOf(records);
+    }
+
+    /** Evicts oldest whole records until both recent-memory limits are satisfied. */
+    List<MemoryRecord> evictOverflow() {
+        List<MemoryRecord> evicted = new ArrayList<>();
+        while (!records.isEmpty()
+                && (records.size() > CompanionMemoryPolicy.recentRecordLimit()
+                || (estimatedTokens > CompanionMemoryPolicy.recentTokenBudget() && records.size() > 1))) {
+            MemoryRecord oldest = records.remove(0);
+            estimatedTokens -= cost(oldest);
+            evicted.add(oldest);
+        }
+        return evicted;
+    }
+
+    private int cost(MemoryRecord record) {
+        int tokens = CompanionMemoryPolicy.recordFramingTokens();
+        for (MemoryEntry entry : record.entries()) {
+            tokens += tokenEstimator.estimate(entry.content())
+                    + CompanionMemoryPolicy.entryFramingTokens();
+        }
+        return tokens;
+    }
+}

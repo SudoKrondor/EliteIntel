@@ -1,9 +1,7 @@
 package elite.intel.companion.input.ru;
 
 import elite.intel.companion.input.CompanionEvalHarness;
-import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.db.FuzzySearch;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.AfterAll;
@@ -115,7 +113,7 @@ class MemorySearchEvalTest {
 
     /** Records one docking as an EVENT memory entry via the real gateway write path (embedding + dedup). */
     private void dock(String station) {
-        h.memory().write(new MemoryEntry(
-                Instant.now(), ConversationTopic.NAVIGATION, MemorySource.EVENT, "пристыковались к станции " + station));
+        h.memory().write(MemoryRecord.event(
+                Instant.now(), "Пристыковались к станции " + station + "."));
     }
 }

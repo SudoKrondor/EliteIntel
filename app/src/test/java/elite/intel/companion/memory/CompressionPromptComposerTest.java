@@ -1,11 +1,10 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmMessage;
 import elite.intel.companion.model.llm.LlmMessageRole;
-import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
@@ -16,68 +15,40 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifies the compression message flow: a system instruction stating the size cap, and a user block with
- * the existing summary (or "(none)") and the buffered entries tagged by source and topic.
- */
 class CompressionPromptComposerTest {
 
     private final CompressionPromptComposer composer = new CompressionPromptComposer();
 
-    private static MemoryEntry entry(ConversationTopic topic, String content) {
-        return new MemoryEntry(Instant.now(), topic, MemorySource.EVENT, content);
-    }
-
-    /** Commander's language name, resolved exactly as production does, so the test holds in any environment. */
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
         return language.displayName();
     }
 
     @Test
-    void buildsSystemInstructionAndUserBlockWithEntries() {
-        List<LlmMessage> messages = composer.compose("known so far",
-                List.of(entry(ConversationTopic.MINING, "found platinum"),
-                        entry(ConversationTopic.NAVIGATION, "jumped to Sol")));
+    void buildsKindSpecificPromptFromCompletedRecords() {
+        MemoryRecord first = MemoryRecord.event(Instant.EPOCH, "found platinum");
+        MemoryRecord second = MemoryRecord.event(Instant.ofEpochSecond(1), "jumped to Sol");
+
+        List<LlmMessage> messages = composer.compose(
+                MemoryKind.EVENT, "known so far", List.of(first, second));
 
         assertEquals(2, messages.size());
+        assertEquals(LlmMessageRole.SYSTEM, messages.get(0).role());
+        assertTrue(messages.get(0).content().contains(String.valueOf(CompanionMemoryPolicy.summaryMaxChars())));
+        assertTrue(messages.get(0).content().contains("write the summary in " + resolvedLanguageName()));
 
-        LlmMessage system = messages.get(0);
-        assertEquals(LlmMessageRole.SYSTEM, system.role());
-        assertTrue(system.content().contains(String.valueOf(CompanionMemoryLimits.SUMMARY_MAX_CHARS)),
-                "instruction must state the size cap");
-        // Instruction stays English but names the commander's language and binds the summary to it.
-        assertTrue(system.content().contains("write the summary in " + resolvedLanguageName()),
-                "instruction must bind the summary to the commander's language");
-
-        LlmMessage user = messages.get(1);
-        assertEquals(LlmMessageRole.USER, user.role());
-        assertTrue(user.content().contains("known so far"));
-        assertTrue(user.content().contains("[EVENT][mining][normal] found platinum"));
-        assertTrue(user.content().contains("[EVENT][navigation][normal] jumped to Sol"));
+        String user = messages.get(1).content();
+        assertTrue(user.contains("Memory kind: EVENT"));
+        assertTrue(user.contains("known so far"));
+        assertTrue(user.contains("[EVENT] found platinum"));
+        assertTrue(user.contains("[EVENT] jumped to Sol"));
     }
 
     @Test
-    void lineCompressionAsksForOneShortSentenceWithFaithfulNumbersInTheCommandersLanguage() {
-        List<LlmMessage> messages = composer.composeLineCompression("  a very long station-services briefing  ");
+    void rendersNoneWhenSummaryIsEmpty() {
+        List<LlmMessage> messages = composer.compose(
+                MemoryKind.DIALOGUE, "", List.of(MemoryRecord.dialogue(Instant.EPOCH, "hello", "hello")));
 
-        assertEquals(2, messages.size());
-        LlmMessage system = messages.get(0);
-        assertEquals(LlmMessageRole.SYSTEM, system.role());
-        assertTrue(system.content().contains("ONE short sentence"), "asks for a single short sentence");
-        assertTrue(system.content().contains("never invent, change, re-estimate or exaggerate"),
-                "forbids distorting facts/numbers (a small model turned 44M into 440M)");
-        assertTrue(system.content().contains("write the summary in " + resolvedLanguageName()),
-                "binds the gist to the commander's language");
-
-        LlmMessage user = messages.get(1);
-        assertEquals(LlmMessageRole.USER, user.role());
-        assertEquals("a very long station-services briefing", user.content(), "the entry text is passed stripped");
-    }
-
-    @Test
-    void rendersNoneWhenSummaryEmpty() {
-        List<LlmMessage> messages = composer.compose("", List.of(entry(ConversationTopic.TRADE, "sold cargo")));
         assertTrue(messages.get(1).content().contains("Existing summary:\n(none)"));
     }
 }

@@ -418,7 +418,7 @@ public class LocationTrackingSubscriber {
             if (bearing > 0) sb.append(localizedEvent("event.nav.bearing", (int) bearing));
             sb.append(" ");
             log.info(sb.toString());
-            CompanionRuntime.narrator().announce("navigation", sb.toString(), "NAVIGATION", false);
+            CompanionRuntime.narrator().announce(sb.toString(), false);
             lastAnnounceTime = System.currentTimeMillis();
         } else {
             log.info("Not enough time passed to announce. and not high priority.");

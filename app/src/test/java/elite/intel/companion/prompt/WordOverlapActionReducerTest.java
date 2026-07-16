@@ -26,9 +26,9 @@ class WordOverlapActionReducerTest {
 
     private static final Set<IntelActionCategory> ALL = EnumSet.allOf(IntelActionCategory.class);
 
-    private static GameToolCandidates.Candidate candidate(String id, String phraseKey) {
-        return new GameToolCandidates.Candidate(id, phraseKey,
-                new LlmToolDefinition(id, "desc", phraseKey, List.of()));
+    private static GameToolCandidates.Candidate candidate(String id, String localizedAliasGroup) {
+        return new GameToolCandidates.Candidate(id, localizedAliasGroup,
+                new LlmToolDefinition(id, "desc", localizedAliasGroup, List.of()));
     }
 
     /** Fixed three-tool catalog; the source ignores categories (gating is tested separately). */

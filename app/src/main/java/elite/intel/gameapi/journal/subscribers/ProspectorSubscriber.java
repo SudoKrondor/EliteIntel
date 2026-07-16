@@ -38,7 +38,7 @@ public class ProspectorSubscriber {
             }
 
             if (foundTargetMaterial && playerSession.isMiningAnnouncementOn()) {
-                CompanionRuntime.narrator().announce("mining", sb.toString(), "MINING", false);
+                CompanionRuntime.narrator().announce(sb.toString(), false);
             }
         });
     }
