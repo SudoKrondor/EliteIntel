@@ -11,6 +11,7 @@ import elite.intel.companion.input.BargeInController;
 import elite.intel.companion.llm.CompanionLlmGatewayFactory;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MidTermToLongTermConsolidator;
+import elite.intel.companion.memory.OversizedMemoryCompressor;
 import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.DispatcherCompanionNarrator;
@@ -50,6 +51,7 @@ public final class CompanionRuntimeGraphFactory {
         GenerationBoundSpeechGateway speechGateway = null;
         SessionMemoryGateway memoryGateway = null;
         MidTermToLongTermConsolidator memoryConsolidator = null;
+        OversizedMemoryCompressor oversizedMemoryCompressor = null;
         ThoughtDispatcher thoughtDispatcher = null;
 
         try {
@@ -70,7 +72,10 @@ public final class CompanionRuntimeGraphFactory {
             memoryGateway = new SessionMemoryGateway();
             memoryConsolidator = new MidTermToLongTermConsolidator(
                     memoryGateway, llmGateway, speechGateway, runtimeGeneration);
+            oversizedMemoryCompressor = new OversizedMemoryCompressor(
+                    memoryGateway, llmGateway, runtimeGeneration);
             memoryGateway.setPendingConsolidationListener(memoryConsolidator);
+            memoryGateway.setOversizedMemoryListener(oversizedMemoryCompressor);
 
             DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
             ConfirmationCoordinator confirmationCoordinator = new ConfirmationCoordinator();
@@ -106,14 +111,18 @@ public final class CompanionRuntimeGraphFactory {
                     thoughtDispatcher,
                     confirmationCoordinator,
                     bargeInController,
-                    memoryConsolidator);
+                    memoryConsolidator,
+                    oversizedMemoryCompressor);
         } catch (RuntimeException | Error assemblyFailure) {
             if (memoryGateway != null) {
                 SessionMemoryGateway partiallyBuiltMemoryGateway = memoryGateway;
                 runCleanupAfterAssemblyFailure(assemblyFailure,
                         () -> partiallyBuiltMemoryGateway.setPendingConsolidationListener(null));
+                runCleanupAfterAssemblyFailure(assemblyFailure,
+                        () -> partiallyBuiltMemoryGateway.setOversizedMemoryListener(null));
             }
             closeResourceAfterAssemblyFailure(assemblyFailure, thoughtDispatcher);
+            closeResourceAfterAssemblyFailure(assemblyFailure, oversizedMemoryCompressor);
             closeResourceAfterAssemblyFailure(assemblyFailure, memoryConsolidator);
             closeResourceAfterAssemblyFailure(assemblyFailure, speechGateway);
             closeResourceAfterAssemblyFailure(assemblyFailure,

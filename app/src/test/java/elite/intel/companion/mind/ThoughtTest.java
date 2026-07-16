@@ -166,6 +166,23 @@ class ThoughtTest {
     }
 
     @Test
+    void longQueryAnswerIsPassedWholeToMemoryAndVoicedVerbatim() {
+        reducer.tools = List.of(new LlmToolDefinition("query_system", "Query system", "system status", List.of()));
+        llm.results.add(ok(call("query_system", new JsonObject())));
+        String fullAnswer = "First route leg has detailed coordinates. "
+                + "Second route leg has another destination. ".repeat(8);
+        execution.results.put("query_system", outcome(fullAnswer));
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "query_system".equals(id) ? IntelActionType.QUERY : IntelActionType.SYSTEM);
+
+        Thought.commander(Urgency.NORMAL, "show the current route", dependencies(types)).run();
+
+        assertEquals(fullAnswer, memory.writes.getFirst().companionText(),
+                "the memory gateway, not the thought, owns eventual gist compression");
+        assertEquals(List.of(fullAnswer), speech.requests.stream().map(SpeechRequest::text).toList());
+    }
+
+    @Test
     void failedCommanderQueryIsVoicedButNeverRemembered() {
         reducer.tools = List.of(new LlmToolDefinition("query_system", "Query system", "system status", List.of()));
         llm.results.add(ok(call("query_system", new JsonObject())));

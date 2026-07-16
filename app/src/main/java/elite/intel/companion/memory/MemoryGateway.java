@@ -14,7 +14,11 @@ import java.util.Map;
  */
 public interface MemoryGateway {
 
-    /** Atomically writes one completed record. SAVED_TEXT goes directly to long-term saved-text storage. */
+    /**
+     * Accepts one completed record. Normal records are stored atomically; an oversized record may be handed off
+     * whole for asynchronous compression before its eventual atomic write. SAVED_TEXT goes directly to its
+     * verbatim long-term storage.
+     */
     void write(MemoryRecord record);
 
     /** Returns recent completed records, oldest-to-newest, for role-valid prompt replay. */

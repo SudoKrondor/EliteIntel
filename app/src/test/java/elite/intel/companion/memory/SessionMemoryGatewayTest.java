@@ -88,6 +88,51 @@ class SessionMemoryGatewayTest {
     }
 
     @Test
+    void oversizedRecordIsHandedOffWholeBeforeAnyStorageMutation() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
+        List<MemoryRecord> deferred = new ArrayList<>();
+        gateway.setOversizedMemoryListener(deferred::add);
+        MemoryRecord query = MemoryRecord.query(
+                Instant.EPOCH, "route?", "leg ".repeat(CompanionMemoryPolicy.entryMaxChars()));
+
+        gateway.write(query);
+
+        assertTrue(gateway.readRecentHistory().isEmpty());
+        assertEquals(List.of(query), deferred);
+        assertEquals(2, deferred.get(0).entryCount());
+    }
+
+    @Test
+    void declinedOversizedHandoffStoresOneBoundedCompleteRecord() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
+        gateway.setOversizedMemoryListener(record -> false);
+        gateway.write(MemoryRecord.query(
+                Instant.EPOCH, "route?", "first leg then second leg ".repeat(20)));
+
+        MemoryRecord stored = gateway.readRecentHistory().getFirst();
+
+        assertEquals(MemoryKind.QUERY, stored.kind());
+        assertEquals(2, stored.entryCount());
+        assertTrue(stored.companionText().length() <= CompanionMemoryPolicy.entryMaxChars());
+        assertTrue(stored.companionText().endsWith("..."));
+        assertFalse(stored.companionText().endsWith("le..."),
+                "fallback should prefer a complete word over a mid-word cut");
+    }
+
+    @Test
+    void savedTextBypassesTheOversizedCompressor() {
+        SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
+        List<MemoryRecord> deferred = new ArrayList<>();
+        gateway.setOversizedMemoryListener(deferred::add);
+        String text = "remember " + "x".repeat(CompanionMemoryPolicy.entryMaxChars() + 10);
+
+        gateway.write(MemoryRecord.savedText(Instant.EPOCH, text));
+
+        assertTrue(deferred.isEmpty());
+        assertEquals(text, gateway.savedTextRecords().getFirst().savedText());
+    }
+
+    @Test
     void factGroundingUsesOnlyEventsAndPinnedPhrases() {
         SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
         gateway.write(dialogue(0, "Sol dialogue", "not trusted"));

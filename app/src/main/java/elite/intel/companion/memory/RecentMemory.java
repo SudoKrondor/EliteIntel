@@ -17,9 +17,9 @@ final class RecentMemory {
         this.tokenEstimator = tokenEstimator;
     }
 
-    /** Appends one already-completed record. */
+    /** Inserts one already-completed record by completion time, including a gist that arrived asynchronously. */
     void add(MemoryRecord record) {
-        records.add(record);
+        insertChronologically(records, record);
         estimatedTokens += cost(record);
     }
 
@@ -48,5 +48,13 @@ final class RecentMemory {
                     + CompanionMemoryPolicy.entryFramingTokens();
         }
         return tokens;
+    }
+
+    private static void insertChronologically(List<MemoryRecord> records, MemoryRecord record) {
+        int index = records.size();
+        while (index > 0 && records.get(index - 1).timestamp().isAfter(record.timestamp())) {
+            index--;
+        }
+        records.add(index, record);
     }
 }

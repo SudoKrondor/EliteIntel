@@ -32,6 +32,7 @@ public final class SessionMemoryGateway implements MemoryGateway {
     private final MidTermMemory midTerm = new MidTermMemory();
     private final LongTermMemory longTerm = new LongTermMemory();
     private volatile PendingConsolidationListener consolidationListener = record -> { };
+    private volatile OversizedMemoryListener oversizedListener;
 
     /** Production constructor using the shared semantic matcher. */
     public SessionMemoryGateway() {
@@ -59,13 +60,22 @@ public final class SessionMemoryGateway implements MemoryGateway {
         consolidationListener = listener == null ? record -> { } : listener;
     }
 
+    /** Registers the background owner of whole-record oversized compression; null restores bounded fallback. */
+    public void setOversizedMemoryListener(OversizedMemoryListener listener) {
+        oversizedListener = listener;
+    }
+
     /**
-     * Stores one completed record atomically. SAVED_TEXT uses its own verbatim length/count limits; other records
-     * are bounded before the first mutation, then enter recent memory together.
+     * Stores one completed record atomically. SAVED_TEXT uses its own verbatim length/count limits. An oversized
+     * ordinary record is handed off whole before the first mutation; when no compressor accepts it, every entry is
+     * bounded synchronously and the complete record still enters recent memory together.
      */
     @Override
     public void write(MemoryRecord record) {
         Objects.requireNonNull(record, "record");
+        if (record.kind() != MemoryKind.SAVED_TEXT && hasOversizedEntry(record) && handOffOversized(record)) {
+            return;
+        }
         MemoryRecord stored = prepareForStore(record, record.kind() != MemoryKind.SAVED_TEXT);
         List<MemoryRecord> staged;
         synchronized (this) {
@@ -186,7 +196,25 @@ public final class SessionMemoryGateway implements MemoryGateway {
                 longTerm.summaries(), longTerm.savedTexts());
     }
 
-    /** Bounds ordinary prompt-visible entries and attaches semantic vectors without changing recorded wording. */
+    private boolean handOffOversized(MemoryRecord record) {
+        OversizedMemoryListener listener = oversizedListener;
+        if (listener == null) {
+            return false;
+        }
+        try {
+            return listener.onOversized(record);
+        } catch (RuntimeException failure) {
+            log.warn("Oversized memory handoff failed; storing the bounded record synchronously", failure);
+            return false;
+        }
+    }
+
+    private static boolean hasOversizedEntry(MemoryRecord record) {
+        int max = CompanionMemoryPolicy.entryMaxChars();
+        return record.entries().stream().anyMatch(entry -> entry.content().length() > max);
+    }
+
+    /** Bounds ordinary prompt-visible entries as a safety fallback and attaches semantic vectors. */
     private MemoryRecord prepareForStore(MemoryRecord record, boolean applyEntryLimit) {
         List<MemoryEntry> prepared = new ArrayList<>(record.entries().size());
         for (MemoryEntry entry : record.entries()) {
@@ -194,21 +222,10 @@ public final class SessionMemoryGateway implements MemoryGateway {
                     && entry.content().length() > CompanionMemoryPolicy.savedTextMaxChars()) {
                 throw new IllegalArgumentException("SAVED_TEXT entry exceeds its length limit");
             }
-            String content = applyEntryLimit ? bound(entry.content()) : entry.content();
+            String content = applyEntryLimit ? MemoryTextBounds.entry(entry.content()) : entry.content();
             prepared.add(new MemoryEntry(entry.source(), content, embed(content)));
         }
         return record.withEntries(prepared);
-    }
-
-    private static String bound(String content) {
-        int max = CompanionMemoryPolicy.entryMaxChars();
-        if (content.length() <= max) {
-            return content;
-        }
-        String suffix = max >= 3 ? "..." : "";
-        int end = Math.max(0, max - suffix.length());
-        String bounded = content.substring(0, end).stripTrailing() + suffix;
-        return bounded.length() <= max ? bounded : bounded.substring(0, max);
     }
 
     private float[] embed(String text) {

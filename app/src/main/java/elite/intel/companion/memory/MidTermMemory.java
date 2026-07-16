@@ -19,7 +19,8 @@ final class MidTermMemory {
         if (!record.kind().movesToMidTerm()) {
             throw new IllegalArgumentException("No mid-term storage for " + record.kind());
         }
-        retainedByKind.computeIfAbsent(record.kind(), ignored -> new ArrayList<>()).add(record);
+        insertChronologically(
+                retainedByKind.computeIfAbsent(record.kind(), ignored -> new ArrayList<>()), record);
     }
 
     /** Returns retained and pending records of one kind, oldest-to-newest. */
@@ -67,7 +68,8 @@ final class MidTermMemory {
             int limit = CompanionMemoryPolicy.midTermRecordLimit(kind);
             while (records.size() > limit) {
                 MemoryRecord record = records.remove(0);
-                pendingByKind.computeIfAbsent(kind, ignored -> new ArrayList<>()).add(record);
+                insertChronologically(
+                        pendingByKind.computeIfAbsent(kind, ignored -> new ArrayList<>()), record);
                 staged.add(record);
             }
         }
@@ -100,5 +102,13 @@ final class MidTermMemory {
                 throw new IllegalStateException("Consolidation batch contains a non-pending " + kind + " record");
             }
         }
+    }
+
+    private static void insertChronologically(List<MemoryRecord> records, MemoryRecord record) {
+        int index = records.size();
+        while (index > 0 && records.get(index - 1).timestamp().isAfter(record.timestamp())) {
+            index--;
+        }
+        records.add(index, record);
     }
 }

@@ -51,4 +51,23 @@ class CompressionPromptComposerTest {
 
         assertTrue(messages.get(1).content().contains("Existing summary:\n(none)"));
     }
+
+    @Test
+    void lineCompressionUsesProvenSingleSentenceContract() {
+        String source = "First leg A to B. Second leg B to C.";
+        List<LlmMessage> messages = composer.composeLineCompression(source);
+
+        assertEquals(2, messages.size());
+        String system = messages.get(0).content();
+        assertTrue(system.contains("ONE short sentence (about 15 words)"));
+        assertTrue(system.contains("single most important point"));
+        assertTrue(system.contains("never invent, change"));
+        assertTrue(system.contains("Write numbers as digits"));
+        assertTrue(system.contains("Call speak exactly once"));
+        assertTrue(system.contains("speak.text"));
+        assertTrue(system.contains("do not return free text"));
+        assertTrue(system.contains("Lembava"));
+        assertTrue(system.contains("write the summary in " + resolvedLanguageName()));
+        assertEquals(source, messages.get(1).content());
+    }
 }

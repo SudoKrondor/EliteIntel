@@ -11,7 +11,7 @@ import elite.intel.session.SystemSession;
 
 import java.util.List;
 
-/** Builds the plain-text LLM request that consolidates old records of one memory kind. */
+/** Builds LLM requests for bounded entry gists and long-term memory consolidation. */
 final class CompressionPromptComposer {
 
     private static final String INSTRUCTION =
@@ -38,6 +38,21 @@ final class CompressionPromptComposer {
         return List.of(
                 LlmMessage.of(LlmMessageRole.SYSTEM, INSTRUCTION + " " + languageRule()),
                 LlmMessage.of(LlmMessageRole.USER, user.toString()));
+    }
+
+    /** Returns the proven single-line prompt for shrinking one oversized entry to its main point. */
+    List<LlmMessage> composeLineCompression(String content) {
+        String instruction = "Rewrite the crew memory line below as ONE short sentence (about 15 words) that keeps "
+                + "only its single most important point and drops secondary details, enumerations and coordinates. "
+                + "Keep every fact and number you include exactly as in the source - never invent, change, "
+                + "re-estimate or exaggerate it. Write numbers as digits, not spelled-out words. "
+                + "Call speak exactly once with that sentence in speak.text; do not return free text. "
+                + languageRule()
+                + " Example of the target form: \"Lembava: independent high-tech system with bounty-hunting sites "
+                + "and a conflict zone.\"";
+        return List.of(
+                LlmMessage.of(LlmMessageRole.SYSTEM, instruction),
+                LlmMessage.of(LlmMessageRole.USER, content == null ? "" : content.strip()));
     }
 
     private static String languageRule() {

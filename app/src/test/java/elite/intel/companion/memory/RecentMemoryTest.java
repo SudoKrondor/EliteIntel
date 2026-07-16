@@ -37,4 +37,16 @@ class RecentMemoryTest {
         assertEquals(List.of(query), evicted);
         assertEquals(MemoryKind.DIALOGUE, memory.records().get(0).kind());
     }
+
+    @Test
+    void delayedCompressedRecordIsInsertedByItsOriginalTimestamp() {
+        RecentMemory memory = new RecentMemory(text -> 0);
+        MemoryRecord later = MemoryRecord.event(Instant.ofEpochSecond(2), "later");
+        MemoryRecord delayed = MemoryRecord.event(Instant.ofEpochSecond(1), "compressed later");
+
+        memory.add(later);
+        memory.add(delayed);
+
+        assertEquals(List.of(delayed, later), memory.records());
+    }
 }

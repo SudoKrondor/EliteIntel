@@ -40,4 +40,16 @@ class MidTermMemoryTest {
         assertThrows(IllegalArgumentException.class,
                 () -> memory.add(MemoryRecord.savedText(Instant.EPOCH, "remember this")));
     }
+
+    @Test
+    void delayedCompressedRecordKeepsRetainedHistoryChronological() {
+        MidTermMemory memory = new MidTermMemory();
+        MemoryRecord later = MemoryRecord.event(Instant.ofEpochSecond(2), "later");
+        MemoryRecord delayed = MemoryRecord.event(Instant.ofEpochSecond(1), "compressed later");
+
+        memory.add(later);
+        memory.add(delayed);
+
+        assertEquals(List.of(delayed, later), memory.records(MemoryKind.EVENT));
+    }
 }
