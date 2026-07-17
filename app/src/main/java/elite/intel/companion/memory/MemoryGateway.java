@@ -1,8 +1,6 @@
 package elite.intel.companion.memory;
 
-import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 
 import java.util.List;
@@ -26,14 +24,6 @@ public interface MemoryGateway {
 
     /** Searches every memory area and returns bounded record-level matches with honest count metadata. */
     MemorySearchResult recallMatching(String query, int limit);
-
-    /** Returns only EVENT facts and SAVED_TEXT records suitable for prompt grounding. */
-    List<MemorySearchMatch> recallFactCandidates(String query, int limit);
-
-    /** Same trusted recall while optionally reusing the live turn's prepared query embedding. */
-    default List<MemorySearchMatch> recallFactCandidates(String query, int limit, SemanticQuery semanticQuery) {
-        return recallFactCandidates(query, limit);
-    }
 
     /** Returns the long-term summaries by retained kind. */
     Map<MemoryKind, String> longTermSummaries();

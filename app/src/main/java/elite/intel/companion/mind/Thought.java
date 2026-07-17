@@ -246,7 +246,7 @@ public abstract class Thought {
         return sb.toString();
     }
 
-    /** Assembles the seed prompt: reduced game tools + system tools + memory snapshot + answer candidates. */
+    /** Assembles the seed prompt: reduced game tools, system tools, recent history, and live fact candidates. */
     protected ComposedPrompt composeInitialPrompt() {
         long composeStartedNanos = System.nanoTime();
         long reducerStartedNanos = System.nanoTime();
@@ -257,7 +257,7 @@ public abstract class Thought {
         List<MemoryRecord> history = dependencies.memoryGateway().readRecentHistory();
         long historyMillis = elapsedMillis(historyStartedNanos);
         long factsStartedNanos = System.nanoTime();
-        List<Fact> candidates = memoryCandidates();
+        List<Fact> candidates = factCandidates();
         long factsMillis = elapsedMillis(factsStartedNanos);
         long promptStartedNanos = System.nanoTime();
         ComposedPrompt composed = dependencies.promptComposer().compose(
@@ -275,8 +275,8 @@ public abstract class Thought {
                         + " facts=" + factsMillis + " ms"
                         + " prompt=" + promptMillis + " ms"
                         + " total=" + elapsedMillis(composeStartedNanos) + " ms");
-        // Show the actual inlined facts (memory core plus source-tagged live facts), one per line as in the prompt,
-        // numbered i/total so multiple grounding facts are easy to count and reference.
+        // Show the actual source-tagged live facts, one per line as in the prompt, numbered i/total so multiple
+        // grounding facts are easy to count and reference.
         int factNo = 0;
         for (Fact fact : candidates) {
             CompanionDiagnostics.debug(trace, "facts",
@@ -286,10 +286,9 @@ public abstract class Thought {
     }
 
     /**
-     * Pre-turn clean answer facts to inline in the prompt (see {@code MergedFactCandidates}). Default
-     * none; a COMMANDER thought overrides it. A memory-only or narration thought carries no candidates.
+     * Host-provided live facts to append to the system prompt. Default none; a COMMANDER thought overrides it.
      */
-    protected List<Fact> memoryCandidates() {
+    protected List<Fact> factCandidates() {
         return List.of();
     }
 

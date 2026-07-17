@@ -10,7 +10,6 @@ import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.speech.SpeechGateway;
@@ -98,7 +97,6 @@ public final class CompanionRuntimeTestSupport {
         @Override public MemorySearchResult recallMatching(String query, int limit) {
             return MemorySearchResult.empty();
         }
-        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
         @Override public Map<MemoryKind, String> longTermSummaries() { return Map.of(); }
         @Override public void commitConsolidation(
                 MemoryKind kind, List<MemoryRecord> batch, String summary

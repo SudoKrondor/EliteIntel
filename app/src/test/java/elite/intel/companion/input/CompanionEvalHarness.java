@@ -150,7 +150,7 @@ public final class CompanionEvalHarness {
         }
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
-            lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
+            lastRequestBody = body; // captured for live-fact injection scoring
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
@@ -364,18 +364,13 @@ public final class CompanionEvalHarness {
                 .anyMatch(entry -> contains(entry.content(), tokenLower));
     }
 
-    /** The raw body of the last LLM request this turn (for inspecting what the prompt carried: context + candidates). */
+    /** The raw body of the last LLM request this turn, for inspecting its history, context, and live facts. */
     public String lastRequestBody() {
         return lastRequestBody == null ? "" : lastRequestBody;
     }
 
-    /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
-    public boolean recalled() {
-        return lastRequestBody != null && lastRequestBody.contains("<facts>");
-    }
-
-    /** The answer-fact candidates inlined into this turn's prompt (the two-tier "Relevant remembered facts"), or empty. */
-    public List<String> recallResult() {
+    /** The live fact-source values inlined into this turn's system prompt, or empty. */
+    public List<String> injectedFacts() {
         if (lastRequestBody == null) {
             return List.of();
         }

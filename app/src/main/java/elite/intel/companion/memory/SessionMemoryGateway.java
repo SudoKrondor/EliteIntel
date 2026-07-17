@@ -1,7 +1,6 @@
 package elite.intel.companion.memory;
 
 import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -125,38 +124,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
     }
 
     @Override
-    public List<MemorySearchMatch> recallFactCandidates(String query, int limit) {
-        return recallFactCandidates(query, limit, null);
-    }
-
-    @Override
-    public List<MemorySearchMatch> recallFactCandidates(String query, int limit, SemanticQuery semanticQuery) {
-        FactCorpus corpus = factCorpus();
-        List<MemorySearchMatch> hits = MemorySearch.recallMatches(
-                query, limit, corpus.recentEvents(), corpus.retainedEvents(), List.of(), corpus.savedTexts(),
-                matcherSource, semanticQuery, SessionMemoryGateway::isTrustedFactEntry);
-        CompanionDiagnostics.debugAmbient("memory",
-                "recalled " + hits.size() + " fact candidate(s) for grounding");
-        return hits;
-    }
-
-    private synchronized FactCorpus factCorpus() {
-        List<MemoryRecord> trustedRecent = recent.records().stream()
-                .filter(record -> record.kind() == MemoryKind.EVENT)
-                .toList();
-        return new FactCorpus(trustedRecent, midTerm.records(MemoryKind.EVENT), longTerm.savedTexts());
-    }
-
-    /** Only final EVENT facts and explicitly saved commander text may enter automatic grounding. */
-    private static boolean isTrustedFactEntry(MemorySearchMatch match) {
-        return switch (match.kind()) {
-            case EVENT -> match.entry().source() == MemorySource.EVENT;
-            case SAVED_TEXT -> match.entry().source() == MemorySource.COMMANDER;
-            case DIALOGUE, QUERY -> false;
-        };
-    }
-
-    @Override
     public synchronized Map<MemoryKind, String> longTermSummaries() {
         return longTerm.summaries();
     }
@@ -248,13 +215,6 @@ public final class SessionMemoryGateway implements MemoryGateway {
             List<MemoryRecord> recent,
             List<MemoryRecord> retained,
             List<MemorySearchMatch> summaries,
-            List<MemoryRecord> savedTexts
-    ) {
-    }
-
-    private record FactCorpus(
-            List<MemoryRecord> recentEvents,
-            List<MemoryRecord> retainedEvents,
             List<MemoryRecord> savedTexts
     ) {
     }

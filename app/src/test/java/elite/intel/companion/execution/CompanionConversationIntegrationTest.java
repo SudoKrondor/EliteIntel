@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -47,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * real {@link CompanionLlmGateway} + {@link MistralLlmAdapter} - driven by a scripted LLM transport (canned
  * Mistral responses) instead of a live model. It plays a short conversation and asserts the cross-cutting
  * behaviour the unit tests cannot: the built-in remember command stores only its extracted text argument and
- * the saved phrase is grounded into a later prompt. No network or real game input is involved.
+ * durable memory is not automatically injected into a later prompt. No network or real game input is involved.
  */
 class CompanionConversationIntegrationTest {
 
@@ -65,7 +66,7 @@ class CompanionConversationIntegrationTest {
     }
 
     @Test
-    void remembersAndRecallsThroughTheRealGraph() {
+    void rememberedTextIsNotAutomaticallyInjectedIntoLaterPrompts() {
         ThoughtDispatcher dispatcher = bootCompanion();
 
         // Turn 1: ordinary dialogue.
@@ -74,9 +75,9 @@ class CompanionConversationIntegrationTest {
         // Turn 2: the ordinary command stores only the extracted content and gets normal command acknowledgement.
         transport.scripted.add(response(
                 call("c2", "remember", "{\"text\":\"the hull is solid\"}")));
-        // Turn 3: trusted SAVED_TEXT memory is injected before the model call.
+        // Turn 3: no memory_search query is offered by this narrow test reducer, so durable memory stays absent.
         transport.scripted.add(response(
-                call("c3", "speak", "{\"text\":\"You said the hull is solid.\"}")));
+                call("c3", "speak", "{\"text\":\"I need a memory search for that.\"}")));
 
         // Submit the conversation as a real burst. The commander cognitive lane must preserve intake order, so
         // turn 3 sees the fact committed by turn 2 without the test manually draining between submissions.
@@ -92,11 +93,10 @@ class CompanionConversationIntegrationTest {
                 memory.savedTextRecords().get(0).entries().get(0).content());
         // The companion actually spoke the scripted phrases (real SpeakFunction -> SpeechGateway).
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("Course plotted")));
-        assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));
-        // The exact saved phrase was injected before the recall turn.
+        assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("memory search")));
+        // The saved phrase is reachable only through memory_search, not through automatic prompt grounding.
         String lastRequestBody = transport.bodies.get(transport.bodies.size() - 1);
-        assertTrue(lastRequestBody.contains("<facts>"), "the remembered fact must be injected before the turn");
-        assertTrue(lastRequestBody.contains("hull is solid"), "the remembered fact must be available to answer");
+        assertFalse(lastRequestBody.contains("hull is solid"), "durable memory must not be injected before the turn");
     }
 
     /** Wires the real companion graph against the scripted transport and stubbed game tools, then installs it. */

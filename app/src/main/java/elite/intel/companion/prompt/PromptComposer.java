@@ -34,7 +34,7 @@ public final class PromptComposer {
      * @param gameTools        reducer-selected game/query tools
      * @param systemTools      system function tools for this source
      * @param recentRecords    recent records replayed as role-valid history
-     * @param factCandidates   trusted facts to inline with provenance
+     * @param factCandidates   trusted live facts to append to the system message with provenance
      */
     public ComposedPrompt compose(
             ThoughtSource source,
@@ -75,10 +75,10 @@ public final class PromptComposer {
             List<Fact> factCandidates,
             PendingClarification pendingClarification) {
         List<LlmMessage> messages = new ArrayList<>();
-        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, systemPrompt.staticRules(source)));
+        messages.add(LlmMessage.of(LlmMessageRole.SYSTEM, buildSystemPrompt(source, factCandidates)));
         messages.addAll(buildHistoryMessages(recentRecords));
         messages.add(LlmMessage.of(LlmMessageRole.USER,
-                buildCurrentInput(currentInput, factCandidates, pendingClarification)));
+                buildCurrentInput(currentInput, pendingClarification)));
 
         List<LlmToolDefinition> tools = new ArrayList<>(gameTools);
         tools.addAll(systemTools);
@@ -116,7 +116,7 @@ public final class PromptComposer {
         return List.copyOf(out);
     }
 
-    /** Appends trusted, provenance-labelled facts to the current-turn context. */
+    /** Appends trusted, provenance-labelled live facts to the system message. */
     private void appendFactsBlock(StringBuilder sb, List<Fact> factCandidates) {
         sb.append("<facts>\n");
         int id = 1;
@@ -127,28 +127,36 @@ public final class PromptComposer {
         sb.append("</facts>\n");
     }
 
-    /** Keeps trusted dynamic context separate from the commander's current words. */
+    /** Keeps the static prefix stable and places host-provided live facts at the end of the single system message. */
+    private String buildSystemPrompt(ThoughtSource source, List<Fact> factCandidates) {
+        String rules = systemPrompt.staticRules(source);
+        if (factCandidates == null || factCandidates.isEmpty()) {
+            return rules;
+        }
+        StringBuilder sb = new StringBuilder(rules);
+        if (!rules.endsWith("\n")) {
+            sb.append('\n');
+        }
+        sb.append('\n');
+        appendFactsBlock(sb, factCandidates);
+        return sb.toString();
+    }
+
+    /** Keeps host-owned clarification state separate from the commander's current words. */
     private String buildCurrentInput(
             String currentInput,
-            List<Fact> factCandidates,
             PendingClarification pendingClarification
     ) {
         String input = currentInput == null ? "" : currentInput;
-        boolean hasFacts = factCandidates != null && !factCandidates.isEmpty();
         boolean hasPendingClarification = pendingClarification != null;
-        if (!hasFacts && !hasPendingClarification) {
+        if (!hasPendingClarification) {
             return input;
         }
 
         StringBuilder sb = new StringBuilder();
         sb.append("<context>\n");
         sb.append("The following data is host-provided context, separate from the commander's current input.\n");
-        if (hasFacts) {
-            appendFactsBlock(sb, factCandidates);
-        }
-        if (hasPendingClarification) {
-            appendPendingClarificationBlock(sb, pendingClarification);
-        }
+        appendPendingClarificationBlock(sb, pendingClarification);
         sb.append("</context>\n\n");
         sb.append("<commander_input>\n");
         sb.append(PromptXml.text(input));

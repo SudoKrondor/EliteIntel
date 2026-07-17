@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * One comprehensive English memory evaluation over a simulated salvage-run conversation. It covers recent and
- * retained dialogue, trusted event facts, exact SAVED_TEXT phrases, multi-fact coherence, and the boundary between
- * memory answers and live-state queries. The trace carries the record-kind distribution and recall results;
+ * retained dialogue, event records, exact SAVED_TEXT phrases, explicit memory_search, multi-fact coherence, and the
+ * boundary between memory answers and live-state queries. The trace carries record-kind distribution and search results;
  * hard assertions require the live model and successful recall. Opt-in; LM Studio must be available.
  */
 @Tag("local-integration")
@@ -77,8 +77,8 @@ class MemoryEvalTest {
     // Keywords planted only by events, to check each HIGH event landed in some memory tier.
     private final List<String> eventKeywords = List.of("wolf", "vargas", "massacre", "osmium");
 
-    /** System-function ids; any other executed tool is a real game query/action. */
-    private static final Set<String> SYSTEM_TOOLS = Set.of(
+    /** Tools that are not live-state queries; any other executed tool is a real game query/action. */
+    private static final Set<String> NON_LIVE_QUERY_TOOLS = Set.of(
             "speak", "request_input", "memory_search");
 
     @BeforeAll
@@ -131,7 +131,7 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(probe.a());
             boolean hit = h.spokenContains(probe.b());
-            boolean recalled = h.recalled();
+            boolean recalled = h.called("memory_search");
             if (hit) {
                 recallHits++;
             }
@@ -169,8 +169,8 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(q);
             List<String> tools = h.turnToolNames();
-            boolean usedQuery = tools.stream().anyMatch(t -> !SYSTEM_TOOLS.contains(t));
-            boolean ok = usedQuery && !h.recalled();
+            boolean usedQuery = tools.stream().anyMatch(t -> !NON_LIVE_QUERY_TOOLS.contains(t));
+            boolean ok = usedQuery && !h.called("memory_search");
             if (ok) {
                 routedOk++;
             }
@@ -183,7 +183,7 @@ class MemoryEvalTest {
 
         block.append("\n---- scores ----\n");
         block.append(String.format("in-conversation recall: %d / %d%n", hotHits, hotAsks));
-        block.append(String.format("recall after eviction:  %d / %d (candidates injected %d)%n", recallHits, recallProbes.size(), recalledCount));
+        block.append(String.format("recall after eviction:  %d / %d (memory_search calls %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("coherence (2 facts):    %s%n", coherenceOk ? "ok" : "no"));
         block.append(String.format("events recorded:        %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("query routing:          %d / %d%n", routedOk, queryProbes.size()));

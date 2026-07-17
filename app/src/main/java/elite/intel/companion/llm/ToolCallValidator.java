@@ -15,10 +15,10 @@ import java.util.Map;
 /**
  * Validates parsed tool calls against the exact provider-neutral tool snapshot offered in the same LLM request.
  * The contract is deliberately strict and non-coercing: required properties must exist, JSON primitive types and
- * enum values must match exactly, and undeclared properties reject the complete response before any call can
- * reach execution. A provider's explicit {@code null} for an optional property is the sole compatibility
- * normalization: after the complete response validates, that property is removed and handlers observe it as
- * omitted. Required {@code null} remains invalid.
+ * enum values must match exactly, and undeclared properties reject parameterized calls before any call can reach
+ * execution. Arguments hallucinated for a parameterless function are ignored because its empty schema makes every
+ * value inapplicable. A provider's explicit {@code null} for an optional property is also removed. Normalization is
+ * atomic: it happens only after the complete response validates. Required {@code null} remains invalid.
  */
 final class ToolCallValidator {
 
@@ -40,22 +40,21 @@ final class ToolCallValidator {
         if (schemasByTool == null) {
             return false;
         }
-        List<List<String>> optionalNullsByInvocation = new ArrayList<>(invocations.size());
+        List<List<String>> propertiesToRemoveByInvocation = new ArrayList<>(invocations.size());
         for (LlmToolInvocation invocation : invocations) {
             if (invocation == null || invocation.name() == null || invocation.arguments() == null) {
                 return false;
             }
             Map<String, ActionParameterSpec> schema = schemasByTool.get(invocation.name());
-            List<String> optionalNulls = schema == null
-                    ? null : optionalNullProperties(invocation.arguments(), schema);
-            if (optionalNulls == null) {
+            List<String> propertiesToRemove = normalizableProperties(invocation.arguments(), schema);
+            if (propertiesToRemove == null) {
                 return false;
             }
-            optionalNullsByInvocation.add(optionalNulls);
+            propertiesToRemoveByInvocation.add(propertiesToRemove);
         }
         for (int i = 0; i < invocations.size(); i++) {
             JsonObject arguments = invocations.get(i).arguments();
-            optionalNullsByInvocation.get(i).forEach(arguments::remove);
+            propertiesToRemoveByInvocation.get(i).forEach(arguments::remove);
         }
         return true;
     }
@@ -79,6 +78,20 @@ final class ToolCallValidator {
             }
         }
         return schemasByTool;
+    }
+
+    /** Returns harmless properties to discard, or {@code null} when the call violates its declared schema. */
+    private static List<String> normalizableProperties(
+            JsonObject arguments,
+            Map<String, ActionParameterSpec> schema
+    ) {
+        if (schema == null) {
+            return null;
+        }
+        if (schema.isEmpty()) {
+            return List.copyOf(arguments.keySet());
+        }
+        return optionalNullProperties(arguments, schema);
     }
 
     private static boolean validSpec(ActionParameterSpec parameter) {

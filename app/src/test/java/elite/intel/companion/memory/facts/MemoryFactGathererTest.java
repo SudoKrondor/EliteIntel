@@ -50,24 +50,6 @@ class MemoryFactGathererTest {
     }
 
     @Test
-    void gatherForSearchIsEmptyForAmbientOnlySources() {
-        // The ambient/state sources do not override searchFacts, so memory_search gets nothing from them.
-        assertTrue(MemoryFactGatherer.gatherForSearch(ctx(), List.of(source("ship", "hull at 80%"))).isEmpty());
-    }
-
-    @Test
-    void gatherForSearchUsesTheSearchRole() {
-        MemoryFactSource searchable = new MemoryFactSource() {
-            @Override public String id() { return "q"; }
-            @Override public List<String> factsFor(MemoryFactContext context) { return List.of("ambient"); }
-            @Override public List<String> searchFacts(MemoryFactContext context) { return List.of("searched"); }
-        };
-
-        assertEquals(List.of(new Fact("ambient", "q")), MemoryFactGatherer.gather(ctx(), List.of(searchable)));
-        assertEquals(List.of(new Fact("searched", "q")), MemoryFactGatherer.gatherForSearch(ctx(), List.of(searchable)));
-    }
-
-    @Test
     void gatherRelevantDelegatesTheDecisionToEachSource() {
         MemoryFactSource relevant = new MemoryFactSource() {
             @Override public String id() { return "relevant"; }
@@ -104,7 +86,7 @@ class MemoryFactGathererTest {
     }
 
     private static MemoryFactContext ctx() {
-        return MemoryFactContext.forQuery("q");
+        return MemoryFactContext.forCommanderInput("q");
     }
 
     private static MemoryFactSource source(String id, String... facts) {

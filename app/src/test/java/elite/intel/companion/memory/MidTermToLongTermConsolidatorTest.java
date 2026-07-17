@@ -5,7 +5,6 @@ import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.speech.SpeechRequest;
 import org.junit.jupiter.api.Test;
@@ -169,7 +168,6 @@ class MidTermToLongTermConsolidatorTest {
         @Override public MemorySearchResult recallMatching(String query, int limit) {
             return MemorySearchResult.empty();
         }
-        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
         @Override public Map<MemoryKind, String> longTermSummaries() { return Map.copyOf(summaries); }
         @Override public void commitConsolidation(
                 MemoryKind kind, List<MemoryRecord> batch, String summary

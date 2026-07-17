@@ -86,8 +86,8 @@ public final class CommanderThought extends Thought {
             List<LlmToolDefinition> tools = prompt.tools();
             PromptCacheProfile profile = prompt.profile();
 
-            // Single-round by design: one LLM round settles the turn (memory is retrieved before the turn as
-            // inlined answer facts, so there is no in-turn lookup round).
+            // Single-round by design: one LLM call selects the settling function. Explicit memory_search is an
+            // existing terminal game query; durable memory is never injected before this call.
             if (isStopped()) {
                 discardIncompleteTurn();
                 return CompletableFuture.completedFuture(null);
@@ -134,11 +134,10 @@ public final class CommanderThought extends Thought {
         return dependencies.systemFunctionProvider().systemFunctions(source(), gameTools);
     }
 
-    /** Pre-turn clean answer facts for this commander input (memory core plus pluggable sources), inlined as {@code <facts>}. */
+    /** Host-provided live facts for this commander input, appended to the system prompt as {@code <facts>}. */
     @Override
-    protected List<Fact> memoryCandidates() {
-        return MergedFactCandidates.forInput(dependencies.memoryGateway(),
-                new MemoryFactContext(context.matchInput(), source(), urgency()), context.semanticQuery());
+    protected List<Fact> factCandidates() {
+        return MergedFactCandidates.forInput(new MemoryFactContext(context.matchInput(), source(), urgency()));
     }
 
     /** Settles the one validated call; game handlers return a detached lifecycle future. */

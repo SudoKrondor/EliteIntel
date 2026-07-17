@@ -3,7 +3,6 @@ package elite.intel.companion.memory;
 import elite.intel.ai.embed.AngleEmbedder;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 import org.junit.jupiter.api.Test;
 
@@ -151,20 +150,6 @@ class SessionMemoryGatewayTest {
 
         assertTrue(deferred.isEmpty());
         assertEquals(text, gateway.savedTextRecords().getFirst().savedText());
-    }
-
-    @Test
-    void factGroundingUsesOnlyEventsAndPinnedPhrases() {
-        SessionMemoryGateway gateway = new SessionMemoryGateway(text -> 0);
-        gateway.write(dialogue(0, "Sol dialogue", "not trusted"));
-        gateway.write(MemoryRecord.query(Instant.ofEpochSecond(1), "Sol query", "not trusted"));
-        gateway.write(MemoryRecord.event(Instant.ofEpochSecond(2), "arrived at Sol"));
-        gateway.write(MemoryRecord.savedText(Instant.ofEpochSecond(3), "my home is Sol"));
-
-        List<MemorySearchMatch> matches = gateway.recallFactCandidates("Sol", 10);
-
-        assertEquals(List.of("my home is Sol", "arrived at Sol"),
-                matches.stream().map(match -> match.entry().content()).toList());
     }
 
     @Test

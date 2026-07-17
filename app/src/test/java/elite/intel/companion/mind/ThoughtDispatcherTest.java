@@ -16,7 +16,6 @@ import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.*;
 import elite.intel.companion.model.memory.MemoryEntry;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -745,7 +744,6 @@ class ThoughtDispatcherTest {
         @Override public MemorySearchResult recallMatching(String query, int limit) {
             return MemorySearchResult.empty();
         }
-        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
         @Override public Map<MemoryKind, String> longTermSummaries() { return Map.of(); }
         @Override public void commitConsolidation(
                 MemoryKind kind, List<MemoryRecord> batch, String summary

@@ -37,7 +37,7 @@ class CurrentSituationFactSourceTest {
     @Test
     void isAutomaticallyRegisteredAndRelevantToEveryCommanderTurn() {
         assertTrue(CurrentSituationFactSource.class.isAnnotationPresent(RegisterMemoryFactSource.class));
-        assertTrue(source.isRelevant(MemoryFactContext.forQuery("deploy landing gear")));
+        assertTrue(source.isRelevant(MemoryFactContext.forCommanderInput("deploy landing gear")));
         assertFalse(source.isRelevant(new MemoryFactContext("event", ThoughtSource.EVENT, Urgency.NORMAL)));
     }
 
@@ -66,14 +66,14 @@ class CurrentSituationFactSourceTest {
         setStatus(flags[0], flags[1]);
 
         assertEquals(List.of("Game situation: In ship · supercruise"),
-                source.factsFor(MemoryFactContext.forQuery("status")));
+                source.factsFor(MemoryFactContext.forCommanderInput("status")));
     }
 
     private void assertLiveFact(PlayerSituation situation) {
         long[] flags = StatusFlags.flagsForSituation(situation);
         setStatus(flags[0], flags[1]);
         assertEquals(List.of(CurrentSituationFactSource.format(situation)),
-                source.factsFor(MemoryFactContext.forQuery("status")));
+                source.factsFor(MemoryFactContext.forCommanderInput("status")));
     }
 
     private static void setStatus(long flags, long flags2) {

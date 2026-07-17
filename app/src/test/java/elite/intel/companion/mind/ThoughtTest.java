@@ -22,7 +22,6 @@ import elite.intel.companion.model.llm.LlmResult;
 import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 import elite.intel.companion.model.memory.MemoryKind;
-import elite.intel.companion.model.memory.MemorySearchMatch;
 import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.memory.MemorySource;
 import elite.intel.companion.model.speech.SpeechRequest;
@@ -310,7 +309,7 @@ class ThoughtTest {
     }
 
     @Test
-    void preparedSemanticQueryFlowsToReducerAndTrustedMemoryRecall() {
+    void preparedSemanticQueryFlowsToReducerOnly() {
         SemanticQuery prepared = new SemanticPhraseMatcher(new AngleEmbedder(Map.of("route", 0.0)))
                 .embedQueryContext("route");
         llm.results.add(ok(call(SpeakFunction.ID, text("on it"))));
@@ -320,7 +319,6 @@ class ThoughtTest {
         Thought.commander(context, dependencies()).run();
 
         assertSame(prepared, reducer.lastSemanticQuery);
-        assertSame(prepared, memory.lastSemanticQuery);
     }
 
     @Test
@@ -423,18 +421,10 @@ class ThoughtTest {
     private static final class FakeMemory implements MemoryGateway {
         private final List<MemoryRecord> writes = new CopyOnWriteArrayList<>();
         private final Map<MemoryKind, String> summaries = new EnumMap<>(MemoryKind.class);
-        private SemanticQuery lastSemanticQuery;
-
         @Override public void write(MemoryRecord record) { writes.add(record); }
         @Override public List<MemoryRecord> readRecentHistory() { return List.of(); }
         @Override public MemorySearchResult recallMatching(String query, int limit) {
             return MemorySearchResult.empty();
-        }
-        @Override public List<MemorySearchMatch> recallFactCandidates(String query, int limit) { return List.of(); }
-        @Override public List<MemorySearchMatch> recallFactCandidates(
-                String query, int limit, SemanticQuery semanticQuery) {
-            lastSemanticQuery = semanticQuery;
-            return List.of();
         }
         @Override public Map<MemoryKind, String> longTermSummaries() { return Map.copyOf(summaries); }
         @Override public void commitConsolidation(

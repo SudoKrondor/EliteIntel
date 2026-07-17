@@ -12,18 +12,17 @@ import elite.intel.companion.model.Urgency;
  * implementation may ignore the query and only read live state. {@link #source()} and
  * {@link #urgency()} are the other turn-scoped signals available at this point.
  *
- * @param query   the commander's current input (matchInput); blank selects no ambient sources
+ * @param query   the commander's current input (matchInput); blank disables only query-gated sources
  * @param source  the thought source assembling the prompt (COMMANDER today)
  * @param urgency whether the turn was born urgent
  */
 public record MemoryFactContext(String query, ThoughtSource source, Urgency urgency) {
 
     /**
-     * Context for a query-time source lookup (e.g. ambient selection or {@code memory_search}) where thought signals
-     * are not threaded through: it is a COMMANDER turn and urgency is treated as NORMAL. Use when only the query
-     * text is known.
+     * Context for a current-state source lookup where thought signals are not threaded through: it is a COMMANDER
+     * turn and urgency is treated as NORMAL. Use when only the commander's current text is known.
      */
-    public static MemoryFactContext forQuery(String query) {
+    public static MemoryFactContext forCommanderInput(String query) {
         return new MemoryFactContext(query, ThoughtSource.COMMANDER, Urgency.NORMAL);
     }
 }

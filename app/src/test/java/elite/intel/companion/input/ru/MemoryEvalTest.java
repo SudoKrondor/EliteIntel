@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Comprehensive Russian memory evaluation, mirroring the English salvage-run session with additional probes.
- * It covers recent and retained dialogue, trusted event facts, exact SAVED_TEXT phrases, multi-fact coherence, and
+ * It covers recent and retained dialogue, event records, exact SAVED_TEXT phrases, explicit memory_search, and
  * live-state query routing. The trace carries record-kind placement and recall results; hard assertions require
  * the live model and successful recall. Opt-in; LM Studio must be available.
  */
@@ -136,8 +136,8 @@ class MemoryEvalTest {
             ask("биосигналы какого рода мы обнаружили?", "светляк"),        // SAASignalsFound
             ask("сигнал бедствия с какого маяка мы засекли?", "циклоп"));   // FSSSignalDiscovered
 
-    /** System-function ids; any other executed tool is a real game query/action. */
-    private static final Set<String> SYSTEM_TOOLS = Set.of(
+    /** Tools that are not live-state queries; any other executed tool is a real game query/action. */
+    private static final Set<String> NON_LIVE_QUERY_TOOLS = Set.of(
             "speak", "request_input", "memory_search");
 
     @BeforeAll
@@ -192,15 +192,15 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(probe.a());
             boolean hit = h.spokenContains(probe.b());
-            boolean recalled = h.recalled();
+            boolean recalled = h.called("memory_search");
             if (hit) {
                 recallHits++;
             }
             if (recalled) {
                 recalledCount++;
             }
-            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | вернулось=%s | %s%n",
-                    probe.b(), tier, recalled, hit, h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s' | tier=%s | recalled=%s | hit=%s | liveFacts=%s | %s%n",
+                    probe.b(), tier, recalled, hit, h.injectedFacts(), h.spokenTexts()));
         }
 
         // Phase 3: coherence probes, each weaving together two separately-stated facts.
@@ -214,8 +214,8 @@ class MemoryEvalTest {
             if (ok) {
                 coherenceHits++;
             }
-            block.append(String.format("ждём '%s'+'%s' | ok=%s | вернулось=%s | %s%n",
-                    probe.kw1(), probe.kw2(), ok, h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s'+'%s' | ok=%s | liveFacts=%s | %s%n",
+                    probe.kw1(), probe.kw2(), ok, h.injectedFacts(), h.spokenTexts()));
         }
 
         // Phase 4: events landed in memory.
@@ -240,8 +240,8 @@ class MemoryEvalTest {
             if (hit) {
                 eventRecallHits++;
             }
-            block.append(String.format("ждём '%s' | hit=%s | вернулось=%s | %s%n",
-                    probe.b(), hit, h.recallResult(), h.spokenTexts()));
+            block.append(String.format("ждём '%s' | hit=%s | liveFacts=%s | %s%n",
+                    probe.b(), hit, h.injectedFacts(), h.spokenTexts()));
         }
 
         // Phase 5: live-state routing - must use a query, not memory.
@@ -251,8 +251,8 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(q);
             List<String> tools = h.turnToolNames();
-            boolean usedQuery = tools.stream().anyMatch(t -> !SYSTEM_TOOLS.contains(t));
-            boolean ok = usedQuery && !h.recalled();
+            boolean usedQuery = tools.stream().anyMatch(t -> !NON_LIVE_QUERY_TOOLS.contains(t));
+            boolean ok = usedQuery && !h.called("memory_search");
             if (ok) {
                 routedOk++;
             }
@@ -268,7 +268,7 @@ class MemoryEvalTest {
 
         block.append("\n---- итоги ----\n");
         block.append(String.format("горячий recall:        %d / %d%n", hotHits, hotAsks));
-        block.append(String.format("recall после вытеснения: %d / %d (кандидаты подмешаны %d)%n", recallHits, recallProbes.size(), recalledCount));
+        block.append(String.format("recall после вытеснения: %d / %d (memory_search вызван %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("связность (пары фактов): %d / %d%n", coherenceHits, coherenceProbes.size()));
         block.append(String.format("события записаны:      %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("recall событий:         %d / %d%n", eventRecallHits, eventRecallProbes.size()));

@@ -17,14 +17,13 @@ import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Theme (Russian): the explicit memory enumeration. We dock at five stations, interleaved with chatter and a
  * command so the events arrive non-sequentially, then ask the companion to list which stations we docked at
- * and how many. The test asserts the OUTCOME - the commander hears every docked station enumerated - not the
- * route: the answer may be voiced by the {@code memory_search} analysis (the path meant for when the capped
- * auto-injected candidates cannot hold every match) or spoken directly from the injected facts (when the few
- * facts already cover it). Which path was taken is recorded in the trace for diagnosis only. Station names are
+ * and how many. The test asserts both the route and outcome: {@code memory_search} must be called, and the commander
+ * must hear every docked station enumerated because durable memory is never injected as prompt facts. Station names are
  * matched tolerantly (one transliteration edit, e.g. "Уолш"/"Волш") since the model re-voices them in persona.
  * Opt-in; LM Studio must be up.
  */
@@ -64,14 +63,12 @@ class MemorySearchEvalTest {
         dock(STATIONS.get(4));
         h.say("тихо сегодня, поболтаем ещё немного");
 
-        // Ask for the full enumeration. The commander must hear every station; the model may reach the answer
-        // via memory_search or straight from the injected facts, so score what was actually spoken this turn.
+        // Ask for the full enumeration. The commander must route through memory_search and hear every station.
         h.beginTurn();
         h.say("перечисли, к каким станциям мы пристыковывались, и сколько их было");
 
-        boolean searched = h.called("memory_search"); // trace-only: which path settled the turn
-        // Everything the commander heard this turn, regardless of path (memory_search self-voices its analysis;
-        // a direct answer comes as a speak call) - see CompanionEvalHarness#spokenTexts.
+        boolean searched = h.called("memory_search");
+        // memory_search self-voices its analysis; see CompanionEvalHarness#spokenTexts.
         String answer = String.join(" ", h.spokenTexts());
         List<String> answerWords = words(answer);
         // The analysis model composes in-persona and may shorten "Джеймсон Мемориал" to "Джеймсон", so match
@@ -89,7 +86,7 @@ class MemorySearchEvalTest {
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
-        // Outcome, not route: whichever path the model took, the commander must hear all five stations.
+        assertTrue(searched, "durable recall must use memory_search");
         assertEquals(STATIONS.size(), found, "the commander must hear every docked station enumerated");
     }
 

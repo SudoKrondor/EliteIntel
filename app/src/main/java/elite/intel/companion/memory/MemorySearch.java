@@ -1,8 +1,6 @@
 package elite.intel.companion.memory;
 
-import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.VectorMath;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
@@ -51,21 +49,6 @@ final class MemorySearch {
         }
         List<String> items = boundedItems(ranked, limit);
         return new MemorySearchResult(ranked.size(), exactRecordCount, items);
-    }
-
-    static List<MemorySearchMatch> recallMatches(
-            String query,
-            int limit,
-            List<MemoryRecord> recent,
-            List<MemoryRecord> retained,
-            List<MemorySearchMatch> summaries,
-            List<MemoryRecord> savedTexts,
-            Supplier<SemanticPhraseMatcher> matcherSource,
-            SemanticQuery semanticQuery,
-            Predicate<MemorySearchMatch> included
-    ) {
-        return emitMatches(rankEntries(
-                query, recent, retained, summaries, savedTexts, matcherSource, semanticQuery, included), limit);
     }
 
     /** Whether two entries have semantic vectors above the configured duplicate threshold. */
@@ -167,127 +150,9 @@ final class MemorySearch {
                 && candidate.semanticScore() >= CompanionMemoryPolicy.semanticRecallFloor());
     }
 
-    private static List<Scored> rankEntries(
-            String query,
-            List<MemoryRecord> recent,
-            List<MemoryRecord> retained,
-            List<MemorySearchMatch> summaries,
-            List<MemoryRecord> savedTexts,
-            Supplier<SemanticPhraseMatcher> matcherSource,
-            SemanticQuery semanticQuery,
-            Predicate<MemorySearchMatch> included
-    ) {
-        if (recent.isEmpty() && retained.isEmpty() && summaries.isEmpty() && savedTexts.isEmpty()) {
-            return List.of();
-        }
-        Set<String> queryTokens = tokens(query);
-        boolean blank = query == null || query.isBlank();
-        SemanticPhraseMatcher matcher = blank ? null : safeMatcher(matcherSource);
-        float[] queryVector = matcher == null || semanticQuery == null
-                ? null : semanticQuery.vectorFor(query, matcher);
-        if (queryVector == null && matcher != null) {
-            queryVector = safeEmbedQuery(matcher, query);
-        }
-
-        List<Scored> scored = new ArrayList<>();
-        collect(scored, recent, queryTokens, blank, queryVector, included);
-        collect(scored, retained, queryTokens, blank, queryVector, included);
-        collectMatches(scored, summaries, queryTokens, blank, queryVector, included);
-        collect(scored, savedTexts, queryTokens, blank, queryVector, included);
-
-        boolean semantic = queryVector != null;
-        List<Scored> eligible = deduplicate(filter(scored, blank, semantic));
-        eligible.sort(semantic ? fusedRank(eligible) : WORD_RANK);
-        return eligible;
-    }
-
-    private static void collect(
-            List<Scored> out,
-            List<MemoryRecord> records,
-            Set<String> queryTokens,
-            boolean blank,
-            float[] queryVector,
-            Predicate<MemorySearchMatch> included
-    ) {
-        for (MemoryRecord record : records) {
-            for (MemoryEntry entry : record.entries()) {
-                MemorySearchMatch match = new MemorySearchMatch(record.kind(), record.timestamp(), entry);
-                if (!included.test(match)) {
-                    continue;
-                }
-                int wordScore = blank ? 0 : overlap(queryTokens, entry.content());
-                double semanticScore = queryVector != null && entry.embedding() != null
-                        ? VectorMath.cosine(queryVector, entry.embedding()) : Double.NaN;
-                out.add(new Scored(match, wordScore, semanticScore));
-            }
-        }
-    }
-
-    private static void collectMatches(
-            List<Scored> out,
-            List<MemorySearchMatch> matches,
-            Set<String> queryTokens,
-            boolean blank,
-            float[] queryVector,
-            Predicate<MemorySearchMatch> included
-    ) {
-        for (MemorySearchMatch match : matches) {
-            if (!included.test(match)) {
-                continue;
-            }
-            MemoryEntry entry = match.entry();
-            int wordScore = blank ? 0 : overlap(queryTokens, entry.content());
-            double semanticScore = queryVector != null && entry.embedding() != null
-                    ? VectorMath.cosine(queryVector, entry.embedding()) : Double.NaN;
-            out.add(new Scored(match, wordScore, semanticScore));
-        }
-    }
-
-    private static List<Scored> filter(List<Scored> scored, boolean blank, boolean semantic) {
-        double floor = CompanionMemoryPolicy.semanticRecallFloor();
-        return scored.stream()
-                .filter(candidate -> blank || candidate.wordScore() > 0
-                        || (semantic && !Double.isNaN(candidate.semanticScore())
-                        && candidate.semanticScore() >= floor))
-                .toList();
-    }
-
-    private static List<MemorySearchMatch> emitMatches(List<Scored> ranked, int limit) {
-        if (limit <= 0) {
-            return List.of();
-        }
-        List<MemorySearchMatch> out = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        for (Scored candidate : ranked) {
-            MemorySearchMatch match = candidate.match();
-            String identity = match.kind() + "\u0000" + match.entry().content();
-            if (!seen.add(identity)) {
-                continue;
-            }
-            out.add(match);
-            if (out.size() == limit) {
-                break;
-            }
-        }
-        return List.copyOf(out);
-    }
-
-    private static final Comparator<Scored> WORD_RANK = Comparator
-            .comparingInt(Scored::wordScore).reversed()
-            .thenComparing(candidate -> candidate.match().timestamp(), Comparator.reverseOrder());
-
     private static final Comparator<RecordScored> RECORD_WORD_RANK = Comparator
             .comparingInt(RecordScored::wordScore).reversed()
             .thenComparing(candidate -> candidate.document().timestamp(), Comparator.reverseOrder());
-
-    private static Comparator<Scored> fusedRank(List<Scored> eligible) {
-        double floor = CompanionMemoryPolicy.semanticRecallFloor();
-        Map<Scored, Double> fused = new IdentityHashMap<>();
-        accumulateRank(fused, eligible, candidate -> candidate.wordScore() > 0, Scored::wordScore);
-        accumulateRank(fused, eligible, candidate -> candidate.semanticScore() >= floor, Scored::semanticScore);
-        return Comparator.<Scored>comparingDouble(candidate -> fused.getOrDefault(candidate, 0.0)).reversed()
-                .thenComparing(candidate -> candidate.match().timestamp(), Comparator.reverseOrder());
-    }
 
     private static Comparator<RecordScored> fusedRecordRank(List<RecordScored> eligible) {
         double floor = CompanionMemoryPolicy.semanticRecallFloor();
@@ -297,29 +162,6 @@ final class MemorySearch {
                 fused, eligible, candidate -> candidate.semanticScore() >= floor, RecordScored::semanticScore);
         return Comparator.<RecordScored>comparingDouble(candidate -> fused.getOrDefault(candidate, 0.0)).reversed()
                 .thenComparing(candidate -> candidate.document().timestamp(), Comparator.reverseOrder());
-    }
-
-    private static void accumulateRank(
-            Map<Scored, Double> fused,
-            List<Scored> candidates,
-            Predicate<Scored> included,
-            ToDoubleFunction<Scored> score
-    ) {
-        List<Scored> ordered = candidates.stream()
-                .filter(included)
-                .sorted(Comparator.comparingDouble(score).reversed())
-                .toList();
-        int rank = 0;
-        double previous = Double.NaN;
-        for (int i = 0; i < ordered.size(); i++) {
-            Scored candidate = ordered.get(i);
-            double current = score.applyAsDouble(candidate);
-            if (i > 0 && current != previous) {
-                rank = i;
-            }
-            fused.merge(candidate, 1.0 / (RRF_K + rank), Double::sum);
-            previous = current;
-        }
     }
 
     private static void accumulateRecordRank(
@@ -343,38 +185,6 @@ final class MemorySearch {
             fused.merge(candidate, 1.0 / (RRF_K + rank), Double::sum);
             previous = current;
         }
-    }
-
-    /** De-duplication stays within one kind, so saved text or EVENT evidence cannot be hidden by dialogue. */
-    private static List<Scored> deduplicate(List<Scored> candidates) {
-        double floor = CompanionMemoryPolicy.semanticDedupFloor();
-        List<Scored> survivors = new ArrayList<>();
-        for (Scored candidate : candidates) {
-            int duplicate = duplicateOf(survivors, candidate, floor);
-            if (duplicate < 0) {
-                survivors.add(candidate);
-            } else {
-                survivors.set(duplicate, merge(survivors.get(duplicate), candidate));
-            }
-        }
-        return survivors;
-    }
-
-    private static int duplicateOf(List<Scored> survivors, Scored candidate, double floor) {
-        for (int i = 0; i < survivors.size(); i++) {
-            Scored survivor = survivors.get(i);
-            if (survivor.match().kind() == candidate.match().kind()
-                    && sameMeaning(survivor.match().entry(), candidate.match().entry(), floor)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private static Scored merge(Scored first, Scored second) {
-        Scored representative = first.match().timestamp().isAfter(second.match().timestamp()) ? first : second;
-        return new Scored(representative.match(), Math.max(first.wordScore(), second.wordScore()),
-                maxScore(first.semanticScore(), second.semanticScore()));
     }
 
     private static double maxScore(double first, double second) {
@@ -405,17 +215,6 @@ final class MemorySearch {
         }
     }
 
-    private static int overlap(Set<String> queryTokens, String content) {
-        Set<String> contentTokens = tokens(content);
-        int score = 0;
-        for (String token : queryTokens) {
-            if (contentTokens.contains(token)) {
-                score++;
-            }
-        }
-        return score;
-    }
-
     private static int explicitOverlap(Set<String> queryTokens, String content) {
         Set<String> contentTokens = explicitTokens(content);
         int score = 0;
@@ -439,22 +238,6 @@ final class MemorySearch {
             }
         }
         return tokens;
-    }
-
-    private static Set<String> tokens(String text) {
-        if (text == null) {
-            return Set.of();
-        }
-        Set<String> tokens = new HashSet<>();
-        for (String word : text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+")) {
-            if (word.length() > 2 && !InputNormalizerLocalizations.stopWords().contains(word)) {
-                tokens.add(word);
-            }
-        }
-        return tokens;
-    }
-
-    private record Scored(MemorySearchMatch match, int wordScore, double semanticScore) {
     }
 
     private record RecordScored(SearchDocument document, int wordScore, double semanticScore) {

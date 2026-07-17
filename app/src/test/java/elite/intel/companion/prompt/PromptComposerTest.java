@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -139,7 +140,7 @@ class PromptComposerTest {
     }
 
     @Test
-    void factsAndPendingClarificationStayInFinalUserContext() {
+    void factsEndTheSystemMessageWhilePendingClarificationStaysWithCurrentInput() {
         PendingClarification pending = new PendingClarification(
                 "set_speed", "amount", "set speed", "By how much?", Instant.MAX);
         ComposedPrompt prompt = composer.compose(
@@ -148,12 +149,25 @@ class PromptComposerTest {
                 List.of(new Fact("fuel is low <10%", "event")), pending);
 
         assertEquals(2, prompt.messages().size());
+        String system = prompt.messages().getFirst().content();
         String current = currentInput(prompt).content();
-        assertTrue(current.contains("<facts>"));
-        assertTrue(current.contains("fuel is low &lt;10%"));
+        assertTrue(system.endsWith("<facts>\n"
+                + "  <fact id=\"1\" source=\"event\">fuel is low &lt;10%</fact>\n"
+                + "</facts>\n"));
+        assertFalse(current.contains("<facts>"));
         assertTrue(current.contains("<pending_clarification>"));
         assertTrue(current.contains("<action_id>set_speed</action_id>"));
         assertTrue(current.contains("<commander_input>\nfifty percent"));
+    }
+
+    @Test
+    void factsDoNotWrapTheCommanderInput() {
+        ComposedPrompt prompt = composer.compose(
+                ThoughtSource.COMMANDER, "set speed to fifty percent",
+                List.of(), List.of(), List.of(), List.of(new Fact("in supercruise", "situation")));
+
+        assertEquals("set speed to fifty percent", currentInput(prompt).content());
+        assertTrue(prompt.messages().getFirst().content().endsWith("</facts>\n"));
     }
 
     @Test

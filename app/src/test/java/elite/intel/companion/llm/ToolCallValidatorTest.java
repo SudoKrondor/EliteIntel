@@ -65,6 +65,19 @@ class ToolCallValidatorTest {
     }
 
     @Test
+    void ignoresHallucinatedArgumentsForParameterlessTool() {
+        LlmToolDefinition parameterless = new LlmToolDefinition(
+                "query_carrier_voyage", "Carrier route", "", List.of());
+        JsonObject arguments = new JsonObject();
+        arguments.addProperty("tool_name", parameterless.name());
+        LlmToolInvocation invocation = new LlmToolInvocation("call-1", parameterless.name(), arguments);
+
+        assertTrue(ToolCallValidator.validateAndNormalizeExactSchemas(
+                List.of(invocation), List.of(parameterless)));
+        assertEquals(new JsonObject(), arguments);
+    }
+
+    @Test
     void rejectsTypeCoercionAndUnknownEnumValues() {
         JsonObject numericString = validArguments();
         numericString.addProperty("distance", "12.5");
