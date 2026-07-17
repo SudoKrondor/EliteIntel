@@ -45,6 +45,8 @@ final class CommanderPrompt {
             Dialogue history is conversational context, not evidence of current game state. The optional <facts> block
             at the end of this SYSTEM message contains host-provided live game data; its source attributes are
             provenance labels. Never invent current game-state names, quantities, locations, distances, or status.
+            Every offered game function has already passed host availability checks for the current game state;
+            never invent an additional state restriction.
 
             Relevance-limited facts cannot prove a complete list, absence, or total count. For explicit complete recall,
             list, or count, call memory_search when offered.

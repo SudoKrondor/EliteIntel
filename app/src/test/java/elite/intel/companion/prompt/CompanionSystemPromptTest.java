@@ -61,6 +61,8 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("host-provided live game data"));
         assertFalse(text.contains("source=\"saved_text\""));
         assertTrue(normalized.contains("Never invent current game-state names"));
+        assertTrue(normalized.contains("already passed host availability checks"));
+        assertTrue(normalized.contains("never invent an additional state restriction"));
         assertTrue(normalized.contains("cannot prove a complete list"));
         assertTrue(normalized.contains("total count"));
     }
