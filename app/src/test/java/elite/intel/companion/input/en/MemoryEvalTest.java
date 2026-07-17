@@ -1,7 +1,6 @@
 package elite.intel.companion.input.en;
 
 import elite.intel.companion.input.CompanionEvalHarness;
-import elite.intel.companion.model.memory.MemoryImportance;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,23 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Theme: one comprehensive English memory eval over a simulated live conversation, replacing the separate
- * short-term / mid-term / long-term evals. A believable salvage-run session interleaves commander statements
- * across many topics, explicit "remember" instructions (which the consciousness should rate {@code MAX}),
- * routine chatter, and HIGH game events that land in memory under their static topic. It then assesses, from
- * one run:
- * <ul>
- *   <li><b>filling &amp; recall</b> - facts stated early (pushed out of the hot timeline into mid-term) are
- *       recalled later, including the companion's own lines;</li>
- *   <li><b>importance distribution</b> - the AI assigns LOW/NORMAL/HIGH, and explicit "remember" facts are
- *       MAX;</li>
- *   <li><b>topic distribution</b> - statements are filed across topics, events under their static topic;</li>
- *   <li><b>events in memory</b> - HIGH events are recorded and findable;</li>
- *   <li><b>coherence</b> - a multi-fact question is answered from several remembered facts;</li>
- *   <li><b>routing</b> - live-state questions go to a query function, not memory recall.</li>
- * </ul>
- * Mostly observational (the trace carries the scores and the full memory distribution); the hard assertions
- * are only that the model was reached and that recall works at all. Opt-in; LM Studio must be up.
+ * One comprehensive English memory evaluation over a simulated salvage-run conversation. It covers recent and
+ * retained dialogue, event records, exact SAVED_TEXT phrases, explicit memory_search, multi-fact coherence, and the
+ * boundary between memory answers and live-state queries. The trace carries record-kind distribution and search results;
+ * hard assertions require the live model and successful recall. Opt-in; LM Studio must be available.
  */
 @Tag("local-integration")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -51,8 +37,7 @@ class MemoryEvalTest {
 
     private final CompanionEvalHarness h = new CompanionEvalHarness("companion-memory-eval-trace.txt");
 
-    // A believable session: statements across topics, explicit remembers (-> MAX), chatter (-> LOW), HIGH game
-    // events (mapped types, recorded under their static topic), and one in-flight recall while still hot.
+    // A believable session with dialogue, explicit SAVED_TEXT phrases, trusted events, and recent recall.
     private final List<Turn> script = List.of(
             say("alright, the plan this run is a quiet salvage job out past Deciat, keep it off the books"),
             say("remember our docking authorization code is Sierra Nine Four, we'll need it at the station"),
@@ -92,9 +77,9 @@ class MemoryEvalTest {
     // Keywords planted only by events, to check each HIGH event landed in some memory tier.
     private final List<String> eventKeywords = List.of("wolf", "vargas", "massacre", "osmium");
 
-    /** System-function ids; any other executed tool is a real game query/action. */
-    private static final Set<String> SYSTEM_TOOLS = Set.of(
-            "speak", "classify_turn", "memory_search");
+    /** Tools that are not live-state queries; any other executed tool is a real game query/action. */
+    private static final Set<String> NON_LIVE_QUERY_TOOLS = Set.of(
+            "speak", "request_input", "memory_search");
 
     @BeforeAll
     void boot() throws Exception {
@@ -146,7 +131,7 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(probe.a());
             boolean hit = h.spokenContains(probe.b());
-            boolean recalled = h.recalled();
+            boolean recalled = h.called("memory_search");
             if (hit) {
                 recallHits++;
             }
@@ -184,27 +169,27 @@ class MemoryEvalTest {
             h.beginTurn();
             h.say(q);
             List<String> tools = h.turnToolNames();
-            boolean usedQuery = tools.stream().anyMatch(t -> !SYSTEM_TOOLS.contains(t));
-            boolean ok = usedQuery && !h.recalled();
+            boolean usedQuery = tools.stream().anyMatch(t -> !NON_LIVE_QUERY_TOOLS.contains(t));
+            boolean ok = usedQuery && !h.called("memory_search");
             if (ok) {
                 routedOk++;
             }
             block.append(String.format("%-38s | tools=%s | routed-ok=%s%n", q, tools, ok));
         }
 
-        // Did the explicit "remember" facts get MAX importance from the AI?
-        boolean maxAssigned = h.allEntries().stream().anyMatch(e -> e.importance() == MemoryImportance.MAX
-                && (e.content().contains("sierra") || e.content().contains("hutton")));
+        boolean explicitFactsPinned = h.memory().savedTextRecords().stream()
+                .flatMap(record -> record.entries().stream())
+                .anyMatch(entry -> entry.content().toLowerCase(Locale.ROOT).contains("sierra"));
 
         block.append("\n---- scores ----\n");
         block.append(String.format("in-conversation recall: %d / %d%n", hotHits, hotAsks));
-        block.append(String.format("recall after eviction:  %d / %d (candidates injected %d)%n", recallHits, recallProbes.size(), recalledCount));
+        block.append(String.format("recall after eviction:  %d / %d (memory_search calls %d)%n", recallHits, recallProbes.size(), recalledCount));
         block.append(String.format("coherence (2 facts):    %s%n", coherenceOk ? "ok" : "no"));
         block.append(String.format("events recorded:        %d / %d%n", eventsLanded, eventKeywords.size()));
         block.append(String.format("query routing:          %d / %d%n", routedOk, queryProbes.size()));
-        block.append(String.format("explicit-remember -> MAX assigned: %s%n", maxAssigned));
+        block.append(String.format("explicit remember -> SAVED_TEXT: %s%n", explicitFactsPinned));
         block.append(h.memoryDistributionBlock());
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

@@ -10,6 +10,7 @@ import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.execution.ExecutionGateway;
+import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
@@ -98,8 +99,8 @@ public final class CompanionRoutingHarness {
     // answer, including a direct request_input question, not just dispatched tool names.
     private final List<String> turnSpeech = new CopyOnWriteArrayList<>();
     private final List<String> turnClarificationDiagnostics = new CopyOnWriteArrayList<>();
-    // Timing diagnostics are emitted through UiBus in production; capture just the latency-related subset here
-    // so Gradle/IDE local-integration output can show it through stdout.
+    // Turn diagnostics are emitted through UiBus in production; capture latency plus the exact inlined facts here
+    // so Gradle/IDE local-integration output shows the model context used for routing.
     private final List<String> turnLatencyDiagnostics = new CopyOnWriteArrayList<>();
     // A failed assertion needs every model attempt made during THIS route, including retry/continuation calls.
     private final List<String> turnLlmTranscript = new CopyOnWriteArrayList<>();
@@ -140,6 +141,7 @@ public final class CompanionRoutingHarness {
         SystemSession.getInstance().setLanguage(language);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
+        MemoryFactSourceRegistry.getInstance().load();
         SystemFunctionRegistry registry = SystemFunctionRegistry.getInstance();
         if (registry.byId().isEmpty()) {
             registry.load();
@@ -152,10 +154,8 @@ public final class CompanionRoutingHarness {
 
         // Routing-only execution. Game COMMANDS and QUERIES are recorded but NEVER executed - running them
         // would press keys (commands) or call third-party REST APIs (queries: EDSM/Spansh). But SYSTEM
-        // FUNCTIONS (classify_turn, speak, memory_search) are internal companion mechanics with no external
-        // side effect (speak only publishes an event and no TTS engine is started), and the turn flow depends
-        // on their real results - e.g. classify_turn returns isQuestion, which drives whether the companion
-        // dispatches a data query or just speaks - so they run for real. Every tool name is still recorded.
+        // FUNCTIONS are internal companion mechanics with no external game side effect, so they run for real.
+        // Every tool name is still recorded. memory_search is a game query and therefore remains recording-only.
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
             firstToolNanos.compareAndSet(0L, System.nanoTime());
@@ -330,8 +330,8 @@ public final class CompanionRoutingHarness {
     private static boolean isLatencyDiagnostic(String line) {
         return line != null && line.startsWith("Companion ")
                 && (line.contains(" intake:")
-                || line.contains(" semantic-reflex:")
                 || line.contains(" compose:")
+                || line.contains(" facts:")
                 || line.contains(" llm:")
                 || line.contains(" llm-http:")
                 || line.contains(" latency:")
@@ -353,6 +353,7 @@ public final class CompanionRoutingHarness {
 
     private static boolean isLlmDiagnostic(String line) {
         return line != null && (line.contains(" compose:")
+                || line.contains(" facts:")
                 || line.contains(" llm:")
                 || line.contains(" llm-http:"));
     }

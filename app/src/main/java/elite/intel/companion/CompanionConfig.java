@@ -26,24 +26,14 @@ public final class CompanionConfig {
     private static final String NAME_SPOKEN_KEY = "companion.name.spoken";
 
     // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
-    /** Max entries kept in the hot short-term timeline (the primary eviction control). */
-    private static final int SHORT_TERM_MEMORY_SIZE = 30;
-    /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
-    private static final int MID_TERM_MEMORY_SIZE_PER_TOPIC = 30;
-    /** Max read-only query handlers that may execute concurrently after their commander turns are classified. */
+    /** Max read-only query handlers that may execute concurrently after their cognitive turns settle. */
     private static final int MAX_PARALLEL_QUERY_EXECUTIONS = 4;
     /** Hard lifecycle ceiling for a live thought. */
     private static final Duration THOUGHT_WATCHDOG_TIMEOUT = Duration.ofSeconds(60);
     /** One deadline for queue wait plus all physical attempts of a logical LLM request. */
     private static final Duration LLM_LOGICAL_DEADLINE = Duration.ofSeconds(50);
-    /** Absolute floor (cosine 0..1): below this a memory entry is unrelated and dropped from the semantic part of memory recall. e5-small cosines are compressed, so unrelated short-text pairs sit just under it. */
-    private static final double SEMANTIC_RECALL_FLOOR = 0.85;
-    /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
-    private static final double SEMANTIC_DEDUP_FLOOR = 0.95;
-    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
-    private static final int MEMORY_ENTRY_MAX_CHARS = 200;
     /**
-     * Whether the companion's internal-detail diagnostics (compose/LLM/classify/exec/memory/lifecycle) are
+     * Whether the companion's internal-detail diagnostics (compose/LLM/exec/memory/lifecycle) are
      * promoted onto the always-visible SYSTEM LOG. On by default while the detailed-log GUI toggle for this
      * channel is still pending; set to {@code false} to keep only the per-turn headlines.
      */
@@ -84,16 +74,6 @@ public final class CompanionConfig {
         return input != null && input.strip().equalsIgnoreCase(CONFIRMATION_CODE_WORD);
     }
 
-    /** Max entries kept in the hot short-term timeline (the primary eviction control). */
-    public static int shortTermMemorySize() {
-        return SHORT_TERM_MEMORY_SIZE;
-    }
-
-    /** Max entries kept per topic in mid-term memory before older ones overflow to consolidation. */
-    public static int midTermMemorySizePerTopic() {
-        return MID_TERM_MEMORY_SIZE_PER_TOPIC;
-    }
-
     /** Max read-only query handlers that may execute concurrently. */
     public static int maxParallelQueryExecutions() {
         return MAX_PARALLEL_QUERY_EXECUTIONS;
@@ -107,21 +87,6 @@ public final class CompanionConfig {
     /** Total LLM request deadline, deliberately shorter than {@link #thoughtWatchdogTimeout()}. */
     public static Duration llmLogicalDeadline() {
         return LLM_LOGICAL_DEADLINE;
-    }
-
-    /** Absolute floor (cosine 0..1) below which a semantic match is dropped from memory recall. */
-    public static double semanticRecallFloor() {
-        return SEMANTIC_RECALL_FLOOR;
-    }
-
-    /** At or above this meaning-closeness (cosine 0..1) two memory entries are treated as the same fact and collapsed (on write and in search results). */
-    public static double semanticDedupFloor() {
-        return SEMANTIC_DEDUP_FLOOR;
-    }
-
-    /** Max characters a single memory entry may hold; a longer write is sent for silent LLM compression to a gist before storing (prompt-bloat guard). */
-    public static int memoryEntryMaxChars() {
-        return MEMORY_ENTRY_MAX_CHARS;
     }
 
     /** Whether the companion's internal-detail diagnostics are promoted onto the always-visible SYSTEM LOG (default on). */

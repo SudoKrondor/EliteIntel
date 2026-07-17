@@ -38,7 +38,7 @@ class CurrentSystemFactSourceWiringTest {
 
         assertEquals(
                 List.of("current system Sol: allegiance Federation, security High, economy Refinery, population 22.7B, controlled by Zachary Hudson"),
-                new CurrentSystemFactSource().factsFor(MemoryFactContext.forQuery("")));
+                new CurrentSystemFactSource().factsFor(MemoryFactContext.forCommanderInput("")));
     }
 
     @Test
@@ -48,7 +48,7 @@ class CurrentSystemFactSourceWiringTest {
 
         assertEquals(
                 List.of("current system Sol: allegiance Federation, security High"),
-                new CurrentSystemFactSource().factsFor(MemoryFactContext.forQuery("")));
+                new CurrentSystemFactSource().factsFor(MemoryFactContext.forCommanderInput("")));
     }
 
     private static void seedSol() {

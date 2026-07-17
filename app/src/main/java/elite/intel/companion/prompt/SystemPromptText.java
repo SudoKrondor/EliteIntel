@@ -2,11 +2,7 @@ package elite.intel.companion.prompt;
 
 import elite.intel.companion.model.ThoughtSource;
 
-/**
- * Replaceable source of the static narrative block of the system prompt (persona, tool-calling rules,
- * source rules, safety, and the response-language rule). Kept behind an interface so {@link PromptComposer}
- * can be assembled and tested without reaching into session/localization singletons.
- */
+/** Replaceable source of source-specific static rules, kept injectable for prompt-composer tests. */
 public interface SystemPromptText {
 
     /**

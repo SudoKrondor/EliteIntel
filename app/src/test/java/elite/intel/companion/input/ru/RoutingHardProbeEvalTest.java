@@ -76,7 +76,7 @@ class RoutingHardProbeEvalTest {
         }
 
         block.append(String.format("%nrouting score: %d / %d%n", hits, cases.size()));
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

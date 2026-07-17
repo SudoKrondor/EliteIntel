@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p>
  * Diagnostic (no hard behavioural assertion beyond reaching the model): for each turn it records the spoken
  * reply, whether it echoes an earlier reply verbatim, and - when it does - whether that earlier text was
- * present in this turn's visible conversation (the role-based history) and/or in the injected "Relevant
- * remembered facts" candidates, so the source of the echo (context vs candidates) is pinned from one run.
+ * present in this turn's visible conversation (the role-based history) and/or in the injected live facts,
+ * so the source of the echo (context vs facts) is pinned from one run.
  * Opt-in; LM Studio must be up.
  */
 @Tag("local-integration")
@@ -95,7 +95,7 @@ class ChatNaturalnessEvalTest {
                 silentReplies++;
             }
             String body = h.lastRequestBody();
-            List<String> candidates = h.recallResult();
+            List<String> candidates = h.injectedFacts();
 
             // Third-person narration of the commander ("командир хочет...") - the unnatural pattern under test.
             boolean thirdPerson = THIRD_PERSON_MARKERS.stream().anyMatch(saidLower::contains);
@@ -113,7 +113,7 @@ class ChatNaturalnessEvalTest {
             }
 
             // History is now native user/assistant messages, not a "## Visible context" block: treat the whole
-            // request body minus the injected candidates block as the visible conversation.
+            // request body minus the injected live-facts block as the visible conversation.
             String candidatesBlock = section(body, "<facts>", "</facts>");
             String visible = body.toLowerCase(Locale.ROOT).replace(candidatesBlock, "");
             boolean echoInVisible = echo && visible.contains(echoedOf);

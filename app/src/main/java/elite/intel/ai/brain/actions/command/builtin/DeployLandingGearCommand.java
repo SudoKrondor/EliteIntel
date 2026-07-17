@@ -6,7 +6,6 @@ import elite.intel.ai.brain.actions.command.RegisterCommand;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
 import elite.intel.eventbus.GameControllerBus;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 
@@ -30,16 +29,19 @@ public final class DeployLandingGearCommand implements IntelCommand {
         return ID;
     }
 
-    /// due to bug in FDev impl of the Status.json we can't rely on the status
-    /// ALWAYS RETURN TRUE HERE
+    /** The landing-gear bit can be stale, but supercruise reliably forbids deploying the gear. */
     @Override
     public boolean isVisibleForLLM(Status status) {
-        return true;
+        return !status.isInSupercruise();
     }
 
     @Override
     public String execute(JsonObject params, String responseText) {
         Status status = Status.getInstance();
+
+        if (status.isInSupercruise()) {
+            return StringUtls.localizedLlm("handler.landingGear.cantDoThat");
+        }
 
         if (status.isLandingGearDown()) {
             return StringUtls.localizedLlm("handler.landingGear.alreadyDeployed");

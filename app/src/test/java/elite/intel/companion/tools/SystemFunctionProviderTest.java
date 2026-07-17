@@ -39,9 +39,9 @@ class SystemFunctionProviderTest {
     void commanderToolsCoverEveryFunctionWithDescriptionsAndNoPhrases() {
         List<LlmToolDefinition> tools = commanderFunctions();
 
-        assertEquals(3, tools.size());
+        assertEquals(2, tools.size());
         assertEquals(
-                Set.of("speak", "request_input", "classify_turn"),
+                Set.of("speak", "request_input"),
                 names(tools));
         for (LlmToolDefinition tool : tools) {
             assertFalse(tool.description() == null || tool.description().isBlank(), tool.name() + " description");
@@ -57,7 +57,7 @@ class SystemFunctionProviderTest {
         List<String> commander = commanderFunctions().stream()
                 .map(LlmToolDefinition::name).toList();
         assertEquals(
-                List.of("speak", "request_input", "classify_turn"),
+                List.of("speak", "request_input"),
                 commander);
 
         List<String> event = provider.systemFunctions(ThoughtSource.EVENT, List.of()).stream()
@@ -79,7 +79,7 @@ class SystemFunctionProviderTest {
         Set<String> commanderNames = names(provider.systemFunctions(
                 ThoughtSource.COMMANDER, List.of(openMap)));
 
-        assertEquals(Set.of(SpeakFunction.ID, ClassifyTurnFunction.ID), commanderNames);
+        assertEquals(Set.of(SpeakFunction.ID), commanderNames);
         assertFalse(commanderNames.contains(RequestInputFunction.ID));
     }
 
@@ -93,16 +93,21 @@ class SystemFunctionProviderTest {
     }
 
     @Test
-    void speakDescriptionDefersToMatchingFunctions() {
+    void systemFunctionDescriptionsStayFocusedOnPurpose() {
         LlmToolDefinition speak = commanderFunctions().stream()
                 .filter(tool -> tool.name().equals(SpeakFunction.ID))
                 .findFirst()
                 .orElseThrow();
+        LlmToolDefinition requestInput = commanderFunctions().stream()
+                .filter(tool -> tool.name().equals(RequestInputFunction.ID))
+                .findFirst()
+                .orElseThrow();
 
-        assertTrue(speak.description().contains("only when no offered function matches"));
-        assertTrue(speak.description().contains("call request_input instead"));
-        assertTrue(speak.description().contains("Never use it to acknowledge, promise, or describe"));
-        assertTrue(speak.description().contains("call that function instead"));
+        assertTrue(speak.description().length() < 100);
+        assertTrue(requestInput.description().length() < 150);
+        assertFalse(speak.description().contains("call request_input"));
+        assertFalse(requestInput.description().contains("unsupported requests"));
+        assertFalse(requestInput.description().contains("ambiguity"));
     }
 
     @Test

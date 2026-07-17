@@ -2,7 +2,7 @@ package elite.intel.companion.memory.facts;
 
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
-import elite.intel.companion.prompt.AliasMatchSurface;
+import elite.intel.companion.prompt.AliasEmbeddingText;
 import elite.intel.companion.prompt.CompanionWordMatch;
 import elite.intel.session.SystemSession;
 
@@ -37,7 +37,7 @@ public final class LocalizedFactRelevance {
         for (String aliasKey : aliasKeys) {
             String localized = AiActionAliasTextProvider.getText(
                     SystemSession.getInstance().getLanguage(), aliasKey);
-            for (String phrase : AliasMatchSurface.phrases(localized, List.of())) {
+            for (String phrase : AliasEmbeddingText.phrases(localized, List.of())) {
                 List<String> phraseTokens = tokens(phrase);
                 if (containsPhrase(inputTokens, phraseTokens)
                         || matchedWords(inputWords, significantWords(phraseTokens)) >= minimum) {

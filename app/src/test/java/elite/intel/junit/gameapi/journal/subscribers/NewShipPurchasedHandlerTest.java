@@ -79,7 +79,7 @@ class NewShipPurchasedHandlerTest {
         String data;
 
         @Override public void filler(String text, boolean urgent) { }
-        @Override public void narrate(String data, String instructions, String topic) { this.data = data; }
-        @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) { }
+        @Override public void narrate(String data, String instructions) { this.data = data; }
+        @Override public void announce(String phrase, boolean urgent) { }
     }
 }

@@ -55,7 +55,7 @@ public class MaterialCollectedSubscriber {
                     ? pending.getFirst()
                     : localizedEventPlural(pending.size(), "event.material.batchCollected");
             pending.clear();
-            CompanionRuntime.narrator().announce("mining", announcement, "MINING", false);
+            CompanionRuntime.narrator().announce(announcement, false);
         }
     }
 

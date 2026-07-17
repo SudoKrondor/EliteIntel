@@ -73,7 +73,7 @@ public class FSSSignalDiscoveredSubscriber {
     }
 
     private void publishVoice(String message) {
-        CompanionRuntime.narrator().announce("discovery", message, "EXPLORATION", false);
+        CompanionRuntime.narrator().announce(message, false);
     }
 
 

@@ -2,18 +2,20 @@ package elite.intel.companion.memory;
 
 import elite.intel.companion.CompanionRuntimeGeneration;
 import elite.intel.companion.llm.LlmGateway;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryImportance;
-import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.speech.SpeechRequest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -22,14 +24,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Verifies the consolidator with synchronous fakes: it buffers until the threshold, then compresses and
- * atomically replaces the summary; a failing/oversized compression keeps the existing summary and notifies
- * the commander; below the threshold nothing happens.
- */
 class MidTermToLongTermConsolidatorTest {
 
     private static final Executor SYNC = Runnable::run;
@@ -43,131 +39,109 @@ class MidTermToLongTermConsolidatorTest {
                 return CompletableFuture.completedFuture(null);
             }, SYNC);
 
-    private static MemoryEntry entry(String content) {
-        return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content);
+    private static MemoryRecord event(int index) {
+        return MemoryRecord.event(Instant.ofEpochSecond(index), "event-" + index);
     }
 
-    private static MemoryEntry entry(String content, MemoryImportance importance) {
-        return new MemoryEntry(Instant.now(), ConversationTopic.MINING, MemorySource.EVENT, content, importance);
-    }
-
-    private void feed(int count) {
+    private void feedEvents(int count) {
         for (int i = 0; i < count; i++) {
-            consolidator.onEvicted(entry("rock-" + i));
+            consolidator.onPending(event(i));
         }
     }
 
     @Test
-    void compressesAndReplacesSummaryAtThreshold() {
-        llm.scripted = "compact mining summary";
+    void compressesAndReplacesOnlyTheMatchingKindSummaryAtThreshold() {
+        memory.summaries.put(MemoryKind.DIALOGUE, "dialogue remains");
+        llm.scripted = "compact event summary";
 
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD);
+        feedEvents(CompanionMemoryPolicy.consolidationBatchSize());
 
         assertEquals(1, llm.calls);
-        assertEquals("compact mining summary", memory.summary);
+        assertEquals(MemoryKind.EVENT, llm.lastKind);
+        assertEquals("compact event summary", memory.summaries.get(MemoryKind.EVENT));
+        assertEquals("dialogue remains", memory.summaries.get(MemoryKind.DIALOGUE));
         assertTrue(notices.isEmpty());
     }
 
     @Test
-    void maxIsPinnedVerbatimImmediatelyAndLowIsDroppedWithoutBuffering() {
+    void kindsBufferIndependently() {
         llm.scripted = "summary";
-        consolidator.onEvicted(entry("abort word granite", MemoryImportance.MAX));
-        consolidator.onEvicted(entry("idle chatter", MemoryImportance.LOW));
-
-        // MAX is pinned right away (verbatim); LOW is dropped; neither buffers, so no compression yet.
-        assertEquals(List.of("abort word granite"), memory.pinned.stream().map(MemoryEntry::content).toList());
-        assertEquals(0, llm.calls);
-
-        // HIGH/NORMAL still buffer and summarize at the threshold - MAX/LOW did not count toward it.
-        for (int i = 0; i < CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD; i++) {
-            consolidator.onEvicted(entry("rock-" + i, MemoryImportance.NORMAL));
+        for (int i = 0; i < CompanionMemoryPolicy.consolidationBatchSize() - 1; i++) {
+            consolidator.onPending(event(i));
+            consolidator.onPending(MemoryRecord.dialogue(
+                    Instant.ofEpochSecond(i), "order-" + i, "reply-" + i));
         }
-        assertEquals(1, llm.calls);
-        assertEquals("summary", memory.summary);
-        assertEquals(1, memory.pinned.size());
-    }
-
-    @Test
-    void belowThresholdDoesNothing() {
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD - 1);
 
         assertEquals(0, llm.calls);
-        assertEquals("", memory.summary);
-    }
-
-    @Test
-    void failedCompressionKeepsSummaryAndNotifies() {
-        memory.summary = "previous summary";
-        llm.scripted = null; // compression failure
-
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD);
-
-        assertEquals("previous summary", memory.summary); // unchanged
-        assertEquals(1, notices.size());
-    }
-
-    @Test
-    void oversizedOutputIsTreatedAsFailure() {
-        memory.summary = "previous summary";
-        llm.scripted = "x".repeat(CompanionMemoryLimits.SUMMARY_MAX_CHARS + 1);
-
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD);
-
-        assertEquals("previous summary", memory.summary);
-        assertEquals(1, notices.size());
-    }
-
-    @Test
-    void bufferClearsSoFollowingEntriesAccumulateAgain() {
-        llm.scripted = "s";
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD); // one pass
-        feed(CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD - 1); // not enough for a second
-
+        consolidator.onPending(event(100));
         assertEquals(1, llm.calls);
+        assertEquals(MemoryKind.EVENT, llm.lastKind);
     }
 
     @Test
-    void closeDiscardsAConsolidationThatCompletesAfterShutdown() throws Exception {
+    void repeatedOversizedCompressionCommitsBoundedLocalFallback() {
+        memory.summaries.put(MemoryKind.EVENT, "previous summary");
+        llm.scripted = "x".repeat(CompanionMemoryPolicy.summaryMaxChars() + 1);
+
+        feedEvents(CompanionMemoryPolicy.consolidationBatchSize());
+
+        assertEquals(3, llm.calls);
+        assertTrue(memory.summaries.get(MemoryKind.EVENT).contains("previous summary"));
+        assertTrue(memory.summaries.get(MemoryKind.EVENT).contains("event-0"));
+        assertTrue(memory.summaries.get(MemoryKind.EVENT).length()
+                <= CompanionMemoryPolicy.summaryMaxChars());
+        assertEquals(CompanionMemoryPolicy.consolidationBatchSize(), memory.committed.size());
+        assertEquals(1, notices.size());
+    }
+
+    @Test
+    void failedBatchRetriesWithoutWaitingForAnotherRecord() {
+        llm.responses.add("x".repeat(CompanionMemoryPolicy.summaryMaxChars() + 1));
+        llm.responses.add("recovered summary");
+
+        feedEvents(CompanionMemoryPolicy.consolidationBatchSize());
+
+        assertEquals(2, llm.calls);
+        assertEquals("recovered summary", memory.summaries.get(MemoryKind.EVENT));
+        assertEquals(CompanionMemoryPolicy.consolidationBatchSize(), memory.committed.size());
+    }
+
+    @Test
+    void closeDiscardsCompletionThatArrivesAfterShutdown() throws Exception {
         RecordingMemory delayedMemory = new RecordingMemory();
         BlockingLlm delayedLlm = new BlockingLlm();
-        List<SpeechRequest> delayedNotices = new ArrayList<>();
         ExecutorService worker = Executors.newSingleThreadExecutor();
-        MidTermToLongTermConsolidator delayedConsolidator = new MidTermToLongTermConsolidator(
-                delayedMemory,
-                delayedLlm,
-                request -> {
-                    delayedNotices.add(request);
-                    return CompletableFuture.completedFuture(null);
-                },
-                new CompanionRuntimeGeneration(),
-                worker);
-
-        for (int index = 0; index < CompanionMemoryLimits.CONSOLIDATION_BUFFER_THRESHOLD; index++) {
-            delayedConsolidator.onEvicted(entry("delayed-" + index));
+        MidTermToLongTermConsolidator delayed = new MidTermToLongTermConsolidator(
+                delayedMemory, delayedLlm,
+                request -> CompletableFuture.completedFuture(null),
+                new CompanionRuntimeGeneration(), worker);
+        for (int i = 0; i < CompanionMemoryPolicy.consolidationBatchSize(); i++) {
+            delayed.onPending(event(i));
         }
         assertTrue(delayedLlm.started.await(1, TimeUnit.SECONDS));
-        delayedConsolidator.close();
+
+        delayed.close();
         delayedLlm.result.complete("late summary");
         assertTrue(worker.awaitTermination(1, TimeUnit.SECONDS));
 
-        assertEquals("", delayedMemory.summary);
-        assertTrue(delayedNotices.isEmpty(), "shutdown cancellation must not emit a failure announcement");
+        assertTrue(delayedMemory.summaries.isEmpty());
     }
 
-    /** LlmGateway fake: scripted compression result; submit unused. */
     private static final class FakeLlm implements LlmGateway {
-        volatile String scripted;
-        volatile int calls;
+        private String scripted;
+        private final Deque<String> responses = new ArrayDeque<>();
+        private int calls;
+        private MemoryKind lastKind;
 
-        @Override
-        public CompletableFuture<LlmResult> submit(LlmRequest request) {
+        @Override public CompletableFuture<LlmResult> submit(LlmRequest request) {
             throw new UnsupportedOperationException();
         }
 
-        @Override
-        public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
+        @Override public CompletableFuture<String> compressMidTermMemory(LlmRequest request) {
             calls++;
-            return CompletableFuture.completedFuture(scripted);
+            String content = request.messages().get(1).content();
+            lastKind = content.contains("Memory kind: EVENT") ? MemoryKind.EVENT : MemoryKind.DIALOGUE;
+            return CompletableFuture.completedFuture(responses.isEmpty() ? scripted : responses.removeFirst());
         }
     }
 
@@ -185,20 +159,23 @@ class MidTermToLongTermConsolidatorTest {
         }
     }
 
-    /** MemoryGateway fake recording the long-term summary and the pinned MAX facts. */
     private static final class RecordingMemory implements MemoryGateway {
-        String summary = "";
-        final List<MemoryEntry> pinned = new ArrayList<>();
+        private final Map<MemoryKind, String> summaries = new EnumMap<>(MemoryKind.class);
+        private List<MemoryRecord> committed = List.of();
 
-        @Override public void write(MemoryEntry entry) { throw new UnsupportedOperationException(); }
+        @Override public void write(MemoryRecord record) { throw new UnsupportedOperationException(); }
+        @Override public List<MemoryRecord> readRecentHistory() { return List.of(); }
+        @Override public MemorySearchResult recallMatching(String query, int limit) {
+            return MemorySearchResult.empty();
+        }
+        @Override public Map<MemoryKind, String> longTermSummaries() { return Map.copyOf(summaries); }
+        @Override public void commitConsolidation(
+                MemoryKind kind, List<MemoryRecord> batch, String summary
+        ) {
+            summaries.put(kind, summary);
+            committed = List.copyOf(batch);
+        }
+        @Override public List<MemoryRecord> savedTextRecords() { return List.of(); }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
-        @Override public List<MemoryEntry> readShortTermTimeline() { throw new UnsupportedOperationException(); }
-        @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public List<String> recallMatching(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { throw new UnsupportedOperationException(); }
-        @Override public String longTermSummary() { return summary; }
-        @Override public void replaceLongTermSummary(String summary) { this.summary = summary; }
-        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.copyOf(pinned); }
-        @Override public void addLongTermPinned(MemoryEntry fact) { pinned.add(fact); }
     }
 }

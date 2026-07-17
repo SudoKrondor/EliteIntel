@@ -1,11 +1,10 @@
 package elite.intel.companion.diag;
 
-import elite.intel.companion.CompanionConfig;
-import elite.intel.companion.memory.CompanionMemoryLimits;
+import elite.intel.companion.memory.CompanionMemoryPolicy;
 import elite.intel.companion.memory.MemorySnapshot;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.ToolLink;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.util.json.GsonFactory;
 
 import java.time.Instant;
@@ -14,108 +13,113 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Single owner of the companion-memory diagnostic dump format: turns a {@link MemorySnapshot} into a
- * pretty-printed JSON document meant to be read by both a human and an assistant when investigating what the
- * companion remembers and why recall behaved as it did.
- * <p>
- * The document keeps every recorded field of a {@link MemoryEntry} (timestamp, topic, source, importance,
- * verbatim content, optional canonical fact and tool linkage) but omits the meaning-vector - hundreds of
- * floats that are noise to a reader - surfacing only whether one is present. A header records the moment of
- * the dump, the configured memory limits, and the current per-area counts, so eviction pressure
- * (counts vs limits) is visible at a glance.
- * <p>
- * Serialization is delegated to the shared {@link GsonFactory} Gson (pretty-printing, ISO-8601 {@code Instant}s,
- * null fields omitted), so the format stays consistent with the rest of the app and no field ordering or
- * escaping is hand-rolled here. Timestamps are truncated to whole seconds so they render as the
- * {@code yyyy-MM-ddTHH:mm:ssZ} journal form, matching the exported logs and the game journal for correlation.
- */
+/** Renders a complete record-based companion-memory snapshot as readable diagnostic JSON. */
 public final class CompanionMemoryDump {
 
     private CompanionMemoryDump() {
     }
 
-    /** Serializes the snapshot into the pretty-printed JSON dump document. */
+    /** Serializes the snapshot with vectors omitted but their presence reported. */
     public static String toJson(MemorySnapshot snapshot) {
         return GsonFactory.getGson().toJson(build(snapshot));
     }
 
     private static Dump build(MemorySnapshot snapshot) {
-        Map<String, List<Entry>> midTerm = new LinkedHashMap<>();
-        Map<String, Integer> midTermCounts = new LinkedHashMap<>();
-        int midTermTotal = 0;
-        for (Map.Entry<ConversationTopic, List<MemoryEntry>> byTopic : snapshot.midTermByTopic().entrySet()) {
-            List<Entry> entries = mapEntries(byTopic.getValue());
-            midTerm.put(byTopic.getKey().id(), entries);
-            midTermCounts.put(byTopic.getKey().id(), entries.size());
-            midTermTotal += entries.size();
+        Map<String, List<Record>> retained = new LinkedHashMap<>();
+        Map<String, Integer> retainedCounts = new LinkedHashMap<>();
+        for (MemoryKind kind : MemoryKind.values()) {
+            List<MemoryRecord> records = snapshot.retainedByKind().get(kind);
+            if (records == null) {
+                continue;
+            }
+            retained.put(kind.name(), mapRecords(records));
+            retainedCounts.put(kind.name(), records.size());
         }
+        Map<String, List<Record>> pending = new LinkedHashMap<>();
+        Map<String, Integer> pendingCounts = new LinkedHashMap<>();
+        snapshot.pendingByKind().forEach((kind, records) -> {
+            pending.put(kind.name(), mapRecords(records));
+            pendingCounts.put(kind.name(), records.size());
+        });
+
+        Map<String, String> summaries = new LinkedHashMap<>();
+        snapshot.summaries().forEach((kind, summary) -> summaries.put(kind.name(), summary));
 
         Limits limits = new Limits(
-                CompanionConfig.shortTermMemorySize(),
-                CompanionMemoryLimits.SHORT_TERM_TOKEN_BUDGET,
-                CompanionConfig.midTermMemorySizePerTopic(),
-                CompanionConfig.memoryEntryMaxChars(),
-                CompanionConfig.semanticDedupFloor());
-
-        String summary = snapshot.longTermSummary() == null ? "" : snapshot.longTermSummary();
+                CompanionMemoryPolicy.recentRecordLimit(),
+                CompanionMemoryPolicy.recentTokenBudget(),
+                CompanionMemoryPolicy.midTermRecordLimit(MemoryKind.DIALOGUE),
+                CompanionMemoryPolicy.midTermRecordLimit(MemoryKind.EVENT),
+                CompanionMemoryPolicy.entryMaxChars(),
+                CompanionMemoryPolicy.semanticDedupFloor());
         Counts counts = new Counts(
-                snapshot.shortTerm().size(),
-                midTermCounts,
-                midTermTotal,
-                snapshot.longTermPinned().size(),
-                summary.length());
+                snapshot.recent().size(),
+                entryCount(snapshot.recent()),
+                retainedCounts,
+                pendingCounts,
+                snapshot.savedTexts().size(),
+                summaries.values().stream().mapToInt(String::length).sum());
 
-        return new Dump(
-                secondsUtc(Instant.now()),
-                limits,
-                counts,
-                mapEntries(snapshot.shortTerm()),
-                midTerm,
-                summary,
-                mapEntries(snapshot.longTermPinned()));
+        return new Dump(secondsUtc(Instant.now()), limits, counts,
+                mapRecords(snapshot.recent()), retained, pending, summaries, mapRecords(snapshot.savedTexts()));
     }
 
-    private static List<Entry> mapEntries(List<MemoryEntry> entries) {
-        return entries.stream().map(CompanionMemoryDump::mapEntry).toList();
+    private static int entryCount(List<MemoryRecord> records) {
+        return records.stream().mapToInt(MemoryRecord::entryCount).sum();
     }
 
-    /**
-     * Truncates a timestamp to whole seconds so the shared Gson {@code Instant} adapter renders it as
-     * {@code yyyy-MM-ddTHH:mm:ssZ} (the journal/log form), without the sub-second precision those do not carry.
-     */
+    private static List<Record> mapRecords(List<MemoryRecord> records) {
+        return records.stream().map(CompanionMemoryDump::mapRecord).toList();
+    }
+
+    private static Record mapRecord(MemoryRecord record) {
+        return new Record(secondsUtc(record.timestamp()), record.kind().name(),
+                record.entries().stream().map(CompanionMemoryDump::mapEntry).toList());
+    }
+
+    private static Entry mapEntry(MemoryEntry entry) {
+        return new Entry(entry.source().name(), entry.content(), entry.embedding() != null);
+    }
+
     private static Instant secondsUtc(Instant timestamp) {
         return timestamp == null ? null : timestamp.truncatedTo(ChronoUnit.SECONDS);
     }
 
-    private static Entry mapEntry(MemoryEntry e) {
-        return new Entry(
-                secondsUtc(e.timestamp()),
-                e.topic() == null ? null : e.topic().id(),
-                e.source() == null ? null : e.source().name(),
-                e.importance() == null ? null : e.importance().name(),
-                e.content(),
-                e.canonicalFact(),
-                e.embedding() != null,
-                e.toolLink());
+    private record Dump(
+            Instant dumpedAt,
+            Limits limits,
+            Counts counts,
+            List<Record> recent,
+            Map<String, List<Record>> retained,
+            Map<String, List<Record>> pending,
+            Map<String, String> summaries,
+            List<Record> savedTexts
+    ) {
     }
 
-    // --- serializable model (field names become JSON keys; nulls are omitted by the shared Gson) ---
-
-    private record Dump(Instant dumpedAt, Limits limits, Counts counts,
-                        List<Entry> shortTerm, Map<String, List<Entry>> midTerm,
-                        String longTermSummary, List<Entry> longTermPinned) {
+    private record Limits(
+            int recentMaxRecords,
+            int recentTokenBudget,
+            int retainedDialogueMaxRecords,
+            int retainedEventMaxRecords,
+            int memoryEntryMaxChars,
+            double semanticDedupFloor
+    ) {
     }
 
-    private record Limits(int shortTermMaxEntries, int shortTermTokenBudget, int midTermMaxPerTopic,
-                          int memoryEntryMaxChars, double semanticDedupFloor) {
+    private record Counts(
+            int recentRecords,
+            int recentEntries,
+            Map<String, Integer> retainedRecordsByKind,
+            Map<String, Integer> pendingRecordsByKind,
+            int savedTextRecords,
+            int summaryChars
+    ) {
     }
 
-    private record Counts(int shortTerm, Map<String, Integer> midTermByTopic, int midTermTotal,
-                          int longTermPinned, int longTermSummaryChars) {
+    private record Record(Instant timestamp, String kind, List<Entry> entries) {
     }
 
-    private record Entry(Instant timestamp, String topic, String source, String importance,
-                         String content, String canonicalFact, boolean hasEmbedding, ToolLink toolLink) {
+    private record Entry(String source, String content, boolean hasEmbedding) {
     }
 }

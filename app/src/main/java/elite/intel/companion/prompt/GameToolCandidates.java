@@ -1,6 +1,7 @@
 package elite.intel.companion.prompt;
 
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.command.CommandRegistry;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
@@ -21,22 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Step 1 of game-tool selection, independent of the reduction algorithm: turns the visible game actions
- * of the allowed categories into provider-neutral {@link LlmToolDefinition}s. Reusable by any
- * {@link CompanionActionReducer} implementation - only the narrowing in step 2 is swappable.
- * <p>
- * Sources by category: {@code IntelCommand} registry -> {@code ACTION}, {@code IntelQuery} registry ->
- * {@code QUERY}, user macros -> {@code MACRO}. An action is included only if visible for the current
- * game context ({@code isVisibleForLLM}); a missing localized phrase does <em>not</em> exclude it
- * (native tool-calling selects by name/description/parameters), it only weakens cross-language matching.
- * The legacy fallback ids (general-conversation, ignore-nonsensical, connection-check) are never offered.
- * <p>
- * Per the localized-phrase hard rule (§10.3): when an action has localized training phrases they are
- * embedded into the English {@code description} (the only field the provider sees) to help the model map
- * a non-English commander utterance to the right tool; they are also kept in the neutral
- * {@code localizedTrainingPhrases} field for future dialects.
- */
+/** Builds provider-neutral game-tool candidates from visible actions and localized aliases. */
 public final class GameToolCandidates {
 
     /** Legacy-path fallback ids the companion never offers; it has its own speak. */
@@ -48,11 +34,11 @@ public final class GameToolCandidates {
     /**
      * One selectable game tool.
      *
-     * @param id        the action id (matched against the reducer's survivors)
-     * @param phraseKey the localized alias group (or id when none) - the reducer/reflex matching surface
-     * @param tool      the rendered, provider-neutral definition (carries the parameter schema)
+     * @param id                  the action id matched against the reducer's survivors
+     * @param localizedAliasGroup the localized alias group, or the id when none is defined
+     * @param tool                the rendered, provider-neutral definition carrying the parameter schema
      */
-    public record Candidate(String id, String phraseKey, LlmToolDefinition tool) {}
+    public record Candidate(String id, String localizedAliasGroup, LlmToolDefinition tool) {}
 
     private final Map<String, ? extends IntelAction> commands;
     private final Map<String, ? extends IntelAction> queries;
@@ -117,7 +103,9 @@ public final class GameToolCandidates {
     private void addActions(List<Candidate> out, Map<String, ? extends IntelAction> actions) {
         for (IntelAction action : actions.values()) {
             String id = action.id();
-            if (EXCLUDED_IDS.contains(id) || !action.isVisibleForLLM(status)) {
+            if (EXCLUDED_IDS.contains(id)
+                    || !action.isAvailableIn(IntelActionContext.COMPANION_COMMANDER)
+                    || !action.isVisibleForLLM(status)) {
                 continue;
             }
             boolean hasPhrases = AiActionAliasTextProvider.hasKey(language, id);
@@ -150,13 +138,13 @@ public final class GameToolCandidates {
         }
     }
 
-    /** Appends the localized example phrases to a base description when present (§10.3 hard rule). */
+    /** Appends localized example phrases to a macro description when present. */
     private String describe(String base, String phraseGroup) {
         String phrases = examplePhrases(phraseGroup);
         return phrases.isEmpty() ? base : base + " " + phrases;
     }
 
-    /** The localized example-phrases sentence embedded into a tool description (§10.3), or empty when none. */
+    /** Returns the localized example-phrase sentence, or an empty string when none exists. */
     private String examplePhrases(String phraseGroup) {
         return phraseGroup.isBlank() ? "" : "Example phrases in " + languageName + ": " + phraseGroup + ".";
     }

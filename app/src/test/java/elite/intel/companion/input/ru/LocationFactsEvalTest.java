@@ -56,16 +56,16 @@ class LocationFactsEvalTest {
         StringBuilder block = new StringBuilder("\n======== RU LOCATION FACTS (current system) ========\n");
 
         int registered = MemoryFactSourceRegistry.getInstance().sources().size();
-        List<String> sourceFacts = new CurrentSystemFactSource().factsFor(MemoryFactContext.forQuery(""));
-        // The fact reaches the prompt via the same path PromptComposer inlines: memory core + gathered source facts.
-        List<Fact> blockFacts = MergedFactCandidates.forInput(h.memory(), MemoryFactContext.forQuery("в какой мы системе"));
+        List<String> sourceFacts = new CurrentSystemFactSource().factsFor(MemoryFactContext.forCommanderInput(""));
+        // The fact reaches the prompt via the same registered-source path used by PromptComposer.
+        List<Fact> blockFacts = MergedFactCandidates.forInput(MemoryFactContext.forCommanderInput("в какой мы системе"));
         boolean inBlock = blockFacts.stream().anyMatch(f -> f.text().toLowerCase(Locale.ROOT).contains("current system sol"));
         boolean profileInBlock = blockFacts.stream().anyMatch(f -> "commander".equals(f.source()));
 
         h.beginTurn();
         h.say("в какой мы сейчас системе и насколько тут безопасно?");
 
-        List<String> injected = h.recallResult();
+        List<String> injected = h.injectedFacts();
         List<String> tools = h.turnToolNames();
         boolean queried = tools.stream().anyMatch(t -> t.startsWith("query_"));
 

@@ -25,7 +25,8 @@ public final class SystemFunctionProvider {
      * churn the request and the prompt cache, so the order is fixed here. New functions not listed
      * here automatically sort into the alphabetical tail - no central list to keep in sync.
      */
-    private static final List<String> LEAD_ORDER = List.of(SpeakFunction.ID, RequestInputFunction.ID);
+    private static final List<String> LEAD_ORDER = List.of(
+            SpeakFunction.ID, RequestInputFunction.ID);
 
     private final SystemFunctionRegistry registry;
 

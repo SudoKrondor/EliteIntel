@@ -1181,7 +1181,7 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> queryMaterials() {
-        return Stream.of("quanto ferro abbiamo?", "quanto stagno c'è?", "quanti propulsori Guardian abbiamo?",
+        return Stream.of("quanti water purifiers ho nella stiva", "quanto ferro abbiamo?", "quanto stagno c'è?", "quanti propulsori Guardian abbiamo?",
                 "che scorta di molibdeno abbiamo?", "abbiamo del tungsteno?", "ce l'abbiamo il materiale osmio?",
                 "quanto osmio ci rimane?");
     }

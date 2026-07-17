@@ -20,8 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * lifecycle completion; the worker then accepts the next thought while the detached one remains live and tracked
  * for preemption, watchdog, shutdown, pending accounting, and {@link #isIdle()}.
  * <p>
- * COMMANDER uses one worker so prompt/classification/topic/input commits remain ordered; game handlers detach
- * after that stage. EVENT also uses one worker. The generic concurrency argument remains for lanes whose
+ * COMMANDER uses one worker so prompt selection and dialogue/query memory publication remain ordered; game handlers
+ * detach after that stage. EVENT also uses one worker. The generic concurrency argument remains for lanes whose
  * cognitive stages are safe to parallelize.
  * <p>
  * Shutdown is graceful: one poison pill per worker lets the workers finish their live thoughts and drain the
@@ -67,7 +67,7 @@ final class ThoughtLane {
         queue.offerFirst(wrap(thought));
     }
 
-    /** Interrupts every currently live thought (cooperative; each safe-flushes and dies). */
+    /** Interrupts every currently live thought (cooperative; incomplete turns publish no memory and then die). */
     void interruptLive() {
         live.keySet().forEach(Thought::interrupt);
     }

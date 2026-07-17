@@ -3,6 +3,7 @@ package elite.intel.companion.prompt;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
@@ -74,6 +75,20 @@ class GameToolCandidatesTest {
     }
 
     @Test
+    void actionsUnavailableToCompanionCommanderAreExcluded() {
+        IntelAction legacyOnly = new IntelAction() {
+            @Override public String id() { return "legacy_only"; }
+            @Override public boolean isAvailableIn(IntelActionContext context) {
+                return context != IntelActionContext.COMPANION_COMMANDER;
+            }
+            @Override public JsonObject handle(String action, JsonObject params, String text) { return null; }
+        };
+        GameToolCandidates c = candidates(Map.of("legacy_only", legacyOnly), Map.of(), List.of());
+
+        assertTrue(c.collect(EnumSet.of(IntelActionCategory.ACTION)).isEmpty());
+    }
+
+    @Test
     void legacyFallbackIdsAreNeverOffered() {
         GameToolCandidates c = candidates(
                 Map.of(IgnoreNonsensicalInputCommand.ID, action(IgnoreNonsensicalInputCommand.ID, true)),
@@ -93,16 +108,16 @@ class GameToolCandidatesTest {
         assertTrue(macro.tool().description().contains("Example phrases in English: dock us, take us in"),
                 "localized phrases must be embedded in the description and labeled with the resolved language");
         assertEquals("dock us, take us in", macro.tool().localizedTrainingPhrases());
-        assertEquals("dock us, take us in", macro.phraseKey());
+        assertEquals("dock us, take us in", macro.localizedAliasGroup());
     }
 
     @Test
     void actionWithoutLocalizedPhraseStillIncludedButPlain() {
-        // EN bundle has no alias for this made-up id: included, no example phrases, phraseKey falls back to id.
+        // EN bundle has no alias for this made-up id: included, no examples, localizedAliasGroup falls back to id.
         GameToolCandidates c = candidates(Map.of("made_up_action", action("made_up_action", true)), Map.of(), List.of());
 
         GameToolCandidates.Candidate only = c.collect(EnumSet.of(IntelActionCategory.ACTION)).get(0);
-        assertEquals("made_up_action", only.phraseKey());
+        assertEquals("made_up_action", only.localizedAliasGroup());
         assertTrue(only.tool().localizedTrainingPhrases().isEmpty());
         assertFalse(only.tool().description().contains("Example phrases"));
         // No synthetic "Game action <id>" base: with no phrases the description is empty, not a name restatement.

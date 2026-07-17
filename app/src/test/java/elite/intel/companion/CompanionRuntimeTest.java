@@ -106,8 +106,8 @@ class CompanionRuntimeTest {
         private final AtomicInteger submissions = new AtomicInteger();
 
         @Override public void filler(String text, boolean urgent) { submissions.incrementAndGet(); }
-        @Override public void narrate(String data, String instructions, String topic) { submissions.incrementAndGet(); }
-        @Override public void announce(String sourceId, String phrase, String topic, boolean urgent) {
+            @Override public void narrate(String data, String instructions) { submissions.incrementAndGet(); }
+            @Override public void announce(String phrase, boolean urgent) {
             submissions.incrementAndGet();
         }
     }

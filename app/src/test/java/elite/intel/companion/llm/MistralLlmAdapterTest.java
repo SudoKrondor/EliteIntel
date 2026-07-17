@@ -131,7 +131,7 @@ class MistralLlmAdapterTest {
     @Test
     void capturesFinishReasonAndFreeTextAlongsideToolCall() {
         JsonObject function = new JsonObject();
-        function.addProperty("name", "classify_turn");
+        function.addProperty("name", "speak");
         function.addProperty("arguments", "{}");
         JsonObject call = new JsonObject();
         call.addProperty("id", "call-1");

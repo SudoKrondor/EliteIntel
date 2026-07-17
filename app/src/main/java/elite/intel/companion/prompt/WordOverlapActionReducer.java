@@ -122,7 +122,7 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
             if (FALLBACK_IDS.contains(candidate.id())) {
                 continue;
             }
-            Set<String> triggerWords = significantWords(candidate.phraseKey());
+            Set<String> triggerWords = significantWords(candidate.localizedAliasGroup());
             boolean[] mask = new boolean[inputWords.size()];
             boolean any = false;
             for (int i = 0; i < inputWords.size(); i++) {

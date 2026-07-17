@@ -6,45 +6,35 @@ import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.ai.brain.actions.query.RegisterQuery;
 import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.memory.facts.MemoryFactContext;
-import elite.intel.companion.memory.facts.MemoryFactGatherer;
-import elite.intel.companion.prompt.Fact;
+import elite.intel.companion.memory.MemorySearchResult;
 import elite.intel.util.json.JsonUtils;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.List;
 
 /**
- * Explicit, comprehensive recall over the companion's session memory. Unlike the answer-fact candidates that
- * are auto-injected each turn (a tier-2-filtered top few, meant to answer a single recall question), this
- * gathers EVERY matching memory entry for a subject the commander explicitly asks to look up - so a request
- * like "which stations did we dock at, and how many" has the complete set to answer from, which the capped
- * auto-candidates cannot give.
- * <p>
- * Read-only. Like the other queries it does not hand-format its own line: it hands the matches plus an
- * instruction to {@link BaseQueryAnalyzer#process}, so the analysis model composes the enumeration/count in
- * character and in the commander's language (the retrieval is deterministic; the wording is voiced the same
- * way cargo/biome results are). A registered {@code MemoryFactSource} may contribute query-relevant facts to the
- * recalled set through its search role ({@code searchFacts}); the current ambient/state sources opt out, so none add
- * anything here yet. Companion-mode only - it reads {@link CompanionRuntime#memory()}.
+ * Explicit record-level recall over every session-memory area. Exact counts are exposed only while matching
+ * records still retain their individual form; the returned item list is always bounded.
  */
 @RegisterQuery
 public final class MemorySearchQuery extends BaseQueryAnalyzer implements IntelQuery {
 
     public static final String ID = "memory_search";
     private static final String PARAM_QUERY = "query";
-    /** Generous cap so an enumeration ("all stations") gets the full set, not the auto-candidate top few. */
     private static final int RECALL_LIMIT = 25;
 
     private static final String INSTRUCTIONS = """
             Answer the commander's question from the remembered entries below.
             Rules:
-            - The 'remembered' list holds everything found in memory for this question. Report the entries
-              relevant to what was asked, as a natural spoken answer.
-            - If the commander asks how many, state the exact count of the relevant entries.
-            - If the 'remembered' list is empty, say you have nothing in memory about that.
+            - exactRecordCount is an exact count only when it is a number. If it is null, matching older records
+              have been summarized and an exact historical count is unavailable.
+            - matchingUnits is the number of matching retrieval units, including summaries. Never present it as
+              a factual count of events or conversations.
+            - items contains the highest-ranked matching units that fit the response limit. Preserve their
+              provenance when answering.
+            - If truncated is true, do not claim that items is a complete list.
+            - If matchingUnits is zero, say you have nothing in memory about the subject.
             """;
 
     @Override
@@ -54,7 +44,7 @@ public final class MemorySearchQuery extends BaseQueryAnalyzer implements IntelQ
 
     @Override
     public String llmDescription() {
-        return "Search the companion's session memory and return every remembered item matching a subject (e.g. every station docked at, everything said about a plan). Use when the commander asks to recall, list, or count things from memory; pass the subject as the query.";
+        return "Search session memory for a subject. Returns bounded matches and an exact count when records are not summarized.";
     }
 
     @Override
@@ -66,49 +56,28 @@ public final class MemorySearchQuery extends BaseQueryAnalyzer implements IntelQ
                 "Extract the subject the commander wants recalled, in their own language; do not translate."));
     }
 
-    /** Recalls every matching entry and lets the analysis model voice the enumeration/count (see class doc). */
+    /** Recalls matching records and lets the analysis model voice the result. */
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) {
         String query = JsonUtils.getAsStringOrEmpty(params, PARAM_QUERY);
-        List<String> remembered;
+        MemorySearchResult result;
         try {
-            List<String> recalled = strip(CompanionRuntime.memory().recallMatching(query, RECALL_LIMIT));
-            remembered = merge(recalled, MemoryFactGatherer.gatherForSearch(MemoryFactContext.forQuery(query)));
+            result = CompanionRuntime.memory().recallMatching(query, RECALL_LIMIT);
         } catch (IllegalStateException companionNotInstalled) {
-            // WHY: this query is companion-only; in the legacy router CompanionRuntime.memory() is not
-            // installed and throws. Degrade to an empty result there (no source facts either). Any other
-            // failure must propagate.
-            remembered = List.of();
+            result = MemorySearchResult.empty();
         }
-        return process(new AiDataStruct(INSTRUCTIONS, new Remembered(remembered)), originalUserInput);
+        return process(new AiDataStruct(INSTRUCTIONS,
+                new Remembered(result.exactRecordCount(), result.matchingUnits(), result.truncated(), result.items())),
+                originalUserInput);
     }
 
-    /**
-     * Combines the recalled entries with the fact-source facts for one lookup: the source facts (the same ones the
-     * per-turn block gets) are appended after the recalled entries and de-duplicated case-insensitively, so a fact a
-     * recalled entry already covers, or that two sources both offer, is reported once. Package-visible for tests.
-     */
-    static List<String> merge(List<String> recalled, List<Fact> sourceFacts) {
-        List<String> remembered = new ArrayList<>(recalled);
-        Set<String> seen = new HashSet<>();
-        for (String entry : recalled) {
-            seen.add(entry.toLowerCase(Locale.ROOT));
-        }
-        for (Fact fact : sourceFacts) {
-            if (seen.add(fact.text().toLowerCase(Locale.ROOT))) {
-                remembered.add(fact.text());
-            }
-        }
-        return remembered;
-    }
-
-    /** Strips the leading {@code [SOURCE]} label from each recalled entry so the model sees clean facts. */
-    private static List<String> strip(List<String> matches) {
-        return matches.stream().map(m -> m.replaceFirst("^\\[[^\\]]*\\]\\s*", "").strip()).collect(Collectors.toList());
-    }
-
-    /** The recalled entries, serialized to YAML for the analysis model. */
-    record Remembered(List<String> remembered) implements ToYamlConvertable {
+    /** Structured recall data serialized for the analysis model. */
+    record Remembered(
+            Integer exactRecordCount,
+            int matchingUnits,
+            boolean truncated,
+            List<String> items
+    ) implements ToYamlConvertable {
         @Override
         public String toYaml() {
             return YamlFactory.toYaml(this);

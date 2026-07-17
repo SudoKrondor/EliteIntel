@@ -1,8 +1,9 @@
 # Companion: Durable Memory & Situational Awareness - Design Proposal
 
-**Status:** Draft for discussion
+**Status:** Historical proposal, superseded by the current `COMPANION_ARCHITECTURE.md`
 **Audience:** Gnevko (companion subsystem owner) + Alex
-**Scope:** Theoretical approach only - no implementation. This is a starting point for a conversation, not a spec.
+**Scope:** Historical design context only. Deleted types and methods below describe the architecture at the time
+this proposal was written; they are not current interfaces. Use `COMPANION_ARCHITECTURE.md` as the source of truth.
 
 ---
 
@@ -25,7 +26,7 @@ Everything below is deliberately shaped to **wrap, not rewrite** the companion i
 
 ---
 
-## 2. Current state (as-built, for shared context)
+## 2. Historical baseline (no longer current)
 
 **Memory** (`companion/memory`) is intentionally **session-only, in-RAM** -
 `SessionMemoryGateway` says so explicitly. Three tiers:

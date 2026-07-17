@@ -204,7 +204,7 @@ public final class CompanionRuntimeGraph implements AutoCloseable {
         Throwable cleanupFailure = null;
         cleanupFailure = runCleanup(cleanupFailure, () -> {
             if (sessionMemoryGateway != null) {
-                sessionMemoryGateway.setMidTermEvictionListener(null);
+                sessionMemoryGateway.setPendingConsolidationListener(null);
                 sessionMemoryGateway.setOversizedMemoryListener(null);
             }
         });

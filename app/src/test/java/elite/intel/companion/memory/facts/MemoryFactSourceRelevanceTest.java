@@ -69,7 +69,7 @@ class MemoryFactSourceRelevanceTest {
     }
 
     private static MemoryFactContext ctx(String query) {
-        return MemoryFactContext.forQuery(query);
+        return MemoryFactContext.forCommanderInput(query);
     }
 
     private static List<MemoryFactSource> builtInSources() {

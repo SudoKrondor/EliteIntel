@@ -7,17 +7,14 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * Single owner of running the registered {@link MemoryFactSource}s for a context: it asks every source for its facts,
- * isolates a failing or contract-violating source (it drops only its own facts, never the caller's turn or query), and
+ * isolates a failing or contract-violating source (it drops only its own facts, never the caller's turn), and
  * returns them flat, each tagged with its source {@link MemoryFactSource#id()} as provenance. It applies no cap and no
  * de-duplication - each consumer applies its own policy.
- * <p>
- * Two entry points select which role the sources play: {@link #gather} relevance-gates current-state facts for the
- * per-turn block ({@link MergedFactCandidates}), and {@link #gatherForSearch} pulls the query-relevant facts for the
- * {@code memory_search} query.
+ * Registered sources contribute only live current-state facts to the per-turn block ({@link MergedFactCandidates});
+ * durable-memory search remains owned by the existing {@code memory_search} query.
  */
 public final class MemoryFactGatherer {
 
@@ -31,14 +28,9 @@ public final class MemoryFactGatherer {
         return gatherRelevant(context, MemoryFactSourceRegistry.getInstance().sources());
     }
 
-    /** Query-relevant facts from every registered source, for {@code memory_search}; flat, tagged, isolated. */
-    public static List<Fact> gatherForSearch(MemoryFactContext context) {
-        return gatherForSearch(context, MemoryFactSourceRegistry.getInstance().sources());
-    }
-
     /** Testable collection seam for sources already selected by the caller. */
     static List<Fact> gather(MemoryFactContext context, List<MemoryFactSource> sources) {
-        return collect(sources, source -> source.factsFor(context));
+        return collect(sources, context);
     }
 
     /** Testable seam that asks each explicit source to decide its own relevance. */
@@ -51,18 +43,13 @@ public final class MemoryFactGatherer {
                 .toList();
         CompanionDiagnostics.debugAmbient("facts", "ambient relevance -> "
                 + relevant.stream().map(MemoryFactSource::id).toList());
-        return collect(relevant, source -> source.factsFor(context));
+        return collect(relevant, context);
     }
 
-    /** Testable seam for the search role: gathers from an explicit source list instead of the global registry. */
-    static List<Fact> gatherForSearch(MemoryFactContext context, List<MemoryFactSource> sources) {
-        return collect(sources, source -> source.searchFacts(context));
-    }
-
-    private static List<Fact> collect(List<MemoryFactSource> sources, Function<MemoryFactSource, List<String>> facts) {
+    private static List<Fact> collect(List<MemoryFactSource> sources, MemoryFactContext context) {
         List<Fact> collected = new ArrayList<>();
         for (MemoryFactSource source : sources) {
-            for (String text : offeredFacts(source, facts)) {
+            for (String text : offeredFacts(source, context)) {
                 if (text == null || text.isBlank()) {
                     continue;
                 }
@@ -73,12 +60,12 @@ public final class MemoryFactGatherer {
     }
 
     /**
-     * The facts a source offers for the selected role, isolated from the caller's fate. A fact source is an optional
-     * contributor: a broken one must drop only its own facts, never fail the turn or query that asked.
+     * The facts a source offers for the current context, isolated from the caller's fate. A fact source is an optional
+     * contributor: a broken one must drop only its own facts, never fail the turn that asked.
      */
-    private static List<String> offeredFacts(MemoryFactSource source, Function<MemoryFactSource, List<String>> facts) {
+    private static List<String> offeredFacts(MemoryFactSource source, MemoryFactContext context) {
         try {
-            List<String> offered = facts.apply(source);
+            List<String> offered = source.factsFor(context);
             // WHY: the contract is non-null, but degrade to "no facts" rather than NPE the caller on a violation.
             return offered != null ? offered : List.of();
         } catch (RuntimeException e) {

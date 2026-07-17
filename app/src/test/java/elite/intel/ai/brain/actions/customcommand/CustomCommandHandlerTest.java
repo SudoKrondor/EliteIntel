@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
@@ -185,6 +186,29 @@ class CustomCommandHandlerTest {
                   {"type":"RUN_COMMAND","actionId":"does_not_exist_12345"}
                 ]}"""));
         assertTrue(inputCapture.events.isEmpty());
+    }
+
+    @Test
+    void runCommandStepSkipsActionThatRejectsCustomCommandDelegation() {
+        AtomicBoolean called = new AtomicBoolean(false);
+        IntelAction companionOnly = new IntelAction() {
+            @Override public String id() { return "companion_only"; }
+            @Override public boolean isAvailableIn(IntelActionContext context) {
+                return context != IntelActionContext.CUSTOM_COMMAND;
+            }
+            @Override public JsonObject handle(String a, JsonObject p, String r) {
+                called.set(true);
+                return null;
+            }
+        };
+        registerHandler("companion_only", companionOnly);
+
+        runCustomCommand("""
+                {"id":"m","name":"M","phrases":"p","steps":[
+                  {"type":"RUN_COMMAND","actionId":"companion_only"}
+                ]}""");
+
+        assertFalse(called.get(), "Companion-only action must not run through a custom command");
     }
 
     // --- RAW_KEY ---

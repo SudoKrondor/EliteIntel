@@ -76,7 +76,7 @@ class DialogueCoherenceEvalTest {
             block.append("   -> ").append(spoken()).append("\n");
         }
 
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         // The only machine-checkable fact here: the live model was actually reached. Coherence is judged by a

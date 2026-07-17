@@ -74,7 +74,7 @@ public final class CompanionRuntimeGraphFactory {
                     memoryGateway, llmGateway, speechGateway, runtimeGeneration);
             oversizedMemoryCompressor = new OversizedMemoryCompressor(
                     memoryGateway, llmGateway, runtimeGeneration);
-            memoryGateway.setMidTermEvictionListener(memoryConsolidator);
+            memoryGateway.setPendingConsolidationListener(memoryConsolidator);
             memoryGateway.setOversizedMemoryListener(oversizedMemoryCompressor);
 
             DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
@@ -117,7 +117,7 @@ public final class CompanionRuntimeGraphFactory {
             if (memoryGateway != null) {
                 SessionMemoryGateway partiallyBuiltMemoryGateway = memoryGateway;
                 runCleanupAfterAssemblyFailure(assemblyFailure,
-                        () -> partiallyBuiltMemoryGateway.setMidTermEvictionListener(null));
+                        () -> partiallyBuiltMemoryGateway.setPendingConsolidationListener(null));
                 runCleanupAfterAssemblyFailure(assemblyFailure,
                         () -> partiallyBuiltMemoryGateway.setOversizedMemoryListener(null));
             }

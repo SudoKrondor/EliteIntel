@@ -12,9 +12,9 @@ import java.util.Set;
 /**
  * Selects the game tools offered to the LLM for one thought turn, narrowed from the full catalog to a
  * prompt-sized set. This is the swap seam for the selection strategy: its required inputs are the allowed
- * categories and current input; optional per-turn {@link SemanticQuery} and {@link GameStateSnapshot} hints let
- * cooperating routing stages reuse already-computed work and one visibility context without becoming cross-turn
- * caches. Reducers that do not understand those hints simply ignore them. The seam otherwise leaks no algorithm
+ * categories and current input; optional per-turn {@link SemanticQuery} and {@link GameStateSnapshot} inputs let
+ * callers reuse already-computed work and one visibility context without becoming cross-turn caches. Reducers that
+ * do not understand those inputs simply ignore them. The seam otherwise leaks no algorithm
  * detail (no phrase maps, no word-overlap), so the current word-overlap wrapper over the legacy
  * {@code elite.intel.ai.brain.Reducer} can later be replaced by a smarter (e.g. semantic) reducer
  * without touching any call site (see COMPANION_ARCHITECTURE.md §10.3).
@@ -34,10 +34,10 @@ public interface CompanionActionReducer {
     List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput);
 
     /**
-     * Returns the tool definitions to offer this turn, optionally reusing hints prepared while the same input was
-     * routed. The default preserves the two-argument contract for reducers that have no use for such hints.
+     * Returns the tool definitions to offer this turn, optionally reusing an embedding prepared by the caller for
+     * the same input. The default preserves the two-argument contract for reducers that have no use for it.
      *
-     * @param semanticQuery optional embedding prepared for this exact input during the current turn's intake
+     * @param semanticQuery optional embedding prepared for this exact input during the current turn
      */
     default List<LlmToolDefinition> selectTools(Set<IntelActionCategory> allowedCategories, String currentInput,
                                                 SemanticQuery semanticQuery) {

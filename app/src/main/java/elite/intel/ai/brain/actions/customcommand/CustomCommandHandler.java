@@ -3,6 +3,7 @@ package elite.intel.ai.brain.actions.customcommand;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
@@ -18,28 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * A handler for executing custom commands defined by {@code CustomCommandDefinition}.
- * This class is responsible for processing a series of custom command steps,
- * managing parameter resolution, handling errors, and synchronizing the execution flow
- * using a reentrant lock to ensure thread safety.
- *
- * Responsibilities:
- * - Ensures First-In-First-Out (FIFO) execution of custom commands.
- * - Validates and resolves required parameters for each custom command execution.
- * - Supports execution of multiple step types, including key bindings, delays, speech, and nested command calls.
- * - Handles interruptions and errors gracefully during execution, logging abort or error details as necessary.
- * - Blocks cross-delegation of nested {@code CustomCommandHandler} instances to prevent recursion.
- *
- * Thread Safety and Locking:
- * - Execution is synchronized using a global {@code ReentrantLock} with fair ordering.
- * - Locking ensures that no two threads can execute custom commands simultaneously.
- *
- * Dependencies:
- * - Uses {@code CustomCommandDefinition} for defining the custom command's structure.
- * - Relies on {@code CustomCommandSpeakExecutor} for speech execution steps.
- * - Integrates with {@code GameEventBus} to log and publish events during execution.
- */
+/** Executes one validated custom command while a fair global lock preserves submission order. */
 public final class CustomCommandHandler implements IntelAction {
 
     private static final Logger log = LogManager.getLogger(CustomCommandHandler.class);
@@ -184,6 +164,11 @@ public final class CustomCommandHandler implements IntelAction {
                     log.warn("Custom command '{}' step {}: RUN_COMMAND may not target another custom command ('{}') - step skipped",
                             customCommand.getName(), index, step.getActionId());
                     UiBus.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId() + " (nested custom command blocked)"));
+                } else if (!nested.isAvailableIn(IntelActionContext.CUSTOM_COMMAND)) {
+                    log.warn("Custom command '{}' step {}: RUN_COMMAND may not target '{}' - step skipped",
+                            customCommand.getName(), index, step.getActionId());
+                    UiBus.publish(new AppLogEvent("Custom command step: RUN_COMMAND " + step.getActionId()
+                            + " (delegation blocked)"));
                 } else {
                     // Resolve step-level param mapping; preserves JSON types for bare ${ref} values.
                     Map<String, String> stepParamMapping = step.getStepParams();

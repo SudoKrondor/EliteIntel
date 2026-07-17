@@ -1,14 +1,16 @@
 package elite.intel.companion.memory;
 
-import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.VectorMath;
 import elite.intel.companion.CompanionConfig;
 import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemorySearchMatch;
+import elite.intel.companion.model.memory.MemoryRecord;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -21,350 +23,250 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
 
-/**
- * Read-only recall over the companion's memory areas (the {@code memory_search} ranking). Scores each
- * candidate by word-overlap and by meaning (cosine of the query vector to the entry's vector), collapses
- * near-duplicate paraphrases into one, fuses the two signals by reciprocal rank, and returns the top entries as
- * labelled text. Pure: it never mutates the stores. Split out of {@link SessionMemoryGateway} so the gateway
- * owns storage and eviction while this owns the ranking; stateless, so the methods are static.
- */
+/** Read-only relevance and recency ranking across record-based companion memory. */
 final class MemorySearch {
 
     private static final Logger log = LogManager.getLogger(MemorySearch.class);
-
-    /** Reciprocal-rank-fusion constant: dampens how much a top rank dominates (the standard k). */
     private static final int RRF_K = 60;
 
     private MemorySearch() {
     }
 
-    /**
-     * Ranks the memory areas against {@code query} and returns at most {@code limit} matches as labelled
-     * text. A given entry lives in exactly one of short-term / mid-term, so the two never double-count.
-     *
-     * @param shortTerm     the hot timeline entries
-     * @param midTerm       mid-term entries across all topics
-     * @param summary       the session long-term summary as searchable entries (empty when none consolidated)
-     * @param archive       pinned MAX facts (capped by {@link CompanionMemoryLimits#ARCHIVE_RECALL_LIMIT})
-     * @param matcherSource supplies the shared semantic matcher, or null when semantic search is unavailable;
-     *                      consulted only for a non-blank query with at least one stored entry, so an empty
-     *                      memory never loads the model
-     */
-    static List<String> recall(String query, int limit, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
-                               List<MemoryEntry> summary, List<MemoryEntry> archive,
-                               Supplier<SemanticPhraseMatcher> matcherSource) {
-        if (limit <= 0) {
+    static MemorySearchResult recall(
+            String query,
+            int limit,
+            List<MemoryRecord> recent,
+            List<MemoryRecord> retained,
+            List<MemorySearchMatch> summaries,
+            List<MemoryRecord> savedTexts,
+            Supplier<SemanticPhraseMatcher> matcherSource
+    ) {
+        List<RecordScored> ranked = rankRecords(query, recent, retained, summaries, savedTexts, matcherSource);
+        Integer exactRecordCount = ranked.stream().anyMatch(candidate -> candidate.document().summary())
+                ? null : ranked.size();
+        if (limit <= 0 || ranked.isEmpty()) {
+            return new MemorySearchResult(ranked.size(), exactRecordCount, List.of());
+        }
+        List<String> items = boundedItems(ranked, limit);
+        return new MemorySearchResult(ranked.size(), exactRecordCount, items);
+    }
+
+    /** Whether two entries have semantic vectors above the configured duplicate threshold. */
+    static boolean sameMeaning(MemoryEntry first, MemoryEntry second, double floor) {
+        return first.embedding() != null && second.embedding() != null
+                && VectorMath.cosine(first.embedding(), second.embedding()) >= floor;
+    }
+
+    private static List<RecordScored> rankRecords(
+            String query,
+            List<MemoryRecord> recent,
+            List<MemoryRecord> retained,
+            List<MemorySearchMatch> summaries,
+            List<MemoryRecord> savedTexts,
+            Supplier<SemanticPhraseMatcher> matcherSource
+    ) {
+        List<SearchDocument> documents = new ArrayList<>();
+        collectDocuments(documents, recent);
+        collectDocuments(documents, retained);
+        for (MemorySearchMatch summary : summaries) {
+            documents.add(new SearchDocument(
+                    summary.kind(), summary.timestamp(), List.of(summary.entry()), true));
+        }
+        collectDocuments(documents, savedTexts);
+        if (documents.isEmpty()) {
             return List.of();
         }
-        return emit(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource, null), limit);
+
+        Set<String> queryTokens = explicitTokens(query);
+        boolean blank = query == null || query.isBlank();
+        SemanticPhraseMatcher matcher = blank ? null : safeMatcher(matcherSource);
+        float[] queryVector = matcher == null ? null : safeEmbedQuery(matcher, query);
+        List<RecordScored> scored = documents.stream()
+                .map(document -> score(document, queryTokens, blank, queryVector))
+                .filter(candidate -> eligible(candidate, blank, queryVector != null))
+                .toList();
+        List<RecordScored> ranked = new ArrayList<>(scored);
+        ranked.sort(queryVector == null ? RECORD_WORD_RANK : fusedRecordRank(ranked));
+        return List.copyOf(ranked);
     }
 
-    /**
-     * The same ranking as {@link #recall}, but returns the ranked {@link MemoryEntry entries} themselves (not
-     * labelled text) so a caller can read each entry's {@code source}/{@code importance} - used by the pre-turn
-     * memory-candidate lookup, which filters the ranked matches down to a few clean answer facts before the
-     * prompt. Archive (pinned MAX) facts are capped exactly as in {@link #emit}, and identical content is
-     * de-duplicated.
-     */
-    static List<MemoryEntry> recallEntries(String query, int limit, List<MemoryEntry> shortTerm,
-                                           List<MemoryEntry> midTerm, List<MemoryEntry> summary,
-                                           List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource) {
-        return recallEntries(query, limit, shortTerm, midTerm, summary, archive, matcherSource, null);
-    }
-
-    /**
-     * The same entry recall, optionally reusing the query embedding prepared during the current thought's intake.
-     */
-    static List<MemoryEntry> recallEntries(String query, int limit, List<MemoryEntry> shortTerm,
-                                           List<MemoryEntry> midTerm, List<MemoryEntry> summary,
-                                           List<MemoryEntry> archive, Supplier<SemanticPhraseMatcher> matcherSource,
-                                           SemanticQuery semanticQuery) {
-        if (limit <= 0) {
-            return List.of();
+    private static void collectDocuments(List<SearchDocument> out, List<MemoryRecord> records) {
+        for (MemoryRecord record : records) {
+            out.add(new SearchDocument(record.kind(), record.timestamp(), record.entries(), false));
         }
-        return emitEntries(rankEligible(query, shortTerm, midTerm, summary, archive, matcherSource, semanticQuery), limit);
     }
 
-    /** Scores, filters and orders every memory area against {@code query} into the final ranked candidate list. */
-    private static List<Scored> rankEligible(String query, List<MemoryEntry> shortTerm, List<MemoryEntry> midTerm,
-                                             List<MemoryEntry> summary, List<MemoryEntry> archive,
-                                             Supplier<SemanticPhraseMatcher> matcherSource,
-                                             SemanticQuery semanticQuery) {
-        // The first companion turn has no memory at all. There is nothing to rank, so avoid lazily loading the
-        // semantic model and embedding its query just to return an empty list.
-        if (shortTerm.isEmpty() && midTerm.isEmpty() && summary.isEmpty() && archive.isEmpty()) {
-            return List.of();
-        }
-        Set<String> queryTokens = tokens(query);
-        boolean blank = queryTokens.isEmpty();
-        // Semantic search runs only for a real query with a loaded model; a blank query keeps the old behaviour
-        // (every entry matches with relevance 0, so it degenerates to importance-then-recency). The dedup step
-        // below still runs on every path, collapsing near-identical entries that carry vectors.
-        SemanticPhraseMatcher matcher = blank ? null : matcherSource.get();
-        float[] queryVector = matcher == null || semanticQuery == null ? null : semanticQuery.vectorFor(query, matcher);
-        if (queryVector == null && matcher != null) {
-            // No usable prepared context (absent, another input, or another matcher): retain the normal path.
-            queryVector = safeEmbedQuery(matcher, query);
-        }
-        boolean semantic = queryVector != null;
-
-        List<Scored> scored = new ArrayList<>();
-        collectScored(scored, false, shortTerm, queryTokens, blank, queryVector);
-        collectScored(scored, false, midTerm, queryTokens, blank, queryVector);
-        collectScored(scored, false, summary, queryTokens, blank, queryVector);
-        collectScored(scored, true, archive, queryTokens, blank, queryVector);
-
-        List<Scored> eligible = dedupByMeaning(filterEligible(scored, blank, semantic));
-        // With both signals present, fuse the two rankings by position (reciprocal rank) so neither scale's raw
-        // numbers dominate; with words only, keep the original relevance-then-importance-then-recency order.
-        eligible.sort(semantic ? byFusedRank(eligible) : BY_WORD_RANK);
-        return eligible;
-    }
-
-    /** Whether two entries mean the same thing (cosine &ge; {@code floor}); false if either lacks a vector. */
-    static boolean sameMeaning(MemoryEntry a, MemoryEntry b, double floor) {
-        return a.embedding() != null && b.embedding() != null
-                && VectorMath.cosine(a.embedding(), b.embedding()) >= floor;
-    }
-
-    /**
-     * Keeps an entry if it matches by words (exact lexical hit - always reliable, e.g. a name or code), or
-     * (when semantic search is on) is at or above the absolute meaning floor. The floor is the only semantic
-     * gate: recall must be free to return several distinct facts (a compound question needs both), so a
-     * relative "within a margin of the best match" cut is deliberately avoided - it would drop the weaker but
-     * still-relevant second fact and leave the model to guess it.
-     */
-    private static List<Scored> filterEligible(List<Scored> scored, boolean blank, boolean semantic) {
-        double floor = CompanionConfig.semanticRecallFloor();
-        List<Scored> eligible = new ArrayList<>();
-        for (Scored s : scored) {
-            boolean semanticHit = semantic && !Double.isNaN(s.semScore()) && s.semScore() >= floor;
-            if (blank || s.wordScore() > 0 || semanticHit) {
-                eligible.add(s);
+    /** Applies both per-item and total character budgets without changing the number of matching units. */
+    private static List<String> boundedItems(List<RecordScored> ranked, int limit) {
+        List<String> items = new ArrayList<>();
+        int remaining = CompanionMemoryPolicy.searchResultMaxChars();
+        for (RecordScored candidate : ranked) {
+            if (items.size() == limit || remaining <= 0) {
+                break;
+            }
+            String item = bound(candidate.document().render(), CompanionMemoryPolicy.searchItemMaxChars());
+            if (item.length() > remaining) {
+                item = bound(item, remaining);
+            }
+            if (!item.isBlank()) {
+                items.add(item);
+                remaining -= item.length();
             }
         }
-        return eligible;
+        return List.copyOf(items);
     }
 
-    /**
-     * Emits the ranked results as labelled text, capping how many archive (pinned MAX) facts enter so an
-     * accumulating archive cannot crowd out the more relevant short/mid-term matches, de-duplicating identical
-     * content, and stopping at the limit.
-     */
-    private static List<String> emit(List<Scored> ranked, int limit) {
-        List<String> out = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        int archiveUsed = 0;
-        for (Scored s : ranked) {
-            if (s.archive() && archiveUsed >= CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT) {
-                continue;
-            }
-            String content = "[" + s.entry().source().displayLabel(CompanionConfig.companionName()) + "] "
-                    + s.entry().content();
-            if (seen.add(content)) {
-                if (s.archive()) {
-                    archiveUsed++;
-                }
-                out.add(content);
-                if (out.size() >= limit) {
-                    break;
+    private static String bound(String text, int maxChars) {
+        if (text.length() <= maxChars) {
+            return text;
+        }
+        if (maxChars <= 3) {
+            return text.substring(0, Math.max(0, maxChars));
+        }
+        return text.substring(0, maxChars - 3).stripTrailing() + "...";
+    }
+
+    private static RecordScored score(
+            SearchDocument document,
+            Set<String> queryTokens,
+            boolean blank,
+            float[] queryVector
+    ) {
+        int wordScore = blank ? 0 : explicitOverlap(queryTokens, document.searchText());
+        double semanticScore = Double.NaN;
+        if (queryVector != null) {
+            for (MemoryEntry entry : document.entries()) {
+                if (entry.embedding() != null) {
+                    semanticScore = maxScore(semanticScore, VectorMath.cosine(queryVector, entry.embedding()));
                 }
             }
         }
-        return out;
+        return new RecordScored(document, wordScore, semanticScore);
     }
 
-    /**
-     * Like {@link #emit}, but yields the ranked {@link MemoryEntry entries} (same archive cap and
-     * content-dedup) instead of labelled text, so the caller keeps each entry's source/importance metadata.
-     */
-    private static List<MemoryEntry> emitEntries(List<Scored> ranked, int limit) {
-        List<MemoryEntry> out = new ArrayList<>();
-        Set<String> seen = new HashSet<>();
-        int archiveUsed = 0;
-        for (Scored s : ranked) {
-            if (s.archive() && archiveUsed >= CompanionMemoryLimits.ARCHIVE_RECALL_LIMIT) {
-                continue;
-            }
-            if (seen.add(s.entry().content())) {
-                if (s.archive()) {
-                    archiveUsed++;
-                }
-                out.add(s.entry());
-                if (out.size() >= limit) {
-                    break;
-                }
-            }
-        }
-        return out;
+    private static boolean eligible(RecordScored candidate, boolean blank, boolean semantic) {
+        return blank || candidate.wordScore() > 0
+                || (semantic && !Double.isNaN(candidate.semanticScore())
+                && candidate.semanticScore() >= CompanionMemoryPolicy.semanticRecallFloor());
     }
 
-    /**
-     * Scores every entry of one memory area against the query and adds it as a candidate. Word-overlap is 0 for
-     * a blank query (all match); meaning-closeness is {@code NaN} when there is no query vector or the entry was
-     * never embedded, so such an entry can still match by words but never by an accidental low cosine.
-     */
-    private static void collectScored(List<Scored> out, boolean archive, List<MemoryEntry> entries,
-                                      Set<String> queryTokens, boolean blank, float[] queryVector) {
-        for (MemoryEntry entry : entries) {
-            int wordScore = blank ? 0 : overlap(queryTokens, entry.content());
-            double semScore = (queryVector != null && entry.embedding() != null)
-                    ? VectorMath.cosine(queryVector, entry.embedding())
-                    : Double.NaN;
-            out.add(new Scored(entry, archive, wordScore, semScore));
-        }
+    private static final Comparator<RecordScored> RECORD_WORD_RANK = Comparator
+            .comparingInt(RecordScored::wordScore).reversed()
+            .thenComparing(candidate -> candidate.document().timestamp(), Comparator.reverseOrder());
+
+    private static Comparator<RecordScored> fusedRecordRank(List<RecordScored> eligible) {
+        double floor = CompanionMemoryPolicy.semanticRecallFloor();
+        Map<RecordScored, Double> fused = new IdentityHashMap<>();
+        accumulateRecordRank(fused, eligible, candidate -> candidate.wordScore() > 0, RecordScored::wordScore);
+        accumulateRecordRank(
+                fused, eligible, candidate -> candidate.semanticScore() >= floor, RecordScored::semanticScore);
+        return Comparator.<RecordScored>comparingDouble(candidate -> fused.getOrDefault(candidate, 0.0)).reversed()
+                .thenComparing(candidate -> candidate.document().timestamp(), Comparator.reverseOrder());
     }
 
-    /** A candidate entry with its two recall scores: word-overlap count and meaning-closeness (cosine). */
-    private record Scored(MemoryEntry entry, boolean archive, int wordScore, double semScore) {}
-
-    /** Word relevance first, then importance, then recency - the recall ranking when there is no query vector. */
-    private static final Comparator<Scored> BY_WORD_RANK = Comparator
-            .comparingInt(Scored::wordScore).reversed()
-            .thenComparing(s -> s.entry().importance(), Comparator.reverseOrder())
-            .thenComparing(s -> s.entry().timestamp(), Comparator.reverseOrder());
-
-    /**
-     * Reciprocal-rank fusion of the word-overlap and meaning rankings, then importance, then recency. Each
-     * entry's fused score is the sum of {@code 1/(k+rank)} over the two rankings it appears in, so an entry
-     * ranked high by either signal surfaces and one ranked high by both surfaces strongest, without comparing
-     * the two incompatible scales (an overlap count vs a cosine) directly.
-     */
-    private static Comparator<Scored> byFusedRank(List<Scored> eligible) {
-        double floor = CompanionConfig.semanticRecallFloor();
-        Map<Scored, Double> fused = new IdentityHashMap<>();
-        accumulateReciprocalRank(fused, eligible, s -> s.wordScore() > 0, Scored::wordScore);
-        accumulateReciprocalRank(fused, eligible, s -> s.semScore() >= floor, Scored::semScore);
-        return Comparator.<Scored>comparingDouble(s -> fused.getOrDefault(s, 0.0)).reversed()
-                .thenComparing(s -> s.entry().importance(), Comparator.reverseOrder())
-                .thenComparing(s -> s.entry().timestamp(), Comparator.reverseOrder());
-    }
-
-    /**
-     * Adds each entry's reciprocal-rank contribution for one ranking. Rank is competition-style: entries with
-     * an equal score share a rank, so a tie in one signal stays a tie (broken by the other signal, then by
-     * importance/recency) rather than by arbitrary list position.
-     */
-    private static void accumulateReciprocalRank(Map<Scored, Double> fused, List<Scored> eligible,
-                                                 Predicate<Scored> ranked, ToDoubleFunction<Scored> score) {
-        List<Scored> ordered = eligible.stream()
-                .filter(ranked)
+    private static void accumulateRecordRank(
+            Map<RecordScored, Double> fused,
+            List<RecordScored> candidates,
+            Predicate<RecordScored> included,
+            ToDoubleFunction<RecordScored> score
+    ) {
+        List<RecordScored> ordered = candidates.stream()
+                .filter(included)
                 .sorted(Comparator.comparingDouble(score).reversed())
                 .toList();
         int rank = 0;
-        double prev = Double.NaN;
+        double previous = Double.NaN;
         for (int i = 0; i < ordered.size(); i++) {
-            Scored s = ordered.get(i);
-            double sc = score.applyAsDouble(s);
-            if (i > 0 && sc != prev) {
-                rank = i; // standard competition ranking: skip ranks after a group of ties
+            RecordScored candidate = ordered.get(i);
+            double current = score.applyAsDouble(candidate);
+            if (i > 0 && current != previous) {
+                rank = i;
             }
-            fused.merge(s, 1.0 / (RRF_K + rank), Double::sum);
-            prev = sc;
+            fused.merge(candidate, 1.0 / (RRF_K + rank), Double::sum);
+            previous = current;
         }
     }
 
-    /**
-     * Collapses candidate results that mean the same thing into one each: the representative is the most
-     * important (newest when tied) entry of the group, carrying the best of the group's two relevance scores so
-     * the group still surfaces at its strongest match. Entries without a vector are never merged.
-     */
-    private static List<Scored> dedupByMeaning(List<Scored> eligible) {
-        double floor = CompanionConfig.semanticDedupFloor();
-        List<Scored> survivors = new ArrayList<>();
-        for (Scored candidate : eligible) {
-            int cluster = clusterOf(survivors, candidate.entry(), floor);
-            if (cluster < 0) {
-                survivors.add(candidate);
-            } else {
-                survivors.set(cluster, mergeScored(survivors.get(cluster), candidate));
-            }
+    private static double maxScore(double first, double second) {
+        if (Double.isNaN(first)) {
+            return second;
         }
-        return survivors;
+        if (Double.isNaN(second)) {
+            return first;
+        }
+        return Math.max(first, second);
     }
 
-    /** Index of the survivor whose meaning matches {@code entry}, or -1 (and -1 when the entry has no vector). */
-    private static int clusterOf(List<Scored> survivors, MemoryEntry entry, double floor) {
-        for (int i = 0; i < survivors.size(); i++) {
-            if (sameMeaning(entry, survivors.get(i).entry(), floor)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /** Merges two same-meaning results: the more important (newer when tied) entry, with the group's best scores. */
-    private static Scored mergeScored(Scored a, Scored b) {
-        Scored representative = isMoreImportant(a, b) ? a : b;
-        var freshest = a.entry().timestamp().isAfter(b.entry().timestamp())
-                ? a.entry().timestamp() : b.entry().timestamp();
-        int wordScore = Math.max(a.wordScore(), b.wordScore());
-        double semScore = maxScore(a.semScore(), b.semScore());
-        return new Scored(representative.entry().withTimestamp(freshest), representative.archive(), wordScore, semScore);
-    }
-
-    /** Whether {@code a} is the better representative: more important, or newer at equal importance. */
-    private static boolean isMoreImportant(Scored a, Scored b) {
-        int byImportance = a.entry().importance().compareTo(b.entry().importance());
-        if (byImportance != 0) {
-            return byImportance > 0;
-        }
-        return !a.entry().timestamp().isBefore(b.entry().timestamp());
-    }
-
-    /** The larger of two relevance scores, treating {@code NaN} (not applicable) as the smaller. */
-    private static double maxScore(double x, double y) {
-        if (Double.isNaN(x)) {
-            return y;
-        }
-        if (Double.isNaN(y)) {
-            return x;
-        }
-        return Math.max(x, y);
-    }
-
-    /** Embeds the query, returning {@code null} on a transient embed failure so recall degrades to word-only. */
     private static float[] safeEmbedQuery(SemanticPhraseMatcher matcher, String query) {
         try {
             return matcher.embedQuery(query);
-        } catch (RuntimeException e) {
-            // WHY: a transient embed failure must not abort recall; degrade to word-only for this query. The
-            // matcher exists only after a successful model load, so a throw here is unexpected - log, not hide.
-            log.warn("Query embedding failed; falling back to word-only recall for this query", e);
+        } catch (RuntimeException failure) {
+            log.warn("Query embedding failed; falling back to word-only recall", failure);
             return null;
         }
     }
 
-    /**
-     * The lexical relevance score of an entry: how many distinct query tokens appear verbatim in the content.
-     * Matching is exact (token equality), not inflection-tolerant: word forms, paraphrases and cross-lingual
-     * meaning are recalled by the semantic vector instead (see {@link #recall}), while exact word-overlap keeps
-     * the proper nouns and codes (names, callsigns, docking codes) that embeddings can rank weakly. The earlier
-     * fuzzy rule made short stems spuriously match unrelated words ("код" matched "кодовое"), surfacing the
-     * wrong facts; recall no longer fuzzes letters now that meaning is carried by a vector.
-     */
-    private static int overlap(Set<String> queryTokens, String content) {
-        Set<String> contentTokens = tokens(content);
+    private static SemanticPhraseMatcher safeMatcher(Supplier<SemanticPhraseMatcher> matcherSource) {
+        try {
+            return matcherSource.get();
+        } catch (RuntimeException failure) {
+            log.warn("Semantic matcher is unavailable; falling back to word-only recall", failure);
+            return null;
+        }
+    }
+
+    private static int explicitOverlap(Set<String> queryTokens, String content) {
+        Set<String> contentTokens = explicitTokens(content);
         int score = 0;
-        for (String q : queryTokens) {
-            if (contentTokens.contains(q)) {
+        for (String token : queryTokens) {
+            if (contentTokens.contains(token)) {
                 score++;
             }
         }
         return score;
     }
 
-    /** Meaningful lower-cased word tokens: length > 2 and not a stop word (same filter as the action reducer). */
-    private static Set<String> tokens(String text) {
+    /** Explicit recall keeps short words and stop words because they may be the exact remembered subject. */
+    private static Set<String> explicitTokens(String text) {
         if (text == null) {
             return Set.of();
         }
-        Set<String> set = new HashSet<>();
+        Set<String> tokens = new HashSet<>();
         for (String word : text.toLowerCase(Locale.ROOT).split("[^\\p{L}\\p{N}_]+")) {
-            if (word.length() > 2 && !InputNormalizerLocalizations.stopWords().contains(word)) {
-                set.add(word);
+            if (!word.isBlank()) {
+                tokens.add(word);
             }
         }
-        return set;
+        return tokens;
+    }
+
+    private record RecordScored(SearchDocument document, int wordScore, double semanticScore) {
+    }
+
+    private record SearchDocument(
+            MemoryKind kind,
+            Instant timestamp,
+            List<MemoryEntry> entries,
+            boolean summary
+    ) {
+
+        private SearchDocument {
+            entries = List.copyOf(entries);
+        }
+
+        private String searchText() {
+            return entries.stream().map(MemoryEntry::content).collect(java.util.stream.Collectors.joining("\n"));
+        }
+
+        private String render() {
+            if (summary) {
+                return "[" + kind.name().toLowerCase(Locale.ROOT) + "_summary] "
+                        + entries.getFirst().content();
+            }
+            return entries.stream()
+                    .map(entry -> "[" + entry.source().displayLabel(CompanionConfig.companionName()) + "] "
+                            + entry.content())
+                    .collect(java.util.stream.Collectors.joining("\n"));
+        }
     }
 }

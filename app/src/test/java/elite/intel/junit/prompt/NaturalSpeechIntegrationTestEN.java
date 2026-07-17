@@ -93,6 +93,22 @@ public class NaturalSpeechIntegrationTestEN {
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(12)
+    @MethodSource
+    void remember(String input) throws InterruptedException {
+        assertRouted(input, RememberCommand.ID);
+        assertFalse(harness.lastArgument(RememberCommand.ID, RememberCommand.PARAM_TEXT)
+                .orElseThrow().isBlank());
+    }
+
+    static Stream<String> remember() {
+        return Stream.of(
+                "remember that our docking code is Sierra Nine Four",
+                "save in memory the rendezvous is Hutton Orbital",
+                "note down the carrier access code is Delta Seven");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
     @Order(13)
     @MethodSource
     void combatMode(String input) throws InterruptedException {
