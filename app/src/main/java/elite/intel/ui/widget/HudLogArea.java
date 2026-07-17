@@ -93,6 +93,17 @@ public class HudLogArea extends JPanel implements Scrollable {
     private static final int CHAT_HIGHLIGHT_ALPHA = 31;
     private static final int FULL_ALPHA = 255;
     private static final long CHAT_ACTIVE_HOLD_NANOS = TimeUnit.MILLISECONDS.toNanos(HudPalette.HUD_CHAT_ACTIVE_HOLD_MS);
+    private static final ChatPresentation STANDARD_CHAT_PRESENTATION = new ChatPresentation(
+            true,
+            true,
+            HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+    private static final ChatPresentation OVERLAY_CHAT_PRESENTATION = new ChatPresentation(
+            false,
+            false,
+            HudPalette.HUD_COLOR_ROLE_OVERLAY_TRANSPARENT_BACKGROUND);
+
+    /** Presentation options that let the overlay omit chrome without changing the standard chat surface. */
+    private record ChatPresentation(boolean showTimestamps, boolean showCommanderPrompt, Color background) {}
 
     private final Style style;
     /**
@@ -101,6 +112,9 @@ public class HudLogArea extends JPanel implements Scrollable {
      */
     private final boolean chat;
     private final boolean selectable;
+    /** Font role selected by the hosting surface. */
+    private final float fontSize;
+    private final ChatPresentation chatPresentation;
     private final List<Message> messages = new ArrayList<>();
     /** Every line ever added this session (capped at {@link #MAX_TRANSCRIPT}), for {@link #exportText()}. */
     private final Deque<String> transcript = new ArrayDeque<>();
@@ -156,7 +170,7 @@ public class HudLogArea extends JPanel implements Scrollable {
      * @param style             visual marker style
      */
     public HudLogArea(int typewriterDelayMs, Style style) {
-        this(typewriterDelayMs, style, false);
+        this(typewriterDelayMs, style, false, HudPalette.HUD_FONT_LOG_PANEL, STANDARD_CHAT_PRESENTATION);
     }
 
     /**
@@ -167,22 +181,42 @@ public class HudLogArea extends JPanel implements Scrollable {
      * @param typewriterDelayMs milliseconds between typewriter character steps
      */
     public static HudLogArea chat(int typewriterDelayMs) {
-        return new HudLogArea(typewriterDelayMs, Style.USER_INPUT, true);
+        return new HudLogArea(typewriterDelayMs, Style.USER_INPUT, true, HudPalette.HUD_FONT_LOG_PANEL,
+                STANDARD_CHAT_PRESENTATION);
     }
 
-    private HudLogArea(int typewriterDelayMs, Style style, boolean chat) {
+    /**
+     * Creates the chat canvas for the always-on-top companion overlay. Its dedicated presentation keeps the
+     * current exchange readable above the game without timestamps, an idle command prompt, or an opaque canvas.
+     *
+     * @param typewriterDelayMs milliseconds between typewriter character steps
+     * @return HUD chat canvas sized by {@link HudPalette#HUD_FONT_OVERLAY}
+     */
+    public static HudLogArea overlayChat(int typewriterDelayMs) {
+        return new HudLogArea(typewriterDelayMs, Style.USER_INPUT, true, HudPalette.HUD_FONT_OVERLAY,
+                OVERLAY_CHAT_PRESENTATION);
+    }
+
+    private HudLogArea(int typewriterDelayMs, Style style, boolean chat, float fontSize,
+                       ChatPresentation chatPresentation) {
         this.style = style;
         this.chat = chat;
         this.selectable = !chat && style == Style.SYSTEM_LOG;
-        setOpaque(true);
-        setBackground(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        this.fontSize = fontSize;
+        this.chatPresentation = chatPresentation;
+        setOpaque(chatPresentation.background().getAlpha() == 255);
+        setBackground(chatPresentation.background());
         typewriterTimer = new Timer(typewriterDelayMs, null);
         if (chat) {
-            blinkTimer = new Timer(530, e -> {
-                caretVisible = !caretVisible;
-                repaint();
-            });
-            blinkTimer.setRepeats(true);
+            if (chatPresentation.showCommanderPrompt()) {
+                blinkTimer = new Timer(530, e -> {
+                    caretVisible = !caretVisible;
+                    repaint();
+                });
+                blinkTimer.setRepeats(true);
+            } else {
+                blinkTimer = null;
+            }
             activeCardTimer = new Timer(HudPalette.HUD_CHAT_ACTIVE_FADE_FRAME_MS, e -> repaintActiveCardFade());
             activeCardTimer.setRepeats(true);
         } else {
@@ -480,7 +514,7 @@ public class HudLogArea extends JPanel implements Scrollable {
     }
 
     private Font hudFont() {
-        return getFont().deriveFont(HudPalette.HUD_FONT_LOG_PANEL);
+        return getFont().deriveFont(fontSize);
     }
 
     /** Returns the canvas size required by the current message stream for the viewport width. */
@@ -548,7 +582,7 @@ public class HudLogArea extends JPanel implements Scrollable {
 
         ChatMetrics metrics = chatMetrics(font, width);
         Message newest = messages.isEmpty() ? null : messages.get(messages.size() - 1);
-        boolean cmdrAnimating = newest != null && !newest.complete && newest.align == Align.LEFT;
+        boolean cmdrAnimating = isCommanderPromptActive(newest);
         List<List<String>> wrapped = new ArrayList<>();
         int historyCount = cmdrAnimating ? messages.size() - 1 : messages.size();
         for (int i = 0; i < historyCount; i++) {
@@ -559,10 +593,18 @@ public class HudLogArea extends JPanel implements Scrollable {
 
         int activeRows = cmdrAnimating
                 ? wrapText(newest.visibleText, metrics.fm(), metrics.wrapW()).size()
-                : 1;
-        int height = PAD_Y + activeRows * metrics.lineH() + LINE_GAP;
+                : (chatPresentation.showCommanderPrompt() ? 1 : 0);
+        int height = PAD_Y + activeRows * metrics.lineH()
+                + (chatPresentation.showCommanderPrompt() ? LINE_GAP : 0);
         for (List<String> lines : wrapped) height += cardHeight(lines, metrics) + CHAT_CARD_GAP;
         return height;
+    }
+
+    private boolean isCommanderPromptActive(Message message) {
+        return chatPresentation.showCommanderPrompt()
+                && message != null
+                && !message.complete
+                && message.align == Align.LEFT;
     }
 
     private void scrollToBottom() {
@@ -646,10 +688,18 @@ public class HudLogArea extends JPanel implements Scrollable {
         }
         Graphics2D g2 = offscreen.createGraphics();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
+                chatPresentation.background().getAlpha() == 255
+                        ? RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB
+                        : RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        g2.setColor(HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
+        g2.setComposite(AlphaComposite.Clear);
         g2.fillRect(0, 0, w, h);
+        g2.setComposite(AlphaComposite.SrcOver);
+        if (chatPresentation.background().getAlpha() > 0) {
+            g2.setColor(chatPresentation.background());
+            g2.fillRect(0, 0, w, h);
+        }
 
         if (chat) {
             paintChat(g2, w, h);
@@ -752,11 +802,12 @@ public class HudLogArea extends JPanel implements Scrollable {
 
     /**
      * Chat renderer: one merged, time-ordered stream of cards. Commander cards sit on the left with a green
-     * rail; AI (Vega) cards sit on the right with a cyan rail. Each card shows a timestamp above its text.
+     * rail; AI (Vega) cards sit on the right with a cyan rail. The standard profile shows timestamps above text,
+     * while the overlay profile omits that chrome.
      * The AI card that is still being written is the "active" card - it gets a fully-opaque rail, a faint
      * left-fading highlight and a fully opaque rail instead of a typewriter caret. Its active treatment smoothly
-     * fades after the typewriter completes. The commander's own
-     * in-progress line types in the blinking bottom prompt row (its waiting cursor) before it posts.
+     * fades after the typewriter completes. The commander's own in-progress line types in the blinking bottom
+     * prompt row (its waiting cursor) before it posts only in the standard profile.
      * This method orchestrates layout/scroll; each card kind is drawn by a dedicated painter.
      */
     private void paintChat(Graphics2D g2, int w, int h) {
@@ -764,13 +815,15 @@ public class HudLogArea extends JPanel implements Scrollable {
         g2.setFont(font);
         ChatMetrics m = chatMetrics(g2, font, w);
 
-        // Commander (left) newest message types in the bottom prompt row; Vega (right) types in-place as the
-        // active card. So only a commander in-progress line is excluded from history here.
+        // Commander (left) types in the bottom prompt row only in the standard profile; the overlay keeps every
+        // in-progress message in its card so no empty input row is reserved.
         Message newest = messages.isEmpty() ? null : messages.get(messages.size() - 1);
-        boolean cmdrAnimating = newest != null && !newest.complete && newest.align == Align.LEFT;
+        boolean cmdrAnimating = isCommanderPromptActive(newest);
         List<String> activeLines = cmdrAnimating ? wrapText(newest.visibleText, m.fm(), m.wrapW()) : null;
-        int nInputRows = cmdrAnimating ? activeLines.size() : 1;
-        int cursorZoneH = nInputRows * m.lineH() + LINE_GAP;
+        int nInputRows = cmdrAnimating ? activeLines.size() : (chatPresentation.showCommanderPrompt() ? 1 : 0);
+        int cursorZoneH = chatPresentation.showCommanderPrompt()
+                ? nInputRows * m.lineH() + LINE_GAP
+                : 0;
 
         int historyCount = cmdrAnimating ? messages.size() - 1 : messages.size();
 
@@ -780,7 +833,7 @@ public class HudLogArea extends JPanel implements Scrollable {
             Message msg = messages.get(i);
             wrapped.add(wrapText(msg.complete ? msg.fullText : msg.visibleText, m.fm(), m.wrapW()));
         }
-        // Draw cards bottom-up: newest sits just above the prompt row, older cards extend upward.
+        // Draw cards bottom-up: newest sits above the prompt row when present, older cards extend upward.
         int y = h - PAD_Y - cursorZoneH;
         for (int i = historyCount - 1; i >= 0; i--) {
             Message msg = messages.get(i);
@@ -797,7 +850,9 @@ public class HudLogArea extends JPanel implements Scrollable {
             }
             y -= CHAT_CARD_GAP;
         }
-        paintCommanderPrompt(g2, h, m, cmdrAnimating, activeLines);
+        if (chatPresentation.showCommanderPrompt()) {
+            paintCommanderPrompt(g2, h, m, cmdrAnimating, activeLines);
+        }
     }
 
     /** Returns the newest Vega card's active-treatment strength: full while typing, smoothly fading afterward. */
@@ -834,12 +889,13 @@ public class HudLogArea extends JPanel implements Scrollable {
         int rightTextEnd = rightRailX - CHAT_RAIL_TEXT_GAP;
         int wrapW = Math.max(10, Math.min(rightTextEnd - leftTextX, Math.round(w * CHAT_BUBBLE_MAX_FRACTION)));
         return new ChatMetrics(font, font.deriveFont(font.getSize2D() * 0.82f), fm, tsFm,
-                fm.getHeight(), tsFm.getHeight(), leftTextX, rightRailX, rightTextEnd, wrapW);
+                fm.getHeight(), chatPresentation.showTimestamps() ? tsFm.getHeight() : 0,
+                leftTextX, rightRailX, rightTextEnd, wrapW);
     }
 
-    /** Height a chat card occupies, excluding the inter-card gap (timestamp line + wrapped text lines). */
+    /** Height a chat card occupies, excluding the inter-card gap (optional timestamp + wrapped text lines). */
     private static int cardHeight(List<String> lines, ChatMetrics m) {
-        return m.tsH() + CHAT_TS_GAP + lines.size() * m.lineH();
+        return m.tsH() + (m.tsH() > 0 ? CHAT_TS_GAP : 0) + lines.size() * m.lineH();
     }
 
     /** Right (Vega) card: cyan rail, timestamp, text right-anchored (single line) or column-aligned (wrapped);
@@ -855,10 +911,12 @@ public class HudLogArea extends JPanel implements Scrollable {
         int railAlpha = CHAT_RAIL_ALPHA + Math.round((FULL_ALPHA - CHAT_RAIL_ALPHA) * activityStrength);
         g2.setColor(withAlpha(HudPalette.HUD_COLOR_ROLE_INFORMATION_MARK, railAlpha));
         g2.fillRect(m.rightRailX(), y, CHAT_RAIL_W, cardH);
-        drawTimestamp(g2, msg, m.tsFont(), m.tsFm(), m.rightTextEnd(), y + m.tsFm().getAscent(), true);
+        if (m.tsH() > 0) {
+            drawTimestamp(g2, msg, m.tsFont(), m.tsFm(), m.rightTextEnd(), y + m.tsFm().getAscent(), true);
+        }
         g2.setFont(m.font());
         g2.setColor(msg.style.textColor);
-        int textTop = y + m.tsH() + CHAT_TS_GAP;
+        int textTop = y + m.tsH() + (m.tsH() > 0 ? CHAT_TS_GAP : 0);
         for (int li = 0; li < lines.size(); li++) {
             String line = lines.get(li);
             int lx = multiLine ? colLeft : m.rightTextEnd() - m.fm().stringWidth(line);
@@ -870,10 +928,12 @@ public class HudLogArea extends JPanel implements Scrollable {
     private void paintCommanderCard(Graphics2D g2, Message msg, List<String> lines, int y, int cardH, ChatMetrics m) {
         g2.setColor(withAlpha(HudPalette.HUD_COLOR_ROLE_COMMANDER_MARKER, CHAT_RAIL_ALPHA));
         g2.fillRect(PAD_X, y, CHAT_RAIL_W, cardH);
-        drawTimestamp(g2, msg, m.tsFont(), m.tsFm(), m.leftTextX(), y + m.tsFm().getAscent(), false);
+        if (m.tsH() > 0) {
+            drawTimestamp(g2, msg, m.tsFont(), m.tsFm(), m.leftTextX(), y + m.tsFm().getAscent(), false);
+        }
         g2.setFont(m.font());
         g2.setColor(msg.style.textColor);
-        int textTop = y + m.tsH() + CHAT_TS_GAP;
+        int textTop = y + m.tsH() + (m.tsH() > 0 ? CHAT_TS_GAP : 0);
         for (int li = 0; li < lines.size(); li++) {
             g2.drawString(lines.get(li), m.leftTextX(), textTop + li * m.lineH() + m.fm().getAscent());
         }

@@ -15,7 +15,10 @@ public final class HudPalette {
 
     // -- Raw colors ------------------------------------------------------------
 
-    public static final Color HUD_COLOR_000000 = new Color(0x000000);
+    /** Fully transparent black used only as the per-pixel background of native overlay windows. */
+    public static final Color HUD_COLOR_00000000 = new Color(0x00000000, true);
+    /** 70%-opaque panel fill used by companion cards above the game. */
+    public static final Color HUD_COLOR_B3101721 = new Color(0xB3101721, true);
     public static final Color HUD_COLOR_8C000000 = new Color(0x8C000000, true);
     public static final Color HUD_COLOR_090D12 = new Color(0x090D12);
     public static final Color HUD_COLOR_101721 = new Color(0x101721);
@@ -61,7 +64,10 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_MONOSPACE_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_101721;
-    public static final Color HUD_COLOR_ROLE_STREAM_OVERLAY_BACKGROUND = HUD_COLOR_000000;
+    /** Transparent native-window background for overlays when the desktop compositor supports it. */
+    public static final Color HUD_COLOR_ROLE_OVERLAY_TRANSPARENT_BACKGROUND = HUD_COLOR_00000000;
+    /** Shared 30%-transparent surface behind companion overlay cards, distinct from the native window. */
+    public static final Color HUD_COLOR_ROLE_OVERLAY_CARD_BACKGROUND = HUD_COLOR_B3101721;
     /** Semi-transparent dark veil placed on the owner window glass pane while a modal dialog is open. */
     public static final Color HUD_COLOR_ROLE_MODAL_SCRIM = HUD_COLOR_8C000000;
     public static final Color HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND = HUD_COLOR_101721;
@@ -136,6 +142,10 @@ public final class HudPalette {
     public static final int HUD_CHAT_ACTIVE_HOLD_MS = 1_200;
     /** Repaint cadence for the short active-Vega fade in the conversation view. */
     public static final int HUD_CHAT_ACTIVE_FADE_FRAME_MS = 33;
+    /** Compact companion overlay width, reduced 40% for an unobtrusive in-game footprint. */
+    public static final int HUD_OVERLAY_DEFAULT_WIDTH = 540;
+    /** Compact viewport height for the current commander/Vega conversation pair in the overlay. */
+    public static final int HUD_OVERLAY_CONVERSATION_HEIGHT = 98;
     public static final int HUD_PANEL_ARC = 0;
     public static final int HUD_TOP_BAR_HEIGHT = 44;
     public static final int HUD_BADGE_HEIGHT = 20;
@@ -238,6 +248,6 @@ public final class HudPalette {
     public static final float HUD_FONT_UI_DEFAULT = 18f;
     /** LAF monospaceFont - base monospace font of the application (AppView). */
     public static final float HUD_FONT_MONO_BASE  = 20f;
-    /** OBS overlay text (Electrolize), separate size from MONO_BASE. */
-    public static final float HUD_FONT_OVERLAY    = 20f;
+    /** Companion overlay text, kept separate from the standard log and sized for its compact card. */
+    public static final float HUD_FONT_OVERLAY    = HUD_FONT_MD;
 }

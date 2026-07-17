@@ -22,6 +22,7 @@ public class HudPanel extends JPanel {
     private final Color accentColor;
     private final Variant variant;
     private boolean paintBackgroundFill = true;
+    private Color backgroundFill = HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND;
 
     /**
      * Creates a HUD panel with the standard accent colour.
@@ -62,6 +63,17 @@ public class HudPanel extends JPanel {
         this.paintBackgroundFill = value;
     }
 
+    /**
+     * Sets the colour painted beneath the HUD frame while preserving the panel's shape and framing variant.
+     * Subclasses use this for specialised translucent surfaces without duplicating the panel painter.
+     *
+     * @param color fill colour, or {@code null} to restore the standard HUD panel background
+     */
+    protected final void setBackgroundFill(Color color) {
+        backgroundFill = color == null ? HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND : color;
+        repaint();
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
@@ -70,7 +82,7 @@ public class HudPanel extends JPanel {
             int w = getWidth();
             int h = getHeight();
             if (paintBackgroundFill) {
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+                g2.setColor(backgroundFill);
                 g2.fillRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1),
                         HudPalette.HUD_PANEL_ARC, HudPalette.HUD_PANEL_ARC);
             }

@@ -10,6 +10,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
+import elite.intel.ui.overlay.CompanionOverlayWindow;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
@@ -41,9 +42,9 @@ import static elite.intel.ui.theme.HudPalette.HUD_GAP;
 public class AiTabPanel extends JPanel {
 
     private JButton wakeWordButton;
-    private JButton obsOverlayButton;
-    private boolean obsOverlayVisible;
-    private final OBSOverlayWindow[] obsOverlay = {null};
+    private JButton overlayButton;
+    private boolean overlayVisible;
+    private CompanionOverlayWindow overlayWindow;
 
     private JButton startStopServicesButton;
     private JButton recalibrateAudioButton;
@@ -94,6 +95,10 @@ public class AiTabPanel extends JPanel {
     public void dispose() {
         summaryClockTimer.stop();
         UiBus.unregister(this);
+        if (overlayWindow != null) {
+            overlayWindow.dispose();
+            overlayWindow = null;
+        }
         if (updateAppButton != null) updateAppButton.dispose();
     }
 
@@ -116,18 +121,9 @@ public class AiTabPanel extends JPanel {
                 UiBus.publish(new ToggleWakeWordEvent(!sleeping)));
         wakeWordButton.setEnabled(false);
 
-        obsOverlayButton = makeButtonSubtle(obsOverlayText());
-        obsOverlayButton.setToolTipText(getText("ai.obsOverlay.tooltip"));
-        obsOverlayButton.addActionListener(e -> SwingUtilities.invokeLater(() -> {
-            obsOverlayVisible = !obsOverlayVisible;
-            if (obsOverlayVisible) {
-                if (obsOverlay[0] == null) obsOverlay[0] = new OBSOverlayWindow();
-                obsOverlay[0].setVisible(true);
-            } else if (obsOverlay[0] != null) {
-                obsOverlay[0].setVisible(false);
-            }
-            obsOverlayButton.setText(obsOverlayText());
-        }));
+        overlayButton = makeButtonSubtle(overlayText());
+        overlayButton.setToolTipText(getText("ai.obsOverlay.tooltip"));
+        overlayButton.addActionListener(e -> toggleOverlay());
 
         recalibrateAudioButton = makeButtonSubtle(getText("button.calibrateAudio"));
         recalibrateAudioButton.setEnabled(false);
@@ -218,7 +214,7 @@ public class AiTabPanel extends JPanel {
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
 
         for (JButton b : new JButton[]{startStopServicesButton, wakeWordButton,
-                obsOverlayButton, audioDevicesButton, recalibrateAudioButton,
+                overlayButton, audioDevicesButton, recalibrateAudioButton,
                 updateAppButton}) {
             b.setAlignmentX(Component.LEFT_ALIGNMENT);
             b.setMaximumSize(new Dimension(Integer.MAX_VALUE, HudPalette.HUD_BUTTON_HEIGHT));
@@ -229,7 +225,7 @@ public class AiTabPanel extends JPanel {
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
         top.add(wakeWordButton);
         top.add(Box.createRigidArea(new Dimension(0, HUD_GAP)));
-        top.add(obsOverlayButton);
+        top.add(overlayButton);
 
         // bottom: audio + update
         bottom.add(audioDevicesButton);
@@ -647,8 +643,29 @@ public class AiTabPanel extends JPanel {
         return getText(sleeping ? "ai.action.wake" : "ai.action.sleep");
     }
 
-    private String obsOverlayText() {
-        return getText(obsOverlayVisible ? "ai.action.hideObs" : "ai.action.showObs");
+    private void toggleOverlay() {
+        if (overlayVisible) {
+            overlayWindow.hideOverlay();
+            return;
+        }
+        if (overlayWindow == null) {
+            overlayWindow = new CompanionOverlayWindow(this::onOverlayHidden);
+        }
+        overlayVisible = true;
+        overlayWindow.showOverlay();
+        overlayButton.setText(overlayText());
+    }
+
+    /** Updates the controlling action when the overlay is closed outside the button flow. */
+    private void onOverlayHidden() {
+        overlayVisible = false;
+        if (overlayButton != null) {
+            overlayButton.setText(overlayText());
+        }
+    }
+
+    private String overlayText() {
+        return getText(overlayVisible ? "ai.action.hideObs" : "ai.action.showObs");
     }
 
     @Subscribe

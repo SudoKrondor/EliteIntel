@@ -25,6 +25,7 @@ public class HudSection extends HudPanel {
     private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
     private Color headerDividerColor;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+    private boolean headerVisible = true;
     private boolean topRightChamfered;
 
     /**
@@ -128,6 +129,26 @@ public class HudSection extends HudPanel {
     }
 
     /**
+     * Shows or removes the section header while retaining the card frame and content body.
+     * This is intended for compact HUD surfaces whose surrounding context already names the module.
+     *
+     * @param visible whether the header strip should be part of the layout
+     */
+    public void setHeaderVisible(boolean visible) {
+        if (headerVisible == visible) {
+            return;
+        }
+        headerVisible = visible;
+        if (visible) {
+            add(header, BorderLayout.NORTH);
+        } else {
+            remove(header);
+        }
+        revalidate();
+        repaint();
+    }
+
+    /**
      * Applies one background surface to the section header and body while retaining the section frame.
      * Passing {@code null} restores the default framed-section treatment.
      *
@@ -136,9 +157,15 @@ public class HudSection extends HudPanel {
     public void setSurfaceBackground(Color background) {
         if (background == null) {
             headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+            setBackgroundFill(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
+            body.setOpaque(false);
+        } else if (background.getAlpha() < 255) {
+            headerBackground = background;
+            setBackgroundFill(background);
             body.setOpaque(false);
         } else {
             headerBackground = background;
+            setBackgroundFill(HudPalette.HUD_COLOR_ROLE_PANEL_BACKGROUND);
             body.setOpaque(true);
             body.setBackground(background);
         }
@@ -265,8 +292,7 @@ public class HudSection extends HudPanel {
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 int w = getWidth();
-                Component header = getComponentCount() > 0 ? getComponent(0) : null;
-                if (header != null) {
+                if (headerVisible) {
                     Rectangle bounds = header.getBounds();
                     g2.setColor(headerDividerColor);
                     g2.drawLine(1, bounds.y + bounds.height,
@@ -290,8 +316,7 @@ public class HudSection extends HudPanel {
                     ? sectionShape(1, 1, w - 2, h - 2)
                     : new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
 
-            Component header = getComponentCount() > 0 ? getComponent(0) : null;
-            if (header != null) {
+            if (headerVisible) {
                 Rectangle bounds = header.getBounds();
                 g2.setColor(headerBackground);
                 g2.fillRect(1, 1, Math.max(0, w - 2), Math.max(0, bounds.height));
