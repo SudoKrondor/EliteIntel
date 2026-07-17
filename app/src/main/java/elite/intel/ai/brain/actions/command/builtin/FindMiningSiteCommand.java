@@ -20,8 +20,6 @@ import elite.intel.util.json.GetNumberFromParam;
 import java.util.List;
 import java.util.Optional;
 
-import static elite.intel.util.StringUtls.capitalizeWords;
-
 /**
  * Self-describing "find mining site" command.
  * Owns its own execution: body migrated 1:1 from the legacy FindMiningSiteHandler,
@@ -89,12 +87,11 @@ public final class FindMiningSiteCommand implements IntelCommand {
             return StringUtls.localizedLlm("handler.miningSite.didNotCatch");
         }
 
-        String material =
-                capitalizeWords(
-                        FuzzySearch.fuzzyCommodityMatch(
-                                mat.getAsString(), 8
-                        )
-                );
+        // fuzzyCommodityMatch already returns the properly-cased English DB name, which is
+        // what the Spansh ring search expects. Do NOT run it through capitalizeWords: that
+        // lowercases the whole string first and mangles non-Title-Case names
+        // ("CMM Composite" -> "Cmm Composite"), breaking the search.
+        String material = FuzzySearch.fuzzyCommodityMatch(mat.getAsString(), 8);
         // The model may hand back a non-numeric radius ("three hundred"); this is how every sibling search
         // command reads max_distance, and it falls back to the default rather than throwing.
         int range = GetNumberFromParam.extractRangeParameter(params, MAX_DEFAULT_RANGE).intValue();

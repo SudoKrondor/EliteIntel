@@ -1,16 +1,14 @@
 package elite.intel.ai.brain.actions.command.builtin;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.command.RegisterCommand;
+import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.db.managers.TradeProfileManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.inputs.RoutePlotter;
 import elite.intel.search.edsm.commodity.CommoditySearchResult;
 import elite.intel.search.edsm.commodity.EdsmCommoditySearch;
@@ -21,7 +19,6 @@ import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.util.StringUtls.capitalizeWords;
 import static elite.intel.util.StringUtls.getIntSafely;
 
 /**
@@ -100,12 +97,11 @@ public final class FindCommodityCommand implements IntelCommand {
             return StringUtls.localizedLlm("handler.commodity.specify");
         }
 
-        String commodity =
-                capitalizeWords(
-                        FuzzySearch.fuzzyCommodityMatch(
-                                key.getAsString(), 3
-                        )
-                );
+        // fuzzyCommodityMatch already returns the properly-cased English DB name
+        // (e.g. "CMM Composite"), which is exactly what EDSM expects. Do NOT run it
+        // through capitalizeWords: that lowercases the whole string first and mangles
+        // non-Title-Case names ("CMM Composite" -> "Cmm Composite"), breaking the search.
+        String commodity = FuzzySearch.fuzzyCommodityMatch(key.getAsString(), 3);
 
         if (commodity == null) {
             return StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString());
