@@ -86,6 +86,8 @@ public class GameEvents {
         private double count;
         @SerializedName("Stolen")
         private double stolen;
+        @SerializedName("Name_Localised")
+        private String nameLocalised;
 
         public String getName() {
             return name;
@@ -97,6 +99,10 @@ public class GameEvents {
 
         public double getStolen() {
             return stolen;
+        }
+
+        public String getNameLocalised() {
+            return nameLocalised;
         }
     }
 

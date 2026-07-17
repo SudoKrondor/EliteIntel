@@ -76,6 +76,21 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
         return null;
     }
 
+    /**
+     * Matches a cargo inventory entry against a resolved commodity. The journal's Inventory
+     * {@code Name} is the non-localized game symbol, lower-cased, so matching is
+     * case-insensitive. Primary match is the DB {@code symbol}; the fallbacks cover legacy
+     * goods FDevIDs no longer lists (no symbol) and single-word symbols equal to the name.
+     */
+    private static boolean matchesCommodity(GameEvents.Inventory item, String symbol, String englishName) {
+        String name = item.getName();
+        if (name == null) return false;
+        if (symbol != null && name.equalsIgnoreCase(symbol)) return true;
+        if (name.equalsIgnoreCase(englishName)) return true;
+        String localised = item.getNameLocalised();
+        return localised != null && localised.equalsIgnoreCase(englishName);
+    }
+
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         JsonElement key = params.get(PARAM_KEY);
         String query = (key != null) ? key.getAsString() : null;
@@ -107,13 +122,18 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
             }
         }
 
-        // 2. Try commodity in the cargo hold
-        String commodityName = capitalizeWords(FuzzySearch.fuzzyCommodityMatch(query, 3));
+        // 2. Try commodity in the cargo hold.
+        // fuzzyCommodityMatch resolves the (possibly localized) spoken word to the English
+        // commodity name in the DB. Cargo Inventory 'Name', however, is the non-localized game
+        // symbol (e.g. "atmosphericextractors" for "Atmospheric Processors"), so we match on the
+        // symbol from the commodities table rather than the display name.
+        String commodityName = FuzzySearch.fuzzyCommodityMatch(query, 3);
         if (commodityName != null) {
+            String symbol = FuzzySearch.commoditySymbol(commodityName);
             GameEvents.CargoEvent cargo = PlayerSession.getInstance().getShipCargo();
             if (cargo != null && cargo.getInventory() != null) {
                 GameEvents.Inventory item = cargo.getInventory().stream()
-                        .filter(i -> i.getName() != null && i.getName().equalsIgnoreCase(commodityName))
+                        .filter(i -> matchesCommodity(i, symbol, commodityName))
                         .findFirst().orElse(null);
                 if (item != null) {
                     String instructions = """
