@@ -11,6 +11,7 @@ import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.OverlayWindow;
+import elite.intel.ui.support.GameWindowActivator;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
@@ -95,6 +96,7 @@ public class AiTabPanel extends JPanel {
     public void dispose() {
         summaryClockTimer.stop();
         UiBus.unregister(this);
+        GameWindowActivator.restoreEliteDangerousWindowPosition();
         if (overlayWindow != null) {
             overlayWindow.dispose();
             overlayWindow = null;
@@ -653,12 +655,14 @@ public class AiTabPanel extends JPanel {
         }
         overlayVisible = true;
         overlayWindow.showOverlay();
+        GameWindowActivator.hideEliteDangerousTitleBar();
         overlayButton.setText(overlayText());
     }
 
     /** Updates the controlling action when the overlay is closed outside the button flow. */
     private void onOverlayHidden() {
         overlayVisible = false;
+        GameWindowActivator.restoreEliteDangerousWindowPosition();
         if (overlayButton != null) {
             overlayButton.setText(overlayText());
         }

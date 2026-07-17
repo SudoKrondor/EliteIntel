@@ -18,7 +18,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 final class TradeRouteOverlayView extends JPanel {
 
     private final JLabel actionValue = valueLabel(SwingConstants.LEFT,
-            HudPalette.HUD_COLOR_ROLE_WARNING, HudPalette.HUD_FONT_APP_TITLE);
+            HudPalette.HUD_COLOR_ROLE_WARNING, HudPalette.HUD_FONT_READOUT_KEY);
     private final JLabel cargoValue = valueLabel(SwingConstants.LEFT,
             HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, HudPalette.HUD_FONT_MD);
     private final JLabel profitValue = valueLabel(SwingConstants.RIGHT,
@@ -28,7 +28,7 @@ final class TradeRouteOverlayView extends JPanel {
     private final JLabel stationValue = valueLabel(SwingConstants.LEFT,
             HudPalette.HUD_COLOR_ROLE_PRIMARY_TEXT, HudPalette.HUD_FONT_READOUT_VALUE);
     private final JLabel stopValue = valueLabel(SwingConstants.RIGHT,
-            HudPalette.HUD_COLOR_ROLE_INFORMATION, HudPalette.HUD_FONT_READOUT_VALUE);
+            HudPalette.HUD_COLOR_ROLE_WARNING, HudPalette.HUD_FONT_READOUT_KEY);
     private final JLabel nextJumpValue = valueLabel(SwingConstants.LEFT,
             HudPalette.HUD_COLOR_ROLE_INFORMATION, HudPalette.HUD_FONT_READOUT_VALUE);
     private final JLabel jumpsValue = valueLabel(SwingConstants.LEFT,
@@ -75,7 +75,7 @@ final class TradeRouteOverlayView extends JPanel {
 
     private JPanel createSummaryRow() {
         JPanel summary = AppTheme.transparentPanel(new BorderLayout(HudPalette.HUD_GAP, 0));
-        JLabel profitKey = AppTheme.hudReadoutLabel(getText("overlay.trade.profit"));
+        JLabel profitKey = overlayKeyLabel(getText("overlay.trade.profit"));
         profitKey.setHorizontalAlignment(SwingConstants.LEFT);
 
         summary.add(createRoutePair(actionValue, cargoValue), BorderLayout.CENTER);
@@ -117,11 +117,11 @@ final class TradeRouteOverlayView extends JPanel {
     private JPanel createNavigationRow() {
         JPanel row = AppTheme.transparentPanel(null);
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.add(AppTheme.hudReadoutLabel(getText("overlay.navigation.next")));
+        row.add(overlayKeyLabel(getText("overlay.navigation.next")));
         row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP_TIGHT));
         row.add(nextJumpValue);
         row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP * 2));
-        row.add(AppTheme.hudReadoutLabel(getText("overlay.navigation.jumps")));
+        row.add(overlayKeyLabel(getText("overlay.navigation.jumps")));
         row.add(Box.createHorizontalStrut(HudPalette.HUD_GAP_TIGHT));
         row.add(jumpsValue);
         return row;
@@ -136,6 +136,14 @@ final class TradeRouteOverlayView extends JPanel {
         JLabel label = AppTheme.hudReadoutValue("", color);
         label.setHorizontalAlignment(alignment);
         label.setFont(label.getFont().deriveFont(Font.BOLD, fontSize));
+        return label;
+    }
+
+    /** Builds a compact secondary label without changing the shared readout-label presentation. */
+    private static JLabel overlayKeyLabel(String text) {
+        JLabel label = AppTheme.hudReadoutLabel(text);
+        label.setForeground(HudPalette.HUD_COLOR_ROLE_WARNING);
+        label.setFont(label.getFont().deriveFont(Font.BOLD, HudPalette.HUD_FONT_READOUT_KEY));
         return label;
     }
 
