@@ -16,7 +16,7 @@ import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
  * Borderless companion window rendered above the game. It is deliberately built from portable Swing APIs so the
  * same always-on-top, non-focus-stealing behaviour is available on Windows and Linux desktop environments.
  */
-public final class CompanionOverlayWindow extends JWindow {
+public final class CompanionOverlayWindow extends JWindow implements OverlayWindow {
 
     private final List<OverlayModule> modules;
     private final Runnable onHidden;
@@ -57,6 +57,7 @@ public final class CompanionOverlayWindow extends JWindow {
     }
 
     /** Makes the overlay visible and starts every live module without stealing focus from the game. */
+    @Override
     public void showOverlay() {
         if (!SwingUtilities.isEventDispatchThread()) {
             SwingUtilities.invokeLater(this::showOverlay);
@@ -76,6 +77,7 @@ public final class CompanionOverlayWindow extends JWindow {
     }
 
     /** Hides the overlay, stops live subscriptions, and lets the controlling button refresh its label. */
+    @Override
     public void hideOverlay() {
         if (!SwingUtilities.isEventDispatchThread()) {
             SwingUtilities.invokeLater(this::hideOverlay);

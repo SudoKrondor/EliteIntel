@@ -10,7 +10,7 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
 import elite.intel.ui.event.*;
-import elite.intel.ui.overlay.CompanionOverlayWindow;
+import elite.intel.ui.overlay.OverlayWindow;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
@@ -44,7 +44,7 @@ public class AiTabPanel extends JPanel {
     private JButton wakeWordButton;
     private JButton overlayButton;
     private boolean overlayVisible;
-    private CompanionOverlayWindow overlayWindow;
+    private OverlayWindow overlayWindow;
 
     private JButton startStopServicesButton;
     private JButton recalibrateAudioButton;
@@ -649,7 +649,7 @@ public class AiTabPanel extends JPanel {
             return;
         }
         if (overlayWindow == null) {
-            overlayWindow = new CompanionOverlayWindow(this::onOverlayHidden);
+            overlayWindow = OverlayWindowFactory.create(this::onOverlayHidden);
         }
         overlayVisible = true;
         overlayWindow.showOverlay();

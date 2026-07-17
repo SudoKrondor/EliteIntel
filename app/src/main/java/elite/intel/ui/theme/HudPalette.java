@@ -17,6 +17,8 @@ public final class HudPalette {
 
     /** Fully transparent black used only as the per-pixel background of native overlay windows. */
     public static final Color HUD_COLOR_00000000 = new Color(0x00000000, true);
+    /** Opaque black used by the legacy Linux overlay background. */
+    public static final Color HUD_COLOR_000000 = new Color(0x000000);
     /** 70%-opaque panel fill used by companion cards above the game. */
     public static final Color HUD_COLOR_B3101721 = new Color(0xB3101721, true);
     public static final Color HUD_COLOR_8C000000 = new Color(0x8C000000, true);
@@ -64,6 +66,8 @@ public final class HudPalette {
     public static final Color HUD_COLOR_ROLE_PRIMARY_ACTION = HUD_COLOR_FF7100;
     public static final Color HUD_COLOR_ROLE_MONOSPACE_TEXT = HUD_COLOR_E6E6E6;
     public static final Color HUD_COLOR_ROLE_SELECTED_TEXT = HUD_COLOR_101721;
+    /** Opaque background used by the legacy Linux conversation overlay. */
+    public static final Color HUD_COLOR_ROLE_LEGACY_OVERLAY_BACKGROUND = HUD_COLOR_000000;
     /** Transparent native-window background for overlays when the desktop compositor supports it. */
     public static final Color HUD_COLOR_ROLE_OVERLAY_TRANSPARENT_BACKGROUND = HUD_COLOR_00000000;
     /** Shared 30%-transparent surface behind companion overlay cards, distinct from the native window. */
