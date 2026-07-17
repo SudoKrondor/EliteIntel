@@ -27,7 +27,7 @@ public class HudStatusReadout extends JPanel {
      * @param state initial visual state driving text and accent colour
      */
     public HudStatusReadout(String label, String value, StatusBadge.State state) {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(HUD_GAP, 0));
         setOpaque(false);
         setAlignmentX(LEFT_ALIGNMENT);
         setMaximumSize(new Dimension(Integer.MAX_VALUE, HUD_BADGE_HEIGHT));

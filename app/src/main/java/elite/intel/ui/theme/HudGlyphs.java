@@ -310,8 +310,8 @@ public final class HudGlyphs {
         Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         Stroke oldStroke = g2.getStroke();
-        float strokeW = Math.max(2f, w / 9f);
-        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        float strokeW = Math.max(1f, w / 12f);
+        g2.setStroke(new BasicStroke(strokeW, BasicStroke.CAP_SQUARE, BasicStroke.JOIN_MITER));
         g2.setColor(color);
 
         int backX = x + Math.round(w * 0.30f);

@@ -68,8 +68,8 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
  * no LLM turn, so both filters work with no LLM connected). Below those, an "Available commands and queries"
  * section (canon 9) holds one combined, alphabetically sorted list of the commands (built-in actions plus
  * custom-command macros) and queries available in the selected situation, laid out row-major across three
- * equal, header-less columns of a single read-only HUD table (canon 6). All of it updates live off game events
- * while the tab is showing (the table rebuilds when the selected situation changes).
+ * equal, header-less columns of a single read-only HUD table (canon 6). A second Help sub-tab presents the
+ * current trade route and its GUI command shortcuts. Both surfaces update while they are visible.
  */
 public class HelpTabPanel extends JPanel {
 
@@ -102,6 +102,7 @@ public class HelpTabPanel extends JPanel {
     private JTable actionsTable;
     private DefaultTableModel actionsModel;
     private HudSection actionsSection;
+    private TradeRouteHelpPanel tradeRoutePanel;
     /** Last situation the action table was built for; it rebuilds only when this changes (EDT-only field). */
     private PlayerSituation lastSituation;
     /** Last status flags rendered; the frequent Status tick is skipped while these are unchanged (event-thread-only). */
@@ -142,6 +143,9 @@ public class HelpTabPanel extends JPanel {
         setLayout(new BorderLayout());
         setBackground(HUD_COLOR_ROLE_APPLICATION_BACKGROUND);
         setBorder(hudScreenBorder());
+
+        JPanel commandsPanel = transparentPanel(new BorderLayout());
+        commandsPanel.setBorder(hudSubtabContentBorder());
 
         // Top of the page (no framed section): a two-column row splitting situation | place down the middle
         // (canon 9, HudTwoColumns), then the commander phrase full-width below.
@@ -205,7 +209,7 @@ public class HelpTabPanel extends JPanel {
         addField(phraseCol, phraseField, fgc, 1, 1.0);
         addSpanComponent(top, phraseCol, gbc);
 
-        add(top, BorderLayout.NORTH);
+        commandsPanel.add(top, BorderLayout.NORTH);
 
         // "Available commands and queries": one combined list laid out across COLUMN_COUNT equal, header-less
         // read-only columns of a single HUD table (canon 6), filled row-major so reading left-to-right,
@@ -228,7 +232,13 @@ public class HelpTabPanel extends JPanel {
 
         actionsSection = HudSection.flat(availableActionsTitle(0), new BorderLayout());
         actionsSection.body().add(scroll, BorderLayout.CENTER);
-        add(actionsSection, BorderLayout.CENTER);
+        commandsPanel.add(actionsSection, BorderLayout.CENTER);
+
+        tradeRoutePanel = new TradeRouteHelpPanel();
+        JTabbedPane sections = makeSectionTabs();
+        sections.addTab(getText("help.tab.commands"), commandsPanel);
+        sections.addTab(getText("help.tab.tradeRoute"), tradeRoutePanel);
+        add(sections, BorderLayout.CENTER);
     }
 
     @Override
@@ -325,11 +335,13 @@ public class HelpTabPanel extends JPanel {
     /** Reads the persisted situation + location once. Called by {@link AppView} at startup and on tab show. */
     public void initData() {
         refresh();
+        tradeRoutePanel.initData();
     }
 
     /** Unregisters from the event bus; safe to call when never registered (e.g. on a language-change rebuild). */
     public void dispose() {
         unsubscribe();
+        tradeRoutePanel.dispose();
     }
 
     /**

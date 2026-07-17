@@ -1,7 +1,9 @@
 package elite.intel.ui.support;
 
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
@@ -15,9 +17,12 @@ import org.apache.logging.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 
 /**
- * Centralizes GUI-triggered command dispatch that must leave the application window before sending input.
+ * Centralizes GUI-triggered command dispatch, both for game-facing actions that first transfer
+ * foreground focus and for app-side actions that should leave the current window open.
  */
 public final class GuiCommandRunner {
 
@@ -50,12 +55,56 @@ public final class GuiCommandRunner {
             moveOwnerOutOfForeground(owner);
         }
 
+        scheduleDispatch(action, safeParams, speakAffirmation);
+    }
+
+    /**
+     * Activates Elite Dangerous without closing the application and schedules the command only when
+     * foreground activation succeeds. Returns {@code false} without dispatching any game input when
+     * the game window cannot be activated. Call from the Swing EDT.
+     */
+    public static boolean runAfterActivatingGame(String action, JsonObject params, boolean speakAffirmation) {
+        return runAfterActivatingGame(
+                action, params, speakAffirmation, GameWindowActivator::activateEliteDangerousWindow);
+    }
+
+    /** Test seam for verifying that failed foreground activation never schedules command input. */
+    static boolean runAfterActivatingGame(
+            String action,
+            JsonObject params,
+            boolean speakAffirmation,
+            BooleanSupplier gameActivator
+    ) {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(gameActivator, "gameActivator");
+        JsonObject safeParams = params == null ? new JsonObject() : params;
+        if (!gameActivator.getAsBoolean()) {
+            return false;
+        }
+        scheduleDispatch(action, safeParams, speakAffirmation);
+        return true;
+    }
+
+    private static void scheduleDispatch(String action, JsonObject params, boolean speakAffirmation) {
         Timer dispatchTimer = new Timer(
                 GUI_COMMAND_DISPATCH_DELAY_MS,
-                event -> dispatchCommand(action, safeParams, speakAffirmation)
+                event -> dispatchCommand(action, params, speakAffirmation, null)
         );
         dispatchTimer.setRepeats(false);
         dispatchTimer.start();
+    }
+
+    /**
+     * Dispatches an existing command without closing windows, changing foreground focus, or delaying execution.
+     * The handler runs asynchronously; {@code onComplete} is queued exactly once on the Swing EDT after success,
+     * a handler failure, or an unavailable action.
+     */
+    public static void runInApp(String action, JsonObject params, boolean speakAffirmation, Runnable onComplete) {
+        Objects.requireNonNull(action, "action");
+        Objects.requireNonNull(onComplete, "onComplete");
+        JsonObject safeParams = params == null ? new JsonObject() : params;
+
+        dispatchCommand(action, safeParams, speakAffirmation, onComplete);
     }
 
     /**
@@ -66,10 +115,17 @@ public final class GuiCommandRunner {
      * of the GUI context are rejected before acknowledgement. Built-in commands speak an affirmative preamble;
      * custom commands do not (see {@code CommandDetailsDialog#runCommand}).
      */
-    private static void dispatchCommand(String action, JsonObject params, boolean speakAffirmation) {
+    private static void dispatchCommand(
+            String action,
+            JsonObject params,
+            boolean speakAffirmation,
+            Runnable onComplete
+    ) {
+        Runnable complete = edtCompletion(onComplete);
         IntelAction handler = CommandHandlerFactory.getInstance().registerCommandHandlers().get(action);
         if (handler == null || !handler.isAvailableIn(IntelActionContext.GUI)) {
             GameEventBus.publish(new MissionCriticalAnnouncementEvent("command not found"));
+            complete.run();
             return;
         }
         if (speakAffirmation) {
@@ -77,12 +133,41 @@ public final class GuiCommandRunner {
         }
         new Thread(() -> {
             try {
-                handler.handle(action, params, "");
+                publishSpokenResponse(handler.handle(action, params, ""));
             } catch (Exception e) {
                 GameEventBus.publish(new AiVoxResponseEvent("Error processing command for action " + action + " see logs."));
                 log.error("GUI command dispatch failed for action {}: {}", action, e.getMessage(), e);
+            } finally {
+                complete.run();
             }
         }, "GuiCommandDispatch").start();
+    }
+
+    private static void publishSpokenResponse(JsonObject response) {
+        if (response == null || !response.has(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE)) {
+            return;
+        }
+        JsonElement spoken = response.get(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE);
+        if (spoken == null || spoken.isJsonNull() || !spoken.isJsonPrimitive()) {
+            return;
+        }
+        String text = spoken.getAsString();
+        if (!text.isBlank()) {
+            GameEventBus.publish(new AiVoxResponseEvent(text));
+        }
+    }
+
+    private static Runnable edtCompletion(Runnable onComplete) {
+        if (onComplete == null) {
+            return () -> {
+            };
+        }
+        AtomicBoolean scheduled = new AtomicBoolean();
+        return () -> {
+            if (scheduled.compareAndSet(false, true)) {
+                SwingUtilities.invokeLater(onComplete);
+            }
+        };
     }
 
     private static void moveOwnerOutOfForeground(Window owner) {
