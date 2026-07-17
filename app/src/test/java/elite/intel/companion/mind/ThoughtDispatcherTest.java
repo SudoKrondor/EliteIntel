@@ -22,7 +22,6 @@ import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
 import elite.intel.companion.prompt.PromptComposer;
 import elite.intel.companion.prompt.ReflexResolver;
-import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.companion.speech.SpeechGateway;
 import elite.intel.companion.tools.IntelActionTypeResolver;
 import elite.intel.companion.tools.SpeakFunction;
@@ -331,13 +330,17 @@ class ThoughtDispatcherTest {
     void nonReflexInputFallsThroughToTheCommanderLlmPath() {
         // The resolver matches nothing, so the input takes the normal CommanderThought path - the LLM is engaged.
         CapturingLlm llm = new CapturingLlm();
-        ReflexResolver noReflex = new ReflexResolver(() -> List.of(), invocation -> false);
-        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), UrgencyPolicy.normalOnly(), noReflex);
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
+        AtomicInteger exactAttempts = new AtomicInteger();
+        ReflexResolver noReflex = new ReflexResolver(() -> {
+            exactAttempts.incrementAndGet();
+            return List.of();
+        }, invocation -> false);
+        ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, s -> s);
         dispatcher.start();
         dispatcher.submitCommanderInput("how is the ship");
         dispatcher.stop();
 
+        assertEquals(1, exactAttempts.get(), "unchanged canonical input must not repeat the exact-reflex lookup");
         assertTrue(llm.requests.size() >= 1, "a non-reflex commander input engages the LLM");
         assertTrue(memory.entries().stream().anyMatch(e -> e.source() == MemorySource.COMMANDER));
     }
@@ -351,7 +354,6 @@ class ThoughtDispatcherTest {
         Function<String, String> normalizer = s -> "open fleet career management panel".equals(s)
                 ? "open fleet carrier management panel" : s;
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), noReflex, normalizer);
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM path, not the embedder reflex
         dispatcher.start();
         dispatcher.submitCommanderInput("open fleet career management panel");
         dispatcher.stop();
@@ -474,7 +476,6 @@ class ThoughtDispatcherTest {
             }
         };
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm), policy);
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/preemption path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // runs, blocks on the LLM
@@ -494,7 +495,6 @@ class ThoughtDispatcherTest {
     void interruptLiveThoughtsPreemptsTheLiveThought() throws InterruptedException {
         BlockFirstLlm llm = new BlockFirstLlm();
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(dependenciesWith(llm));
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled()); // exercise the LLM/barge-in path, not reflex
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow task");   // blocks on the LLM
@@ -565,7 +565,6 @@ class ThoughtDispatcherTest {
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(
                 dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false),
                 Function.identity(), 50, 10);
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled());
         dispatcher.start();
 
         dispatcher.submitCommanderInput("stuck query");
@@ -625,7 +624,6 @@ class ThoughtDispatcherTest {
                 invocation -> false, new ConfirmationCoordinator(), actionTypes);
         ThoughtDispatcher dispatcher = new ThoughtDispatcher(
                 dependencies, UrgencyPolicy.normalOnly(), new ReflexResolver(() -> List.of(), invocation -> false));
-        dispatcher.setSemanticReflexResolver(SemanticReflexResolver.disabled());
         dispatcher.start();
 
         dispatcher.submitCommanderInput("slow one");

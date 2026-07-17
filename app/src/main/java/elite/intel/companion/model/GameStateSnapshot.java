@@ -6,9 +6,9 @@ import elite.intel.session.Status;
 import java.util.Objects;
 
 /**
- * Immutable visibility inputs captured once for a commander turn. Exact reflex, semantic reflex and reduction
- * all derive their candidate sets from this same snapshot, so a live status update cannot split one turn across
- * incompatible game contexts. This is a routing snapshot only; execution is not revalidated against live state.
+ * Immutable visibility inputs captured once for a commander turn. Exact reflex and reduction derive their candidate
+ * sets from this same snapshot, so a live status update cannot split one turn across incompatible game contexts.
+ * This is a routing snapshot only; execution is not revalidated against live state.
  */
 public record GameStateSnapshot(long shipStatusFlags, long playerContextFlags, boolean isFighterOut) {
 

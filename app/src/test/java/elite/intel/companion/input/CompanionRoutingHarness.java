@@ -330,7 +330,6 @@ public final class CompanionRoutingHarness {
     private static boolean isLatencyDiagnostic(String line) {
         return line != null && line.startsWith("Companion ")
                 && (line.contains(" intake:")
-                || line.contains(" semantic-reflex:")
                 || line.contains(" compose:")
                 || line.contains(" facts:")
                 || line.contains(" llm:")

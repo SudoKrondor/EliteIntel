@@ -2,9 +2,6 @@ package elite.intel.companion.mind;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.embed.AngleEmbedder;
-import elite.intel.ai.embed.SemanticPhraseMatcher;
-import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.companion.clarify.ClarificationCoordinator;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
@@ -309,19 +306,6 @@ class ThoughtTest {
     }
 
     @Test
-    void preparedSemanticQueryFlowsToReducerOnly() {
-        SemanticQuery prepared = new SemanticPhraseMatcher(new AngleEmbedder(Map.of("route", 0.0)))
-                .embedQueryContext("route");
-        llm.results.add(ok(call(SpeakFunction.ID, text("on it"))));
-        ThoughtContext context = ThoughtContext.commander(Urgency.NORMAL, "plot route", "route")
-                .withSemanticQuery(prepared);
-
-        Thought.commander(context, dependencies()).run();
-
-        assertSame(prepared, reducer.lastSemanticQuery);
-    }
-
-    @Test
     void reflexQueryPublishesCompleteQueryRecordWithoutLlm() {
         execution.results.put("scan_system", outcome("two stars"));
         IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
@@ -439,13 +423,6 @@ class ThoughtTest {
     private static final class RecordingReducer implements CompanionActionReducer {
         private List<LlmToolDefinition> tools = List.of();
         private List<LlmToolDefinition> catalog = List.of();
-        private SemanticQuery lastSemanticQuery;
-
-        @Override public List<LlmToolDefinition> selectTools(
-                Set<IntelActionCategory> categories, String input, SemanticQuery semanticQuery) {
-            lastSemanticQuery = semanticQuery;
-            return tools;
-        }
 
         @Override public List<LlmToolDefinition> selectTools(Set<IntelActionCategory> categories, String input) {
             return tools;

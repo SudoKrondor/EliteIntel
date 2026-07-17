@@ -134,9 +134,9 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a reflex thought for one safe, parameterless action selected by an exact or semantic reflex. It runs
-     * on the commander lane like a {@link CommanderThought} but skips the LLM entirely. Commands remain outside
-     * memory; completed queries publish a commander/companion QUERY pair.
+     * Creates a reflex thought for one safe, parameterless action selected by an exact reflex. It runs on the
+     * commander lane like a {@link CommanderThought} but skips the LLM entirely. Commands remain outside memory;
+     * completed queries publish a commander/companion QUERY pair.
      */
     public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtDependencies dependencies) {
         return reflex(ThoughtContext.commander(urgency, input, input), commandId, dependencies);
@@ -299,7 +299,7 @@ public abstract class Thought {
     private List<LlmToolDefinition> selectedGameTools() {
         Set<IntelActionCategory> categories = allowedCategories();
         List<LlmToolDefinition> selected = dependencies.reducer().selectTools(
-                categories, context.matchInput(), context.semanticQuery(), context.gameStateSnapshot());
+                categories, context.matchInput(), null, context.gameStateSnapshot());
         var pending = context.pendingClarification();
         if (pending == null) {
             return selected;

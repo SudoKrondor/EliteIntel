@@ -9,7 +9,6 @@ import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.prompt.ReflexResolver;
-import elite.intel.companion.prompt.SemanticReflexResolver;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
@@ -62,21 +61,6 @@ public final class ThoughtDispatcher implements ManagedService {
     private final ThoughtDependencies dependencies;
     private final UrgencyPolicy urgencyPolicy;
     private final ReflexResolver reflexResolver;
-    /**
-     * The semantic reflex gate, tried after the exact-alias {@link #reflexResolver}: a confident, unambiguous
-     * embedding match dispatches directly (command or query), so a weak command model is never asked to pick a
-     * tool the embedder already identified. A no-op when the embedding model is unavailable. Package-private and
-     * replaceable so a test exercising the LLM/preemption path can pin it to {@link SemanticReflexResolver#disabled()}.
-     */
-    private volatile SemanticReflexResolver semanticReflexResolver = new SemanticReflexResolver();
-
-    /**
-     * Test seam: disable (or pin) the semantic reflex so a preemption/LLM-path test is not intercepted by it.
-     */
-    void setSemanticReflexResolver(SemanticReflexResolver resolver) {
-        this.semanticReflexResolver = resolver;
-    }
-
     /**
      * Canonicalizes commander input for command matching, LLM prompting, and any memory settlement this turn earns.
      * Production applies only per-language acoustic STT corrections; the seam remains injectable for tests.
@@ -152,8 +136,8 @@ public final class ThoughtDispatcher implements ManagedService {
         long acceptedAtNanos = System.nanoTime();
         PendingClarification pendingClarification = dependencies.clarificationCoordinator()
                 .claim().orElse(null);
-        // One coherent visibility context owns the whole turn. Exact reflex, semantic reflex and the reducer
-        // must never re-read a changing player_status row independently.
+        // One coherent visibility context owns the whole turn. Exact reflex and the reducer must never re-read a
+        // changing player_status row independently.
         GameStateSnapshot gameStateSnapshot = GameStateSnapshot.capture();
         Urgency urgency = urgencyPolicy.forCommander(input);
         // Strip a leading vocative address by the companion's own name ("Vega, all stop", or - as STT usually
@@ -171,33 +155,14 @@ public final class ThoughtDispatcher implements ManagedService {
         // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
         // phrase keeps a deliberately authored alias authoritative if a correction ever overlaps with it.
         Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
-        if (reflexCommand.isEmpty()) {
+        if (reflexCommand.isEmpty() && !matchInput.equals(rawStripped)) {
             reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
         }
-        // Which reflex mechanism fired, for the intake log: the verbatim exact-alias reflex, or - failing that -
-        // the semantic embedding shortcut. Both dispatch a known action without the LLM (a ReflexThought); the log
-        // spells out which one so an exact-phrase reflex is never confused with a semantic-similarity match.
-        String reflexKind = reflexCommand.isPresent() ? "exact" : null;
-        long semanticReflexMillis = -1;
-        if (reflexCommand.isEmpty()) {
-            // No verbatim exact-alias match: try the semantic reflex (a confident, unambiguous embedding match
-            // dispatches without the LLM - the weak model is not asked to pick a tool the embedder already found).
-            long semanticReflexStartedNanos = System.nanoTime();
-            SemanticReflexResolver.Resolution semanticResolution =
-                    semanticReflexResolver.resolveWithSemanticQuery(matchInput, gameStateSnapshot);
-            semanticReflexMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - semanticReflexStartedNanos);
-            reflexCommand = semanticResolution.actionId();
-            context = context.withSemanticQuery(semanticResolution.semanticQuery());
-            if (reflexCommand.isPresent()) {
-                reflexKind = "semantic";
-            }
-        }
-        ThoughtContext finalContext = context;
         Thought thought = reflexCommand
-                .map(actionId -> Thought.reflex(finalContext, actionId, dependencies))
-                .orElseGet(() -> Thought.commander(finalContext, dependencies));
+                .map(actionId -> Thought.reflex(context, actionId, dependencies))
+                .orElseGet(() -> Thought.commander(context, dependencies));
         String route = reflexCommand.isPresent()
-                ? "reflex " + reflexCommand.get() + " (" + reflexKind + ")"
+                ? "reflex " + reflexCommand.get() + " (exact)"
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);
@@ -206,9 +171,6 @@ public final class ThoughtDispatcher implements ManagedService {
             CompanionDiagnostics.debug(thought.trace(), "clarify",
                     pendingClarification.actionId() + "." + pendingClarification.parameterName()
                             + " " + disposition);
-        }
-        if (semanticReflexMillis >= 0) {
-            CompanionDiagnostics.debug(thought.trace(), "semantic-reflex", semanticReflexMillis + " ms");
         }
         if (!matchInput.equals(input)) {
             // The normalized/name-stripped form actually used for tool matching and the LLM current-input.

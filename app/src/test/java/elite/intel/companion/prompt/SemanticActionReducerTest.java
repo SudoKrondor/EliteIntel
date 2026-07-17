@@ -123,7 +123,7 @@ class SemanticActionReducerTest {
     }
 
     @Test
-    void reusesNonReflexSemanticQueryForTheSameTurn() {
+    void reusesPreparedSemanticQueryForTheSameTurn() {
         AtomicInteger queryEmbeds = new AtomicInteger();
         TextEmbedder counting = new TextEmbedder() {
             @Override public float[] embed(String text) {
@@ -142,27 +142,19 @@ class SemanticActionReducerTest {
                         new ActionParameterSpec("destination", "string", true, "Destination", List.of(), null))),
                 catalog.get(1), catalog.get(2));
         GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
-        AtomicReference<GameStateSnapshot> reflexState = new AtomicReference<>();
         AtomicReference<GameStateSnapshot> reducerState = new AtomicReference<>();
-        SemanticReflexResolver reflex = new SemanticReflexResolver(
-                (allowed, snapshot) -> {
-                    reflexState.set(snapshot);
-                    return parameterizedCatalog;
-                }, () -> matcher, invocation -> false);
         SemanticActionReducer reducer = new SemanticActionReducer(
                 (allowed, snapshot) -> {
                     reducerState.set(snapshot);
                     return parameterizedCatalog;
                 }, () -> matcher, unusedFallback(new AtomicBoolean()));
 
-        SemanticReflexResolver.Resolution resolution = reflex.resolveWithSemanticQuery("GO_NAV", turnState);
+        SemanticQuery prepared = matcher.embedQueryContext("GO_NAV");
         List<LlmToolDefinition> tools = reducer.selectTools(
-                ALL, "GO_NAV", resolution.semanticQuery(), turnState);
+                ALL, "GO_NAV", prepared, turnState);
 
-        assertTrue(resolution.actionId().isEmpty(), "a parameterized match must continue to the LLM path");
         assertEquals(List.of("navigate"), ids(tools));
-        assertEquals(1, queryEmbeds.get(), "the reducer must reuse the semantic reflex query vector");
-        assertSame(turnState, reflexState.get(), "semantic reflex must use the owning turn's visibility state");
+        assertEquals(1, queryEmbeds.get(), "the reducer must reuse the prepared query vector");
         assertSame(turnState, reducerState.get(), "the reducer must receive that exact same state instance");
     }
 

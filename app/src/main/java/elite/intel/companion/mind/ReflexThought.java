@@ -6,10 +6,9 @@ import elite.intel.companion.model.llm.LlmToolInvocation;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A reflex: a commander input a reflex gate resolved to exactly one safe, parameterless action without the LLM -
- * either {@code ReflexResolver} (verbatim exact-alias, commands only) or {@code SemanticReflexResolver} (a
- * confident, unambiguous embedding match, commands or queries). It runs on the commander lane like a
- * {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking loop, no tool selection.
+ * A reflex: {@code ReflexResolver} matched a commander input verbatim to exactly one safe, parameterless action.
+ * It runs on the commander lane like a {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking
+ * loop, no tool selection. Every non-exact input goes through {@link CommanderThought}.
  * <p>
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
  * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes
