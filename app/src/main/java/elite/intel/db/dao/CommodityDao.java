@@ -24,6 +24,15 @@ public interface CommodityDao {
     @SqlQuery("SELECT <col> FROM commodities WHERE LOWER(commodity) = LOWER(:englishName) LIMIT 1")
     String getLocalizedByEnglishName(@Define("col") String col, @Bind("englishName") String englishName);
 
+    /**
+     * Returns the non-localized game symbol (FDevIDs {@code symbol}, e.g. "AtmosphericExtractors")
+     * for an English commodity name. This is what a Cargo event's {@code Name} field holds
+     * (lower-cased in the journal), so it is the value to match cargo inventory against.
+     * Returns {@code null} for legacy/Powerplay goods that FDevIDs no longer lists.
+     */
+    @SqlQuery("SELECT symbol FROM commodities WHERE LOWER(commodity) = LOWER(:englishName) LIMIT 1")
+    String getSymbolByEnglishName(@Bind("englishName") String englishName);
+
     // optional – one-time init if table empty
     @SqlQuery("SELECT COUNT(*) FROM commodities")
     int count();

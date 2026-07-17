@@ -106,6 +106,29 @@ class FuzzySearchTest {
         assertNull(FuzzySearch.fuzzyCommodityMatch("xxxxxxxxxx", 3));
     }
 
+    // ── commoditySymbol (non-localized FDevIDs symbol for cargo matching) ──
+
+    @Test
+    void commoditySymbolReturnsCamelCaseSymbolForMultiWordName() {
+        // Cargo Inventory 'Name' is the symbol, so a multi-word display name must resolve to
+        // the single-token symbol — this is the case the old display-name match got wrong.
+        assertEquals("AtmosphericExtractors", FuzzySearch.commoditySymbol("Atmospheric Processors"));
+    }
+
+    @Test
+    void commoditySymbolMatchesLowerCasedJournalNameCaseInsensitively() {
+        // The journal writes the symbol lower-cased ("atmosphericextractors"); matching must
+        // be case-insensitive against the CamelCase DB symbol.
+        String symbol = FuzzySearch.commoditySymbol("Water Purifiers");
+        assertEquals("WaterPurifiers", symbol);
+        org.junit.jupiter.api.Assertions.assertTrue("waterpurifiers".equalsIgnoreCase(symbol));
+    }
+
+    @Test
+    void commoditySymbolUnknownNameReturnsNull() {
+        assertNull(FuzzySearch.commoditySymbol("Definitely Not A Commodity"));
+    }
+
     // ── fuzzyInventorySearch (materials table, game-state, seeded above) ───
 
     @Test
