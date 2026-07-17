@@ -32,6 +32,8 @@ class LmStudioLlmAdapterTest {
         assertEquals("gemma-3", json.get("model").getAsString());
         assertEquals("required", json.get("tool_choice").getAsString());
         assertFalse(json.get("parallel_tool_calls").getAsBoolean());
+        assertEquals("none", json.get("reasoning_effort").getAsString());
+        assertFalse(json.get("stream").getAsBoolean());
         assertFalse(json.has("prompt_cache_key"), "Mistral's cache key must not be sent to LM Studio");
         // Local models accept a custom temperature, so it must be sent (the inverse of the OpenAI case).
         assertTrue(json.has("temperature"), "a custom temperature must be sent to LM Studio");
