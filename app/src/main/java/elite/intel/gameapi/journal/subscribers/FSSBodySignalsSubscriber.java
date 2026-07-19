@@ -57,9 +57,9 @@ public class FSSBodySignalsSubscriber {
 
             if (playerSession.isDiscoveryAnnouncementOn()) {
                 if (bioSignals > 0)
-                    CompanionRuntime.narrator().announce("discovery", localizedEventPlural(bioSignals, "event.fss.body.bioSignals"), "EXPLORATION", false);
+                    CompanionRuntime.narrator().announce(localizedEventPlural(bioSignals, "event.fss.body.bioSignals"), false);
                 if (geoSignals > 0)
-                    CompanionRuntime.narrator().announce("discovery", localizedEventPlural(geoSignals, "event.fss.body.geoSignals"), "EXPLORATION", false);
+                    CompanionRuntime.narrator().announce(localizedEventPlural(geoSignals, "event.fss.body.geoSignals"), false);
             }
         });
     }

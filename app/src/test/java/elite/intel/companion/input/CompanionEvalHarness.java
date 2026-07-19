@@ -17,9 +17,9 @@ import elite.intel.companion.llm.*;
 import elite.intel.companion.memory.MemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDispatcher;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryImportance;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
 import elite.intel.db.dao.ShipDao;
@@ -74,7 +74,7 @@ public final class CompanionEvalHarness {
     private final List<Executed> turnCalls = new CopyOnWriteArrayList<>();
     private final List<Long> latenciesMs = new CopyOnWriteArrayList<>();
     private final AtomicLong rounds = new AtomicLong();
-    // Identities of short-term entries already reported, so each memoryDeltaBlock() shows only new writes.
+    // Identities of recent records already reported, so each memoryDeltaBlock() shows only new atomic writes.
     private final Set<String> seenMemory = new HashSet<>();
     // The raw body of the last LLM request this turn, so recall scoring can read the injected candidate block.
     private volatile String lastRequestBody;
@@ -150,7 +150,7 @@ public final class CompanionEvalHarness {
         }
         LlmTransport tracing = body -> {
             long round = rounds.incrementAndGet();
-            lastRequestBody = body; // captured for candidate-injection scoring (see recalled()/recallResult())
+            lastRequestBody = body; // captured for live-fact injection scoring
             traceRaw("\n======== LLM REQUEST #" + round + " ========\n" + body + "\n");
             long t0 = System.nanoTime();
             try {
@@ -166,9 +166,8 @@ public final class CompanionEvalHarness {
         LlmGateway llm = new CompanionLlmGateway(adapter, tracing);
 
         // Recording execution with one real seam for read-only work: game COMMANDS are recorded but never
-        // executed (they would press keys); QUERIES and system functions (speak, memory_search,
-        // classify_turn, ...) run for real, so the LLM and memory get the actual query result and the
-        // topic/verbosity/speech state evolves the production way.
+        // executed (they would press keys); QUERIES and system functions run for real, so the LLM and memory
+        // receive the actual query result while external game state remains untouched.
         ExecutionGateway recordingExecution = request -> {
             String toolName = request.toolName();
             SystemFunction fn = systemFunctions.get(toolName);
@@ -201,8 +200,8 @@ public final class CompanionEvalHarness {
         Files.writeString(traceFile, "Companion eval - " + Instant.now() + " (model=" + model + ")\n",
                 StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         Thread.sleep(1500);
-        // Treat any boot-time entries as already seen, so the first memoryDeltaBlock() reports only real input.
-        memory.readShortTermTimeline().forEach(e -> seenMemory.add(memoryKey(e)));
+        // Treat any boot-time records as already seen, so the first memoryDeltaBlock() reports only real input.
+        memory.readRecentHistory().forEach(record -> seenMemory.add(memoryKey(record)));
     }
 
     /** Stops the subsystem; safe to call when never booted. */
@@ -253,8 +252,8 @@ public final class CompanionEvalHarness {
     }
 
     /**
-     * Publishes a game event with an explicit importance the production way and waits for the turn to settle.
-     * A {@code HIGH} event of a mapped type is recorded into memory under its static topic (an EVENT thought).
+     * Publishes a game event with explicit journal importance through the production path and waits for the turn
+     * to settle. A mapped event that produces a reaction is stored as one completed EVENT record.
      */
     public void gameEvent(String type, String summary, BaseEvent.Importance importance) throws Exception {
         beginTurn();
@@ -335,61 +334,43 @@ public final class CompanionEvalHarness {
         return spokenTexts().stream().anyMatch(s -> s.toLowerCase(Locale.ROOT).contains(needle));
     }
 
-    // --- memory-tier scoring (shared by the memory evals) ---
+    // --- memory-area scoring (shared by the memory evals) ---
 
-    /** Where a fact (matched by a distinctive lowercase token) currently lives across the memory tiers. */
+    /** Where a fact matched by a distinctive token currently lives across the memory areas. */
     public String locateTier(String token) {
         String tok = token.toLowerCase(Locale.ROOT);
         List<String> tiers = new ArrayList<>();
-        if (memory.readShortTermTimeline().stream().anyMatch(e -> contains(e.content(), tok))) {
-            tiers.add("short-term");
+        var snapshot = memory.snapshot();
+        if (recordsContain(snapshot.recent(), tok)) {
+            tiers.add("recent");
         }
-        String midTopic = midTermTopic(tok);
-        if (midTopic != null) {
-            tiers.add("mid-term[" + midTopic + "]");
+        for (MemoryKind kind : MemoryKind.values()) {
+            if (recordsContain(snapshot.retainedByKind().getOrDefault(kind, List.of()), tok)) {
+                tiers.add("retained[" + kind.name().toLowerCase(Locale.ROOT) + "]");
+            }
+            String summary = snapshot.summaries().get(kind);
+            if (summary != null && contains(summary, tok)) {
+                tiers.add("summary[" + kind.name().toLowerCase(Locale.ROOT) + "]");
+            }
         }
-        String summary = memory.longTermSummary();
-        if (summary != null && contains(summary, tok)) {
-            tiers.add("long-term");
+        if (recordsContain(snapshot.savedTexts(), tok)) {
+            tiers.add("saved_text");
         }
         return tiers.isEmpty() ? "LOST" : String.join("+", tiers);
     }
 
-    /** The mid-term topic id (lowercase enum name) whose memory holds the token, or null. */
-    public String midTermTopic(String token) {
-        String tok = token.toLowerCase(Locale.ROOT);
-        for (ConversationTopic topic : ConversationTopic.values()) {
-            if (memory.recallTopicMemory(topic, null, 100).stream().anyMatch(e -> contains(e.content(), tok))) {
-                return topic.name().toLowerCase(Locale.ROOT);
-            }
-        }
-        return null;
+    private static boolean recordsContain(List<MemoryRecord> records, String tokenLower) {
+        return records.stream().flatMap(record -> record.entries().stream())
+                .anyMatch(entry -> contains(entry.content(), tokenLower));
     }
 
-    /** The raw body of the last LLM request this turn (for inspecting what the prompt carried: context + candidates). */
+    /** The raw body of the last LLM request this turn, for inspecting its history, context, and live facts. */
     public String lastRequestBody() {
         return lastRequestBody == null ? "" : lastRequestBody;
     }
 
-    /** Whether clean answer-fact candidates were injected into this turn's prompt (the two-tier recall block). */
-    public boolean recalled() {
-        return lastRequestBody != null && lastRequestBody.contains("<facts>");
-    }
-
-    /** The importance the model assigned this turn via classify_turn, or empty when it did not call it. */
-    public String assignedImportance() {
-        List<Executed> calls = callsNamed("classify_turn");
-        return calls.isEmpty() ? "" : str(calls.get(0).args(), "importance");
-    }
-
-    /** The is_question flag the model set this turn via classify_turn ("true"/"false"), or empty when not called. */
-    public String assignedIsQuestion() {
-        List<Executed> calls = callsNamed("classify_turn");
-        return calls.isEmpty() ? "" : str(calls.get(0).args(), "is_question");
-    }
-
-    /** The answer-fact candidates inlined into this turn's prompt (the two-tier "Relevant remembered facts"), or empty. */
-    public List<String> recallResult() {
+    /** The live fact-source values inlined into this turn's system prompt, or empty. */
+    public List<String> injectedFacts() {
         if (lastRequestBody == null) {
             return List.of();
         }
@@ -421,53 +402,54 @@ public final class CompanionEvalHarness {
 
     // --- memory-fill tracing (shared by every theme eval) ---
 
-    /**
-     * The short-term writes since the previous call, formatted as the prompt shows them
-     * ({@code [SOURCE][topic] content}), with the running short-term total - so each turn's report can show
-     * exactly what that input wrote to memory and how the hot timeline accumulates and evicts over the run.
-     */
+    /** Completed records added since the previous call, with the running recent-history total. */
     public String memoryDeltaBlock() {
-        List<MemoryEntry> added = newMemoryThisTurn();
+        List<MemoryRecord> added = newMemoryThisTurn();
         StringBuilder block = new StringBuilder(
-                String.format("    memory +%d (short-term total: %d):%n", added.size(), memory.readShortTermTimeline().size()));
-        for (MemoryEntry e : added) {
-            block.append("      ").append(renderEntry(e)).append("\n");
+                String.format("    memory +%d record(s) (recent total: %d):%n",
+                        added.size(), memory.readRecentHistory().size()));
+        for (MemoryRecord record : added) {
+            block.append(renderRecord(record, "      "));
         }
         return block.toString();
     }
 
-    /** The whole short-term timeline at the end of the run, oldest-to-newest - the accumulated memory state. */
-    public String shortTermDumpBlock() {
-        List<MemoryEntry> timeline = memory.readShortTermTimeline();
+    /** The whole recent record history at the end of the run, oldest-to-newest. */
+    public String recentMemoryDumpBlock() {
+        List<MemoryRecord> records = memory.readRecentHistory();
         StringBuilder dump = new StringBuilder(
-                String.format("%n---- short-term timeline at end (%d entries, oldest first) ----%n", timeline.size()));
-        for (MemoryEntry e : timeline) {
-            dump.append("  ").append(renderEntry(e)).append("\n");
+                String.format("%n---- recent memory at end (%d records, oldest first) ----%n", records.size()));
+        for (MemoryRecord record : records) {
+            dump.append(renderRecord(record, "  "));
         }
         return dump.toString();
     }
 
-    /** Short-term entries written since the previous {@link #memoryDeltaBlock()} call (matched by identity). */
-    private List<MemoryEntry> newMemoryThisTurn() {
-        List<MemoryEntry> added = new ArrayList<>();
-        for (MemoryEntry e : memory.readShortTermTimeline()) {
-            if (seenMemory.add(memoryKey(e))) {
-                added.add(e);
+    /** Recent records written since the previous {@link #memoryDeltaBlock()} call. */
+    private List<MemoryRecord> newMemoryThisTurn() {
+        List<MemoryRecord> added = new ArrayList<>();
+        for (MemoryRecord record : memory.readRecentHistory()) {
+            if (seenMemory.add(memoryKey(record))) {
+                added.add(record);
             }
         }
         return added;
     }
 
-    /** Renders a memory entry for the trace as {@code [SOURCE][topic][importance] content}. */
-    private static String renderEntry(MemoryEntry e) {
-        return String.format("[%s][%s][%s] %s",
-                e.source().displayLabel(CompanionConfig.companionName()),
-                e.topic().name().toLowerCase(Locale.ROOT),
-                e.importance().name().toLowerCase(Locale.ROOT), e.content());
+    private static String renderRecord(MemoryRecord record, String indent) {
+        StringBuilder rendered = new StringBuilder(indent)
+                .append('[').append(record.kind().name().toLowerCase(Locale.ROOT)).append("] ")
+                .append(record.timestamp()).append('\n');
+        for (MemoryEntry entry : record.entries()) {
+            rendered.append(indent).append("  [")
+                    .append(entry.source().displayLabel(CompanionConfig.companionName()))
+                    .append("] ").append(entry.content()).append('\n');
+        }
+        return rendered.toString();
     }
 
-    private static String memoryKey(MemoryEntry e) {
-        return e.timestamp() + "|" + e.source() + "|" + e.content();
+    private static String memoryKey(MemoryRecord record) {
+        return record.timestamp() + "|" + record.kind() + "|" + record.entries();
     }
 
     public MemoryGateway memory() {
@@ -544,41 +526,34 @@ public final class CompanionEvalHarness {
         };
     }
 
-    /** Every stored entry across short-term, mid-term (all topics) and pinned long-term facts. */
+    /** Every stored entry across recent, retained, pending and explicitly saved memory. */
     public List<MemoryEntry> allEntries() {
-        List<MemoryEntry> all = new ArrayList<>(memory.readShortTermTimeline());
-        for (ConversationTopic topic : ConversationTopic.values()) {
-            all.addAll(memory.recallTopicMemory(topic, null, 1000));
-        }
-        all.addAll(memory.longTermPinnedFacts());
-        return all;
+        return allRecords().stream().flatMap(record -> record.entries().stream()).toList();
     }
 
-    /**
-     * Distribution of stored memory across short-term, mid-term (all topics) and pinned long-term facts,
-     * grouped by topic and by importance, plus the verbatim pinned MAX facts - for assessing topic and
-     * importance spread at the end of a run.
-     */
+    /** Distribution of stored records by their host-assigned retention kind. */
     public String memoryDistributionBlock() {
-        List<MemoryEntry> all = allEntries();
-
-        Map<ConversationTopic, Integer> byTopic = new EnumMap<>(ConversationTopic.class);
-        Map<MemoryImportance, Integer> byImportance = new EnumMap<>(MemoryImportance.class);
-        for (MemoryEntry entry : all) {
-            byTopic.merge(entry.topic(), 1, Integer::sum);
-            byImportance.merge(entry.importance(), 1, Integer::sum);
-        }
-
-        StringBuilder b = new StringBuilder("\n---- memory distribution (short-term + mid-term + pinned) ----\n");
-        b.append("by topic:\n");
-        byTopic.forEach((topic, n) -> b.append("  ").append(topic.name().toLowerCase(Locale.ROOT)).append(": ").append(n).append("\n"));
-        b.append("by importance:\n");
-        byImportance.forEach((importance, n) -> b.append("  ").append(importance.name().toLowerCase(Locale.ROOT)).append(": ").append(n).append("\n"));
-        List<MemoryEntry> pinned = memory.longTermPinnedFacts();
-        b.append("pinned MAX facts (").append(pinned.size()).append("):\n");
-        for (MemoryEntry entry : pinned) {
-            b.append("  ").append(entry.content()).append("\n");
+        Map<MemoryKind, Long> byKind = allRecords().stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        MemoryRecord::kind, () -> new EnumMap<>(MemoryKind.class),
+                        java.util.stream.Collectors.counting()));
+        StringBuilder b = new StringBuilder("\n---- memory distribution by kind ----\n");
+        byKind.forEach((kind, count) -> b.append("  ")
+                .append(kind.name().toLowerCase(Locale.ROOT)).append(": ").append(count).append('\n'));
+        List<MemoryRecord> savedTexts = memory.savedTextRecords();
+        b.append("saved texts (").append(savedTexts.size()).append("):\n");
+        for (MemoryRecord record : savedTexts) {
+            b.append("  ").append(record.entries().get(0).content()).append('\n');
         }
         return b.toString();
+    }
+
+    private List<MemoryRecord> allRecords() {
+        var snapshot = memory.snapshot();
+        List<MemoryRecord> records = new ArrayList<>(snapshot.recent());
+        snapshot.retainedByKind().values().forEach(records::addAll);
+        snapshot.pendingByKind().values().forEach(records::addAll);
+        records.addAll(snapshot.savedTexts());
+        return List.copyOf(records);
     }
 }

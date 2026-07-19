@@ -3,6 +3,7 @@ package elite.intel.companion.execution;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
+import elite.intel.ai.brain.actions.command.builtin.RememberCommand;
 import elite.intel.ai.brain.actions.query.IntelQuery;
 import elite.intel.companion.CompanionRuntimeGraph;
 import elite.intel.companion.CompanionRuntimeTestSupport;
@@ -16,7 +17,8 @@ import elite.intel.companion.memory.SessionMemoryGateway;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.ThoughtDependencies;
 import elite.intel.companion.mind.ThoughtDispatcher;
-import elite.intel.companion.model.ConversationTopic;
+import elite.intel.companion.model.llm.LlmToolDefinition;
+import elite.intel.companion.model.memory.MemoryKind;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.prompt.CompanionActionReducer;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
@@ -37,16 +39,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Deterministic end-to-end integration of the real companion graph - dispatcher, thought, real
  * {@link SessionMemoryGateway}/{@link PromptComposer}/{@link SystemFunctionProvider}/{@link CompanionState},
  * real {@link CompanionLlmGateway} + {@link MistralLlmAdapter} - driven by a scripted LLM transport (canned
- * Mistral responses) instead of a live model. It plays a short multi-topic conversation and asserts the
- * cross-cutting behaviour the unit tests cannot: the global topic moves across turns, a stated fact survives
- * in memory and is recalled, and a multi-round turn replays the assistant tool-call and round-trips the
- * recalled fact into the next prompt. No network, no real game input - the LLM transport and game tools are stubbed.
+ * Mistral responses) instead of a live model. It plays a short conversation and asserts the cross-cutting
+ * behaviour the unit tests cannot: the built-in remember command stores only its extracted text argument and
+ * durable memory is not automatically injected into a later prompt. No network or real game input is involved.
  */
 class CompanionConversationIntegrationTest {
 
@@ -64,56 +66,52 @@ class CompanionConversationIntegrationTest {
     }
 
     @Test
-    void playsAMultiTopicConversationThroughTheRealGraph() {
+    void rememberedTextIsNotAutomaticallyInjectedIntoLaterPrompts() {
         ThoughtDispatcher dispatcher = bootCompanion();
 
-        // Turn 1: navigate -> topic moves to NAVIGATION, the companion speaks.
+        // Turn 1: ordinary dialogue.
         transport.scripted.add(response(
-                call("c1", "classify_turn", "{\"topic\":\"navigation\",\"importance\":\"normal\","
-                        + "\"is_question\":false,\"canonical_fact\":\"\"}"),
-                call("c2", "speak", "{\"text\":\"Course plotted.\"}")));
-        // Turn 2: topic moves to SHIP_STATUS; the commander states a fact, recorded in short-term memory.
+                call("c1", "speak", "{\"text\":\"Course plotted.\"}")));
+        // Turn 2: the ordinary command stores only the extracted content and gets normal command acknowledgement.
         transport.scripted.add(response(
-                call("c4", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"high\","
-                        + "\"is_question\":false,\"canonical_fact\":\"The hull is solid.\"}"),
-                call("c6", "speak", "{\"text\":\"Noted.\"}")));
-        // Turn 3: the stated fact is injected as a "Relevant remembered fact" before the turn, so the companion
-        // answers from it in one round (no in-turn lookup).
+                call("c2", "remember", "{\"text\":\"the hull is solid\"}")));
+        // Turn 3: no memory_search query is offered by this narrow test reducer, so durable memory stays absent.
         transport.scripted.add(response(
-                call("c8", "classify_turn", "{\"topic\":\"ship_status\",\"importance\":\"normal\","
-                        + "\"is_question\":true,\"canonical_fact\":\"\"}"),
-                call("c9", "speak", "{\"text\":\"You said the hull is solid.\"}")));
+                call("c3", "speak", "{\"text\":\"I need a memory search for that.\"}")));
 
         // Submit the conversation as a real burst. The commander cognitive lane must preserve intake order, so
         // turn 3 sees the fact committed by turn 2 without the test manually draining between submissions.
         dispatcher.start();
         dispatcher.submitCommanderInput("take us to the next system");
-        dispatcher.submitCommanderInput("note that the hull is solid");
+        dispatcher.submitCommanderInput("remember that the hull is solid");
         dispatcher.submitCommanderInput("what did I tell you about the hull");
         awaitIdle(dispatcher);
         dispatcher.stop();
 
-        // The global topic moved across turns (real classify_turn handle on the real state).
-        assertEquals(ConversationTopic.SHIP_STATUS, state.globalTopic());
-        // The stated fact survived in short-term memory.
-        assertTrue(memory.readShortTermTimeline().stream()
-                .anyMatch(e -> e.content().contains("hull is solid")));
+        assertEquals(MemoryKind.SAVED_TEXT, memory.savedTextRecords().get(0).kind());
+        assertEquals("the hull is solid",
+                memory.savedTextRecords().get(0).entries().get(0).content());
         // The companion actually spoke the scripted phrases (real SpeakFunction -> SpeechGateway).
         assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("Course plotted")));
-        assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("You said the hull is solid")));
-        // The stated fact was injected as a remembered-fact candidate before the recall turn (no lookup round).
+        assertTrue(speech.spoken.stream().anyMatch(t -> t.contains("memory search")));
+        // The saved phrase is reachable only through memory_search, not through automatic prompt grounding.
         String lastRequestBody = transport.bodies.get(transport.bodies.size() - 1);
-        assertTrue(lastRequestBody.contains("<facts>"), "the remembered fact must be injected before the turn");
-        assertTrue(lastRequestBody.contains("hull is solid"), "the remembered fact must be available to answer");
+        assertFalse(lastRequestBody.contains("hull is solid"), "durable memory must not be injected before the turn");
     }
 
     /** Wires the real companion graph against the scripted transport and stubbed game tools, then installs it. */
     private ThoughtDispatcher bootCompanion() {
-        CompanionActionReducer reducer = (categories, input) -> List.of(); // no game tools this run
+        RememberCommand remember = new RememberCommand();
+        LlmToolDefinition rememberTool = new LlmToolDefinition(
+                remember.id(), remember.llmDescription(), "remember {text:X}, remember that {text:X}",
+                remember.parameters());
+        CompanionActionReducer reducer = (categories, input) ->
+                input.startsWith("remember that ") ? List.of(rememberTool) : List.of();
         LlmGateway llm = new CompanionLlmGateway(new MistralLlmAdapter(), transport);
-        // Real execution gateway but with empty command/query maps (only system functions run) + synchronous lanes.
+        // Real execution gateway with the real remember command and synchronous lanes.
+        Map<String, IntelAction> commands = Map.of(RememberCommand.ID, remember);
         ExecutionGateway execution = new CompanionExecutionGateway(
-                Map.of(), Map.of(), systemFunctions(), Runnable::run, Runnable::run);
+                commands, Map.of(), systemFunctions(), Runnable::run, Runnable::run);
         DangerousActionPolicy notDangerous = invocation -> false;
         ConfirmationCoordinator coordinator = new ConfirmationCoordinator();
 
@@ -121,7 +119,7 @@ class CompanionConversationIntegrationTest {
         ThoughtDependencies dependencies = new ThoughtDependencies(llm, speech, execution, memory,
                 new PromptComposer(), new IntelActionAccessPolicy(), new SystemFunctionProvider(), reducer, state,
                 notDangerous, coordinator, runtimeGraph.runtimeGeneration());
-        // Pin the reflex gate off this run (no game tools / no commands), so every turn stays LLM-driven.
+        // Parameterized commands cannot use the reflex gate, so every turn stays LLM-driven.
         return new ThoughtDispatcher(dependencies, new ReflexResolver(() -> List.of(), notDangerous));
     }
 

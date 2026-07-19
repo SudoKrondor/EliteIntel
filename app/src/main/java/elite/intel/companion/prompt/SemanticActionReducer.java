@@ -3,6 +3,7 @@ package elite.intel.companion.prompt;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticQuery;
 import elite.intel.ai.embed.SemanticSearchProvider;
+import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
@@ -16,55 +17,25 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Selects the game tools for a thought turn by <em>meaning</em>: it embeds the commander phrase and keeps the
- * candidates whose training phrases (localized aliases) are closest in the embedding space, so an inflected or
- * paraphrased input reaches the right tool without sharing a literal word with it. This replaces
- * {@link WordOverlapActionReducer} on the companion path; the word-overlap reducer is retained as the
- * graceful-degradation fallback and is delegated to whenever meaning-based selection cannot run.
- * <p>
- * The selection model is ported from the proven legacy {@code elite.intel.ai.brain.Reducer} semantic mode:
- * e5 cosines sit in a high, compressed band, so selection is <em>relative</em> to the best match (keep
- * everything within {@link #SEM_MARGIN} of it), gated by an absolute {@link #SEM_FLOOR} below which nothing is
- * relevant (the turn is conversation or memory recall, not a command), and capped at {@link #SEM_MAX} so a
- * vague input cannot flood the prompt.
- * <p>
- * Degrades to word-overlap (never errors out a turn) when the input is blank, the embedding model is
- * unavailable ({@link SemanticSearchProvider#matcher()} returns {@code null}), or an embed call fails.
+ * Selects game tools by semantic similarity. Exact prefixes for trailing string parameters are retained in
+ * addition to semantic candidates, and word overlap is the fallback when embedding is unavailable.
  */
 public final class SemanticActionReducer implements CompanionActionReducer {
 
     private static final Logger log = LogManager.getLogger(SemanticActionReducer.class);
 
-    /**
-     * Below this best cosine, nothing is close enough in meaning: offer no game tools. Calibrated for
-     * multilingual-e5-small against the live-LLM natural-speech routing suite (EN + RU), the recall authority:
-     * 0.85 matches 0.80's routing exactly for EN/RU (no real commands dropped) while rejecting more sub-0.85
-     * junk, whereas 0.87+ starts dropping EN commands. Conversational noise embeds ~0.87-0.92, so this floor
-     * does not reject it without also costing recall - a known limit of this model's compressed band, not fixed
-     * by any single global floor. IT aliases embed lower and regress even at 0.85 (deprioritized for now); a
-     * per-language floor or stronger IT aliases would be the real fix. Recalibrate after any model change (see
-     * {@code SemanticReducerProbe#dumpsFloorCalibration}).
-     */
+    /** Minimum best cosine accepted as an actionable match. */
     private static final double SEM_FLOOR = 0.85;
-    /**
-     * Keep candidates scoring within this margin of the best match (legacy semantic margin). Deliberately
-     * inclusive: the correct tool is not always the single top match (a noun like "двигатели" can pull a
-     * sibling query above "target subsystem"), so a band wide enough to admit the near-miss correct tool lets
-     * the LLM make the final pick. Narrowing is the cap's job, not the margin's.
-     */
+    /** Relative band kept below the best score. */
     private static final double SEM_MARGIN = 0.04;
-    /**
-     * Hard cap on surviving candidates, and the actual narrowing lever. Far below the legacy 25: a broad verb
-     * ("переключи", "найди") sits near a whole command family, so the band alone would admit the family and
-     * widen the prompt; the cap bounds that tail to the closest few while the top-ranked correct tool always
-     * survives.
-     */
+    /** Maximum number of game tools exposed to one turn. */
     private static final int SEM_MAX = 8;
 
     private final BiFunction<Set<IntelActionCategory>, GameStateSnapshot,
@@ -74,10 +45,7 @@ public final class SemanticActionReducer implements CompanionActionReducer {
 
     /** Production: live candidates, the shared process-wide embedder, and a word-overlap reducer for degradation. */
     public SemanticActionReducer() {
-        // Build the candidates fresh every turn (not once) so the reducer always reflects the CURRENT command
-        // language and custom-command set. GameToolCandidates freezes those in its constructor, so capturing one
-        // instance would pin the language to companion-start time - a later language change (e.g. in Settings)
-        // would never reach the reducer. Visibility alone is deliberately supplied by the owning turn snapshot.
+        // Rebuild the catalog each turn so language and custom-command changes become visible immediately.
         this((categories, snapshot) -> new GameToolCandidates(snapshot).collect(categories),
                 SemanticSearchProvider::matcher, new WordOverlapActionReducer());
     }
@@ -126,15 +94,24 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                                                GameStateSnapshot gameStateSnapshot) {
         List<LlmToolDefinition> selected = doSelect(
                 allowedCategories, currentInput, semanticQuery, gameStateSnapshot);
-        // Diagnostics harness: surface the reducer's shortlist as a structured marker so the skill can tell a
-        // recall miss (expected id ABSENT here - fix the aliases) from a selection miss (expected id present but
-        // the LLM dispatched another - fix the llmDescription), without scraping the prose DBG/LOG lines. The
-        // names are the same runtime ids DIAG dispatch uses, in the reducer's ranking order. Only for a real
-        // game-tool reduction (non-empty categories); a NARRATION turn offers no game tools by intent, so no line.
+        // A structured shortlist distinguishes reducer misses from later model-selection misses.
         if (DiagnosticsMode.isEnabled() && !allowedCategories.isEmpty()) {
             DiagnosticsLog.write("DIAG reducer-candidates=" + CompanionDiagnostics.names(selected));
         }
         return selected;
+    }
+
+    /** Rehydrates a clarification target directly from the current visible catalog, without embedding it again. */
+    @Override
+    public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories, String actionId,
+                                                    GameStateSnapshot gameStateSnapshot) {
+        if (actionId == null || actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return candidateSource.apply(allowedCategories, gameStateSnapshot).stream()
+                .filter(candidate -> actionId.equals(candidate.id()))
+                .map(GameToolCandidates.Candidate::tool)
+                .findFirst();
     }
 
     private List<LlmToolDefinition> doSelect(Set<IntelActionCategory> allowedCategories, String currentInput,
@@ -142,32 +119,92 @@ public final class SemanticActionReducer implements CompanionActionReducer {
                                              GameStateSnapshot gameStateSnapshot) {
         List<GameToolCandidates.Candidate> candidates = candidateSource.apply(allowedCategories, gameStateSnapshot);
         if (candidates.isEmpty()) {
-            // An empty allowed-category set is intent (e.g. a NARRATION thought offers no game tools), not a
-            // selection outcome, so it needs no line; a non-empty set that yielded nothing is worth surfacing.
             if (!allowedCategories.isEmpty()) {
                 CompanionDiagnostics.debugAmbient("reduce", "semantic: no candidates for " + allowedCategories);
             }
             return List.of();
         }
+        List<LlmToolDefinition> exactParameterized = exactParameterizedMatches(candidates, currentInput);
         // A blank input has no meaning to embed; the word-overlap fallback owns the "offer all" blank-input rule.
         if (currentInput == null || currentInput.isBlank()) {
             CompanionDiagnostics.debugAmbient("reduce", "semantic: blank input -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
+            return mergeExactMatches(exactParameterized,
+                    wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
         SemanticPhraseMatcher matcher = matcherSupplier.get();
         if (matcher == null) {
             // Embedding model unavailable: degrade to word-overlap for the rest of the session (documented contract).
             CompanionDiagnostics.debugAmbient("reduce", "semantic: embedding model unavailable -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
+            return mergeExactMatches(exactParameterized,
+                    wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
         try {
-            return semanticSelect(matcher, candidates, currentInput, semanticQuery);
+            return mergeExactMatches(exactParameterized,
+                    semanticSelect(matcher, candidates, currentInput, semanticQuery));
         } catch (RuntimeException embedFailure) {
-            // WHY: a transient embed failure must not drop the turn's tools; degrade to word-overlap for this turn.
+            // A transient embedding failure must not make every game command unavailable.
             log.warn("Semantic reduction failed; falling back to word-overlap for this turn", embedFailure);
             CompanionDiagnostics.debugAmbient("reduce", "semantic: embed failed -> word-overlap fallback");
-            return wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot);
+            return mergeExactMatches(exactParameterized,
+                    wordOverlapFallback.selectTools(allowedCategories, currentInput, null, gameStateSnapshot));
         }
+    }
+
+    /** Keeps only matches with the longest exact literal prefix, resolving overlapping broad/specific aliases. */
+    private static List<LlmToolDefinition> exactParameterizedMatches(
+            List<GameToolCandidates.Candidate> candidates,
+            String input
+    ) {
+        int[] specificity = new int[candidates.size()];
+        int best = 0;
+        for (int i = 0; i < candidates.size(); i++) {
+            GameToolCandidates.Candidate candidate = candidates.get(i);
+            specificity[i] = TrailingStringAliasMatcher.findBestMatch(
+                            candidate.localizedAliasGroup(), candidate.tool().parameters(), input)
+                    .map(TrailingStringAliasMatcher.Match::prefixWordCount)
+                    .orElse(0);
+            best = Math.max(best, specificity[i]);
+        }
+        if (best == 0) {
+            return List.of();
+        }
+        List<LlmToolDefinition> result = new ArrayList<>();
+        Set<String> added = new LinkedHashSet<>();
+        for (int i = 0; i < candidates.size() && result.size() < SEM_MAX; i++) {
+            GameToolCandidates.Candidate candidate = candidates.get(i);
+            if (specificity[i] == best && added.add(candidate.id())) {
+                result.add(candidate.tool());
+            }
+        }
+        return result;
+    }
+
+    /** Keeps deterministic prefix matches first without suppressing semantic competitors. */
+    private static List<LlmToolDefinition> mergeExactMatches(
+            List<LlmToolDefinition> exactMatches,
+            List<LlmToolDefinition> selected
+    ) {
+        if (exactMatches.isEmpty()) {
+            return selected;
+        }
+        List<LlmToolDefinition> merged = new ArrayList<>();
+        Set<String> added = new LinkedHashSet<>();
+        for (LlmToolDefinition tool : exactMatches) {
+            if (added.add(tool.name())) {
+                merged.add(tool);
+            }
+        }
+        for (LlmToolDefinition tool : selected) {
+            if (merged.size() >= SEM_MAX) {
+                break;
+            }
+            if (added.add(tool.name())) {
+                merged.add(tool);
+            }
+        }
+        CompanionDiagnostics.debugAmbient("reduce", "parameterized trigger retained -> "
+                + CompanionDiagnostics.names(merged));
+        return List.copyOf(merged);
     }
 
     /**
@@ -185,7 +222,8 @@ public final class SemanticActionReducer implements CompanionActionReducer {
         double best = -1.0;
         for (int i = 0; i < candidates.size(); i++) {
             GameToolCandidates.Candidate candidate = candidates.get(i);
-            List<String> aliases = AliasMatchSurface.phrases(candidate.phraseKey(), candidate.tool().parameters());
+            List<String> aliases = AliasEmbeddingText.phrases(
+                    candidate.localizedAliasGroup(), candidate.tool().parameters());
             scores[i] = matcher.bestSimilarity(queryVector, aliases);
             best = Math.max(best, scores[i]);
         }

@@ -203,6 +203,8 @@ The `canBeInterrupted` field on `VocalisationRequestEvent` controls whether
 
 `GoogleTTSImpl` is a singleton that calls the Google Cloud TTS API using an API key from
 `systemSession.getTtsApiKey()`. Audio is returned as 24kHz LINEAR16 PCM. The API key is never logged and must not be transmitted outside the Cloud TTS endpoint.
+Legacy `Chirp-HD` voices receive plain-text input because their API rejects SSML; Chirp3-HD and Standard voices
+retain punctuation-aware SSML pauses.
 
 ### Queue Pipeline
 

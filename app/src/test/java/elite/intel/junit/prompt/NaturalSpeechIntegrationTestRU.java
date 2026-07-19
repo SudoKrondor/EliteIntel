@@ -3,12 +3,19 @@ package elite.intel.junit.prompt;
 import elite.intel.ai.brain.actions.command.builtin.*;
 import elite.intel.ai.brain.actions.handlers.query.*;
 import elite.intel.companion.input.CompanionRoutingHarness;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.List;
 import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 
@@ -209,6 +216,69 @@ public class NaturalSpeechIntegrationTestRU {
 
     static Stream<String> optimalSpeed() {
         return Stream.of("установи оптимальную скорость", "оптимальная скорость захода");
+    }
+
+    // =========================================================================
+    // Missing-parameter clarification / continuation
+    // =========================================================================
+
+    @Test
+    @Order(28)
+    void missingSpeedAmountIsAppliedFromNextTurn() throws Exception {
+        harness.restart();
+        List<String> firstTurn = harness.routeWithActionVisible("увеличь скорость на", IncreaseSpeedCommand.ID);
+
+        assertAll(
+                () -> assertFalse(firstTurn.contains(IncreaseSpeedCommand.ID),
+                        () -> "Incomplete command was dispatched: " + firstTurn),
+                () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                        () -> "Missing request_input dispatch: " + firstTurn),
+                () -> assertTrue(harness.lastTurnRequestedInput(IncreaseSpeedCommand.ID, "key"),
+                        () -> "Expected request_input for increase_speed.key; speech: "
+                                + harness.lastTurnSpeech()),
+                () -> assertFalse(harness.lastTurnSpeech().isEmpty(),
+                        "The commander was not asked for the missing amount")
+        );
+
+        List<String> secondTurn = harness.routeWithActionVisible("на 10", IncreaseSpeedCommand.ID);
+
+        assertAll(
+                () -> assertTrue(secondTurn.contains(IncreaseSpeedCommand.ID),
+                        () -> "Clarification reply dispatched " + secondTurn
+                                + " instead of " + IncreaseSpeedCommand.ID),
+                () -> assertEquals("10", harness.lastArgument(IncreaseSpeedCommand.ID, "key").orElse("<missing>"),
+                        "The clarification value was not applied to increase_speed.key")
+        );
+    }
+
+    @Test
+    @Order(29)
+    void newCommandSupersedesPendingClarification() throws Exception {
+        harness.restart();
+        try {
+            List<String> firstTurn = harness.routeWithActionVisible("увеличь скорость на", IncreaseSpeedCommand.ID);
+
+            assertAll(
+                    () -> assertFalse(firstTurn.contains(IncreaseSpeedCommand.ID),
+                            () -> "Incomplete command was dispatched: " + firstTurn),
+                    () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                            () -> "Missing request_input dispatch: " + firstTurn),
+                    () -> assertTrue(harness.lastTurnRequestedInput(IncreaseSpeedCommand.ID, "key"),
+                            () -> "Expected request_input for increase_speed.key; speech: "
+                                    + harness.lastTurnSpeech())
+            );
+
+            List<String> secondTurn = harness.routeWithActionVisible("все стоп", SetSpeedZeroCommand.ID);
+
+            assertAll(
+                    () -> assertTrue(secondTurn.contains(SetSpeedZeroCommand.ID),
+                            () -> "New command dispatched " + secondTurn + " instead of " + SetSpeedZeroCommand.ID),
+                    () -> assertFalse(secondTurn.contains(IncreaseSpeedCommand.ID),
+                            () -> "Pending command was resumed instead of superseded: " + secondTurn)
+            );
+        } finally {
+            harness.restart();
+        }
     }
 
     // =========================================================================
@@ -1222,6 +1292,398 @@ public class NaturalSpeechIntegrationTestRU {
 
     static Stream<String> fighterAttackTarget() {
         return Stream.of("истребитель атакуй мою цель", "атакуй мою цель", "сосредоточиться на моей цели");
+    }
+
+    // =========================================================================
+    // Fleet carrier management and neutron routes
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(83)
+    @MethodSource
+    void openFleetCarrierPanel(String input) throws InterruptedException {
+        assertRouted(input, DisplayFleetCarrierManagementPanelCommand.ID);
+    }
+
+    static Stream<String> openFleetCarrierPanel() {
+        return Stream.of("открой панель управления авианосцем", "панель управления авианосцем",
+                "открой управление авианосцем");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(86)
+    @MethodSource
+    void calculateNeutronRoute(String input) throws InterruptedException {
+        assertRouted(input, CalculateNeutronStarRouteCommand.ID);
+    }
+
+    static Stream<String> calculateNeutronRoute() {
+        return Stream.of("рассчитай маршрут через нейтронные звезды с эффективностью 20",
+                "рассчитай маршрут через нейтронные звезды с эффективностью 60");
+    }
+
+    @Test
+    @Order(86)
+    void calculateNeutronRouteAppliesMissingEfficiencyFromNextTurn() throws Exception {
+        harness.restart();
+        try {
+            List<String> firstTurn = harness.routeWithActionVisible(
+                    "рассчитай нейтронный маршрут", CalculateNeutronStarRouteCommand.ID);
+
+            assertAll(
+                    () -> assertFalse(firstTurn.contains(CalculateNeutronStarRouteCommand.ID),
+                            () -> "Incomplete command was dispatched: " + firstTurn),
+                    () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
+                            () -> "Missing request_input dispatch: " + firstTurn
+                                    + "; speech: " + harness.lastTurnSpeech()),
+                    () -> assertTrue(harness.lastTurnRequestedInput(
+                                    CalculateNeutronStarRouteCommand.ID, "efficiency"),
+                            () -> "Expected request_input for calculate_neutron_star_route.efficiency; speech: "
+                                    + harness.lastTurnSpeech()),
+                    () -> assertFalse(harness.lastTurnSpeech().isEmpty(),
+                            "The commander was not asked for the missing efficiency")
+            );
+
+            List<String> secondTurn = harness.routeWithActionVisible(
+                    "20 процентов", CalculateNeutronStarRouteCommand.ID);
+
+            assertAll(
+                    () -> assertTrue(secondTurn.contains(CalculateNeutronStarRouteCommand.ID),
+                            () -> "Clarification reply dispatched " + secondTurn
+                                    + " instead of " + CalculateNeutronStarRouteCommand.ID),
+                    () -> assertEquals("20", harness.lastArgument(
+                                    CalculateNeutronStarRouteCommand.ID, "efficiency").orElse("<missing>"),
+                            "The clarification value was not applied to calculate_neutron_star_route.efficiency")
+            );
+        } finally {
+            harness.restart();
+        }
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(87)
+    @MethodSource
+    void plotNextNeutronLeg(String input) throws InterruptedException {
+        assertRouted(input, PlotRouteNextNeutronStarWaypointCommand.ID);
+    }
+
+    static Stream<String> plotNextNeutronLeg() {
+        return Stream.of("отведи меня к следующей нейтронной звезде",
+                "проложи маршрут к следующей точке нейтронной звезды", "следующая нейтронная звезда");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(88)
+    @MethodSource
+    void clearNeutronStarRoute(String input) throws InterruptedException {
+        assertRouted(input, ClearNeutronRouteCommand.ID);
+    }
+
+    static Stream<String> clearNeutronStarRoute() {
+        return Stream.of("очисти маршрут нейтронной звезды");
+    }
+
+    // =========================================================================
+    // Trade route and navigation targets
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(300)
+    @MethodSource
+    void cancelTradeRoute(String input) throws InterruptedException {
+        assertRouted(input, CancelTradeRouteCommand.ID);
+    }
+
+    static Stream<String> cancelTradeRoute() {
+        return Stream.of("отмени торговый маршрут", "останови торговый маршрут",
+                "очисти торговый маршрут", "прерви торговый маршрут");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(305)
+    @MethodSource
+    void setHomeSystem(String input) throws InterruptedException {
+        assertRouted(input, SetHomeSystemCommand.ID);
+    }
+
+    static Stream<String> setHomeSystem() {
+        return Stream.of("установи домашнюю систему", "сделай текущую систему домашней",
+                "отметь домашнюю систему");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(306)
+    @MethodSource
+    void navigateToHomeSystem(String input) throws InterruptedException {
+        assertRouted(input, NavigateToHomeSystemCommand.ID);
+    }
+
+    static Stream<String> navigateToHomeSystem() {
+        return Stream.of("веди домой", "навигация домой", "проложи маршрут домой", "курс домой");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(307)
+    @MethodSource
+    void navigateFromMemory(String input) throws InterruptedException {
+        assertRouted(input, NavigateFromMemoryCommand.ID);
+    }
+
+    static Stream<String> navigateFromMemory() {
+        return Stream.of("навигация из памяти", "вставь из памяти", "используй адрес из памяти");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(308)
+    @MethodSource
+    void navigateToCoordinates(String input) throws InterruptedException {
+        assertRouted(input, NavigateToCoordinatesCommand.ID);
+    }
+
+    static Stream<String> navigateToCoordinates() {
+        return Stream.of("лети к координатам широта 12.5 долгота 78.9",
+                "веди меня к широте 45.2 долготе 130.7",
+                "проложи поверхностный курс к широте минус 12.3 долготе минус 40.5");
+    }
+
+    @Test
+    @Order(309)
+    void navigateToCoordinatesCarriesLatAndLon() throws Exception {
+        List<String> tools = harness.routeWithActionVisible(
+                "навигация к координатам широта 12.5 долгота 78.9", NavigateToCoordinatesCommand.ID);
+
+        assertAll(
+                () -> assertTrue(tools.contains(NavigateToCoordinatesCommand.ID),
+                        () -> "Dispatched " + tools + " instead of " + NavigateToCoordinatesCommand.ID),
+                () -> assertEquals("12.5",
+                        harness.lastArgument(NavigateToCoordinatesCommand.ID, "lat").orElse("<missing>"),
+                        "Latitude was not passed to navigate_to_coordinates.lat"),
+                () -> assertEquals("78.9",
+                        harness.lastArgument(NavigateToCoordinatesCommand.ID, "lon").orElse("<missing>"),
+                        "Longitude was not passed to navigate_to_coordinates.lon")
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(310)
+    @MethodSource
+    void launchShipDetachFromStation(String input) throws InterruptedException {
+        assertRouted(input, LaunchShipDetachFromStationCommand.ID);
+    }
+
+    static Stream<String> launchShipDetachFromStation() {
+        return Stream.of("отстыкуй корабль", "взлетай", "отстыковка", "покинь станцию", "запусти корабль");
+    }
+
+    // =========================================================================
+    // Combat targeting and wing
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(315)
+    @MethodSource
+    void targetSubsystem(String input) throws InterruptedException {
+        assertRouted(input, TargetSubsystemCommand.ID);
+    }
+
+    static Stream<String> targetSubsystem() {
+        return Stream.of("цель силовая установка", "цель FSD", "цель двигатели",
+                "цель щит", "цель жизнеобеспечение");
+    }
+
+    @Test
+    @Order(316)
+    void targetSubsystemCarriesTheSubsystemName() throws Exception {
+        List<String> tools = harness.routeWithActionVisible(
+                "цель распределитель энергии", TargetSubsystemCommand.ID);
+
+        assertAll(
+                () -> assertTrue(tools.contains(TargetSubsystemCommand.ID),
+                        () -> "Dispatched " + tools + " instead of " + TargetSubsystemCommand.ID),
+                () -> assertEquals("power distributor",
+                        harness.lastArgument(TargetSubsystemCommand.ID, "key").orElse("<missing>"),
+                        "The subsystem name was not passed to target_subsystem.key")
+        );
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(317)
+    @MethodSource
+    void targetWingman1(String input) throws InterruptedException {
+        assertRouted(input, TargetWingman1Command.ID);
+    }
+
+    static Stream<String> targetWingman1() {
+        return Stream.of("цель ведомый один", "ведомый альфа");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(318)
+    @MethodSource
+    void targetWingman2(String input) throws InterruptedException {
+        assertRouted(input, TargetWingman2Command.ID);
+    }
+
+    static Stream<String> targetWingman2() {
+        return Stream.of("цель ведомый два", "ведомый браво");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(319)
+    @MethodSource
+    void targetWingman3(String input) throws InterruptedException {
+        assertRouted(input, TargetWingman3Command.ID);
+    }
+
+    static Stream<String> targetWingman3() {
+        return Stream.of("цель ведомый три", "ведомый чарли");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(320)
+    @MethodSource
+    void wingNavLock(String input) throws InterruptedException {
+        assertRouted(input, WingNavLockCommand.ID);
+    }
+
+    static Stream<String> wingNavLock() {
+        return Stream.of("навигационная привязка крыла", "привязка к ведомому", "следовать за ведомым");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(321)
+    @MethodSource
+    void selectFireGroupByNato(String input) throws InterruptedException {
+        assertRouted(input, SelectFireGroupByNatoCommand.ID);
+    }
+
+    static Stream<String> selectFireGroupByNato() {
+        return Stream.of("выбери огневую группу браво", "переключись на огневую группу альфа",
+                "огневая группа чарли");
+    }
+
+    @Test
+    @Order(322)
+    void selectFireGroupCarriesTheNatoWord() throws Exception {
+        List<String> tools = harness.routeWithActionVisible(
+                "переключись на огневую группу браво", SelectFireGroupByNatoCommand.ID);
+
+        assertAll(
+                () -> assertTrue(tools.contains(SelectFireGroupByNatoCommand.ID),
+                        () -> "Dispatched " + tools + " instead of " + SelectFireGroupByNatoCommand.ID),
+                () -> assertEquals("bravo",
+                        harness.lastArgument(SelectFireGroupByNatoCommand.ID, "key").orElse("<missing>"),
+                        "The NATO word was not passed to select_fire_group_by_nato.key")
+        );
+    }
+
+    // =========================================================================
+    // Fighter, SRV, Nomad and surface recovery
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(325)
+    @MethodSource
+    void deployFighter(String input) throws InterruptedException {
+        assertRouted(input, DeployFighterCommand.ID);
+    }
+
+    static Stream<String> deployFighter() {
+        return Stream.of("выпусти истребитель", "запусти истребитель", "отправь истребитель",
+                "подними малый корабль");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(326)
+    @MethodSource
+    void fighterDefend(String input) throws InterruptedException {
+        assertRouted(input, FighterDefendCommand.ID);
+    }
+
+    static Stream<String> fighterDefend() {
+        return Stream.of("истребитель защищай корабль", "прикажи истребителю обороняться", "истребитель оборона");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(327)
+    @MethodSource
+    void fighterHoldFire(String input) throws InterruptedException {
+        assertRouted(input, FighterHoldFireCommand.ID);
+    }
+
+    static Stream<String> fighterHoldFire() {
+        return Stream.of("истребитель прекратить огонь", "истребитель не стрелять", "не открывать огонь");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(328)
+    @MethodSource
+    void fighterReturnToShip(String input) throws InterruptedException {
+        assertRouted(input, FighterReturnToShipCommand.ID);
+    }
+
+    static Stream<String> fighterReturnToShip() {
+        return Stream.of("истребитель вернись на корабль", "истребитель стыковка", "отозвать истребитель");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(330)
+    @MethodSource
+    void driveAssist(String input) throws InterruptedException {
+        assertRouted(input, DriveAssistCommand.ID);
+    }
+
+    static Stream<String> driveAssist() {
+        return Stream.of("помощь вождения", "ассистент вождения", "ассистент SRV");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(331)
+    @MethodSource
+    void recoverSrv(String input) throws InterruptedException {
+        assertRouted(input, RecoverSrvVehicleGetOnBoardShipCommand.ID);
+    }
+
+    static Stream<String> recoverSrv() {
+        return Stream.of("вернуть SRV", "подбери машину", "забери тачку на борт", "стыковка SRV");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(332)
+    @MethodSource
+    void launchNomad(String input) throws InterruptedException {
+        assertRouted(input, LauchNomadCommand.ID);
+    }
+
+    static Stream<String> launchNomad() {
+        return Stream.of("запусти номад", "запусти разведчика", "разверни планетарный разведчик", "разверни номад");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(333)
+    @MethodSource
+    void returnToSurface(String input) throws InterruptedException {
+        assertRouted(input, ReturnToSurfaceCommand.ID);
+    }
+
+    static Stream<String> returnToSurface() {
+        return Stream.of("верни корабль на поверхность", "забери меня", "вызови корабль", "посади корабль рядом");
+    }
+
+    // =========================================================================
+    // Traders
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(340)
+    @MethodSource
+    void findRawMaterialTrader(String input) throws InterruptedException {
+        assertRouted(input, FindRawMaterialTraderCommand.ID);
+    }
+
+    static Stream<String> findRawMaterialTrader() {
+        return Stream.of("найди торговца сырьевыми материалами", "сырьевой торговец",
+                "где обменять сырьевые материалы");
     }
 
 }

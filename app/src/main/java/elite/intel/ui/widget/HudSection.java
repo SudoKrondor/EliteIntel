@@ -5,6 +5,7 @@ import elite.intel.ui.theme.HudPalette;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.geom.Path2D;
 import java.awt.geom.RoundRectangle2D;
 
 /**
@@ -21,7 +22,10 @@ public class HudSection extends HudPanel {
     private final JPanel header;
     private JComponent headerAction;
     private JComponent footer;
+    private Color headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+    private Color headerDividerColor;
     private Color footerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+    private boolean topRightChamfered;
 
     /**
      * Creates a titled section with a supplied body layout.
@@ -69,6 +73,9 @@ public class HudSection extends HudPanel {
         // HudSection owns the titled-card frame; HudPanel only supplies the dark rounded base fill.
         super(new BorderLayout(0, 0), HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION, Variant.FLAT);
         sectionVariant = variant == null ? Variant.FRAMED : variant;
+        headerDividerColor = sectionVariant == Variant.FLAT
+                ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION
+                : HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER;
         if (sectionVariant == Variant.FLAT) {
             setPaintBackgroundFill(false);
         }
@@ -121,6 +128,53 @@ public class HudSection extends HudPanel {
     }
 
     /**
+     * Applies one background surface to the section header and body while retaining the section frame.
+     * Passing {@code null} restores the default framed-section treatment.
+     *
+     * @param background surface colour, or {@code null} for the default HUD panel surface
+     */
+    public void setSurfaceBackground(Color background) {
+        if (background == null) {
+            headerBackground = HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND;
+            body.setOpaque(false);
+        } else {
+            headerBackground = background;
+            body.setOpaque(true);
+            body.setBackground(background);
+        }
+        revalidate();
+        repaint();
+        body.repaint();
+    }
+
+    /**
+     * Sets the separator colour between the section header and body.
+     * Passing {@code null} restores the default tone for this section variant.
+     *
+     * @param color separator colour, or {@code null} for the default
+     */
+    public void setHeaderDividerColor(Color color) {
+        headerDividerColor = color == null
+                ? (sectionVariant == Variant.FLAT
+                ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION
+                : HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER)
+                : color;
+        repaint();
+    }
+
+    /**
+     * Toggles a HUD-style diagonal cut at the section's top-right corner.
+     *
+     * @param chamfered whether the top-right corner should be clipped diagonally
+     */
+    public void setTopRightChamfered(boolean chamfered) {
+        if (topRightChamfered == chamfered) return;
+        topRightChamfered = chamfered;
+        revalidate();
+        repaint();
+    }
+
+    /**
      * Updates the section header title while preserving the HUD header styling and uppercase convention.
      *
      * @param title localized section title
@@ -149,7 +203,7 @@ public class HudSection extends HudPanel {
             headerAction = null;
         }
         if (actions != null && actions.length > 0) {
-            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_TIGHT, 0));
+            JPanel strip = AppTheme.transparentPanel(new GridLayout(1, actions.length, HudPalette.HUD_GAP_HEADER_ACTION, 0));
             for (JComponent action : actions) {
                 strip.add(action);
             }
@@ -195,7 +249,17 @@ public class HudSection extends HudPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
+        if (topRightChamfered) {
+            Graphics2D base = (Graphics2D) g.create();
+            try {
+                base.clip(sectionShape(0, 0, getWidth() - 1, getHeight() - 1));
+                super.paintComponent(base);
+            } finally {
+                base.dispose();
+            }
+        } else {
+            super.paintComponent(g);
+        }
         if (sectionVariant == Variant.FLAT) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
@@ -204,7 +268,7 @@ public class HudSection extends HudPanel {
                 Component header = getComponentCount() > 0 ? getComponent(0) : null;
                 if (header != null) {
                     Rectangle bounds = header.getBounds();
-                    g2.setColor(HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION);
+                    g2.setColor(headerDividerColor);
                     g2.drawLine(1, bounds.y + bounds.height,
                                 Math.max(1, w - 2), bounds.y + bounds.height);
                 }
@@ -222,14 +286,16 @@ public class HudSection extends HudPanel {
             int arc = HudPalette.HUD_PANEL_ARC;
 
             Shape originalClip = g2.getClip();
-            g2.setClip(new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
+            g2.setClip(topRightChamfered
+                    ? sectionShape(1, 1, w - 2, h - 2)
+                    : new RoundRectangle2D.Float(1, 1, Math.max(0, w - 2), Math.max(0, h - 2), arc, arc));
 
             Component header = getComponentCount() > 0 ? getComponent(0) : null;
             if (header != null) {
                 Rectangle bounds = header.getBounds();
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND);
+                g2.setColor(headerBackground);
                 g2.fillRect(1, 1, Math.max(0, w - 2), Math.max(0, bounds.height));
-                g2.setColor(HudPalette.HUD_COLOR_ROLE_SECONDARY_BORDER);
+                g2.setColor(headerDividerColor);
                 g2.drawLine(1, bounds.y + bounds.height, Math.max(1, w - 2), bounds.y + bounds.height);
 
             }
@@ -245,10 +311,45 @@ public class HudSection extends HudPanel {
 
             Color borderColor = (Color) getClientProperty(AppTheme.HUD_CARD_BORDER_COLOR);
             g2.setColor(borderColor == null ? HudPalette.HUD_COLOR_ROLE_CONTROL_DECORATION : borderColor);
-            g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+            if (topRightChamfered) {
+                g2.draw(sectionShape(0, 0, w - 1, h - 1));
+            } else {
+                g2.drawRoundRect(0, 0, Math.max(0, w - 1), Math.max(0, h - 1), arc, arc);
+            }
         } finally {
             g2.dispose();
         }
+    }
+
+    @Override
+    protected void paintChildren(Graphics g) {
+        if (!topRightChamfered) {
+            super.paintChildren(g);
+            return;
+        }
+
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            g2.clip(sectionShape(0, 0, getWidth() - 1, getHeight() - 1));
+            super.paintChildren(g2);
+        } finally {
+            g2.dispose();
+        }
+    }
+
+    private Shape sectionShape(float x, float y, float width, float height) {
+        float right = x + Math.max(0, width);
+        float bottom = y + Math.max(0, height);
+        float cut = Math.min(HudPalette.HUD_GAP, Math.min(Math.max(0, width) / 2f, Math.max(0, height) / 2f));
+
+        Path2D.Float shape = new Path2D.Float();
+        shape.moveTo(x, y);
+        shape.lineTo(right - cut, y);
+        shape.lineTo(right, y + cut);
+        shape.lineTo(right, bottom);
+        shape.lineTo(x, bottom);
+        shape.closePath();
+        return shape;
     }
 
     @Override

@@ -82,7 +82,7 @@ class BehavioralEvalTest {
         StringBuilder block = new StringBuilder("\n======== BEHAVIORAL / not-knowing (theme 7) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("handled well (clarified / honest): %d / %d%n", good, asks.size()));
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");
@@ -109,7 +109,7 @@ class BehavioralEvalTest {
         StringBuilder block = new StringBuilder("\n======== NAME / companion identity ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("said its name \"%s\": %d / %d%n", name, said, nameAsks.size()));
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertTrue(said > 0, "the companion never said its own name \"" + name + "\" - see the trace");

@@ -1,5 +1,6 @@
 package elite.intel.companion;
 
+import elite.intel.companion.clarify.ClarificationCoordinator;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.ConfirmationCoordinator;
 import elite.intel.companion.confirm.DangerousActionPolicy;
@@ -73,11 +74,12 @@ public final class CompanionRuntimeGraphFactory {
                     memoryGateway, llmGateway, speechGateway, runtimeGeneration);
             oversizedMemoryCompressor = new OversizedMemoryCompressor(
                     memoryGateway, llmGateway, runtimeGeneration);
-            memoryGateway.setMidTermEvictionListener(memoryConsolidator);
+            memoryGateway.setPendingConsolidationListener(memoryConsolidator);
             memoryGateway.setOversizedMemoryListener(oversizedMemoryCompressor);
 
             DangerousActionPolicy dangerousActionPolicy = new CommandFlagDangerousActionPolicy();
             ConfirmationCoordinator confirmationCoordinator = new ConfirmationCoordinator();
+            ClarificationCoordinator clarificationCoordinator = new ClarificationCoordinator();
             ThoughtDependencies thoughtDependencies = new ThoughtDependencies(
                     llmGateway,
                     speechGateway,
@@ -90,6 +92,7 @@ public final class CompanionRuntimeGraphFactory {
                     companionState,
                     dangerousActionPolicy,
                     confirmationCoordinator,
+                    clarificationCoordinator,
                     runtimeGeneration);
             thoughtDispatcher = new ThoughtDispatcher(thoughtDependencies);
             CompanionNarrator narrator = new DispatcherCompanionNarrator(
@@ -114,7 +117,7 @@ public final class CompanionRuntimeGraphFactory {
             if (memoryGateway != null) {
                 SessionMemoryGateway partiallyBuiltMemoryGateway = memoryGateway;
                 runCleanupAfterAssemblyFailure(assemblyFailure,
-                        () -> partiallyBuiltMemoryGateway.setMidTermEvictionListener(null));
+                        () -> partiallyBuiltMemoryGateway.setPendingConsolidationListener(null));
                 runCleanupAfterAssemblyFailure(assemblyFailure,
                         () -> partiallyBuiltMemoryGateway.setOversizedMemoryListener(null));
             }

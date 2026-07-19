@@ -70,7 +70,7 @@ class QueryExecutionEvalTest {
         StringBuilder block = new StringBuilder("\n======== RU QUERY EXECUTION (theme 2) ========\n");
         report.forEach(line -> block.append(line).append("\n"));
         block.append(String.format("score: %d / %d%n", hits, cases.size()));
-        block.append(h.shortTermDumpBlock());
+        block.append(h.recentMemoryDumpBlock());
         h.trace(block.toString());
 
         assertFalse(h.latencies().isEmpty(), "the local model was never reached - see the trace and LM Studio settings");

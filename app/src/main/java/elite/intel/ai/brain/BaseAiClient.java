@@ -44,6 +44,21 @@ public class BaseAiClient {
     }
 
     public JsonObject sendJsonRequest(HttpRequest request) {
+        AiTransportResult outcome = sendTransportRequest(request);
+        if (outcome instanceof AiTransportResult.Success success) {
+            return success.response();
+        }
+        AiTransportResult.Failure failure = (AiTransportResult.Failure) outcome;
+        announceLegacyHttpFailure(failure);
+        return createErrorResponse(legacyErrorMessage(failure));
+    }
+
+    /**
+     * Sends one JSON HTTP request without choosing any user-facing narration. Callers receive a typed transport
+     * outcome and own their retry and speech policies; the legacy {@link #sendJsonRequest(HttpRequest)} wrapper
+     * retains its existing error-object behavior for older callers.
+     */
+    protected AiTransportResult sendTransportRequest(HttpRequest request) {
         currentRequestThread = Thread.currentThread();
         CompletableFuture<HttpResponse<String>> exchange = null;
         try {
@@ -52,36 +67,67 @@ public class BaseAiClient {
             exchange = sendAsync(request);
             HttpResponse<String> response = exchange.get();
             int code = response.statusCode();
-            if (code != 200) {
+            if (code < 200 || code >= 300) {
                 String body = response.body();
                 log.error("HTTP {} – response: {}", code, body);
-                if (code == 400 && !systemSession.useLocalCommandLlm()) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Bad Request. Unsupported request format or invalid API key"));
-                } else if (code == 429) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Too Many Requests. Please try again later."));
-                } else if (code == 401) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Invalid API Key. Please check your API Key and try again."));
-                } else if (code == 500) {
-                    GameEventBus.publish(new AiVoxResponseEvent("Internal Server Error. Please try again later."));
-                }
-                return createErrorResponse("HTTP " + code);
+                return AiTransportResult.failure(httpFailureKind(code), code, "HTTP " + code);
             }
-            return JsonParser.parseString(response.body()).getAsJsonObject();
+            try {
+                return AiTransportResult.success(JsonParser.parseString(response.body()).getAsJsonObject());
+            } catch (RuntimeException malformed) {
+                log.error("HTTP {} returned a non-object JSON response", code, malformed);
+                return AiTransportResult.failure(AiTransportResult.FailureKind.MALFORMED_RESPONSE, code,
+                        "Response body is not a JSON object");
+            }
         } catch (InterruptedException e) {
             if (exchange != null) {
                 exchange.cancel(true);
             }
             Thread.currentThread().interrupt();
-            return createErrorResponse("LLM Call Failed");
+            return AiTransportResult.failure(AiTransportResult.FailureKind.CANCELLED, null, "Request interrupted");
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
             String message = cause != null ? cause.getMessage() : e.getMessage();
-            return createErrorResponse("Request failed: " + message);
+            return AiTransportResult.failure(AiTransportResult.FailureKind.TRANSIENT, null,
+                    "Request failed: " + message);
         } catch (CancellationException e) {
-            return createErrorResponse("LLM Call Failed");
+            return AiTransportResult.failure(AiTransportResult.FailureKind.CANCELLED, null, "Request cancelled");
         } finally {
             currentRequestThread = null;
         }
+    }
+
+    private void announceLegacyHttpFailure(AiTransportResult.Failure failure) {
+        Integer code = failure.statusCode();
+        if (code == null) {
+            return;
+        }
+        if (code == 400 && !systemSession.useLocalCommandLlm()) {
+            GameEventBus.publish(new AiVoxResponseEvent("Bad Request. Unsupported request format or invalid API key"));
+        } else if (code == 429) {
+            GameEventBus.publish(new AiVoxResponseEvent("Too Many Requests. Please try again later."));
+        } else if (code == 401) {
+            GameEventBus.publish(new AiVoxResponseEvent("Invalid API Key. Please check your API Key and try again."));
+        } else if (code == 500) {
+            GameEventBus.publish(new AiVoxResponseEvent("Internal Server Error. Please try again later."));
+        }
+    }
+
+    private static String legacyErrorMessage(AiTransportResult.Failure failure) {
+        if (failure.statusCode() != null) {
+            return "HTTP " + failure.statusCode();
+        }
+        return switch (failure.kind()) {
+            case CANCELLED -> "LLM Call Failed";
+            case MALFORMED_RESPONSE -> "LLM response is malformed";
+            case TRANSIENT, PERMANENT -> failure.diagnostic();
+        };
+    }
+
+    private static AiTransportResult.FailureKind httpFailureKind(int statusCode) {
+        return statusCode == 408 || statusCode == 425 || statusCode == 429 || statusCode >= 500
+                ? AiTransportResult.FailureKind.TRANSIENT
+                : AiTransportResult.FailureKind.PERMANENT;
     }
 
     /** Starts the physical HTTP exchange; protected so cancellation can be verified without real network I/O. */

@@ -1,11 +1,21 @@
 package elite.intel.companion.prompt;
 
-/**
- * One inlined answer fact for the prompt's {@code <facts>} block: the recalled text plus its provenance
- * ({@code source}), so the prompt can tag each fact with where it came from - {@code "event"} (a past ship/game
- * occurrence), {@code "commander"} (something the commander stated), or a pluggable fact source's own id (e.g. a
- * live ship/system fact). The provenance lets the model tell a remembered past fact from live state and answer
- * from it instead of re-querying (OpenAI long-context guidance: metadata in attributes).
- */
+import java.util.Objects;
+import java.util.regex.Pattern;
+
+/** One prompt fact plus a safe provenance identifier for the {@code source} XML attribute. */
 public record Fact(String text, String source) {
+
+    private static final Pattern SOURCE_ID = Pattern.compile("[a-z][a-z0-9_]*");
+
+    public Fact {
+        Objects.requireNonNull(text, "text");
+        Objects.requireNonNull(source, "source");
+        if (text.isBlank()) {
+            throw new IllegalArgumentException("Fact text must not be blank");
+        }
+        if (!SOURCE_ID.matcher(source).matches()) {
+            throw new IllegalArgumentException("Invalid fact source id: " + source);
+        }
+    }
 }

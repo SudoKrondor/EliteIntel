@@ -122,7 +122,7 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
             if (FALLBACK_IDS.contains(candidate.id())) {
                 continue;
             }
-            Set<String> triggerWords = significantWords(candidate.phraseKey());
+            Set<String> triggerWords = significantWords(candidate.localizedAliasGroup());
             boolean[] mask = new boolean[inputWords.size()];
             boolean any = false;
             for (int i = 0; i < inputWords.size(); i++) {
@@ -185,6 +185,19 @@ public final class WordOverlapActionReducer implements CompanionActionReducer {
                 "word-overlap: candidates=%d matched=%d top=%.2f -> %s",
                 candidates.size(), matched.size(), scored.get(0).score(), CompanionDiagnostics.names(result)));
         return result;
+    }
+
+    /** Rehydrates a clarification target directly from the current visible catalog, without overlap narrowing. */
+    @Override
+    public Optional<LlmToolDefinition> findToolById(Set<IntelActionCategory> allowedCategories, String actionId,
+                                                    GameStateSnapshot gameStateSnapshot) {
+        if (actionId == null || actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return candidateSource.apply(allowedCategories, gameStateSnapshot).stream()
+                .filter(candidate -> actionId.equals(candidate.id()))
+                .map(GameToolCandidates.Candidate::tool)
+                .findFirst();
     }
 
     private record Scored(GameToolCandidates.Candidate candidate, double score) {}

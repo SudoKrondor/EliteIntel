@@ -495,9 +495,8 @@ public class GoogleTTSImpl implements MouthInterface {
 
             log.debug("Calling Google TTS API");
             long apiStartTime = System.currentTimeMillis();
-            // SSML lets the neural voice pause on the preserved punctuation; Chirp3-HD honors SSML on this
-            // synchronous synthesis path.
-            SynthesisInput input = SynthesisInput.newBuilder().setSsml(GoogleSsml.wrap(text)).build();
+            // Legacy Chirp-HD rejects SSML; compatible voices retain punctuation-aware SSML pauses.
+            SynthesisInput input = GoogleSynthesisInputFactory.create(text, voice);
             AudioConfig config = AudioConfig.newBuilder()
                     .setAudioEncoding(AudioEncoding.LINEAR16)
                     .setSpeakingRate(request.speechRate())

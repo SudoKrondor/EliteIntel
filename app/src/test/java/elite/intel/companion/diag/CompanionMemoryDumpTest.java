@@ -1,13 +1,10 @@
 package elite.intel.companion.diag;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import elite.intel.companion.memory.MemorySnapshot;
-import elite.intel.companion.model.ConversationTopic;
-import elite.intel.companion.model.memory.MemoryEntry;
-import elite.intel.companion.model.memory.MemoryImportance;
-import elite.intel.companion.model.memory.MemorySource;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -18,90 +15,61 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Covers the JSON shape produced by {@link CompanionMemoryDump}: every memory area is present, each entry keeps
- * its recorded fields, the meaning-vector is excluded (only a {@code hasEmbedding} marker), and the counts
- * header reflects the snapshot.
- */
 class CompanionMemoryDumpTest {
 
-    private static MemoryEntry entry(String content, MemorySource source, MemoryImportance importance,
-                                     float[] embedding, String canonicalFact) {
-        return new MemoryEntry(Instant.parse("2026-07-05T10:00:00Z"), ConversationTopic.NAVIGATION,
-                source, content, importance, embedding, canonicalFact);
-    }
+    private static final Instant TIME = Instant.parse("2026-07-05T10:00:00Z");
 
     private static MemorySnapshot sampleSnapshot() {
-        MemoryEntry shortA = entry("docked at abraham lincoln", MemorySource.EVENT, MemoryImportance.NORMAL,
-                new float[]{0.1f, 0.2f}, null);
-        MemoryEntry midA = entry("route plotted to sol", MemorySource.COMMANDER, MemoryImportance.HIGH,
-                null, "commander wants to reach sol");
-        MemoryEntry pinned = entry("commander name is jameson", MemorySource.COMMANDER, MemoryImportance.MAX,
-                null, null);
+        MemoryRecord recent = MemoryRecord.event(TIME, "docked at Abraham Lincoln");
+        recent = recent.withEntries(List.of(
+                recent.entries().get(0).withEmbedding(new float[]{0.1f, 0.2f})));
+        MemoryRecord retained = MemoryRecord.dialogue(TIME, "plot route to Sol", "route plotted");
+        MemoryRecord savedText = MemoryRecord.savedText(TIME, "my name is Jameson");
         return new MemorySnapshot(
-                List.of(shortA),
-                Map.of(ConversationTopic.NAVIGATION, List.of(midA)),
-                "old jumps were summarized here",
-                List.of(pinned));
+                List.of(recent),
+                Map.of(MemoryKind.DIALOGUE, List.of(retained)),
+                Map.of(),
+                Map.of(MemoryKind.EVENT, "old jumps were summarized here"),
+                List.of(savedText));
     }
 
     @Test
-    void dumpContainsEveryAreaAndHeader() {
+    void dumpContainsEveryRecordBasedAreaAndCounts() {
         JsonObject dump = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot())).getAsJsonObject();
 
         assertTrue(dump.has("dumpedAt"));
-        assertTrue(dump.has("limits"));
-        // Both short-term eviction drivers are recorded so token-based ageing is diagnosable.
-        assertTrue(dump.getAsJsonObject("limits").has("shortTermMaxEntries"));
-        assertTrue(dump.getAsJsonObject("limits").has("shortTermTokenBudget"));
-        assertTrue(dump.has("counts"));
-        assertTrue(dump.has("shortTerm"));
-        assertTrue(dump.has("midTerm"));
-        assertEquals("old jumps were summarized here", dump.get("longTermSummary").getAsString());
-        assertTrue(dump.has("longTermPinned"));
-
-        JsonObject counts = dump.getAsJsonObject("counts");
-        assertEquals(1, counts.get("shortTerm").getAsInt());
-        assertEquals(1, counts.get("midTermTotal").getAsInt());
-        assertEquals(1, counts.get("longTermPinned").getAsInt());
-        assertEquals(1, counts.getAsJsonObject("midTermByTopic").get("navigation").getAsInt());
+        assertTrue(dump.getAsJsonObject("limits").has("recentMaxRecords"));
+        assertTrue(dump.getAsJsonObject("limits").has("recentTokenBudget"));
+        assertTrue(dump.has("recent"));
+        assertTrue(dump.has("retained"));
+        assertTrue(dump.has("summaries"));
+        assertTrue(dump.has("savedTexts"));
+        assertEquals(1, dump.getAsJsonObject("counts").get("recentRecords").getAsInt());
+        assertEquals(1, dump.getAsJsonObject("counts").get("recentEntries").getAsInt());
+        assertEquals(1, dump.getAsJsonObject("counts").get("savedTextRecords").getAsInt());
+        assertEquals(1, dump.getAsJsonObject("counts")
+                .getAsJsonObject("retainedRecordsByKind").get("DIALOGUE").getAsInt());
     }
 
     @Test
-    void entryKeepsRecordedFieldsButNotTheVector() {
-        JsonObject dump = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot())).getAsJsonObject();
-        JsonObject shortEntry = dump.getAsJsonArray("shortTerm").get(0).getAsJsonObject();
+    void recordKeepsKindTimestampAndEntriesWithoutDumpingVectors() {
+        JsonObject record = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot()))
+                .getAsJsonObject().getAsJsonArray("recent").get(0).getAsJsonObject();
 
-        assertEquals("navigation", shortEntry.get("topic").getAsString());
-        assertEquals("EVENT", shortEntry.get("source").getAsString());
-        assertEquals("NORMAL", shortEntry.get("importance").getAsString());
-        assertEquals("docked at abraham lincoln", shortEntry.get("content").getAsString());
-        // Timestamp is the whole-second UTC journal form, matching the exported logs and the game journal.
-        assertEquals("2026-07-05T10:00:00Z", shortEntry.get("timestamp").getAsString());
-        // The meaning-vector is never dumped; only its presence is flagged.
-        assertFalse(shortEntry.has("embedding"));
-        assertTrue(shortEntry.get("hasEmbedding").getAsBoolean());
+        assertEquals("2026-07-05T10:00:00Z", record.get("timestamp").getAsString());
+        assertEquals("EVENT", record.get("kind").getAsString());
+        JsonObject entry = record.getAsJsonArray("entries").get(0).getAsJsonObject();
+        assertEquals("EVENT", entry.get("source").getAsString());
+        assertEquals("docked at Abraham Lincoln", entry.get("content").getAsString());
+        assertFalse(entry.has("embedding"));
+        assertTrue(entry.get("hasEmbedding").getAsBoolean());
     }
 
     @Test
-    void dumpedAtUsesTheWholeSecondJournalForm() {
-        JsonObject dump = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot())).getAsJsonObject();
-        // dumpedAt comes from Instant.now(); it must be truncated to whole seconds (no sub-second part) so it
-        // reads exactly like the game journal / exported log timestamps.
-        assertTrue(dump.get("dumpedAt").getAsString().matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"),
-                "dumpedAt must be the yyyy-MM-ddTHH:mm:ssZ journal form");
-    }
-
-    @Test
-    void midTermEntryCarriesCanonicalFactAndPinnedIsNavigation() {
+    void dumpedAtUsesWholeSecondJournalForm() {
         JsonObject dump = JsonParser.parseString(CompanionMemoryDump.toJson(sampleSnapshot())).getAsJsonObject();
 
-        JsonArray midNav = dump.getAsJsonObject("midTerm").getAsJsonArray("navigation");
-        JsonObject midEntry = midNav.get(0).getAsJsonObject();
-        assertEquals("commander wants to reach sol", midEntry.get("canonicalFact").getAsString());
-        assertFalse(midEntry.get("hasEmbedding").getAsBoolean());
-
-        JsonObject pinned = dump.getAsJsonArray("longTermPinned").get(0).getAsJsonObject();
-        assertEquals("MAX", pinned.get("importance").getAsString());
+        assertTrue(dump.get("dumpedAt").getAsString()
+                .matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z"));
     }
 }

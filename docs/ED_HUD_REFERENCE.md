@@ -134,6 +134,8 @@ key, НЕ на таблицу каталога (§6), НЕ на binding id.
 (аффорданс в ячейке, меньше высоты строки).
 
 **Рамки:** `HUD_BORDER_THICKNESS` (стандартная) · `HUD_BORDER_THICKNESS_ACCENT` (акцент).
+**Каретка набора:** `HUD_CARET_WIDTH`; вертикальное выравнивание — по visual bounds маркера через
+`HudGlyphs.paintHudTextCaret`, не по ручному пиксельному сдвигу.
 
 ---
 
@@ -402,6 +404,13 @@ key, НЕ на таблицу каталога (§6), НЕ на binding id.
 `warningGlyphIcon`/`paintHudWarningGlyph`, §13); `HudBanner.multiline(text, state)` (переносимый);
 `HudStatusReadout`; прогресс — сегментированная полоса `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SUCCESS`.
 
+### 7.4 Диалоговый лог
+
+`HudLogArea.chat` ведёт реплики CMDR слева (зелёная рейка) и Vega справа (циановая). Активная
+реплика Vega получает непрозрачную рейку и циановую заливку, затухающую от рейки к тексту. Это
+осознанное исключение из запрета градиентов §0. После последнего символа печати заливка и рейка
+плавно затухают до обычного вида за `HUD_CHAT_ACTIVE_HOLD_MS`.
+
 ## 8. Скроллбары
 
 Служебный хром, не носитель смысла. Цвет-статус (в т.ч. циан) НЕ применяется.
@@ -606,7 +615,8 @@ editor picker'а (`HUD_COMBO_EDITOR_LOCKED`; иначе палитра став�
   выбором строки. Без `HUD_COLOR_ROLE_INFORMATION`/`HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND`.
 - Примитивы для >1 места — в `HudGlyphs`: ▼ `paintHudArrowDown`; ▲ `paintHudArrowUp`; ◄ `paintHudArrowLeft`; ► `paintHudArrowRight`;
   «i» `paintHudInfoGlyph`; × `paintHudCloseGlyph`; маркер чекбокса `paintHudCheckMarker`; ⋮ `paintHudVerticalEllipsis`; ⚠ `paintHudWarningGlyph`;
-  ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; тинт `tintIcon`; приглушение альфой `dimIcon`. Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
+  ⤓ save/download `paintHudSaveGlyph`; 🗑 clear/trash `paintHudTrashGlyph`; каретка `paintHudTextCaret`; тинт `tintIcon`; приглушение альфой `dimIcon`.
+  Глифы — примитивами, НЕ `drawString`/Unicode и НЕ растром.
 - Info-«i» — ВНУТРИ контрола (§5.2/§5.1) через `setInfoAction`. Синие ссылки — антипаттерн.
 - Тултипы (`setToolTipText`) — стиль ГЛОБАЛЬНО через `UIManager` `ToolTip.*` в `AppView.installDarkDefaults`
   (тёмный `HUD_COLOR_ROLE_SECONDARY_PANEL_BACKGROUND` + тёплая рейка `HUD_COLOR_ROLE_CONTROL_DECORATION` `HUD_BORDER_THICKNESS`,

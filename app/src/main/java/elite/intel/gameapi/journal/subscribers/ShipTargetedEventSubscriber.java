@@ -29,7 +29,7 @@ public class ShipTargetedEventSubscriber {
         log.debug(event.toJson());
 
         if (!event.isTargetLocked() && playerSession.isRadarContactAnnouncementOn()) {
-            CompanionRuntime.narrator().announce("radar_contact", localizedEvent("event.target.contactLost"), "COMBAT", true);
+            CompanionRuntime.narrator().announce(localizedEvent("event.target.contactLost"), true);
         }
 
         String pilotRankLocalized = Ranks.getLocalizedPilotFederationRankMap().get(event.getPilotRank());

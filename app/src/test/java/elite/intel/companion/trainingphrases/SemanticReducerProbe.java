@@ -66,7 +66,7 @@ class SemanticReducerProbe {
         for (GameToolCandidates.Candidate c : all) {
             String cat = commandIds.contains(c.id()) ? "ACTION" : queryIds.contains(c.id()) ? "QUERY" : "MACRO";
             b.append(c.id()).append('\t').append(cat).append('\t')
-                    .append(c.phraseKey().replace('\n', ' ')).append('\t')
+                    .append(c.localizedAliasGroup().replace('\n', ' ')).append('\t')
                     .append(c.tool().description().replace('\n', ' ')).append('\n');
         }
         write("catalog-ru.txt", b.toString());

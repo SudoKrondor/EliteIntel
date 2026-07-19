@@ -10,10 +10,9 @@ import java.util.*;
  * Which of the two carriers Elite exposes a commander meant: their own fleet carrier, or their squadron's.
  * <p>
  * Both carriers answer identical questions (fuel, finances, route, ETA), so the companion offers ONE tool per
- * question and resolves the owner HERE, from the commander's own words. The alternative - a fleet tool beside a
- * near-identical squadron tool - is what the semantic reflex explicitly cannot separate: a phrase and its own
- * superstring ("carrier status" / "squadron carrier status") embed too closely to clear the reflex's runner-up
- * gap, forcing every carrier question onto a small local model that then picks a sibling at random.
+ * question and resolves the owner HERE, from the commander's own words. Keeping a fleet tool beside a near-identical
+ * squadron tool made semantic retrieval and the small local model distinguish sibling functions from phrases that
+ * differ by one qualifier ("carrier status" / "squadron carrier status").
  * <p>
  * The commander is assumed to mean their own carrier unless they say otherwise: bare "carrier" is how commanders
  * refer to the one they own, and the squadron carrier is the marked, explicitly-named case.

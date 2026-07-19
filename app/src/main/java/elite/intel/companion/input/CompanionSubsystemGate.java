@@ -62,7 +62,7 @@ public final class CompanionSubsystemGate implements ManagedService {
     @Subscribe
     public void onUserInput(UserInputEvent event) {
         CompanionRuntimeGraph runtimeGraph = activeGraph;
-        if (!isCompanionModeOn() || runtimeGraph == null) {
+        if (runtimeGraph == null) {
             return;
         }
         String input = event.getUserInput();
@@ -88,7 +88,7 @@ public final class CompanionSubsystemGate implements ManagedService {
 
     @Override
     public synchronized void start() {
-        if (activeGraph != null || !isCompanionModeOn()) {
+        if (activeGraph != null) {
             return;
         }
 
@@ -147,11 +147,6 @@ public final class CompanionSubsystemGate implements ManagedService {
         CompanionRuntime.uninstallGraph(runtimeGraph);
         cleanupFailure = runCleanup(cleanupFailure, runtimeGraph::close);
         rethrowCleanupFailure(cleanupFailure);
-    }
-
-    /** Reads the {@code companionModeOn} gate flag. */
-    private boolean isCompanionModeOn() {
-        return CompanionConfig.companionModeOn();
     }
 
     /** Test access to the live dispatcher, or {@code null} while the subsystem is stopped. */

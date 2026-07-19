@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The reflex gate: an input is a reflex only when it matches a training phrase verbatim and resolves to
- * exactly one safe, parameterless command. Word overlap, an ambiguous tie, a parameterized command and a
- * dangerous command are all rejected (they take the LLM / confirmation path instead).
+ * exactly one safe, parameterless action. Word overlap, an ambiguous tie, a parameterized action and a dangerous
+ * action are all rejected (they take the LLM / confirmation path instead).
  */
 class ReflexResolverTest {
 

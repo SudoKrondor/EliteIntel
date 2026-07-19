@@ -76,6 +76,17 @@ class CustomCommandValidatorTest {
         assertFalse(CustomCommandValidator.validate(candidate, List.of(existing), null).isEmpty());
     }
 
+    @Test
+    void rejectsRememberAsRunCommandTarget() {
+        CustomCommandDefinition candidate = customCommand("custom_command_remember", "Remember", "save this", List.of(
+                CustomCommandStep.runCommandWithParams("remember", Map.of("text", "hidden rewrite"))
+        ));
+
+        List<String> errors = CustomCommandValidator.validate(candidate, List.of(), null);
+
+        assertTrue(errors.stream().anyMatch(error -> error.contains("RUN_COMMAND cannot target remember")));
+    }
+
     // --- parameter validation ---
 
     @Test

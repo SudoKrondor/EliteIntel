@@ -5,16 +5,17 @@ import elite.intel.companion.execution.ExecutionGateway;
 import elite.intel.companion.execution.GenerationBoundExecutionGateway;
 import elite.intel.companion.llm.LlmGateway;
 import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.companion.memory.MemorySearchResult;
 import elite.intel.companion.memory.MemorySnapshot;
 import elite.intel.companion.mind.CompanionState;
 import elite.intel.companion.mind.DispatcherCompanionNarrator;
 import elite.intel.companion.mind.ThoughtDispatcher;
-import elite.intel.companion.model.ConversationTopic;
 import elite.intel.companion.model.Urgency;
 import elite.intel.companion.model.execution.ExecutionRequest;
 import elite.intel.companion.model.llm.LlmRequest;
 import elite.intel.companion.model.llm.LlmResult;
-import elite.intel.companion.model.memory.MemoryEntry;
+import elite.intel.companion.model.memory.MemoryKind;
+import elite.intel.companion.model.memory.MemoryRecord;
 import elite.intel.companion.model.speech.SpeechRequest;
 import elite.intel.companion.speech.GenerationBoundSpeechGateway;
 import elite.intel.companion.speech.SpeechGateway;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -150,15 +152,16 @@ class CompanionRuntimeGraphTest {
     private enum NoOpMemoryGateway implements MemoryGateway {
         INSTANCE;
 
-        @Override public void write(MemoryEntry entry) { }
+        @Override public void write(MemoryRecord record) { }
         @Override public MemorySnapshot snapshot() { throw new UnsupportedOperationException(); }
-        @Override public List<MemoryEntry> readShortTermTimeline() { return List.of(); }
-        @Override public List<MemoryEntry> recallTopicMemory(ConversationTopic topic, String query, int limit) { return List.of(); }
-        @Override public List<String> recallMatching(String query, int limit) { return List.of(); }
-        @Override public List<MemoryEntry> recallCandidates(String query, int limit) { return List.of(); }
-        @Override public String longTermSummary() { return ""; }
-        @Override public void replaceLongTermSummary(String summary) { }
-        @Override public List<MemoryEntry> longTermPinnedFacts() { return List.of(); }
-        @Override public void addLongTermPinned(MemoryEntry fact) { }
+        @Override public List<MemoryRecord> readRecentHistory() { return List.of(); }
+        @Override public MemorySearchResult recallMatching(String query, int limit) {
+            return MemorySearchResult.empty();
+        }
+        @Override public Map<MemoryKind, String> longTermSummaries() { return Map.of(); }
+        @Override public void commitConsolidation(
+                MemoryKind kind, List<MemoryRecord> batch, String summary
+        ) { }
+        @Override public List<MemoryRecord> savedTextRecords() { return List.of(); }
     }
 }

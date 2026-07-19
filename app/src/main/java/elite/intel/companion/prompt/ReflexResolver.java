@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 /**
  * The companion's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
  * is a pure reflex - an input that matches a training phrase verbatim and resolves to exactly one safe,
- * parameterless command. Such an input is executed directly (no LLM, a {@code ReflexThought}); everything else
+ * parameterless action. Such an input is executed directly (no LLM, a {@code ReflexThought}); everything else
  * falls through to the full {@link elite.intel.companion.mind.CommanderThought}.
  * <p>
  * Deliberately strict, so a reflex never misfires. It requires all of: a verbatim phrase match (not word
@@ -142,7 +142,7 @@ public final class ReflexResolver {
         return new GameToolCandidates(gameStateSnapshot)
                 .collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
                 .map(candidate -> new CommandPhrase(
-                        candidate.id(), candidate.phraseKey(), candidate.tool().parameters().isEmpty()))
+                        candidate.id(), candidate.localizedAliasGroup(), candidate.tool().parameters().isEmpty()))
                 .toList();
     }
 }

@@ -1,7 +1,9 @@
 package elite.intel.companion.llm;
 
+import com.google.gson.JsonObject;
 import elite.intel.ai.LlmProviderResolver;
 import elite.intel.ai.ProviderEnum;
+import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.LocalLlmProvider;
 import elite.intel.ai.brain.inference.anthropic.AnthropicClient;
 import elite.intel.ai.brain.inference.deepseek.DeepSeekClient;
@@ -37,17 +39,18 @@ public final class CompanionLlmGatewayFactory {
     /** Cloud providers with a wired companion adapter. Add an entry to wire one; its label joins the message. */
     private static final Map<ProviderEnum, WiredProvider> CLOUD_GATEWAYS = Map.of(
             ProviderEnum.MISTRAL, new WiredProvider("Mistral", session -> new CompanionLlmGateway(
-                    new MistralLlmAdapter(), body -> MistralClient.getInstance().sendJsonRequest(body))),
+                    new MistralLlmAdapter(), typedTransport(body -> MistralClient.getInstance().sendCompanionRequest(body)))),
             ProviderEnum.OPENAI, new WiredProvider("OpenAI", session -> new CompanionLlmGateway(
-                    new OpenAiLlmAdapter(), body -> OpenAiClient.getInstance().sendJsonRequest(body))),
+                    new OpenAiLlmAdapter(), typedTransport(body -> OpenAiClient.getInstance().sendCompanionRequest(body)))),
             ProviderEnum.GROK, new WiredProvider("Grok", session -> new CompanionLlmGateway(
-                    new GrokLlmAdapter(), body -> GrokClient.getInstance().sendJsonRequest(body))),
+                    new GrokLlmAdapter(), typedTransport(body -> GrokClient.getInstance().sendCompanionRequest(body)))),
             ProviderEnum.DEEPSEEK, new WiredProvider("DeepSeek", session -> new CompanionLlmGateway(
-                    new DeepSeekLlmAdapter(), body -> DeepSeekClient.getInstance().sendJsonRequest(body))),
+                    new DeepSeekLlmAdapter(), typedTransport(body -> DeepSeekClient.getInstance().sendCompanionRequest(body)))),
             ProviderEnum.ANTHROPIC, new WiredProvider("Claude", session -> new CompanionLlmGateway(
-                    new AnthropicLlmAdapter(), body -> AnthropicClient.getInstance().sendJsonRequest(body))),
+                    new AnthropicLlmAdapter(), typedTransport(body -> AnthropicClient.getInstance().sendCompanionRequest(body)))),
             ProviderEnum.GEMINI, new WiredProvider("Gemini", session -> new CompanionLlmGateway(
-                    new GeminiLlmAdapter(), body -> GeminiClient.getInstance().sendJsonRequest(body, GeminiClient.MODEL_FLASH))));
+                    new GeminiLlmAdapter(), typedTransport(body -> GeminiClient.getInstance()
+                    .sendCompanionRequest(body, GeminiClient.MODEL_FLASH)))));
 
     /**
      * Local providers with a wired companion adapter. Both ride the shared OpenAI-compatible protocol
@@ -58,12 +61,32 @@ public final class CompanionLlmGatewayFactory {
     private static final Map<LocalLlmProvider, WiredProvider> LOCAL_GATEWAYS = Map.of(
             LocalLlmProvider.LMSTUDIO, new WiredProvider("LM Studio (Gemma 4)", session -> new CompanionLlmGateway(
                     new LmStudioLlmAdapter(session.getLmStudioCommandModel().trim()),
-                    body -> LMStudioClient.getInstance().sendJsonRequest(body))),
+                    typedTransport(body -> LMStudioClient.getInstance().sendCompanionRequest(body)))),
             LocalLlmProvider.OLLAMA, new WiredProvider("Ollama", session -> new CompanionLlmGateway(
                     new OllamaLlmAdapter(session.getOllamaCommandModel().trim()),
-                    body -> OllamaClient.getInstance().sendOpenAiChatRequest(body))));
+                    typedTransport(body -> OllamaClient.getInstance().sendCompanionOpenAiChatRequest(body)))));
 
     private CompanionLlmGatewayFactory() {
+    }
+
+    /** Bridges a provider client that exposes typed HTTP outcomes into the companion transport seam. */
+    private static LlmTransport typedTransport(Function<String, AiTransportResult> sender) {
+        return new LlmTransport() {
+            @Override
+            public JsonObject send(String requestBody) {
+                AiTransportResult outcome = sendOutcome(requestBody);
+                if (outcome instanceof AiTransportResult.Success success) {
+                    return success.response();
+                }
+                AiTransportResult.Failure failure = (AiTransportResult.Failure) outcome;
+                throw new IllegalStateException("Companion transport failed: " + failure.diagnostic());
+            }
+
+            @Override
+            public AiTransportResult sendOutcome(String requestBody) {
+                return sender.apply(requestBody);
+            }
+        };
     }
 
     /** Creates the gateway for the configured provider, or fails with the dynamic supported-provider message. */

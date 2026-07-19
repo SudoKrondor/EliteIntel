@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class PersonalitySwitchPromptTest {
 
-    private final CompanionSystemPromptPart prompt = new CompanionSystemPromptPart();
+    private final CompanionSystemPrompt prompt = new CompanionSystemPrompt();
     private ShipPersonality original;
 
     private String render() {

@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * System function: speak a phrase to the commander via the SpeechGateway. Available to both sources.
- * Dangerous-action confirmation is not the model's concern: it is detected and voiced by the
- * {@code CommanderThought} after the response (§2.13), so this function carries no confirmation marker.
- */
+/** System function that sends a phrase to the commander through the speech gateway. */
 @RegisterSystemFunction
 public final class SpeakFunction implements SystemFunction {
 
@@ -34,9 +30,7 @@ public final class SpeakFunction implements SystemFunction {
 
     @Override
     public String llmDescription() {
-        return "Speak only when no offered action, query, or macro matches the commander's request. Use it for "
-                + "conversation, a grounded answer, clarification, or an unsupported request. Never use it to "
-                + "acknowledge, promise, or describe a matching function; call that function instead.";
+        return "Speak a message to the commander.";
     }
 
     @Override

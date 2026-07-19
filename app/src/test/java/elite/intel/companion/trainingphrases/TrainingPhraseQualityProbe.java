@@ -7,7 +7,7 @@ import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.ai.embed.SemanticPhraseMatcher;
 import elite.intel.ai.embed.SemanticSearchProvider;
 import elite.intel.companion.model.IntelActionCategory;
-import elite.intel.companion.prompt.AliasMatchSurface;
+import elite.intel.companion.prompt.AliasEmbeddingText;
 import elite.intel.companion.prompt.GameToolCandidates;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
@@ -35,7 +35,7 @@ import java.util.Set;
 /**
  * Deterministic (no LLM) training-phrase quality probe. Reads authored probe phrases from
  * {@code src/test/resources/trainingphrases/probe-phrases-<lang>.json} ({id: [phrases]}), runs each through the
- * alias-only semantic matcher (via {@link AliasMatchSurface}), and produces a per-command diagnosis: the probes
+ * alias-only semantic matcher (via {@link AliasEmbeddingText}), and produces a per-command diagnosis: the probes
  * with their outcome, the existing training phrases and their gap to each probe, the competing phrases that
  * outrank the tool, the dominant conflict, and a concrete suggestion of which training phrases to add. Written
  * as CSV (weak-first) to {@code build/training-phrase-quality-<lang>.csv} for the Excel summary
@@ -131,7 +131,8 @@ class TrainingPhraseQualityProbe {
         System.out.println("probe seed: " + input + " missing; using localized aliases as EN probe seed");
         Map<String, List<String>> probes = new LinkedHashMap<>();
         for (GameToolCandidates.Candidate candidate : candidates) {
-            List<String> phrases = AliasMatchSurface.phrases(candidate.phraseKey(), candidate.tool().parameters())
+            List<String> phrases = AliasEmbeddingText.phrases(
+                            candidate.localizedAliasGroup(), candidate.tool().parameters())
                     .stream()
                     .map(TrainingPhraseQualityProbe::clean)
                     .distinct()
@@ -203,7 +204,7 @@ class TrainingPhraseQualityProbe {
     /** The embedding-ready alias surface for a candidate (param placeholders substituted / stripped). */
     private List<String> aliasesOf(int index) {
         GameToolCandidates.Candidate candidate = candidates.get(index);
-        return AliasMatchSurface.phrases(candidate.phraseKey(), candidate.tool().parameters());
+        return AliasEmbeddingText.phrases(candidate.localizedAliasGroup(), candidate.tool().parameters());
     }
 
     /** The phrase that best matches the query among the given aliases, or "". */

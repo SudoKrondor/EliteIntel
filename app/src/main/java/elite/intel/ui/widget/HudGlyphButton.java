@@ -8,6 +8,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Objects;
 
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_DISABLED_ICON;
 import static elite.intel.ui.theme.HudPalette.HUD_ICON_TABLE;
 import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
 
@@ -17,7 +18,7 @@ import static elite.intel.ui.theme.HudPalette.HUD_TABLE_ROW_HEIGHT_COMPACT;
  * a left press-release that ends inside the button. The single owner of the small "glyph button in a header or
  * toolbar" pattern (the dialog close {@code x}, a section header action) - no component paints its own copy.
  * <p>
- * Footprint is the compact control square ({@code HUD_TABLE_ROW_HEIGHT_COMPACT}); the glyph is drawn at
+ * Footprint is the compact control square ({@code HUD_TABLE_ROW_HEIGHT_COMPACT}); the default glyph is drawn at
  * {@code HUD_ICON_TABLE}, centred. All sizes are palette tokens, per the HUD canon (§3/§13).
  */
 public final class HudGlyphButton extends JComponent {
@@ -26,6 +27,7 @@ public final class HudGlyphButton extends JComponent {
     private final Color restTint;
     private final Color hoverTint;
     private final Runnable onClick;
+    private final int iconSize;
 
     private boolean hover;
     private boolean armed;
@@ -38,12 +40,31 @@ public final class HudGlyphButton extends JComponent {
      * @param onClick   action run on a completed left click
      */
     public HudGlyphButton(HudGlyphs.Painter painter, Color restTint, Color hoverTint, String tooltip, Runnable onClick) {
+        this(painter, restTint, hoverTint, tooltip, onClick, HUD_ICON_TABLE);
+    }
+
+    /**
+     * Creates an icon-only action with a custom glyph size while retaining the standard compact hit target.
+     *
+     * @param painter   glyph to paint (a {@code HudGlyphs::paintHud*Glyph} method reference)
+     * @param restTint  glyph colour at rest
+     * @param hoverTint glyph colour while hovered
+     * @param tooltip   localized tooltip, or {@code null} for none
+     * @param onClick   action run on a completed left click
+     * @param iconSize  glyph size in pixels, from a {@code HudPalette.HUD_ICON_*} token
+     */
+    public HudGlyphButton(HudGlyphs.Painter painter, Color restTint, Color hoverTint, String tooltip,
+                          Runnable onClick, int iconSize) {
         // Fail fast on the paint-critical collaborators so a null surfaces at construction, not later inside
         // paintComponent. onClick stays optional (a decorative glyph is valid); its use site null-guards it.
         this.painter = Objects.requireNonNull(painter, "painter");
         this.restTint = Objects.requireNonNull(restTint, "restTint");
         this.hoverTint = Objects.requireNonNull(hoverTint, "hoverTint");
         this.onClick = onClick;
+        if (iconSize <= 0) {
+            throw new IllegalArgumentException("iconSize must be positive");
+        }
+        this.iconSize = iconSize;
         setOpaque(false);
         setPreferredSize(new Dimension(HUD_TABLE_ROW_HEIGHT_COMPACT, HUD_TABLE_ROW_HEIGHT_COMPACT));
         setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -53,7 +74,7 @@ public final class HudGlyphButton extends JComponent {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
-                hover = true;
+                hover = isEnabled();
                 repaint();
             }
 
@@ -66,14 +87,14 @@ public final class HudGlyphButton extends JComponent {
 
             @Override
             public void mousePressed(MouseEvent e) {
-                if (SwingUtilities.isLeftMouseButton(e)) {
+                if (isEnabled() && SwingUtilities.isLeftMouseButton(e)) {
                     armed = true;
                 }
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                boolean fire = armed && SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint());
+                boolean fire = isEnabled() && armed && SwingUtilities.isLeftMouseButton(e) && contains(e.getPoint());
                 armed = false;
                 if (fire && onClick != null) {
                     onClick.run();
@@ -83,13 +104,25 @@ public final class HudGlyphButton extends JComponent {
     }
 
     @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        if (!enabled) {
+            hover = false;
+            armed = false;
+        }
+        setCursor(Cursor.getPredefinedCursor(enabled ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+        repaint();
+    }
+
+    @Override
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         try {
-            int gs = HUD_ICON_TABLE;
+            int gs = iconSize;
             int gx = (getWidth() - gs) / 2;
             int gy = (getHeight() - gs) / 2;
-            painter.paint(g2, gx, gy, gs, gs, hover ? hoverTint : restTint);
+            Color tint = !isEnabled() ? HUD_COLOR_ROLE_DISABLED_ICON : hover ? hoverTint : restTint;
+            painter.paint(g2, gx, gy, gs, gs, tint);
         } finally {
             g2.dispose();
         }

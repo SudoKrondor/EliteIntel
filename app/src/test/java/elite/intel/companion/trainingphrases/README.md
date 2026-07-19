@@ -30,7 +30,7 @@ Reducer на каждом ходу отбирает из ~188 команд ко�
 | `../../../../scripts/build_training_xlsx.py` | Сборка Excel из CSV (листы `data` / `Легенда` / `Алгоритм`) |
 
 Продакшн‑код, на который опирается тест (в пакете `companion.prompt`): `SemanticActionReducer`,
-`AliasMatchSurface`, `GameToolCandidates`, `SemanticPhraseMatcher`.
+`AliasEmbeddingText`, `GameToolCandidates`, `SemanticPhraseMatcher`.
 
 ---
 
@@ -95,7 +95,7 @@ python scripts/build_training_xlsx.py en "C:\Users\Alex\Downloads\training-phras
 В бандле алиасы несут плейсхолдеры `{name:hint}` (`{key:X}`, `{minutes:X}`, `{state:true/false}`). **Каждая**
 фраза параметрической команды должна нести плейсхолдер — этого требует конвенция и извлечение параметров.
 
-Но в эмбеддер идёт **не** сырой алиас: `AliasMatchSurface` строит матчинг‑поверхность —
+Но в эмбеддер идёт **не** сырой алиас: `AliasEmbeddingText` строит матчинг‑поверхность —
 - **number** → подставляет пример‑число (`{key:X}` → `20`); замерено: матчит реальную «на двадцать» лучше, чем
   и аннотация, и голый стрип;
 - **всё остальное** (string/enum/boolean) → **стрип** (значение уже несёт существительное/глагол фразы).

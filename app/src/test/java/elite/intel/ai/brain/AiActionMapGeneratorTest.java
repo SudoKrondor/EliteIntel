@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -44,7 +45,7 @@ class AiActionMapGeneratorTest {
     }
 
     /**
-     * Frozen snapshot of the built-in action ids the generator must produce on EN (182 ids).
+     * Frozen snapshot of the built-in action ids the generator must produce on EN.
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
      * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
      * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
@@ -264,6 +265,15 @@ class AiActionMapGeneratorTest {
         assertTrue(missing.isEmpty() && unexpected.isEmpty(),
                 "Built-in composition drift. Missing (snapshot, not generated): "
                         + missing + " ; Unexpected (generated, not in snapshot): " + unexpected);
+    }
+
+    @Test
+    void companionOnlyRememberIsAbsentFromLegacyActionMap() {
+        Map<String, String> actionMap = new AiActionMapGenerator().generate(
+                Status.getInstance(), true,
+                SystemSession.getInstance().conversationalModeOn());
+
+        assertFalse(actionMap.containsValue("remember"));
     }
 
     /**

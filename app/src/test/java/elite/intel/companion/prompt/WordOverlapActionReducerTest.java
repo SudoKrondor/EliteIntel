@@ -26,9 +26,9 @@ class WordOverlapActionReducerTest {
 
     private static final Set<IntelActionCategory> ALL = EnumSet.allOf(IntelActionCategory.class);
 
-    private static GameToolCandidates.Candidate candidate(String id, String phraseKey) {
-        return new GameToolCandidates.Candidate(id, phraseKey,
-                new LlmToolDefinition(id, "desc", phraseKey, List.of()));
+    private static GameToolCandidates.Candidate candidate(String id, String localizedAliasGroup) {
+        return new GameToolCandidates.Candidate(id, localizedAliasGroup,
+                new LlmToolDefinition(id, "desc", localizedAliasGroup, List.of()));
     }
 
     /** Fixed three-tool catalog; the source ignores categories (gating is tested separately). */
@@ -60,6 +60,21 @@ class WordOverlapActionReducerTest {
 
         assertEquals(List.of("trade"), ids(snapshotReducer.selectTools(ALL, "open market", null, turnState)));
         assertSame(turnState, observed.get(), "word-overlap fallback must retain the semantic path's turn state");
+    }
+
+    @Test
+    void clarificationTargetLookupUsesTheFreshSnapshotWithoutPhraseNarrowing() {
+        GameStateSnapshot turnState = GameStateSnapshot.capture(Status.detached(PlayerSituation.IN_SHIP_DEEP_SPACE));
+        AtomicReference<GameStateSnapshot> observed = new AtomicReference<>();
+        WordOverlapActionReducer snapshotReducer = new WordOverlapActionReducer((allowed, snapshot) -> {
+            observed.set(snapshot);
+            return snapshot == turnState ? catalog : List.of();
+        }, Language.EN);
+
+        LlmToolDefinition target = snapshotReducer.findToolById(ALL, "navigate", turnState).orElseThrow();
+
+        assertEquals("navigate", target.name());
+        assertSame(turnState, observed.get(), "target rehydration must apply the continuation turn's visibility");
     }
 
     @Test

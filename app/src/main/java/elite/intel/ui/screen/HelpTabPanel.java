@@ -17,6 +17,7 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
+import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
@@ -154,8 +155,9 @@ public class HelpTabPanel extends JPanel {
         // the filter (see availableRows).
         JPanel situationCol = transparentPanel(new GridBagLayout());
         GridBagConstraints sgc = baseGbc();
-        addLabel(situationCol, getText("location.field.label"), sgc);
-        situationCombo = new HudComboBox<>(PlayerSituation.values(), s -> caps(getText(s.i18nKey())));
+        addLabel(situationCol, EventsTextProvider.getText("game.situation.label"), sgc);
+        situationCombo = new HudComboBox<>(PlayerSituation.values(),
+                s -> caps(EventsTextProvider.getText(s.i18nKey())));
         situationCombo.setSelectedItem(PlayerSituation.UNKNOWN); // no context known until the first refresh/sync
         situationCombo.addActionListener(e -> {
             if (syncingSituation) {

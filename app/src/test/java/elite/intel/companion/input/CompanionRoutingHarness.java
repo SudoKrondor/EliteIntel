@@ -10,14 +10,15 @@ import elite.intel.ai.brain.actions.query.QueryRegistry;
 import elite.intel.companion.CompanionRuntime;
 import elite.intel.companion.diag.CompanionDiagnostics;
 import elite.intel.companion.execution.ExecutionGateway;
+import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.companion.mind.ThoughtDispatcher;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.ThoughtSource;
 import elite.intel.companion.prompt.IntelActionAccessPolicy;
-import elite.intel.companion.tools.SpeakFunction;
+import elite.intel.companion.speech.SpeechGateway;
+import elite.intel.companion.tools.RequestInputFunction;
 import elite.intel.companion.tools.SystemFunction;
 import elite.intel.companion.tools.SystemFunctionRegistry;
-import elite.intel.util.json.JsonUtils;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -26,14 +27,16 @@ import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
-import elite.intel.util.Cypher;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.ui.event.AppLogEvent;
 import elite.intel.ui.event.CommanderMatchInputChangedEvent;
+import elite.intel.util.Cypher;
+import elite.intel.util.json.JsonUtils;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -67,6 +70,8 @@ public final class CompanionRoutingHarness {
     private static final long FLAG_DOCKED = 1L;
     private static final long FLAG_LANDED = 2L;
     private static final long FLAG_SUPERCRUISE = 16L;
+    private static final long FLAG_IN_WING = 128L;
+    private static final long FLAG_HAS_LAT_LONG = 2_097_152L;
     private static final long FLAG_IN_MAIN_SHIP = 16_777_216L;
     private static final long FLAG_IN_SRV = 67_108_864L;
     private static final long FLAG2_ON_FOOT = 1L; // flags2
@@ -83,16 +88,22 @@ public final class CompanionRoutingHarness {
             {FLAG_IN_MAIN_SHIP | FLAG_LANDED, 0L},       // landed
             {FLAG_IN_SRV, 0L},                           // in the SRV
             {0L, FLAG2_ON_FOOT},                         // on foot
+            {FLAG_IN_MAIN_SHIP | FLAG_HAS_LAT_LONG, 0L}, // flying over a planetary surface
+            {FLAG_IN_MAIN_SHIP | FLAG_IN_WING, 0L},      // in a wing
     };
 
     private final Language language;
     private final List<String> turnTools = new CopyOnWriteArrayList<>();
-    // The phrases the companion LLM spoke this turn (speak.text), captured so a failed assertion can show the
-    // model's actual answer, not just the dispatched tool names.
+    private final List<RoutedCall> turnCalls = new CopyOnWriteArrayList<>();
+    // The phrases submitted to speech this turn, captured so a failed assertion can show the model's actual
+    // answer, including a direct request_input question, not just dispatched tool names.
     private final List<String> turnSpeech = new CopyOnWriteArrayList<>();
-    // Timing diagnostics are emitted through UiBus in production; capture just the latency-related subset here
-    // so Gradle/IDE local-integration output can show it through stdout.
+    private final List<String> turnClarificationDiagnostics = new CopyOnWriteArrayList<>();
+    // Turn diagnostics are emitted through UiBus in production; capture latency plus the exact inlined facts here
+    // so Gradle/IDE local-integration output shows the model context used for routing.
     private final List<String> turnLatencyDiagnostics = new CopyOnWriteArrayList<>();
+    // A failed assertion needs every model attempt made during THIS route, including retry/continuation calls.
+    private final List<String> turnLlmTranscript = new CopyOnWriteArrayList<>();
     private final Map<String, IntelAction> actionsById = new HashMap<>();
     private final AtomicLong firstToolNanos = new AtomicLong();
 
@@ -112,6 +123,14 @@ public final class CompanionRoutingHarness {
         this.language = language;
     }
 
+    private record RoutedCall(String toolName, JsonObject arguments) {}
+
+    /** Rebuilds the runtime graph so an ordered live scenario starts with empty session conversation state. */
+    public void restart() throws Exception {
+        shutdown();
+        boot();
+    }
+
     /**
      * Boots the companion subsystem pinned to this harness's language; call once per suite.
      */
@@ -122,6 +141,7 @@ public final class CompanionRoutingHarness {
         SystemSession.getInstance().setLanguage(language);
         CommandRegistry.getInstance().load();
         QueryRegistry.getInstance().load();
+        MemoryFactSourceRegistry.getInstance().load();
         SystemFunctionRegistry registry = SystemFunctionRegistry.getInstance();
         if (registry.byId().isEmpty()) {
             registry.load();
@@ -134,20 +154,16 @@ public final class CompanionRoutingHarness {
 
         // Routing-only execution. Game COMMANDS and QUERIES are recorded but NEVER executed - running them
         // would press keys (commands) or call third-party REST APIs (queries: EDSM/Spansh). But SYSTEM
-        // FUNCTIONS (classify_turn, speak, memory_search) are internal companion mechanics with no external
-        // side effect (speak only publishes an event and no TTS engine is started), and the turn flow depends
-        // on their real results - e.g. classify_turn returns isQuestion, which drives whether the companion
-        // dispatches a data query or just speaks - so they run for real. Every tool name is still recorded.
+        // FUNCTIONS are internal companion mechanics with no external game side effect, so they run for real.
+        // Every tool name is still recorded. memory_search is a game query and therefore remains recording-only.
         ExecutionGateway recording = request -> {
             String toolName = request.toolName();
             firstToolNanos.compareAndSet(0L, System.nanoTime());
             turnTools.add(toolName);
-            if (SpeakFunction.ID.equals(toolName)) {
-                String spoken = JsonUtils.getAsStringOrEmpty(request.arguments(), SpeakFunction.PARAM_TEXT);
-                if (!spoken.isBlank()) {
-                    turnSpeech.add(spoken);
-                }
-            }
+            JsonObject arguments = request.arguments() == null
+                    ? new JsonObject()
+                    : request.arguments().deepCopy();
+            turnCalls.add(new RoutedCall(toolName, arguments));
             SystemFunction fn = systemFunctions.get(toolName);
             if (fn != null) {
                 try {
@@ -164,7 +180,16 @@ public final class CompanionRoutingHarness {
             return CompletableFuture.completedFuture(recorded);
         };
 
-        gate = new CompanionSubsystemGate(null, recording); // null LLM override → production companion LLM gateway
+        // Capture every phrase at the actual speech boundary. request_input is intentionally handled inside
+        // CommanderThought rather than through ExecutionGateway, so this is the observable proof that its
+        // question was voiced; it also keeps local-integration runs silent.
+        SpeechGateway recordingSpeech = request -> {
+            turnSpeech.add(request.text());
+            return CompletableFuture.completedFuture(null);
+        };
+
+        // null LLM override → production companion LLM gateway
+        gate = new CompanionSubsystemGate(null, recording, recordingSpeech);
         gate.start();
         dispatcher = gate.dispatcher();
         UiBus.register(this);
@@ -210,8 +235,11 @@ public final class CompanionRoutingHarness {
      */
     public List<String> route(String input) throws InterruptedException {
         turnTools.clear();
+        turnCalls.clear();
         turnSpeech.clear();
+        turnClarificationDiagnostics.clear();
         turnLatencyDiagnostics.clear();
+        turnLlmTranscript.clear();
         firstToolNanos.set(0L);
         lastMatchInput = "";
         lastGameStateSnapshot = null;
@@ -237,6 +265,7 @@ public final class CompanionRoutingHarness {
         boolean settled = dispatcher.isIdle();
         lastTurnTiming = new TurnTiming(firstToolMillis, idleMillis, settled);
         printTurnLatency(input, lastTurnTiming);
+        captureLlmTranscript(input);
         return List.copyOf(turnTools);
     }
 
@@ -245,16 +274,39 @@ public final class CompanionRoutingHarness {
         return lastTurnTiming;
     }
 
+    /** Returns the phrases submitted to the speech gateway during the most recent turn. */
+    public List<String> lastTurnSpeech() {
+        return List.copyOf(turnSpeech);
+    }
+
+    /** Whether the most recent turn opened the expected validated request_input continuation. */
+    public boolean lastTurnRequestedInput(String actionId, String parameterName) {
+        String expected = " settle: request_input " + actionId + "." + parameterName;
+        return turnClarificationDiagnostics.stream().anyMatch(line -> line.contains(expected));
+    }
+
+    /** Returns one argument from the most recent recorded invocation of {@code toolName}. */
+    public Optional<String> lastArgument(String toolName, String parameterName) {
+        for (int i = turnCalls.size() - 1; i >= 0; i--) {
+            RoutedCall call = turnCalls.get(i);
+            if (toolName.equals(call.toolName())) {
+                String value = JsonUtils.getAsStringOrEmpty(call.arguments(), parameterName);
+                return value.isBlank() ? Optional.empty() : Optional.of(value);
+            }
+        }
+        return Optional.empty();
+    }
+
     /** Captures info-level companion latency diagnostics for the active local-integration turn. */
     @Subscribe
     public void onAppLog(AppLogEvent event) {
-        captureLatencyDiagnostic(event.getData());
+        captureTurnDiagnostic(event.getData());
     }
 
     /** Captures detail-level companion latency diagnostics for the active local-integration turn. */
     @Subscribe
     public void onAppLogDebug(AppLogDebugEvent event) {
-        captureLatencyDiagnostic(event.getData());
+        captureTurnDiagnostic(event.getData());
     }
 
     /** Captures the exact per-turn normalized input without storing it in shared companion runtime state. */
@@ -264,7 +316,12 @@ public final class CompanionRoutingHarness {
         lastGameStateSnapshot = event.gameStateSnapshot();
     }
 
-    private void captureLatencyDiagnostic(String line) {
+    private void captureTurnDiagnostic(String line) {
+        if (line != null && line.contains(" settle: request_input ")) {
+            turnClarificationDiagnostics.add(line);
+            firstToolNanos.compareAndSet(0L, System.nanoTime());
+            turnTools.add(RequestInputFunction.ID);
+        }
         if (isLatencyDiagnostic(line)) {
             turnLatencyDiagnostics.add(line);
         }
@@ -273,13 +330,38 @@ public final class CompanionRoutingHarness {
     private static boolean isLatencyDiagnostic(String line) {
         return line != null && line.startsWith("Companion ")
                 && (line.contains(" intake:")
-                || line.contains(" semantic-reflex:")
                 || line.contains(" compose:")
+                || line.contains(" facts:")
                 || line.contains(" llm:")
                 || line.contains(" llm-http:")
                 || line.contains(" latency:")
                 || line.contains(" exec-time:")
                 || line.contains(" done:"));
+    }
+
+    /** Retains every model-facing diagnostic emitted during the completed turn for a later assertion failure. */
+    private void captureLlmTranscript(String input) {
+        List<String> llmLines = turnLatencyDiagnostics.stream()
+                .filter(CompanionRoutingHarness::isLlmDiagnostic)
+                .toList();
+        if (llmLines.isEmpty()) {
+            return;
+        }
+        turnLlmTranscript.add("=== LLM turn: \"" + input + "\" ===");
+        turnLlmTranscript.addAll(llmLines);
+    }
+
+    private static boolean isLlmDiagnostic(String line) {
+        return line != null && (line.contains(" compose:")
+                || line.contains(" facts:")
+                || line.contains(" llm:")
+                || line.contains(" llm-http:"));
+    }
+
+    private String llmTranscript() {
+        return turnLlmTranscript.isEmpty()
+                ? "<no LLM calls in current turn>"
+                : String.join(System.lineSeparator(), turnLlmTranscript);
     }
 
     private void printTurnLatency(String input, TurnTiming timing) {
@@ -296,22 +378,29 @@ public final class CompanionRoutingHarness {
      * is restored afterwards.
      */
     public void assertRouted(String input, String expectedAction) throws InterruptedException {
+        List<String> tools = routeWithActionVisible(input, expectedAction);
+        if (!tools.contains(expectedAction)) {
+            // On failure also surface what the semantic reducer offered for this input, so a miss can be told
+            // apart at a glance: the reducer never proposed the target (reducer/alias problem) vs. it proposed
+            // it but the companion LLM did not pick it (prompt/model problem).
+            fail("Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction
+                    + "\"; reducer selected " + reducerSelection()
+                    + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech))
+                    + System.lineSeparator() + "Timing: " + lastTurnTiming
+                    + System.lineSeparator() + "LLM transcript for current turn:"
+                    + System.lineSeparator() + llmTranscript());
+        }
+    }
+
+    /** Routes one input while forcing a game state in which {@code visibleAction} is offered to the LLM. */
+    public List<String> routeWithActionVisible(String input, String visibleAction) throws InterruptedException {
         Status status = Status.getInstance();
         GameEvents.StatusEvent snapshot = status.getStatus();
         long savedFlags = snapshot.getFlags();
         long savedFlags2 = snapshot.getFlags2();
         try {
-            applyStateFor(expectedAction, status, snapshot);
-            List<String> tools = route(input);
-            if (!tools.contains(expectedAction)) {
-                // On failure also surface what the semantic reducer offered for this input, so a miss can be told
-                // apart at a glance: the reducer never proposed the target (reducer/alias problem) vs. it proposed
-                // it but the companion LLM did not pick it (prompt/model problem).
-                fail("Input: \"" + input + "\" → dispatched " + tools + " but expected \"" + expectedAction
-                        + "\"; reducer selected " + reducerSelection()
-                        + System.lineSeparator() + "LLM said: " + (turnSpeech.isEmpty() ? "<nothing>" : String.join(" | ", turnSpeech))
-                        + System.lineSeparator() + "Timing: " + lastTurnTiming);
-            }
+            applyStateFor(visibleAction, status, snapshot);
+            return route(input);
         } finally {
             snapshot.setFlags(savedFlags);
             snapshot.setFlags2(savedFlags2);
