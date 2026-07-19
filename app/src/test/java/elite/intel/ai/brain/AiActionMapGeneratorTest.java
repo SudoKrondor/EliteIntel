@@ -186,7 +186,7 @@ class AiActionMapGeneratorTest {
             "set_speed_to_zero_0_stop_ship",
             "set_timed_reminder",
             "show_chat_comms_panel",
-            "show_commander_panel",
+            "show_central_panel",
             "show_contacts_panel",
             "show_crew_panel",
             "show_email_inbox_panel",

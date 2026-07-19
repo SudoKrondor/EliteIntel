@@ -137,7 +137,7 @@ public class Status extends StatusFlags {
     }
 
     public boolean isRolePanelOpen() {
-        return getGuiFocus() == GuiFocus.ROLE_PANEL;
+        return getGuiFocus() == GuiFocus.CENTRAL_PANEL;
     }
 
     public boolean isStationServicesOpen() {

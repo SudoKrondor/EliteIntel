@@ -14,15 +14,16 @@ import elite.intel.session.ui.UINavigator;
 import static elite.intel.ai.hands.Bindings.GameCommand.*;
 
 /**
- * Stage-4b self-describing command for "show commander panel".
+ * Stage-4b self-describing command for the central panel, the one carrying the commander's own information.
  */
 @RegisterCommand
-public final class ShowCommanderPanelCommand implements IntelCommand {
-    public static final String ID = "show_commander_panel";
+public final class ShowCentralPanelCommand implements IntelCommand {
+    public static final String ID = "show_central_panel";
 
     @Override
     public String llmDescription() {
-        return "Open the commander (role) panel.";
+        return "Open the central panel, the one carrying the commander's own information, also called the commander "
+                + "panel or the kneeboard.";
     }
 
 
@@ -42,7 +43,7 @@ public final class ShowCommanderPanelCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.COMMANDER);
+            navigator.openAndNavigate(StatusFlags.GuiFocus.CENTRAL_PANEL, CenterPanel.COMMANDER);
         } else if (status.isOnFoot()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingHold(BINDING_ON_FOOT_WHEEL.getGameBinding(), 500),

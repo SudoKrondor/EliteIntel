@@ -126,8 +126,9 @@ public final class ThoughtDispatcher implements ManagedService {
      * {@link #inputNormalizer} (acoustic corrections only) - this is the form used for the reflex gate and, on
      * the LLM path, the reducer, prompt current-input, and conversational memory. The raw words are retained for
      * execution and intake diagnostics. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
-     * matches a training phrase verbatim and resolves to exactly one safe, parameterless command becomes a
-     * deterministic {@code ReflexThought} (no LLM); everything else becomes a full {@code CommanderThought}.
+     * matches a training phrase verbatim and resolves to exactly one safe command, with every argument the alias
+     * supplies, becomes a deterministic {@code ReflexThought} (no LLM); everything else becomes a full
+     * {@code CommanderThought}.
      */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
@@ -154,15 +155,15 @@ public final class ThoughtDispatcher implements ManagedService {
         UiBus.publish(new CommanderMatchInputChangedEvent(matchInput, gameStateSnapshot));
         // Exact-alias reflex: try the commander's actual words FIRST, then the acoustically corrected form. The raw
         // phrase keeps a deliberately authored alias authoritative if a correction ever overlaps with it.
-        Optional<String> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
+        Optional<ReflexResolver.Reflex> reflexCommand = reflexResolver.resolve(rawStripped, gameStateSnapshot);
         if (reflexCommand.isEmpty() && !matchInput.equals(rawStripped)) {
             reflexCommand = reflexResolver.resolve(matchInput, gameStateSnapshot);
         }
         Thought thought = reflexCommand
-                .map(actionId -> Thought.reflex(context, actionId, dependencies))
+                .map(reflex -> Thought.reflex(context, reflex.actionId(), reflex.argumentsJson(), dependencies))
                 .orElseGet(() -> Thought.commander(context, dependencies));
         String route = reflexCommand.isPresent()
-                ? "reflex " + reflexCommand.get() + " (exact)"
+                ? "reflex " + reflexCommand.get().actionId() + reflexCommand.get().arguments() + " (exact)"
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);

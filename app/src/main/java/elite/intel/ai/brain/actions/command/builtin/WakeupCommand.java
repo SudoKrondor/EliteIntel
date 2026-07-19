@@ -20,7 +20,9 @@ public final class WakeupCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Wake the companion from sleep so it resumes listening and responding to voice commands.";
+        return "Start listening to voice commands: the commander is telling the companion to wake up, pay attention, "
+                + "or begin accepting voice input. Being told to listen is this action, not conversation - call it "
+                + "even when the companion appears to be awake already.";
     }
 
 

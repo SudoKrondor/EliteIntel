@@ -40,11 +40,12 @@ class CommandExecutionEvalTest {
             new Case("переключи грузовой ковш", "toggle_cargo_scoop", null, false),
             new Case("установи торговый бюджет десять миллионов кредитов", "trade_profile_set_budget", "10", false),
             new Case("установи максимальное число торговых остановок три", "trade_profile_set_max_stops", "3", false),
-            // Subsystem targeting: parameterized, so it goes through the LLM. The model normalizes the spoken
-            // Russian subsystem to its English key (двигатели -> drive, силовая установка -> powerplant).
+            // Subsystem targeting. A paraphrase still needs the LLM to normalize the spoken Russian subsystem to
+            // its English key (двигатели -> drive); "цель силовая установка" is a verbatim alias that already
+            // names its key, so it reflexes with key=powerplant and never reaches the model.
             new Case("наведись на двигатели", "target_subsystem", "drive", false),
             new Case("целься в двигатели", "target_subsystem", "drive", false),
-            new Case("цель силовая установка", "target_subsystem", "powerplant", false),
+            new Case("цель силовая установка", "target_subsystem", "powerplant", true),
             // "Find" commands: parameterized search. The model normalizes the commodity to its English key.
             new Case("найди где купить золото в радиусе 80 световых лет", "find_commodity", "gold", false),
             new Case("найди место добычи платины", "find_mining_site", "platinum", false),
@@ -83,7 +84,7 @@ class CommandExecutionEvalTest {
             // token (no command trains on it), so the right tool still fires (reflex=false). The reflex
             // fast-path is preserved too: the dispatcher's name strip recognizes the Cyrillic form, so
             // "Вега, полный стоп" is stripped to "полный стоп" and still reflexes (reflex=true).
-            new Case("Вега, цель силовая установка", "target_subsystem", "powerplant", false),
+            new Case("Вега, цель силовая установка", "target_subsystem", "powerplant", true),
             new Case("Вега, установи скорость пятьдесят процентов", "set_speed_50", null, false),
             new Case("Вега, контакты", "show_contacts_panel", null, false),
             new Case("Вега, полный стоп", "set_speed_to_zero_0_stop_ship", null, true));

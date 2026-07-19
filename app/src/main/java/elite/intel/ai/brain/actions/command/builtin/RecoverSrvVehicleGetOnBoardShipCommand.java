@@ -57,7 +57,7 @@ public final class RecoverSrvVehicleGetOnBoardShipCommand implements IntelComman
                 GameInputStep.bindingTap(ui_right),
                 GameInputStep.bindingTap(activate)
         ));
-        navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+        navigator.assumeDefaultState(StatusFlags.GuiFocus.CENTRAL_PANEL);
         return null;
     }
 }

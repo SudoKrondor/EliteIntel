@@ -56,7 +56,7 @@ public class LauchNomadCommand implements IntelCommand {
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
             ));
-            navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+            navigator.assumeDefaultState(StatusFlags.GuiFocus.CENTRAL_PANEL);
 
         }
         return null;

@@ -1309,7 +1309,7 @@ public class NaturalSpeechIntegrationTestIT {
     @Order(235)
     @MethodSource
     void openCentralPanel(String input) throws InterruptedException {
-        assertRouted(input, ShowCommanderPanelCommand.ID);
+        assertRouted(input, ShowCentralPanelCommand.ID);
     }
 
     static Stream<String> openCentralPanel() {

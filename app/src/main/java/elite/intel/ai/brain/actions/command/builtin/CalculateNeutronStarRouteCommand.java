@@ -46,12 +46,19 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
     private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
 
+    /**
+     * Applied whenever the commander does not state an efficiency, so a bare request still plots a route.
+     */
+    private static final int DEFAULT_EFFICIENCY = 50;
+
     private static List<ActionParameterSpec> buildParameters() {
         ActionParameterSpec efficiency = new ActionParameterSpec(
-                PARAM_EFFICIENCY, "number", true,
-                "Route efficiency percentage from 1 to 100: lower trades extra jumps for shorter total distance.",
+                PARAM_EFFICIENCY, "number", false,
+                "Route efficiency percentage from 1 to 100: lower trades extra jumps for shorter total distance. "
+                        + "Optional - omit it when the commander does not state one and " + DEFAULT_EFFICIENCY
+                        + " is used.",
                 List.of("60", "100"),
-                "Extract the efficiency percentage the commander states (1-100).");
+                "Extract the efficiency percentage only if the commander states one; never ask for it.");
         efficiency.validate();
         return List.of(efficiency);
     }
@@ -76,13 +83,10 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         JsonElement key = params.get(PARAM_EFFICIENCY);
 
-        if (key == null) {
-            return StringUtls.localizedLlm("handler.neutronRoute.efficiency");
-        }
-
-        Integer efficiency = getIntSafely(key.getAsString());
-        if (efficiency != null && efficiency < 1 || efficiency > 100) {
-            efficiency = 50; // Default if none provided.
+        // A bare "plot a neutron route" is a complete order: plot it at the default rather than asking back.
+        Integer efficiency = key == null || key.isJsonNull() ? null : getIntSafely(key.getAsString());
+        if (efficiency == null || efficiency < 1 || efficiency > 100) {
+            efficiency = DEFAULT_EFFICIENCY;
         }
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());

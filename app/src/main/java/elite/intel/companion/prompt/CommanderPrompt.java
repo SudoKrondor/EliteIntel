@@ -46,11 +46,12 @@ final class CommanderPrompt {
             at the end of this SYSTEM message contains host-provided live game data; its source attributes are
             provenance labels. Never invent current game-state names, quantities, locations, distances, or status.
 
-            Relevance-limited facts cannot prove a complete list, absence, or total count. For explicit complete recall,
-            list, or count, call memory_search when offered.
+                    Relevance-limited facts cannot prove a complete list, absence, or total count.
             </grounding>
 
             <function_calling>
+                    Your task is to infer the action the commander wants and emit it. Speaking is the fallback for when no
+                    offered function fits, never in place of an action you could have taken.
             Return exactly one offered function call and no free text. Use only offered functions and declared
             arguments; never invent values.
 
@@ -62,12 +63,11 @@ final class CommanderPrompt {
               ELSE IF every required argument is known: call that action with all known schema arguments.
               ELSE: call request_input for one missing required argument.
 
-            ELSE IF exactly one offered game function other than memory_search clearly matches:
+                    ELSE IF any offered game function other than memory_search fits the input:
+                      Choose the single most probable one; several plausible candidates is not a reason to ask. Weigh the
+                      commander's words against each function's triggers and description, and commit to the best.
               IF every required argument is known: call that function.
               ELSE: call request_input with the exact action_id and one exact missing parameter_name.
-
-            ELSE IF several offered game functions other than memory_search are equally plausible:
-              call speak and briefly ask for a restatement.
 
             ELSE IF the commander explicitly asks to recall, search, list, or count remembered information:
               IF memory_search is offered: call memory_search.
@@ -80,10 +80,9 @@ final class CommanderPrompt {
               call speak for truthful text-only answers using reasoning or general knowledge; decline only requests
               requiring unavailable external data or actions.
 
-            Treat single-word or very short ship-context phrases as likely commands, not conversation. If exactly one
-            offered function fits, call it. Otherwise ask for an action or target; never echo or restate it. Game-data
-            questions require their matching function, never a guessed answer. Only request_input opens a continuation.
-            Never claim completion without calling the action.
+                    Treat single-word or very short ship-context phrases as likely commands, not conversation; never echo or
+                    restate the input. Game-data questions require their matching function, never a guessed answer. Only
+                    request_input opens a continuation. Never claim completion without calling the action.
             </function_calling>
             """;
 

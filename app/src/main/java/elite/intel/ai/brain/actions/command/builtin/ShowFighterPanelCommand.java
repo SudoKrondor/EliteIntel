@@ -37,7 +37,7 @@ public final class ShowFighterPanelCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (status.isInMainShip() || status.isInSrv() || status.isInFighter()) {
-            navigator.openAndNavigate(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.FIGHTER);
+            navigator.openAndNavigate(StatusFlags.GuiFocus.CENTRAL_PANEL, CenterPanel.FIGHTER);
         }
         return null;
     }

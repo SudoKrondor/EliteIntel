@@ -6,9 +6,7 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /** Verifies the source-specific static prompt contracts and resolved language settings. */
 class CompanionSystemPromptTest {
@@ -74,8 +72,7 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("Use only offered functions and declared arguments"));
         assertOrdered(normalized,
                 "IF <pending_clarification> continues",
-                "ELSE IF exactly one offered game function other than memory_search clearly matches",
-                "ELSE IF several offered game functions other than memory_search are equally plausible",
+                "ELSE IF any offered game function other than memory_search fits the input",
                 "ELSE IF the commander explicitly asks to recall",
                 "ELSE IF one trusted fact fully answers the request: call speak",
                 "ELSE: call speak for truthful text-only answers");
@@ -84,6 +81,26 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("Treat single-word or very short ship-context phrases as likely commands"));
         assertTrue(normalized.contains("Game-data questions require their matching function"));
         assertTrue(normalized.contains("decline only requests requiring unavailable external data or actions"));
+    }
+
+    /**
+     * The product invariant: the companion's job is to emit an action, and conversation is only what happens when
+     * no offered function fits. Ambiguity between several candidate functions must resolve to the most probable
+     * one - asking the commander to restate is not an acceptable substitute for acting.
+     */
+    @Test
+    void actionAlwaysOutranksConversation() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("infer the action the commander wants and emit it"));
+        assertTrue(normalized.contains("Speaking is the fallback"),
+                "speaking must be described as the fallback, never a peer of acting");
+        assertTrue(normalized.contains("never in place of an action you could have taken"));
+        assertTrue(normalized.contains("Choose the single most probable one"));
+        assertTrue(normalized.contains("several plausible candidates is not a reason to ask"),
+                "several plausible functions must resolve to the best one, not a request to restate");
+        assertFalse(normalized.contains("call speak and briefly ask for a restatement"),
+                "the ambiguity branch must never route to conversation");
     }
 
     @Test
@@ -98,9 +115,7 @@ class CompanionSystemPromptTest {
         String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
 
         assertTrue(normalized.contains("likely commands, not conversation"));
-        assertTrue(normalized.contains("If exactly one offered function fits, call it"));
-        assertTrue(normalized.contains("Otherwise ask for an action or target"));
-        assertTrue(normalized.contains("never echo or restate it"));
+        assertTrue(normalized.contains("never echo or restate the input"));
     }
 
     @Test

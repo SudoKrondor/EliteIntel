@@ -718,38 +718,27 @@ public class NaturalSpeechIntegrationTestDE {
         );
     }
 
+    /**
+     * A bare "berechne die neutronensternroute" is a complete order, not an incomplete one: efficiency is optional
+     * and the command plots at its default rather than asking the commander a question. Acting always outranks
+     * conversing, so the only acceptable outcome is a dispatch. The cross-turn clarification mechanism itself is
+     * exercised where a parameter genuinely has no default - see {@link #missingSpeedAmountIsAppliedFromNextTurn()}.
+     */
     @Test
     @Order(86)
-    void calculateNeutronRouteAppliesMissingEfficiencyFromNextTurn() throws Exception {
+    void bareNeutronRouteDispatchesAtDefaultEfficiencyInsteadOfAsking() throws Exception {
         harness.restart();
         try {
             List<String> firstTurn = harness.routeWithActionVisible(
                     "berechne die neutronensternroute", CalculateNeutronStarRouteCommand.ID);
 
             assertAll(
-                    () -> assertFalse(firstTurn.contains(CalculateNeutronStarRouteCommand.ID),
-                            () -> "Incomplete command was dispatched: " + firstTurn),
-                    () -> assertTrue(firstTurn.contains(RequestInputFunction.ID),
-                            () -> "Missing request_input dispatch: " + firstTurn
+                    () -> assertTrue(firstTurn.contains(CalculateNeutronStarRouteCommand.ID),
+                            () -> "A bare neutron-route order must plot the route, but dispatched " + firstTurn
                                     + "; speech: " + harness.lastTurnSpeech()),
-                    () -> assertTrue(harness.lastTurnRequestedInput(
-                                    CalculateNeutronStarRouteCommand.ID, "efficiency"),
-                            () -> "Expected request_input for calculate_neutron_star_route.efficiency; speech: "
-                                    + harness.lastTurnSpeech()),
-                    () -> assertFalse(harness.lastTurnSpeech().isEmpty(),
-                            "The commander was not asked for the missing efficiency")
-            );
-
-            List<String> secondTurn = harness.routeWithActionVisible("20 prozent", CalculateNeutronStarRouteCommand.ID);
-
-            assertAll(
-                    () -> assertTrue(secondTurn.contains(CalculateNeutronStarRouteCommand.ID),
-                            () -> "Clarification reply dispatched " + secondTurn
-                                    + " instead of " + CalculateNeutronStarRouteCommand.ID),
-                    () -> assertEquals("20", harness.lastArgument(
-                                    CalculateNeutronStarRouteCommand.ID, "efficiency").orElse("<missing>"),
-                            "The clarification value was not applied to "
-                                    + "calculate_neutron_star_route.efficiency")
+                    () -> assertFalse(firstTurn.contains(RequestInputFunction.ID),
+                            () -> "The commander was asked for an efficiency that has a default; speech: "
+                                    + harness.lastTurnSpeech())
             );
         } finally {
             harness.restart();
@@ -1339,7 +1328,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(235)
     @MethodSource
     void openCentralPanel(String input) throws InterruptedException {
-        assertRouted(input, ShowCommanderPanelCommand.ID);
+        assertRouted(input, ShowCentralPanelCommand.ID);
     }
 
     static Stream<String> openCentralPanel() {

@@ -23,7 +23,9 @@ public class AnalyzeBioScansStarSystemQuery extends BaseQueryAnalyzer implements
 
     @Override
     public String llmDescription() {
-        return "Report biological signals across the whole current star system: which bodies have bio signals and which still need scanning.";
+        return "Report scanning progress for biological signals across the current star system: which bodies carry "
+                + "bio signals and which still need scanning. This is an inventory of what has and has not been "
+                + "scanned, never an analysis or prediction of the biome itself.";
     }
 
 

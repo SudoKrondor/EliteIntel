@@ -60,7 +60,7 @@ public final class DisembarkCommand implements IntelCommand {
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_RIGHT.getGameBinding()),
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
             ));
-            navigator.assumeDefaultState(StatusFlags.GuiFocus.ROLE_PANEL);
+            navigator.assumeDefaultState(StatusFlags.GuiFocus.CENTRAL_PANEL);
         } else if (status.isInMainShip()) {
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding()),

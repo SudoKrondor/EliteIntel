@@ -6,9 +6,10 @@ import elite.intel.companion.model.llm.LlmToolInvocation;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * A reflex: {@code ReflexResolver} matched a commander input verbatim to exactly one safe, parameterless action.
- * It runs on the commander lane like a {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking
- * loop, no tool selection. Every non-exact input goes through {@link CommanderThought}.
+ * A reflex: {@code ReflexResolver} matched a commander input verbatim to exactly one safe action, along with any
+ * arguments that alias itself pins down (e.g. "target fsd" -> {@code key=fsd}). It runs on the commander lane like
+ * a {@link CommanderThought} but skips the LLM entirely - no prompt, no thinking loop, no tool selection, and no
+ * argument extraction. Every non-exact input goes through {@link CommanderThought}.
  * <p>
  * A COMMAND reflex just executes the command: a side effect, not dialogue, so nothing is filed to memory and the
  * handler owns any spoken outcome. A QUERY reflex runs the query's own data-grounded analysis path and publishes
@@ -20,10 +21,15 @@ import java.util.concurrent.CompletableFuture;
 final class ReflexThought extends Thought {
 
     private final String actionId;
+    /**
+     * Arguments the matched alias already pinned down; empty for a parameterless action.
+     */
+    private final JsonObject arguments;
 
-    ReflexThought(ThoughtContext context, String actionId, ThoughtDependencies dependencies) {
+    ReflexThought(ThoughtContext context, String actionId, JsonObject arguments, ThoughtDependencies dependencies) {
         super(context, dependencies);
         this.actionId = actionId;
+        this.arguments = arguments;
     }
 
     @Override
@@ -45,7 +51,7 @@ final class ReflexThought extends Thought {
     }
 
     private CompletableFuture<Void> beginReflex() {
-        LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, new JsonObject());
+        LlmToolInvocation inv = new LlmToolInvocation(newId(), actionId, arguments);
         CompletableFuture<JsonObject> execution = submitExecution(inv);
         inFlight = execution;
         if (isStopped()) {

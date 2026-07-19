@@ -25,11 +25,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -134,17 +130,21 @@ public abstract class Thought {
     }
 
     /**
-     * Creates a reflex thought for one safe, parameterless action selected by an exact reflex. It runs on the
-     * commander lane like a {@link CommanderThought} but skips the LLM entirely. Commands remain outside memory;
-     * completed queries publish a commander/companion QUERY pair.
+     * Creates a reflex thought for one safe action selected by an exact reflex. It runs on the commander lane
+     * like a {@link CommanderThought} but skips the LLM entirely. Commands remain outside memory; completed
+     * queries publish a commander/companion QUERY pair.
      */
     public static Thought reflex(Urgency urgency, String input, String commandId, ThoughtDependencies dependencies) {
-        return reflex(ThoughtContext.commander(urgency, input, input), commandId, dependencies);
+        return reflex(ThoughtContext.commander(urgency, input, input), commandId, new JsonObject(), dependencies);
     }
 
-    /** Creates a reflex thought from turn signals already prepared by the dispatcher. */
-    static Thought reflex(ThoughtContext context, String commandId, ThoughtDependencies dependencies) {
-        return new ReflexThought(context, commandId, dependencies);
+    /**
+     * Creates a reflex thought from turn signals already prepared by the dispatcher, running the action with the
+     * arguments its alias supplied (empty when the action takes none).
+     */
+    static Thought reflex(ThoughtContext context, String commandId, JsonObject arguments,
+                          ThoughtDependencies dependencies) {
+        return new ReflexThought(context, commandId, arguments, dependencies);
     }
 
     /** Runs this thought on the lane thread. Each concrete kind drives its own lifecycle. */

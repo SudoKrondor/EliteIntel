@@ -1,28 +1,37 @@
 package elite.intel.companion.prompt;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.ai.brain.i18n.AliasPhrase;
 import elite.intel.companion.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.companion.confirm.DangerousActionPolicy;
 import elite.intel.companion.model.GameStateSnapshot;
 import elite.intel.companion.model.IntelActionCategory;
+import elite.intel.companion.model.llm.LlmToolDefinition;
 import elite.intel.companion.model.llm.LlmToolInvocation;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * The companion's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
- * is a pure reflex - an input that matches a training phrase verbatim and resolves to exactly one safe,
- * parameterless action. Such an input is executed directly (no LLM, a {@code ReflexThought}); everything else
- * falls through to the full {@link elite.intel.companion.mind.CommanderThought}.
+ * is a pure reflex - an input that matches a training phrase verbatim and resolves to exactly one safe action
+ * whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
+ * everything else falls through to the full {@link elite.intel.companion.mind.CommanderThought}.
  * <p>
  * Deliberately strict, so a reflex never misfires. It requires all of: a verbatim phrase match (not word
- * overlap), exactly one matching action, no parameters (the LLM is needed to extract arguments), the action
+ * overlap), exactly one matching action, every required argument supplied without inference, the action
  * currently visible, and not dangerous (a dangerous command must keep its confirmation flow). It covers
- * parameterless COMMANDS and QUERIES (a verbatim query alias like "squadron carrier route" resolves it directly;
+ * COMMANDS and QUERIES (a verbatim query alias like "squadron carrier route" resolves it directly;
  * {@link elite.intel.companion.mind.ReflexThought} voices a query reflex from the query's own data), never macros.
+ * <p>
+ * An argument counts as known without inference when the alias itself pins it down - "target fsd {key:fsd}"
+ * always means {@code key=fsd}, so nothing is left to extract and the phrase resolves here rather than asking a
+ * small local model to tell a subsystem command from a same-named query. An alias whose value stands in for the
+ * commander's own wording ("increase speed by {key:X}") still needs the LLM. See {@link AliasPhrase}.
  * <p>
  * It introduces no new classification, reusing the existing owners: {@link GameToolCandidates} for the visible
  * commands and their localized phrases/parameters, {@link AiActionLocalizations#splitPhraseGroup} for phrase
@@ -31,11 +40,50 @@ import java.util.function.Supplier;
 public final class ReflexResolver {
 
     /**
-     * One reflex-eligible command's matching surface: its id, its localized training-phrase group and whether
-     * it is parameterless (a reflex requires no parameters - the LLM extracts arguments). The {@code danger}
-     * flag is sourced separately, from the {@link DangerousActionPolicy}.
+     * One reflex-eligible command's matching surface: its id, its localized training-phrase group and the names
+     * of every parameter it declares. A reflex has to supply all of them without the LLM, either because there
+     * are none or because the matched alias pins them all down literally. Optional parameters count too: an
+     * alias that leaves one unset is a phrase the commander may still be qualifying, so it keeps the LLM path.
+     * The {@code danger} flag is sourced separately, from the {@link DangerousActionPolicy}.
      */
-    public record CommandPhrase(String id, String phraseGroup, boolean parameterless) {}
+    public record CommandPhrase(String id, String phraseGroup, Set<String> parameters) {
+
+        public CommandPhrase {
+            parameters = Set.copyOf(parameters);
+        }
+
+        /**
+         * A command whose arguments the alias never supplies: parameterless, or parameterized via the LLM.
+         */
+        public CommandPhrase(String id, String phraseGroup, boolean parameterless) {
+            this(id, phraseGroup, parameterless ? Set.of() : Set.of(UNRESOLVABLE_PARAMETER));
+        }
+    }
+
+    /**
+     * Stands for "this command needs an argument the alias does not name", so a phrase group authored without
+     * literal values can never satisfy {@link #resolve} however it is matched.
+     */
+    private static final String UNRESOLVABLE_PARAMETER = "\0";
+
+    /**
+     * One resolved reflex: the action to run and the arguments its alias already pinned down.
+     */
+    public record Reflex(String actionId, Map<String, String> arguments) {
+
+        public Reflex {
+            arguments = Map.copyOf(arguments);
+        }
+
+        /**
+         * Renders the alias-supplied arguments as the invocation payload the handler expects.
+         */
+        public JsonObject argumentsJson() {
+            JsonObject json = new JsonObject();
+            arguments.forEach(json::addProperty);
+            return json;
+        }
+    }
 
     private final Function<GameStateSnapshot, List<CommandPhrase>> commandSource;
     private final DangerousActionPolicy dangerousActionPolicy;
@@ -65,11 +113,11 @@ public final class ReflexResolver {
     }
 
     /**
-     * The id of the single safe, parameterless command whose training phrase the input matches verbatim, or
-     * empty when the input is not a reflex (no match, an ambiguous tie, parameterized, dangerous, or not a
-     * command) - in which case the input takes the normal LLM path.
+     * The single safe command whose training phrase the input matches verbatim, with its arguments, or
+     * empty when the input is not a reflex (no match, an ambiguous tie, an argument the alias does not supply,
+     * dangerous, or not a command) - in which case the input takes the normal LLM path.
      */
-    public Optional<String> resolve(String input) {
+    public Optional<Reflex> resolve(String input) {
         if (input == null || input.isBlank()) {
             return Optional.empty();
         }
@@ -79,34 +127,43 @@ public final class ReflexResolver {
     /**
      * Resolves an exact reflex using the immutable visibility state captured for the owning commander turn.
      */
-    public Optional<String> resolve(String input, GameStateSnapshot gameStateSnapshot) {
+    public Optional<Reflex> resolve(String input, GameStateSnapshot gameStateSnapshot) {
         if (input == null || input.isBlank()) {
             return Optional.empty();
         }
         String needle = canonicalizeForMatch(input);
-        List<CommandPhrase> matches = commandSource.apply(Objects.requireNonNull(gameStateSnapshot)).stream()
-                .filter(command -> matchesVerbatim(command.phraseGroup(), needle))
+        List<Reflex> matches = commandSource.apply(Objects.requireNonNull(gameStateSnapshot)).stream()
+                .flatMap(command -> matchVerbatim(command, needle).stream())
                 .toList();
         if (matches.size() != 1) {
             return Optional.empty(); // no command, or an ambiguous tie - let the LLM decide
         }
-        CommandPhrase only = matches.get(0);
-        if (!only.parameterless() || isDangerous(only.id())) {
-            return Optional.empty(); // parameters need the LLM; dangerous needs the confirmation flow
+        Reflex only = matches.get(0);
+        if (isDangerous(only.actionId())) {
+            return Optional.empty(); // dangerous needs the confirmation flow
         }
-        return Optional.of(only.id());
+        return Optional.of(only);
     }
 
     /**
-     * Whether any phrase in the group equals the input verbatim (case-insensitive, ignoring trailing punctuation).
+     * The reflex for the one phrase in this command's group that the input matches verbatim (case-insensitive,
+     * ignoring trailing punctuation), or empty when none matches or the matched phrase leaves an argument for
+     * the LLM to extract. A phrase qualifies only when its own literal values cover every parameter the action
+     * declares: "ziel fsd {key:fsd}" carries its own {@code key}, "erhöhe geschwindigkeit um {key:X}" does not.
      */
-    private static boolean matchesVerbatim(String phraseGroup, String needle) {
-        for (String phrase : AiActionLocalizations.splitPhraseGroup(phraseGroup)) {
-            if (canonicalizeForMatch(phrase).equals(needle)) {
-                return true;
+    private static Optional<Reflex> matchVerbatim(CommandPhrase command, String needle) {
+        for (String phrase : AiActionLocalizations.splitPhraseGroup(command.phraseGroup())) {
+            AliasPhrase alias = AliasPhrase.parse(phrase);
+            if (!canonicalizeForMatch(alias.spokenText()).equals(needle)) {
+                continue;
             }
+            if (alias.hasVariableArgument()
+                    || !alias.literalArguments().keySet().containsAll(command.parameters())) {
+                return Optional.empty(); // the alias cannot supply every argument - the LLM must extract them
+            }
+            return Optional.of(new Reflex(command.id(), alias.literalArguments()));
         }
-        return false;
+        return Optional.empty();
     }
 
     /**
@@ -142,7 +199,16 @@ public final class ReflexResolver {
         return new GameToolCandidates(gameStateSnapshot)
                 .collect(Set.of(IntelActionCategory.ACTION, IntelActionCategory.QUERY)).stream()
                 .map(candidate -> new CommandPhrase(
-                        candidate.id(), candidate.localizedAliasGroup(), candidate.tool().parameters().isEmpty()))
+                        candidate.id(), candidate.localizedAliasGroup(), parameterNames(candidate.tool())))
                 .toList();
+    }
+
+    /**
+     * Every parameter an action declares - the alias has to account for all of them to reflex.
+     */
+    private static Set<String> parameterNames(LlmToolDefinition tool) {
+        return tool.parameters().stream()
+                .map(ActionParameterSpec::getName)
+                .collect(Collectors.toUnmodifiableSet());
     }
 }
