@@ -1,9 +1,9 @@
 package elite.intel.junit.gameapi.journal.subscribers;
 
 import com.google.gson.JsonObject;
-import elite.intel.companion.CompanionNarrator;
-import elite.intel.companion.CompanionRuntimeGraph;
-import elite.intel.companion.CompanionRuntimeTestSupport;
+import elite.intel.ai.brain.vega.CompanionNarrator;
+import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
+import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
 import elite.intel.gameapi.journal.events.ShipyardBuyEvent;
 import elite.intel.gameapi.journal.subscribers.NewShipPurchasedHandler;
 import org.junit.jupiter.api.AfterEach;

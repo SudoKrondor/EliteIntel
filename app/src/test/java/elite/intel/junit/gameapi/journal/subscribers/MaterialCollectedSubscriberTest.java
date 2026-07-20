@@ -5,7 +5,7 @@ import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.journal.subscribers.MaterialCollectedSubscriber;
-import elite.intel.search.edsm.dto.MaterialsType;
+import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

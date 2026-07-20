@@ -6,7 +6,7 @@ public enum Panels {
 
     NAV_PANEL(StatusFlags.GuiFocus.EXTERNAL_PANEL, RightPanel.class),
     COMMS_PANEL(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.class),
-    ROLE_PANEL(StatusFlags.GuiFocus.ROLE_PANEL, CenterPanel.class),
+    ROLE_PANEL(StatusFlags.GuiFocus.CENTRAL_PANEL, CenterPanel.class),
     INTERNAL_PANEL(StatusFlags.GuiFocus.INTERNAL_PANEL, LeftPanel.class);
 
     private final StatusFlags.GuiFocus id;

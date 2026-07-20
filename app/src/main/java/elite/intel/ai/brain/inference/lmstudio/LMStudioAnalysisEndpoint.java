@@ -7,7 +7,7 @@ import com.google.gson.JsonParser;
 import elite.intel.ai.ApiFactory;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.AiAnalysisInterface;
-import elite.intel.ai.brain.actions.handlers.query.struct.AiData;
+import elite.intel.ai.brain.actions.handlers.queries.struct.AiData;
 import elite.intel.ai.brain.commons.AiEndPoint;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.JsonUtils;

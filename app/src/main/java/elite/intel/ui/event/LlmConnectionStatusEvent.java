@@ -2,7 +2,7 @@ package elite.intel.ui.event;
 
 /**
  * Published by
- * {@link elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery}
+ * {@link elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery}
  * after each LLM connection check (startup and retry).
  * The event is published on every call to {@code verifyConnection()},
  * including recurring 30s retries, not just at startup.

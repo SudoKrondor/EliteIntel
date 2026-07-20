@@ -2,7 +2,7 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.SquadronCarrierRouteDao;
 import elite.intel.db.util.Database;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 
 import java.util.HashMap;
 import java.util.List;

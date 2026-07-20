@@ -1,11 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.HuntingGroundManager;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;

@@ -1,10 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MissionRedirectedEvent;
 import elite.intel.gameapi.journal.events.dto.MissionDto;
 import elite.intel.util.yaml.ToYamlConvertable;

@@ -1,11 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.managers.MissionManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ShipTargetedEvent;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.Md5Utils;

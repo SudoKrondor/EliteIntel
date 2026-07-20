@@ -1,24 +1,23 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.mouth.EventNarrator;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
 import elite.intel.db.managers.*;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.DiscoveryScanner;
 import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.SystemBodiesDto;
-import elite.intel.search.edsm.dto.TrafficDto;
-import elite.intel.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.SystemBodiesDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.dto.data.ParentBody;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 
@@ -168,7 +167,8 @@ public class JumpCompletedSubscriber {
             stellarObject.setGravity(surfaceGravity == null ? 0 : surfaceGravity);
             stellarObject.setSurfaceTemperature(data.getSurfaceTemperature()); // Keep Kelvin
             stellarObject.setTidalLocked(data.isRotationalPeriodTidallyLocked());
-            stellarObject.setLocationType(LocationDto.determineType(data.getType(), data.getDistanceToArrival() == 0));
+            LocationDto.LocationType bodyType = classifyEdsmBody(data);
+            if (bodyType != null) stellarObject.setLocationType(bodyType);
             if (starPos != null) {
                 stellarObject.setX(starPos[0]);
                 stellarObject.setY(starPos[1]);
@@ -183,12 +183,61 @@ public class JumpCompletedSubscriber {
             stellarObject.setAxialTilt(data.getAxialTilt());
             stellarObject.setRotationPeriod(data.getRotationalPeriod());
             stellarObject.setVolcanism(data.getVolcanismType());
-            stellarObject.setPlanetClass(data.getSpectralClass());
+            applyBodyClass(stellarObject, data);
             stellarObject.setStarName(starSystem);
             locationManager.save(stellarObject);
         }
     }
 
+
+    /**
+     * Classifies an EDSM body, or returns null when EDSM says nothing useful about it.
+     *
+     * <p>WHY: {@link LocationDto#determineType} matches descriptive words ("body", "giant", "world",
+     * "star"), which EDSM carries in {@code subType}. It used to be passed {@code type}, which is only
+     * ever "Star" or "Planet", so every planet fell through to null. Since a null was then stored, each
+     * jump wiped the type of every non-star body in the system, including bodies the commander's own
+     * scan had classified correctly. Callers must skip a null rather than persist it.
+     *
+     * <p>EDSM has no distinct moon type, so a body whose parent is a planet is a moon. That is the same
+     * rule {@link elite.intel.gameapi.journal.ScanBodyClassifier} applies to journal scans, and it keeps
+     * this path from demoting a known moon to a planet.
+     */
+    static LocationDto.LocationType classifyEdsmBody(BodyData data) {
+        String subType = data.getSubType();
+        if (subType == null || subType.isBlank()) return null;
+
+        LocationDto.LocationType type = LocationDto.determineType(subType, data.getDistanceToArrival() == 0);
+        if (type != LocationDto.LocationType.PLANET) return type;
+        return orbitsAPlanet(data) ? LocationDto.LocationType.MOON : LocationDto.LocationType.PLANET;
+    }
+
+    private static boolean orbitsAPlanet(BodyData data) {
+        List<ParentBody> parents = data.getParents();
+        if (parents == null) return false;
+        for (ParentBody parent : parents) {
+            if (parent.getStar() != null) return false;
+            if (parent.getPlanet() != null) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Records an EDSM body's class in the field that matches what it actually is.
+     *
+     * <p>WHY: EDSM reports a star's class in {@code spectralClass} ("M5") and a planet's in
+     * {@code subType} ("High metal content world"); {@code spectralClass} is absent for planets. This
+     * used to write {@code spectralClass} into {@code planetClass}, so every EDSM star was stored as a
+     * planet whose type was a spectral code, and its star class was lost. Downstream that reads as a
+     * planet: BiomeAnalyzer treats "no star class but a planet class" as a planet.
+     */
+    static void applyBodyClass(LocationDto stellarObject, BodyData data) {
+        if ("Star".equalsIgnoreCase(data.getType())) {
+            stellarObject.setStarClass(data.getSpectralClass());
+        } else {
+            stellarObject.setPlanetClass(data.getSubType());
+        }
+    }
 
     private List<MaterialDto> toMaterials(Map<String, Double> materials) {
         if (materials == null) return new ArrayList<>();

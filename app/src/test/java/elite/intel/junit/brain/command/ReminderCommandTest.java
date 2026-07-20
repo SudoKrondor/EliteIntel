@@ -1,8 +1,8 @@
 package elite.intel.junit.brain.command;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.command.builtin.ClearRemindersCommand;
-import elite.intel.ai.brain.actions.command.builtin.SetReminderCommand;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.ClearRemindersCommand;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.SetReminderCommand;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.managers.ReminderManager;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,14 +1,14 @@
 package elite.intel.util;
 
-import elite.intel.companion.CompanionRuntime;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.CarrierRouteLegs;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
-import elite.intel.search.spansh.carrierroute.CarrierRouteCriteria;
-import elite.intel.search.spansh.carrierroute.SpanshCarrierRouteClient;
-import elite.intel.search.spansh.nearest.NearestKnownLocationSearchClient;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierRouteCriteria;
+import elite.intel.gameapi.search.spansh.carrierroute.SpanshCarrierRouteClient;
+import elite.intel.gameapi.search.spansh.nearest.NearestKnownLocationSearchClient;
 import elite.intel.session.PlayerSession;
 
 import java.util.Map;

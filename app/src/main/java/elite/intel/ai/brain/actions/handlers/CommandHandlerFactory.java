@@ -1,9 +1,10 @@
 package elite.intel.ai.brain.actions.handlers;
 
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.IntelCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandHandler;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -56,7 +57,7 @@ public class CommandHandlerFactory {
      * Refreshes only custom command handlers in-place so existing ResponseRouter references see edits immediately.
      */
     public void refreshCustomCommandHandlers() {
-        commandHandlers.entrySet().removeIf(entry -> entry.getValue() instanceof elite.intel.ai.brain.actions.customcommand.CustomCommandHandler);
+        commandHandlers.entrySet().removeIf(entry -> entry.getValue() instanceof CustomCommandHandler);
         CustomCommandRegistry.getInstance().contributeToHandlerMap(commandHandlers);
     }
 }

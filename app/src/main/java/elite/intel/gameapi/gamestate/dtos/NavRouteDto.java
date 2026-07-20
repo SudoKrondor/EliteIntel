@@ -1,7 +1,7 @@
 package elite.intel.gameapi.gamestate.dtos;
 
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 

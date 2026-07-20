@@ -2,10 +2,10 @@ package elite.intel.ai.brain.actions.catalog;
 
 import com.google.gson.Gson;
 import elite.intel.ai.brain.actions.IntelActionContext;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.IntelCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

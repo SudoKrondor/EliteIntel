@@ -1,0 +1,73 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
+import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
+import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
+import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
+
+import java.util.List;
+
+/**
+ * Self-describing "recon hunting ground" command.
+ * Owns its own execution: body migrated 1:1 from the legacy ReconPirateMissionTargetSystemHandler,
+ * routed through CommandRegistry via the self-describing model.
+ */
+@RegisterCommand
+public final class ReconHuntingGroundCommand implements IntelCommand {
+    public static final String ID = "recon_hunting_ground";
+
+    @Override
+    public String llmDescription() {
+        return "Plot a route to an unconfirmed pirate-massacre target system that still needs recon to verify its resource extraction (hunting) site.";
+    }
+
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    /** Route plotting taps the ship-only GalaxyMapOpen bind; works only in the main-ship cockpit. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
+    @Override
+    public String execute(JsonObject params, String responseText) {
+        HuntingGroundManager manager = HuntingGroundManager.getInstance();
+        LocationManager locationManager = LocationManager.getInstance();
+        List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = manager.findTargetSystemInRangeForRecon(locationManager.getGalacticCoordinates());
+
+
+        HuntingGround target = huntingGrounds.stream().filter(
+                data -> data.getTarget().getTargetFaction() == null && !data.getTarget().isHasResSite()
+        ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
+
+        if (target == null) {
+            return StringUtls.localizedLlm("handler.pirate.noReconSystems");
+        }
+
+        boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
+        // Non-terminal warning: the recon announcement and route plotting below must still run, so voice
+        // the line via CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
+        if (multipleMissionProviders) {
+            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.multipleProviders"), false);
+        }
+
+        String starSystem = target.getStarSystem();
+
+        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem), false);
+
+        RoutePlotter plotter = new RoutePlotter();
+        return plotter.plotRoute(starSystem);
+    }
+}

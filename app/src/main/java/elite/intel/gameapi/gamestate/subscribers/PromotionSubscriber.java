@@ -1,9 +1,7 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.gameapi.journal.events.PromotionEvent;
 import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
 import elite.intel.session.PlayerSession;

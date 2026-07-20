@@ -1,9 +1,9 @@
 package elite.intel.gameapi.data;
 
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.StarSystemDto;
-import elite.intel.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.StarSystemDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 

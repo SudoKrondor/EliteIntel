@@ -1,10 +1,8 @@
 package elite.intel.gameapi.gamestate.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.BioSampleDistanceCalculator;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;

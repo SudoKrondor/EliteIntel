@@ -5,6 +5,7 @@ import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
@@ -197,9 +198,8 @@ public class SilentPersistenceSubscriber {
     @Subscribe
     public void onScan(ScanEvent event) {
         if (event.getBodyID() == null) return;
-        if (event.getBodyName() != null && event.getBodyName().contains("Belt Cluster")) return;
 
-        LocationDto.LocationType locationType = determineScanLocationType(event);
+        LocationDto.LocationType locationType = ScanBodyClassifier.classify(event);
         if (BELT_CLUSTER.equals(locationType)) return;
 
         LocationDto location = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
@@ -312,28 +312,6 @@ public class SilentPersistenceSubscriber {
         playerSession.setShipLoadout(loadout);
         playerSession.setCurrentShipName(shipName);
         log.debug("PreScan: saved ship {} ({})", shipName, event.getShipId());
-    }
-
-    private LocationDto.LocationType determineScanLocationType(ScanEvent event) {
-        boolean isStar = (event.getStarType() != null && !event.getStarType().isEmpty())
-                || event.getSurfaceTemperature() > 1000;
-        boolean isPrimaryStar = event.getDistanceFromArrivalLS() == 0;
-        boolean isBeltCluster = event.getBodyName() != null && event.getBodyName().contains("Belt Cluster");
-        List<ScanEvent.Parent> parents = event.getParents();
-
-        if (isBeltCluster) return BELT_CLUSTER;
-        // Rings follow the ED "<parent> <letter> Ring" convention; match the suffix precisely so it
-        // wins over the MOON branch below (a ring's parent is a planet).
-        if (event.getBodyName() != null && event.getBodyName().matches(".* [A-Z] Ring")) return PLANETARY_RING;
-        if (isPrimaryStar) return PRIMARY_STAR;
-        if (parents == null || parents.isEmpty()) return isStar ? STAR : UNCLASSIFIED;
-
-        for (ScanEvent.Parent parent : parents) {
-            if (parent.getStar() != null && parent.getStar() >= 0) return PLANET;
-            if (parent.getPlanet() != null && parent.getPlanet() > 0) return MOON;
-            if (parent.getStar() == null && event.getSurfaceTemperature() > 1000) return STAR;
-        }
-        return UNCLASSIFIED;
     }
 
     private static String subtractBodyName(String bodyName, String starSystem) {

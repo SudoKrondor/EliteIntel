@@ -3,9 +3,9 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.BrainTreesDao;
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
-import elite.intel.search.spansh.braintrees.BrainTreeClient;
-import elite.intel.search.spansh.braintrees.BrainTreeCriteria;
-import elite.intel.search.spansh.stellarobjects.StellarObjectSearchResultDto;
+import elite.intel.gameapi.search.spansh.braintrees.BrainTreeClient;
+import elite.intel.gameapi.search.spansh.braintrees.BrainTreeCriteria;
+import elite.intel.gameapi.search.spansh.stellarobjects.StellarObjectSearchResultDto;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.Arrays;

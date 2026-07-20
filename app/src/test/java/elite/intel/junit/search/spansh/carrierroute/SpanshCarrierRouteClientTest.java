@@ -1,9 +1,9 @@
 package elite.intel.junit.search.spansh.carrierroute;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
-import elite.intel.search.spansh.carrierroute.CarrierRouteCriteria;
-import elite.intel.search.spansh.carrierroute.SpanshCarrierRouteClient;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierRouteCriteria;
+import elite.intel.gameapi.search.spansh.carrierroute.SpanshCarrierRouteClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

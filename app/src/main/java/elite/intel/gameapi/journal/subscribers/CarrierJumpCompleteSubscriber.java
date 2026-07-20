@@ -1,8 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.mouth.EventNarrator;
-import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.managers.DeferredNotificationManager;
 import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;

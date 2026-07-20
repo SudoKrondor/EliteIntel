@@ -1,5 +1,7 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandExportImportService;
 import elite.intel.ui.render.HudBooleanCellEditor;
 import elite.intel.ui.render.HudBooleanCellRenderer;
 import elite.intel.ui.render.HudCheckBoxHeaderRenderer;
@@ -7,9 +9,6 @@ import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudModalSpec;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
-
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandExportImportService;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -26,7 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal dialog for selecting and exporting custom command definitions to a JSON file.

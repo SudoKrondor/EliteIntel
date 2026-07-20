@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.actions.handlers;
 
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.IntelQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

@@ -5,7 +5,7 @@ import elite.intel.db.dao.RouteMonetisationDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.search.edsm.monetize.MonetizeRoute;
+import elite.intel.gameapi.search.edsm.monetize.MonetizeRoute;
 import elite.intel.util.StringUtls;
 
 public class MonetizeRouteManager {

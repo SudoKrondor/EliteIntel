@@ -1,10 +1,10 @@
 package elite.intel.junit.search.spansh.neutronroute;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
-import elite.intel.search.spansh.neutronroute.NeutronStarRouteCalculatorCriteria;
-import elite.intel.search.spansh.neutronroute.NeutronStarRouteClient;
-import elite.intel.search.spansh.neutronroute.NeutronStarSystemJump;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarRoute;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarRouteCalculatorCriteria;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarRouteClient;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarSystemJump;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -8,7 +8,7 @@ import elite.intel.db.dao.PirateMissionProviderDao;
 import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
 import elite.intel.db.util.Database;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.search.spansh.starsystems.StarSystemResult;
+import elite.intel.gameapi.search.spansh.starsystems.StarSystemResult;
 import elite.intel.util.StringUtls;
 
 import javax.annotation.Nonnull;

@@ -1,8 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.companion.CompanionRuntime;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.journal.events.dto.BioSampleDto;

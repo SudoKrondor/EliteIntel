@@ -8,10 +8,10 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.EventRegistry;
 import elite.intel.gameapi.journal.events.BaseEvent;
 import elite.intel.session.PlayerSession;
+import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.ui.controller.ManagedService;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.util.json.GsonFactory;
-import elite.intel.ws.WebSocketBroadcaster;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

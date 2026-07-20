@@ -248,7 +248,7 @@ public class UINavigator {
                 case EXTERNAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_LEFT_PANEL_BUGGY.getGameBinding();
                 case COMMS_PANEL -> Bindings.GameCommand.BINDING_FOCUS_COMMS_PANEL_BUGGY.getGameBinding();
                 case INTERNAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_INTERNAL_PANEL_BUGGY.getGameBinding();
-                case ROLE_PANEL -> Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding();
+                case CENTRAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL_BUGGY.getGameBinding();
                 default -> throw new IllegalArgumentException("No panel binding for GuiFocus: " + panel);
             };
         } else if (status.isInMainShip() || status.isInFighter()) {
@@ -256,7 +256,7 @@ public class UINavigator {
                 case EXTERNAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_LEFT_PANEL.getGameBinding();
                 case COMMS_PANEL -> Bindings.GameCommand.BINDING_FOCUS_COMMS_PANEL.getGameBinding();
                 case INTERNAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_INTERNAL_PANEL.getGameBinding();
-                case ROLE_PANEL -> Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding();
+                case CENTRAL_PANEL -> Bindings.GameCommand.BINDING_FOCUS_ROLE_PANEL.getGameBinding();
                 default -> throw new IllegalArgumentException("No panel binding for GuiFocus: " + panel);
             };
         }

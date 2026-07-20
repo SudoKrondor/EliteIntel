@@ -1,0 +1,53 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.db.managers.HuntingGroundManager;
+import elite.intel.db.managers.LocationManager;
+import elite.intel.gameapi.journal.events.dto.LocationDto;
+import elite.intel.session.PlayerSession;
+import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
+
+/**
+ * Self-describing "ignore hunting ground" command.
+ * Owns its own execution: body migrated 1:1 from the legacy IgnoreHuntingGroundHandler,
+ * routed through CommandRegistry via the self-describing model.
+ */
+@RegisterCommand
+public final class IgnoreHuntingGroundCommand implements IntelCommand {
+    public static final String ID = "ignore_hunting_ground";
+
+    @Override
+    public String llmDescription() {
+        return "Mark the current star system to be ignored/excluded as a pirate-massacre hunting ground.";
+    }
+
+
+    private final HuntingGroundManager huntingGroundManager = HuntingGroundManager.getInstance();
+    private final LocationManager locationManager = LocationManager.getInstance();
+    private final PlayerSession playerSession = PlayerSession.getInstance();
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    /**
+     * Recon verdict (twin of confirm_hunting_ground): dismisses the current system as a hunting ground
+     * after the commander has flown there and judged it. Evaluating a hunting ground is only possible while
+     * piloting the main ship in that system, so it is offered only there.
+     */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInMainShip();
+    }
+
+    @Override
+    public String execute(JsonObject params, String responseText) {
+        LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
+        huntingGroundManager.ignoreHuntingGround(location.getStarName());
+        return StringUtls.localizedLlm("handler.pirate.huntingGroundDeleted", location.getStarName());
+    }
+}

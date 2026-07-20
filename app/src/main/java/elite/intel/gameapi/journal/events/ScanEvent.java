@@ -208,6 +208,7 @@ public class ScanEvent extends BaseEvent {
         this.bodyID = event.bodyID;
         this.parents = event.parents;
         this.starSystem = event.starSystem;
+        this.starType = event.starType;
         this.systemAddress = event.systemAddress;
         this.distanceFromArrivalLS = event.distanceFromArrivalLS;
         this.tidalLock = event.tidalLock;
