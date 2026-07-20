@@ -2,8 +2,8 @@ package elite.intel.gameapi.journal.events.dto;
 
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
-import elite.intel.search.edsm.dto.*;
-import elite.intel.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.dto.*;
+import elite.intel.gameapi.search.edsm.dto.data.BodyData;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;

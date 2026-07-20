@@ -1,6 +1,6 @@
 package elite.intel.db.managers;
 
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 
 import java.util.ArrayList;
 import java.util.List;

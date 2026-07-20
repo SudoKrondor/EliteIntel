@@ -2,8 +2,8 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.NeutronStarRouteDao;
 import elite.intel.db.util.Database;
-import elite.intel.search.spansh.neutronroute.NeutronStarRoute;
-import elite.intel.search.spansh.neutronroute.NeutronStarSystemJump;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarRoute;
+import elite.intel.gameapi.search.spansh.neutronroute.NeutronStarSystemJump;
 
 import java.util.List;
 

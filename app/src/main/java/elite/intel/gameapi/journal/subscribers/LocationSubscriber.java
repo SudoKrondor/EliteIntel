@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.LocationEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
 
 import java.util.Locale;
 

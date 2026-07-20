@@ -1,7 +1,7 @@
 package elite.intel.junit.db.managers;
 
 import elite.intel.db.managers.FleetCarrierRouteManager;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

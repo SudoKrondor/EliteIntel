@@ -1,10 +1,10 @@
 package elite.intel.diagnostics;
 
 import com.google.gson.JsonObject;
-import elite.intel.companion.execution.ExecutionGateway;
-import elite.intel.companion.model.execution.ExecutionRequest;
-import elite.intel.companion.tools.SystemFunction;
-import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.ai.brain.vega.execution.ExecutionGateway;
+import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
+import elite.intel.ai.brain.vega.tools.SystemFunction;
+import elite.intel.ai.brain.vega.tools.SystemFunctionRegistry;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

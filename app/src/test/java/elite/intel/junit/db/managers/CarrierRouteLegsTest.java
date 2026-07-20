@@ -1,7 +1,7 @@
 package elite.intel.junit.db.managers;
 
 import elite.intel.db.managers.CarrierRouteLegs;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

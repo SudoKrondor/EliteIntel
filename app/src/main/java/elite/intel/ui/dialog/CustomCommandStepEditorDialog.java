@@ -1,36 +1,25 @@
 package elite.intel.ui.dialog;
 
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandStep;
+import elite.intel.ai.brain.commons.ActionParameterKeyExtractor;
+import elite.intel.ai.hands.BindingModifier;
+import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.support.CustomCommandStepPickerItem;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;
 import elite.intel.ui.theme.HudPalette;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudModalSpec;
-import elite.intel.ui.widget.HudSection;
-import elite.intel.ui.widget.HudStepper;
-import elite.intel.ui.widget.HudTable;
-import elite.intel.ui.widget.HudTextField;
-
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
-import elite.intel.ai.brain.commons.ActionParameterKeyExtractor;
-import elite.intel.ai.hands.BindingModifier;
-import elite.intel.ai.hands.KeyBindingExecutor;
+import elite.intel.ui.widget.*;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.LinkedHashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-import static elite.intel.ui.theme.HudPalette.*;
 
 /**
  * Modal editor for one custom command step.

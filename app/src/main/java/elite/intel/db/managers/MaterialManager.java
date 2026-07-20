@@ -3,7 +3,7 @@ package elite.intel.db.managers;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.data.EDMaterialCaps;
-import elite.intel.search.edsm.dto.MaterialsType;
+import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import elite.intel.util.StringUtls;
 
 public class MaterialManager {

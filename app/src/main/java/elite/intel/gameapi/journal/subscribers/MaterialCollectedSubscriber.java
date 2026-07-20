@@ -1,14 +1,12 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.db.util.Database;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
-import elite.intel.search.edsm.dto.MaterialsType;
+import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import elite.intel.util.StringUtls;
 
 import java.util.ArrayList;

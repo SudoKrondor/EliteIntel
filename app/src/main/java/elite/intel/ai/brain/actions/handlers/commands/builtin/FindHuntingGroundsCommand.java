@@ -1,0 +1,91 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.db.dao.PirateHuntingGroundsDao.HuntingGround;
+import elite.intel.db.dao.PirateMissionProviderDao.MissionProvider;
+import elite.intel.db.managers.HuntingGroundManager.PirateMissionTuple;
+import elite.intel.gameapi.search.spansh.missions.pirates.PirateMassacreMissionSearch;
+import elite.intel.session.Status;
+import elite.intel.util.StringUtls;
+
+import java.util.List;
+
+import static elite.intel.util.StringUtls.getIntSafely;
+
+/**
+ * Self-describing "find hunting grounds" command.
+ * Owns its own execution: body migrated 1:1 from the legacy LocatePirateHuntingGrounds,
+ * routed through CommandRegistry via the self-describing model.
+ */
+@RegisterCommand
+public final class FindHuntingGroundsCommand implements IntelCommand {
+    public static final String ID = "find_hunting_grounds";
+
+    @Override
+    public String llmDescription() {
+        return "Search for pirate-massacre hunting grounds (resource extraction sites and their mission providers) within the range in ly given by 'key'.";
+    }
+
+
+    private static final String PARAM_KEY = "key";
+
+    private static final List<ActionParameterSpec> PARAMETERS = buildParameters();
+
+    private static List<ActionParameterSpec> buildParameters() {
+        ActionParameterSpec key = new ActionParameterSpec(
+                PARAM_KEY, "number", false,
+                "Maximum search range in light years (ly). If omitted, a default range is used.",
+                List.of("50", "100"),
+                "Extract the range limit in light years if the commander states one; otherwise omit it.");
+        key.validate();
+        return List.of(key);
+    }
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    /** App-side search (no game input); executable in any location. */
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return true;
+    }
+
+    @Override
+    public List<ActionParameterSpec> parameters() {
+        return PARAMETERS;
+    }
+
+    @Override
+    public String execute(JsonObject params, String responseText) {
+        int range = params.get(PARAM_KEY) == null
+                || getIntSafely(params.get(PARAM_KEY).getAsString()) == null
+                || params.isEmpty() ? 100 : params.get(PARAM_KEY).getAsInt();
+
+        PirateMassacreMissionSearch missionSearch = PirateMassacreMissionSearch.getInstance();
+        List<PirateMissionTuple<HuntingGround, List<MissionProvider>>> huntingGrounds = missionSearch.findHuntingSpotsInRange(range);
+
+        if (huntingGrounds != null) {
+            String message;
+            if (huntingGrounds.isEmpty()) {
+                message = StringUtls.localizedLlm("handler.pirate.noProviders");
+            } else {
+                String providers = huntingGrounds.size() == 1
+                        ? StringUtls.localizedLlm("handler.pirate.foundProvidersOne")
+                        : StringUtls.localizedLlm("handler.pirate.foundProvidersMany", huntingGrounds.size());
+                boolean reconRequired = huntingGrounds.stream().anyMatch(data -> !data.getTarget().isHasResSite());
+                String nav = reconRequired
+                        ? StringUtls.localizedLlm("handler.pirate.reconRequired")
+                        : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
+                message = providers + " " + nav;
+            }
+            return message;
+        } else {
+            return StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range);
+        }
+    }
+}

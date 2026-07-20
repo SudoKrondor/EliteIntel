@@ -1,16 +1,14 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ApproachBodyEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.SystemBodiesDto;
-import elite.intel.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.SystemBodiesDto;
+import elite.intel.gameapi.search.edsm.dto.data.BodyData;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.LocationUtils;

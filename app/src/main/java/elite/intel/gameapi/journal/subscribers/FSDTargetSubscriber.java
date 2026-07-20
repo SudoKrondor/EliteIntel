@@ -5,10 +5,10 @@ import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.data.FsdTarget;
 import elite.intel.gameapi.journal.events.FSDTargetEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.StarSystemDto;
-import elite.intel.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.StarSystemDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
 import elite.intel.session.PlayerSession;
 
 import static elite.intel.util.StringUtls.localizedEvent;

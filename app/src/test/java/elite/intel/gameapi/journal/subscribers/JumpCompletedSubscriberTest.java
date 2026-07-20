@@ -1,7 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.dto.data.BodyData;
 import elite.intel.util.json.GsonFactory;
 import org.junit.jupiter.api.Test;
 

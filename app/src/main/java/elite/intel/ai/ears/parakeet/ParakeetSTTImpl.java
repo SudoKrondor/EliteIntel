@@ -2,13 +2,13 @@ package elite.intel.ai.ears.parakeet;
 
 import com.google.common.eventbus.Subscribe;
 import com.k2fsa.sherpa.onnx.*;
-import elite.intel.ai.brain.actions.command.builtin.InterruptCommand;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.InterruptCommand;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.InputNormalizerLocalizations;
+import elite.intel.ai.brain.vega.input.BargeInEvent;
 import elite.intel.ai.ears.*;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.ai.mouth.subscribers.events.TTSInterruptEvent;
-import elite.intel.companion.input.BargeInEvent;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.UserInputEvent;

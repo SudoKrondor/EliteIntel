@@ -1,37 +1,9 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.eventbus.UiBus;
-import elite.intel.gameapi.journal.events.BuyAmmoEvent;
-import elite.intel.gameapi.journal.events.BuyDronesEvent;
-import elite.intel.gameapi.journal.events.CarrierBankTransferEvent;
-import elite.intel.gameapi.journal.events.CarrierBuyEvent;
-import elite.intel.gameapi.journal.events.LoadGameEvent;
-import elite.intel.gameapi.journal.events.MarketBuyEvent;
-import elite.intel.gameapi.journal.events.MarketSellEvent;
-import elite.intel.gameapi.journal.events.MissionCompletedEvent;
-import elite.intel.gameapi.journal.events.ModuleBuyEvent;
-import elite.intel.gameapi.journal.events.ModuleSellEvent;
-import elite.intel.gameapi.journal.events.ModuleSellRemoteEvent;
-import elite.intel.gameapi.journal.events.MultiSellExplorationDataEvent;
-import elite.intel.gameapi.journal.events.NpcCrewPaidWageEvent;
-import elite.intel.gameapi.journal.events.PayBountiesEvent;
-import elite.intel.gameapi.journal.events.PayFinesEvent;
-import elite.intel.gameapi.journal.events.RedeemVoucherEvent;
-import elite.intel.gameapi.journal.events.RefuelAllEvent;
-import elite.intel.gameapi.journal.events.RefuelPartialEvent;
-import elite.intel.gameapi.journal.events.RepairAllEvent;
-import elite.intel.gameapi.journal.events.RepairEvent;
-import elite.intel.gameapi.journal.events.RestockVehicleEvent;
-import elite.intel.gameapi.journal.events.ResurrectEvent;
-import elite.intel.gameapi.journal.events.SellDronesEvent;
-import elite.intel.gameapi.journal.events.SellOrganicDataEvent;
-import elite.intel.gameapi.journal.events.ShipyardBuyEvent;
-import elite.intel.gameapi.journal.events.ShipyardSellEvent;
-import elite.intel.gameapi.journal.events.ShipyardTransferEvent;
+import elite.intel.gameapi.journal.events.*;
 import elite.intel.session.PlayerSession;
 import elite.intel.ui.event.CreditsUpdatedEvent;
 

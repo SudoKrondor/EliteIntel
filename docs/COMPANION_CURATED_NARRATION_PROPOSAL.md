@@ -3,7 +3,7 @@
 **Status:** Proposal / discussion
 **Author:** (commander)
 **Date:** 2026-06-25
-**Affects:** `elite.intel.companion.*`, `elite.intel.gameapi.journal.subscribers.*`
+**Affects:** `elite.intel.vega.*`, `elite.intel.gameapi.journal.subscribers.*`
 **Related:** `docs/COMPANION_ARCHITECTURE.md` (§2.2 importance taxonomy)
 
 ## TL;DR

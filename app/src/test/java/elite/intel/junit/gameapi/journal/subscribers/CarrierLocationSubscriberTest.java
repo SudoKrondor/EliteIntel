@@ -6,7 +6,7 @@ import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.gameapi.journal.events.CarrierLocationEvent;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.gameapi.journal.subscribers.CarrierLocationSubscriber;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

@@ -5,7 +5,7 @@ import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.Client;
 import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.eventbus.GameEventBus;
-import elite.intel.ws.WebSocketBroadcaster;
+import elite.intel.tools.ws.WebSocketBroadcaster;
 import elite.intel.util.json.GsonFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

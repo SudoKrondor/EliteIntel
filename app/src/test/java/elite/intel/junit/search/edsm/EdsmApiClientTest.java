@@ -2,9 +2,9 @@ package elite.intel.junit.search.edsm;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.MarketDto;
-import elite.intel.search.edsm.dto.StarSystemDto;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.MarketDto;
+import elite.intel.gameapi.search.edsm.dto.StarSystemDto;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

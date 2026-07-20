@@ -1,8 +1,8 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.mouth.EventNarrator;
-import elite.intel.companion.CompanionRuntime;
 import elite.intel.db.dao.DestinationReminderDao;
 import elite.intel.db.dao.RouteMonetisationDao.MonetisationTransaction;
 import elite.intel.db.dao.ShipSettingsDao;
@@ -12,12 +12,12 @@ import elite.intel.gameapi.gamestate.dtos.NavRouteDto;
 import elite.intel.gameapi.journal.events.FSDJumpEvent;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.MaterialDto;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.SystemBodiesDto;
-import elite.intel.search.edsm.dto.TrafficDto;
-import elite.intel.search.edsm.dto.data.BodyData;
-import elite.intel.search.edsm.dto.data.ParentBody;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.SystemBodiesDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.dto.data.BodyData;
+import elite.intel.gameapi.search.edsm.dto.data.ParentBody;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 

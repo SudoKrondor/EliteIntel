@@ -1,12 +1,12 @@
 package elite.intel.ai.brain;
 
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;

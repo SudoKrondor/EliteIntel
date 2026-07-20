@@ -1,23 +1,18 @@
 package elite.intel.ai.brain.actions.catalog;
 
-import elite.intel.ai.brain.actions.command.CommandI18nKeys;
-import elite.intel.ai.brain.actions.command.CommandKind;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.IntelCommand;
 import elite.intel.ai.brain.actions.IntelActionContext;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryI18nKeys;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandI18nKeys;
+import elite.intel.ai.brain.actions.handlers.commands.CommandKind;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.queries.IntelQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryI18nKeys;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 /**

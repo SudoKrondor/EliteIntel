@@ -6,13 +6,13 @@ import elite.intel.db.util.Database;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.data.EDMaterialCaps;
 import elite.intel.gameapi.journal.events.MaterialsEvent;
-import elite.intel.search.edsm.dto.MaterialsType;
+import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import elite.intel.ui.event.AppLogDebugEvent;
 import elite.intel.util.StringUtls;
 
 import java.util.List;
 
-import static elite.intel.search.edsm.dto.MaterialsType.*;
+import static elite.intel.gameapi.search.edsm.dto.MaterialsType.*;
 
 @SuppressWarnings("unused")
 public class MaterialsEventSubscriber {
