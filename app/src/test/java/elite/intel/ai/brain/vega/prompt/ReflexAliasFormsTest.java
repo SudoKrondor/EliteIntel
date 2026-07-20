@@ -1,6 +1,5 @@
 package elite.intel.ai.brain.vega.prompt;
 
-import elite.intel.ai.brain.vega.prompt.ReflexResolver;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
@@ -56,7 +55,17 @@ class ReflexAliasFormsTest {
             Map.entry("night vision", "toggle_night_vision_on_off"),
             Map.entry("drive assist", "drive_assist"),
             Map.entry("disembark", "disembark"),
-            Map.entry("honk", "run_discovery_scan"));
+            Map.entry("honk", "run_discovery_scan"),
+            // Closing the current screen. "close the window" reached the LLM instead of the reflex gate and came
+            // back as a clarifying question ("which window - the panel, map, or something else?") rather than an
+            // action, because English carried only the qualified "close panel"/"close map" forms while de/es/ru/uk
+            // already had the bare verb.
+            Map.entry("close", "exit_close"),
+            Map.entry("close the window", "exit_close"),
+            Map.entry("close window", "exit_close"),
+            Map.entry("close the panel", "exit_close"),
+            Map.entry("close the map", "exit_close"),
+            Map.entry("back out", "exit_close"));
 
     @Test
     void shortShipCommandsCarryAUniqueBareReflexForm() throws Exception {

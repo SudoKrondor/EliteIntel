@@ -19,6 +19,15 @@ public class KeyProcessor {
     private static final int NATIVE_CHARACTER_BASE = 0x20000;
     private static final int NATIVE_CHARACTER_LIMIT = NATIVE_CHARACTER_BASE + Character.MAX_VALUE;
 
+    /**
+     * Settle time before the first typed character, so a just-focused field is listening.
+     */
+    private static final int TEXT_LEAD_IN_MS = 400;
+    /**
+     * Gap between typed characters, so each lands in its own game input poll.
+     */
+    private static final int TEXT_INTER_CHAR_MS = 30;
+
     private final Robot robot;
     private final NativeKeyInput nativeKeyInput;
 
@@ -308,12 +317,23 @@ public class KeyProcessor {
         return ThreadLocalRandom.current().nextInt(43, 89);
     }
 
+    /**
+     * Types text into whichever game field currently has focus.
+     * <p>
+     * Both native backends inject characters straight through SendInput/XTest, which bypasses
+     * {@link Robot#setAutoDelay} — so before this delay existed the whole string was blasted out
+     * within a single frame. Elite's text fields are frame-polled and only start accepting input a
+     * beat after they gain focus, which dropped the leading character. {@link #TEXT_LEAD_IN_MS}
+     * gives the field that beat, and {@link #TEXT_INTER_CHAR_MS} keeps one character per poll.
+     */
     public void enterText(String text) {
+        robot.delay(TEXT_LEAD_IN_MS);
         for (char c : text.toCharArray()) {
             if (!nativeKeyInput.typeChar(c)) {
                 robot.keyPress(KeyEvent.getExtendedKeyCodeForChar(c));
                 robot.keyRelease(KeyEvent.getExtendedKeyCodeForChar(c));
             }
+            robot.delay(TEXT_INTER_CHAR_MS);
         }
     }
 }

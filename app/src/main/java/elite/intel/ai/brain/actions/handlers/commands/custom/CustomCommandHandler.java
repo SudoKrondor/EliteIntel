@@ -102,7 +102,9 @@ public final class CustomCommandHandler implements IntelAction {
         switch (step.getType()) {
             case BINDING_TAP -> {
                 UiBus.publish(new AppLogEvent("Custom command step: BINDING_TAP " + step.getBindingId()));
-                pendingInput.addInput(GameInputStep.bindingTap(step.getBindingId()));
+                // WHY: the commander picked Binding Tap over the neighbouring Binding Hold step, so a tap is
+                // what they asked for even if their .binds marks that binding as a long press.
+                pendingInput.addInput(GameInputStep.bindingForcedTap(step.getBindingId()));
             }
 
             case BINDING_HOLD -> {

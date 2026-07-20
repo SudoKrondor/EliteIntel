@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,6 +46,12 @@ public class ScanEventSubscriber {
     private final SystemSession systemSession = SystemSession.getInstance();
     private final LocationManager locationManager = LocationManager.getInstance();
     private final BiomeAnalyzer biomeAnalyzer = BiomeAnalyzer.getInstance();
+
+    /**
+     * Bodies already announced in {@link #announcedSystemAddress}; see {@link #isFirstAnnouncementForBody}.
+     */
+    private final Set<Long> announcedBodies = new HashSet<>();
+    private long announcedSystemAddress = Long.MIN_VALUE;
 
     private static String getDetails(ScanEvent event, String shortName) {
         boolean hasMats = event.getMaterials() != null && !event.getMaterials().isEmpty();
@@ -176,9 +183,9 @@ public class ScanEventSubscriber {
 
         if (!wasDiscovered && PLANET.equals(location.getLocationType())) {
             if (event.getTerraformState() != null && !event.getTerraformState().isEmpty()) {
-                CompanionRuntime.narrator().announce(localizedEvent("event.scan.newTerraformable", shortName), false);
+                announceOnce(event, localizedEvent("event.scan.newTerraformable", shortName));
             } else if (event.getPlanetClass() != null && valuablePlanetClasses.contains(event.getPlanetClass().toLowerCase())) {
-                CompanionRuntime.narrator().announce(localizedEvent("event.scan.newDiscovery", event.getPlanetClass()), false);
+                announceOnce(event, localizedEvent("event.scan.newDiscovery", event.getPlanetClass()));
             }
         }
 
@@ -189,8 +196,45 @@ public class ScanEventSubscriber {
                 log.info(sensorData);
             }
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
-            CompanionRuntime.narrator().announce(localizedEvent("event.scan.newSystem"), false);
+            announceOnce(event, localizedEvent("event.scan.newSystem"));
         }
+    }
+
+    /**
+     * Announces a discovery at most once per body.
+     * <p>
+     * The game emits several Scan events for the same body - an {@code AutoScan} on arrival and a
+     * {@code Detailed} scan when it is honked or targeted - all carrying the same
+     * {@code WasDiscovered:false}. Without this guard each one announced, so arriving in an
+     * undiscovered system said "New System discovered!" twice, seconds apart.
+     */
+    private void announceOnce(ScanEvent event, String message) {
+        if (isFirstAnnouncementForBody(event.getSystemAddress(), event.getBodyID())) {
+            CompanionRuntime.narrator().announce(message, false);
+        }
+    }
+
+    /**
+     * Records a body as announced and reports whether this call was the first to do so.
+     * <p>
+     * Scoped to the current system so the set stays bounded on a long exploration run: leaving a
+     * system drops its bodies, and re-entering one can only re-announce bodies that are by then
+     * flagged {@code WasDiscovered:true} anyway. Synchronized because scans are handled on virtual
+     * threads and two scans of the same body can be in flight together.
+     * <p>
+     * // WHY: a body with no {@code BodyID} always announces. Folding those onto one shared key would
+     * silence every unidentified body in the system after the first, turning a missing field into a
+     * lost discovery; repeating an announcement is the cheaper failure than never making it.
+     */
+    synchronized boolean isFirstAnnouncementForBody(long systemAddress, Long bodyId) {
+        if (systemAddress != announcedSystemAddress) {
+            announcedSystemAddress = systemAddress;
+            announcedBodies.clear();
+        }
+        if (bodyId == null) {
+            return true;
+        }
+        return announcedBodies.add(bodyId);
     }
 
     private List<MaterialDto> toListOfMaterials(List<ScanEvent.Material> materials) {
