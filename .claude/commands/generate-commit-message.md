@@ -50,4 +50,4 @@ Example shape (illustrative, not a template to copy verbatim):
 # 4. Output
 
 Write the message to `commit-message.txt` in the repo root and print it inline. Do not run `git add` or
-`git commit`. Mention that the draft is ready for the user to review and commit.
+`git commit`. Mention that the draft is ready for the user to review and commit. Allways overrie `commit-message.txt`

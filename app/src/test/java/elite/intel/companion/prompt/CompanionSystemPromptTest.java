@@ -11,7 +11,33 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Verifies the source-specific static prompt contracts and resolved language settings. */
 class CompanionSystemPromptTest {
 
+    /**
+     * Budget for the prompt text we author, excluding the interpolated personality clause. Headroom over the
+     * current size is deliberate: translated prompts run longer than the English original.
+     */
+    private static final int AUTHORED_WORD_BUDGET = 600;
+
     private final CompanionSystemPrompt prompt = new CompanionSystemPrompt();
+
+    /**
+     * Words in the prompt minus the commander's personality clause.
+     *
+     * <p>WHY: {@code CommanderPrompt} interpolates {@code SystemSession.getAIPersonality()}, which is the
+     * <em>active ship's</em> personality, and those clauses run from 34 words (PROFESSIONAL) to 140 (ROGUE).
+     * Counting the whole string made this assertion depend on which ship the commander last flew: under Gradle
+     * the in-memory DB has no ship and falls back to CASUAL (595 words, passes), while an IDE run against a
+     * real DB could land on ROGUE (695, fails) for a prompt nobody had touched. Subtracting the clause makes
+     * the number depend only on the prompt we write - it is exactly 555 for every personality.
+     */
+    private static int authoredWordCount(String prompt) {
+        String clause = SystemSession.getInstance().getAIPersonality().getPersonalityClause();
+        return wordCount(prompt) - wordCount(clause);
+    }
+
+    private static int wordCount(String text) {
+        String trimmed = text.trim();
+        return trimmed.isEmpty() ? 0 : trimmed.split("\\s+").length;
+    }
 
     private static String resolvedLanguageName() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
@@ -42,8 +68,13 @@ class CompanionSystemPromptTest {
         assertTrue(text.contains("<grounding>"));
         assertTrue(text.contains("<function_calling>"));
         assertFalse(text.contains("<safety>"));
-        int wordCount = text.trim().split("\\s+").length;
-        assertTrue(wordCount < 600, () -> "Commander prompt must stay concise, actual words: " + wordCount);
+        int authored = authoredWordCount(text);
+        assertTrue(authored < AUTHORED_WORD_BUDGET, () -> String.format(
+                "Commander prompt must stay concise: %d authored words (budget %d). "
+                        + "Measured with personality=%s, language=%s; the personality clause (%d words) is "
+                        + "excluded because it is commander-selected content, not authored prompt.",
+                authored, AUTHORED_WORD_BUDGET, SystemSession.getInstance().getAIPersonality(),
+                inputLanguageName(), wordCount(SystemSession.getInstance().getAIPersonality().getPersonalityClause())));
     }
 
     @Test

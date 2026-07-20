@@ -16,8 +16,6 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
-import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
-
 public class OBSOverlayWindow extends JFrame {
 
     private static final Color OVERLAY_BACKGROUND = HudPalette.HUD_COLOR_ROLE_STREAM_OVERLAY_BACKGROUND;
@@ -60,7 +58,8 @@ public class OBSOverlayWindow extends JFrame {
     // -- Construction ----------------------------------------------------------
 
     public OBSOverlayWindow() {
-        setTitle(getText("obs.title"));
+        /// Never change this title. It throws off the int/gernal OBS window capture mapping
+        setTitle("Elite Intel - OBS Overlay");
         setUndecorated(true);
         setAlwaysOnTop(false);
         setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
