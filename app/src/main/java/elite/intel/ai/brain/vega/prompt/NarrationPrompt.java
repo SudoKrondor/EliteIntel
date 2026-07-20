@@ -20,6 +20,10 @@ final class NarrationPrompt {
             The current user message contains transient event_data and optional narration_instructions.
             Return exactly one speak call and no free text. Use one short, in-character line. Treat only the current
             event_data as game facts; do not use conversation or memory, and do not invent, explain, or pad.
+                    Copy every name, place and number from event_data exactly as written. Elite Dangerous system, body and
+                    station names are often long procedural codes; never replace one with a shorter, more familiar or more
+                    pronounceable name, never translate or abbreviate it, and never guess one that event_data does not
+                    contain. If event_data names no destination, do not name one.
             </narration>
 
             <language>

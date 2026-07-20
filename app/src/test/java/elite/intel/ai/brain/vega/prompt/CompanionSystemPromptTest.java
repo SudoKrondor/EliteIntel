@@ -2,7 +2,6 @@ package elite.intel.ai.brain.vega.prompt;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
-import elite.intel.ai.brain.vega.prompt.CompanionSystemPrompt;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.Test;
@@ -175,6 +174,26 @@ class CompanionSystemPromptTest {
         assertFalse(text.contains("<safety>"));
         assertFalse(text.contains("memory_search"));
         assertTrue(text.contains("<language>"));
+    }
+
+    /**
+     * The narration branch must forbid substituting proper nouns, not merely forbid inventing facts.
+     *
+     * <p>WHY: asked to report a carrier jump whose payload named no destination, the model answered "we're
+     * heading to Sol" for a route running to Colonia. The rule against inventing was already present; what
+     * was missing was an explicit instruction to reproduce names exactly and to name nothing when the data
+     * names nothing. Elite Dangerous system names are long procedural codes, so a small model paraphrasing
+     * one into something familiar is a standing risk on every narrated event, not just this one.
+     */
+    @Test
+    void narrationBranchForbidsSubstitutingNamesFromEventData() {
+        String normalized = prompt.staticRules(ThoughtSource.EVENT).replaceAll("\\s+", " ");
+        assertTrue(normalized.contains("Copy every name, place and number from event_data exactly as written"),
+                "narration must pin proper nouns to the payload");
+        assertTrue(normalized.contains("never replace one with a shorter, more familiar or more pronounceable name"),
+                "narration must forbid swapping a procedural name for a familiar one");
+        assertTrue(normalized.contains("If event_data names no destination, do not name one"),
+                "narration must forbid filling a gap the payload leaves");
     }
 
     @Test
