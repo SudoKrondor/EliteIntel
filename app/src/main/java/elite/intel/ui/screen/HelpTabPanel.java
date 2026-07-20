@@ -1,22 +1,21 @@
 package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.model.IntelActionCategory;
-import elite.intel.companion.model.llm.LlmToolDefinition;
-import elite.intel.companion.prompt.GameToolCandidates;
-import elite.intel.companion.prompt.SemanticActionReducer;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.model.IntelActionCategory;
+import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
+import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
+import elite.intel.ai.brain.vega.prompt.SemanticActionReducer;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.NormalizedUserInputEvent;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
+import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.PlayerSituation;
@@ -29,6 +28,8 @@ import elite.intel.ui.widget.HudComboBox;
 import elite.intel.ui.widget.HudSection;
 import elite.intel.ui.widget.HudTable;
 import elite.intel.ui.widget.HudTwoColumns;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -40,14 +41,8 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashSet;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
@@ -154,8 +149,9 @@ public class HelpTabPanel extends JPanel {
         // the filter (see availableRows).
         JPanel situationCol = transparentPanel(new GridBagLayout());
         GridBagConstraints sgc = baseGbc();
-        addLabel(situationCol, getText("location.field.label"), sgc);
-        situationCombo = new HudComboBox<>(PlayerSituation.values(), s -> caps(getText(s.i18nKey())));
+        addLabel(situationCol, EventsTextProvider.getText("game.situation.label"), sgc);
+        situationCombo = new HudComboBox<>(PlayerSituation.values(),
+                s -> caps(EventsTextProvider.getText(s.i18nKey())));
         situationCombo.setSelectedItem(PlayerSituation.UNKNOWN); // no context known until the first refresh/sync
         situationCombo.addActionListener(e -> {
             if (syncingSituation) {

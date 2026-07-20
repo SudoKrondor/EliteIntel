@@ -1,14 +1,15 @@
 package elite.intel.ai.brain;
 
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.RegisterCommand;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
-import elite.intel.ai.brain.actions.query.RegisterQuery;
+import elite.intel.ai.brain.actions.IntelActionContext;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.RegisterQuery;
 import elite.intel.ai.brain.i18n.AiActionAliasTextProvider;
 import elite.intel.session.Status;
 import elite.intel.session.SystemSession;
@@ -21,21 +22,8 @@ import java.util.*;
 import static elite.intel.ai.brain.commons.AiEndPoint.CONNECTION_CHECK_COMMAND;
 
 /**
- * Builds the LLM action map (phrase-group -> action id) from the self-describing
- * command and query registries, deterministically ordered. Reproduces every block
- * of {@link AiActionsMap#actionMap(boolean)} so it can eventually replace the manual
- * {@code AiActionAliasProvider.addAliases} list.
- * <p>
- * NOT wired into the runtime yet: this is a parallel generator validated by a golden
- * test against the current map. Ordering is id-sorted then refined by the optional
- * {@code before} hints on {@link RegisterCommand}/{@link RegisterQuery} (topological
- * sort); with no hints declared the result is a stable id-sorted order.
- * <p>
- * Composition rule: an action is included only if it has a localized phrase in the
- * alias bundle (i.e. {@code localizedAiActionKeys(id) != id}); ids without a phrase
- * are invisible to the LLM today and stay excluded. The non-action additions
- * (mode fallback, connection-check, custom commands) are appended verbatim after the
- * ordered actions, exactly as the current {@code actionMap}.
+ * Builds the legacy phrase-to-action map from available, localized commands and queries. Action ids provide the
+ * stable base order, optional {@code before} hints refine it, and runtime fallback entries are appended last.
  */
 public class AiActionMapGenerator {
 
@@ -44,21 +32,22 @@ public class AiActionMapGenerator {
     /**
      * Assembles the action map for the given context.
      *
-     * @param status             session status used for context visibility (ignored when isDryRun)
-     * @param isDryRun            true = show everything (visibility not filtered), matching dry-run actionMap
-     * @param conversationalMode  selects the fallback entry (general conversation vs ignore)
+     * @param status session status used for context visibility, ignored in dry-run mode
+     * @param isDryRun whether status visibility should be ignored
+     * @param conversationalMode selects the conversational or ignore fallback
      * @return ordered phrase-group -> id map (LinkedHashMap)
      */
     public Map<String, String> generate(Status status, boolean isDryRun, boolean conversationalMode) {
-        // a) single cross-registry list of self-describing actions
         List<IntelAction> actions = new ArrayList<>();
         actions.addAll(CommandRegistry.getInstance().byId().values());
         actions.addAll(QueryRegistry.getInstance().byId().values());
 
-        // b) composition filter (reproduces the current map's membership)
         List<IntelAction> visible = new ArrayList<>();
         for (IntelAction action : actions) {
             String id = action.id();
+            if (!action.isAvailableIn(IntelActionContext.LEGACY_ACTION_MAP)) {
+                continue;
+            }
             // Include only if the alias bundle for the current language actually DEFINES a key
             // for this id. This is distinct from "phrase != id": a present-but-equal-to-id phrase
             // (interrupt=interrupt, disembark=disembark) counts as defined and stays in; an id with
@@ -73,16 +62,13 @@ public class AiActionMapGenerator {
             visible.add(action);
         }
 
-        // c) deterministic order: id-sorted base refined by 'before' topological sort
         List<IntelAction> ordered = orderByBefore(visible);
 
-        // d) ordered actions into the map
         Map<String, String> map = new LinkedHashMap<>();
         for (IntelAction action : ordered) {
             map.put(StringUtls.localizedAiActionKeys(action.id()), action.id());
         }
 
-        // e) non-action additions, appended after the ordered actions (as in actionMap)
         if (conversationalMode) {
             map.put("general conversation", GeneralConversationQuery.ID);
         } else {

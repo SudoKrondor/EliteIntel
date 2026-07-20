@@ -127,7 +127,7 @@ public class PanelStateTracker {
         if (panel == GuiFocus.COMMS_PANEL) {
             return commsPanel;
         }
-        if (panel == GuiFocus.ROLE_PANEL) {
+        if (panel == GuiFocus.CENTRAL_PANEL) {
             return centrePanel;
         }
         if (panel == GuiFocus.INTERNAL_PANEL) {

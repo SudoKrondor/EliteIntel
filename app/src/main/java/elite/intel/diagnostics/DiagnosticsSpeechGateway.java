@@ -1,8 +1,8 @@
 package elite.intel.diagnostics;
 
-import elite.intel.companion.model.speech.SpeechRequest;
-import elite.intel.companion.speech.CompanionSpeechGateway;
-import elite.intel.companion.speech.SpeechGateway;
+import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
+import elite.intel.ai.brain.vega.speech.CompanionSpeechGateway;
+import elite.intel.ai.brain.vega.speech.SpeechGateway;
 
 import java.util.concurrent.CompletableFuture;
 

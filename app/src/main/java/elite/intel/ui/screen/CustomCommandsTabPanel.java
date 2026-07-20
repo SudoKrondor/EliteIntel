@@ -2,8 +2,8 @@ package elite.intel.ui.screen;
 
 import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.brain.actions.catalog.CommandCatalogEntry;
-import elite.intel.ai.brain.actions.customcommand.*;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
+import elite.intel.ai.brain.actions.handlers.commands.custom.*;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ui.dialog.*;
 import elite.intel.ui.render.HudCommandNameCellRenderer;

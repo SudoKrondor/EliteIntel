@@ -1,0 +1,49 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.hands.Bindings;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.gameapi.inputs.UiNavCommon;
+import elite.intel.session.Status;
+
+/**
+ * Self-describing "show station services panel" command.
+ * Owns its own execution: body migrated 1:1 from the legacy OpenStationServicesHandler,
+ * routed through CommandRegistry via the self-describing model.
+ */
+@RegisterCommand
+public final class ShowStationServicesPanelCommand implements IntelCommand {
+    public static final String ID = "show_station_services_panel";
+
+    @Override
+    public String llmDescription() {
+        return "Open the station services menu (available while docked).";
+    }
+
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isDocked();
+    }
+
+    @Override
+    public String execute(JsonObject params, String responseText) {
+        UiNavCommon.close();
+        UiNavCommon.prepToKnownUiPositionWhileInTheShipAtStation();
+        GameControllerBus.publish(GameInputSequenceEvent.of(
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_UI_UP.getGameBinding()),
+                GameInputStep.bindingTap(Bindings.GameCommand.BINDING_ACTIVATE.getGameBinding())
+        ));
+        return null;
+    }
+}

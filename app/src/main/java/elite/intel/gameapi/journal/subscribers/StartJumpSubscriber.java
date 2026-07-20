@@ -1,12 +1,12 @@
 package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.companion.CompanionRuntime;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.GlobalSettingsManager;
 import elite.intel.gameapi.journal.events.StartJumpEvent;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.DeathsDto;
-import elite.intel.search.edsm.dto.TrafficDto;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.DeathsDto;
+import elite.intel.gameapi.search.edsm.dto.TrafficDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.SleepNoThrow;
 
@@ -58,7 +58,7 @@ public class StartJumpSubscriber {
                                 - IF no deaths data is available, omit mentioning fatalities.
                             """;
                     SleepNoThrow.sleep(3000);
-                    CompanionRuntime.narrator().narrate(sb.toString(), instructions, "navigation");
+                    CompanionRuntime.narrator().narrate(sb.toString(), instructions);
                 }
             }); // end virtual thread
         }

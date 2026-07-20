@@ -1,9 +1,7 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.gameapi.gamestate.status_events.InGlideEvent;
 import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.gameapi.journal.events.DisembarkEvent;
@@ -418,7 +416,7 @@ public class LocationTrackingSubscriber {
             if (bearing > 0) sb.append(localizedEvent("event.nav.bearing", (int) bearing));
             sb.append(" ");
             log.info(sb.toString());
-            CompanionRuntime.narrator().announce("navigation", sb.toString(), "NAVIGATION", false);
+            CompanionRuntime.narrator().announce(sb.toString(), false);
             lastAnnounceTime = System.currentTimeMillis();
         } else {
             log.info("Not enough time passed to announce. and not high priority.");

@@ -1,22 +1,18 @@
 package elite.intel.ai.brain.actions.catalog;
 
-import elite.intel.ai.brain.actions.command.CommandI18nKeys;
-import elite.intel.ai.brain.actions.command.CommandKind;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.IntelCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.query.IntelQuery;
-import elite.intel.ai.brain.actions.query.QueryI18nKeys;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.IntelActionContext;
+import elite.intel.ai.brain.actions.handlers.commands.CommandI18nKeys;
+import elite.intel.ai.brain.actions.handlers.commands.CommandKind;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.queries.IntelQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryI18nKeys;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.util.StringUtls;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -43,12 +39,14 @@ public final class CommandCatalog {
         this.textResolver = Objects.requireNonNull(textResolver, "textResolver");
     }
 
+    /** Returns deterministic metadata for commands available from the GUI command surface. */
     public List<CommandCatalogEntry> entries() {
         // Source is the self-describing registry. byId() is a LinkedHashMap, but its
         // insertion order mirrors the Reflections scan and is NOT stable across JVM runs,
         // so we sort here (name, then id) — the same comparator the UI consumers already
         // apply — to keep entries() deterministic.
         return CommandRegistry.getInstance().byId().values().stream()
+                .filter(command -> command.isAvailableIn(IntelActionContext.GUI))
                 .map(this::entryFrom)
                 .sorted(Comparator.comparing(CommandCatalogEntry::name, String.CASE_INSENSITIVE_ORDER)
                                   .thenComparing(CommandCatalogEntry::id))
@@ -56,7 +54,7 @@ public final class CommandCatalog {
     }
 
     /**
-     * Returns the full built-in catalog: commands (from CommandRegistry) followed by queries
+     * Returns the GUI built-in catalog: available commands followed by queries
      * (from QueryRegistry), each block sorted by name then id. Unlike {@link #entries()} — which
      * stays a command-only projection — this is the surface UI consumers show under "built-in".
      */
@@ -71,8 +69,8 @@ public final class CommandCatalog {
     }
 
     /**
-     * Returns all catalog entries: built-in commands followed by user-defined customCommands.
-     * Built-in entries are derived from CommandRegistry.byId() as before; custom command entries
+     * Returns all GUI catalog entries: available built-in commands followed by user-defined customCommands.
+     * Built-in entries are derived from CommandRegistry.byId(); custom command entries
      * are built from the provided list. The existing {@link #entries()} method is unchanged.
      */
     public List<CommandCatalogEntry> entries(List<CustomCommandDefinition> customCommands) {

@@ -1,0 +1,244 @@
+package elite.intel.gameapi.search.spansh.station.marketstation;
+
+import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
+import elite.intel.util.json.ToJsonConvertible;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+public class TradeStationSearchCriteria extends BaseJsonDto implements ToJsonConvertible {
+
+    @SerializedName("filters")
+    private Filters filters = new Filters();
+
+    @SerializedName("reference_coords")
+    private ReferenceCoords referenceCoords;
+
+
+    @SerializedName("sort")
+    private List<Object> sort = Collections.emptyList();
+
+    @SerializedName("size")
+    private int size = 10;
+
+    @SerializedName("page")
+    private int page = 0;
+
+    @SerializedName("distance")
+    private Distance distance;
+
+
+    // === Setters for builder-style usage ===
+
+
+    public Distance getDistance() {
+        return distance;
+    }
+
+    public void setDistance(Distance distance) {
+        this.distance = distance;
+    }
+
+    public void setReferenceCoords(ReferenceCoords referenceCoords) {
+        this.referenceCoords = referenceCoords;
+    }
+
+    public void setFilters(Filters filters) {
+        this.filters = filters;
+    }
+
+    public void setSort(List<Object> sort) {
+        this.sort = sort != null ? sort : Collections.emptyList();
+    }
+
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public void setPage(int page) {
+        this.page = page;
+    }
+
+    // === Nested classes ===
+    public static class SystemName {
+        @SerializedName("value")
+        private String systemName;
+
+        public String getSystemName() {
+            return systemName;
+        }
+
+        public void setSystemName(String systemName) {
+            this.systemName = systemName;
+        }
+    }
+
+    public static class StationType {
+        @SerializedName("value")
+         List<String> types= Arrays.asList("Asteroid base", "Coriolis Starport", "Mega ship");
+
+        public void setTypes(List<String> types) {
+            this.types = types;
+        }
+    }
+
+    public static class Distance {
+        @SerializedName("min")
+        private String min; // sure it makes sense to use int, but API wants this as String...
+        @SerializedName("max")
+        private String max; // sure it makes sense to use int, but API wants this as String...
+
+        public void setMin(int min) {
+            //API wants this as String...
+            this.min = String.valueOf(min);
+        }
+
+        public void setMax(int max) {
+            //API wants this as String...
+            this.max = String.valueOf(max);
+        }
+    }
+
+    public static class Filters {
+
+        @SerializedName("updated_at")
+        private UpdatedAt updatedAt;
+
+        @SerializedName("distance_to_arrival")
+        private RangeFilter distanceToArrival;
+
+        @SerializedName("system_name")
+        private SystemName systemName;
+
+        @SerializedName("distance")
+        private Distance distance;
+
+        @SerializedName("type")
+        private StationType stationType;
+
+        @SerializedName("small_pads")
+        private RangeFilter smallPads;
+
+        @SerializedName("medium_pads")
+        private RangeFilter mediumPads;
+
+        @SerializedName("large_pads")
+        private RangeFilter largePads;
+
+
+        public UpdatedAt getUpdatedAt() {
+            return updatedAt;
+        }
+
+        public void setUpdatedAt(UpdatedAt updatedAt) {
+            this.updatedAt = updatedAt;
+        }
+
+        public SystemName getSystemName() {
+            return systemName;
+        }
+
+        public void setSystemName(SystemName systemName) {
+            this.systemName = systemName;
+        }
+
+        public void setStationType(StationType stationType) {
+            this.stationType = stationType;
+        }
+
+        // Setters
+        public void setDistanceToArrival(RangeFilter distanceToArrival) {
+            this.distanceToArrival = distanceToArrival;
+        }
+
+        public void setSmallPads(RangeFilter smallPads) {
+            this.smallPads = smallPads;
+        }
+
+        public void setMediumPads(RangeFilter mediumPads) {
+            this.mediumPads = mediumPads;
+        }
+
+        public void setLargePads(RangeFilter largePads) {
+            this.largePads = largePads;
+        }
+
+        public void setDistanceToStarSystem(Distance distanceToStarSystem) {
+            this.distance = distanceToStarSystem;
+        }
+    }
+
+
+    public static class UpdatedAt {
+        @SerializedName("comparison")
+        private String comparison;           // e.g. "<=>"
+
+        @SerializedName("value")
+        private List<String> value;          // ISO-8601 strings
+
+        public void setComparison(String comparison) { this.comparison = comparison; }
+        public void setValue(List<String> value) { this.value = value; }
+    }
+
+
+    public static class ReferenceCoords {
+
+        @SerializedName("x")
+        private double x;
+
+        @SerializedName("y")
+        private double y;
+
+        @SerializedName("z")
+        private double z;
+
+        public ReferenceCoords() {
+        }
+
+        public ReferenceCoords(double x, double y, double z) {
+            this.x = x;
+            this.y = y;
+            this.z = z;
+        }
+
+        // Setters
+        public void setX(double x) {
+            this.x = x;
+        }
+
+        public void setY(double y) {
+            this.y = y;
+        }
+
+        public void setZ(double z) {
+            this.z = z;
+        }
+    }
+
+    public static class RangeFilter {
+
+        @SerializedName("comparison")
+        private String comparison = "<=>";  // Spansh uses "<=>" for range
+
+        @SerializedName("value")
+        private int[] value = new int[2];
+
+        public RangeFilter() {
+        }
+
+        public RangeFilter(int min, int max) {
+            this.value[0] = min;
+            this.value[1] = max;
+        }
+
+        public void setValue(int[] value) {
+            this.value = value != null ? value : new int[]{0, 0};
+        }
+
+        public void setComparison(String comparison) {
+            this.comparison = comparison;
+        }
+    }
+}

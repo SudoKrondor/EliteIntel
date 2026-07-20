@@ -1,11 +1,11 @@
 package elite.intel.ui.dialog;
 
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandStep;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandValidator;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandStep;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandValidator;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
-import elite.intel.companion.llm.CustomCommandKeyGenerator;
+import elite.intel.ai.brain.vega.llm.CustomCommandKeyGenerator;
 import elite.intel.ui.support.BindingSlotDisplayFormatter;
 import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.theme.HudForms;

@@ -1,8 +1,8 @@
 package elite.intel.ai.brain.commons;
 
 import com.google.gson.JsonObject;
-import elite.intel.ai.brain.actions.handlers.query.BaseQueryAnalyzer;
-import elite.intel.ai.brain.actions.handlers.query.struct.AiDataStruct;
+import elite.intel.ai.brain.actions.handlers.queries.BaseQueryAnalyzer;
+import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.data.BioForms;
 import elite.intel.gameapi.journal.events.dto.LocationDto;

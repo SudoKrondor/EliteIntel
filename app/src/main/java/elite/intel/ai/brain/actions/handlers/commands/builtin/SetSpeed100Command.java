@@ -1,0 +1,26 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.brain.actions.handlers.commands.SimpleTapCommand;
+import elite.intel.ai.hands.Bindings;
+import elite.intel.session.Status;
+
+@RegisterCommand
+public final class SetSpeed100Command extends SimpleTapCommand {
+    public static final String ID = "set_speed_100";
+
+    @Override
+    public String llmDescription() {
+        return "Set the throttle to 100% (full forward).";
+    }
+
+    public SetSpeed100Command() {
+        super(ID, Bindings.GameCommand.BINDING_SET_SPEED100.getGameBinding());
+    }
+
+    /// in any vehicle
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return (status.isInMainShip() || status.isInSrv() || status.isInFighter()) && (!status.isDocked() && !status.isLanded());
+    }
+}

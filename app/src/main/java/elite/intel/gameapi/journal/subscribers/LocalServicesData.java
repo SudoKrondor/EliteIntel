@@ -2,10 +2,10 @@ package elite.intel.gameapi.journal.subscribers;
 
 import elite.intel.db.managers.LocationManager;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
-import elite.intel.search.edsm.EdsmApiClient;
-import elite.intel.search.edsm.dto.MarketDto;
-import elite.intel.search.edsm.dto.OutfittingDto;
-import elite.intel.search.edsm.dto.ShipyardDto;
+import elite.intel.gameapi.search.edsm.EdsmApiClient;
+import elite.intel.gameapi.search.edsm.dto.MarketDto;
+import elite.intel.gameapi.search.edsm.dto.OutfittingDto;
+import elite.intel.gameapi.search.edsm.dto.ShipyardDto;
 import elite.intel.session.PlayerSession;
 
 import static elite.intel.util.StringUtls.localizedEvent;

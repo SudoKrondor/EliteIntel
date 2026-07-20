@@ -1,17 +1,13 @@
 package elite.intel;
 
 import com.formdev.flatlaf.FlatLightLaf;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
-import elite.intel.companion.memory.facts.MemoryFactSourceRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
+import elite.intel.ai.brain.vega.memory.facts.MemoryFactSourceRegistry;
 import elite.intel.db.managers.ShipMakeManager;
 import elite.intel.db.util.Database;
-import elite.intel.diagnostics.DiagnosticsInputTailer;
-import elite.intel.diagnostics.DiagnosticsLog;
-import elite.intel.diagnostics.DiagnosticsLogWriter;
-import elite.intel.diagnostics.DiagnosticsMode;
-import elite.intel.diagnostics.DiagnosticsPacer;
+import elite.intel.diagnostics.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.JournalPreScanner;
 import elite.intel.gameapi.SubscriberRegistration;

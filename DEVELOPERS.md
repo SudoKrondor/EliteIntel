@@ -213,7 +213,7 @@ are used, and the build/tests are unaffected.** The fix is to tell your IDE that
 4. Open the **Entry points** tab, find **Annotations**, and click the ellipsis (`...`).
 5. Add the fully-qualified annotations:
     - `com.google.common.eventbus.Subscribe`
-    - `elite.intel.ai.brain.actions.query.RegisterQuery`
+   - `elite.intel.ai.brain.actions.handlers.queries.RegisterQuery`
     - `elite.intel.ai.brain.actions.command.RegisterCommand`
 
 IntelliJ stores these in `.idea/misc.xml` under `EntryPointsManager`. That file is checked in

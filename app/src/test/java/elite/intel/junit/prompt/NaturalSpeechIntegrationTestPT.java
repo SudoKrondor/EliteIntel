@@ -1,8 +1,8 @@
 package elite.intel.junit.prompt;
 
-import elite.intel.ai.brain.actions.command.builtin.*;
-import elite.intel.ai.brain.actions.handlers.query.*;
-import elite.intel.companion.input.CompanionRoutingHarness;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.*;
+import elite.intel.ai.brain.actions.handlers.queries.*;
+import elite.intel.ai.brain.vega.input.CompanionRoutingHarness;
 import elite.intel.i18n.Language;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1253,7 +1253,7 @@ public class NaturalSpeechIntegrationTestPT {
     @Order(235)
     @MethodSource
     void openCentralPanel(String input) throws InterruptedException {
-        assertRouted(input, ShowCommanderPanelCommand.ID);
+        assertRouted(input, ShowCentralPanelCommand.ID);
     }
 
     static Stream<String> openCentralPanel() {

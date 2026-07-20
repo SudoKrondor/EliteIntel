@@ -1,10 +1,10 @@
 package elite.intel.ui.screen;
 
 import com.google.common.eventbus.Subscribe;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.companion.CompanionRuntime;
-import elite.intel.companion.diag.CompanionMemoryDump;
-import elite.intel.companion.memory.MemoryGateway;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.diag.CompanionMemoryDump;
+import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -1,10 +1,11 @@
 package elite.intel.ai.brain.actions.catalog;
 
 import com.google.gson.Gson;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.IntelCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.IntelActionContext;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +26,10 @@ class CommandCatalogTest {
         QueryRegistry.getInstance().load();
     }
 
-    private static int registrySize() {
-        return CommandRegistry.getInstance().byId().size();
+    private static List<IntelCommand> guiCommands() {
+        return CommandRegistry.getInstance().byId().values().stream()
+                .filter(command -> command.isAvailableIn(IntelActionContext.GUI))
+                .toList();
     }
 
     private static int queryRegistrySize() {
@@ -34,13 +37,14 @@ class CommandCatalogTest {
     }
 
     @Test
-    void containsOneEntryForEveryRegistryCommand() {
+    void containsOneEntryForEveryGuiAvailableCommand() {
         Map<String, Long> entryCountsById = catalog.entries().stream()
                 .collect(Collectors.groupingBy(CommandCatalogEntry::id, Collectors.counting()));
-        Map<String, Long> registryCountsById = CommandRegistry.getInstance().byId().keySet().stream()
+        Map<String, Long> registryCountsById = guiCommands().stream()
+                .map(IntelCommand::id)
                 .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
 
-        assertEquals(registrySize(), catalog.entries().size());
+        assertEquals(guiCommands().size(), catalog.entries().size());
         assertEquals(registryCountsById, entryCountsById);
     }
 
@@ -56,7 +60,7 @@ class CommandCatalogTest {
         Map<String, CommandCatalogEntry> entriesById = catalog.entries().stream()
                 .collect(Collectors.toMap(CommandCatalogEntry::id, Function.identity()));
 
-        for (IntelCommand command : CommandRegistry.getInstance().byId().values()) {
+        for (IntelCommand command : guiCommands()) {
             CommandCatalogEntry entry = entriesById.get(command.id());
             assertNotNull(entry, command.id());
             assertEquals(expectedType(command), entry.type(), command.id());
@@ -78,7 +82,7 @@ class CommandCatalogTest {
     @Test
     void builtInEntriesContainCommandsAndQueries() {
         List<CommandCatalogEntry> builtIn = catalog.builtInEntries();
-        assertEquals(registrySize() + queryRegistrySize(), builtIn.size());
+        assertEquals(guiCommands().size() + queryRegistrySize(), builtIn.size());
 
         Map<String, CommandCatalogEntry> byId = builtIn.stream()
                 .collect(Collectors.toMap(CommandCatalogEntry::id, Function.identity()));
@@ -106,7 +110,7 @@ class CommandCatalogTest {
     @Test
     void builtInEntriesStillPresentWhenCustomCommandListIsEmpty() {
         List<CommandCatalogEntry> entries = catalog.entries(List.of());
-        assertEquals(registrySize(), entries.size());
+        assertEquals(guiCommands().size(), entries.size());
     }
 
     @Test
@@ -114,7 +118,7 @@ class CommandCatalogTest {
         CustomCommandDefinition customCommand = buildCustomCommand("custom_command_test", "Test Custom Command", "desc");
         List<CommandCatalogEntry> entries = catalog.entries(List.of(customCommand));
 
-        assertEquals(registrySize() + 1, entries.size());
+        assertEquals(guiCommands().size() + 1, entries.size());
         CommandCatalogEntry customCommandEntry = entries.getLast();
         assertEquals("custom_command_test", customCommandEntry.id());
         assertEquals("Test Custom Command", customCommandEntry.name());

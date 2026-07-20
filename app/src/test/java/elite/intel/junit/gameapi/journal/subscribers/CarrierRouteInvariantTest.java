@@ -13,7 +13,7 @@ import elite.intel.gameapi.journal.subscribers.CarrierJumpCompleteSubscriber;
 import elite.intel.gameapi.journal.subscribers.CarrierLocationSubscriber;
 import elite.intel.gameapi.journal.subscribers.DockedSubscriber;
 import elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber;
-import elite.intel.search.spansh.carrierroute.CarrierJump;
+import elite.intel.gameapi.search.spansh.carrierroute.CarrierJump;
 import elite.intel.session.PlayerSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

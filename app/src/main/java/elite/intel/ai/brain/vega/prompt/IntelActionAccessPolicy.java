@@ -1,0 +1,27 @@
+package elite.intel.ai.brain.vega.prompt;
+
+import elite.intel.ai.brain.vega.model.IntelActionCategory;
+import elite.intel.ai.brain.vega.model.ThoughtSource;
+
+import java.util.EnumSet;
+import java.util.Set;
+
+/**
+ * Maps a thought {@link ThoughtSource} to the {@code IntelAction} categories it may use. This is the
+ * code-level enforcement of the COMMANDER/EVENT split: EVENT thoughts can never receive
+ * action/macro tools regardless of any prompt instruction.
+ * <p>
+ * Governs game tools ({@code IntelCommand}/{@code IntelQuery}/macros) by category; system-function
+ * visibility is owned per-function by {@code SystemFunction.availableFor}.
+ */
+public final class IntelActionAccessPolicy {
+
+    /** Returns the IntelAction categories allowed for the given source. */
+    public Set<IntelActionCategory> allowedCategories(ThoughtSource source) {
+        return switch (source) {
+            case COMMANDER -> EnumSet.of(IntelActionCategory.QUERY, IntelActionCategory.ACTION, IntelActionCategory.MACRO);
+            // A reactive EVENT thought gets no game tools: the subscriber already calculated and filtered the data.
+            case EVENT -> EnumSet.noneOf(IntelActionCategory.class);
+        };
+    }
+}

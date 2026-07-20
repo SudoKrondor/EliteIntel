@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.db.managers.MaterialManager;
 import elite.intel.gameapi.journal.events.MaterialsEvent;
 import elite.intel.gameapi.journal.subscribers.MaterialsEventSubscriber;
-import elite.intel.search.edsm.dto.MaterialsType;
+import elite.intel.gameapi.search.edsm.dto.MaterialsType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

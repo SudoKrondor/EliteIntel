@@ -1,8 +1,8 @@
 package elite.intel.diagnostics;
 
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.session.Status;
 

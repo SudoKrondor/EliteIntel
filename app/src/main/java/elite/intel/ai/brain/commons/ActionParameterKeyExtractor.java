@@ -2,7 +2,7 @@ package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiActionsMap;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 
 import java.util.LinkedHashMap;
 import java.util.List;

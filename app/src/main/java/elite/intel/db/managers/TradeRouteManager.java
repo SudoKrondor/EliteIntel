@@ -2,8 +2,8 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.TradeRouteDao;
 import elite.intel.db.util.Database;
-import elite.intel.search.spansh.station.marketstation.TradeStopDto;
-import elite.intel.search.spansh.traderoute.*;
+import elite.intel.gameapi.search.spansh.station.marketstation.TradeStopDto;
+import elite.intel.gameapi.search.spansh.traderoute.*;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.ArrayList;

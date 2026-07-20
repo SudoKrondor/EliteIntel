@@ -1,7 +1,7 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandExportImportService;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandExportImportService;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import elite.intel.ui.render.HudBooleanCellEditor;
 import elite.intel.ui.render.HudBooleanCellRenderer;

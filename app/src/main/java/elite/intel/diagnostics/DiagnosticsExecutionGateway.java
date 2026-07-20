@@ -1,10 +1,10 @@
 package elite.intel.diagnostics;
 
 import com.google.gson.JsonObject;
-import elite.intel.companion.execution.ExecutionGateway;
-import elite.intel.companion.model.execution.ExecutionRequest;
-import elite.intel.companion.tools.SystemFunction;
-import elite.intel.companion.tools.SystemFunctionRegistry;
+import elite.intel.ai.brain.vega.execution.ExecutionGateway;
+import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
+import elite.intel.ai.brain.vega.tools.SystemFunction;
+import elite.intel.ai.brain.vega.tools.SystemFunctionRegistry;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -12,8 +12,8 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Diagnostics-mode {@link ExecutionGateway}. Records every dispatched tool to {@link DiagnosticsLog} as a
  * {@code DIAG dispatch} marker (the signal the tester matches against the expected action) and, like
- * {@code CompanionRoutingHarness}, executes ONLY system functions ({@code speak}, {@code classify_turn},
- * memory - internal, read-only, no game side effect) while game COMMANDS and QUERIES are merely recorded,
+ * {@code CompanionRoutingHarness}, executes only companion system functions while game commands and queries are
+ * merely recorded,
  * never run. So a diagnostics session drives the real routing path (reflex &rarr; reducer &rarr; companion
  * LLM) without pressing keys into the game or calling EDSM/Spansh.
  * <p>

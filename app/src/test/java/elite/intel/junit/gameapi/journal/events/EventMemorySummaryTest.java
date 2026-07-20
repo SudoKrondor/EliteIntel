@@ -144,9 +144,11 @@ class EventMemorySummaryTest {
 
     @Test
     void sellOrganicData() {
-        assertEquals("sold exobiology data from 2 species for 350 credits",
-                new SellOrganicDataEvent(ev("BioData",
-                        arr(obj("Value", 100, "Bonus", 50), obj("Value", 200, "Bonus", 0)))).memorySummary());
+        assertEquals("sold exobiology data: 3 samples across 2 species for 450 credits",
+                new SellOrganicDataEvent(ev("BioData", arr(
+                        obj("Species_Localised", "Bacterium Aurasus", "Value", 100, "Bonus", 50),
+                        obj("Species_Localised", "Bacterium Aurasus", "Value", 100, "Bonus", 0),
+                        obj("Species_Localised", "Tubus Cavas", "Value", 200, "Bonus", 0)))).memorySummary());
         assertEquals("", new SellOrganicDataEvent(ev()).memorySummary());
     }
 

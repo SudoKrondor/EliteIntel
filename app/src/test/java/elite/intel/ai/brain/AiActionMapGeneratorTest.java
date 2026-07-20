@@ -1,12 +1,12 @@
 package elite.intel.ai.brain;
 
-import elite.intel.ai.brain.actions.command.CommandRegistry;
-import elite.intel.ai.brain.actions.command.builtin.IgnoreNonsensicalInputCommand;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.customcommand.CustomCommandRegistry;
-import elite.intel.ai.brain.actions.handlers.query.ConnectionCheckQuery;
-import elite.intel.ai.brain.actions.handlers.query.GeneralConversationQuery;
-import elite.intel.ai.brain.actions.query.QueryRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
+import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
+import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
+import elite.intel.ai.brain.actions.handlers.queries.QueryRegistry;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -44,7 +45,7 @@ class AiActionMapGeneratorTest {
     }
 
     /**
-     * Frozen snapshot of the built-in action ids the generator must produce on EN (182 ids).
+     * Frozen snapshot of the built-in action ids the generator must produce on EN.
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
      * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
      * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
@@ -185,7 +186,7 @@ class AiActionMapGeneratorTest {
             "set_speed_to_zero_0_stop_ship",
             "set_timed_reminder",
             "show_chat_comms_panel",
-            "show_commander_panel",
+            "show_central_panel",
             "show_contacts_panel",
             "show_crew_panel",
             "show_email_inbox_panel",
@@ -264,6 +265,15 @@ class AiActionMapGeneratorTest {
         assertTrue(missing.isEmpty() && unexpected.isEmpty(),
                 "Built-in composition drift. Missing (snapshot, not generated): "
                         + missing + " ; Unexpected (generated, not in snapshot): " + unexpected);
+    }
+
+    @Test
+    void companionOnlyRememberIsAbsentFromLegacyActionMap() {
+        Map<String, String> actionMap = new AiActionMapGenerator().generate(
+                Status.getInstance(), true,
+                SystemSession.getInstance().conversationalModeOn());
+
+        assertFalse(actionMap.containsValue("remember"));
     }
 
     /**

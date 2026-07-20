@@ -1,0 +1,41 @@
+package elite.intel.ai.brain.actions.handlers.commands.builtin;
+
+import com.google.gson.JsonObject;
+import elite.intel.ai.brain.actions.handlers.commands.IntelCommand;
+import elite.intel.ai.brain.actions.handlers.commands.RegisterCommand;
+import elite.intel.ai.hands.events.GameInputSequenceEvent;
+import elite.intel.ai.hands.events.GameInputStep;
+import elite.intel.eventbus.GameControllerBus;
+import elite.intel.session.Status;
+
+import static elite.intel.ai.hands.Bindings.GameCommand.BINDING_EXIT_SUPERCRUISE;
+
+/**
+ * Stage-4b self-describing command for "drop from super cruise".
+ */
+@RegisterCommand
+public final class DropFromSuperCruiseCommand implements IntelCommand {
+    public static final String ID = "drop_from_super_cruise";
+
+    @Override
+    public String llmDescription() {
+        return "Drop out of supercruise into normal space (e.g. to arrive at a station or signal source).";
+    }
+
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
+    public boolean isVisibleForLLM(Status status) {
+        return status.isInSupercruise();
+    }
+
+    @Override
+    public String execute(JsonObject params, String responseText) {
+        GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_EXIT_SUPERCRUISE.getGameBinding())));
+        return null;
+    }
+}

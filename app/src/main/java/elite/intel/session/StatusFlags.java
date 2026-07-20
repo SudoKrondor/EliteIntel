@@ -70,7 +70,7 @@ public abstract class StatusFlags {
         INTERNAL_PANEL(1),   // Right panel
         EXTERNAL_PANEL(2),   // Left panel
         COMMS_PANEL(3),      // Top panel
-        ROLE_PANEL(4),       // Bottom panel
+        CENTRAL_PANEL(4),    // Central panel
         STATION_SERVICES(5),
         GALAXY_MAP(6),
         SYSTEM_MAP(7),

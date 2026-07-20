@@ -1,11 +1,10 @@
 package elite.intel.gameapi.journal.subscribers;
 
-import elite.intel.companion.CompanionRuntime;
-
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.commons.BiomeAnalyzer;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.db.managers.LocationManager;
-import elite.intel.eventbus.GameEventBus;
+import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.FSSBodySignalsEvent;
 import elite.intel.gameapi.journal.events.SAASignalsFoundEvent;
 import elite.intel.gameapi.journal.events.ScanEvent;
@@ -18,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -47,6 +47,12 @@ public class ScanEventSubscriber {
     private final LocationManager locationManager = LocationManager.getInstance();
     private final BiomeAnalyzer biomeAnalyzer = BiomeAnalyzer.getInstance();
 
+    /**
+     * Bodies already announced in {@link #announcedSystemAddress}; see {@link #isFirstAnnouncementForBody}.
+     */
+    private final Set<Long> announcedBodies = new HashSet<>();
+    private long announcedSystemAddress = Long.MIN_VALUE;
+
     private static String getDetails(ScanEvent event, String shortName) {
         boolean hasMats = event.getMaterials() != null && !event.getMaterials().isEmpty();
         boolean isTerraformable = event.getTerraformState() != null && !event.getTerraformState().isEmpty();
@@ -62,7 +68,7 @@ public class ScanEventSubscriber {
         Thread.ofVirtual().start(() -> {
 
             String shortName = subtractString(event.getBodyName(), event.getStarSystem());
-            LocationDto.LocationType locationType = determineLocationType(event);
+            LocationDto.LocationType locationType = ScanBodyClassifier.classify(event);
 
             if (BELT_CLUSTER.equals(locationType)) {
                 return; // skip belt clusters.
@@ -170,67 +176,16 @@ public class ScanEventSubscriber {
         });
     }
 
-    private LocationDto.LocationType determineLocationType(ScanEvent event) {
-        boolean isStar = event.getStarType() != null && !event.getStarType().isEmpty() || event.getSurfaceTemperature() > 1000;
-        boolean isPrimaryStar = event.getDistanceFromArrivalLS() == 0;
-        boolean isBeltCluster = event.getBodyName().contains("Belt Cluster");
-        // Rings follow the ED "<parent> <letter> Ring" convention. Match the suffix precisely rather
-        // than contains("Ring") so a system whose name contains "Ring" doesn't misclassify its bodies.
-        // A ring's parent is a planet, so without this it would fall through to MOON/PLANET.
-        boolean isRing = event.getBodyName() != null && event.getBodyName().matches(".* [A-Z] Ring");
-        if (isRing) return PLANETARY_RING;
-        boolean isPlanet = false;
-        boolean isMoon = false;
-        List<ScanEvent.Parent> parents = event.getParents();
-        if (parents == null || parents.isEmpty()) {
-            if (isPrimaryStar) return PRIMARY_STAR;
-            return isStar ? STAR : UNCLASSIFIED;
-        }
-        for (ScanEvent.Parent parent : parents) {
-            if (parent.getStar() != null && parent.getStar() >= 0) {
-                isPlanet = true;
-                break;
-            }
-            if (parent.getPlanet() != null && parent.getPlanet() > 0) {
-                isMoon = true;
-                break;
-            }
-            if (parent.getStar() == null && event.getSurfaceTemperature() > 1000) {
-                isStar = true;
-                break;
-            }
-        }
-
-        if (isPrimaryStar) {
-            return PRIMARY_STAR;
-        } else if (isStar) {
-            return STAR;
-        } else if (isBeltCluster) {
-            return BELT_CLUSTER;
-        } else if (isPlanet) {
-            return PLANET;
-        } else if (isMoon) {
-            return MOON;
-        } else {
-            return UNCLASSIFIED;
-        }
-    }
-
     private void announceIfNewDiscovery(ScanEvent event, LocationDto location) {
         boolean wasDiscovered = event.isWasDiscovered();
         boolean wasMapped = event.isWasMapped();
         String shortName = subtractString(event.getBodyName(), event.getStarSystem());
 
-
-        boolean isStar = event.getStarType() != null && !event.getStarType().isEmpty() || event.getSurfaceTemperature() > 1000;
-        boolean isPrimaryStar = event.getDistanceFromArrivalLS() == 0;
-        boolean isBeltCluster = event.getBodyName().contains("Belt Cluster");
-
         if (!wasDiscovered && PLANET.equals(location.getLocationType())) {
             if (event.getTerraformState() != null && !event.getTerraformState().isEmpty()) {
-                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newTerraformable", shortName), "EXPLORATION", false);
+                announceOnce(event, localizedEvent("event.scan.newTerraformable", shortName));
             } else if (event.getPlanetClass() != null && valuablePlanetClasses.contains(event.getPlanetClass().toLowerCase())) {
-                CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newDiscovery", event.getPlanetClass()), "EXPLORATION", false);
+                announceOnce(event, localizedEvent("event.scan.newDiscovery", event.getPlanetClass()));
             }
         }
 
@@ -241,8 +196,45 @@ public class ScanEventSubscriber {
                 log.info(sensorData);
             }
         } else if (!wasDiscovered && PRIMARY_STAR.equals(location.getLocationType())) {
-            CompanionRuntime.narrator().announce("discovery", localizedEvent("event.scan.newSystem"), "EXPLORATION", false);
+            announceOnce(event, localizedEvent("event.scan.newSystem"));
         }
+    }
+
+    /**
+     * Announces a discovery at most once per body.
+     * <p>
+     * The game emits several Scan events for the same body - an {@code AutoScan} on arrival and a
+     * {@code Detailed} scan when it is honked or targeted - all carrying the same
+     * {@code WasDiscovered:false}. Without this guard each one announced, so arriving in an
+     * undiscovered system said "New System discovered!" twice, seconds apart.
+     */
+    private void announceOnce(ScanEvent event, String message) {
+        if (isFirstAnnouncementForBody(event.getSystemAddress(), event.getBodyID())) {
+            CompanionRuntime.narrator().announce(message, false);
+        }
+    }
+
+    /**
+     * Records a body as announced and reports whether this call was the first to do so.
+     * <p>
+     * Scoped to the current system so the set stays bounded on a long exploration run: leaving a
+     * system drops its bodies, and re-entering one can only re-announce bodies that are by then
+     * flagged {@code WasDiscovered:true} anyway. Synchronized because scans are handled on virtual
+     * threads and two scans of the same body can be in flight together.
+     * <p>
+     * // WHY: a body with no {@code BodyID} always announces. Folding those onto one shared key would
+     * silence every unidentified body in the system after the first, turning a missing field into a
+     * lost discovery; repeating an announcement is the cheaper failure than never making it.
+     */
+    synchronized boolean isFirstAnnouncementForBody(long systemAddress, Long bodyId) {
+        if (systemAddress != announcedSystemAddress) {
+            announcedSystemAddress = systemAddress;
+            announcedBodies.clear();
+        }
+        if (bodyId == null) {
+            return true;
+        }
+        return announcedBodies.add(bodyId);
     }
 
     private List<MaterialDto> toListOfMaterials(List<ScanEvent.Material> materials) {

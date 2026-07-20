@@ -2,10 +2,27 @@ package elite.intel.ai.brain.i18n.fr;
 
 import elite.intel.ai.brain.i18n.InputNormalizerProvider;
 
+import java.util.LinkedHashMap;
 import java.util.Set;
 
-/** French input filters; acoustic corrections can be added when French STT mishears are characterised. */
+/**
+ * French input filters and acoustic corrections.
+ */
 public class FrenchInputNormalizerRules implements InputNormalizerProvider {
+
+    /**
+     * "Porte-vaisseau" and "porte-vaisseaux" are homophones, so which one reaches us is decided by the STT engine
+     * rather than by the commander. Collapsing the plural onto the singular lets one authored alias serve both,
+     * instead of every carrier phrase needing a twin: the fleet carrier is the single most-discussed object in the
+     * French command set, and its aliases are written in the singular.
+     */
+    @Override
+    public LinkedHashMap<String, String> buildPhoneticMap() {
+        LinkedHashMap<String, String> corrections = new LinkedHashMap<>();
+        corrections.put("porte-vaisseaux", "porte-vaisseau");
+        corrections.put("porte vaisseaux", "porte vaisseau");
+        return corrections;
+    }
 
     @Override
     public Set<String> stopWords() {

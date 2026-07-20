@@ -14,6 +14,12 @@ import java.util.*;
  */
 public class KeyBindingExecutor {
     private static final Logger log = LogManager.getLogger(KeyBindingExecutor.class);
+
+    /**
+     * How long to hold a binding whose .binds slot carries {@code <Hold Value="1"/>}.
+     */
+    private static final int CONFIGURED_HOLD_MS = 500;
+
     private final KeyProcessor keyProcessor;
     private static final Map<String, Integer> ELITE_TO_KEYPROCESSOR_MAP = new HashMap<>();
 
@@ -122,13 +128,31 @@ public class KeyBindingExecutor {
         return Collections.unmodifiableSet(ELITE_TO_KEYPROCESSOR_MAP.keySet());
     }
 
+    /**
+     * Presses a binding the way its {@code .binds} entry configures it: a plain tap normally, or a
+     * {@link #CONFIGURED_HOLD_MS} press-and-hold when the slot carries {@code <Hold Value="1"/>}.
+     * <p>
+     * This is the default for game actions: the game itself decides which of them need a long press, so
+     * the file owns that decision. {@link #executeTap} is the opposite choice, for the callers that mean
+     * a tap whatever the file says; a hold the file does not specify comes from
+     * {@link #executeBindingWithHold} with an explicit duration.
+     */
     public void executeBinding(KeyBindingsParser.KeyBinding binding) {
-        executeBindingWithHold(binding, 0); // Default: no hold
+        executeBindingWithHold(binding, 0); // 0 = no caller override; the binding's own hold flag applies
     }
 
     /**
-     * Executes a binding as a guaranteed single tap regardless of the binding's
-     * hold flag. Use for UI navigation where holding would cause key-repeat.
+     * Executes a binding as a guaranteed single tap, ignoring the {@code <Hold Value="1"/>} flag in the
+     * {@code .binds} file.
+     * <p>
+     * For callers whose own contract is "tap", not "do what the game does": the custom-command editor's
+     * <em>Binding Tap</em> step, where the commander picked a tap over the neighbouring <em>Binding
+     * Hold</em> step and must get one even if that binding is configured as a long press in their file.
+     * <p>
+     * // WHY: this used to back every binding press in the app, which silently defeated long-press
+     * actions once {@link KeyBindingsParser} started reporting the hold flag correctly. It is kept
+     * narrow on purpose: reach for {@link #executeBinding} unless the caller genuinely owns the tap
+     * decision, or that bug comes back.
      */
     public void executeTap(KeyBindingsParser.KeyBinding binding) {
         NormalizedChord chord = normalizeChord(binding.key, binding.modifiers);
@@ -144,10 +168,9 @@ public class KeyBindingExecutor {
             for (int modCode : resolved.modifierCodes()) {
                 keyProcessor.holdKey(modCode);
             }
-            // Always pressKey - never hold, regardless of binding.hold flag
             keyProcessor.pressKey(resolved.triggerCode());
-            log.debug("Executed tap binding: trigger={}, modifiers={}", chord.triggerKey(), chord.modifierKeys());
             releaseModifiers(resolved.modifierCodes());
+            log.debug("Executed tap binding: trigger={}, modifiers={}", chord.triggerKey(), chord.modifierKeys());
         } catch (Exception e) {
             log.error("Error executing tap binding: {}", e.getMessage());
         }
@@ -177,7 +200,17 @@ public class KeyBindingExecutor {
                 log.debug("Executed hold binding: trigger={}, modifiers={}, holdTimeMs={}", chord.triggerKey(), chord.modifierKeys(), holdTimeMs);
             } else if (binding.hold) {
                 keyProcessor.holdKey(resolved.triggerCode());
-                Thread.sleep(500);
+                try {
+                    Thread.sleep(CONFIGURED_HOLD_MS);
+                } catch (InterruptedException interrupted) {
+                    // WHY: shutdownNow() interrupts this worker mid-hold. Let the key up before leaving,
+                    // then re-arm the flag so the executor's shutdown still sees it - the broad catch below
+                    // would swallow both and leave the key stuck down.
+                    keyProcessor.releaseKey(resolved.triggerCode());
+                    releaseModifiers(resolved.modifierCodes());
+                    Thread.currentThread().interrupt();
+                    return;
+                }
                 keyProcessor.releaseKey(resolved.triggerCode());
                 log.debug("Executed hold binding: trigger={}, modifiers={}", chord.triggerKey(), chord.modifierKeys());
             } else {

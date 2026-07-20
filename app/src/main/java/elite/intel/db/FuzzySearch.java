@@ -70,6 +70,18 @@ public class FuzzySearch {
         return (localized == null || localized.isBlank()) ? englishName : localized;
     }
 
+    /**
+     * Resolves the non-localized game symbol (FDevIDs {@code symbol}) for an English
+     * commodity name (typically the result of {@link #fuzzyCommodityMatch}). This is the
+     * value to compare — case-insensitively — against a Cargo event's {@code Name} field,
+     * which the journal writes lower-cased (e.g. "atmosphericextractors" for the symbol
+     * "AtmosphericExtractors"). Returns {@code null} for legacy goods with no known symbol.
+     */
+    public static String commoditySymbol(String englishName) {
+        if (englishName == null || englishName.isBlank()) return null;
+        return Database.withDao(CommodityDao.class, dao -> dao.getSymbolByEnglishName(englishName));
+    }
+
     public static String fuzzyMaterialNameSearch(String input, int similarity) {
         Language lang = SystemSession.getInstance().getLanguage();
         if (lang == Language.EN) {

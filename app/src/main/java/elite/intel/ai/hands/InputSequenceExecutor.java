@@ -90,7 +90,8 @@ public class InputSequenceExecutor {
 
     private boolean executeStep(GameInputStep step) {
         return switch (step.getType()) {
-            case BINDING_TAP -> executeBindingTap(step.getBindingId());
+            case BINDING_TAP -> executeBindingPress(step.getBindingId());
+            case BINDING_FORCED_TAP -> executeForcedTap(step.getBindingId());
             case BINDING_HOLD -> executeBindingHold(step.getBindingId(), step.getDurationMs());
             case BINDING_DOWN -> executeBindingDown(step.getBindingId());
             case BINDING_UP -> executeBindingUp(step.getBindingId());
@@ -123,12 +124,22 @@ public class InputSequenceExecutor {
         };
     }
 
-    private boolean executeBindingTap(String bindingId) {
+    private boolean executeBindingPress(String bindingId) {
         KeyBindingsParser.KeyBinding binding = resolveBinding(bindingId);
         if (binding == null) {
             return false;
         }
-        log.debug("Tap binding: key={}, ignoring hold flag={}", binding.key, binding.hold);
+        log.debug("Press binding: key={}, hold={}", binding.key, binding.hold);
+        bindingExecutor.executeBinding(binding);
+        return true;
+    }
+
+    private boolean executeForcedTap(String bindingId) {
+        KeyBindingsParser.KeyBinding binding = resolveBinding(bindingId);
+        if (binding == null) {
+            return false;
+        }
+        log.debug("Forced tap binding: key={}, ignoring hold flag={}", binding.key, binding.hold);
         bindingExecutor.executeTap(binding);
         return true;
     }

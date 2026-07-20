@@ -15,8 +15,21 @@ import java.util.List;
 public interface IntelAction {
     String id();
 
+    /** Whether this action may be exposed or delegated through the given invocation surface. */
+    default boolean isAvailableIn(IntelActionContext context) {
+        return true;
+    }
+
     default boolean isVisibleForLLM(Status status) {
         return true;
+    }
+
+    /**
+     * Selects which commander text is passed to {@link #handle}. Most handlers need the original utterance;
+     * commands that validate model-visible wording may opt into the canonical match text.
+     */
+    default String executionInput(String originalInput, String matchInput) {
+        return originalInput;
     }
 
     default List<ActionParameterSpec> parameters() {

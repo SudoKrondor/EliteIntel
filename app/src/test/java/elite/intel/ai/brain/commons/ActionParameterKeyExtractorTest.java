@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.commons;
 
-import elite.intel.ai.brain.actions.command.CommandRegistry;
+import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

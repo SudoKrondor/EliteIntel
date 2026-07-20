@@ -3,9 +3,9 @@ package elite.intel.gameapi.gamestate.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.SwitchToCombatModeCommand;
+import elite.intel.ai.brain.actions.handlers.commands.builtin.TargetHostileHighestThreatCommand;
 import elite.intel.gameapi.gamestate.status_events.BeingInterdictedEvent;
-import elite.intel.ai.brain.actions.command.builtin.TargetHostileHighestThreatCommand;
-import elite.intel.ai.brain.actions.command.builtin.SwitchToCombatModeCommand;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
