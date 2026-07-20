@@ -9,6 +9,7 @@ public final class GameInputStep {
 
     public enum Type {
         BINDING_TAP,
+        BINDING_FORCED_TAP,
         BINDING_HOLD,
         BINDING_DOWN,
         BINDING_UP,
@@ -35,12 +36,25 @@ public final class GameInputStep {
     }
 
     /**
-     * Executes a forced short tap of an Elite Dangerous binding.
-     * This is the migration target for old {@code 0 = tap} inputs, especially UI/menu/tab navigation where holding
-     * can overshoot.
+     * Presses an Elite Dangerous binding the way the commander's {@code .binds} file configures it: a short
+     * tap normally, or a press-and-hold when that binding carries {@code <Hold Value="1"/>}.
+     * <p>
+     * This is the right step for game actions, because the game decides which of them need a long press.
+     * Use {@link #bindingForcedTap(String)} only when the caller's own contract is a tap regardless of the
+     * file, and {@link #bindingHold(String, int)} when the caller owns the duration.
      */
     public static GameInputStep bindingTap(String bindingId) {
         return new GameInputStep(Type.BINDING_TAP, requireBindingId(bindingId), 0, null, 0, 0);
+    }
+
+    /**
+     * Taps an Elite Dangerous binding, ignoring any {@code <Hold Value="1"/>} flag on it.
+     * <p>
+     * For the custom-command editor's <em>Binding Tap</em> step, where the commander chose a tap over the
+     * neighbouring <em>Binding Hold</em> step and must get one whatever their file says.
+     */
+    public static GameInputStep bindingForcedTap(String bindingId) {
+        return new GameInputStep(Type.BINDING_FORCED_TAP, requireBindingId(bindingId), 0, null, 0, 0);
     }
 
     /**

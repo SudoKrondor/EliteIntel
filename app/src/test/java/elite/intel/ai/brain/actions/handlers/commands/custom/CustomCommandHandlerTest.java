@@ -54,6 +54,11 @@ class CustomCommandHandlerTest {
 
     // --- BINDING_TAP ---
 
+    /**
+     * A Binding Tap step must reach the executor as a <em>forced</em> tap. The commander picked it over the
+     * neighbouring Binding Hold step, so it has to tap even when their .binds marks that binding as a long
+     * press - a plain {@code BINDING_TAP} would defer to the file and hold instead.
+     */
     @Test
     void bindingTapStepPublishesGameInputWithCorrectBindingId() {
         runCustomCommand("""
@@ -63,7 +68,7 @@ class CustomCommandHandlerTest {
 
         assertEquals(1, inputCapture.events.size());
         GameInputStep step = inputCapture.events.getFirst().getSteps().getFirst();
-        assertEquals(GameInputStep.Type.BINDING_TAP, step.getType());
+        assertEquals(GameInputStep.Type.BINDING_FORCED_TAP, step.getType());
         assertEquals("TestBinding", step.getBindingId());
     }
 
@@ -345,7 +350,7 @@ class CustomCommandHandlerTest {
         assertEquals(2, steps.size());
         assertEquals(GameInputStep.Type.DELAY, steps.getFirst().getType());
         GameInputStep step = steps.get(1);
-        assertEquals(GameInputStep.Type.BINDING_TAP, step.getType());
+        assertEquals(GameInputStep.Type.BINDING_FORCED_TAP, step.getType());
         assertEquals("GalaxyMapOpen", step.getBindingId());
     }
 

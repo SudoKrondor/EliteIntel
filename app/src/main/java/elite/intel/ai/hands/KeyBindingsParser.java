@@ -205,7 +205,7 @@ public class KeyBindingsParser {
     private ReadOnlyBindingSlot readOnlySlot(Element slot, BindingSlotType slotType) {
         String device = slot.getAttribute("Device");
         String key = slot.getAttribute("Key");
-        boolean hold = "1".equals(slot.getAttribute("Hold"));
+        boolean hold = readHoldFlag(slot);
         List<BindingModifier> bindingModifiers = getBindingModifiers(slot);
         return new ReadOnlyBindingSlot(
                 device,
@@ -217,6 +217,30 @@ public class KeyBindingsParser {
                 isKeyboardUsable(device, key, bindingModifiers),
                 isEditableKeyboardSlot(device, key, bindingModifiers)
         );
+    }
+
+    /**
+     * Reads a slot's press-and-hold flag.
+     * <p>
+     * Elite serialises it as a <em>child element</em> — {@code <Hold Value="1" />} inside the
+     * {@code <Primary>}/{@code <Secondary>} body — not as a {@code Hold="1"} attribute on the slot
+     * tag. Reading only the attribute silently produced {@code hold=false} for every binding, so
+     * long-press actions executed as taps. The attribute form is still accepted because
+     * {@link BindingsWriter} preserves one if a hand-edited file carries it.
+     */
+    private boolean readHoldFlag(Element slot) {
+        if ("1".equals(slot.getAttribute("Hold"))) {
+            return true;
+        }
+        NodeList children = slot.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            if (children.item(i) instanceof Element child
+                    && "Hold".equals(child.getTagName())
+                    && "1".equals(child.getAttribute("Value"))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private KeyBinding toExecutableBinding(ReadOnlyBindingSlot slot) {
