@@ -65,7 +65,9 @@ public class FinanceSubscriber {
         apply(delta(e));
         announce(e.toYaml(), """
                 We sold organic data and made credits.
-                Provide the user with a sale summary. Start with the total amount collected, then provide a breakdown by genus.
+                Provide the user with a sale summary. State totalCredits as the amount earned, then read the
+                saleByGenus breakdown. Do not add up the bioData rows yourself - every total is precomputed.
+                If totalBonus is above zero, mention it as a first-discovery bonus.
                 """);
     }
 
@@ -321,10 +323,11 @@ public class FinanceSubscriber {
         return e.getWithdraw() - e.getDeposit();
     }
 
+    /**
+     * Value plus first-discovery bonus, as computed by the event itself so the credited amount and
+     * the amount narrated to the commander can never diverge.
+     */
     public static long delta(SellOrganicDataEvent e) {
-        // WHY: a SellOrganicData with no BioData list legitimately credits nothing; this is an
-        // empty-set case, not a masked error.
-        if (e.getBioData() == null) return 0;
-        return e.getBioData().stream().mapToLong(b -> b.getValue() + b.getBonus()).sum();
+        return e.getTotalCredits();
     }
 }
