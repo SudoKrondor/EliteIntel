@@ -136,6 +136,30 @@ class CompanionSystemPromptTest {
                 "the ambiguity branch must never route to conversation");
     }
 
+    /**
+     * Two failure modes seen on Mistral, both fed by the same thing: recent history is replayed as
+     * USER/ASSISTANT pairs, so whatever the companion said last turn is in context as an example of what to
+     * say next. With nothing new to add, the model re-emitted its previous reply; and having once answered
+     * "Sorry, Commander", it had a template it kept reaching for.
+     *
+     * <p>The old wording - "Do not repeat answers verbatim unless asked" - was too weak on both counts: it
+     * forbade only verbatim repeats (a reworded echo passed) and said nothing about apologising at all.
+     */
+    @Test
+    void forbidsEchoingEarlierRepliesAndOpeningWithApology() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("Never reuse an earlier reply's wording"),
+                "the rule must cover reworded echoes, not just verbatim ones");
+        assertTrue(normalized.contains("if you already said it, say only what is new"),
+                "the model needs the alternative behaviour, not just the prohibition");
+        assertTrue(normalized.contains("Never apologise or open with regret"));
+        assertTrue(normalized.contains("name what is unavailable, then what you can do instead"),
+                "an unavailable request still owes the commander a useful sentence");
+        assertFalse(normalized.contains("Do not repeat answers verbatim unless asked"),
+                "superseded by the stronger rule; keeping both dilutes it");
+    }
+
     @Test
     void addressesTheCommanderDirectlyInSecondPerson() {
         String text = prompt.staticRules(ThoughtSource.COMMANDER);

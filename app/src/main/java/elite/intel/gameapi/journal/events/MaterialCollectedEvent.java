@@ -2,8 +2,10 @@ package elite.intel.gameapi.journal.events;
 
 import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
-import elite.intel.util.json.GsonFactory;
+import elite.intel.util.StringUtls;
 import elite.intel.util.TimestampFormatter;
+import elite.intel.util.json.GsonFactory;
+
 import java.time.Duration;
 
 public class MaterialCollectedEvent extends BaseEvent {
@@ -16,12 +18,30 @@ public class MaterialCollectedEvent extends BaseEvent {
     @SerializedName("Count")
     private int count;
 
+    @SerializedName("Name_Localised")
+    private String nameLocalised;
+
     public MaterialCollectedEvent(JsonObject json) {
         super(json.get("timestamp").getAsString(), Duration.ofSeconds(30), "MaterialCollected");
         MaterialCollectedEvent event = GsonFactory.getGson().fromJson(json, MaterialCollectedEvent.class);
         this.category = event.category;
         this.name = event.name;
         this.count = event.count;
+        this.nameLocalised = event.nameLocalised;
+    }
+
+
+    public String getNameLocalised() {
+        return nameLocalised;
+    }
+
+    /**
+     * The name to speak: the localised name when the journal supplied one, otherwise the raw name.
+     * Frontier omits {@code Name_Localised} whenever it would equal the raw value, which is the common case
+     * for raw elements (e.g. {@code carbon}), so callers must not assume it is present.
+     */
+    public String getDisplayName() {
+        return nameLocalised != null ? nameLocalised : StringUtls.capitalizeWords(name);
     }
 
     @Override

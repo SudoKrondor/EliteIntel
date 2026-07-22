@@ -10,6 +10,7 @@ import elite.intel.gameapi.gamestate.status_events.PlayerMovedEvent;
 import elite.intel.session.Status;
 import elite.intel.session.StatusFlags.GuiFocus;
 import elite.intel.session.ui.PanelStateTracker;
+import elite.intel.util.Ranks;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
@@ -44,7 +45,9 @@ public class StatusEventSubscriber {
                 && !"Speeding".equalsIgnoreCase(legalState)
                 && !"Clean".equalsIgnoreCase(legalState)
                 && !legalState.equalsIgnoreCase(lastAnnouncedLegalState)) {
-            EventNarrator.critical(localizedEvent("event.status.legalStatus", legalState));
+            // The template is localized; the state itself is a raw English journal value and needs translating too.
+            EventNarrator.critical(localizedEvent("event.status.legalStatus",
+                    Ranks.getLocalizedLegalStatus(legalState)));
             lastAnnouncedLegalState = legalState;
         }
 

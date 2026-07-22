@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.gameapi.journal.events.dto.RankAndProgressDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -61,6 +62,7 @@ public class AnalyzePlayerProfileQuery extends BaseQueryAnalyzer implements Inte
                 - totalSystemsVisited: number of star systems visited
                 - totalExobiologyProfits: total credits from exobiology
                 - totalProfitsFromExploration: total credits from exploration
+                """ + SpokenAmounts.RULE + """
                 
                 Rules:
                 - Answer only what the user asked. If no specific question, provide a brief progression summary.
@@ -104,7 +106,15 @@ public class AnalyzePlayerProfileQuery extends BaseQueryAnalyzer implements Inte
             long totalProfitsFromExploration
     ) implements ToYamlConvertable {
         @Override public String toYaml() {
-            return YamlFactory.toYaml(this);
+            // Each credit field gets a spoken sibling, appended by the same mechanism the finance
+            // announcements use so the whole system speaks amounts one way. See SpokenAmounts.RULE.
+            return YamlFactory.toYaml(this)
+                    + SpokenAmounts.yamlLine("totalBountiesCollected", totalBountiesCollected)
+                    + SpokenAmounts.yamlLine("highestTransaction", highestTransaction)
+                    + SpokenAmounts.yamlLine("totalProfits", totalProfits)
+                    + SpokenAmounts.yamlLine("personalCredits", personalCredits)
+                    + SpokenAmounts.yamlLine("totalExobiologyProfits", totalExobiologyProfits)
+                    + SpokenAmounts.yamlLine("totalProfitsFromExploration", totalProfitsFromExploration);
         }
     }
 }
