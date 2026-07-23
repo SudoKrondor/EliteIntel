@@ -106,6 +106,11 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
         }
 
 
+        // WHY: the Spansh plot below can run for minutes - far past the 60s thought watchdog, which by the time it
+        // returns has already force-interrupted the commander turn that launched us. A returned outcome would settle
+        // on that interrupted thought and be discarded as a late result (route saved, never voiced), so both the
+        // success and failure outcomes are announced on the EVENT lane instead - deliberately voiced AND remembered
+        // as an event, since a completed plot attempt is a real outcome worth recall.
         NeutronStarRouteClient client = new NeutronStarRouteClient();
         NeutronStarRoute route = client.calculateRoute(
                 new NeutronStarRouteCalculatorCriteria(
@@ -113,10 +118,15 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
                 )
         );
 
+        String outcome;
         if (route != null && route.getResult() != null && route.getResult().getTotalJumps() > 0) {
             neutronStarRouteManager.saveNeutronStarRoute(route);
-            return StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps());
+            outcome = StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps());
+        } else {
+            outcome = StringUtls.localizedLlm("handler.neutronRoute.notFound");
         }
+
+        CompanionRuntime.narrator().announce(outcome, false);
         return null;
     }
 }

@@ -74,19 +74,29 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
             return StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName);
         }
 
+        // WHY: the Spansh optimisation below can run for minutes - far past the 60s thought watchdog, which by the
+        // time it returns has already force-interrupted the commander turn that launched us. A returned outcome
+        // would settle on that interrupted thought and be discarded as a late result (route saved, never voiced),
+        // so the completed plot is announced on the EVENT lane instead - deliberately voiced AND remembered as an
+        // event, since a plotted route is a real completion worth recall. The early validation guards above return
+        // normally: they complete well within the watchdog window, so their COMMAND-outcome settlement still fires.
         TradeRouteResponse route = tradeRouteManager.calculateTradeRoute(criteria);
+        String outcome;
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
             if (criteria.getStation() != null) {
-                return StringUtls.localizedLlm("handler.tradeRoute.notFound");
+                outcome = StringUtls.localizedLlm("handler.tradeRoute.notFound");
             } else {
                 String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
-                return StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding);
+                outcome = StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding);
             }
+        } else {
+            long totalProfit = route.getResult().stream()
+                    .mapToLong(TradeRouteTransaction::getTotalProfit)
+                    .sum();
+            outcome = StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit);
         }
-        long totalProfit = route.getResult().stream()
-                .mapToLong(TradeRouteTransaction::getTotalProfit)
-                .sum();
 
-        return StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit);
+        CompanionRuntime.narrator().announce(outcome, false);
+        return null;
     }
 }
