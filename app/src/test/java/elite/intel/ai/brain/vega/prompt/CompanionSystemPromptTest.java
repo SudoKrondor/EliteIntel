@@ -137,6 +137,22 @@ class CompanionSystemPromptTest {
     }
 
     /**
+     * A value the commander already spoke ("find a market to buy tritium") is a known argument, not a prompt to
+     * ask "what type of tritium?". request_input exists for an argument the commander never gave, never to refine
+     * or subcategorize one already spoken - otherwise required-string commands (find_commodity, find_mining_site)
+     * stall on a needless clarification instead of executing.
+     */
+    @Test
+    void requestInputNeverRefinesAnAlreadySpokenArgument() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("A value the commander already spoke is a known argument"),
+                "a spoken argument must be defined as known so the model extracts it instead of asking");
+        assertTrue(normalized.contains("never request_input to refine or subcategorize it"),
+                "request_input must be forbidden from re-clarifying a value already given");
+    }
+
+    /**
      * Two failure modes seen on Mistral, both fed by the same thing: recent history is replayed as
      * USER/ASSISTANT pairs, so whatever the companion said last turn is in context as an example of what to
      * say next. With nothing new to add, the model re-emitted its previous reply; and having once answered
