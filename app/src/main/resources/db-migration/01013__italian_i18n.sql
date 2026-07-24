@@ -643,15 +643,15 @@ WHERE LOWER(commodity) = LOWER('Agri-Medicines');
 
 
 UPDATE commodities
-SET commodity_it = 'Materiali Mediatici Aisling'
+SET commodity_it = 'Materiali Mediatici di Aisling'
 WHERE LOWER(commodity) = LOWER('Aisling Media Materials');
 
 UPDATE commodities
-SET commodity_it = 'Contratti Sigillati Aisling'
+SET commodity_it = 'Contratti Sigillati di Aisling'
 WHERE LOWER(commodity) = LOWER('Aisling Sealed Contracts');
 
 UPDATE commodities
-SET commodity_it = 'Materiali del Programma Aisling'
+SET commodity_it = 'Materiali del Programma di Aisling'
 WHERE LOWER(commodity) = LOWER('Aisling Programme Materials');
 
 UPDATE commodities
@@ -891,11 +891,11 @@ SET commodity_it = 'Mega Gin di Centauri'
 WHERE LOWER(commodity) = LOWER('Centauri Mega Gin');
 
 UPDATE commodities
-SET commodity_it = 'Compositi ceramici'
+SET commodity_it = 'Compositi Ceramici'
 WHERE LOWER(commodity) = LOWER('Ceramic Composites');
 
 UPDATE commodities
-SET commodity_it = 'Tè cerimoniale Heike'
+SET commodity_it = 'Tè Cerimoniale di Heike'
 WHERE LOWER(commodity) = LOWER('Ceremonial Heike Tea');
 
 UPDATE commodities
@@ -1003,11 +1003,11 @@ SET commodity_it = 'Criolite'
 WHERE LOWER(commodity) = LOWER('Cryolite');
 
 UPDATE commodities
-SET commodity_it = 'Sfere cristalline'
+SET commodity_it = 'Sfere Cristalline'
 WHERE LOWER(commodity) = LOWER('Crystalline Spheres');
 
 UPDATE commodities
-SET commodity_it = 'Capsula di salvataggio danneggiata'
+SET commodity_it = 'Capsula di Salvataggio Danneggiata'
 WHERE LOWER(commodity) = LOWER('Damaged Escape Pod');
 
 UPDATE commodities
@@ -1015,7 +1015,7 @@ SET commodity_it = 'Carapaci di Damna'
 WHERE LOWER(commodity) = LOWER('Damna Carapaces');
 
 UPDATE commodities
-SET commodity_it = 'Nucleo dati'
+SET commodity_it = 'Nucleo Dati'
 WHERE LOWER(commodity) = LOWER('Data Core');
 
 UPDATE commodities
@@ -1027,11 +1027,11 @@ SET commodity_it = 'Tartufo di Deuringas'
 WHERE LOWER(commodity) = LOWER('Deuringas Truffles');
 
 UPDATE commodities
-SET commodity_it = 'Sensore diagnostico hardware'
+SET commodity_it = 'Sensore Diagnostico Hardware'
 WHERE LOWER(commodity) = LOWER('Hardware Diagnostic Sensor');
 
 UPDATE commodities
-SET commodity_it = 'Valigia diplomatica'
+SET commodity_it = 'Valigia Diplomatica'
 WHERE LOWER(commodity) = LOWER('Diplomatic Bag');
 
 UPDATE commodities
@@ -1123,7 +1123,7 @@ SET commodity_it = 'Frutta e verdura'
 WHERE LOWER(commodity) = LOWER('Fruit and Vegetables');
 
 UPDATE commodities
-SET commodity_it = ' Tè di Fujin'
+SET commodity_it = 'Tè di Fujin'
 WHERE LOWER(commodity) = LOWER('Fujin Tea');
 
 UPDATE commodities
@@ -1139,19 +1139,19 @@ SET commodity_it = 'Gallio'
 WHERE LOWER(commodity) = LOWER('Gallium');
 
 UPDATE commodities
-SET commodity_it = 'Polvere da danza Geawen'
+SET commodity_it = 'Polvere da Danza Geawen'
 WHERE LOWER(commodity) = LOWER('Geawen Dance Dust');
 
 UPDATE commodities
-SET commodity_it = 'Banca genetica'
+SET commodity_it = 'Banca Genetica'
 WHERE LOWER(commodity) = LOWER('Gene Bank');
 
 UPDATE commodities
-SET commodity_it = 'Attrezzatura geologica'
+SET commodity_it = 'Attrezzatura Geologica'
 WHERE LOWER(commodity) = LOWER('Geological Equipment');
 
 UPDATE commodities
-SET commodity_it = 'Campioni geologici'
+SET commodity_it = 'Campioni Geologici'
 WHERE LOWER(commodity) = LOWER('Geological Samples');
 
 UPDATE commodities
@@ -1159,7 +1159,7 @@ SET commodity_it = 'Birra Gueuze Gerasiana'
 WHERE LOWER(commodity) = LOWER('Gerasian Gueuze Beer');
 
 UPDATE commodities
-SET commodity_it = 'Lumache giganti di Irukama'
+SET commodity_it = 'Lumache Giganti di Irukama'
 WHERE LOWER(commodity) = LOWER('Giant Irukama Snails');
 
 UPDATE commodities
@@ -1167,7 +1167,7 @@ SET commodity_it = 'Verrix Giganti'
 WHERE LOWER(commodity) = LOWER('Giant Verrix');
 
 UPDATE commodities
-SET commodity_it = 'Armi d’autore Gilya'
+SET commodity_it = 'Armi d’Autore Gilya'
 WHERE LOWER(commodity) = LOWER('Gilya Signature Weapons');
 
 UPDATE commodities
@@ -1194,7 +1194,7 @@ SET commodity_it = 'Grandidierite'
 WHERE LOWER(commodity) = LOWER('Grandidierite');
 
 UPDATE commodities
-SET commodity_it = 'Controspionaggio Grom'
+SET commodity_it = 'Controspionaggio di Grom'
 WHERE LOWER(commodity) = LOWER('Grom Counter Intelligence');
 
 UPDATE commodities
@@ -1286,7 +1286,7 @@ SET commodity_it = 'Pacco di Contrabbando Kumo'
 WHERE LOWER(commodity) = LOWER('Kumo Contraband Package');
 
 UPDATE commodities
-SET commodity_it = 'Prigionieri Politici Torval'
+SET commodity_it = 'Prigionieri Politici di Torval'
 WHERE LOWER(commodity) = LOWER('Torval Political Prisoners');
 
 UPDATE commodities
@@ -1330,7 +1330,7 @@ SET commodity_it = 'Riso di Jaroua'
 WHERE LOWER(commodity) = LOWER('Jaroua Rice');
 
 UPDATE commodities
-SET commodity_it = 'Jotun Mookah'
+SET commodity_it = 'Mookah di Jotun'
 WHERE LOWER(commodity) = LOWER('Jotun Mookah');
 
 UPDATE commodities
@@ -1338,19 +1338,19 @@ SET commodity_it = 'Sanguisughe Filtranti di Kachirigin'
 WHERE LOWER(commodity) = LOWER('Kachirigin Filter Leeches');
 
 UPDATE commodities
-SET commodity_it = 'Rifornimenti di Aiuto Kaine'
+SET commodity_it = 'Rifornimenti di Aiuto di Kaine'
 WHERE LOWER(commodity) = LOWER('Kaine Aid Supplies');
 
 UPDATE commodities
-SET commodity_it = 'Materiali di Lobbying Kaine'
+SET commodity_it = 'Materiali di Lobbying di Kaine'
 WHERE LOWER(commodity) = LOWER('Kaine Lobbying Materials');
 
 UPDATE commodities
-SET commodity_it = 'Disinformazione Kaine'
+SET commodity_it = 'Disinformazione di Kaine'
 WHERE LOWER(commodity) = LOWER('Kaine Misinformation');
 
 UPDATE commodities
-SET commodity_it = 'Sigari Kamitra'
+SET commodity_it = 'Sigari di Kamitra'
 WHERE LOWER(commodity) = LOWER('Kamitra Cigars');
 
 UPDATE commodities
@@ -1394,19 +1394,19 @@ SET commodity_it = 'Brandy Laviano'
 WHERE LOWER(commodity) = LOWER('Lavian Brandy');
 
 UPDATE commodities
-SET commodity_it = 'Rapporti di Corruzione Lavigny'
+SET commodity_it = 'Rapporti di Corruzione di Lavigny'
 WHERE LOWER(commodity) = LOWER('Lavigny Corruption Reports');
 
 UPDATE commodities
-SET commodity_it = 'Rifornimenti da Campo Lavigny'
+SET commodity_it = 'Rifornimenti da Campo di Lavigny'
 WHERE LOWER(commodity) = LOWER('Lavigny Field Supplies');
 
 UPDATE commodities
-SET commodity_it = 'Rifornimenti di Guarnigione Lavigny'
+SET commodity_it = 'Rifornimenti di Guarnigione di Lavigny'
 WHERE LOWER(commodity) = LOWER('Lavigny Garrison Supplies');
 
 UPDATE commodities
-SET commodity_it = 'Rapporti Strategici Lavigny'
+SET commodity_it = 'Rapporti Strategici di Lavigny'
 WHERE LOWER(commodity) = LOWER('Lavigny Strategic Reports');
 
 UPDATE commodities
@@ -1454,7 +1454,7 @@ SET commodity_it = 'Vermi Marini Vivi di Hecate'
 WHERE LOWER(commodity) = LOWER('Live Hecate Sea Worms');
 
 UPDATE commodities
-SET commodity_it = 'Armi militari marcate'
+SET commodity_it = 'Armi Militari Marcate'
 WHERE LOWER(commodity) = LOWER('Marked Military Arms');
 
 UPDATE commodities
@@ -1578,7 +1578,7 @@ SET commodity_it = 'Experience Jelly di Motrona'
 WHERE LOWER(commodity) = LOWER('Motrona Experience Jelly');
 
 UPDATE commodities
-SET commodity_it = 'Chitin‑os di Mukusubii'
+SET commodity_it = 'Chitin-os di Mukusubii'
 WHERE LOWER(commodity) = LOWER('Mukusubii Chitin-os');
 
 UPDATE commodities
@@ -1778,15 +1778,15 @@ SET commodity_it = 'Praseodimio'
 WHERE LOWER(commodity) = LOWER('Praseodymium');
 
 UPDATE commodities
-SET commodity_it = 'Gemme preziose'
+SET commodity_it = 'Gemme Preziose'
 WHERE LOWER(commodity) = LOWER('Precious Gems');
 
 UPDATE commodities
-SET commodity_it = 'Cellule progenitrici'
+SET commodity_it = 'Cellule Progenitrici'
 WHERE LOWER(commodity) = LOWER('Progenitor Cells');
 
 UPDATE commodities
-SET commodity_it = 'Materiali di ricerca proibiti'
+SET commodity_it = 'Materiali di Ricerca Proibiti'
 WHERE LOWER(commodity) = LOWER('Prohibited Research Materials');
 
 UPDATE commodities
@@ -2158,11 +2158,11 @@ SET commodity_it = 'Tabacco'
 WHERE LOWER(commodity) = LOWER('Tobacco');
 
 UPDATE commodities
-SET commodity_it = 'Accordi commerciali Torval'
+SET commodity_it = 'Accordi commerciali di Torval'
 WHERE LOWER(commodity) = LOWER('Torval Trade Agreements');
 
 UPDATE commodities
-SET commodity_it = 'Atti Torval'
+SET commodity_it = 'Atti di Torval'
 WHERE LOWER(commodity) = LOWER('Torval Deeds');
 
 UPDATE commodities
@@ -2186,7 +2186,7 @@ SET commodity_it = 'Tritio'
 WHERE LOWER(commodity) = LOWER('Tritium');
 
 UPDATE commodities
-SET commodity_it = 'Supporto Clandestino Grom'
+SET commodity_it = 'Supporto Clandestino di Grom'
 WHERE LOWER(commodity) = LOWER('Grom Underground Support');
 
 UPDATE commodities
@@ -2378,11 +2378,11 @@ SET commodity_it = 'Compagni biomorfici di Xihe'
 WHERE LOWER(commodity) = LOWER('Xihe Biomorphic Companions');
 
 UPDATE commodities
-SET commodity_it = 'Foglia Yaso Kondi'
+SET commodity_it = 'Foglia di Yaso Kondi'
 WHERE LOWER(commodity) = LOWER('Yaso Kondi Leaf');
 
 UPDATE commodities
-SET commodity_it = 'Colla di Larve di ormica Zeessze'
+SET commodity_it = 'Colla di Larve di Formica Zeessze'
 WHERE LOWER(commodity) = LOWER('Zeessze Ant Grub Glue');
 
 

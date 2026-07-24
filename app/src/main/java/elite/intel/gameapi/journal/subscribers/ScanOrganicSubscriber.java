@@ -72,7 +72,7 @@ public class ScanOrganicSubscriber {
             BioForms.BioDetails bioDetails = BioForms.getDetails(genus, species);
             Integer distance = BioScanDistances.GENUS_TO_CCR.get(genus);
 
-            Integer range = (bioDetails != null) ? (int) bioDetails.colonyRange() : distance;
+            Integer range = requiredRange(bioDetails, distance);
 
             if (scan1.equalsIgnoreCase(scanType)) {
                 sb.append(" ").append(localizedEvent("event.organic.detected"));
@@ -132,6 +132,24 @@ public class ScanOrganicSubscriber {
                 announce(sb.toString());
             }
         });
+    }
+
+    /**
+     * Minimum colony distance to state for a scan: the species' own range when we have a table entry for it,
+     * otherwise the genus default.
+     *
+     * <p>Both sources are optional and {@code null} is a normal answer, not an error - it means we hold no
+     * distance for this organism and simply say nothing about range. Both lookups are keyed by the genus name
+     * as the journal localised it, so they miss together whenever the game client is not running in English,
+     * or whenever Frontier adds an organism our tables predate.
+     *
+     * <p>Kept as a method rather than an inline conditional because the inline form was a live NPE: casting one
+     * branch to {@code int} gives the whole conditional type {@code int} (JLS 15.25 binary numeric promotion),
+     * which unboxes the other branch. The throw killed the scan handler's virtual thread, so the sample was
+     * never recorded and nothing was announced - the log line was the only symptom.
+     */
+    static Integer requiredRange(BioForms.BioDetails bioDetails, Integer genusDefault) {
+        return bioDetails != null ? bioDetails.colonyRange() : genusDefault;
     }
 
     private BioSampleDto createBioSampleDto(String genus, String species, boolean isOurDiscovery) {

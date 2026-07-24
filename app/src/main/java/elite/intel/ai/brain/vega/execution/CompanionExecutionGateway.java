@@ -24,10 +24,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code Thought} decides what is spoken (via the {@code speak} system function), and the raw result flows
  * back as a tool result.
  * <p>
- * Threading: commands/macros run on one serialized action lane, so multi-step game/session side effects retain
- * submission order. Read-only queries run on a bounded parallel pool, so a slow lookup does not block unrelated
- * queries or the next commander's cognitive turn. Small companion system functions execute on the caller's
- * cognitive thread; they dispatch metadata/speech and are not remote game handlers.
+ * Threading: every command/macro runs on its own virtual thread, so a running command never blocks a later one -
+ * a multi-second route/trade calculation cannot stall the next "deploy hardpoints", "land", or "boost". (A macro
+ * still sequences its own internal steps within its single {@code handle} call.) This lane no longer serializes
+ * commands, so it no longer provides mutual exclusion: a command handler that read-modify-writes shared session
+ * state (e.g. {@code PlayerSession}, {@code Status}, a route manager) must be safe to run concurrently with
+ * another command, since two overlapping commands may now touch that state at once (see the striped locks in
+ * {@code LocationManager} for the pattern). Read-only queries run on a bounded parallel pool, so a slow lookup
+ * does not block unrelated queries or the next commander's cognitive turn. Small companion system functions
+ * execute on the caller's cognitive thread; they dispatch metadata/speech and are not remote game handlers.
  * <p>
  * Result is dispatch/execution status, not a game fact: a {@code handle} that returns a payload (queries,
  * data-returning system functions) yields it as-is; a side-effect {@code handle} that returns null yields a
@@ -49,13 +54,14 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /**
-     * Production: handler maps + system-function registry, a serialized action lane, and a bounded query pool.
+     * Production: handler maps + system-function registry, a per-command virtual-thread action lane, and a
+     * bounded query pool. The action lane spawns one thread per command so a running command never blocks another.
      */
     public CompanionExecutionGateway() {
         this(CommandHandlerFactory.getInstance().registerCommandHandlers(),
                 QueryHandlerFactory.getInstance().registerQueryHandlers(),
                 loadedSystemFunctions(),
-                Executors.newSingleThreadExecutor(daemon("companion-action")),
+                Executors.newThreadPerTaskExecutor(virtualDaemon("companion-action")),
                 Executors.newFixedThreadPool(CompanionConfig.maxParallelQueryExecutions(),
                         daemon("companion-query")));
     }
@@ -184,6 +190,13 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
             thread.setDaemon(true);
             return thread;
         };
+    }
+
+    /**
+     * One named virtual thread per command; virtual threads are inherently daemon and never keep the JVM alive.
+     */
+    private static java.util.concurrent.ThreadFactory virtualDaemon(String namePrefix) {
+        return Thread.ofVirtual().name(namePrefix + "-", 0).factory();
     }
 
     private static void shutdownExecutor(Executor executor) {

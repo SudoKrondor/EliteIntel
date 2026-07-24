@@ -74,16 +74,25 @@ public class Ranks {
      */
     private static final Map<String, String> RANK_I18N_KEY_MAP = buildNameToKeyMap();
 
+    /**
+     * Legal states, keyed by the journal's English value reduced to letters only (see {@link #legalStatusKey}).
+     * The same vocabulary reaches us from two journal sources - a scanned ship (ShipTargeted.LegalStatus) and
+     * the commander's own standing (Status.json LegalState) - which are not guaranteed to agree on case or
+     * spacing (e.g. {@code IllegalCargo} versus {@code Illegal cargo}), so the lookup normalizes rather than
+     * relying on an exact match.
+     */
     private static final Map<String, String> LEGAL_STATUS_I18N_KEY_MAP = Map.ofEntries(
-            Map.entry("Clean", "event.target.legal.clean"),
-            Map.entry("Wanted", "event.target.legal.wanted"),
-            Map.entry("Hostile", "event.target.legal.hostile"),
-            Map.entry("Lawless", "event.target.legal.lawless")
+            Map.entry("clean", "event.target.legal.clean"),
+            Map.entry("wanted", "event.target.legal.wanted"),
+            Map.entry("hostile", "event.target.legal.hostile"),
+            Map.entry("lawless", "event.target.legal.lawless"),
+            Map.entry("allied", "event.target.legal.allied"),
+            Map.entry("illegalcargo", "event.target.legal.illegalCargo")
     );
 
     /**
      * Returns the localized display name for the given English legal status sourced from the game journal
-     * (e.g. {@code Clean}, {@code Wanted}, {@code Hostile}, {@code Lawless}).
+     * (e.g. {@code Clean}, {@code Wanted}, {@code Hostile}, {@code Allied}, {@code IllegalCargo}).
      * Falls back to the original value (with underscores replaced by spaces) if no translation key is registered.
      * Returns {@code null} for {@code null} or blank input so callers can filter it out.
      */
@@ -91,8 +100,15 @@ public class Ranks {
         if (englishLegalStatus == null || englishLegalStatus.isBlank()) {
             return null;
         }
-        String key = LEGAL_STATUS_I18N_KEY_MAP.get(englishLegalStatus);
+        String key = LEGAL_STATUS_I18N_KEY_MAP.get(legalStatusKey(englishLegalStatus));
         return key != null ? getText(key) : englishLegalStatus.replace("_", " ");
+    }
+
+    /**
+     * Reduces a journal legal-status value to letters only, so case, spaces and underscores cannot miss.
+     */
+    private static String legalStatusKey(String englishLegalStatus) {
+        return englishLegalStatus.replaceAll("[^A-Za-z]", "").toLowerCase(java.util.Locale.ROOT);
     }
 
     /**

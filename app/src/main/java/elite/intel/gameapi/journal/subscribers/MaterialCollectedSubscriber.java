@@ -33,9 +33,10 @@ public class MaterialCollectedSubscriber {
         materialManager.save(event.getName(), determineType(event.getCategory()), event.getCount());
 
         MaterialsDao.Material material = Database.withDao(MaterialsDao.class, dao -> dao.findByExactName(StringUtls.capitalizeWords(event.getName())));
+        String displayName = event.getDisplayName();
         String message = material == null
-                ? localizedEvent("event.material.collected", event.getCount(), event.getName())
-                : localizedEvent("event.material.collectedTotal", event.getCount(), event.getName(), material.getAmount());
+                ? localizedEvent("event.material.collected", event.getCount(), displayName)
+                : localizedEvent("event.material.collectedTotal", event.getCount(), displayName, material.getAmount());
 
         synchronized (pending) {
             pending.add(message);

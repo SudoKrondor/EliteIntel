@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.dao.CodexEntryDao;
 import elite.intel.db.managers.CodexEntryManager;
 import elite.intel.db.managers.LocationManager;
@@ -43,13 +44,17 @@ public class AnalyzeExplorationProfitsQuery extends BaseQueryAnalyzer implements
                 - acquiredProfit: total credits already earned from completed bio samples and codex entries this session
                 
                 State both values in credits. Combine both values into a single response.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(
                 new AiDataStruct(
                         instructions,
-                        new DataDto(calculatePotentialProfit(), calculateActualProfit())),
+                        buildData()),
                 originalUserInput
         );
+    }
+
+    private DataDto buildData() {
+        return new DataDto(calculatePotentialProfit(), calculateActualProfit());
     }
 
     private long calculateActualProfit() {
@@ -77,9 +82,15 @@ public class AnalyzeExplorationProfitsQuery extends BaseQueryAnalyzer implements
         return result;
     }
 
-    record DataDto(long potentialProfit, long acquiredProfit) implements ToYamlConvertable {
+    record DataDto(
+            long potentialProfit,
+            long acquiredProfit
+    ) implements ToYamlConvertable {
         @Override public String toYaml() {
-            return YamlFactory.toYaml(this);
+            // Spoken siblings appended the same way as the finance announcements. See SpokenAmounts.RULE.
+            return YamlFactory.toYaml(this)
+                    + SpokenAmounts.yamlLine("potentialProfit", potentialProfit)
+                    + SpokenAmounts.yamlLine("acquiredProfit", acquiredProfit);
         }
     }
 }

@@ -382,10 +382,8 @@ public class NaturalSpeechIntegrationTestIT {
 
     static Stream<String> navigateToCarrier() {
         return Stream.of("raggiungere la fleet carrier", "andare alla portanavi",
-                "vai verso la fleet carrier",
-                "tornare alla fleetcarrier", "portami alla portanavi",
-                "portami alla fleet carrier",
-                "dirigiti alla portanavi", "rotta verso la fleet carrier");
+                "vai verso la fleet carrier", "tornare alla fleetcarrier", "portami alla portanavi",
+                "portami alla fleet carrier", "dirigiti alla portanavi", "rotta verso la fleet carrier");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1515,7 +1513,6 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> openCentralPanel() {
-        // pannello del comandante, pannello comandante, pannello centrale, mostra il pannello del comandante, apri il pannello del comandante
         return Stream.of("pannello comandante aperto", "apri pannello comandante", "puoi aprire il pannello comandante",
                 "mostra il pannello comandate", "apri il pannello del comandante", "mostra il pannello del comandante");
     }
@@ -1707,8 +1704,8 @@ public class NaturalSpeechIntegrationTestIT {
     }
 
     static Stream<String> targetWingman1() {
-        return Stream.of("mira a compagno wing 2", "mira a compagno d'ala 2",
-                "mira a compagno wing bravo", "compagno d'ala bravo");
+        return Stream.of("mira a compagno wing 1", "mira a compagno d'ala 1",
+                "mira a compagno wing alfa", "compagno d'ala alfa");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")

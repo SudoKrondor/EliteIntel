@@ -7,6 +7,7 @@ import elite.intel.ai.brain.actions.handlers.commands.builtin.SetCarrierFuelRese
 import elite.intel.ai.brain.actions.handlers.queries.carrier.CarrierOwnership;
 import elite.intel.ai.brain.actions.handlers.queries.carrier.CarrierView;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
 import elite.intel.util.StringUtls;
 import elite.intel.util.yaml.ToYamlConvertable;
@@ -61,6 +62,7 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
                 - maxRangeOnCurrentSupply: range in light years on fuelSupply alone
                 - maxRangeUsingReserve: range in light years drawing on the reserve as well
                 - fundedOperation: weeks of operation funded at the current balance
+                """ + SpokenAmounts.RULE + """
                 
                 Rules:
                 - Answer only the specific field the commander asks about.
@@ -110,7 +112,12 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
     ) implements ToYamlConvertable {
         @Override
         public String toYaml() {
-            return YamlFactory.toYaml(this);
+            // Spoken siblings for the bank balances, appended the same way as the finance announcements
+            // so amounts are spoken one way everywhere. See SpokenAmounts.RULE.
+            return YamlFactory.toYaml(this)
+                    + SpokenAmounts.yamlLine("reserveBalance", reserveBalance)
+                    + SpokenAmounts.yamlLine("totalBalance", totalBalance)
+                    + SpokenAmounts.yamlLine("marketBalance", marketBalance);
         }
     }
 }
