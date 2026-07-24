@@ -37,8 +37,8 @@ public class BioSampleTrackingSubscriber {
 
         for (BioSampleDto bioSample : bioSamples) {
             boolean canTakeSample = BioSampleDistanceCalculator.isFarEnoughFromSample(
-                    bioSample.getGenus(),
-                    bioSample.getSpecies(),
+                    bioSample.getGenusSymbol(),
+                    bioSample.getSpeciesSymbol(),
                     bioSample.getScanLatitude(),
                     bioSample.getScanLongitude(),
                     status.getStatus().getLatitude(),

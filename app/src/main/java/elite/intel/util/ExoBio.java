@@ -14,7 +14,7 @@ public class ExoBio {
         ArrayList<DataDto> result = new ArrayList<>();
         for (BioSampleDto bioSample : allBioSamples) {
             if (bioSample.getPlanetName().equalsIgnoreCase(planetName)) {
-                result.add(new DataDto(planetName, bioSample.getGenus(), bioSample.getSpecies(), bioSample.getScanXof3(), 3 == bioSample.getScanXof3()));
+                result.add(new DataDto(planetName, bioSample.getGenus(), bioSample.getGenusSymbol(), bioSample.getSpecies(), bioSample.getScanXof3(), 3 == bioSample.getScanXof3()));
             }
         }
 
@@ -26,7 +26,7 @@ public class ExoBio {
         for (GenusDto genus : genusListForCurrentLocation) {
             boolean found = false;
             for (ExoBio.DataDto sample : completedSamples) {
-                if (sample.genus().equals(genus.getSpecies())) {
+                if (genusMatches(sample, genus)) {
                     found = true;
                     break;
                 }
@@ -38,8 +38,20 @@ public class ExoBio {
         return result;
     }
 
+    /**
+     * Match a completed scan to a detected genus. Prefers the language-independent FDev genus symbol;
+     * falls back to the localized display name for data recorded before symbols were captured.
+     */
+    private static boolean genusMatches(DataDto sample, GenusDto genus) {
+        if (sample.genusSymbol() != null && genus.getGenusSymbol() != null) {
+            return sample.genusSymbol().equals(genus.getGenusSymbol());
+        }
+        return sample.genus() != null && sample.genus().equalsIgnoreCase(genus.getGenusLocalised());
+    }
 
-    public record DataDto(String planetName, String genus, String species, Integer scanXof3, boolean completed) implements ToYamlConvertable {
+
+    public record DataDto(String planetName, String genus, String genusSymbol, String species, Integer scanXof3,
+                          boolean completed) implements ToYamlConvertable {
 
         @Override public String toYaml() {
             return YamlFactory.toYaml(this);

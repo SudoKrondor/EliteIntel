@@ -1,0 +1,40 @@
+{
+  "language": "EN",
+  "count": 4,
+  "mode": "targeted --only find_commodity (post-alias-fix verification)",
+  "timestamp": "2026-07-23T07-21-24Z",
+  "records": [
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "what station's got the best deal on bromellite right now?",
+      "dispatched": "find_commodity",
+      "pass": true,
+      "best": 0.876
+    },
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "where can I grab platinum for as little as possible?",
+      "dispatched": "find_commodity",
+      "pass": true,
+      "best": 0.873
+    },
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "point me to somewhere selling palladium on the cheap within 150 light years",
+      "dispatched": "speak",
+      "pass": false,
+      "best": 0.844
+    },
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "who's got the lowest price on indium around here?",
+      "dispatched": "find_commodity",
+      "pass": true,
+      "best": 0.883
+    }
+  ]
+}

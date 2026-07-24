@@ -1,6 +1,5 @@
 package elite.intel.gameapi.journal.events.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.util.Md5Utils;
 import elite.intel.util.json.ToJsonConvertible;
@@ -17,6 +16,14 @@ public class BioSampleDto extends BaseJsonDto implements ToJsonConvertible, ToYa
     private String primaryStar;
     private long bodyId;
     private String genus;
+    /**
+     * Language-independent FDev genus symbol stem (e.g. "Tussocks"); used for all lookups/joins.
+     */
+    private String genusSymbol;
+    /**
+     * Language-independent FDev species symbol stem (e.g. "Tussocks_02"); used for all lookups/joins.
+     */
+    private String speciesSymbol;
     private double scanLatitude;
     private double scanLongitude;
     private double distanceToNextSample;
@@ -39,6 +46,28 @@ public class BioSampleDto extends BaseJsonDto implements ToJsonConvertible, ToYa
 
     public void setGenus(String genus) {
         this.genus = genus;
+    }
+
+    /**
+     * FDev genus symbol stem (language-independent). Use this for lookups/joins, not {@link #getGenus()}.
+     */
+    public String getGenusSymbol() {
+        return genusSymbol;
+    }
+
+    public void setGenusSymbol(String genusSymbol) {
+        this.genusSymbol = genusSymbol;
+    }
+
+    /**
+     * FDev species symbol stem (language-independent). Use this for lookups/joins, not {@link #getSpecies()}.
+     */
+    public String getSpeciesSymbol() {
+        return speciesSymbol;
+    }
+
+    public void setSpeciesSymbol(String speciesSymbol) {
+        this.speciesSymbol = speciesSymbol;
     }
 
 
@@ -147,7 +176,12 @@ public class BioSampleDto extends BaseJsonDto implements ToJsonConvertible, ToYa
     }
 
     public String getKey() {
-        return Md5Utils.generateMd5(bodyId + planetName + genus + species);
+        // WHY: identity is the language-independent symbol when we have it, so the same sample keys
+        // the same on any client language. Legacy samples (no symbol) fall back to the localized names,
+        // which preserves their original stored key so existing rows are not orphaned or duplicated.
+        String g = genusSymbol != null ? genusSymbol : genus;
+        String s = speciesSymbol != null ? speciesSymbol : species;
+        return Md5Utils.generateMd5(bodyId + planetName + g + s);
     }
 
     @Override public String toYaml() {

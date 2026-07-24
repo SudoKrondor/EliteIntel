@@ -100,13 +100,12 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         if (!partialBioSamples.isEmpty()) {
             List<CodexEntryDao.CodexEntry> filteredResult = new ArrayList<>();
             for (CodexEntryDao.CodexEntry entry : codexEntries) {
-                String entryNameLower = entry.getEntryName().toLowerCase(Locale.ROOT);
                 if (completedBioSamples != null && completedBioSamples.stream()
-                        .anyMatch(c -> entryNameLower.contains(c.getGenus().toLowerCase(Locale.ROOT)))) {
+                        .anyMatch(c -> entryMatchesSample(entry, c))) {
                     continue;
                 }
                 for (BioSampleDto partial : partialBioSamples) {
-                    if (entryNameLower.contains(partial.getGenus().toLowerCase(Locale.ROOT))) {
+                    if (entryMatchesSample(entry, partial)) {
                         filteredResult.add(entry);
                         break;
                     }
@@ -119,12 +118,54 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
 
         List<CodexEntryDao.CodexEntry> filteredResult = new ArrayList<>();
         for (CodexEntryDao.CodexEntry entry : codexEntries) {
-            boolean isCompleted = completedBioSamples.stream().anyMatch(
-                    c -> entry.getEntryName().toLowerCase(Locale.ROOT)
-                            .contains(c.getGenus().toLowerCase(Locale.ROOT)));
+            boolean isCompleted = completedBioSamples.stream().anyMatch(c -> entryMatchesSample(entry, c));
             if (!isCompleted) filteredResult.add(entry);
         }
         return filteredResult;
+    }
+
+    /**
+     * Genus symbol stem of a codex entry, or null for legacy rows with no stored symbol.
+     */
+    private static String genusSymbolOf(CodexEntryDao.CodexEntry entry) {
+        String sym = entry.getEntrySymbol();
+        return (sym != null && !sym.isBlank()) ? BioForms.genusStemForSpecies(sym) : null;
+    }
+
+    /**
+     * True when a codex entry belongs to the same genus as a bio sample. Prefers the language-independent
+     * FDev symbol on both sides; falls back to a localized display-name substring match for legacy rows.
+     */
+    private static boolean entryMatchesSample(CodexEntryDao.CodexEntry entry, BioSampleDto sample) {
+        String es = genusSymbolOf(entry);
+        if (es != null && sample.getGenusSymbol() != null) {
+            return es.equals(sample.getGenusSymbol());
+        }
+        return sample.getGenus() != null && entry.getEntryName() != null
+                && entry.getEntryName().toLowerCase(Locale.ROOT).contains(sample.getGenus().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * True when a codex entry belongs to the given genus symbol. Prefers the entry's stored symbol;
+     * falls back to matching the English genus name inside the (localized) entry name for legacy rows.
+     */
+    private static boolean entryMatchesGenusSymbol(CodexEntryDao.CodexEntry entry, String genusSymbol) {
+        if (genusSymbol == null) return false;
+        String es = genusSymbolOf(entry);
+        if (es != null) return genusSymbol.equals(es);
+        String english = BioForms.englishGenusName(genusSymbol);
+        return english != null && entry.getEntryName() != null
+                && entry.getEntryName().toLowerCase(Locale.ROOT).contains(english.toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * Stable per-genus grouping key: symbol stem when known, else the (legacy) first word of the entry name.
+     */
+    private static String genusKeyOf(CodexEntryDao.CodexEntry entry) {
+        String es = genusSymbolOf(entry);
+        if (es != null) return es;
+        String name = entry.getEntryName();
+        return name != null ? name.split(" ")[0] : "";
     }
 
     private Tuple<CodexEntryDao.CodexEntry, String> findBestBioTarget(List<CodexEntryDao.CodexEntry> codexEntries, List<BioSampleDto> partials, double playerLat, double playerLon, double planetRadius) {
@@ -147,9 +188,9 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
 
         for (CodexEntryDao.CodexEntry entry : codexEntries) {
             if (entry.getLatitude() == 0 && entry.getLongitude() == 0) continue;
-            String genus = entry.getEntryName().split(" ")[0];
-            if (!genus.equalsIgnoreCase(partialGenus)) continue;
-            if (isTooCloseToAnyPartialOfSameGenus(entry, genus, partials, planetRadius)) continue;
+            // partialGenus is the FDev genus symbol stem set by ScanOrganicSubscriber.
+            if (!entryMatchesGenusSymbol(entry, partialGenus)) continue;
+            if (isTooCloseToAnyPartialOfSameGenus(entry, partialGenus, partials, planetRadius)) continue;
 
             double dist = calculateSurfaceDistance(playerLat, playerLon, entry.getLatitude(), entry.getLongitude(), planetRadius, 0);
             if (dist < bestDist) {
@@ -171,8 +212,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         Map<String, List<CodexEntryDao.CodexEntry>> byGenus = new LinkedHashMap<>();
         for (CodexEntryDao.CodexEntry entry : codexEntries) {
             if (entry.getLatitude() == 0 && entry.getLongitude() == 0) continue;
-            String genus = entry.getEntryName().split(" ")[0];
-            byGenus.computeIfAbsent(genus, k -> new ArrayList<>()).add(entry);
+            byGenus.computeIfAbsent(genusKeyOf(entry), k -> new ArrayList<>()).add(entry);
         }
 
         int bestCount = 0;
@@ -214,12 +254,15 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         return new Tuple<>(bestEntry, "");
     }
 
-    private boolean isTooCloseToAnyPartialOfSameGenus(CodexEntryDao.CodexEntry entry, String genus, List<BioSampleDto> partials, double planetRadius) {
-        double minAllowed = BioForms.getDistance(genus);
+    private boolean isTooCloseToAnyPartialOfSameGenus(CodexEntryDao.CodexEntry entry, String genusSymbol, List<BioSampleDto> partials, double planetRadius) {
+        double minAllowed = BioForms.getDistance(genusSymbol);
         if (minAllowed <= 0) return false;
 
         for (BioSampleDto partial : partials) {
-            if (!genus.equalsIgnoreCase(partial.getGenus())) continue;
+            boolean sameGenus = partial.getGenusSymbol() != null
+                    ? genusSymbol.equals(partial.getGenusSymbol())
+                    : genusSymbol.equalsIgnoreCase(partial.getGenus());
+            if (!sameGenus) continue;
             double dist = calculateSurfaceDistance(
                     partial.getScanLatitude(), partial.getScanLongitude(),
                     entry.getLatitude(), entry.getLongitude(), planetRadius, 0);
