@@ -3,6 +3,7 @@ package elite.intel.junit.util;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 import elite.intel.util.Ranks;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,6 +36,14 @@ class RanksKeyResolutionTest {
 
     @BeforeEach
     void forceEnglishLocale() {
+        SystemSession.getInstance().setLanguage(Language.EN);
+    }
+
+    /**
+     * Restore here, not at the end of each test, so a failed assertion cannot leak a foreign locale onward.
+     */
+    @AfterEach
+    void restoreEnglishLocale() {
         SystemSession.getInstance().setLanguage(Language.EN);
     }
 
@@ -86,12 +95,52 @@ class RanksKeyResolutionTest {
 
     @Test
     void legalStatusesResolveToDisplayText() {
-        for (String status : List.of("Clean", "Wanted", "Hostile", "Lawless")) {
+        for (String status : List.of("Clean", "Wanted", "Hostile", "Lawless", "Allied", "IllegalCargo")) {
             String localized = Ranks.getLocalizedLegalStatus(status);
             assertNotNull(localized, "getLocalizedLegalStatus should localize: " + status);
             assertFalse(isUnresolvedKey(localized),
                     "getLocalizedLegalStatus(\"" + status + "\") leaked unresolved i18n key: " + localized);
         }
+    }
+
+    /**
+     * The ticket case: the state announced with the commander's own legal standing stayed English while the
+     * sentence around it was translated. English cannot catch that - "Clean" maps to "Clean" - so the
+     * every-state check above proves only that keys resolve. This one proves they actually translate.
+     */
+    @Test
+    void legalStatusesAreTranslatedNotPassedThrough() {
+        SystemSession.getInstance().setLanguage(Language.DE);
+        assertEquals("Gesucht", Ranks.getLocalizedLegalStatus("Wanted"));
+        assertEquals("Verbündet", Ranks.getLocalizedLegalStatus("Allied"));
+        assertEquals("Illegale Fracht", Ranks.getLocalizedLegalStatus("IllegalCargo"));
+
+        SystemSession.getInstance().setLanguage(Language.RU);
+        assertEquals("Разыскивается", Ranks.getLocalizedLegalStatus("Wanted"));
+        assertEquals("Запрещённый груз", Ranks.getLocalizedLegalStatus("IllegalCargo"));
+    }
+
+    /**
+     * The same vocabulary reaches us from two journal sources that do not agree on spelling -
+     * {@code Status.json} writes {@code IllegalCargo}, {@code ShipTargeted} writes {@code Illegal cargo} -
+     * and an exact-match lookup silently fell back to the raw English value for whichever form it did not hold.
+     */
+    @Test
+    void legalStatusLookupIgnoresCaseSpacingAndUnderscores() {
+        String expected = Ranks.getLocalizedLegalStatus("IllegalCargo");
+        for (String variant : List.of("Illegal cargo", "illegal_cargo", "ILLEGALCARGO")) {
+            assertEquals(expected, Ranks.getLocalizedLegalStatus(variant),
+                    "spelling variant must resolve to the same translation: " + variant);
+        }
+    }
+
+    @Test
+    void unknownLegalStatusFallsBackToReadableEnglish() {
+        // Frontier adds states over time (Speeding, PassengerWanted, Warrant); an unmapped one must still
+        // be speakable rather than surfacing an i18n key.
+        assertEquals("Passenger Wanted", Ranks.getLocalizedLegalStatus("Passenger_Wanted"));
+        assertNull(Ranks.getLocalizedLegalStatus(null));
+        assertNull(Ranks.getLocalizedLegalStatus("  "));
     }
 
     private static void assertAllResolved(String source, Iterable<String> values) {

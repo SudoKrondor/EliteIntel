@@ -7,7 +7,8 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The single door for executing tool-calls in companion mode. Executes {@code ExecutionRequest}s
- * (never {@code Thought}s) on a serialized action lane (actions/macros) or a parallel query lane.
+ * (never {@code Thought}s) on a concurrent, per-command action lane (actions/macros) or a parallel query lane,
+ * so a running command never blocks a later one.
  * <p>
  * The gateway never writes to memory; real game changes arrive later via the journal/status path.
  */

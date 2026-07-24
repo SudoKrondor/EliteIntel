@@ -2,6 +2,7 @@ package elite.intel.ai.brain.actions.handlers.queries;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.db.managers.BountyManager;
 import elite.intel.util.yaml.ToYamlConvertable;
 import elite.intel.util.yaml.YamlFactory;
@@ -31,13 +32,14 @@ public class AnalyzeBountiesCollectedQuery extends BaseQueryAnalyzer implements 
         String instructions = """
                 Report the totalBounties value as credits collected in bounties this session.
                 State only the amount. No commentary.
-                """;
+                """ + SpokenAmounts.RULE;
         return process(new AiDataStruct(instructions, new DataDto(totalBounties)), originalUserInput);
     }
 
     record DataDto(long totalBounties) implements ToYamlConvertable {
         @Override public String toYaml() {
-            return YamlFactory.toYaml(this);
+            // Spoken sibling appended the same way as the finance announcements. See SpokenAmounts.RULE.
+            return YamlFactory.toYaml(this) + SpokenAmounts.yamlLine("totalBounties", totalBounties);
         }
     }
 }

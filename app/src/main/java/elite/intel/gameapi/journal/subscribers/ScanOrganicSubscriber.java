@@ -13,7 +13,6 @@ import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.gameapi.journal.events.dto.TargetLocation;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
-import elite.intel.util.BioScanDistances;
 import elite.intel.util.ExoBio;
 
 import java.util.List;
@@ -55,8 +54,11 @@ public class ScanOrganicSubscriber {
             playerSession.setTracking(new TargetLocation()); // turn off tracking
             StringBuilder sb = new StringBuilder();
             String scanType = event.getScanType();
-            String genus = event.getGenusLocalised();
-            playerSession.setCurrentPartial(genus);
+            // Language-independent symbols drive every lookup/join; the localised strings are for speech only.
+            String genusSymbol = BioForms.normalizeGenus(event.getGenus());
+            String speciesSymbol = BioForms.normalizeSpecies(event.getSpecies());
+            String genus = event.getGenusLocalised() != null ? event.getGenusLocalised() : BioForms.englishGenusName(genusSymbol);
+            playerSession.setCurrentPartial(genusSymbol);
             String species = subtractString(event.getSpeciesLocalised(), genus);
             if (event.getBody() == null) return;
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
@@ -64,15 +66,15 @@ public class ScanOrganicSubscriber {
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());
 
             boolean isOurDiscovery = currentLocation.isOurDiscovery();
-            BioForms.ProjectedPayment paymentData = BioForms.getProjectedPayment(genus, species);
+            BioForms.ProjectedPayment paymentData = BioForms.getProjectedPayment(speciesSymbol);
 
             long payment = paymentData == null ? 0 : paymentData.payment();
             long firstDiscoveryBonus = paymentData == null || !isOurDiscovery ? 0 : paymentData.firstDiscoveryBonus();
 
-            BioForms.BioDetails bioDetails = BioForms.getDetails(genus, species);
-            Integer distance = BioScanDistances.GENUS_TO_CCR.get(genus);
+            BioForms.BioDetails bioDetails = BioForms.getDetails(speciesSymbol);
+            Integer distance = BioForms.colonyRangeOrNull(genusSymbol);
 
-            Integer range = (bioDetails != null) ? (int) bioDetails.colonyRange() : distance;
+            Integer range = requiredRange(bioDetails, distance);
 
             if (scan1.equalsIgnoreCase(scanType)) {
                 sb.append(" ").append(localizedEvent("event.organic.detected"));
@@ -84,18 +86,18 @@ public class ScanOrganicSubscriber {
                     sb.append(" ").append(localizedEvent("event.organic.requiredDistance", range));
                 }
 
-                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, isOurDiscovery);
+                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
                 bioSampleDto.setScanXof3(1);
                 currentLocation.addBioScan(bioSampleDto);
-                deleteScannedCodexEntry(genus, currentLocation);
+                deleteScannedCodexEntry(genusSymbol, currentLocation);
                 locationManager.save(currentLocation);
                 announce(sb.toString());
 
             } else if (scan2.equalsIgnoreCase(scanType)) {
-                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, isOurDiscovery);
+                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
                 bioSampleDto.setScanXof3(2);
                 currentLocation.addBioScan(bioSampleDto);
-                deleteScannedCodexEntry(genus, currentLocation);
+                deleteScannedCodexEntry(genusSymbol, currentLocation);
                 locationManager.save(currentLocation);
                 announce(localizedEvent("event.organic.sampleLogged", genus));
             } else if (scan3.equalsIgnoreCase(scanType)) {
@@ -103,14 +105,14 @@ public class ScanOrganicSubscriber {
                 sb.append(localizedEvent("event.organic.finalSample", genus)).append(" ");
                 sb.append(localizedEvent("event.organic.collectionComplete")).append(" ");
 
-                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, isOurDiscovery);
+                BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
 
                 bioSampleDto.setPayout(payment);
                 bioSampleDto.setFistDiscoveryBonus(firstDiscoveryBonus);
                 bioSampleDto.setScanXof3(3);
                 bioSampleDto.setBioSampleCompleted(true);
                 bioSampleDto.setOurDiscovery(currentLocation.isOurDiscovery());
-                deleteScannedCodexEntry(genus, currentLocation);
+                deleteScannedCodexEntry(genusSymbol, currentLocation);
                 playerSession.addBioSample(bioSampleDto);
                 playerSession.setCurrentPartial(null);
                 currentLocation.deletePartialBioSamples();
@@ -125,7 +127,7 @@ public class ScanOrganicSubscriber {
                 } else {
                     sb.append(" ").append(localizedEvent("event.organic.remainingGenus")).append(" ");
                     for (GenusDto entry : remainingSpecies) {
-                        sb.append(entry.getSpecies()).append(", ");
+                        sb.append(entry.getGenusLocalised()).append(", ");
                     }
                 }
 
@@ -134,7 +136,25 @@ public class ScanOrganicSubscriber {
         });
     }
 
-    private BioSampleDto createBioSampleDto(String genus, String species, boolean isOurDiscovery) {
+    /**
+     * Minimum colony distance to state for a scan: the species' own range when we have a table entry for it,
+     * otherwise the genus default.
+     *
+     * <p>Both sources are optional and {@code null} is a normal answer, not an error - it means we hold no
+     * distance for this organism and simply say nothing about range. Both lookups are keyed by the genus name
+     * as the journal localised it, so they miss together whenever the game client is not running in English,
+     * or whenever Frontier adds an organism our tables predate.
+     *
+     * <p>Kept as a method rather than an inline conditional because the inline form was a live NPE: casting one
+     * branch to {@code int} gives the whole conditional type {@code int} (JLS 15.25 binary numeric promotion),
+     * which unboxes the other branch. The throw killed the scan handler's virtual thread, so the sample was
+     * never recorded and nothing was announced - the log line was the only symptom.
+     */
+    static Integer requiredRange(BioForms.BioDetails bioDetails, Integer genusDefault) {
+        return bioDetails != null ? bioDetails.colonyRange() : genusDefault;
+    }
+
+    private BioSampleDto createBioSampleDto(String genus, String species, String genusSymbol, String speciesSymbol, boolean isOurDiscovery) {
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         BioSampleDto bioSampleDto = new BioSampleDto();
@@ -143,23 +163,29 @@ public class ScanOrganicSubscriber {
         bioSampleDto.setPlanetShortName(currentLocation.getPlanetShortName());
         bioSampleDto.setScanLatitude(status.getStatus().getLatitude());
         bioSampleDto.setScanLongitude(status.getStatus().getLongitude());
-        bioSampleDto.setGenus(genus);
-        bioSampleDto.setSpecies(species);
+        bioSampleDto.setGenus(genus);                 // localised - for speech
+        bioSampleDto.setSpecies(species);             // localised - for speech
+        bioSampleDto.setGenusSymbol(genusSymbol);     // language-independent - for lookups/joins
+        bioSampleDto.setSpeciesSymbol(speciesSymbol); // language-independent - for lookups/joins
         bioSampleDto.setOurDiscovery(isOurDiscovery);
         bioSampleDto.setBodyId(currentLocation.getBodyId());
-        bioSampleDto.setDistanceToNextSample(distanceToNextSample(genus, species));
+        bioSampleDto.setDistanceToNextSample(distanceToNextSample(genusSymbol, speciesSymbol));
         return bioSampleDto;
     }
 
     /**
      * Deletes the codex entry nearest to the current scan position whose genus matches.
      * The scanned colony will be within minimum colony range of the matching codex entry.
+     * Matching is on the language-independent genus symbol, resolved from each codex entry's
+     * stored FDev symbol - so it works on every game language.
+     *
+     * @param genusSymbol FDev genus symbol stem of the just-scanned organism
      */
-    private void deleteScannedCodexEntry(String genus, LocationDto currentLocation) {
+    private void deleteScannedCodexEntry(String genusSymbol, LocationDto currentLocation) {
         double lat = status.getStatus().getLatitude();
         double lon = status.getStatus().getLongitude();
         double planetRadius = status.getStatus().getPlanetRadius();
-        double minRange = BioForms.getDistance(genus);
+        double minRange = BioForms.getDistance(genusSymbol);
         if (minRange <= 0) return;
 
         List<CodexEntry> entries =
@@ -169,7 +195,7 @@ public class ScanOrganicSubscriber {
         CodexEntry nearest = null;
         double nearestDist = Double.MAX_VALUE;
         for (CodexEntry entry : entries) {
-            if (!entry.getEntryName().toLowerCase(Locale.ROOT).contains(genus.toLowerCase(Locale.ROOT))) continue;
+            if (!genusMatches(entry, genusSymbol)) continue;
             double dist = calculateSurfaceDistance(lat, lon, entry.getLatitude(), entry.getLongitude(), planetRadius, 0);
             if (dist < minRange && dist < nearestDist) {
                 nearest = entry;
@@ -185,8 +211,27 @@ public class ScanOrganicSubscriber {
         }
     }
 
-    private double distanceToNextSample(String genus, String species) {
-        BioForms.BioDetails details = BioForms.getDetails(genus, species);
-        return details == null ? BioScanDistances.GENUS_TO_CCR.get(genus) : details.colonyRange();
+    /**
+     * True when the codex entry belongs to the given genus symbol. Prefers the entry's stored FDev
+     * symbol (language-independent); falls back to the legacy localised-name substring match for rows
+     * saved before the symbol column existed.
+     */
+    private boolean genusMatches(CodexEntry entry, String genusSymbol) {
+        String entrySymbol = entry.getEntrySymbol();
+        if (entrySymbol != null && !entrySymbol.isBlank()) {
+            return genusSymbol.equals(BioForms.genusStemForSpecies(entrySymbol));
+        }
+        String english = BioForms.englishGenusName(genusSymbol);
+        return english != null
+                && entry.getEntryName() != null
+                && entry.getEntryName().toLowerCase(Locale.ROOT).contains(english.toLowerCase(Locale.ROOT));
+    }
+
+    private double distanceToNextSample(String genusSymbol, String speciesSymbol) {
+        BioForms.BioDetails details = BioForms.getDetails(speciesSymbol);
+        if (details != null && details.colonyRange() != null) {
+            return details.colonyRange();
+        }
+        return BioForms.getDistance(genusSymbol); // never null; 0 when unknown
     }
 }

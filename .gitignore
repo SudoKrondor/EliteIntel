@@ -36,9 +36,11 @@
 !.idea/misc.xml
 app/logs/
 build/
+bin/
 distribution/elite_intel.jar
 identifier.sqlite
 updater/build/
+updater/bin/
 CLAUDE.md
 
 #-- SECURITY - If you are using any of these tools, never ever commit these files for security reasons.

@@ -3,10 +3,9 @@ package elite.intel.ai.brain.vega.execution;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.IntelAction;
 import elite.intel.ai.brain.actions.handlers.queries.IntelQuery;
-import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.CompanionNarrator;
+import elite.intel.ai.brain.vega.CompanionRuntime;
 import elite.intel.ai.brain.vega.CompanionRuntimeGraph;
-import elite.intel.ai.brain.vega.execution.CompanionExecutionGateway;
 import elite.intel.ai.brain.vega.CompanionRuntimeTestSupport;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
@@ -15,13 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -244,6 +237,53 @@ class CompanionExecutionGatewayTest {
         assertEquals("completed_by_executor", result.get(1, TimeUnit.SECONDS).get("status").getAsString());
         closing.get(1, TimeUnit.SECONDS);
         assertFalse(handlerInterrupted.get(), "started game actions must not be force-interrupted");
+    }
+
+    @Test
+    void aRunningCommandDoesNotBlockALaterCommand() throws Exception {
+        // Regression: the action lane used to be single-threaded, so a multi-second route/trade calculation
+        // stalled every later command. A running command must never block a subsequent one (land, deploy, boost).
+        CountDownLatch slowStarted = new CountDownLatch(1);
+        CountDownLatch releaseSlow = new CountDownLatch(1);
+        IntelAction slowCommand = new IntelAction() {
+            @Override
+            public String id() {
+                return "slow";
+            }
+
+            @Override
+            public JsonObject handle(String action, JsonObject params, String text) {
+                slowStarted.countDown();
+                try {
+                    releaseSlow.await();
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+                return null;
+            }
+        };
+        RecordingCommand fastCommand = new RecordingCommand();
+        ExecutorService actionLane = Executors.newVirtualThreadPerTaskExecutor();
+        CompanionExecutionGateway gateway = new CompanionExecutionGateway(
+                Map.of("slow", slowCommand, "fast", fastCommand), Map.of(), Map.of(), actionLane, SYNC);
+
+        try {
+            CompletableFuture<JsonObject> slow = gateway.submit(new ExecutionRequest("r1", "slow", new JsonObject()));
+            assertTrue(slowStarted.await(1, TimeUnit.SECONDS), "slow command should be running");
+
+            // The fast command must complete while the slow one is still in flight.
+            JsonObject fast = gateway.submit(new ExecutionRequest("r2", "fast", new JsonObject()))
+                    .get(1, TimeUnit.SECONDS);
+            assertTrue(fastCommand.invoked, "later command must run without waiting for the slow one");
+            assertEquals("completed_by_executor", fast.get("status").getAsString());
+            assertFalse(slow.isDone(), "slow command should still be blocked");
+
+            releaseSlow.countDown();
+            assertEquals("completed_by_executor", slow.get(1, TimeUnit.SECONDS).get("status").getAsString());
+        } finally {
+            releaseSlow.countDown();
+            gateway.close();
+        }
     }
 
     @Test

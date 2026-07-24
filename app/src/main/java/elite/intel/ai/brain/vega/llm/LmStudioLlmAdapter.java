@@ -16,5 +16,7 @@ public final class LmStudioLlmAdapter extends OpenAiCompatibleLlmAdapter {
     @Override
     protected void addToolRequestParameters(JsonObject body) {
         body.addProperty("parallel_tool_calls", false);
+        body.addProperty("reasoning_effort", "none");
+        body.addProperty("stream", false);
     }
 }

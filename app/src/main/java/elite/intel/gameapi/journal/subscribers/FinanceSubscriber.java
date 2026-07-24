@@ -2,6 +2,7 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
+import elite.intel.ai.brain.vega.SpokenAmounts;
 import elite.intel.eventbus.UiBus;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.session.PlayerSession;
@@ -54,7 +55,7 @@ public class FinanceSubscriber {
     @Subscribe
     public void onRedeemVoucher(RedeemVoucherEvent e) {
         apply(delta(e));
-        announce(e.toYaml(), """
+        announce(voucherPayload(e), """
                 A bounty/voucher payment was awarded.
                 Notify the user about the credits received and which factions we received it from.
                 """);
@@ -63,11 +64,12 @@ public class FinanceSubscriber {
     @Subscribe
     public void onSellOrganicData(SellOrganicDataEvent e) {
         apply(delta(e));
-        announce(e.toYaml(), """
+        announce(organicSalePayload(e), """
                 We sold organic data and made credits.
-                Provide the user with a sale summary. State totalCredits as the amount earned, then read the
-                saleByGenus breakdown. Do not add up the bioData rows yourself - every total is precomputed.
-                If totalBonus is above zero, mention it as a first-discovery bonus.
+                Provide the user with a sale summary. State the amount earned, and if totalBonus is above zero
+                mention it as a first-discovery bonus. Summarise the saleByGenus breakdown by naming each genus
+                and its samples count; do not read out the per-genus credit figures. Do not add up the bioData
+                rows yourself - every total is precomputed.
                 """);
     }
 
@@ -75,7 +77,7 @@ public class FinanceSubscriber {
     public void onMultiSellExploration(MultiSellExplorationDataEvent e) {
         apply(delta(e));
         if (playerSession.isDiscoveryAnnouncementOn()) {
-            announce(e.toYaml(),
+            announce(explorationSalePayload(e),
                     "Report the exploration data sale. State the total credits earned, the bonus, and the number of star systems sold.");
         }
     }
@@ -121,7 +123,7 @@ public class FinanceSubscriber {
     public void onResurrect(ResurrectEvent e) {
         apply(delta(e));
         if (!e.isBankrupt() && e.getCost() > 0) {
-            announce(e.toYaml(),
+            announce(rebuyPayload(e),
                     "Notify the commander that the ship insurance rebuy was paid and state the cost.");
         }
     }
@@ -179,13 +181,15 @@ public class FinanceSubscriber {
     @Subscribe
     public void onShipyardBuy(ShipyardBuyEvent e) {
         apply(delta(e));
-        announce(e.toYaml(), "Notify the commander of the new ship purchase and state the net cost.");
+        announce(shipyardBuyPayload(e),
+                "Notify the commander of the new ship purchase and state netCost as the net cost.");
     }
 
     @Subscribe
     public void onCarrierBuy(CarrierBuyEvent e) {
         apply(delta(e));
-        announce(e.toYaml(), "Notify the commander that a fleet carrier was purchased and state the price.");
+        announce(carrierBuyPayload(e),
+                "Notify the commander that a fleet carrier was purchased and state the price.");
     }
 
     // --- Mixed (sign depends on direction) ---
@@ -203,9 +207,51 @@ public class FinanceSubscriber {
 
     /**
      * Hands English data + instruction to the LLM, which speaks it in the user's language with personality.
+     * Every announcement here carries money, so the spoken-amount rule always rides along with it.
      */
     private void announce(String data, String instruction) {
-        CompanionRuntime.narrator().narrate(data, instruction);
+        CompanionRuntime.narrator().narrate(data, withSpokenAmountRule(instruction));
+    }
+
+    /**
+     * Appends the spoken-amount rule to an announcement instruction. Split out so it can be verified.
+     */
+    static String withSpokenAmountRule(String instruction) {
+        return instruction + SpokenAmounts.RULE;
+    }
+
+    // --- Announcement payloads. Each pairs an event's serialized YAML with a spoken sibling for every amount
+    // the announcement voices. Kept as pure methods so a test can check the field names match the payload and
+    // the spoken figure matches the value, without standing up the companion runtime. ---
+
+    static String voucherPayload(RedeemVoucherEvent e) {
+        return e.toYaml() + SpokenAmounts.yamlLine("amount", e.getAmount());
+    }
+
+    static String organicSalePayload(SellOrganicDataEvent e) {
+        return e.toYaml()
+                + SpokenAmounts.yamlLine("totalCredits", e.getTotalCredits())
+                + SpokenAmounts.yamlLine("totalBonus", e.getTotalBonus());
+    }
+
+    static String explorationSalePayload(MultiSellExplorationDataEvent e) {
+        return e.toYaml()
+                + SpokenAmounts.yamlLine("totalEarnings", e.getTotalEarnings())
+                + SpokenAmounts.yamlLine("bonus", e.getBonus());
+    }
+
+    static String rebuyPayload(ResurrectEvent e) {
+        return e.toYaml() + SpokenAmounts.yamlLine("cost", e.getCost());
+    }
+
+    static String shipyardBuyPayload(ShipyardBuyEvent e) {
+        // Net of any trade-in, so the spoken figure matches what actually left the account. This net figure is
+        // computed here rather than carried by the event, so it brings its own numeric line as well.
+        return e.toYaml() + SpokenAmounts.syntheticAmount("netCost", -delta(e));
+    }
+
+    static String carrierBuyPayload(CarrierBuyEvent e) {
+        return e.toYaml() + SpokenAmounts.yamlLine("price", e.getPrice());
     }
 
     // Signed deltas (positive = inflow, negative = outflow). Public/static so the
