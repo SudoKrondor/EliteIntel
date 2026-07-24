@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class ScanOrganicRequiredRangeTest {
 
     private static BioForms.BioDetails detailsWithRange(Integer colonyRange) {
-        return new BioForms.BioDetails(1_000L, 0L, colonyRange, "None", 0.0, 0.0, null);
+        return new BioForms.BioDetails(1_000L, 0L, colonyRange);
     }
 
     @Test

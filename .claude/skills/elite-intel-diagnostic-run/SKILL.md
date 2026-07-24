@@ -69,8 +69,8 @@ glossary if missing, launch the app, feed, report. The provider/model is the use
 and irrelevant here (the skill only writes phrases and reads the log): do not detect it, factor it
 in, or ask.
 
-Environment: Windows PowerShell 5.1, Windows paths with drive letters, no bash-isms, no `&&`/`||`
-chaining.
+Environment: OS-agnostic (Linux, macOS, or Windows). Do not assume a shell or hardcode platform-specific paths or commands; drive every file operation through the portable Python 3 one-liners in
+*Harness I/O (cross-platform)* below.
 
 ## How the harness works
 
@@ -78,7 +78,7 @@ The app runs in diagnostics mode when the input file `input.txt` exists at start
 is the gate. The app only ever READS it and never creates it, so you own its lifecycle: create it
 before launch, delete it after the run, so the mode does not stick to later launches.
 
-Files (all under `%LOCALAPPDATA%\elite-intel\diagnostics\`):
+Files (all under the diagnostics directory, resolved per-OS in *Harness I/O (cross-platform)*):
 
 - `input.txt` — the gate; its existence enables the mode, and you append phrases to it during the
   run.
@@ -129,6 +129,10 @@ Each line is `<UTC-timestamp> <marker>`:
 - `DIAG dispatch tool=<actionId>` — an action the companion dispatched this turn (the routing
   result you score).
 - `DIAG speaking=true|false` — TTS boundaries.
+-
+`DIAG turn-done` — the terminal marker for a phrase's turn, written once the turn has started and gone quiet (after all its
+`DIAG dispatch` line(s) and the
+`DIAG speaking=false` that ends its spoken reply). Key turn-completion off this single anchor.
 - `DIAG boot-language=<CODE>` — the app set the command language from `language.txt` at startup
   (before the companion/reducer were built). This is how the run language is applied. A
   `DIAG boot-language error` line means the code didn't parse (check for a stray BOM/newline).
@@ -145,14 +149,52 @@ A phrase **passes** if its expected action id appears in a `DIAG dispatch tool=`
 phrase's turn (the lines between its `DIAG input=` and the next `DIAG input=` / `DIAG status=` /
 `DIAG event=`).
 
+## Harness I/O (cross-platform)
+
+This skill is OS-agnostic — it runs on Linux, macOS, and Windows. Do NOT assume a shell or hardcode platform-specific paths or commands. Every mechanical file operation is a
+**Python 3 one-liner
+**: it behaves identically on every OS, writes UTF-8 without a BOM by default, and accepts Windows and POSIX paths alike (forward slashes work in all of them). Run them with whatever Python 3 launcher the host has —
+`python3` on Linux/macOS, `python` or
+`py -3` on Windows. The only per-OS difference is your own shell's quoting for the utterance argument, which you handle per call. These single-operation commands are NOT "building an orchestrator" (see
+*Procedure*); each is one file read or write, the exact analogue of the old per-line append/read calls.
+
+**Where the files live.** The app resolves the diagnostics directory per-OS (mirroring
+`AppPaths.getAppDataBase`): Windows `%LOCALAPPDATA%\elite-intel\diagnostics`; Linux/macOS
+`$XDG_DATA_HOME/elite-intel/diagnostics`, falling back to `~/.local/share/elite-intel/diagnostics`
+when
+`XDG_DATA_HOME` is unset. Resolve it ONCE at the start of the run (the one-liner also creates it) and reuse the printed absolute path, called
+`<DIR>` below:
+
+```
+python3 -c "import os,sys,pathlib; b=pathlib.Path(os.environ['LOCALAPPDATA']) if sys.platform=='win32' else pathlib.Path(os.environ.get('XDG_DATA_HOME') or pathlib.Path.home()/'.local/share'); d=b/'elite-intel'/'diagnostics'; d.mkdir(parents=True,exist_ok=True); print(d)"
+```
+
+**Operations** (substitute the real `<DIR>`, and for append the real line; the phrase is passed as an
+`argv` argument, never embedded in the Python source, so only your shell's quoting applies):
+
+- Create the gate `input.txt` empty (arms diagnostics mode):
+  `python3 -c "import sys,pathlib; pathlib.Path(sys.argv[1]).write_text('',encoding='utf-8')" "<DIR>/input.txt"`
+- Write `language.txt` (boot language, code only):
+  `python3 -c "import sys,pathlib; pathlib.Path(sys.argv[1]).write_text(sys.argv[2],encoding='utf-8')" "<DIR>/language.txt" "EN"`
+- Clear `session.log`:
+  `python3 -c "import sys,pathlib; pathlib.Path(sys.argv[1]).write_text('',encoding='utf-8')" "<DIR>/session.log"`
+- Append ONE line — an utterance or an `@directive` — to `input.txt`:
+  `python3 -c "import sys; open(sys.argv[1],'a',encoding='utf-8').write(sys.argv[2]+'\n')" "<DIR>/input.txt" "<line>"`
+- Read the log tail INCREMENTALLY — pass the last byte offset (start at
+  `0`); the FIRST output line is the new offset to pass next time, everything after it is the appended log text:
+  `python3 -c "import sys; off=int(sys.argv[2]); f=open(sys.argv[1],'rb'); f.seek(off); d=f.read(); print(off+len(d)); sys.stdout.write(d.decode('utf-8','replace'))" "<DIR>/session.log" <OFFSET>`
+- Delete the gate at teardown:
+  `python3 -c "import sys,pathlib; pathlib.Path(sys.argv[1]).unlink(missing_ok=True)" "<DIR>/input.txt"`
+
+**Launch the app** with the Gradle wrapper from the repo root, in the background: `./gradlew :app:run`
+on Linux/macOS, `gradlew.bat :app:run` on Windows.
+
 ## Procedure
 
-**You are the driver — do NOT build one.** Do not write a PowerShell/Python script, harness, or any
-standalone program to orchestrate the run (a script cannot write natural-language utterances). You
-generate each utterance, then feed and observe it with plain one-off tool calls — `Add-Content` to
-append a line, `Get-Content -Tail` to read new log lines, decide PASS/FAIL, repeat. The only
-process you ever launch is the app itself (`.\gradlew :app:run`). If you catch yourself authoring a
-loop-runner, stop and do the next step by hand.
+**You are the driver — do NOT build one.
+** Do not write a script, harness, or any standalone program to orchestrate the run (a program cannot write natural-language utterances). You generate each utterance, then feed and observe it with plain one-off tool calls — append a line, read the new log lines, decide PASS/FAIL, repeat — using the portable one-liners in
+*Harness I/O (
+cross-platform)*. Those single-operation file commands are not an orchestrator; a loop-runner that generates and feeds turns on its own is. The only process you ever launch is the app itself (the Gradle wrapper). If you catch yourself authoring a loop-runner, stop and do the next step by hand.
 
 0. **Validate the language argument.** Per *Arguments and preconditions* — on a bad/missing code,
    print the error and stop before touching any files, the app, or the web.
@@ -191,24 +233,20 @@ loop-runner, stop and do the next step by hand.
    means the id is wrong (fix it); only fall back to a manual `@status`/`@fighter` if you
    deliberately want a non-default context.
 
-5. **Arm diagnostics mode and start the app — create the gate FIRST, then launch.** Do this without
-   asking.
-   - `New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\elite-intel\diagnostics"`.
-   - **Write files as UTF-8 WITHOUT a BOM.** `Set-Content -Encoding utf8` in PowerShell 5.1
-     prepends a BOM, which corrupts the first line (a leading `@directive` or the language code).
-     Use `[System.IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding($false)))`
-     for the initial writes. (The app also strips a leading BOM defensively, but write clean.)
-   - **Create `input.txt` empty** (WriteAllText with empty string, no-BOM) — this is the gate; its
-     presence enables diagnostics mode. Do this BEFORE launching.
-   - **Write the boot language into `language.txt`** (the code only, e.g. `RU`, no-BOM) — a
-     separate data file, NOT `@lang`. The app reads it at startup and sets the command language
-     before the companion is built. Required, because the semantic reducer **freezes its language
-     when constructed**, so a later `@lang` never reaches it and it would miss obvious commands.
-     Confirm with `DIAG boot-language=<LANG>`.
-   - **Clear `session.log`** so you never mistake a previous run for this one:
-     `Set-Content -Path "$env:LOCALAPPDATA\elite-intel\diagnostics\session.log" -Value $null`.
-   - **Launch the app in the background:** `.\gradlew :app:run`. The window can take ~1 min to
-     appear; services autostart.
+5. **Arm diagnostics mode and start the app — create the gate FIRST, then launch.** Do this without asking. Use the operations in
+   *Harness I/O (cross-platform)*; resolve `<DIR>` once and reuse it.
+    - Resolve and create the diagnostics directory (the resolver one-liner also does the `mkdir`).
+    - **Create `input.txt` empty
+      ** — this is the gate; its presence enables diagnostics mode. Do this BEFORE launching. (The Python one-liners write UTF-8 without a BOM, so a leading
+      `@directive` or the language code parses cleanly; the app also strips a leading BOM defensively, but write clean.)
+    - **Write the boot language into `language.txt`** (the code only, e.g. `EN`) — a separate data file, NOT
+      `@lang`. The app reads it at startup and sets the command language before the companion is built. Required, because the semantic reducer
+      **freezes its language when constructed**, so a later
+      `@lang` never reaches it and it would miss obvious commands. Confirm with
+      `DIAG boot-language=<LANG>`.
+    - **Clear `session.log`** so you never mistake a previous run for this one.
+    - **Launch the app in the background** with the Gradle wrapper (`./gradlew :app:run`, or
+      `gradlew.bat :app:run` on Windows). The window can take ~1 min to appear; services autostart.
    - Readiness is decided **only** by a FRESH `DIAG ready` from THIS run. Because you cleared the
      log, it starts empty: wait for the new instance to re-open it (`DIAG log opened`), then a
      `DIAG ready` after it. Never treat a pre-existing `DIAG ready` as readiness, and do not narrate
@@ -222,18 +260,19 @@ loop-runner, stop and do the next step by hand.
    - Per group, first append `@visible <expectedId>` (wait for `DIAG visible=...` — near-instant),
      then its utterances one per turn (step 7). Re-emit `@visible <expectedId>` for each group even
      if the previous differed — it is cheap and keeps context correct.
-   - Write each line with `Add-Content -Encoding utf8` so non-ASCII is preserved. The bookkeeping
-     comment `# intent -> id (ref: ...)` is for your own tracking/report — you need not write it to
-     the file.
+   - Append each line with the append one-liner from *Harness I/O* so non-ASCII is preserved. The bookkeeping comment
+     `# intent -> id (ref: ...)` is for your own tracking/report — you need not write it to the file.
 
 7. **Per-utterance turn loop — feed one, wait for the whole turn, then the next.** For each
    utterance:
    1. Append exactly that one line to `input.txt`.
-   2. Read `session.log` **INCREMENTALLY** (track a byte/line offset; never re-slurp the whole file
-      — that is the main way this skill wastes *your* tokens) until this turn is done: its
-      `DIAG input="<utterance>"` appears, then its `DIAG dispatch tool=<id>` line(s); and if
-      `DIAG speaking=true` appeared, wait for the matching `DIAG speaking=false`. Bound with a
-      per-turn timeout (~90 s).
+   2. Read `session.log` **INCREMENTALLY** with the tail one-liner from *Harness
+      I/O* (track the byte offset it returns; never re-slurp the whole file — that is the main way this skill wastes
+      *your*
+      tokens) until this turn is done: its `DIAG input="<utterance>"` appears, then its
+      `DIAG dispatch tool=<id>` line(s), and finally the `DIAG turn-done` marker that ends the turn
+      (fired after its dispatch line(s) and the
+      `DIAG speaking=false` closing its spoken reply). Bound with a per-turn timeout (~90 s).
    3. Record PASS/FAIL (PASS iff `expectedId` is among that turn's `DIAG dispatch tool=` lines),
       then append the next line **promptly** — add no extra delay; the app already inserts a short
       conversational gap, so padding it makes the run drag.
@@ -245,11 +284,12 @@ loop-runner, stop and do the next step by hand.
    `main_ship(fallback)` or `unknown-action`, note that in the report; otherwise treat the miss as a
    genuine result for step 9.
    - **Stream progress.** A full run is 10–20 min of silence otherwise. After each group (or every
-     ~10 turns), emit one terse line — `группа 34/90 · пройдено 78 · fail 6` — so the user sees it
+     ~10 turns), emit one terse line — `group 34/90 · passed 78 · fail 6` — so the user sees it
      is alive and where the failures are clustering. Keep it to a single line per update, not a
      running transcript.
 
-8. **Report** (in Russian, per project convention) a compact table:
+8. **Report in English
+   ** (the project's working language for developer output — regardless of the language under test; only the generated utterances stay in the target language) a compact table:
    utterance | expected id | dispatched | PASS/FAIL, grouped by intent, plus totals and the failing
    utterances with what they routed to instead. Because the utterances are yours, before recording
    any FAIL sanity-check it against the *Phrase generation* rules: if it is genuinely ambiguous or
@@ -269,7 +309,7 @@ loop-runner, stop and do the next step by hand.
 
 9. **Improvement recommendations.** Base concrete recommendations on **systematic FAIL** intents
    (0 passes) — those are real, actionable routing defects. List **FLAKY** intents separately as
-   "нестабильно, не чистый баг": don't prescribe an `llmDescription`/alias edit off a single flaky
+   "unstable, not a clean bug": don't prescribe an `llmDescription`/alias edit off a single flaky
    turn (you'd be tuning to noise); if a FLAKY intent matters, suggest re-running it with a higher
    `count` via `--only <id>` to see whether it's really borderline. For each systematic FAIL, target
    the two owners of routing:
@@ -296,10 +336,8 @@ loop-runner, stop and do the next step by hand.
    description or alias owner.
 
 10. **Tear down — delete the gate.** When the run is done (or if you abort), always delete
-    `input.txt`: `Remove-Item -Force "$env:LOCALAPPDATA\elite-intel\diagnostics\input.txt"`. Its
-    existence is the mode gate and the app never removes it, so leaving it would boot the next
-    normal launch into diagnostics mode. Do this even on failure. (Do NOT delete it mid-run — its
-    absence is only checked at startup, but keep it for the session.)
+    `input.txt` with the delete one-liner from *Harness
+    I/O*. Its existence is the mode gate and the app never removes it, so leaving it would boot the next normal launch into diagnostics mode. Do this even on failure. (Do NOT delete it mid-run — its absence is only checked at startup, but keep it for the session.)
 
 ## Terminology sourcing (authority is EXTERNAL, not the app)
 

@@ -1,0 +1,29 @@
+{
+  "language": "EN",
+  "count": 3,
+  "mode": "targeted --only find_commodity",
+  "timestamp": "2026-07-23T06-07-22Z",
+  "records": [
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "where's the nearest station selling tritium?",
+      "dispatched": "find_commodity",
+      "pass": true
+    },
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "find me the cheapest painite within 200 light years",
+      "dispatched": "speak",
+      "pass": false
+    },
+    {
+      "intent": "find_commodity",
+      "expectedId": "find_commodity",
+      "utterance": "I want to buy some gold, point me to a market that stocks it",
+      "dispatched": "find_commodity",
+      "pass": true
+    }
+  ]
+}

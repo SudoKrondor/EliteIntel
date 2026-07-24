@@ -16,8 +16,8 @@ import java.util.List;
 public interface CodexEntryDao {
 
     @SqlUpdate("""
-            INSERT INTO codex_entries(subCategory, starSystem, bodyId, latitude, longitude, entryName, voucherAmount)
-                        values (:subCategory, :starSystem, :bodyId, :latitude, :longitude, :entryName, :voucherAmount)
+            INSERT INTO codex_entries(subCategory, starSystem, bodyId, latitude, longitude, entryName, entrySymbol, voucherAmount)
+                        values (:subCategory, :starSystem, :bodyId, :latitude, :longitude, :entryName, :entrySymbol, :voucherAmount)
             """)
     void save(@BindBean CodexEntry entry);
 
@@ -54,6 +54,7 @@ public interface CodexEntryDao {
             entry.setLatitude(rs.getDouble("latitude"));
             entry.setLongitude(rs.getDouble("longitude"));
             entry.setEntryName(rs.getString("entryName"));
+            entry.setEntrySymbol(rs.getString("entrySymbol"));
             entry.setVoucherAmount(rs.getLong("voucherAmount"));
             return entry;
         }
@@ -67,6 +68,10 @@ public interface CodexEntryDao {
         private Double latitude;
         private Double longitude;
         private String entryName;
+        /**
+         * Non-localized FDev codex symbol (journal 'Name', e.g. "$Codex_Ent_Tussocks_02_F_Name;"). Null for legacy rows.
+         */
+        private String entrySymbol;
         private Long voucherAmount;
 
 
@@ -116,6 +121,17 @@ public interface CodexEntryDao {
 
         public void setEntryName(String entryName) {
             this.entryName = entryName;
+        }
+
+        /**
+         * Non-localized FDev codex symbol (journal 'Name'); use for genus/species resolution. Null for legacy rows.
+         */
+        public String getEntrySymbol() {
+            return entrySymbol;
+        }
+
+        public void setEntrySymbol(String entrySymbol) {
+            this.entrySymbol = entrySymbol;
         }
 
         public Long getVoucherAmount() {

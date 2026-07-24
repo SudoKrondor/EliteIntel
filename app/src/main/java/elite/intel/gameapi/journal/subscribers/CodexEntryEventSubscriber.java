@@ -12,7 +12,6 @@ import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.NavigationUtils;
 
-import static elite.intel.util.StringUtls.capitalizeWords;
 import static elite.intel.util.StringUtls.localizedEvent;
 
 public class CodexEntryEventSubscriber {
@@ -36,14 +35,20 @@ public class CodexEntryEventSubscriber {
             if (nameLocalised == null) nameLocalised = event.getName();
             if (nameLocalised == null) nameLocalised = "Unknown";
 
-            String[] nameParts = nameLocalised.split(" ");
-            String firstWordOfEntryName = nameParts[0];
-            String secondWordOfEntryName = nameParts.length > 1 ? nameParts[1] : null;
-            int bioSampleDistance = BioForms.getDistance(firstWordOfEntryName);
-            BioForms.ProjectedPayment projectedPayment = (secondWordOfEntryName != null)
-                    ? BioForms.getProjectedPayment(capitalizeWords(firstWordOfEntryName), capitalizeWords(secondWordOfEntryName))
-                    : BioForms.getAverageProjectedPayment(capitalizeWords(firstWordOfEntryName));
-            String genus = bioSampleDistance > 0 ? capitalizeWords(firstWordOfEntryName) : null;
+            // Resolve genus/species from the language-independent FDev symbol (e.g.
+            // "$Codex_Ent_Shrubs_01_F_Name;"), not the localized display name - so this works
+            // on every game language. Non-organic entries resolve to null and skip bio output.
+            String genusSymbol = BioForms.genusStemForSpecies(event.getName());
+            String speciesSymbol = BioForms.normalizeSpecies(event.getName());
+            int bioSampleDistance = genusSymbol != null ? BioForms.getDistance(genusSymbol) : 0;
+            BioForms.ProjectedPayment projectedPayment = null;
+            if (genusSymbol != null) {
+                projectedPayment = BioForms.getProjectedPayment(speciesSymbol);
+                if (projectedPayment == null) {
+                    projectedPayment = BioForms.getAverageProjectedPayment(genusSymbol);
+                }
+            }
+            String genus = bioSampleDistance > 0 ? genusSymbol : null;
 
             boolean alreadyHaveThisEntry = codexEntryManager.checkIfExist(currentLocation.getStarName(), currentLocation.getBodyId(), nameLocalised);
 

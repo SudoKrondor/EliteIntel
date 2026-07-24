@@ -73,7 +73,7 @@ public class SAASignalsFoundSubscriber {
                     long averageProjectedPayment = 0;
                     long averageFirstDiscoveryBonus = 0;
                     for (SAASignalsFoundEvent.Genus genus : event.getGenuses()) {
-                        BioForms.ProjectedPayment averagePayment = BioForms.getAverageProjectedPayment(genus.getGenusLocalised());
+                        BioForms.ProjectedPayment averagePayment = BioForms.getAverageProjectedPayment(genus.getGenus());
                         if (averagePayment != null) {
                             averageProjectedPayment = averageProjectedPayment + averagePayment.payment();
                             averageFirstDiscoveryBonus = averageFirstDiscoveryBonus + averagePayment.firstDiscoveryBonus();
@@ -139,8 +139,11 @@ public class SAASignalsFoundSubscriber {
     private boolean scanBioCompleted(SAASignalsFoundEvent event, PlayerSession playerSession) {
         List<BioSampleDto> bioSamples = playerSession.getBioCompletedSamples();
         for (SAASignalsFoundEvent.Genus genus : event.getGenuses()) {
+            String genusSymbol = BioForms.normalizeGenus(genus.getGenus());
             for (BioSampleDto bioSampleDto : bioSamples) {
-                boolean matchingGenus = bioSampleDto.getGenus().equalsIgnoreCase(genus.getGenusLocalised());
+                boolean matchingGenus = genusSymbol != null && bioSampleDto.getGenusSymbol() != null
+                        ? genusSymbol.equals(bioSampleDto.getGenusSymbol())
+                        : bioSampleDto.getGenus() != null && bioSampleDto.getGenus().equalsIgnoreCase(genus.getGenusLocalised());
                 boolean samePlanet = bioSampleDto.getPlanetName().equalsIgnoreCase(event.getBodyName());
                 if (matchingGenus && samePlanet) {
                     return true;
@@ -162,9 +165,10 @@ public class SAASignalsFoundSubscriber {
         ArrayList<GenusDto> result = new ArrayList<>();
         for (SAASignalsFoundEvent.Genus genus : organics) {
             GenusDto dto = new GenusDto();
-            dto.setSpecies(genus.getGenusLocalised());
+            dto.setGenusLocalised(genus.getGenusLocalised());   // localised - for speech/display
+            dto.setGenusSymbol(BioForms.normalizeGenus(genus.getGenus())); // language-independent - for joins
             dto.setPlanetName(planetName);
-            BioForms.ProjectedPayment projectedPayment = BioForms.getAverageProjectedPayment(genus.getGenusLocalised());
+            BioForms.ProjectedPayment projectedPayment = BioForms.getAverageProjectedPayment(genus.getGenus());
             if (projectedPayment != null && projectedPayment.payment() != null) {
                 dto.setRewardInCredits(projectedPayment.payment());
                 if (isOurDiscovery) {

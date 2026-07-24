@@ -49,6 +49,7 @@ public final class CodexEntryManager {
             entry.setSubCategory(event.getSubCategoryLocalised());
             entry.setVoucherAmount(event.getVoucherAmount());
             entry.setEntryName(event.getNameLocalised());
+            entry.setEntrySymbol(event.getName()); // non-localized FDev symbol, for language-independent matching
             dao.save(entry);
             return null;
         });

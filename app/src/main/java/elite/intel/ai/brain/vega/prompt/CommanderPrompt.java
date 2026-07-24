@@ -36,7 +36,7 @@ final class CommanderPrompt {
 
             <language>
             The commander speaks {inputLanguage}. Match functions to original wording and offered {inputLanguage}
-            triggers; never translate before selection. Extract required schema arguments verbatim.
+                    triggers; never translate before selection.
             Write speak.text and request_input.question in {language}; never translate function or parameter names.
             </language>
 
@@ -82,6 +82,9 @@ final class CommanderPrompt {
               call speak for truthful text-only answers using reasoning or general knowledge; decline only requests
               requiring unavailable external data or actions.
 
+                            A value the commander already spoke is a known argument: extract it verbatim, never request_input
+                            to refine or subcategorize it.
+                    
                     Treat single-word or very short ship-context phrases as likely commands, not conversation; never echo or
                     restate the input. Game-data questions require their matching function, never a guessed answer. Only
                     request_input opens a continuation. Never claim completion without calling the action.
