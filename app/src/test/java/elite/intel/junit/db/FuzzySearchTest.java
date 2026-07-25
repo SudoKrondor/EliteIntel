@@ -1,32 +1,18 @@
 package elite.intel.junit.db;
 
 import elite.intel.db.FuzzySearch;
-import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.managers.MaterialManager;
-import elite.intel.db.util.Database;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class FuzzySearchTest {
 
-    // materials is game-state — empty after migration; seed what we need.
-    @BeforeEach
-    void seedMaterials() {
-        MaterialManager.getInstance().clear();
-        Database.withDao(MaterialsDao.class, dao -> {
-            dao.upsert("Carbon", "Raw", 10, 300);
-            dao.upsert("Iron", "Raw", 5, 300);
-            dao.upsert("Nickel", "Raw", 3, 300);
-            return null;
-        });
-    }
-
+    // material_names is migration-seeded reference data covering all 147 materials, so nothing needs
+    // seeding here — only the held amounts belong to the commander, and those are reset afterwards.
     @AfterEach
-    void clearMaterials() {
+    void clearAmounts() {
         MaterialManager.getInstance().clear();
     }
 
@@ -129,28 +115,85 @@ class FuzzySearchTest {
         assertNull(FuzzySearch.commoditySymbol("Definitely Not A Commodity"));
     }
 
-    // ── fuzzyInventorySearch (materials table, game-state, seeded above) ───
+    // ── fuzzyMaterialSymbol (spoken name → the journal's non-localized Name) ──
 
     @Test
-    void inventorySearchExactInputReturnsCanonicalCase() {
-        assertEquals("Carbon", FuzzySearch.fuzzyInventorySearch("carbon", 8));
+    void materialSymbolExactInputReturnsSymbol() {
+        assertEquals("carbon", FuzzySearch.fuzzyMaterialSymbol("carbon", 8));
     }
 
     @Test
-    void inventorySearchPrefixMatchesShortestCandidate() {
-        // "iro" prefixes "Iron" but not "Carbon" or "Nickel"
-        assertEquals("Iron", FuzzySearch.fuzzyInventorySearch("iro", 8));
+    void materialSymbolPrefixMatchesShortestCandidate() {
+        // "iro" prefixes "Iron" but not "Iron ..." anything else
+        assertEquals("iron", FuzzySearch.fuzzyMaterialSymbol("iro", 8));
     }
 
     @Test
-    void inventorySearchOneTypoStillMatches() {
+    void materialSymbolOneTypoStillMatches() {
         // "nickl" → "Nickel": distance 1
-        assertEquals("Nickel", FuzzySearch.fuzzyInventorySearch("nickl", 8));
+        assertEquals("nickel", FuzzySearch.fuzzyMaterialSymbol("nickl", 8));
     }
 
     @Test
-    void inventorySearchCommodityNotInMaterialsReturnsNull() {
-        // "Gold" is a commodity, not in the materials inventory
-        assertNull(FuzzySearch.fuzzyInventorySearch("gold", 8));
+    void materialSymbolResolvesMultiWordDisplayNameToSingleTokenSymbol() {
+        // This is the case the old display-name keying got wrong: the spoken words and the
+        // journal's Name share no spelling at all.
+        assertEquals("focuscrystals", FuzzySearch.fuzzyMaterialSymbol("focus crystals", 8));
+        assertEquals("unknownenergysource", FuzzySearch.fuzzyMaterialSymbol("sensor fragment", 8));
+    }
+
+    @Test
+    void materialSymbolCommodityIsNotAMaterialReturnsNull() {
+        // "Gold" is a commodity, never an engineering material
+        assertNull(FuzzySearch.fuzzyMaterialSymbol("gold", 8));
+    }
+
+    @Test
+    void materialSymbolUnknownReturnsNull() {
+        assertNull(FuzzySearch.fuzzyMaterialSymbol("xxxxxxxxxx", 2));
+    }
+
+    // ── aliases (spoken forms the game itself does not display) ───────────
+
+    @Test
+    void communityThargoidPrefixResolvesViaAlias() {
+        // The game calls it "Weapon Parts"; EDDI, Inara and most commanders say "Thargoid Weapon
+        // Parts". Levenshtein cannot bridge that on its own (distance 9, over the budget).
+        assertEquals("tg_weaponparts", FuzzySearch.fuzzyMaterialSymbol("thargoid weapon parts", 8));
+    }
+
+    @Test
+    void blueprintSegmentWordingResolvesToTheGamesFragment() {
+        assertEquals("guardian_weaponblueprint",
+                FuzzySearch.fuzzyMaterialSymbol("guardian weapon blueprint segment", 8));
+    }
+
+    // ── localizedMaterialName (what we speak back) ────────────────────────
+
+    @Test
+    void localizedNameInEnglishIsTheCanonicalName() {
+        assertEquals("Focus Crystals", FuzzySearch.localizedMaterialName("focuscrystals"));
+    }
+
+    @Test
+    void localizedNameStripsTheExportToolsDisambiguationSuffix() {
+        // FDev's localization export and EDDI each append their own "(Guardian)"/"(Biological)"
+        // marker; real journals show the game string carries neither.
+        assertEquals("Pattern Alpha Obelisk Data",
+                FuzzySearch.localizedMaterialName("ancientbiologicaldata"));
+    }
+
+    @Test
+    void localizedNameDegradesToAReadablePhraseRatherThanTheRawSymbol() {
+        // The result is spoken aloud, so an unregistered symbol must not surface the journal token.
+        String spoken = FuzzySearch.localizedMaterialName("no_such_material_symbol");
+        assertEquals("unknown material", spoken);
+        assertFalse(spoken.contains("_"), "a raw journal symbol must never reach speech");
+    }
+
+    @Test
+    void localizedNameHandlesMissingSymbol() {
+        assertEquals("unknown material", FuzzySearch.localizedMaterialName(null));
+        assertEquals("unknown material", FuzzySearch.localizedMaterialName("  "));
     }
 }

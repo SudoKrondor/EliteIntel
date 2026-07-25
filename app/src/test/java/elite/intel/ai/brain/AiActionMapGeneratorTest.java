@@ -47,9 +47,13 @@ class AiActionMapGeneratorTest {
     /**
      * Frozen snapshot of the built-in action ids the generator must produce on EN.
      * Excludes floating additions (general_conversation / ignore_nonsensical_input / connection_check)
-     * and custom-command ids. Note: transfer_power_to_ship_systems is intentionally absent on EN
-     * (RU-only alias, no EN bundle key). Regenerate via the dump diagnostic if the built-in set
-     * legitimately changes.
+     * and custom-command ids. Regenerate via the dump diagnostic if the built-in set legitimately
+     * changes.
+     * <p>
+     * This snapshot previously excluded transfer_power_to_ship_systems, described as "intentionally
+     * absent on EN (RU-only alias, no EN bundle key)". That was not intentional: the generator only
+     * emits actions that have aliases in the active language, so the command was unreachable for every
+     * English-speaking commander. The English aliases now exist and it belongs in the set.
      */
     private static final List<String> SNAPSHOT_BUILTIN_IDS = List.of(
             "activate_ui_control",
@@ -166,7 +170,7 @@ class AiActionMapGeneratorTest {
             "query_trade_route",
             "recon_hunting_ground",
             "recover_srv_vehicle_get_on_board_ship",
-            "lauch_deploy_nomad",
+            "launch_deploy_nomad",
             "remove_mining_target",
             "request_docking",
             "reset_head_look_ahead",
@@ -231,6 +235,7 @@ class AiActionMapGeneratorTest {
             "trade_profile_toggle_strongholds",
             "transfer_power_to_engines",
             "transfer_power_to_shields",
+            "transfer_power_to_ship_systems",
             "transfer_power_to_weapons",
             "wakeup",
             "wing_nav_lock"
