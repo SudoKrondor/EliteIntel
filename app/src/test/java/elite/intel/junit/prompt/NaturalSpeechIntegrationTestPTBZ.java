@@ -241,7 +241,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> jumpToHyperspace() {
         return Stream.of("salto para o hiperespaço", "salto", "vamos saltar daqui", "vamos lá",
-                "saltar para o próximo ponto de rota");
+                "saltar para o próximo ponto de rota",
+                // "pular" is the everyday synonym of "saltar" (issue #94)
+                "pular para hiperespaço", "vamos pular daqui", "iniciar pulo");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -252,7 +254,10 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> enterSupercruise() {
-        return Stream.of("entrar em supercruise", "ativar supercruise", "supercruise", "velocidade da luz");
+        return Stream.of("entrar em supercruise", "ativar supercruise", "supercruise", "velocidade da luz",
+                // STT rarely recognises the English "supercruise"; "cruzeiro" is what commanders actually say
+                // (issue #89). Enter and drop must both carry the term or the one that has it becomes a magnet.
+                "entrar em cruzeiro", "ativar super cruzeiro", "cruzeiro");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -263,7 +268,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> dropFromSupercruise() {
-        return Stream.of("sair aqui", "cair aqui", "sair do supercruise");
+        return Stream.of("sair aqui", "cair aqui", "sair do supercruise",
+                "sair do cruzeiro", "cair do super cruzeiro", "deixar o cruzeiro");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -286,7 +292,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> navigateToCarrier() {
-        return Stream.of("navegar até o fleet carrier", "voltar ao carrier", "nos leve até o carrier");
+        return Stream.of("navegar até o fleet carrier", "voltar ao carrier", "nos leve até o carrier",
+                // "porta-frotas" is Frontier's own pt-BR term for Fleet Carrier (issue #86)
+                "navegar até o porta-frotas", "voltar ao porta-frotas", "nos leve até o porta-frotas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -585,7 +593,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> navigateToNextBioSample() {
         return Stream.of("Navegar até a próxima amostra biológica", "Navegar até o próximo orgânico",
-                "navegar até a entrada do códex");
+                "navegar até a entrada do códex",
+                // "códice" is the correct Portuguese for codex; "códex" is kept for vulgar speech (issue #97)
+                "navegar até a entrada do códice", "me leve até a entrada do códice");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -612,7 +622,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> enterCarrierDestination() {
-        return Stream.of("inserir destino do carrier", "definir destino do carrier", "inserir próximo destino do carrier");
+        return Stream.of("inserir destino do carrier", "definir destino do carrier", "inserir próximo destino do carrier",
+                "inserir destino do porta-frotas", "definir destino do porta-frotas");
     }
 
     /*
@@ -638,7 +649,38 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> findNearestCarrier() {
-        return Stream.of("encontrar o fleet carrier mais próximo", "carrier mais próximo");
+        return Stream.of("encontrar o fleet carrier mais próximo", "carrier mais próximo",
+                "encontre o porta-frotas mais próximo", "porta-frotas mais próximo");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(83)
+    @MethodSource
+    void calculateCarrierRoute(String input) throws InterruptedException {
+        assertRouted(input, CalculateFleetCarrierRouteCommand.ID);
+    }
+
+    /**
+     * The plot-a-route COMMAND. Deliberately excludes the bare noun phrase "rota do porta-frotas" that
+     * issue #86 proposed: that phrasing is how a commander ASKS where the carrier is going, and it already
+     * belongs to {@link AnalyzeCarrierVoyageQuery} as "rota do carrier". See {@link #querySquadronCarrierRoute}.
+     */
+    static Stream<String> calculateCarrierRoute() {
+        return Stream.of("calcular rota do fleet carrier", "planejar rota do carrier",
+                "calcular rota do porta-frotas", "planejar rota do porta-frotas", "preparar rota do porta-frotas");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(84)
+    @MethodSource
+    void displayCarrierManagementPanel(String input) throws InterruptedException {
+        assertRouted(input, DisplayFleetCarrierManagementPanelCommand.ID);
+    }
+
+    static Stream<String> displayCarrierManagementPanel() {
+        return Stream.of("painel de gerenciamento do carrier", "abrir painel de gerenciamento do carrier",
+                "gerenciamento do porta-frotas", "abrir gerenciamento do porta-frotas",
+                "mostrar painel do porta-frotas");
     }
 
     // =========================================================================
@@ -654,7 +696,10 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> navigateToSquadronCarrier() {
         return Stream.of("navegar até o carrier do esquadrão", "ir até o carrier do esquadrão",
-                "seguir até o carrier do esquadrão");
+                "seguir até o carrier do esquadrão",
+                // "esquadrão" (not "esquadra") is the correct pt-BR term for a squadron - see issue #88
+                "navegar para o porta-frotas do esquadrão", "ir ao porta-frotas do esquadrão",
+                "seguir para o porta-frotas do esquadrão");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -702,7 +747,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
     static Stream<String> querySquadronCarrierStatus() {
         return Stream.of("status do carrier do esquadrão", "finanças do carrier do esquadrão", "saldo do carrier do esquadrão",
                 "quanto tempo podemos operar o carrier do esquadrão", "trítio do carrier do esquadrão",
-                "combustível do carrier do esquadrão", "nível de combustível do carrier do esquadrão");
+                "combustível do carrier do esquadrão", "nível de combustível do carrier do esquadrão",
+                "status do porta-frotas do esquadrão", "finanças do porta-frotas do esquadrão",
+                "trítio do porta-frotas do esquadrão");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -712,9 +759,14 @@ public class NaturalSpeechIntegrationTestPTBZ {
         assertRouted(input, AnalyzeCarrierVoyageQuery.ID);
     }
 
+    /**
+     * Guards the query/command split introduced with "porta-frotas": the bare noun phrase "rota do
+     * porta-frotas" must ASK about the voyage, never plot one. See {@link #calculateCarrierRoute}.
+     */
     static Stream<String> querySquadronCarrierRoute() {
         return Stream.of("rota do carrier do esquadrão", "quantos saltos na rota do carrier do esquadrão",
-                "rota do carrier do esquadrão");
+                "rota do porta-frotas", "rota do porta-frotas do esquadrão",
+                "quantos saltos na rota do porta-frotas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -726,7 +778,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> querySquadronCarrierDestination() {
         return Stream.of("para onde o carrier do esquadrão está indo", "destino final do carrier do esquadrão",
-                "rumo do carrier do esquadrão");
+                "rumo do carrier do esquadrão",
+                "para onde o porta-frotas está indo", "destino final do porta-frotas", "rumo do porta-frotas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -738,7 +791,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> querySquadronCarrierEta() {
         return Stream.of("ETA do carrier do esquadrão", "quando o carrier do esquadrão chega",
-                "quanto falta para o carrier do esquadrão chegar");
+                "quanto falta para o carrier do esquadrão chegar",
+                "ETA do porta-frotas", "quando o porta-frotas chega", "horário de chegada do porta-frotas");
     }
 
     // =========================================================================
@@ -755,7 +809,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> bareCarrierDefaultsToFleet() {
-        return Stream.of("navegar até o fleet carrier", "voltar ao carrier", "nos leve até o carrier");
+        return Stream.of("navegar até o fleet carrier", "voltar ao carrier", "nos leve até o carrier",
+                "navegar até o porta-frotas", "voltar ao porta-frotas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -766,7 +821,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> bareCarrierStatusRoutesToStatusQuery() {
-        return Stream.of("status do fleet carrier", "saldo do fleet carrier", "finanças do fleet carrier");
+        return Stream.of("status do fleet carrier", "saldo do fleet carrier", "finanças do fleet carrier",
+                "status do porta-frotas", "saldo do porta-frotas", "finanças do porta-frotas");
     }
 
     // =========================================================================
@@ -971,7 +1027,7 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> queryBioScanProgress() {
-        return Stream.of("Quais planetas ainda precisam de escaneamento biológico ou orgânico?", "Quais escaneamentos biológicos concluímos?");
+        return Stream.of("Quais planetas ainda precisam de escaneamento biológico ou orgânico?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -982,7 +1038,7 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> queryExobiologySamples() {
-        return Stream.of("Quais orgânicos ainda temos que escanear?",
+        return Stream.of("Quais escaneamentos biológicos concluímos?", "Quais orgânicos ainda temos que escanear?",
                 "Quais orgânicos ou biologia há neste planeta");
     }
 
@@ -1007,7 +1063,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
     static Stream<String> queryCarrierStatus() {
         return Stream.of("Qual é o alcance do nosso fleet carrier?", "Qual é o status de combustível do meu fleet carrier",
                 "Quanto tempo podemos operar com os fundos atuais?", "Quão longe o carrier pode saltar com o trítio atual?",
-                "trítio do carrier", "combustível do carrier", "nível de trítio");
+                "trítio do carrier", "combustível do carrier", "nível de trítio",
+                "Qual é o alcance do nosso porta-frotas?", "Quão longe o porta-frotas pode saltar?",
+                "trítio do porta-frotas", "visão geral do porta-frotas");
     }
 
 
@@ -1020,7 +1078,9 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> queryDistanceToCarrier() {
         return Stream.of("Quão longe estamos do carrier?", "Distância do fleet carrier?",
-                "Quão longe está o fleet carrier?");
+                "Quão longe está o fleet carrier?",
+                "Quão longe estamos do porta-frotas?", "distância até o porta-frotas",
+                "onde está nosso porta-frotas");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1144,7 +1204,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> queryCarrierEta() {
-        return Stream.of("Qual é o ETA do salto do nosso fleet carrier?");
+        return Stream.of("Qual é o ETA do salto do nosso fleet carrier?",
+                "Qual é o ETA do salto do nosso porta-frotas?", "quando o porta-frotas parte?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1212,7 +1273,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> queryCarrierRoute() {
         return Stream.of("O que há na rota do carrier?", "Qual é a rota do nosso fleet carrier?",
-                "Quantos saltos na rota do carrier?");
+                "Quantos saltos na rota do carrier?",
+                "Qual é a rota do nosso porta-frotas?", "Quantos saltos na rota do porta-frotas?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1223,7 +1285,8 @@ public class NaturalSpeechIntegrationTestPTBZ {
     }
 
     static Stream<String> queryCarrierDestination() {
-        return Stream.of("Para onde o fleet carrier está indo?", "Qual é o destino final do carrier?");
+        return Stream.of("Para onde o fleet carrier está indo?", "Qual é o destino final do carrier?",
+                "Para onde o porta-frotas está indo?", "Qual é o destino final do porta-frotas?");
     }
 
     @ParameterizedTest(name = "[{index}] \"{0}\"")
@@ -1256,8 +1319,13 @@ public class NaturalSpeechIntegrationTestPTBZ {
         assertRouted(input, ShowCentralPanelCommand.ID);
     }
 
+    /**
+     * "painel de função" was dropped: "função" reads as what the ship's modules DO, so it pulled this
+     * utterance to {@code show_modules_panel} ("installed ship modules and their power priority"). The
+     * action is the commander's own kneeboard - EN carries no role/function phrasing at all.
+     */
     static Stream<String> openCentralPanel() {
-        return Stream.of("Abrir painel do comandante", "abrir painel central", "abrir painel de função",
+        return Stream.of("Abrir painel do comandante", "abrir painel central", "abrir kneeboard",
                 "abrir painel de bordo");
     }
 
@@ -1292,6 +1360,111 @@ public class NaturalSpeechIntegrationTestPTBZ {
 
     static Stream<String> fighterAttackTarget() {
         return Stream.of("caça atacar meu alvo", "atacar", "focar meu alvo");
+    }
+
+    // =========================================================================
+    // pt-BR wording corrections reported by native speakers (issues #90 - #96).
+    // These actions had no PTBZ coverage before; the phrasings below are the ones
+    // the reporter says commanders actually use.
+    // =========================================================================
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(260)
+    @MethodSource
+    void launchShipDetachFromStation(String input) throws InterruptedException {
+        assertRouted(input, LaunchShipDetachFromStationCommand.ID);
+    }
+
+    /**
+     * "decolar" (take off) is correct; the near-homophone "descolar" (to unglue) was removed from the
+     * aliases - it never means "detach" in Portuguese. Issue #96.
+     */
+    static Stream<String> launchShipDetachFromStation() {
+        return Stream.of("lançar nave", "desatracar", "decolar", "sair da estação", "desdocar",
+                "partir da estação");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(261)
+    @MethodSource
+    void launchNomad(String input) throws InterruptedException {
+        assertRouted(input, LaunchNomadCommand.ID);
+    }
+
+    /**
+     * "implantar" (to implant/graft) was removed everywhere - it is not the Portuguese verb for deploying
+     * a vehicle. "lançar" carries all three deploy actions now. Issue #95.
+     */
+    static Stream<String> launchNomad() {
+        return Stream.of("lançar nômade", "lançar explorador", "lançar explorador planetário");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(262)
+    @MethodSource
+    void deployVehicleSrv(String input) throws InterruptedException {
+        assertRouted(input, DeployVehicleSrvCommand.ID);
+    }
+
+    static Stream<String> deployVehicleSrv() {
+        return Stream.of("lançar SRV", "lançar veículo", "soltar SRV", "mandar SRV");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(263)
+    @MethodSource
+    void deployFighter(String input) throws InterruptedException {
+        assertRouted(input, DeployFighterCommand.ID);
+    }
+
+    static Stream<String> deployFighter() {
+        return Stream.of("lançar caça", "mandar caça");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(264)
+    @MethodSource
+    void findGuardianTechnologyBroker(String input) throws InterruptedException {
+        assertRouted(input, FindGuardianTechnologyBrokerCommand.ID);
+    }
+
+    /**
+     * "guardiã" is the correct feminine agreement with "tecnologia"; "guardião" is kept because commanders
+     * still say it. "mercador"/"comerciante" are the everyday pt-BR words for a broker. Issue #90.
+     */
+    static Stream<String> findGuardianTechnologyBroker() {
+        return Stream.of("encontrar corretor de tecnologia guardião", "encontrar corretor de tecnologia guardiã",
+                "encontrar mercador de tecnologia guardiã", "encontrar comerciante de tecnologia guardiã",
+                "mercador de tecnologia guardiã");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(265)
+    @MethodSource
+    void findInterstellarFactor(String input) throws InterruptedException {
+        assertRouted(input, FindInterstellarFactorCommand.ID);
+    }
+
+    static Stream<String> findInterstellarFactor() {
+        return Stream.of("encontrar o agente interestelar mais próximo", "encontrar onde pagar minha recompensa",
+                // how commanders actually refer to using a factor. Issue #91
+                "onde posso limpar meu nome");
+    }
+
+    @ParameterizedTest(name = "[{index}] \"{0}\"")
+    @Order(266)
+    @MethodSource
+    void findManufacturedMaterialTrader(String input) throws InterruptedException {
+        assertRouted(input, FindManufacturedMaterialTraderCommand.ID);
+    }
+
+    /**
+     * "fabricado" is the unambiguous pt-BR term; "manufaturado" also reads as handmade/artisanal, so both
+     * are kept. Must not collide with the raw/encoded trader siblings. Issue #92.
+     */
+    static Stream<String> findManufacturedMaterialTrader() {
+        return Stream.of("encontrar comerciante de material manufaturado",
+                "encontrar comerciante de material fabricado", "comerciante de material fabricado");
     }
 
     /*
