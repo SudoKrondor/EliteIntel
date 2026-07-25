@@ -54,7 +54,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         final RoutePlotter routePlotter = new RoutePlotter();
         final LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         if (!tradeRouteManager.hasRoute()) {
-            return StringUtls.localizedLlm("handler.tradeRoute.notFound");
+            return StringUtls.localizedResponse("handler.tradeRoute.notFound");
         }
 
         GameEvents.CargoEvent shipCargo = playerSession.getShipCargo();
@@ -62,7 +62,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {
-            return StringUtls.localizedLlm("handler.tradeRoute.noMoreStops");
+            return StringUtls.localizedResponse("handler.tradeRoute.noMoreStops");
         }
 
         String sourceSystem = nextStop.getTradeStopDto().getSourceSystem();
@@ -79,24 +79,24 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
             boolean notAtTheSourceStation = location.getStationName() != null && !location.getStationName().equalsIgnoreCase(sourceStation);
 
             if (notInSourceSystem) {
-                message = StringUtls.localizedLlm("handler.tradeStop.travelAndBuy", sourceSystem, sourceStation, commodityList, destinationSystem, destinationStation);
+                message = StringUtls.localizedResponse("handler.tradeStop.travelAndBuy", sourceSystem, sourceStation, commodityList, destinationSystem, destinationStation);
                 routePlotter.plotRoute(sourceSystem);
             } else if (notAtTheSourceStation) {
-                message = StringUtls.localizedLlm("handler.tradeStop.inSystemBuyAtStation", sourceStation, commodityList, destinationSystem, destinationStation);
+                message = StringUtls.localizedResponse("handler.tradeStop.inSystemBuyAtStation", sourceStation, commodityList, destinationSystem, destinationStation);
             } else {
-                message = StringUtls.localizedLlm("handler.tradeStop.atStationBuy", commodityList, destinationSystem, destinationStation);
+                message = StringUtls.localizedResponse("handler.tradeStop.atStationBuy", commodityList, destinationSystem, destinationStation);
             }
         } else {
             boolean notInDestinationSystem = !location.getStarName().equalsIgnoreCase(destinationSystem);
             boolean notAtTheDestinationStation = !location.getStationName().equalsIgnoreCase(destinationStation);
 
             if (notInDestinationSystem) {
-                message = StringUtls.localizedLlm("handler.tradeStop.travelToSell", destinationSystem, destinationStation);
+                message = StringUtls.localizedResponse("handler.tradeStop.travelToSell", destinationSystem, destinationStation);
                 routePlotter.plotRoute(destinationSystem);
             } else if (notAtTheDestinationStation) {
-                message = StringUtls.localizedLlm("handler.tradeStop.headToStation", destinationStation);
+                message = StringUtls.localizedResponse("handler.tradeStop.headToStation", destinationStation);
             } else {
-                message = StringUtls.localizedLlm("handler.tradeStop.sellHere");
+                message = StringUtls.localizedResponse("handler.tradeStop.sellHere");
             }
         }
 

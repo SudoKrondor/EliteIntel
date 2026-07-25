@@ -41,7 +41,7 @@ public class AnalyzeCarrierDepartureEtaQuery extends BaseQueryAnalyzer implement
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         String departureTime = PlayerSession.getInstance().getCarrierDepartureTime();
         if (departureTime == null || departureTime.isBlank()) {
-            return process(StringUtls.localizedLlm("query.carrier.noDepartureTime"));
+            return process(StringUtls.localizedResponse("query.carrier.noDepartureTime"));
         }
 
         long minutesUntilArrival;
@@ -52,7 +52,7 @@ public class AnalyzeCarrierDepartureEtaQuery extends BaseQueryAnalyzer implement
             // The journal writes ISO-8601, so an unparseable value means the stored session state is corrupt,
             // not that the carrier has no jump scheduled. Say we cannot tell, but leave a trail.
             log.warn("Unparseable carrier departure time in session: '{}'", departureTime, e);
-            return process(StringUtls.localizedLlm("query.carrier.noEta"));
+            return process(StringUtls.localizedResponse("query.carrier.noEta"));
         }
 
         String instructions = """

@@ -42,6 +42,6 @@ public final class ClearRemindersCommand implements IntelCommand {
         destinationReminder.clear();
         monetizeRouteManager.clear();
         TimedReminderManager.getInstance().clearAll();
-        return StringUtls.localizedLlm("handler.reminder.cleared");
+        return StringUtls.localizedResponse("handler.reminder.cleared");
     }
 }

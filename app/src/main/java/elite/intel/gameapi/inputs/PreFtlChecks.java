@@ -18,21 +18,21 @@ public class PreFtlChecks {
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(message));
         GlobalSettingsManager settingsManager = GlobalSettingsManager.getInstance();
         if (status.isHardpointsDeployed() && !status.isInSupercruise() && settingsManager.getAutoHardpointsRetractForFtl()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.retractingHardpoints")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("handler.preFtl.retractingHardpoints")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_HARDPOINTS_TOGGLE.getGameBinding()),
                     GameInputStep.delay(2000)
             ));
         }
         if (status.isLandingGearDown() && !status.isInSupercruise() && settingsManager.getAutoLandingGearUpForFtl()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.retractingGear")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("handler.preFtl.retractingGear")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding()),
                     GameInputStep.delay(2000)
             ));
         }
         if (status.isCargoScoopDeployed() && !status.isInSupercruise() && settingsManager.getAutoCargoScoopRetractForFtl()) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.preFtl.closingCargo")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("handler.preFtl.closingCargo")));
             GameControllerBus.publish(GameInputSequenceEvent.of(
                     GameInputStep.bindingTap(BINDING_TOGGLE_CARGO_SCOOP.getGameBinding()),
                     GameInputStep.delay(2000)
@@ -50,7 +50,7 @@ public class PreFtlChecks {
         ///NOTE: Commented out until FDev fixes their Nomad related bugs
 //        if (!status.isInSupercruise() && status.isFighterOut() && settingsManager.getAutoFighterOutFighterDocking()) {
 //            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-//            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("handler.supercruise.fighterOut")));
+//            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("handler.supercruise.fighterOut")));
 //        }
 
         if (settingsManager.getAutoSpeedUpForFtl()) {

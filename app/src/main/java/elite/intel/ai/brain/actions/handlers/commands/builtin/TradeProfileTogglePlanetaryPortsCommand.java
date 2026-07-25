@@ -62,8 +62,8 @@ public final class TradeProfileTogglePlanetaryPortsCommand implements IntelComma
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setAllowPlanetaryPorts(isOn)) {
-            String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-            return StringUtls.localizedLlm("handler.tradeProfile.planetaryPorts", state);
+            String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
+            return StringUtls.localizedResponse("handler.tradeProfile.planetaryPorts", state);
         }
         return null;
     }

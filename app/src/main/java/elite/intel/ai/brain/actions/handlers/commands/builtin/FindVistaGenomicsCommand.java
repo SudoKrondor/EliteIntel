@@ -47,7 +47,7 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, 250);
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.vistaGenomics.searching"), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.vistaGenomics.searching"), false);
 
 
         VistaSearchCriteria criteria = new VistaSearchCriteria();
@@ -72,14 +72,14 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
 
         List<VistaGenomicsLocationDto.Result> results = VistaGenomicsSearch.findVistaGenomics(criteria);
         if (results == null || results.isEmpty()) {
-            return StringUtls.localizedLlm("handler.vistaGenomics.notFound");
+            return StringUtls.localizedResponse("handler.vistaGenomics.notFound");
         }
 
         Optional<VistaGenomicsLocationDto.Result> first = results.stream().findFirst();
         RoutePlotter routePlotter = new RoutePlotter();
         VistaGenomicsLocationDto.Result result = first.get();
 
-        String announcement = StringUtls.localizedLlm("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
+        String announcement = StringUtls.localizedResponse("handler.vistaGenomics.headTo", result.getSystemName(), result.getStationName());
         ReminderManager.getInstance().setReminder(result.getSystemName(), announcement);
         CompanionRuntime.narrator().filler(announcement, false);
         return routePlotter.plotRoute(result.getSystemName());

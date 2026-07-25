@@ -69,23 +69,23 @@ public final class SetTimedReminderCommand implements IntelCommand {
         JsonElement minutesEl = params.get(PARAM_MINUTES);
 
         if (isValidReminder(keyEl, minutesEl)) {
-            return StringUtls.localizedLlm("handler.reminder.invalidText");
+            return StringUtls.localizedResponse("handler.reminder.invalidText");
         }
 
         int minutes;
         try {
             minutes = Integer.parseInt(minutesEl.getAsString().trim());
         } catch (NumberFormatException e) {
-            return StringUtls.localizedLlm("handler.reminder.invalidDuration");
+            return StringUtls.localizedResponse("handler.reminder.invalidDuration");
         }
 
         if (minutes <= 0) {
-            return StringUtls.localizedLlm("handler.reminder.durationZero");
+            return StringUtls.localizedResponse("handler.reminder.durationZero");
         }
 
         String text = keyEl.getAsString();
         TimedReminderManager.getInstance().schedule(text, minutes);
-        return StringUtls.localizedLlm(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes);
+        return StringUtls.localizedResponse(minutes == 1 ? "handler.reminder.setOne" : "handler.reminder.setMany", minutes);
     }
 
     private static boolean isValidReminder(JsonElement keyEl, JsonElement minutesEl) {

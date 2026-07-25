@@ -49,7 +49,7 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         TargetLocation targetLocation = new TargetLocation();
         if (currentLocation.getLandingCoordinates() == null || currentLocation.getLandingCoordinates().length == 0) {
-            return StringUtls.localizedLlm("handler.navigate.landingZoneNotAvailable");
+            return StringUtls.localizedResponse("handler.navigate.landingZoneNotAvailable");
         }
 
         targetLocation.setLatitude(currentLocation.getLandingCoordinates()[0]);
@@ -58,6 +58,6 @@ public final class NavigateToLandingZoneCommand implements IntelCommand {
         targetLocation.setRequestedTime(System.currentTimeMillis());
         playerSession.setTracking(targetLocation);
 
-        return StringUtls.localizedLlm("handler.navigate.startingNavLandingZone");
+        return StringUtls.localizedResponse("handler.navigate.startingNavLandingZone");
     }
 }

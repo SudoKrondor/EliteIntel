@@ -37,6 +37,6 @@ public final class CancelTradeRouteCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         tradeRouteManager.clear();
-        return StringUtls.localizedLlm("handler.tradeRoute.cancelled");
+        return StringUtls.localizedResponse("handler.tradeRoute.cancelled");
     }
 }

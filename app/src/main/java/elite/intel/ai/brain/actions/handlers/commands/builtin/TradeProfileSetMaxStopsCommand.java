@@ -62,12 +62,12 @@ public final class TradeProfileSetMaxStopsCommand implements IntelCommand {
         Integer numberOfStops = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if (numberOfStops == null) {
-            return StringUtls.localizedLlm("handler.tradeProfile.invalidStops");
+            return StringUtls.localizedResponse("handler.tradeProfile.invalidStops");
         }
 
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         if(profileManager.setMaximumStops(numberOfStops)) {
-            return StringUtls.localizedLlm("handler.tradeProfile.maxStops", numberOfStops);
+            return StringUtls.localizedResponse("handler.tradeProfile.maxStops", numberOfStops);
         }
         return null;
     }

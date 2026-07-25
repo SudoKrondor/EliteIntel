@@ -47,14 +47,14 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         if (coordinates == null) {
-            return StringUtls.localizedLlm("handler.interstellarFactors.noCoords");
+            return StringUtls.localizedResponse("handler.interstellarFactors.noCoords");
         }
         List<InterstellarFactorsResultDto.Result> results = InterstellarFactorsSearch.findNearestInterstellarFactors(
                 coordinates.x(), coordinates.y(), coordinates.z(), 100, 6000
         );
 
         if (results == null || results.isEmpty()) {
-            return StringUtls.localizedLlm("handler.interstellarFactors.notFound");
+            return StringUtls.localizedResponse("handler.interstellarFactors.notFound");
         }
 
         String stationName = results.getFirst().getStationName();
@@ -62,7 +62,7 @@ public final class FindInterstellarFactorCommand implements IntelCommand {
         RoutePlotter routePlotter = new RoutePlotter();
         routePlotter.plotRoute(starName);
 
-        String announcement = StringUtls.localizedLlm("handler.interstellarFactors.visit", stationName, starName);
+        String announcement = StringUtls.localizedResponse("handler.interstellarFactors.visit", stationName, starName);
         reminderManager.setReminder("Visit Interstellar Factors at " + stationName, starName);
         return announcement;
     }

@@ -29,13 +29,13 @@ public class AnalyzeDistanceFromFleetCarrierQuery extends BaseQueryAnalyzer impl
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing travel telemetry. Stand by."));
 
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
-        if (carrierData == null) return process(StringUtls.localizedLlm("query.noData"));
+        if (carrierData == null) return process(StringUtls.localizedResponse("query.noData"));
         double carrierLocationX = carrierData.getX();
         double carrierLocationY = carrierData.getY();
         double carrierDataZ = carrierData.getZ();
 
         if (carrierLocationX == 0 && carrierLocationY == 0 && carrierDataZ == 0) {
-            return process(StringUtls.localizedLlm("query.carrier.noCoords"));
+            return process(StringUtls.localizedResponse("query.carrier.noCoords"));
         }
 
         double x = 0, y = 0, z = 0;
@@ -45,7 +45,7 @@ public class AnalyzeDistanceFromFleetCarrierQuery extends BaseQueryAnalyzer impl
         z = playerLocation.getZ();
         boolean arePlayerLocationCoordinatesAvailable = x == 0 && y == 0 && z == 0;
         if (arePlayerLocationCoordinatesAvailable) {
-            return process(StringUtls.localizedLlm("query.noPlayerCoords"));
+            return process(StringUtls.localizedResponse("query.noPlayerCoords"));
         }
 
         ShipLoadOutDto shipLoadout = playerSession.getShipLoadout();
@@ -53,6 +53,6 @@ public class AnalyzeDistanceFromFleetCarrierQuery extends BaseQueryAnalyzer impl
         double distance = NavigationUtils.calculateGalacticDistance(x, y, z, carrierLocationX, carrierLocationY, carrierDataZ);
 
         int numberOfJumps = (int) (distance / jumpRange) + 1;
-        return process(StringUtls.localizedLlm("query.carrier.distance", (int) distance, numberOfJumps));
+        return process(StringUtls.localizedResponse("query.carrier.distance", (int) distance, numberOfJumps));
     }
 }

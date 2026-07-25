@@ -124,14 +124,14 @@ public class FuzzySearch {
      * See {@link Language#isGameLocalized()}.
      */
     public static String localizedMaterialName(String symbol) {
-        if (symbol == null || symbol.isBlank()) return StringUtls.localizedLlm(UNKNOWN_MATERIAL);
+        if (symbol == null || symbol.isBlank()) return StringUtls.localizedResponse(UNKNOWN_MATERIAL);
         Language lang = systemSession.getLanguage();
         String col = lang.isGameLocalized() ? materialNameColumn(lang) : "name";
         String name = Database.withDao(MaterialNameDao.class, dao -> dao.getLocalizedNameBySymbol(col, symbol));
         // WHY: the result is spoken aloud, so an unregistered symbol must not leak the raw journal
         // token ("guardian_powercell") into speech. Degrading to a localized "unknown material" keeps
         // the reply intelligible; the amount and capacity around it are still accurate.
-        return (name == null || name.isBlank()) ? StringUtls.localizedLlm(UNKNOWN_MATERIAL) : name;
+        return (name == null || name.isBlank()) ? StringUtls.localizedResponse(UNKNOWN_MATERIAL) : name;
     }
 
     public static String fuzzySubSystemSearch(String input, int similarity) {

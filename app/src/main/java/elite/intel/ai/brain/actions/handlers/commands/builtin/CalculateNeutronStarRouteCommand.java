@@ -91,7 +91,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
 
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         String destination = ClipboardUtils.getClipboardText();
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.calculating", location.getStarName(), destination, efficiency), false);
 
         ShipLoadOutDto shipLoadout = shipLoadoutManager.get();
         if (shipLoadout == null) {
@@ -102,7 +102,7 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
         // Non-terminal warning: the route calculation below must still run, so voice the line via
         // CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
         if (maxJumpRange < 20) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.neutronRoute.lowRangeWarning"), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.lowRangeWarning"), false);
         }
 
 
@@ -121,9 +121,9 @@ public final class CalculateNeutronStarRouteCommand implements IntelCommand {
         String outcome;
         if (route != null && route.getResult() != null && route.getResult().getTotalJumps() > 0) {
             neutronStarRouteManager.saveNeutronStarRoute(route);
-            outcome = StringUtls.localizedLlm("handler.neutronRoute.found", destination, route.getResult().getTotalJumps());
+            outcome = StringUtls.localizedResponse("handler.neutronRoute.found", destination, route.getResult().getTotalJumps());
         } else {
-            outcome = StringUtls.localizedLlm("handler.neutronRoute.notFound");
+            outcome = StringUtls.localizedResponse("handler.neutronRoute.notFound");
         }
 
         CompanionRuntime.narrator().announce(outcome, false);

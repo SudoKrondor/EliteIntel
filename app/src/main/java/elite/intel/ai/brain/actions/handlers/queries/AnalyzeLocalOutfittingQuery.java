@@ -32,7 +32,7 @@ public class AnalyzeLocalOutfittingQuery extends BaseQueryAnalyzer implements In
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         OutfittingDto outfitting = currentLocation.getOutfitting();
         if (outfitting == null || outfitting.getData() == null) {
-            return process(StringUtls.localizedLlm("query.outfitting.noData"));
+            return process(StringUtls.localizedResponse("query.outfitting.noData"));
         }
 
         String instructions = """

@@ -43,16 +43,16 @@ public final class MonetizeRouteCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         ShipManager shipManager = ShipManager.getInstance();
         if (shipManager.getShip() == null || shipManager.getShip().getCargoCapacity() < 1) {
-            return StringUtls.localizedLlm("handler.tradeRoute.shipNoCapacity");
+            return StringUtls.localizedResponse("handler.tradeRoute.shipNoCapacity");
         }
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.tradeRoute.searchingMarkets"), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.searchingMarkets"), false);
 
         MonetizeRoute.TradeTransaction tradeTuple = monetizeRouteManager.monetizeRoute();
 
         if (tradeTuple == null) {
-            return StringUtls.localizedLlm("handler.tradeRoute.noTradeFound");
+            return StringUtls.localizedResponse("handler.tradeRoute.noTradeFound");
         } else {
-            String reminder = StringUtls.localizedLlm("handler.tradeRoute.tradeReminder",
+            String reminder = StringUtls.localizedResponse("handler.tradeRoute.tradeReminder",
                     tradeTuple.getSource().getStarSystem(),
                     tradeTuple.getSource().getStationName(),
                     tradeTuple.getSource().getCommodity(),
@@ -61,7 +61,7 @@ public final class MonetizeRouteCommand implements IntelCommand {
 
             reminderManager.setReminder(reminder, tradeTuple.getSource().getStarSystem());
 
-            return StringUtls.localizedLlm("handler.tradeRoute.tradeFound", reminder);
+            return StringUtls.localizedResponse("handler.tradeRoute.tradeFound", reminder);
         }
     }
 }

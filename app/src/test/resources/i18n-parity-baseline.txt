@@ -2,8 +2,12 @@
 # Format: <family>|<language>|MISSING|ORPHAN|<key>
 #   MISSING = the base bundle has this key, the translation does not (falls back to English at runtime).
 #   ORPHAN  = the translation has a key the base bundle does not (dead entry, never looked up).
-# I18nBundleParityTest fails on any gap NOT listed here, so new drift is caught while this
+# BundleKeyParityTest fails on any gap NOT listed here, so new drift is caught while this
 # backlog is worked down. Deleting a line once the gap is fixed is the intended workflow.
+
+# Deliberate: ai_action_aliases_fr.properties folds the full "systemes" phrasing into
+# transfer_power_to_shields (the two commands have the same in-game effect). A competing
+# French key here would duplicate aliases across sibling commands and worsen routing.
 
 gui|de|MISSING|hud.state.offline
 gui|de|MISSING|language.italian
@@ -647,16 +651,16 @@ gui|ptbz|MISSING|ranks.imperial.prince
 gui|ptbz|MISSING|ranks.imperial.serf
 gui|ptbz|MISSING|ranks.imperial.squire
 gui|ptbz|MISSING|ranks.imperial.viscount
-llm|de|MISSING|companion.name.spoken
-llm|de|MISSING|handler.fsd.nodestination
-llm|es|MISSING|companion.name.spoken
-llm|es|MISSING|handler.fsd.nodestination
-llm|fr|MISSING|companion.name.spoken
-llm|fr|MISSING|handler.fsd.nodestination
-llm|fr|MISSING|handler.reminder.genericText
-llm|ru|MISSING|handler.fsd.nodestination
-llm|uk|MISSING|handler.fsd.nodestination
-llm|it|MISSING|handler.fsd.nodestination
+responses|de|MISSING|companion.name.spoken
+responses|de|MISSING|handler.fsd.nodestination
+responses|es|MISSING|companion.name.spoken
+responses|es|MISSING|handler.fsd.nodestination
+responses|fr|MISSING|companion.name.spoken
+responses|fr|MISSING|handler.fsd.nodestination
+responses|fr|MISSING|handler.reminder.genericText
+responses|ru|MISSING|handler.fsd.nodestination
+responses|uk|MISSING|handler.fsd.nodestination
+responses|it|MISSING|handler.fsd.nodestination
 ed_events|de|MISSING|event.jump.noFuelAvailable
 ed_events|de|MISSING|event.jump.refuelPossible
 ed_events|es|MISSING|event.jump.noFuelAvailable
@@ -698,9 +702,6 @@ ai_action_aliases|fr|MISSING|cycle_previous_panel
 ai_action_aliases|fr|MISSING|display_radar_panel
 ai_action_aliases|fr|MISSING|launch_deploy_nomad
 ai_action_aliases|fr|MISSING|navigate_to_pirate_mission_target
-# Deliberate: ai_action_aliases_fr.properties folds the full "systèmes" phrasing into
-# transfer_power_to_shields (the two commands have the same in-game effect). A competing
-# French key here would duplicate aliases across sibling commands and worsen routing.
 ai_action_aliases|fr|MISSING|transfer_power_to_ship_systems
 ai_action_aliases|uk|MISSING|cycle_next_page
 ai_action_aliases|uk|MISSING|cycle_next_panel

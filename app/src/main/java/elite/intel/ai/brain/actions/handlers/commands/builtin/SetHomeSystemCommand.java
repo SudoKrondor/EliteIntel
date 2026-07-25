@@ -42,14 +42,14 @@ public final class SetHomeSystemCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         LocationDao.Coordinates coordinates = LocationManager.getInstance().getGalacticCoordinates();
         if (coordinates == null) {
-            return StringUtls.localizedLlm("handler.homeSystem.noCoords");
+            return StringUtls.localizedResponse("handler.homeSystem.noCoords");
         }
         LocationDto newHome = locationManager.findPrimaryStar(coordinates.primaryStar());
         if (newHome == null || newHome.getSystemAddress() < 1) {
-            return StringUtls.localizedLlm("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar());
+            return StringUtls.localizedResponse("handler.homeSystem.primaryStarNotFound", coordinates.primaryStar());
         }
 
         playerSession.setHomeSystem(newHome);
-        return StringUtls.localizedLlm("handler.homeSystem.setting", coordinates.primaryStar());
+        return StringUtls.localizedResponse("handler.homeSystem.setting", coordinates.primaryStar());
     }
 }

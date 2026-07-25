@@ -52,12 +52,12 @@ public final class DismissShipToOrbitCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_EXIT_KEY.getGameBinding())
             ));
         } else if (status.isInMainShip()) {
-            return StringUtls.localizedLlm("speech.shipDismissRejected");
+            return StringUtls.localizedResponse("speech.shipDismissRejected");
         }
         if (status.isLanded()) {
-            return StringUtls.localizedLlm("speech.shipDismissed");
+            return StringUtls.localizedResponse("speech.shipDismissed");
         } else {
-            return StringUtls.localizedLlm("speech.shipRecall");
+            return StringUtls.localizedResponse("speech.shipRecall");
         }
     }
 }

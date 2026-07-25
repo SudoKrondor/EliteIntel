@@ -62,12 +62,12 @@ public final class TradeProfileSetMaxDistanceCommand implements IntelCommand {
         Integer distanceFromEntry = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
 
         if(distanceFromEntry == null){
-            return StringUtls.localizedLlm("handler.tradeProfile.invalidDistance");
+            return StringUtls.localizedResponse("handler.tradeProfile.invalidDistance");
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setDistanceFromSystemEntry(distanceFromEntry)) {
-            return StringUtls.localizedLlm("handler.tradeProfile.distanceFromEntry", distanceFromEntry);
+            return StringUtls.localizedResponse("handler.tradeProfile.distanceFromEntry", distanceFromEntry);
         }
         return null;
     }

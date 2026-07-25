@@ -48,6 +48,6 @@ public final class IgnoreHuntingGroundCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         huntingGroundManager.ignoreHuntingGround(location.getStarName());
-        return StringUtls.localizedLlm("handler.pirate.huntingGroundDeleted", location.getStarName());
+        return StringUtls.localizedResponse("handler.pirate.huntingGroundDeleted", location.getStarName());
     }
 }

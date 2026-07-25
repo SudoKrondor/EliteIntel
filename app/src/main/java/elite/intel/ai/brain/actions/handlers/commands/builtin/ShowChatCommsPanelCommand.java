@@ -52,7 +52,7 @@ public final class ShowChatCommsPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_ACTIVATE.getGameBinding())
             ));
         } else {
-            return StringUtls.localizedLlm("handler.common.cantDoNow");
+            return StringUtls.localizedResponse("handler.common.cantDoNow");
         }
         return null;
     }

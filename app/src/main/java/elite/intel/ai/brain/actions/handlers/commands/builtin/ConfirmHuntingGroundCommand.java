@@ -48,6 +48,6 @@ public final class ConfirmHuntingGroundCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         LocationDto location = locationManager.findByLocationData(playerSession.getLocationData());
         missionDataManager.confirmTargetReconResourceSite(location.getStarName());
-        return StringUtls.localizedLlm("handler.pirate.huntingGroundConfirmed");
+        return StringUtls.localizedResponse("handler.pirate.huntingGroundConfirmed");
     }
 }

@@ -40,11 +40,11 @@ public final class DeployLandingGearCommand implements IntelCommand {
         Status status = Status.getInstance();
 
         if (status.isInSupercruise()) {
-            return StringUtls.localizedLlm("handler.landingGear.cantDoThat");
+            return StringUtls.localizedResponse("handler.landingGear.cantDoThat");
         }
 
         if (status.isLandingGearDown()) {
-            return StringUtls.localizedLlm("handler.landingGear.alreadyDeployed");
+            return StringUtls.localizedResponse("handler.landingGear.alreadyDeployed");
         } else {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         }

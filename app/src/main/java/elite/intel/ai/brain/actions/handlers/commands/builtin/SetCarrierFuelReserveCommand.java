@@ -62,16 +62,16 @@ public final class SetCarrierFuelReserveCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
-            return StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve");
+            return StringUtls.localizedResponse("handler.fleetCarrier.invalidFuelReserve");
         }
         Integer reserve = StringUtls.getIntSafely(key.getAsString());
         if(reserve == null){
-            return StringUtls.localizedLlm("handler.fleetCarrier.invalidFuelReserve");
+            return StringUtls.localizedResponse("handler.fleetCarrier.invalidFuelReserve");
         }
         FleetCarrierManager fleetCarrierManager = FleetCarrierManager.getInstance();
         CarrierDataDto dto = fleetCarrierManager.get();
         dto.setFuelReserve(reserve);
         fleetCarrierManager.save(dto);
-        return StringUtls.localizedLlm("handler.fleetCarrier.fuelReserveSet", reserve);
+        return StringUtls.localizedResponse("handler.fleetCarrier.fuelReserveSet", reserve);
     }
 }

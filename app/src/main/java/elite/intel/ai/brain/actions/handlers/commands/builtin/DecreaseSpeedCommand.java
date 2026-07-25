@@ -77,7 +77,7 @@ public final class DecreaseSpeedCommand implements IntelCommand {
         JsonElement key = params.get(PARAM_KEY);
         Integer num = key == null ? null : StringUtls.getIntSafely(key.getAsString());
         if (num == null) {
-            return StringUtls.localizedLlm("handler.speed.invalidAmount");
+            return StringUtls.localizedResponse("handler.speed.invalidAmount");
         }
 
         String decrease = bindingName();

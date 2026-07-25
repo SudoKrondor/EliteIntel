@@ -78,7 +78,7 @@ public class AnalyzeCarrierVoyageQuery extends BaseQueryAnalyzer implements Inte
         CarrierView carrier = CarrierView.forUtterance(originalUserInput);
         SortedMap<Integer, CarrierJump> route = carrier.route();
         if (route.isEmpty()) {
-            return process(StringUtls.localizedLlm("query.carrier.noRoutePlotted"));
+            return process(StringUtls.localizedResponse("query.carrier.noRoutePlotted"));
         }
 
         CarrierDataDto data = carrier.data();

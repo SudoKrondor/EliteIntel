@@ -46,7 +46,7 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (!profileManager.hasCargoCapacity()) {
-            return StringUtls.localizedLlm("handler.tradeRoute.noCargoCapacity");
+            return StringUtls.localizedResponse("handler.tradeRoute.noCargoCapacity");
         }
 
         TradeRouteSearchCriteria criteria = profileManager.getCriteria(true);
@@ -56,22 +56,22 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
             return null;
         }
         // Start-of-processing filler: voiced while the search runs, never remembered.
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.tradeRoute.calculating", criteria.getStation()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.tradeRoute.calculating", criteria.getStation()), false);
 
         if (criteria.getStartingCapital() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return StringUtls.localizedLlm("handler.tradeRoute.noProfile", shipName);
+            return StringUtls.localizedResponse("handler.tradeRoute.noProfile", shipName);
         }
 
         if (criteria.getMaxJumps() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return StringUtls.localizedLlm("handler.tradeRoute.noStops", shipName);
+            return StringUtls.localizedResponse("handler.tradeRoute.noStops", shipName);
         }
 
 
         if (criteria.getMaxLsFromArrival() == 0) {
             String shipName = playerSession.getShipLoadout().getShipName();
-            return StringUtls.localizedLlm("handler.tradeRoute.noDistance", shipName);
+            return StringUtls.localizedResponse("handler.tradeRoute.noDistance", shipName);
         }
 
         // WHY: the Spansh optimisation below can run for minutes - far past the 60s thought watchdog, which by the
@@ -84,16 +84,16 @@ public final class CalculateTradeRouteCommand implements IntelCommand {
         String outcome;
         if (route == null || route.getResult() == null || route.getResult().isEmpty()) {
             if (criteria.getStation() != null) {
-                outcome = StringUtls.localizedLlm("handler.tradeRoute.notFound");
+                outcome = StringUtls.localizedResponse("handler.tradeRoute.notFound");
             } else {
-                String tryLanding = status.isDocked() ? "" : StringUtls.localizedLlm("handler.tradeRoute.tryLanding");
-                outcome = StringUtls.localizedLlm("handler.tradeRoute.notFoundSpansh", tryLanding);
+                String tryLanding = status.isDocked() ? "" : StringUtls.localizedResponse("handler.tradeRoute.tryLanding");
+                outcome = StringUtls.localizedResponse("handler.tradeRoute.notFoundSpansh", tryLanding);
             }
         } else {
             long totalProfit = route.getResult().stream()
                     .mapToLong(TradeRouteTransaction::getTotalProfit)
                     .sum();
-            outcome = StringUtls.localizedLlm("handler.tradeRoute.found", totalProfit);
+            outcome = StringUtls.localizedResponse("handler.tradeRoute.found", totalProfit);
         }
 
         CompanionRuntime.narrator().announce(outcome, false);

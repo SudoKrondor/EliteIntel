@@ -39,7 +39,7 @@ public class AnalyzeBioSamplesPlanetSurfaceQuery extends BaseQueryAnalyzer imple
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         if (currentLocation.getBodyId() < 0) {
-            return process(StringUtls.localizedLlm("query.bio.noLocation"));
+            return process(StringUtls.localizedResponse("query.bio.noLocation"));
         }
         List<BioSampleDto> partialScans = currentLocation.getPartialBioSamples();
         List<GenusDto> genusListForCurrentLocation = currentLocation.getGenus();

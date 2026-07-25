@@ -42,12 +42,12 @@ public final class FindHumanTechnologyBrokerCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.broker.searching", BrokerType.HUMAN.getType()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.broker.searching", BrokerType.HUMAN.getType()), false);
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
         String location = search.location(null, BrokerType.HUMAN, range);
         if (location == null) {
-            return StringUtls.localizedLlm("handler.broker.noHuman");
+            return StringUtls.localizedResponse("handler.broker.noHuman");
         }
 
         return routePlotter.plotRoute(location);

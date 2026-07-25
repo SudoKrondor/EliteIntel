@@ -65,7 +65,7 @@ public final class SetReminderCommand implements IntelCommand {
                     null
             );
         } else {
-            return StringUtls.localizedLlm("handler.reminder.noKey");
+            return StringUtls.localizedResponse("handler.reminder.noKey");
         }
         return null;
     }

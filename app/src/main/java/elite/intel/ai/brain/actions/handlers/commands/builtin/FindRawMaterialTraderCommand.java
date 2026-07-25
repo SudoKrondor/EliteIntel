@@ -42,7 +42,7 @@ public final class FindRawMaterialTraderCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.trader.searching", TraderType.RAW.getType()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.trader.searching", TraderType.RAW.getType()), false);
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
         return routePlotter.plotRoute(search.location(TraderType.RAW, null, range.intValue()));

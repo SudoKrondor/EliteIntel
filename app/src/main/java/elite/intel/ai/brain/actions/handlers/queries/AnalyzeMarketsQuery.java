@@ -40,7 +40,7 @@ public class AnalyzeMarketsQuery extends BaseQueryAnalyzer implements IntelQuery
         StationsDto stationsDto = EdsmApiClient.searchStations(starName, 0);
         List<Station> stations = stationsDto.getData().getStations();
         if (stations == null || stations.isEmpty()) {
-            return process(StringUtls.localizedLlm("query.noData"));
+            return process(StringUtls.localizedResponse("query.noData"));
         }
 
         List<StationData> stationData = new LinkedList<>();

@@ -34,7 +34,7 @@ public class AnalyzeMaterialsOnPlanetQuery extends BaseQueryAnalyzer implements 
         //GameEventBus.publish(new AiVoxResponseEvent("Analyzing geological data. Stand by."));
 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
-        if (currentLocation.getBodyId() < 0) return process(StringUtls.localizedLlm("query.noLocationData"));
+        if (currentLocation.getBodyId() < 0) return process(StringUtls.localizedResponse("query.noLocationData"));
 
         List<MaterialDto> materials = currentLocation.getMaterials();
         String instructions = """
@@ -57,7 +57,7 @@ public class AnalyzeMaterialsOnPlanetQuery extends BaseQueryAnalyzer implements 
                 """;
 
         if (materials.isEmpty()) {
-            return process(StringUtls.localizedLlm("query.planet.noMaterials"));
+            return process(StringUtls.localizedResponse("query.planet.noMaterials"));
         } else {
             return process(new AiDataStruct(instructions, new DataDto(toMaterialData(materials))), originalUserInput);
         }

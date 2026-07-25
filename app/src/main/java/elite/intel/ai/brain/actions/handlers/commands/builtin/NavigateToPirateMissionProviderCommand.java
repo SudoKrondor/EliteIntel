@@ -64,14 +64,14 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
         // Non-terminal announcement: the route plotting below must still run, so declare the line via
         // CompanionRuntime.narrator().filler (voiced, not remembered) instead of returning here.
         if (location.getStarName().equalsIgnoreCase(targetSystem)){
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
         }
 
         if (destination == null) {
             GameEventBus.publish(new UserInputEvent(" find hunting grounds"));
-            return StringUtls.localizedLlm("handler.pirate.noKnowingProviders");
+            return StringUtls.localizedResponse("handler.pirate.noKnowingProviders");
         } else {
             RoutePlotter plotter = new RoutePlotter();
             return plotter.plotRoute(destination);

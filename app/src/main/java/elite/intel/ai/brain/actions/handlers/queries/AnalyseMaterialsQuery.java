@@ -95,7 +95,7 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
             query = extractQueryFromInput(originalUserInput);
         }
         if (query == null || query.isBlank()) {
-            return process(StringUtls.localizedLlm("query.materials.specify"));
+            return process(StringUtls.localizedResponse("query.materials.specify"));
         }
 
         // 1. Try engineering materials first
@@ -151,13 +151,13 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
                             """;
                     return process(new AiDataStruct(instructions, new CargoItemDto(commodityName, item.getCount(), item.getStolen())), originalUserInput);
                 } else {
-                    return process(StringUtls.localizedLlm("query.materials.notInCargo", commodityName));
+                    return process(StringUtls.localizedResponse("query.materials.notInCargo", commodityName));
                 }
             }
         }
 
         // 3. Not found in either
-        return process(StringUtls.localizedLlm("query.materials.notFound", query));
+        return process(StringUtls.localizedResponse("query.materials.notFound", query));
     }
 
     record MaterialDataDto(String materialName, String materialType, int grade, int amount, int maxCap)

@@ -25,7 +25,7 @@ public class AnalyzeDistanceFromTheBubbleQuery extends BaseQueryAnalyzer impleme
         LocationDao.Coordinates galacticCoordinates = locationManager.getGalacticCoordinates();
 
         if (galacticCoordinates.x() == 0 && galacticCoordinates.y() == 0 && galacticCoordinates.z() == 0) {
-            return process(StringUtls.localizedLlm("query.noLocalCoords"));
+            return process(StringUtls.localizedResponse("query.noLocalCoords"));
         }
 
         double distance = NavigationUtils.calculateGalacticDistance(
@@ -41,6 +41,6 @@ public class AnalyzeDistanceFromTheBubbleQuery extends BaseQueryAnalyzer impleme
         int hours = (int) (totalMinutes / 60);
         int minutes = (int) (totalMinutes % 60);
 
-        return process(StringUtls.localizedLlm("query.bubble.distance", distLy, fuelTons, hours, minutes));
+        return process(StringUtls.localizedResponse("query.bubble.distance", distLy, fuelTons, hours, minutes));
     }
 }

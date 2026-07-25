@@ -58,7 +58,7 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (params.get(PARAM_STATE) == null) {
-            return StringUtls.localizedLlm("handler.common.llmParamFailed");
+            return StringUtls.localizedResponse("handler.common.llmParamFailed");
         }
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
@@ -67,7 +67,7 @@ public final class ToggleAllAnnouncementsCommand implements IntelCommand {
         playerSession.setRadarContactAnnouncementOn(isOn);
         playerSession.setMiningAnnouncementOn(isOn);
         playerSession.setNavigationAnnouncementOn(isOn);
-        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedLlm("handler.announcements.all", state);
+        String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
+        return StringUtls.localizedResponse("handler.announcements.all", state);
     }
 }

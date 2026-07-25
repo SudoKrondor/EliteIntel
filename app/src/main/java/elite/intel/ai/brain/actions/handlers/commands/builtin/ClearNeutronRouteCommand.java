@@ -37,6 +37,6 @@ public final class ClearNeutronRouteCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         manager.clear();
-        return StringUtls.localizedLlm("handler.neutronRoute.cleared");
+        return StringUtls.localizedResponse("handler.neutronRoute.cleared");
     }
 }

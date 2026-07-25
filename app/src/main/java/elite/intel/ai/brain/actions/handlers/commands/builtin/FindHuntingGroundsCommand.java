@@ -72,20 +72,20 @@ public final class FindHuntingGroundsCommand implements IntelCommand {
         if (huntingGrounds != null) {
             String message;
             if (huntingGrounds.isEmpty()) {
-                message = StringUtls.localizedLlm("handler.pirate.noProviders");
+                message = StringUtls.localizedResponse("handler.pirate.noProviders");
             } else {
                 String providers = huntingGrounds.size() == 1
-                        ? StringUtls.localizedLlm("handler.pirate.foundProvidersOne")
-                        : StringUtls.localizedLlm("handler.pirate.foundProvidersMany", huntingGrounds.size());
+                        ? StringUtls.localizedResponse("handler.pirate.foundProvidersOne")
+                        : StringUtls.localizedResponse("handler.pirate.foundProvidersMany", huntingGrounds.size());
                 boolean reconRequired = huntingGrounds.stream().anyMatch(data -> !data.getTarget().isHasResSite());
                 String nav = reconRequired
-                        ? StringUtls.localizedLlm("handler.pirate.reconRequired")
-                        : StringUtls.localizedLlm("handler.pirate.askMissionProvider");
+                        ? StringUtls.localizedResponse("handler.pirate.reconRequired")
+                        : StringUtls.localizedResponse("handler.pirate.askMissionProvider");
                 message = providers + " " + nav;
             }
             return message;
         } else {
-            return StringUtls.localizedLlm("handler.pirate.noHuntingGrounds", range);
+            return StringUtls.localizedResponse("handler.pirate.noHuntingGrounds", range);
         }
     }
 }

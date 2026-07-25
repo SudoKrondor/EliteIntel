@@ -31,7 +31,7 @@ public class AnalyzeShipLoadoutQuery extends BaseQueryAnalyzer implements IntelQ
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         PlayerSession playerSession = PlayerSession.getInstance();
         ShipLoadOutDto shipLoadout = playerSession.getShipLoadout();
-        if (shipLoadout == null) return process(StringUtls.localizedLlm("query.noData"));
+        if (shipLoadout == null) return process(StringUtls.localizedResponse("query.noData"));
 
         Map<String, Object> facts = ShipFactsExtractor.extractFacts(shipLoadout);
 

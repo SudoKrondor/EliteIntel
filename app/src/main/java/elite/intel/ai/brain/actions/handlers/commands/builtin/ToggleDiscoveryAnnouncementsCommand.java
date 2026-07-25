@@ -56,12 +56,12 @@ public final class ToggleDiscoveryAnnouncementsCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (params.get(PARAM_STATE) == null) {
-            return StringUtls.localizedLlm("handler.common.llmParamFailed");
+            return StringUtls.localizedResponse("handler.common.llmParamFailed");
         }
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setDiscoveryAnnouncementOn(isOn);
-        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedLlm("handler.announcements.discovery", state);
+        String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
+        return StringUtls.localizedResponse("handler.announcements.discovery", state);
     }
 }

@@ -70,7 +70,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
         if (mission == null) {
             mission = missionManager.getMissions().values().stream().findFirst().orElse(null);
             if (mission == null) {
-                return StringUtls.localizedLlm("handler.navigate.noMissionsFound");
+                return StringUtls.localizedResponse("handler.navigate.noMissionsFound");
             }
         }
 
@@ -88,7 +88,7 @@ public final class NavigateToMissionTargetCommand implements IntelCommand {
                 mission.getDestinationSystem()
         );
 
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.navigate.headToSystem", mission.getDestinationSystem()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.navigate.headToSystem", mission.getDestinationSystem()), false);
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(mission.getDestinationSystem());
     }

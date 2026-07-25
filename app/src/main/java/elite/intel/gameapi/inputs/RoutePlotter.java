@@ -3,7 +3,6 @@ package elite.intel.gameapi.inputs;
 import elite.intel.ai.hands.KeyProcessor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
-import elite.intel.ai.mouth.subscribers.events.AiVoxResponseEvent;
 import elite.intel.db.managers.ShipRouteManager;
 import elite.intel.eventbus.GameControllerBus;
 import elite.intel.eventbus.GameEventBus;
@@ -32,7 +31,7 @@ public class RoutePlotter {
 
         String finalDestination = ShipRouteManager.getInstance().getDestination();
         if (finalDestination != null && finalDestination.equalsIgnoreCase(destination)) {
-            return StringUtls.localizedLlm("handler.route.alreadyPlotted", finalDestination);
+            return StringUtls.localizedResponse("handler.route.alreadyPlotted", finalDestination);
         }
 
 

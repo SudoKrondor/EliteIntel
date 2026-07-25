@@ -94,8 +94,8 @@ public class AnalyzeCarrierStatusQuery extends BaseQueryAnalyzer implements Inte
 
     private static String noDataMessage(CarrierOwnership ownership) {
         return ownership == CarrierOwnership.SQUADRON
-                ? StringUtls.localizedLlm("query.squadronCarrier.noData")
-                : StringUtls.localizedLlm("query.carrier.noDataOpenPanel");
+                ? StringUtls.localizedResponse("query.squadronCarrier.noData")
+                : StringUtls.localizedResponse("query.carrier.noDataOpenPanel");
     }
 
     record DataDto(

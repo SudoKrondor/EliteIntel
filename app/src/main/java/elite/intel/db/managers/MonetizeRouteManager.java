@@ -31,7 +31,7 @@ public class MonetizeRouteManager {
         ShipRouteManager shipRouteManager = ShipRouteManager.getInstance();
         MonetizeRoute.TradeTransaction tradeTuple = MonetizeRoute.findTrade(shipRouteManager.getOrderedRoute());
         if (tradeTuple == null) {
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.trade.noTradeFound")));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.trade.noTradeFound")));
             return null;
         }
 

@@ -52,16 +52,16 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
         if (status.isFsdCharging()) return null;
 
         if (status.isFsdMassLocked()) {
-            return StringUtls.localizedLlm("handler.supercruise.massLocked");
+            return StringUtls.localizedResponse("handler.supercruise.massLocked");
         } else if (status.isFsdCooldown()) {
-            return StringUtls.localizedLlm("handler.supercruise.cooldown");
+            return StringUtls.localizedResponse("handler.supercruise.cooldown");
         }
 
         ///NOTE. this is commented out until FDev fixes the Status.json.
         /// Game has a bug status.isFighterOut() == true when nomad is equipped and returned to base.
 //        else if (status.isFighterOut()) {
 //            GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_REQUEST_REQUEST_DOCK.getGameBinding())));
-//            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.supercruise.fighterOut"), false);
+//            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.supercruise.fighterOut"), false);
 //        }
 
         else if (status.isInMainShip()) {
@@ -82,7 +82,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                     ));
                 }
             } else {
-                PreFtlChecks.preJumpCheck(status, StringUtls.localizedLlm("handler.supercruise.preparing"));
+                PreFtlChecks.preJumpCheck(status, StringUtls.localizedResponse("handler.supercruise.preparing"));
                 if (settingsManager.getAutoSpeedUpForFtl()) {
                     GameControllerBus.publish(GameInputSequenceEvent.of(
                             GameInputStep.bindingTap(BINDING_SET_SPEED100.getGameBinding()),
@@ -103,7 +103,7 @@ public final class EnterSuperCruiseCommand implements IntelCommand {
                 }
             }
         } else {
-            return StringUtls.localizedLlm("handler.supercruise.notInShip");
+            return StringUtls.localizedResponse("handler.supercruise.notInShip");
         }
         return null;
     }

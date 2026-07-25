@@ -42,7 +42,7 @@ public final class ShowSquadronPanelCommand implements IntelCommand {
         if (status.isInMainShip() || status.isInFighter()) {
             navigator.openAndNavigate(StatusFlags.GuiFocus.COMMS_PANEL, CommsPanel.SQUADRON);
         } else {
-            return StringUtls.localizedLlm("handler.common.cantDoNow");
+            return StringUtls.localizedResponse("handler.common.cantDoNow");
         }
         return null;
     }

@@ -25,7 +25,7 @@ public class ConnectionCheckQuery extends BaseQueryAnalyzer implements IntelQuer
         String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
         UiBus.publish(new LlmConnectionStatusEvent(reachable));
         JsonObject response = new JsonObject();
-        response.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, StringUtls.localizedLlm(key));
+        response.addProperty(AIConstants.PROPERTY_TEXT_TO_SPEECH_RESPONSE, StringUtls.localizedResponse(key));
         return response;
     }
 }

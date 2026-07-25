@@ -41,13 +41,13 @@ public final class RetractLandingGearCommand implements IntelCommand {
         Status status = Status.getInstance();
 
         if (status.isDocked() || status.isLanded() || status.isOnFoot() || status.isInFighter()) {
-            return StringUtls.localizedLlm("handler.landingGear.cantDoThat");
+            return StringUtls.localizedResponse("handler.landingGear.cantDoThat");
         }
 
         if (status.isLandingGearDown()) {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_LANDING_GEAR_TOGGLE.getGameBinding())));
         } else {
-            return StringUtls.localizedLlm("handler.landingGear.alreadyRetracted");
+            return StringUtls.localizedResponse("handler.landingGear.alreadyRetracted");
         }
         return null;
     }

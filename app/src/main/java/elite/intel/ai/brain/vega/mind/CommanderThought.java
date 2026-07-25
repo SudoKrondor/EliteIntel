@@ -3,7 +3,7 @@ package elite.intel.ai.brain.vega.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
@@ -341,7 +341,7 @@ public final class CommanderThought extends Thought {
     /** The fixed, code-generated dangerous-action confirmation prompt in the commander's language (no LLM). */
     private static String confirmDangerousActionPhrase() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return LlmTextProvider.getText(language, CONFIRM_DANGEROUS_KEY);
+        return ResponseTextProvider.getText(language, CONFIRM_DANGEROUS_KEY);
     }
 
 }

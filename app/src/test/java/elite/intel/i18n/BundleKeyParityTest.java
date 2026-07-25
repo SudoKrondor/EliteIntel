@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class BundleKeyParityTest {
 
-    private static final List<String> FAMILIES = List.of("gui", "llm", "ed_events", "ai_action_aliases");
+    private static final List<String> FAMILIES = List.of("gui", "responses", "ed_events", "ai_action_aliases");
 
     private static final String BASELINE = "/i18n-parity-baseline.txt";
 
@@ -121,7 +121,7 @@ class BundleKeyParityTest {
      * green on a backlog it did not create; anything not listed there is new and fails here.
      */
     @ParameterizedTest(name = "{0}: no new key gaps against the English base")
-    @ValueSource(strings = {"gui", "llm", "ed_events", "ai_action_aliases"})
+    @ValueSource(strings = {"gui", "responses", "ed_events", "ai_action_aliases"})
     void translationsDefineTheSameKeysAsTheBase(String family) {
         Set<String> known = baseline();
         List<Gap> unexpected = gapsIn(family).stream()

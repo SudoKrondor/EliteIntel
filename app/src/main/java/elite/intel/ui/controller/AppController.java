@@ -138,7 +138,7 @@ public class AppController {
     @Subscribe
     private void recalibrateAudio(RecalibrateAudioEvent event) {
         SwingUtilities.invokeLater(() -> {
-            appendToLog(StringUtls.localizedLlm("log.audioCalibrationStarting"));
+            appendToLog(StringUtls.localizedSpeech("log.audioCalibrationStarting"));
             EarsInterface ears = services.get(ServiceType.EARS).get();
             if (ears == null) return;
             ears.stop();
@@ -149,13 +149,13 @@ public class AppController {
                     AudioCalibrator.calibrateRMS(format, inputMixerInfo);
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationComplete")));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationComplete")));
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
                         ears.start();
-                        appendToLog(StringUtls.localizedLlm("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
-                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.audioCalibrationFailed")));
+                        appendToLog(StringUtls.localizedSpeech("log.audioCalibrationFailed", String.valueOf(ex.getMessage())));
+                        GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.audioCalibrationFailed")));
                     });
                 }
             }, "AudioCalibrator-Thread").start();
@@ -171,7 +171,7 @@ public class AppController {
                 } catch (Exception e) {
                     log.error("Failed to start services, stopping", e);
                     // Surface the reason to the user (e.g. an unsupported LLM provider), not just the log file.
-                    appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+                    appendToLog(StringUtls.localizedSpeech("log.serviceStartFailed", String.valueOf(e.getMessage())));
                     stopServices();
                 }
             } else {
@@ -206,7 +206,7 @@ public class AppController {
                 // WHY: broad catch at the worker-thread boundary - a startup failure must be surfaced to the
                 // user (console log) and leave services cleanly stopped, not kill the thread half-running.
                 log.error("Failed to restart services", e);
-                appendToLog(StringUtls.localizedLlm("log.serviceStartFailed", String.valueOf(e.getMessage())));
+                appendToLog(StringUtls.localizedSpeech("log.serviceStartFailed", String.valueOf(e.getMessage())));
                 stopServices();
             }
         }
@@ -266,7 +266,7 @@ public class AppController {
                 appendToLog("STT service restarted");
             } catch (Exception e) {
                 log.error("Failed to restart STT service", e);
-                appendToLog(StringUtls.localizedLlm("log.sttRestartFailed", String.valueOf(e.getMessage())));
+                appendToLog(StringUtls.localizedSpeech("log.sttRestartFailed", String.valueOf(e.getMessage())));
             }
         }
     }
@@ -372,7 +372,7 @@ public class AppController {
                 UiBus.publish(new LlmConnectionStatusEvent(reachable));
                 if (!suppressConnectionFailSpeech) {
                     String key = reachable ? "speech.connectionSuccessful" : "speech.connectionFailed";
-                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm(key)));
+                    GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse(key)));
                 }
             } catch (Exception e) {
                 log.warn("Connection check failed", e);

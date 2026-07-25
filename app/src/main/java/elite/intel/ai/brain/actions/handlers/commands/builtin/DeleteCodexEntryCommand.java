@@ -43,9 +43,9 @@ public final class DeleteCodexEntryCommand implements IntelCommand {
         if (tracking != null) {
             codexEntryManager.deleteTrackedEntry(tracking);
             playerSession.setTracking(null);
-            return StringUtls.localizedLlm("handler.codex.deleted");
+            return StringUtls.localizedResponse("handler.codex.deleted");
         } else {
-            return StringUtls.localizedLlm("handler.codex.noTracking");
+            return StringUtls.localizedResponse("handler.codex.noTracking");
         }
     }
 }

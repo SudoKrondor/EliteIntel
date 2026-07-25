@@ -86,7 +86,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         JsonElement mat = params.get(PARAM_KEY);
         if (mat == null) {
-            return StringUtls.localizedLlm("handler.miningSite.didNotCatch");
+            return StringUtls.localizedResponse("handler.miningSite.didNotCatch");
         }
 
         String material =
@@ -102,7 +102,7 @@ public final class FindMiningSiteCommand implements IntelCommand {
         // The Spansh ring search takes seconds; every other long search command voices a filler so the
         // commander is not left in silence.
         CompanionRuntime.narrator().filler(
-                StringUtls.localizedLlm("handler.miningSite.searching", material, range), false);
+                StringUtls.localizedResponse("handler.miningSite.searching", material, range), false);
 
         StellarObjectSearchResultDto miningLocations = StellarObjectSearch.getInstance()
                 .findRings(
@@ -113,18 +113,18 @@ public final class FindMiningSiteCommand implements IntelCommand {
                 );
 
         if (miningLocations == null || miningLocations.getResults().isEmpty()) {
-            return StringUtls.localizedLlm("handler.miningSite.notFound");
+            return StringUtls.localizedResponse("handler.miningSite.notFound");
         }
 
         Optional<StellarObjectSearchResultDto.Result> result = miningLocations.getResults().stream().findFirst();
         if (result.isPresent()) {
             RoutePlotter routePlotter = new RoutePlotter();
             routePlotter.plotRoute(result.get().getSystemName());
-            String reminder = StringUtls.localizedLlm("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
+            String reminder = StringUtls.localizedResponse("handler.miningSite.found", result.get().getSystemName(), result.get().getBodyName());
             ReminderManager.getInstance().setReminder(reminder, result.get().getSystemName());
             return reminder;
         } else {
-            return StringUtls.localizedLlm("handler.miningSite.notFoundInRange");
+            return StringUtls.localizedResponse("handler.miningSite.notFoundInRange");
         }
     }
 }

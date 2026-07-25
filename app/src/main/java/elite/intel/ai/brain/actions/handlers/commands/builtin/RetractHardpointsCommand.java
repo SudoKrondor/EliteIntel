@@ -43,7 +43,7 @@ public final class RetractHardpointsCommand implements IntelCommand {
             if (status.isHardpointsDeployed()) {
                 GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_HARDPOINTS_TOGGLE.getGameBinding())));
             } else {
-                return StringUtls.localizedLlm("handler.hardpoints.alreadyRetracted");
+                return StringUtls.localizedResponse("handler.hardpoints.alreadyRetracted");
             }
         }
         return null;

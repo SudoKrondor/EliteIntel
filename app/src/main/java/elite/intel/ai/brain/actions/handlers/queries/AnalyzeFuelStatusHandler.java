@@ -23,7 +23,7 @@ public class AnalyzeFuelStatusHandler extends BaseQueryAnalyzer implements Intel
         ShipLoadOutDto loadout = playerSession.getShipLoadout();
 
         if (loadout == null) {
-            return process(StringUtls.localizedLlm("query.noData"));
+            return process(StringUtls.localizedResponse("query.noData"));
         }
 
         Double currentFuel = null;

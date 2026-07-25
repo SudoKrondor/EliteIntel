@@ -130,7 +130,7 @@ public class ParakeetSTTImpl implements EarsInterface {
         processingThread.start();
 
         if (RMS_THRESHOLD_HIGH == 0 || NOISE_FLOOR == 0) {
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationRequired")));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("speech.audioCalibrationRequired")));
         } else if (!AudioCalibrator.gateClearsNoiseFloor(NOISE_FLOOR, RMS_THRESHOLD_HIGH)) {
             GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedSpeech("speech.voiceInputEnabledWarning")));
         } else {

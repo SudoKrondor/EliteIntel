@@ -35,7 +35,7 @@ public class AnalyzeShipyardQuery extends BaseQueryAnalyzer implements IntelQuer
         ShipyardDto shipyard = currentLocation.getShipyard();
 
         if (shipyard == null || shipyard.getData() == null) {
-            return process(StringUtls.localizedLlm("query.shipyard.noData"));
+            return process(StringUtls.localizedResponse("query.shipyard.noData"));
         }
 
         String instructions = """
