@@ -1,6 +1,6 @@
 package elite.intel.i18n;
 
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.gameapi.i18n.EventsTextProvider;
 import elite.intel.ui.i18n.MultiLingualTextProvider;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class PortugueseVariantsIndependenceTest {
 
-    private static final List<String> BUNDLES = List.of("gui", "llm", "ed_events", "ai_action_aliases");
+    private static final List<String> BUNDLES = List.of("gui", "responses", "ed_events", "ai_action_aliases");
 
     /**
      * Keys the Brazilian bundles carry that the European ones do not yet. {@code *_pt.properties} is owned by the
@@ -76,7 +76,7 @@ class PortugueseVariantsIndependenceTest {
     @Test
     void brazilianTextIsServedFromTheBrazilianBundle() {
         int checked = 0;
-        for (String baseName : List.of("gui", "llm", "ed_events")) {
+        for (String baseName : List.of("gui", "responses", "ed_events")) {
             Properties european = load(baseName, "_pt");
             Properties brazilian = load(baseName, "_ptbz");
 
@@ -97,7 +97,7 @@ class PortugueseVariantsIndependenceTest {
     private static String resolve(String baseName, String key) {
         return switch (baseName) {
             case "gui" -> MultiLingualTextProvider.getText(Language.PTBZ, key);
-            case "llm" -> LlmTextProvider.getText(Language.PTBZ, key);
+            case "responses" -> ResponseTextProvider.getText(Language.PTBZ, key);
             case "ed_events" -> EventsTextProvider.getText(Language.PTBZ, key);
             default -> throw new IllegalArgumentException("no provider wired for bundle " + baseName);
         };
@@ -109,7 +109,7 @@ class PortugueseVariantsIndependenceTest {
      * to only one of the two files.
      */
     @ParameterizedTest(name = "{0}_ptbz defines every key {0}_pt defines")
-    @ValueSource(strings = {"gui", "llm", "ed_events", "ai_action_aliases"})
+    @ValueSource(strings = {"gui", "responses", "ed_events", "ai_action_aliases"})
     void neitherVariantIsMissingKeysTheOtherDefines(String baseName) {
         Properties european = load(baseName, "_pt");
         Properties brazilian = load(baseName, "_ptbz");
@@ -133,7 +133,7 @@ class PortugueseVariantsIndependenceTest {
      * A duplicated key silently discards one of its two values, which is invisible in a diff.
      */
     @ParameterizedTest(name = "{0}_ptbz has no duplicate keys")
-    @ValueSource(strings = {"gui", "llm", "ed_events", "ai_action_aliases"})
+    @ValueSource(strings = {"gui", "responses", "ed_events", "ai_action_aliases"})
     void brazilianBundlesDeclareEachKeyOnce(String baseName) {
         List<String> keys = new ArrayList<>();
         String path = "/i18n/" + baseName + "_ptbz.properties";
@@ -161,7 +161,7 @@ class PortugueseVariantsIndependenceTest {
     void everyBundleFamilyResolvesForBothVariants() {
         for (Language language : List.of(Language.PT, Language.PTBZ)) {
             assertFalse(MultiLingualTextProvider.getText(language, "tab.commander").isBlank());
-            assertFalse(LlmTextProvider.getText(language, "carrier.squadronStems").isBlank());
+            assertFalse(ResponseTextProvider.getText(language, "carrier.squadronStems").isBlank());
             assertFalse(EventsTextProvider.getText(language, "event.srv.welcomeBack", "CMDR").isBlank());
         }
     }

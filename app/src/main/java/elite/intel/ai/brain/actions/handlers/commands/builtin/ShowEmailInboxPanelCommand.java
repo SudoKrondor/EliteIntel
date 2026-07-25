@@ -53,7 +53,7 @@ public final class ShowEmailInboxPanelCommand implements IntelCommand {
                     GameInputStep.bindingTap(BINDING_CYCLE_NEXT_PANEL.getGameBinding())
             ));
         } else {
-            return StringUtls.localizedLlm("handler.common.cantDoNow");
+            return StringUtls.localizedResponse("handler.common.cantDoNow");
         }
         return null;
     }

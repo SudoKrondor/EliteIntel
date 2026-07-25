@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.queries.carrier;
 
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -92,7 +92,7 @@ public enum CarrierOwnership {
     }
 
     private static List<String> stemsFor(Language language) {
-        return Arrays.stream(LlmTextProvider.getText(language, SQUADRON_STEMS_KEY).split(","))
+        return Arrays.stream(ResponseTextProvider.getText(language, SQUADRON_STEMS_KEY).split(","))
                 .map(stem -> stem.strip().toLowerCase(Locale.ROOT))
                 .filter(stem -> !stem.isEmpty())
                 .toList();

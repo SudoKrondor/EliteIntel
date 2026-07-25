@@ -37,6 +37,6 @@ public final class CancelNavigationCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         playerSession.setTracking(new TargetLocation(false));
-        return StringUtls.localizedLlm("handler.navigate.navigationOff");
+        return StringUtls.localizedResponse("handler.navigate.navigationOff");
     }
 }

@@ -46,7 +46,7 @@ public final class NavigateToPirateMissionTargetCommand implements IntelCommand 
         Set<String> targetFactions = missionManager.getTargetFactions(missionTypes);
 
         if (targetFactions.isEmpty()) {
-            return StringUtls.localizedLlm("handler.pirate.noProvidersMassacre");
+            return StringUtls.localizedResponse("handler.pirate.noProvidersMassacre");
         }
 
         MissionDto mission = missionManager.getMissions(missionTypes)

@@ -40,11 +40,11 @@ public final class OpenFssScanSystemCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         if (status.isScoopingFuel()) {
-            return StringUtls.localizedLlm("handler.supercruise.scooping");
+            return StringUtls.localizedResponse("handler.supercruise.scooping");
         }
 
         if (!status.isInSupercruise()) {
-            return StringUtls.localizedLlm("handler.supercruise.mustBeSupercruise");
+            return StringUtls.localizedResponse("handler.supercruise.mustBeSupercruise");
         }
 
         String stop = BINDING_SET_SPEED_ZERO.getGameBinding();

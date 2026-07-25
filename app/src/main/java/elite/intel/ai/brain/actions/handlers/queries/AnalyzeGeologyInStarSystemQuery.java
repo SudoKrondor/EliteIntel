@@ -34,7 +34,7 @@ public class AnalyzeGeologyInStarSystemQuery extends BaseQueryAnalyzer implement
     private final LocationManager locationManager = LocationManager.getInstance();
 
     @Override public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("handler.geology.searching")));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("handler.geology.searching")));
         Map<String, Integer> planetsWithGeoSignals = planetsWithGeoSignals();
         String instructions = """
                 Report geological signals detected in this star system.

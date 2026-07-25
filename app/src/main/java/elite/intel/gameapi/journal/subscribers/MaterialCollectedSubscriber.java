@@ -2,12 +2,10 @@ package elite.intel.gameapi.journal.subscribers;
 
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.brain.vega.CompanionRuntime;
-import elite.intel.db.dao.MaterialsDao;
+import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.managers.MaterialManager;
-import elite.intel.db.util.Database;
 import elite.intel.gameapi.journal.events.MaterialCollectedEvent;
 import elite.intel.gameapi.search.edsm.dto.MaterialsType;
-import elite.intel.util.StringUtls;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +28,12 @@ public class MaterialCollectedSubscriber {
 
     @Subscribe
     public void onMaterialCollected(MaterialCollectedEvent event) {
-        materialManager.save(event.getName(), determineType(event.getCategory()), event.getCount());
+        // Keyed on the journal's Name (the FDev symbol), never Name_Localised: the same material
+        // arrives under a different display string on every localized client.
+        String symbol = event.getName();
+        materialManager.collect(symbol, determineType(event.getCategory()), event.getCount(), event.getNameLocalised());
 
-        MaterialsDao.Material material = Database.withDao(MaterialsDao.class, dao -> dao.findByExactName(StringUtls.capitalizeWords(event.getName())));
+        MaterialNameDao.Material material = materialManager.find(symbol);
         String displayName = event.getDisplayName();
         String message = material == null
                 ? localizedEvent("event.material.collected", event.getCount(), displayName)

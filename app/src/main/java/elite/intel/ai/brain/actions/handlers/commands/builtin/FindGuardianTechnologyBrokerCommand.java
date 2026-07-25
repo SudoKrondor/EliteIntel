@@ -42,13 +42,13 @@ public final class FindGuardianTechnologyBrokerCommand implements IntelCommand {
     @Override
     public String execute(JsonObject params, String responseText) {
         Number range = GetNumberFromParam.extractRangeParameter(params, DEFAULT_RANGE);
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.broker.searching", BrokerType.GUARDIAN.getType()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.broker.searching", BrokerType.GUARDIAN.getType()), false);
         TradersAndBrokersSearch search = TradersAndBrokersSearch.getInstance();
         RoutePlotter routePlotter = new RoutePlotter();
 
         String location = search.location(null, BrokerType.GUARDIAN, range);
         if (location == null) {
-            return StringUtls.localizedLlm("handler.broker.noGuardian");
+            return StringUtls.localizedResponse("handler.broker.noGuardian");
         }
 
         return routePlotter.plotRoute(location);

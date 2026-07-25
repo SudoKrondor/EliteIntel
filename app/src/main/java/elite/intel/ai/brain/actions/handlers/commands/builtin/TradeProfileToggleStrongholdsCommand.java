@@ -62,7 +62,7 @@ public final class TradeProfileToggleStrongholdsCommand implements IntelCommand 
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         TradeProfileManager profileManager = TradeProfileManager.getInstance();
         profileManager.setAllowStrongHolds(isOn);
-        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedLlm("handler.tradeProfile.strongholds", state);
+        String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
+        return StringUtls.localizedResponse("handler.tradeProfile.strongholds", state);
     }
 }

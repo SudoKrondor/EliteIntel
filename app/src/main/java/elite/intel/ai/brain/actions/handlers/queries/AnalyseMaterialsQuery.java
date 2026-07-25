@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.queries.struct.AiDataStruct;
 import elite.intel.db.FuzzySearch;
-import elite.intel.db.dao.MaterialsDao;
+import elite.intel.db.dao.MaterialNameDao;
 import elite.intel.db.util.Database;
 import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.session.PlayerSession;
@@ -15,8 +15,6 @@ import elite.intel.util.yaml.YamlFactory;
 
 import java.util.List;
 import java.util.Set;
-
-import static elite.intel.util.StringUtls.capitalizeWords;
 
 @RegisterQuery
 public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQuery {
@@ -66,7 +64,7 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
         if (input == null || input.isBlank()) return null;
         for (String token : input.toLowerCase().replaceAll("[^\\p{L}\\s]", "").split("\\s+")) {
             if (token.length() < 3 || SKIP_TOKENS.contains(token)) continue;
-            if (FuzzySearch.fuzzyInventorySearch(token, 8) != null
+            if (FuzzySearch.fuzzyMaterialSymbol(token, 8) != null
                     || FuzzySearch.fuzzyCommodityMatch(token, 3) != null) {
                 return token;
             }
@@ -97,26 +95,33 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
             query = extractQueryFromInput(originalUserInput);
         }
         if (query == null || query.isBlank()) {
-            return process(StringUtls.localizedLlm("query.materials.specify"));
+            return process(StringUtls.localizedResponse("query.materials.specify"));
         }
 
         // 1. Try engineering materials first
-        String materialName = capitalizeWords(FuzzySearch.fuzzyInventorySearch(query, 8));
-        if (materialName != null) {
-            MaterialsDao.Material data = Database.withDao(MaterialsDao.class, dao -> dao.findByExactName(materialName));
+        String materialSymbol = FuzzySearch.fuzzyMaterialSymbol(query, 8);
+        if (materialSymbol != null) {
+            MaterialNameDao.Material data = Database.withDao(MaterialNameDao.class, dao -> dao.findBySymbol(materialSymbol));
             if (data != null) {
                 String instructions = """
                         Answer the user's question about this material in the ship's inventory.
-                        
+
                         Data fields:
-                        - materialName: name of the material
+                        - materialName: name of the material, already in the correct language. Use it verbatim.
                         - materialType: category of the material
-                        - amount: current units held
+                        - grade: rarity, 1 (very common) to 5 (very rare)
+                        - amount: current units held; 0 means the commander holds none
                         - maxCap: maximum storage capacity in units
-                        
+
                         State the amount held and maximum capacity. Answer only what was asked.
                         """;
-                return process(new AiDataStruct(instructions, new MaterialDataDto(data)), originalUserInput);
+                MaterialDataDto dto = new MaterialDataDto(
+                        FuzzySearch.localizedMaterialName(materialSymbol),
+                        data.getMaterialType(),
+                        data.getGrade(),
+                        data.getAmount(),
+                        data.getMaxCapacity());
+                return process(new AiDataStruct(instructions, dto), originalUserInput);
             }
         }
 
@@ -146,16 +151,17 @@ public class AnalyseMaterialsQuery extends BaseQueryAnalyzer implements IntelQue
                             """;
                     return process(new AiDataStruct(instructions, new CargoItemDto(commodityName, item.getCount(), item.getStolen())), originalUserInput);
                 } else {
-                    return process(StringUtls.localizedLlm("query.materials.notInCargo", commodityName));
+                    return process(StringUtls.localizedResponse("query.materials.notInCargo", commodityName));
                 }
             }
         }
 
         // 3. Not found in either
-        return process(StringUtls.localizedLlm("query.materials.notFound", query));
+        return process(StringUtls.localizedResponse("query.materials.notFound", query));
     }
 
-    record MaterialDataDto(MaterialsDao.Material materials) implements ToYamlConvertable {
+    record MaterialDataDto(String materialName, String materialType, int grade, int amount, int maxCap)
+            implements ToYamlConvertable {
         @Override
         public String toYaml() {
             return YamlFactory.toYaml(this);

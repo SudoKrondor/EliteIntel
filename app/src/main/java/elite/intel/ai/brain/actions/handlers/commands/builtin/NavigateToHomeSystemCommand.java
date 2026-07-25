@@ -40,10 +40,10 @@ public final class NavigateToHomeSystemCommand implements IntelCommand {
 
     @Override
     public String execute(JsonObject params, String responseText) {
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.navigate.plottingHome"), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.navigate.plottingHome"), false);
         LocationDto location = playerSession.getHomeSystem();
         if (location.getBodyId() == -1) {
-            return StringUtls.localizedLlm("handler.navigate.homeNotSet");
+            return StringUtls.localizedResponse("handler.navigate.homeNotSet");
         }
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(location.getStarName());

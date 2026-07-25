@@ -40,7 +40,7 @@ public class HelpHandler extends BaseQueryAnalyzer implements IntelQuery {
         JsonElement key = params.get(PARAM_KEY);
         String topic = key == null ? null : key.getAsString();
         if (topic == null) {
-            return process(StringUtls.localizedLlm("query.help.noTopic"));
+            return process(StringUtls.localizedResponse("query.help.noTopic"));
         }
 
         List<String> data = Database.withDao(HelpDao.class, dao -> {

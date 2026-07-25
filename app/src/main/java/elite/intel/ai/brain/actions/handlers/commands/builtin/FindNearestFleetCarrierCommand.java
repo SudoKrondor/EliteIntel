@@ -47,7 +47,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
 
 
         Number range = GetNumberFromParam.extractRangeParameter(params, 500);
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.searching", range.intValue()), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.fleetCarrier.searching", range.intValue()), false);
 
         PlayerSession playerSession = PlayerSession.getInstance();
         FleetCarrierSearchResultsDto fleetCarriers = FleetCarrierSearch.getInstance()
@@ -64,7 +64,7 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
         }
 
         if (fleetCarriers == null) {
-            return StringUtls.localizedLlm("handler.fleetCarrier.spanshUnavailable");
+            return StringUtls.localizedResponse("handler.fleetCarrier.spanshUnavailable");
         }
 
         final String finalPlayerCarrierCallSign = playerCarrierCallSign;
@@ -76,10 +76,10 @@ public final class FindNearestFleetCarrierCommand implements IntelCommand {
                             RoutePlotter routePlotter = new RoutePlotter();
                             String dateAsString = result.getUpdatedAt();
                             String timeAgo = TimeUtils.transformToYMDHtimeAgo(dateAsString, TimeUtils.LOCAL_DATE_TIME);
-                            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo), false);
+                            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.fleetCarrier.found", result.getCallSign(), result.getSystemName(), timeAgo), false);
                             routePlotter.plotRoute(result.getSystemName());
                         },
-                        () -> CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fleetCarrier.notFound"), false)
+                        () -> CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.fleetCarrier.notFound"), false)
                 );
         return null;
     }

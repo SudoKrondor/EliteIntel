@@ -1655,7 +1655,7 @@ public class NaturalSpeechIntegrationTestDE {
     @Order(332)
     @MethodSource
     void launchNomad(String input) throws InterruptedException {
-        assertRouted(input, LauchNomadCommand.ID);
+        assertRouted(input, LaunchNomadCommand.ID);
     }
 
     static Stream<String> launchNomad() {

@@ -65,7 +65,7 @@ public final class AddMiningTargetCommand implements IntelCommand {
         playerSession.setMiningAnnouncementOn(true);
         JsonElement key = params.get(PARAM_KEY);
         if(key == null){
-            return StringUtls.localizedLlm("handler.mining.didNotCatch");
+            return StringUtls.localizedResponse("handler.mining.didNotCatch");
         }
         String target = capitalizeWords(
                 FuzzySearch.fuzzyCommodityMatch(
@@ -74,10 +74,10 @@ public final class AddMiningTargetCommand implements IntelCommand {
                 );
 
         if (target == null || target.isEmpty()) {
-            return StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString());
+            return StringUtls.localizedResponse("handler.mining.notFoundInDb", key.getAsString());
         }
 
         playerSession.addMiningTarget(target);
-        return StringUtls.localizedLlm("handler.mining.targetSet", target);
+        return StringUtls.localizedResponse("handler.mining.targetSet", target);
     }
 }

@@ -2,11 +2,11 @@ package elite.intel.db;
 
 import elite.intel.db.dao.CommodityDao;
 import elite.intel.db.dao.MaterialNameDao;
-import elite.intel.db.dao.MaterialsDao;
 import elite.intel.db.dao.SubSystemDao;
 import elite.intel.db.util.Database;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
+import elite.intel.util.StringUtls;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -14,6 +14,10 @@ import java.util.function.Function;
 
 public class FuzzySearch {
 
+    /**
+     * Spoken stand-in for a material the catalogue does not know. See {@link #localizedMaterialName}.
+     */
+    private static final String UNKNOWN_MATERIAL = "query.materials.unknownName";
 
     public static final SystemSession systemSession = SystemSession.getInstance();
 
@@ -82,28 +86,52 @@ public class FuzzySearch {
         return Database.withDao(CommodityDao.class, dao -> dao.getSymbolByEnglishName(englishName));
     }
 
-    public static String fuzzyMaterialNameSearch(String input, int similarity) {
-        Language lang = SystemSession.getInstance().getLanguage();
-        if (lang == Language.EN) {
-            return fuzzyMatch(input, similarity, MaterialNameDao.class, MaterialNameDao::getAllNamesLowerCase, MaterialNameDao::getOriginalCase);
-        }
+    /**
+     * Resolves a spoken material name to its journal symbol (e.g. {@code focuscrystals}), matching
+     * against the commander's own language plus any aliases. Returns {@code null} when nothing clears
+     * the threshold.
+     * <p>
+     * The symbol, not the display name, is the useful result: it is what every inventory row is keyed
+     * by and what the journal reports.
+     */
+    public static String fuzzyMaterialSymbol(String input, int similarity) {
+        Language lang = systemSession.getLanguage();
         String col = materialNameColumn(lang);
+        String tag = languageTag(lang);
         return fuzzyMatch(input, similarity, MaterialNameDao.class,
-                dao -> dao.getAllLocalizedNamesLowerCase(col),
-                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+                dao -> dao.getAllSpokenFormsLowerCase(col, tag),
+                (dao, spoken) -> dao.getSymbolBySpokenForm(col, tag, spoken));
     }
 
-    public static String fuzzyInventorySearch(String input, int similarity) {
-        Language lang = SystemSession.getInstance().getLanguage();
-        if (lang == Language.EN) {
-            return fuzzyMatch(input, similarity, MaterialsDao.class, MaterialsDao::getAllNamesLowerCase, MaterialsDao::getOriginalCase);
-        }
-        // Inventory materialNames are always English (from journal).
-        // JOIN with material_names lets us match localized input and return the English canonical name.
-        String col = materialNameColumn(lang);
-        return fuzzyMatch(input, similarity, MaterialsDao.class,
-                dao -> dao.getAllLocalizedNamesLowerCase(col),
-                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+    /**
+     * Resolves a spoken material name to its canonical English name. Used where the material name is a
+     * lookup key into English reference data — Spansh brain-tree records, for instance — rather than
+     * something spoken back to the commander.
+     */
+    public static String fuzzyMaterialNameSearch(String input, int similarity) {
+        String symbol = fuzzyMaterialSymbol(input, similarity);
+        if (symbol == null) return null;
+        MaterialNameDao.Material material = Database.withDao(MaterialNameDao.class, dao -> dao.findBySymbol(symbol));
+        return material == null ? null : material.getName();
+    }
+
+    /**
+     * The material name to speak, given its journal symbol.
+     * <p>
+     * Frontier localizes only English, German, Spanish, French, Russian and Brazilian Portuguese. A
+     * commander on any other language is necessarily running an English client, so naming the material
+     * in their spoken language would name something their HUD does not show — they get English instead.
+     * See {@link Language#isGameLocalized()}.
+     */
+    public static String localizedMaterialName(String symbol) {
+        if (symbol == null || symbol.isBlank()) return StringUtls.localizedResponse(UNKNOWN_MATERIAL);
+        Language lang = systemSession.getLanguage();
+        String col = lang.isGameLocalized() ? materialNameColumn(lang) : "name";
+        String name = Database.withDao(MaterialNameDao.class, dao -> dao.getLocalizedNameBySymbol(col, symbol));
+        // WHY: the result is spoken aloud, so an unregistered symbol must not leak the raw journal
+        // token ("guardian_powercell") into speech. Degrading to a localized "unknown material" keeps
+        // the reply intelligible; the amount and capacity around it are still accurate.
+        return (name == null || name.isBlank()) ? StringUtls.localizedResponse(UNKNOWN_MATERIAL) : name;
     }
 
     public static String fuzzySubSystemSearch(String input, int similarity) {
@@ -118,8 +146,17 @@ public class FuzzySearch {
             case RU -> "name_ru";
             case UK -> "name_uk";
             case IT -> "name_it";
+            case PT -> "name_pt";
+            case PTBZ -> "name_ptbz";
             default -> "name";
         };
+    }
+
+    /**
+     * The {@code material_aliases.lang} value for a language, matching migration 01017.
+     */
+    private static String languageTag(Language lang) {
+        return lang.name().toLowerCase();
     }
 
     private static String commodityColumn(Language lang) {

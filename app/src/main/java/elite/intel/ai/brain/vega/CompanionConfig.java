@@ -1,6 +1,6 @@
 package elite.intel.ai.brain.vega;
 
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
@@ -21,7 +21,7 @@ public final class CompanionConfig {
     // TODO: back the companion name by GUI/DB settings.
     private static final String COMPANION_NAME = "Vega";
 
-    // Localization key (i18n.llm bundle) for the name's spoken/STT form per language: Latin "Vega" for
+    // Localization key (i18n.responses bundle) for the name's spoken/STT form per language: Latin "Vega" for
     // Latin-script languages, "Вега" for Cyrillic (ru/uk). Input matching only - never used in the prompt.
     private static final String NAME_SPOKEN_KEY = "companion.name.spoken";
 
@@ -49,7 +49,7 @@ public final class CompanionConfig {
     /**
      * The name forms recognized as a leading vocative on commander INPUT (the reflex vocative strip): the
      * canonical name plus its localized spoken/STT form for the current session language (e.g. Cyrillic "Вега"
-     * for ru/uk, from the i18n.llm bundle). Input matching only - the prompt always uses {@link #companionName()}.
+     * for ru/uk, from the i18n.responses bundle). Input matching only - the prompt always uses {@link #companionName()}.
      * <p>
      * TODO: when the name becomes GUI/DB-configurable, its spoken variants must follow the configured value.
      */
@@ -57,7 +57,7 @@ public final class CompanionConfig {
         Language language = SystemSession.getInstance().getLanguage();
         Set<String> forms = new LinkedHashSet<>();
         forms.add(COMPANION_NAME);
-        String spoken = LlmTextProvider.getText(language, NAME_SPOKEN_KEY);
+        String spoken = ResponseTextProvider.getText(language, NAME_SPOKEN_KEY);
         if (spoken != null && !spoken.isBlank()) {
             forms.add(spoken.trim());
         }

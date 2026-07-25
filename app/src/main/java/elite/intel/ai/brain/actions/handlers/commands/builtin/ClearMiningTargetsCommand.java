@@ -38,6 +38,6 @@ public final class ClearMiningTargetsCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         playerSession.clearMiningTargets();
         playerSession.setMiningAnnouncementOn(true);
-        return StringUtls.localizedLlm("handler.mining.targetsCleared");
+        return StringUtls.localizedResponse("handler.mining.targetsCleared");
     }
 }

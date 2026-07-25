@@ -78,7 +78,7 @@ public final class FindBrainTreesCommand implements IntelCommand {
 
         JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
-            return StringUtls.localizedLlm("handler.brainTrees.didNotCatch");
+            return StringUtls.localizedResponse("handler.brainTrees.didNotCatch");
         }
 
         String material =
@@ -91,14 +91,14 @@ public final class FindBrainTreesCommand implements IntelCommand {
         LocationDao.Coordinates coordinates = locationManager.getGalacticCoordinates();
         StellarObjectSearchResultDto.Result result = brainTreeManager.findNearestWithMaterial(material, coordinates.x(), coordinates.y(), coordinates.z());
         if (result == null) {
-            return StringUtls.localizedLlm("handler.brainTrees.notFound");
+            return StringUtls.localizedResponse("handler.brainTrees.notFound");
         } else {
             double distance = calculateDistance(coordinates, result.getX(), result.getY(), result.getZ());
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.brainTrees.found", result.getSystemName(), distance, result.getBodyName()), false);
             RoutePlotter plotter = new RoutePlotter();
             plotter.plotRoute(result.getSystemName());
             ReminderManager.getInstance().setReminder(
-                    StringUtls.localizedLlm("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
+                    StringUtls.localizedResponse("handler.brainTrees.reminder", result.getSystemName(), result.getBodyName()),
                     result.getSystemName()
             );
         }

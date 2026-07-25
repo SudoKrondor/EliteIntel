@@ -41,11 +41,11 @@ public final class PlotRouteNextNeutronStarWaypointCommand implements IntelComma
     public String execute(JsonObject params, String responseText) {
         NeutronStarRouteDao.Route route = neutronStarRouteManager.getNeutronStarRoute();
         if (route == null || route.getLegs().isEmpty() || route.getLegs().getFirst() == null) {
-            return StringUtls.localizedLlm("handler.neutronRoute.notFound");
+            return StringUtls.localizedResponse("handler.neutronRoute.notFound");
         }
 
         String systemName = route.getLegs().getFirst().getSystemName();
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.neutronRoute.plotting", systemName), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.neutronRoute.plotting", systemName), false);
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(systemName);
     }

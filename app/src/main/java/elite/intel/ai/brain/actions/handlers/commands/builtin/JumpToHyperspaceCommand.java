@@ -61,7 +61,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
 
             if (currentLocation.getStarName().equals(starName)) {
-                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.fsd.nodestination"), false);
+                CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.fsd.nodestination"), false);
                 return null;
             }
 
@@ -69,9 +69,9 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
             String message;
             if (GlobalSettingsManager.getInstance().getAnnounceFuelAvailable()) {
                 String fuelStatus = fsdTarget.getFuelStarStatus() == null ? "unknown" : fsdTarget.getFuelStarStatus();
-                message = StringUtls.localizedLlm("handler.fsd.jumping", starName, starClass, fuelStatus);
+                message = StringUtls.localizedResponse("handler.fsd.jumping", starName, starClass, fuelStatus);
             } else {
-                message = StringUtls.localizedLlm("handler.fsd.jumpingNoFuel", starName, starClass);
+                message = StringUtls.localizedResponse("handler.fsd.jumpingNoFuel", starName, starClass);
             }
             CompanionRuntime.narrator().filler(message, false);
         }
@@ -81,14 +81,14 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         if (status.isFsdCharging()) return null;
 
         if (status.isFsdMassLocked()) {
-            return StringUtls.localizedLlm("handler.supercruise.massLocked");
+            return StringUtls.localizedResponse("handler.supercruise.massLocked");
         } else if (status.isFsdCooldown()) {
-            return StringUtls.localizedLlm("handler.supercruise.cooldown");
+            return StringUtls.localizedResponse("handler.supercruise.cooldown");
         } else if (status.isInMainShip()) {
-            PreFtlChecks.preJumpCheck(status, StringUtls.localizedLlm("handler.supercruise.preparingFtl"));
+            PreFtlChecks.preJumpCheck(status, StringUtls.localizedResponse("handler.supercruise.preparingFtl"));
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_JUMP_TO_HYPERSPACE.getGameBinding())));
         } else {
-            return StringUtls.localizedLlm("handler.supercruise.notInShip");
+            return StringUtls.localizedResponse("handler.supercruise.notInShip");
         }
         return null;
     }

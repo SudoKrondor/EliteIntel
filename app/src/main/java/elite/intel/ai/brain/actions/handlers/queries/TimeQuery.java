@@ -32,7 +32,7 @@ public class TimeQuery extends BaseQueryAnalyzer implements IntelQuery {
             ZonedDateTime localNow = ZonedDateTime.now(ZoneId.systemDefault());
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
             String formattedTime = localNow.format(formatter);
-            return process(StringUtls.localizedLlm("query.time.local", formattedTime));
+            return process(StringUtls.localizedResponse("query.time.local", formattedTime));
         } else {
             ////GameEventBus.publish(new AiVoxResponseEvent("Analyzing temporal data. Stand by."));
 

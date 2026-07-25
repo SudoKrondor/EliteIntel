@@ -23,7 +23,7 @@ public class AnalyzeLocalMarketsHandler extends BaseQueryAnalyzer implements Int
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
         MarketDto market = currentLocation.getMarket();
         if (market == null || market.getData() == null) {
-            return process(StringUtls.localizedLlm("query.market.noData"));
+            return process(StringUtls.localizedResponse("query.market.noData"));
         }
 
         String instructions = """

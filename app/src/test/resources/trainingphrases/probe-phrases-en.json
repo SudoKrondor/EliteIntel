@@ -2243,7 +2243,7 @@
     "do we have any focus crystals",
     "check material stock for tellurium"
   ],
-  "lauch_deploy_nomad": [
+  "launch_deploy_nomad": [
     "launch nomad",
     "please launch nomad",
     "can you launch nomad",

@@ -12,67 +12,85 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
+/**
+ * The Materials event is a full inventory snapshot keyed by FDev symbol, so its counts are absolute
+ * and replace whatever was held.
+ */
 class MaterialsEventSubscriberTest {
 
     private final MaterialsEventSubscriber subscriber = new MaterialsEventSubscriber();
 
     @BeforeEach
-    void clearMaterials() {
+    void clearAmounts() {
         MaterialManager.getInstance().clear();
     }
 
     @Test
     void rawMaterialsAreStoredWithCorrectTypeAndCount() throws InterruptedException {
-        subscriber.onMaterialsEvent(event(material("Carbon", 10), null, null));
+        subscriber.onMaterialsEvent(event(material("carbon", 10), null, null));
 
-        awaitTrue(() -> MaterialManager.getInstance().find("Carbon") != null);
-        var result = MaterialManager.getInstance().find("Carbon");
+        awaitTrue(() -> MaterialManager.getInstance().find("carbon").getAmount() == 10);
+        var result = MaterialManager.getInstance().find("carbon");
         assertEquals(10, result.getAmount());
         assertEquals(MaterialsType.GAME_RAW.getType(), result.getMaterialType());
     }
 
     @Test
     void manufacturedMaterialsAreStoredWithCorrectType() throws InterruptedException {
-        subscriber.onMaterialsEvent(event(null, material("Focus Crystals", 5), null));
+        subscriber.onMaterialsEvent(event(null, material("focuscrystals", 5, "Focus Crystals"), null));
 
-        awaitTrue(() -> MaterialManager.getInstance().find("Focus Crystals") != null);
+        awaitTrue(() -> MaterialManager.getInstance().find("focuscrystals").getAmount() == 5);
         assertEquals(MaterialsType.GAME_MANUFACTURED.getType(),
-                MaterialManager.getInstance().find("Focus Crystals").getMaterialType());
+                MaterialManager.getInstance().find("focuscrystals").getMaterialType());
     }
 
     @Test
     void encodedMaterialsAreStoredWithCorrectType() throws InterruptedException {
-        subscriber.onMaterialsEvent(event(null, null, material("Unusual Encrypted Files", 8)));
+        subscriber.onMaterialsEvent(event(null, null, material("encryptedfiles", 8, "Unusual Encrypted Files")));
 
-        awaitTrue(() -> MaterialManager.getInstance().find("Unusual Encrypted Files") != null);
+        awaitTrue(() -> MaterialManager.getInstance().find("encryptedfiles").getAmount() == 8);
         assertEquals(MaterialsType.GAME_ENCODED.getType(),
-                MaterialManager.getInstance().find("Unusual Encrypted Files").getMaterialType());
+                MaterialManager.getInstance().find("encryptedfiles").getMaterialType());
     }
 
     @Test
     void materialsEventReplacesExistingCountNotAccumulates() throws InterruptedException {
-        MaterialManager.getInstance().save("Carbon", MaterialsType.GAME_RAW, 50);
+        MaterialManager.getInstance().snapshot("carbon", MaterialsType.GAME_RAW, 50, null);
 
-        subscriber.onMaterialsEvent(event(material("Carbon", 12), null, null));
+        subscriber.onMaterialsEvent(event(material("carbon", 12), null, null));
 
-        awaitTrue(() -> MaterialManager.getInstance().find("Carbon").getAmount() == 12);
-        assertEquals(12, MaterialManager.getInstance().find("Carbon").getAmount());
+        awaitTrue(() -> MaterialManager.getInstance().find("carbon").getAmount() == 12);
+        assertEquals(12, MaterialManager.getInstance().find("carbon").getAmount());
+    }
+
+    @Test
+    void snapshotIsStoredAgainstTheSymbolNotTheLocalisedName() throws InterruptedException {
+        // A German client sends Name=salvagedalloys with Name_Localised="Geborgene Legierungen".
+        // Both must land on the same row an English client writes.
+        subscriber.onMaterialsEvent(event(null, material("salvagedalloys", 42, "Geborgene Legierungen"), null));
+
+        awaitTrue(() -> MaterialManager.getInstance().find("salvagedalloys").getAmount() == 42);
+        var result = MaterialManager.getInstance().find("salvagedalloys");
+        assertEquals("Salvaged Alloys", result.getName(),
+                "the catalogue's own English name must win over the client's localized string");
+        assertEquals(300, result.getMaxCapacity());
     }
 
     @Test
     void allThreeCategoriesStoredInOneEvent() throws InterruptedException {
         subscriber.onMaterialsEvent(event(
-                material("Carbon", 3),
-                material("Focus Crystals", 7),
-                material("Unusual Encrypted Files", 2)
+                material("carbon", 3),
+                material("focuscrystals", 7, "Focus Crystals"),
+                material("encryptedfiles", 2, "Unusual Encrypted Files")
         ));
 
-        awaitTrue(() -> MaterialManager.getInstance().find("Focus Crystals") != null);
-        assertNotNull(MaterialManager.getInstance().find("Carbon"));
-        assertNotNull(MaterialManager.getInstance().find("Focus Crystals"));
-        assertNotNull(MaterialManager.getInstance().find("Unusual Encrypted Files"));
+        awaitTrue(() -> MaterialManager.getInstance().find("encryptedfiles").getAmount() == 2);
+        assertEquals(3, MaterialManager.getInstance().find("carbon").getAmount());
+        assertEquals(7, MaterialManager.getInstance().find("focuscrystals").getAmount());
+        assertEquals(2, MaterialManager.getInstance().find("encryptedfiles").getAmount());
     }
 
     private static MaterialsEvent event(JsonObject raw, JsonObject manufactured, JsonObject encoded) {
@@ -85,9 +103,14 @@ class MaterialsEventSubscriberTest {
         return new MaterialsEvent(json);
     }
 
-    private static JsonObject material(String name, int count) {
+    private static JsonObject material(String symbol, int count) {
+        return material(symbol, count, null);
+    }
+
+    private static JsonObject material(String symbol, int count, String localised) {
         JsonObject m = new JsonObject();
-        m.addProperty("Name", name);
+        m.addProperty("Name", symbol);
+        if (localised != null) m.addProperty("Name_Localised", localised);
         m.addProperty("Count", count);
         return m;
     }

@@ -64,7 +64,7 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         JsonElement key = params.get(PARAM_KEY);
         if (key == null) {
-            return StringUtls.localizedLlm("handler.mining.didNotCatch");
+            return StringUtls.localizedResponse("handler.mining.didNotCatch");
         }
         String target = capitalizeWords(
                 FuzzySearch.fuzzyCommodityMatch(
@@ -73,10 +73,10 @@ public final class RemoveMiningTargetCommand implements IntelCommand {
         );
 
         if (target == null || target.isEmpty()) {
-            return StringUtls.localizedLlm("handler.mining.notFoundInDb", key.getAsString());
+            return StringUtls.localizedResponse("handler.mining.notFoundInDb", key.getAsString());
         } else {
             playerSession.removeMiningTarget(target);
         }
-        return StringUtls.localizedLlm("handler.mining.targetRemoved", target);
+        return StringUtls.localizedResponse("handler.mining.targetRemoved", target);
     }
 }

@@ -12,9 +12,9 @@ import elite.intel.session.StatusFlags;
 import elite.intel.session.ui.UINavigator;
 
 @RegisterCommand
-public class LauchNomadCommand implements IntelCommand {
+public class LaunchNomadCommand implements IntelCommand {
 
-    public static final String ID = "lauch_deploy_nomad";
+    public static final String ID = "launch_deploy_nomad";
 
     @Override
     public String llmDescription() {

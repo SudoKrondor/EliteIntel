@@ -1,7 +1,7 @@
 package elite.intel.ai.brain.vega.memory;
 
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
 import elite.intel.ai.brain.vega.model.Urgency;
@@ -307,7 +307,7 @@ public final class MidTermToLongTermConsolidator implements PendingConsolidation
 
     private static String failureNotice() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return LlmTextProvider.getText(language, FAILURE_NOTICE_KEY);
+        return ResponseTextProvider.getText(language, FAILURE_NOTICE_KEY);
     }
 
     private static String localFallbackSummary(String previous, List<MemoryRecord> records) {

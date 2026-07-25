@@ -40,7 +40,7 @@ public final class DeployHardpointsCommand implements IntelCommand {
         Status status = Status.getInstance();
 
         if (status.isHardpointsDeployed()) {
-            return StringUtls.localizedLlm("handler.hardpoints.alreadyDeployed");
+            return StringUtls.localizedResponse("handler.hardpoints.alreadyDeployed");
         } else {
             GameControllerBus.publish(GameInputSequenceEvent.single(GameInputStep.bindingTap(BINDING_HARDPOINTS_TOGGLE.getGameBinding())));
         }

@@ -41,7 +41,7 @@ public final class NavigateToSquadronCarrierCommand implements IntelCommand {
         CarrierDataDto squadronCarrier = playerSession.getSquadronCarrierData();
 
         if (squadronCarrier == null || squadronCarrier.getStarName() == null || squadronCarrier.getStarName().isEmpty()) {
-            return StringUtls.localizedLlm("handler.navigate.squadronCarrierNotAvailable");
+            return StringUtls.localizedResponse("handler.navigate.squadronCarrierNotAvailable");
         }
 
         RoutePlotter plotter = new RoutePlotter();

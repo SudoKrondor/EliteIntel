@@ -334,7 +334,10 @@ public class SystemSession {
             GameSessionDao.GameSession session = dao.get();
             session.setOllamaAddress(address);
             session.setOllamaCommandModel(commandModel);
-            session.setOllamaQueryModel(commandModel); //backward compatibility use single model
+            // WHY: one local model now serves both roles, so nothing here reads the query column.
+            // It is still written because the column is NOT NULL, and because a V1.0 client sharing
+            // this database file still runs the dual-model pipeline and reads it.
+            session.setOllamaQueryModel(commandModel);
             dao.save(session);
             return Void.class;
         });
@@ -345,7 +348,9 @@ public class SystemSession {
             GameSessionDao.GameSession session = dao.get();
             session.setLmStudioAddress(address);
             session.setLmStudioCommandModel(commandModel);
-            session.setLmStudioQueryModel(commandModel);  //backward compatibility use single model
+            // WHY: see setOllamaSettings - the query column is write-only on this branch, kept for the
+            // NOT NULL constraint and for a V1.0 client sharing the same database file.
+            session.setLmStudioQueryModel(commandModel);
             dao.save(session);
             return Void.class;
         });
@@ -359,22 +364,12 @@ public class SystemSession {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaCommandModel());
     }
 
-    @Deprecated
-    public String getOllamaQueryModel() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getOllamaQueryModel());
-    }
-
     public String getLmStudioAddress() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioAddress());
     }
 
     public String getLmStudioCommandModel() {
         return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioCommandModel());
-    }
-
-    @Deprecated
-    public String getLmStudioQueryModel() {
-        return Database.withDao(GameSessionDao.class, dao -> dao.get().getLmStudioQueryModel());
     }
 
     // Language is shared by GUI and command aliases, but still persisted in the legacy aiLanguage column.

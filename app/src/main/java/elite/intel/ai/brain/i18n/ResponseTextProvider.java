@@ -8,15 +8,20 @@ import java.util.MissingResourceException;
 import java.util.Random;
 import java.util.ResourceBundle;
 
-public final class LlmTextProvider {
+/**
+ * Serves the {@code responses} bundle: the lines the assistant says back to the commander in reply to
+ * something they asked. Distinct from {@code ed_events} (spoken lines triggered by a game journal
+ * event), {@code gui} (on-screen text) and {@code ai_action_aliases} (phrases the commander says to us).
+ */
+public final class ResponseTextProvider {
 
-    private static final String BUNDLE_NAME = "i18n.llm";
+    private static final String BUNDLE_NAME = "i18n.responses";
     private static final ResourceBundle.Control NO_FALLBACK_CONTROL =
             ResourceBundle.Control.getNoFallbackControl(ResourceBundle.Control.FORMAT_DEFAULT);
 
     private static final Random RANDOM = new Random();
 
-    private LlmTextProvider() {
+    private ResponseTextProvider() {
     }
 
     public static String getText(Language language, String key, Object... args) {

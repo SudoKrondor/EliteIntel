@@ -31,7 +31,7 @@ public class AnalyzeFsdTargetQuery extends BaseQueryAnalyzer implements IntelQue
 
         FsdTarget fsdTarget = playerSession.getFsdTarget();
         if (fsdTarget == null) {
-            return process(StringUtls.localizedLlm("query.fsd.noTarget"));
+            return process(StringUtls.localizedResponse("query.fsd.noTarget"));
         }
 
         String instructions = """

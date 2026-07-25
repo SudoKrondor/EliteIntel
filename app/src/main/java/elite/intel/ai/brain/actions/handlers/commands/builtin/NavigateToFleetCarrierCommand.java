@@ -46,14 +46,14 @@ public final class NavigateToFleetCarrierCommand implements IntelCommand {
         } else if (hasHomeSystem) {
             destination = playerSession.getHomeSystem().getStarName();
         } else {
-            return StringUtls.localizedLlm("handler.navigate.noHomeSystem");
+            return StringUtls.localizedResponse("handler.navigate.noHomeSystem");
         }
 
         if (destination != null && !destination.isEmpty()) {
             RoutePlotter plotter = new RoutePlotter();
             return plotter.plotRoute(destination);
         } else {
-            return StringUtls.localizedLlm("handler.navigate.carrierNotAvailable");
+            return StringUtls.localizedResponse("handler.navigate.carrierNotAvailable");
         }
     }
 }

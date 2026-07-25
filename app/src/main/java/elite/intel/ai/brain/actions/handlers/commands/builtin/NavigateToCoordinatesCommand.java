@@ -78,7 +78,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
         PlayerSession playerSession = PlayerSession.getInstance();
 
         if(params.get(PARAM_LAT) == null || params.get(PARAM_LON) == null) {
-            return StringUtls.localizedLlm("handler.common.sayAgain");
+            return StringUtls.localizedResponse("handler.common.sayAgain");
         }
 
         double latitude = params.get(PARAM_LAT).getAsDouble();
@@ -86,7 +86,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
 
         if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
             log.error("Invalid coordinates: " + latitude + ", " + longitude);
-            return StringUtls.localizedLlm("handler.navigate.invalidCoords");
+            return StringUtls.localizedResponse("handler.navigate.invalidCoords");
         } else {
             TargetLocation tracking = playerSession.getTracking();
             tracking.setEnabled(true);
@@ -95,7 +95,7 @@ public final class NavigateToCoordinatesCommand implements IntelCommand {
             tracking.setRequestedTime(System.currentTimeMillis());
             playerSession.setTracking(tracking);
             log.info("Starting navigation to coordinates: " + latitude + ", " + longitude);
-            return StringUtls.localizedLlm("handler.navigate.startingNavCoords", latitude, longitude);
+            return StringUtls.localizedResponse("handler.navigate.startingNavCoords", latitude, longitude);
         }
     }
 }

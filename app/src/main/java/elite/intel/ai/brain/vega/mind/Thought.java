@@ -3,7 +3,7 @@ package elite.intel.ai.brain.vega.mind;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AIConstants;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
-import elite.intel.ai.brain.i18n.LlmTextProvider;
+import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
 import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
@@ -502,7 +502,7 @@ public abstract class Thought {
     /** Returns the fixed localized phrase used when a command, query, or macro execution fails. */
     protected static String executionFailurePhrase() {
         Language language = AiResponseLanguagePolicy.resolveEffectiveAiResponseLanguage(SystemSession.getInstance());
-        return LlmTextProvider.getText(language, CANNOT_EXECUTE_KEY);
+        return ResponseTextProvider.getText(language, CANNOT_EXECUTE_KEY);
     }
 
     /** Voices a non-blank phrase through the speech gateway (mission-critical -> urgent/preempting channel). */

@@ -55,7 +55,7 @@ class DeployLandingGearCommandTest {
 
         String outcome = command.execute(new JsonObject(), null);
 
-        assertEquals(StringUtls.localizedLlm("handler.landingGear.cantDoThat"), outcome);
+        assertEquals(StringUtls.localizedResponse("handler.landingGear.cantDoThat"), outcome);
         assertTrue(inputCapture.events.isEmpty());
     }
 

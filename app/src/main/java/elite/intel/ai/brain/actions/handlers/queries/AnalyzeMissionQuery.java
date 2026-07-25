@@ -37,7 +37,7 @@ public class AnalyzeMissionQuery extends BaseQueryAnalyzer implements IntelQuery
     @Override
     public JsonObject handle(String action, JsonObject params, String originalUserInput) throws Exception {
         MissionType[] availableMissionTypes = missionManager.getAvailableMissionTypes();
-        if (availableMissionTypes.length == 0) return process(StringUtls.localizedLlm("query.missions.none"));
+        if (availableMissionTypes.length == 0) return process(StringUtls.localizedResponse("query.missions.none"));
 
         Map<MissionType, Collection<MissionDto>> missions = Arrays.stream(availableMissionTypes).collect(
                 Collectors.toMap(

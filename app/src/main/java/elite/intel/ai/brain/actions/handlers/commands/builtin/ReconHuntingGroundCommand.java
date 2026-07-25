@@ -53,19 +53,19 @@ public final class ReconHuntingGroundCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget).orElse(null);
 
         if (target == null) {
-            return StringUtls.localizedLlm("handler.pirate.noReconSystems");
+            return StringUtls.localizedResponse("handler.pirate.noReconSystems");
         }
 
         boolean multipleMissionProviders = huntingGrounds.getFirst().getMissionProvider().size() > 1;
         // Non-terminal warning: the recon announcement and route plotting below must still run, so voice
         // the line via CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
         if (multipleMissionProviders) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.multipleProviders"), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.multipleProviders"), false);
         }
 
         String starSystem = target.getStarSystem();
 
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.reconSystem", starSystem), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.reconSystem", starSystem), false);
 
         RoutePlotter plotter = new RoutePlotter();
         return plotter.plotRoute(starSystem);

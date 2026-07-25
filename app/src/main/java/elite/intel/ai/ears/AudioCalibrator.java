@@ -103,7 +103,7 @@ public class AudioCalibrator {
             log.warn("Insufficient speech/noise separation (noiseFloor={}, speechAvg={}, separation={} dB, minimum={} dB). " +
                             "Environment too loud or mic gain too low; gate pinned just above the floor, speech may be missed.",
                     (int) noiseFloor, (int) avgSpeechRMS, String.format("%.1f", separation), MIN_SPEECH_TO_NOISE_DB);
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationLowGap",
+            UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationLowGap",
                     String.format("%.1f dB", separation))));
             highThreshold = Math.max(gateOpen, DEGENERATE_GATE_FALLBACK);
         } else {
@@ -125,7 +125,7 @@ public class AudioCalibrator {
         log.info("Final calibrated RMS thresholds: HIGH={} ({}), LOW={} ({}) (speech avg={} ({}), separation={} dB)",
                 highThreshold, formatDbfs(highThreshold), lowThreshold, formatDbfs(lowThreshold),
                 (int) avgSpeechRMS, formatDbfs(avgSpeechRMS), String.format("%.1f", separation));
-        UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationComplete",
+        UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationComplete",
                 formatDbfs(highThreshold), formatDbfs(lowThreshold))));
         return new RmsTupple<>(highThreshold, lowThreshold);
     }
@@ -203,7 +203,7 @@ public class AudioCalibrator {
      */
     private static void speakPromptAndWait(String speechKey) {
         CompletableFuture<Void> done = new CompletableFuture<>();
-        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm(speechKey), done));
+        GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse(speechKey), done));
         log.info("Prompted '{}', waiting up to {}ms for TTS to finish", speechKey, TTS_COMPLETION_TIMEOUT_MS);
         try {
             done.get(TTS_COMPLETION_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -248,7 +248,7 @@ public class AudioCalibrator {
 
         if (samples.isEmpty()) {
             log.warn("No noise samples collected");
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationNoAudio")));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationNoAudio")));
             throw new AudioCalibrationException("No noise samples collected");
         }
 
@@ -269,8 +269,8 @@ public class AudioCalibrator {
 
         if (noiseFloor > MAX_NOISE_AVG) {
             log.warn("High noise floor detected ({}); consider quieter environment", (int) noiseFloor);
-            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedLlm("speech.audioCalibrationNoisy")));
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationHighNoise", String.valueOf((int) noiseFloor))));
+            GameEventBus.publish(new AiVoxResponseEvent(StringUtls.localizedResponse("speech.audioCalibrationNoisy")));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationHighNoise", String.valueOf((int) noiseFloor))));
         }
         return noiseFloor;
     }
@@ -320,7 +320,7 @@ public class AudioCalibrator {
 
         if (speechSampleCount < totalSampleCount / 4) {
             log.warn("Insufficient speech detected ({} speech / {} total). Using noise-based fallback.", speechSampleCount, totalSampleCount);
-            UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationInsufficientSpeech")));
+            UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationInsufficientSpeech")));
             return DEFAULT_RMS_THRESHOLD_HIGH;
         }
 
@@ -358,7 +358,7 @@ public class AudioCalibrator {
                 last = e;
                 if (line != null) line.close();
                 log.warn("Audio input '{}' open attempt {}/{} failed: {}", deviceName, attempt, OPEN_MAX_ATTEMPTS, e.getMessage());
-                UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationDeviceBusyRetry",
+                UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationDeviceBusyRetry",
                         deviceName, String.valueOf(attempt), String.valueOf(OPEN_MAX_ATTEMPTS))));
                 if (attempt < OPEN_MAX_ATTEMPTS) {
                     try {
@@ -372,7 +372,7 @@ public class AudioCalibrator {
         }
         log.error("Audio input '{}' unavailable after {} attempts: {}", deviceName, OPEN_MAX_ATTEMPTS,
                 last != null ? last.getMessage() : "unknown");
-        UiBus.publish(new AppLogEvent(StringUtls.localizedLlm("log.audioCalibrationDeviceUnavailable",
+        UiBus.publish(new AppLogEvent(StringUtls.localizedSpeech("log.audioCalibrationDeviceUnavailable",
                 deviceName, String.valueOf(OPEN_MAX_ATTEMPTS))));
         throw new AudioCalibrationException(
                 "Audio input '" + deviceName + "' unavailable after " + OPEN_MAX_ATTEMPTS + " attempts", last);

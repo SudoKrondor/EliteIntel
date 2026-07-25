@@ -160,7 +160,7 @@ public class HuntingGroundManager {
                 dao.upsert(provider);
             }
             dao.updateFaction(provider.getId(), providerFaction);
-            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.pirate.providerFactionUpdated", providerFaction)));
+            GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.pirate.providerFactionUpdated", providerFaction)));
             return Void.class;
         });
     }
@@ -181,7 +181,7 @@ public class HuntingGroundManager {
             HuntingGround system = dao.findByStarSystem(primaryStarName);
             if (system != null && !system.isHasResSite()) {
                 dao.confirm(primaryStarName);
-                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedLlm("speech.pirate.reconConfirmed", primaryStarName)));
+                GameEventBus.publish(new MissionCriticalAnnouncementEvent(StringUtls.localizedResponse("speech.pirate.reconConfirmed", primaryStarName)));
             }
             return Void.class;
         });

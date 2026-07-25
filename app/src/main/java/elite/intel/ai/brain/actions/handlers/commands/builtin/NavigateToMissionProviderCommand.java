@@ -81,9 +81,9 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
             // Non-terminal announcement: provider resolution below must still run, so voice the line via
             // CompanionRuntime.narrator().filler (spoken, not remembered) instead of returning here.
             if (size == 1) {
-                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem()), false);
+                CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.oneMissionProvider", size, pair.getTarget().getStarSystem()), false);
             } else {
-                CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem()), false);
+                CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.manyMissionProviders", size, pair.getTarget().getStarSystem()), false);
             }
 
             provider = providers.stream().filter(p -> p.getMissionProviderFaction() == null).findFirst().orElse(null);
@@ -95,7 +95,7 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
             if (tryConfirmedMissionProvider()) {
                 return null;
             }
-            return StringUtls.localizedLlm("handler.pirate.noProviderForTarget", targetStarSystemName);
+            return StringUtls.localizedResponse("handler.pirate.noProviderForTarget", targetStarSystemName);
         }
 
         huntingGrounds.stream().filter(
@@ -103,12 +103,12 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         ).findFirst().map(PirateMissionTuple::getTarget);
 
         String starSystem = provider.getStarSystem();
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.plottingToProvider", starSystem, targetStarSystemName), false);
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.plottingToProvider", starSystem, targetStarSystemName), false);
 
         RoutePlotter plotter = new RoutePlotter();
         String result = plotter.plotRoute(starSystem);
         ReminderManager.getInstance().setReminder(
-                StringUtls.localizedLlm("handler.pirate.seekProviderReminder", targetStarSystemName),
+                StringUtls.localizedResponse("handler.pirate.seekProviderReminder", targetStarSystemName),
                 targetStarSystemName
         );
         return result;
@@ -128,13 +128,13 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         }
 
         if (location.getStarName().equalsIgnoreCase(targetSystem)) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.checkPorts", targetSystem), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.headTo", destination, targetSystem), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);
         }
 
         if (destination == null) {
-            CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.pirate.noKnowingProviders"), false);
+            CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.noKnowingProviders"), false);
             GameEventBus.publish(new UserInputEvent(" find hunting grounds"));
             return false;
         } else {

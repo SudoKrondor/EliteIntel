@@ -58,7 +58,7 @@ public class AnalyzeTradeScheduleQuery extends BaseQueryAnalyzer implements Inte
                     .append("\n");
         }
         if(allStops.isEmpty()){
-            return process(StringUtls.localizedLlm("query.trade.noSchedule"));
+            return process(StringUtls.localizedResponse("query.trade.noSchedule"));
         }
         return process(new AiDataStruct(INSTRUCTIONS, new DataDto(sb.toString())), originalUserInput);
     }

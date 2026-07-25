@@ -51,7 +51,6 @@ public class AiServicesSettingsPanel extends JPanel {
     private HudSegmentedControl providerControl;
     private JTextField addressField;
     private JTextField commandModelField;
-    private JTextField queryModelField;
     private JPasswordField apiKeyField;
     private JCheckBox llmLockCheck;
 
@@ -66,8 +65,8 @@ public class AiServicesSettingsPanel extends JPanel {
     private JLabel unsavedLabel;
 
     // -- Working copy (in memory, committed only by save) ----------------------
-    private String ollamaAddress = "", ollamaCommand = "", ollamaQuery = "";
-    private String lmAddress = "", lmCommand = "", lmQuery = "";
+    private String ollamaAddress = "", ollamaCommand = "";
+    private String lmAddress = "", lmCommand = "";
     /** Which provider's values are currently shown in the address/model fields. */
     private LocalLlmProvider shownProvider = LocalLlmProvider.LMSTUDIO;
 
@@ -75,8 +74,8 @@ public class AiServicesSettingsPanel extends JPanel {
     // so reverting values back to saved clears the "unsaved changes" banner.
     private boolean savedLlmLocal;
     private LocalLlmProvider savedProvider = LocalLlmProvider.LMSTUDIO;
-    private String savedOllamaAddress = "", savedOllamaCommand = "", savedOllamaQuery = "";
-    private String savedLmAddress = "", savedLmCommand = "", savedLmQuery = "";
+    private String savedOllamaAddress = "", savedOllamaCommand = "";
+    private String savedLmAddress = "", savedLmCommand = "";
     private String savedAiKey = "", savedTtsKey = "";
     private boolean savedTtsLocal;
 
@@ -123,16 +122,6 @@ public class AiServicesSettingsPanel extends JPanel {
         nextRow(gc);
         addLabel(localCol, getText("settings.ai.model"), gc, 0);
         addField(localCol, commandModelField, gc, 1, 1.0);
-
-        // Query (analysis) model field hidden: the companion runs a single model, so only one model
-        // field is shown. The field object and all its plumbing are intentionally kept (it still
-        // round-trips through the working copy and save), so this is a pure UI hide - uncomment the
-        // three layout lines below and relabel the field above to restore the split.
-        // Hidden pending the final decision to completely remove the legacy dual-model pipeline.
-        queryModelField = makeTextField();
-        // nextRow(gc);
-        // addLabel(localCol, getText("settings.ai.queryModel"), gc, 0);
-        // addField(localCol, queryModelField, gc, 1, 1.0);
 
         // Right column - CLOUD SETUP.
         rightCol = transparentPanel(new GridBagLayout());
@@ -233,7 +222,6 @@ public class AiServicesSettingsPanel extends JPanel {
 
         onTextChange(addressField);
         onTextChange(commandModelField);
-        onTextChange(queryModelField);
         onTextChange(apiKeyField);
         onTextChange(ttsKeyField);
     }
@@ -263,10 +251,8 @@ public class AiServicesSettingsPanel extends JPanel {
 
             ollamaAddress = nz(systemSession.getOllamaAddress(), LocalLlmProvider.OLLAMA.getDefaultUrl());
             ollamaCommand = nz(systemSession.getOllamaCommandModel(), "");
-            ollamaQuery = nz(systemSession.getOllamaQueryModel(), "");
             lmAddress = nz(systemSession.getLmStudioAddress(), LocalLlmProvider.LMSTUDIO.getDefaultUrl());
             lmCommand = nz(systemSession.getLmStudioCommandModel(), "");
-            lmQuery = nz(systemSession.getLmStudioQueryModel(), "");
             loadFields(shownProvider);
 
             apiKeyField.setText(nz(systemSession.getAiApiKey(), ""));
@@ -277,10 +263,8 @@ public class AiServicesSettingsPanel extends JPanel {
             savedProvider = provider;
             savedOllamaAddress = ollamaAddress;
             savedOllamaCommand = ollamaCommand;
-            savedOllamaQuery = ollamaQuery;
             savedLmAddress = lmAddress;
             savedLmCommand = lmCommand;
-            savedLmQuery = lmQuery;
             savedAiKey = nz(systemSession.getAiApiKey(), "");
             savedTtsKey = nz(systemSession.getTtsApiKey(), "");
             savedTtsLocal = systemSession.useLocalTTS();
@@ -318,11 +302,9 @@ public class AiServicesSettingsPanel extends JPanel {
         if (provider == LocalLlmProvider.OLLAMA) {
             ollamaAddress = addressField.getText();
             ollamaCommand = commandModelField.getText();
-            ollamaQuery = queryModelField.getText();
         } else {
             lmAddress = addressField.getText();
             lmCommand = commandModelField.getText();
-            lmQuery = queryModelField.getText();
         }
     }
 
@@ -330,7 +312,6 @@ public class AiServicesSettingsPanel extends JPanel {
         boolean ollama = provider == LocalLlmProvider.OLLAMA;
         addressField.setText(ollama ? ollamaAddress : lmAddress);
         commandModelField.setText(ollama ? ollamaCommand : lmCommand);
-        queryModelField.setText(ollama ? ollamaQuery : lmQuery);
     }
 
     /** Enables the active source's controls and dims the unused source (section 0.6). */
@@ -379,10 +360,8 @@ public class AiServicesSettingsPanel extends JPanel {
                 || !Objects.equals(newTtsKey, savedTtsKey)
                 || !Objects.equals(ollamaAddress, savedOllamaAddress)
                 || !Objects.equals(ollamaCommand, savedOllamaCommand)
-                || !Objects.equals(ollamaQuery, savedOllamaQuery)
                 || !Objects.equals(lmAddress, savedLmAddress)
-                || !Objects.equals(lmCommand, savedLmCommand)
-                || !Objects.equals(lmQuery, savedLmQuery);
+                || !Objects.equals(lmCommand, savedLmCommand);
     }
 
     private void setDirty(boolean modified) {
@@ -468,10 +447,8 @@ public class AiServicesSettingsPanel extends JPanel {
         savedProvider = newProvider;
         savedOllamaAddress = ollamaAddress;
         savedOllamaCommand = ollamaCommand;
-        savedOllamaQuery = ollamaQuery;
         savedLmAddress = lmAddress;
         savedLmCommand = lmCommand;
-        savedLmQuery = lmQuery;
         savedAiKey = newAiKey;
         savedTtsKey = newTtsKey;
         savedTtsLocal = newTtsLocal;
@@ -486,10 +463,8 @@ public class AiServicesSettingsPanel extends JPanel {
         try {
             ollamaAddress = LocalLlmProvider.OLLAMA.getDefaultUrl();
             ollamaCommand = DEFAULT_MODEL;
-            ollamaQuery = DEFAULT_MODEL;
             lmAddress = LocalLlmProvider.LMSTUDIO.getDefaultUrl();
             lmCommand = DEFAULT_MODEL;
-            lmQuery = DEFAULT_MODEL;
             providerControl.setSelectedIndex(PROV_LMSTUDIO);
             shownProvider = LocalLlmProvider.LMSTUDIO;
             llmSourceControl.setSelectedIndex(SRC_LOCAL);

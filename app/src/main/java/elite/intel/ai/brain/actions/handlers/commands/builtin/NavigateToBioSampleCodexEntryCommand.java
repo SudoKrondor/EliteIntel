@@ -60,12 +60,12 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         LocationDto currentLocation = locationManager.findByLocationData(playerSession.getLocationData());
 
         if (currentLocation == null || status.getStatus() == null) {
-            return StringUtls.localizedLlm("handler.navigate.noLocation");
+            return StringUtls.localizedResponse("handler.navigate.noLocation");
         }
 
         List<CodexEntryDao.CodexEntry> codexEntries = getCodexEntries(currentLocation);
         if (codexEntries.isEmpty()) {
-            return StringUtls.localizedLlm("handler.codex.notFound");
+            return StringUtls.localizedResponse("handler.codex.notFound");
         }
 
         double planetRadius = status.getStatus().getPlanetRadius();
@@ -86,7 +86,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
         playerSession.setTracking(nav);
         playerSession.setNavigationAnnouncementOn(true);
 
-        return StringUtls.localizedLlm("handler.codex.heading", target.getSample().getEntryName());
+        return StringUtls.localizedResponse("handler.codex.heading", target.getSample().getEntryName());
     }
 
     private List<CodexEntryDao.CodexEntry> getCodexEntries(LocationDto currentLocation) {
@@ -199,7 +199,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
             }
         }
 
-        if (best == null) return new Tuple<>(null, StringUtls.localizedLlm("handler.codex.noPartialTarget"));
+        if (best == null) return new Tuple<>(null, StringUtls.localizedResponse("handler.codex.noPartialTarget"));
         return new Tuple<>(best, "");
     }
 
@@ -250,7 +250,7 @@ public final class NavigateToBioSampleCodexEntryCommand implements IntelCommand 
             }
         }
 
-        if (bestEntry == null) return new Tuple<>(null, StringUtls.localizedLlm("handler.codex.notFound"));
+        if (bestEntry == null) return new Tuple<>(null, StringUtls.localizedResponse("handler.codex.notFound"));
         return new Tuple<>(bestEntry, "");
     }
 

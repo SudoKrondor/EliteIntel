@@ -58,7 +58,7 @@ public final class ToggleRadioCommand implements IntelCommand {
         boolean isOn = params.get(PARAM_STATE).getAsBoolean();
         PlayerSession playerSession = PlayerSession.getInstance();
         playerSession.setRadioTransmissionOn(isOn);
-        String state = StringUtls.localizedLlm(isOn ? "handler.state.on" : "handler.state.off");
-        return StringUtls.localizedLlm("handler.announcements.radio", state);
+        String state = StringUtls.localizedResponse(isOn ? "handler.state.on" : "handler.state.off");
+        return StringUtls.localizedResponse("handler.announcements.radio", state);
     }
 }

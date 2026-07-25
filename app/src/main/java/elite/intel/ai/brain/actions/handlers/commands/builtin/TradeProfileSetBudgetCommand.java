@@ -61,12 +61,12 @@ public final class TradeProfileSetBudgetCommand implements IntelCommand {
     public String execute(JsonObject params, String responseText) {
         Integer budget = StringUtls.getIntSafely(params.get(PARAM_KEY).getAsString());
         if (budget == null) {
-            return StringUtls.localizedLlm("handler.tradeProfile.invalidBudget");
+            return StringUtls.localizedResponse("handler.tradeProfile.invalidBudget");
         }
 
         TradeProfileManager manager = TradeProfileManager.getInstance();
         if(manager.setStartingCapitol(budget)) {
-            return StringUtls.localizedLlm("handler.tradeProfile.startingBudget", budget);
+            return StringUtls.localizedResponse("handler.tradeProfile.startingBudget", budget);
         }
         return null;
     }

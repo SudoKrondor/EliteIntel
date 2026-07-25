@@ -95,7 +95,7 @@ public final class FindCommodityCommand implements IntelCommand {
         String starName = playerSession.getPrimaryStarName();
 
         if (key == null) {
-            return StringUtls.localizedLlm("handler.commodity.specify");
+            return StringUtls.localizedResponse("handler.commodity.specify");
         }
 
         String commodity =
@@ -106,19 +106,19 @@ public final class FindCommodityCommand implements IntelCommand {
                 );
 
         if (commodity == null) {
-            return StringUtls.localizedLlm("handler.commodity.notFound", key.getAsString());
+            return StringUtls.localizedResponse("handler.commodity.notFound", key.getAsString());
         }
 
-        String searchMode = StringUtls.localizedLlm(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
-        CompanionRuntime.narrator().filler(StringUtls.localizedLlm("handler.commodity.searching", searchMode, commodity, distance), false);
+        String searchMode = StringUtls.localizedResponse(returnClosest ? "handler.commodity.modeNearest" : "handler.commodity.modeBest");
+        CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.commodity.searching", searchMode, commodity, distance), false);
         TradeRouteSearchCriteria tradeProfileManagerCriteria = tradeProfileManager.getCriteria(false);
         int cargoCapacity = tradeProfileManagerCriteria.getMaxCargo();
         if (cargoCapacity == 0) {
-            return StringUtls.localizedLlm("handler.commodity.noCargoCapacity");
+            return StringUtls.localizedResponse("handler.commodity.noCargoCapacity");
         }
         int maxDistanceFromArrival = tradeProfileManagerCriteria.getMaxLsFromArrival();
         if (maxDistanceFromArrival == 0) {
-            return StringUtls.localizedLlm("handler.commodity.maxDistanceFromArrivalNoSet");
+            return StringUtls.localizedResponse("handler.commodity.maxDistanceFromArrivalNoSet");
         }
         List<CommoditySearchResult> results = EdsmCommoditySearch.search(
                 commodity,
@@ -129,11 +129,11 @@ public final class FindCommodityCommand implements IntelCommand {
                 returnClosest
         );
         if (results.isEmpty()) {
-            return StringUtls.localizedLlm("handler.commodity.noMatch");
+            return StringUtls.localizedResponse("handler.commodity.noMatch");
         }
         ReminderManager reminderManager = ReminderManager.getInstance();
         CommoditySearchResult result = results.getFirst();
-        String reminder = StringUtls.localizedLlm("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
+        String reminder = StringUtls.localizedResponse("handler.commodity.headTo", result.getStarSystem(), result.getStationName(), result.getStationType(), result.getPrice());
         CompanionRuntime.narrator().filler(reminder, false);
         reminderManager.setReminder(reminder, result.getStarSystem());
 

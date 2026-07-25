@@ -45,7 +45,7 @@ public class AnalyzeCargoHoldQuery extends BaseQueryAnalyzer implements IntelQue
                     originalUserInput
             );
         } else {
-            return process(StringUtls.localizedLlm("query.cargo.noLoadout"));
+            return process(StringUtls.localizedResponse("query.cargo.noLoadout"));
         }
     }
 

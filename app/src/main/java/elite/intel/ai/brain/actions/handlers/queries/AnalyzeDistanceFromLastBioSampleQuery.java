@@ -45,7 +45,7 @@ public class AnalyzeDistanceFromLastBioSampleQuery extends BaseQueryAnalyzer imp
                 """;
 
         if (status.getStatus() == null) {
-            return process(StringUtls.localizedLlm("query.bio.noPlanetData"));
+            return process(StringUtls.localizedResponse("query.bio.noPlanetData"));
         }
 
         double latitude = status.getStatus().getLatitude();
@@ -53,11 +53,11 @@ public class AnalyzeDistanceFromLastBioSampleQuery extends BaseQueryAnalyzer imp
         double planetRadius = status.getStatus().getPlanetRadius();
 
         if (latitude == 0 || longitude == 0 || planetRadius == 0) {
-            return process(StringUtls.localizedLlm("query.noPosition"));
+            return process(StringUtls.localizedResponse("query.noPosition"));
         }
 
         if (currentLocation.getPartialBioSamples().isEmpty()) {
-            return process(StringUtls.localizedLlm("query.bio.noPartialScans"));
+            return process(StringUtls.localizedResponse("query.bio.noPartialScans"));
         }
 
         BioSampleDto bioSample = currentLocation.getPartialBioSamples().getLast();
