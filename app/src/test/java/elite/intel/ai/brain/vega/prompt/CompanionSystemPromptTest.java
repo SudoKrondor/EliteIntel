@@ -14,8 +14,16 @@ import static org.junit.jupiter.api.Assertions.*;
 class CompanionSystemPromptTest {
 
     /**
-     * Budget for the prompt text we author, excluding the interpolated personality clause. Headroom over the
-     * current size is deliberate: translated prompts run longer than the English original.
+     * Budget for the prompt text we author, excluding the interpolated personality clause. It is a bloat tripwire,
+     * not a spending limit: exceeding it means an older rule has to pay for the new one, because every rule added
+     * dilutes the rest for a small local model. Raise this number only with a reason that is not "the new rule
+     * did not fit".
+     *
+     * <p>It last fired when the state-gating rule landed and the prompt was at 598 - one word under. Two passages
+     * were cut to make room rather than raising it: the biography's career sentences (which licensed "when to
+     * challenge risky decisions", working directly against <em>Obey without argument</em> and against the new
+     * rule) and the grounding block's gloss on the {@code source} XML attribute, which explained a label the
+     * model reads fine unaided. Headroom is deliberate: translated prompts run longer than the English original.
      */
     private static final int AUTHORED_WORD_BUDGET = 600;
 
@@ -134,6 +142,31 @@ class CompanionSystemPromptTest {
                 "several plausible functions must resolve to the best one, not a request to restate");
         assertFalse(normalized.contains("call speak and briefly ask for a restatement"),
                 "the ambiguity branch must never route to conversation");
+    }
+
+    /**
+     * The offered tool set is the authority on what is currently possible: {@link GameToolCandidates} gates every
+     * candidate through {@code IntelAction.isVisibleForLLM(status)} against the live game status, so a function the
+     * model can see is by construction runnable right now.
+     *
+     * <p>WHY: asked to "run biome analysis" in supercruise, Mistral was offered {@code query_biome_analysis} (the
+     * reducer kept it alone at 0.942) and still answered "we're in supercruise, can't do that yet" - and repeated
+     * the refusal when the commander corrected it. Biome analysis is a DB read with no state requirement at all;
+     * the precondition came from the model's own Elite lore about surface scanning, applied over a
+     * {@code situation} fact saying "In ship - supercruise". Without this rule, every always-available query is one
+     * plausible-sounding game rule away from being refused, and the {@code situation} fact makes that guess easy.
+     */
+    @Test
+    void neverRefusesAnOfferedFunctionOnGameStateGrounds() {
+        String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
+
+        assertTrue(normalized.contains("already filtered by live game state"),
+                "the model must be told the offered set is state-gated by the host");
+        assertTrue(normalized.contains("every one can run now"));
+        assertTrue(normalized.contains("Never refuse or defer one on situational grounds"),
+                "an offered function must never be declined over the game situation");
+        assertTrue(normalized.contains("an action needing another state is not offered"),
+                "the model needs the reason, not just the prohibition");
     }
 
     /**
