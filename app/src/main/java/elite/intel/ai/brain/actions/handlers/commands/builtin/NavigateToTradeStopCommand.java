@@ -75,7 +75,7 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
 
         String message;
         if (!cargoLoaded) {
-            boolean notInSourceSystem = !location.getStarName().equalsIgnoreCase(sourceSystem);
+            boolean notInSourceSystem = !location.isInSystem(sourceSystem);
             boolean notAtTheSourceStation = location.getStationName() != null && !location.getStationName().equalsIgnoreCase(sourceStation);
 
             if (notInSourceSystem) {
@@ -87,8 +87,8 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
                 message = StringUtls.localizedResponse("handler.tradeStop.atStationBuy", commodityList, destinationSystem, destinationStation);
             }
         } else {
-            boolean notInDestinationSystem = !location.getStarName().equalsIgnoreCase(destinationSystem);
-            boolean notAtTheDestinationStation = !location.getStationName().equalsIgnoreCase(destinationStation);
+            boolean notInDestinationSystem = !location.isInSystem(destinationSystem);
+            boolean notAtTheDestinationStation = !location.isAtStation(destinationStation);
 
             if (notInDestinationSystem) {
                 message = StringUtls.localizedResponse("handler.tradeStop.travelToSell", destinationSystem, destinationStation);

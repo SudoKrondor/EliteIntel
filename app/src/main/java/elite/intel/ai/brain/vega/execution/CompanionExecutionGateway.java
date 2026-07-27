@@ -11,6 +11,8 @@ import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
 import elite.intel.ai.brain.vega.tools.SystemFunction;
 import elite.intel.ai.brain.vega.tools.SystemFunctionRegistry;
 import elite.intel.ai.brain.vega.tools.SystemFunctionResultFields;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 import java.util.concurrent.*;
@@ -39,6 +41,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code completed_by_executor} status. The gateway never writes to memory.
  */
 public final class CompanionExecutionGateway implements ExecutionGateway {
+
+    private static final Logger log = LogManager.getLogger(CompanionExecutionGateway.class);
 
     /** Dispatch-status result for a side-effect tool; the gateway-only "tool" field names which one ran. */
     private static final String TOOL = "tool";
@@ -124,6 +128,10 @@ public final class CompanionExecutionGateway implements ExecutionGateway {
                 try {
                     future.complete(execute(tool, request));
                 } catch (Throwable failure) {
+                    // The caller turns this into the commander's "can't do that right now" phrase, which says
+                    // nothing about why. The stack trace is the only record of the real cause, so it is logged here
+                    // - at the one point every tool-call failure passes through - rather than lost with the future.
+                    log.error("Companion tool '{}' failed", request.toolName(), failure);
                     future.completeExceptionally(failure);
                 }
             });

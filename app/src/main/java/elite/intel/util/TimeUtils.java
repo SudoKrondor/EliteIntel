@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class TimeUtils {
-    private static final int SECONDS_PER_MINUTE = 60;
     //public static final String ISO_8601 = "yyyy-MM-dd HH:mm:ss";
 
     // --------------------------------------------------------------
@@ -31,22 +30,6 @@ public class TimeUtils {
     public static final String ISO_LOCAL_TIME = "HH:mm:ss";
     public static final String FILE_SAFE_DATE_TIME = "yyyy-MM-dd_HH-mm-ss";
 
-
-
-    /**
-     * Converts a time duration in seconds (as a double) to a human-readable string
-     * in the format "N minutes remaining".
-     *
-     * @param seconds the time duration in seconds
-     * @return a string in the format "N minutes remaining"
-     */
-    public static String secondsToMinutesRemainingString(Double seconds) {
-        if (seconds == null) {
-            return "";
-        }
-        int minutes = (int) (seconds / SECONDS_PER_MINUTE);
-        return minutes + " minutes remaining";
-    }
 
 
     /**

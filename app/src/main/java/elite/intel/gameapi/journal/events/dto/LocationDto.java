@@ -239,6 +239,21 @@ public class LocationDto implements ToJsonConvertible {
         return starName;
     }
 
+    /**
+     * Null-safe "is this location in the named system". A location looked up for a system we hold no row for
+     * carries no star name at all, so callers must never compare through {@link #getStarName()} directly.
+     */
+    public boolean isInSystem(String systemName) {
+        return starName != null && systemName != null && starName.equalsIgnoreCase(systemName);
+    }
+
+    /**
+     * Null-safe "is this location the named station"; an unknown station name is never a match.
+     */
+    public boolean isAtStation(String station) {
+        return stationName != null && station != null && stationName.equalsIgnoreCase(station);
+    }
+
     public void setStarName(String starName) {
         if (starName == null) return;
         this.starName = starName;

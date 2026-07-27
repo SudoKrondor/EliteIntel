@@ -54,7 +54,7 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
         String destination = null;
         String targetSystem = null;
         for (MissionProvider provider : missionProviders) {
-            if (!location.getStarName().equalsIgnoreCase(provider.getStarSystem())){
+            if (!location.isInSystem(provider.getStarSystem())) {
                 destination = provider.getStarSystem();
                 targetSystem = provider.getTargetSystem();
                 break;
@@ -63,7 +63,7 @@ public final class NavigateToPirateMissionProviderCommand implements IntelComman
 
         // Non-terminal announcement: the route plotting below must still run, so declare the line via
         // CompanionRuntime.narrator().filler (voiced, not remembered) instead of returning here.
-        if (location.getStarName().equalsIgnoreCase(targetSystem)){
+        if (location.isInSystem(targetSystem)) {
             CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
             CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);

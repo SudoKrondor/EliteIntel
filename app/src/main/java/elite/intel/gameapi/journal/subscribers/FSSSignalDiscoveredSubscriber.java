@@ -9,9 +9,9 @@ import elite.intel.gameapi.journal.events.dto.FssSignalDto;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
-import elite.intel.util.TimeUtils;
 
 import static elite.intel.util.StringUtls.localizedEvent;
+import static elite.intel.util.StringUtls.localizedEventPlural;
 
 @SuppressWarnings("unused")
 public class FSSSignalDiscoveredSubscriber {
@@ -20,6 +20,7 @@ public class FSSSignalDiscoveredSubscriber {
     private static final String USS_TYPE_VALUABLE_SALVAGE = "$USS_Type_ValuableSalvage";
     private static final String USS_TYPE_VERY_VALUABLE_SALVAGE = "$USS_Type_VeryValuableSalvage";
     private static final String NOTABLE_STELLAR_PHENOMENON = "$Fixed_Event_Life_Cloud;";
+    private static final int SECONDS_PER_MINUTE = 60;
 
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final HuntingGroundManager pirateMissionDataManager = HuntingGroundManager.getInstance();
@@ -48,7 +49,7 @@ public class FSSSignalDiscoveredSubscriber {
                 announceSalvage("event.fss.signal.salvage.veryValuable", event);
             }
             if (event.getSignalName() != null && event.getSignalName().contains(NOTABLE_STELLAR_PHENOMENON)) {
-                announceSalvage("event.fss.notable.stellar.phenomenon", event);
+                publishVoice(localizedEvent("event.fss.notable.stellar.phenomenon"));
             }
         });
     }
@@ -76,16 +77,33 @@ public class FSSSignalDiscoveredSubscriber {
 
 
     private void announceSalvage(String qualityKey, FSSSignalDiscoveredEvent event) {
-        StringBuilder msg = new StringBuilder()
-                .append(localizedEvent(qualityKey)).append(" ")
-                .append(event.getUssTypeLocalised()).append(": ")
-                .append(TimeUtils.secondsToMinutesRemainingString(event.getTimeRemaining()));
+        StringBuilder msg = new StringBuilder(localizedEvent(qualityKey));
+
+        if (event.getUssTypeLocalised() != null && !event.getUssTypeLocalised().isBlank()) {
+            msg.append(" ").append(event.getUssTypeLocalised());
+        }
+
+        String timeRemaining = formatTimeRemaining(event.getTimeRemaining());
+        if (!timeRemaining.isEmpty()) {
+            msg.append(": ").append(timeRemaining);
+        }
 
         if (event.getThreatLevel() > 0) {
             msg.append(localizedEvent("event.fss.signal.salvage.threatLevel", event.getThreatLevel()));
         }
 
         publishVoice(msg.toString());
+    }
+
+    /**
+     * TimeRemaining is absent on most signal types, so a zero here means "no timer", not "expired".
+     */
+    private String formatTimeRemaining(double seconds) {
+        int minutes = (int) (seconds / SECONDS_PER_MINUTE);
+        if (minutes <= 0) {
+            return "";
+        }
+        return localizedEvent("event.fss.signal.timeRemaining", localizedEventPlural(minutes, "event.time.minutes"));
     }
 
 }

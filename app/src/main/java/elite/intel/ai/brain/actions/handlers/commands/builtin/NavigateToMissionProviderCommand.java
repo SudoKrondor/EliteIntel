@@ -120,14 +120,14 @@ public final class NavigateToMissionProviderCommand implements IntelCommand {
         String destination = null;
         String targetSystem = null;
         for (MissionProvider provider : missionProviders) {
-            if (!location.getStarName().equalsIgnoreCase(provider.getStarSystem())) {
+            if (!location.isInSystem(provider.getStarSystem())) {
                 destination = provider.getStarSystem();
                 targetSystem = provider.getTargetSystem();
                 break;
             }
         }
 
-        if (location.getStarName().equalsIgnoreCase(targetSystem)) {
+        if (location.isInSystem(targetSystem)) {
             CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.checkPorts", targetSystem), false);
         } else {
             CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.pirate.headTo", destination, targetSystem), false);

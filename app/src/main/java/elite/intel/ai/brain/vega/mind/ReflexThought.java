@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.vega.mind;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
 import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
 
 import java.util.concurrent.CompletableFuture;
@@ -62,9 +63,16 @@ final class ReflexThought extends Thought {
                 if (isStopped()) {
                     return null;
                 }
-                JsonObject settled = failure == null
-                        ? (result == null ? new JsonObject() : result)
-                        : executionError(inv.name(), failure);
+                JsonObject settled;
+                if (failure == null) {
+                    settled = result == null ? new JsonObject() : result;
+                } else {
+                    // A reflex has no LLM round to report through, so without this line the companion log shows
+                    // only the generic failure phrase and never names the action that broke.
+                    CompanionDiagnostics.debug(trace(), "exec", inv.name() + " failed: "
+                            + CompanionDiagnostics.truncate(String.valueOf(failure.getMessage())));
+                    settled = executionError(inv.name(), failure);
+                }
                 settleToolOutcome(inv, settled);
                 return null;
             } finally {

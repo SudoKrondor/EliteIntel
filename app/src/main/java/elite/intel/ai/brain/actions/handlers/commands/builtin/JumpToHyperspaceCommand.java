@@ -60,7 +60,7 @@ public final class JumpToHyperspaceCommand implements IntelCommand {
         if (fsdTarget != null) {
             String starName = fsdTarget.getName() == null ? "unknown" : fsdTarget.getName();
 
-            if (currentLocation.getStarName().equals(starName)) {
+            if (currentLocation.isInSystem(starName)) {
                 CompanionRuntime.narrator().filler(StringUtls.localizedResponse("handler.fsd.nodestination"), false);
                 return null;
             }
