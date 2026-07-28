@@ -48,15 +48,26 @@ public class FuzzySearch {
     }
 
 
+    /**
+     * Resolves a spoken commodity name to the canonical <em>English</em> name, matching against the
+     * commander's own language first and falling back to English.
+     * <p>
+     * The English retry is not redundant with the DAO's {@code COALESCE(<col>, commodity)}: that
+     * only covers rows with no translation, so on a row that <em>is</em> translated the English
+     * term is absent from the localized candidate list entirely. Commodity names are commonly
+     * spoken in English whatever the client language, so both must resolve. The retry costs
+     * nothing on the hit path.
+     */
     public static String fuzzyCommodityMatch(String input, int similarity) {
         Language lang = SystemSession.getInstance().getLanguage();
-        if (lang == Language.EN) {
-            return fuzzyMatch(input, similarity, CommodityDao.class, CommodityDao::getAllNamesLowerCase, CommodityDao::getOriginalCase);
+        if (lang != Language.EN) {
+            String col = commodityColumn(lang);
+            String localized = fuzzyMatch(input, similarity, CommodityDao.class,
+                    dao -> dao.getAllLocalizedNamesLowerCase(col),
+                    (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+            if (localized != null && !localized.isBlank()) return localized;
         }
-        String col = commodityColumn(lang);
-        return fuzzyMatch(input, similarity, CommodityDao.class,
-                dao -> dao.getAllLocalizedNamesLowerCase(col),
-                (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+        return fuzzyMatch(input, similarity, CommodityDao.class, CommodityDao::getAllNamesLowerCase, CommodityDao::getOriginalCase);
     }
 
     /**
@@ -134,8 +145,52 @@ public class FuzzySearch {
         return (name == null || name.isBlank()) ? StringUtls.localizedResponse(UNKNOWN_MATERIAL) : name;
     }
 
+    /**
+     * Resolves a spoken subsystem name to the canonical <em>English</em> name, matching against the
+     * commander's own language. Targeting is keyed on the English name (and through it the journal
+     * machine key), so the non-localized name is deliberately what comes back out.
+     * <p>
+     * A miss in the active language retries against English. Two things make that worth doing:
+     * a row with no translation yet is only reachable in English, and module names are widely
+     * spoken in English whatever the commander's language. The retry costs nothing on the hit path.
+     */
     public static String fuzzySubSystemSearch(String input, int similarity) {
+        Language lang = systemSession.getLanguage();
+        if (lang != Language.EN) {
+            String col = subSystemLabelColumn(lang);
+            String localized = fuzzyMatch(input, similarity, SubSystemDao.class,
+                    dao -> dao.getAllLocalizedNamesLowerCase(col),
+                    (dao, name) -> dao.getEnglishByLocalizedName(col, name));
+            if (localized != null && !localized.isBlank()) return localized;
+        }
         return fuzzyMatch(input, similarity, SubSystemDao.class, SubSystemDao::getAllNamesLowerCase, SubSystemDao::getOriginalCase);
+    }
+
+    /**
+     * The display name to speak for a canonical English subsystem name — used for announcements
+     * like "not installed", so the commander hears the same wording their HUD shows.
+     */
+    public static String localizedSubSystemName(String englishName) {
+        if (englishName == null || englishName.isBlank()) return englishName;
+        Language lang = systemSession.getLanguage();
+        if (lang == Language.EN) return englishName;
+        String col = subSystemLabelColumn(lang);
+        String localized = Database.withDao(SubSystemDao.class, dao -> dao.getLocalizedLabel(col, englishName));
+        return (localized == null || localized.isBlank()) ? englishName : localized;
+    }
+
+    private static String subSystemLabelColumn(Language lang) {
+        return switch (lang) {
+            case DE -> "label_de";
+            case ES -> "label_es";
+            case FR -> "label_fr";
+            case IT -> "label_it";
+            case PT -> "label_pt";
+            case PTBZ -> "label_ptbz";
+            case RU -> "label_ru";
+            case UK -> "label_uk";
+            default -> "subsystem";
+        };
     }
 
     private static String materialNameColumn(Language lang) {
@@ -159,6 +214,15 @@ public class FuzzySearch {
         return lang.name().toLowerCase();
     }
 
+    /**
+     * The {@code commodities} column holding names for a language. Unlike
+     * {@link #materialNameColumn(Language)} this is not gated on {@link Language#isGameLocalized()}:
+     * commodities are localized for every supported language, not only Frontier's six.
+     * <p>
+     * A column that is still NULL for a given row is not a problem — CommodityDao wraps every
+     * lookup in {@code COALESCE(<col>, commodity)}, so untranslated rows resolve to the English
+     * name. That is what currently carries UK, which has no translations loaded at all.
+     */
     private static String commodityColumn(Language lang) {
         return switch (lang) {
             case DE -> "commodity_de";
@@ -167,6 +231,8 @@ public class FuzzySearch {
             case RU -> "commodity_ru";
             case UK -> "commodity_uk";
             case IT -> "commodity_it";
+            case PT -> "commodity_pt";
+            case PTBZ -> "commodity_ptbz";
             default -> "commodity";
         };
     }

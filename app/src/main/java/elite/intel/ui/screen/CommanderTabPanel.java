@@ -338,37 +338,39 @@ public class CommanderTabPanel extends JPanel {
                 e -> playerSession.setRouteAnnouncementOn(routeAnnouncementBox.isSelected()));
         announcements.add(routeAnnouncementBox, ac);
 
-        ac.gridy = 2;
+        ac.gridx = 1;
+        ac.gridy = 0;
         radarContactAnnouncementBox = makeCheckBox(
                 getText("announcements.radarContact"), playerSession.isRadarContactAnnouncementOn());
         radarContactAnnouncementBox.addActionListener(
                 e -> playerSession.setRadarContactAnnouncementOn(radarContactAnnouncementBox.isSelected()));
         announcements.add(radarContactAnnouncementBox, ac);
 
-        ac.gridx = 1;
-        ac.gridy = 0;
+        ac.gridy = 1;
         miningAnnouncementBox = makeCheckBox(
                 getText("announcements.mining"), playerSession.isMiningAnnouncementOn());
         miningAnnouncementBox.addActionListener(
                 e -> playerSession.setMiningAnnouncementOn(miningAnnouncementBox.isSelected()));
         announcements.add(miningAnnouncementBox, ac);
 
-        ac.gridy = 1;
+        ac.gridx = 2;
+        ac.gridy = 0;
         navigationAnnouncementBox = makeCheckBox(
                 getText("announcements.navigation"), playerSession.isNavigationAnnouncementOn());
         navigationAnnouncementBox.addActionListener(
                 e -> playerSession.setNavigationAnnouncementOn(navigationAnnouncementBox.isSelected()));
         announcements.add(navigationAnnouncementBox, ac);
 
-        ac.gridy = 2;
+        ac.gridy = 1;
         radioTransmissionBox = makeCheckBox(
                 getText("announcements.radioTransmissions"), playerSession.isRadioTransmissionOn());
         radioTransmissionBox.addActionListener(
                 e -> playerSession.setRadioTransmissionOn(radioTransmissionBox.isSelected()));
         announcements.add(radioTransmissionBox, ac);
 
-        // Filler so the two-column checkbox grid stays top-left aligned like the Ship Options tab.
-        ac.gridx = 2;
+        // Filler so the three-column checkbox grid keeps its slack on the right rather than
+        // stretching the columns across the full width.
+        ac.gridx = 3;
         ac.gridy = 0;
         ac.weightx = 1.0;
         announcements.add(Box.createHorizontalGlue(), ac);
@@ -377,7 +379,7 @@ public class CommanderTabPanel extends JPanel {
     }
 
     /**
-     * Shared grid geometry for the two-column checkbox grids of both option tabs.
+     * Shared grid geometry for the three-column checkbox grids of both option tabs.
      */
     private static GridBagConstraints optionGbc() {
         GridBagConstraints gbc = new GridBagConstraints();

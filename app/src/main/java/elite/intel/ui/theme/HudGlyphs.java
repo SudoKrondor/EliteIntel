@@ -3,6 +3,7 @@ package elite.intel.ui.theme;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.font.GlyphVector;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 
@@ -563,27 +564,45 @@ public final class HudGlyphs {
     }
 
     /**
-     * Paints the HUD checkbox marker: a 2-px double-outline square box, with a centred
-     * filled inner square when {@code filled} is true. Geometry matches the legacy inline
-     * drawing in {@link HudCheckBox}. Caller is responsible for antialiasing hints.
+     * Paints the HUD checkbox marker: a 2-px double-outline square box, with a centred tick
+     * when {@code filled} is true. Caller is responsible for antialiasing hints.
+     * <p>
+     * The tick is built in floating point and stroked, rather than snapped to whole pixels. The
+     * previous inner-square marker used integer arithmetic ({@code size / 2} then
+     * {@code (size - innerSize) / 2}), which at the sizes actually in use left an uneven margin —
+     * at the standard 14px marker the square sat 3px from the left and 4px from the right, reading
+     * as visibly crooked. Fractional geometry keeps the tick optically centred at any size.
      *
      * @param g2          graphics context (not disposed by this method)
      * @param x           left edge of the marker box
      * @param y           top edge of the marker box
      * @param size        outer marker size in px (e.g. {@code HUD_TABLE_ROW_HEIGHT_COMPACT - 2*HUD_PADDING_SMALL})
-     * @param markerColor colour of outline and inner fill
-     * @param filled      draw the inner filled square (ON state) when true
+     * @param markerColor colour of the outline and the tick
+     * @param filled      draw the tick (ON state) when true
      */
     public static void paintHudCheckMarker(Graphics2D g2, int x, int y, int size,
                                            Color markerColor, boolean filled) {
         g2.setColor(markerColor);
         g2.drawRect(x,     y,     size - 1, size - 1);
         g2.drawRect(x + 1, y + 1, size - 3, size - 3);
-        if (filled) {
-            int innerSize = size / 2;
-            int innerX = x + (size - innerSize) / 2;
-            int innerY = y + (size - innerSize) / 2;
-            g2.fillRect(innerX, innerY, innerSize, innerSize);
-        }
+        if (!filled) return;
+
+        Stroke oldStroke = g2.getStroke();
+        Object oldAA = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Tick proportions are expressed as fractions of the box so the mark scales with it.
+        float w = size;
+        Path2D.Float tick = new Path2D.Float();
+        tick.moveTo(x + w * 0.28f, y + w * 0.52f);
+        tick.lineTo(x + w * 0.44f, y + w * 0.69f);
+        tick.lineTo(x + w * 0.74f, y + w * 0.33f);
+
+        g2.setStroke(new BasicStroke(Math.max(2f, size / 7f),
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.draw(tick);
+
+        g2.setStroke(oldStroke);
+        if (oldAA != null) g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, oldAA);
     }
 }

@@ -2,6 +2,8 @@ package elite.intel.junit.db;
 
 import elite.intel.db.FuzzySearch;
 import elite.intel.db.managers.MaterialManager;
+import elite.intel.i18n.Language;
+import elite.intel.session.SystemSession;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -195,5 +197,134 @@ class FuzzySearchTest {
     void localizedNameHandlesMissingSymbol() {
         assertEquals("unknown material", FuzzySearch.localizedMaterialName(null));
         assertEquals("unknown material", FuzzySearch.localizedMaterialName("  "));
+    }
+
+    // ── Portuguese commodity names (01018 section 2 adds the columns, section 5 fills them) ──
+
+    @Test
+    void commodityMatchResolvesABrazilianPortugueseNameToEnglish() {
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Advanced Medicines", FuzzySearch.fuzzyCommodityMatch("remédios avançados", 3)));
+    }
+
+    @Test
+    void localizedCommodityNameSpeaksBrazilianPortuguese() {
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Tratamento Agronômico", FuzzySearch.localizedCommodityName("Agronomic Treatment")));
+    }
+
+    @Test
+    void europeanPortugueseAlsoGetsAPortugueseCommodityName() {
+        withLanguage(Language.PT, () ->
+                assertEquals("Tratamento Agronômico", FuzzySearch.localizedCommodityName("Agronomic Treatment")));
+    }
+
+    @Test
+    void untranslatedCommodityFallsBackToEnglishRatherThanGoingBlank() {
+        // Not every row has an upstream translation; the DAO COALESCEs so speech stays intelligible.
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Chemicals", FuzzySearch.localizedCommodityName("Chemicals")));
+    }
+
+    @Test
+    void ukrainianCommoditiesStillResolveViaTheEnglishFallback() {
+        // commodity_uk has no data at all — the upstream file carries no Ukrainian column.
+        withLanguage(Language.UK, () ->
+                assertEquals("Gold", FuzzySearch.fuzzyCommodityMatch("gold", 3)));
+    }
+
+    @Test
+    void commodityMatchStillAcceptsEnglishWhileAnotherLanguageIsActive() {
+        // Same guard as the subsystem case: commodity_ptbz for Gold is "Ouro", so "gold" is absent
+        // from the Portuguese candidate list and COALESCE does not rescue it. Adding the PT/PTBZ
+        // columns would have silently cost these commanders English commodity names without the
+        // English retry in fuzzyCommodityMatch.
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Gold", FuzzySearch.fuzzyCommodityMatch("gold", 3)));
+        withLanguage(Language.DE, () ->
+                assertEquals("Gold", FuzzySearch.fuzzyCommodityMatch("gold", 3)));
+    }
+
+    // ── fuzzySubSystemSearch (sub_system is migration-seeded ref data) ──
+    //
+    // Targeting is keyed on the canonical English name, which resolves to the journal machine key.
+    // A localized utterance must therefore come back out as English, or SubSystemsManager cannot
+    // look up a machine key and refuses to start cycling.
+
+    @Test
+    void subSystemSearchResolvesEnglishToCanonicalCase() {
+        withLanguage(Language.EN, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("power plant", 4)));
+    }
+
+    @Test
+    void subSystemSearchResolvesASpanishNameToTheEnglishCanonicalName() {
+        // "Núcleo de Energía" is the label_es value seeded for Power Plant.
+        withLanguage(Language.ES, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("núcleo de energía", 4)));
+    }
+
+    @Test
+    void subSystemSearchResolvesARussianNameToTheEnglishCanonicalName() {
+        withLanguage(Language.RU, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("силовая установка", 4)));
+    }
+
+    @Test
+    void subSystemSearchStillAcceptsEnglishWhileAnotherLanguageIsActive() {
+        // Guards the English retry specifically, NOT the DAO's COALESCE. label_es for Power Plant
+        // is populated, so COALESCE yields "Núcleo de Energía" and "power plant" is absent from the
+        // Spanish candidate list; this passes only because fuzzySubSystemSearch retries in English.
+        // Delete that retry and this test fails.
+        withLanguage(Language.ES, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("power plant", 4)));
+    }
+
+    @Test
+    void subSystemSearchResolvesABrazilianPortugueseName() {
+        // 01018 section 4 copies the Brazilian labels from label_pt into label_ptbz. PTBZ is the
+        // locale that needs them: a pt-BR client shows translated module names, so that is what
+        // gets spoken.
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("gerador de energia", 4)));
+    }
+
+    @Test
+    void brazilianAndEuropeanPortugueseBothResolveAfterTheCopy() {
+        // The copy left label_pt in place, so PT did not regress to English-only.
+        withLanguage(Language.PT, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("gerador de energia", 4)));
+        withLanguage(Language.PTBZ, () ->
+                assertEquals("Gerador de Energia", FuzzySearch.localizedSubSystemName("Power Plant")));
+    }
+
+    @Test
+    void subSystemSearchFallsBackToEnglishForALanguageWithNoLabels() {
+        // label_de is added but unpopulated; a German commander must still be able to target.
+        withLanguage(Language.DE, () ->
+                assertEquals("Power Plant", FuzzySearch.fuzzySubSystemSearch("power plant", 4)));
+    }
+
+    @Test
+    void localizedSubSystemNameSpeaksTheCommandersWording() {
+        withLanguage(Language.ES, () ->
+                assertEquals("Núcleo de Energía", FuzzySearch.localizedSubSystemName("Power Plant")));
+    }
+
+    @Test
+    void localizedSubSystemNameFallsBackToEnglishWhenUntranslated() {
+        withLanguage(Language.DE, () ->
+                assertEquals("Power Plant", FuzzySearch.localizedSubSystemName("Power Plant")));
+    }
+
+    private static void withLanguage(Language language, Runnable body) {
+        SystemSession session = SystemSession.getInstance();
+        Language previous = session.getLanguage();
+        session.setLanguage(language);
+        try {
+            body.run();
+        } finally {
+            session.setLanguage(previous);
+        }
     }
 }

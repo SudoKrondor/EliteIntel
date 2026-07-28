@@ -56,7 +56,8 @@ public class SubSystemsManager {
             "ext_drive"
     );
 
-    private volatile String target;               // canonical name, used for spoken announcements
+    private volatile String target;               // canonical English name, keys the machine_key lookup
+    private volatile String targetSpokenName;     // localized label, used for spoken announcements
     private volatile String targetMachineKey;     // reliable journal key, used for matching
     private volatile Bindings.GameCommand cycleBinding = BINDING_CYCLE_NEXT_SUBSYSTEM;
     private volatile boolean continueTargeting = false;
@@ -99,9 +100,10 @@ public class SubSystemsManager {
      * the cycle key repeatedly until the target is matched, the cycle has gone fully around
      * (module not installed), or the routine times out.
      *
-     * @param subsystem the name of the subsystem to target. This can be a partial or full
-     *                  name which is resolved using a fuzzy search algorithm. If a match
-     *                  is not found, the method terminates the process.
+     * @param subsystem the name of the subsystem to target, in the commander's own language or in
+     *                  English. This can be a partial or full name which is resolved using a fuzzy
+     *                  search algorithm to the canonical English name the machine key is keyed on.
+     *                  If a match is not found, the method terminates the process.
      */
     public void targetSubSystem(String subsystem) {
         log.debug("[1] targetSubSystem raw input: [{}]", subsystem);
@@ -124,6 +126,7 @@ public class SubSystemsManager {
         }
 
         setTarget(resolved);
+        targetSpokenName = FuzzySearch.localizedSubSystemName(resolved);
         targetMachineKey = machineKey.toLowerCase(Locale.ROOT);
         cycleBinding = directionFor(targetMachineKey);
         anchorRaw = null;
@@ -232,7 +235,10 @@ public class SubSystemsManager {
     }
 
     private void announceNotInstalled() {
-        String text = EventsTextProvider.getText("subsystem.not_installed", getTarget());
+        // Speak the commander's own wording for the module, not the canonical English name we
+        // matched on, so the announcement agrees with what their HUD shows.
+        String spoken = targetSpokenName == null || targetSpokenName.isBlank() ? getTarget() : targetSpokenName;
+        String text = EventsTextProvider.getText("subsystem.not_installed", spoken);
         GameEventBus.publish(new MissionCriticalAnnouncementEvent(text));
         GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
     }

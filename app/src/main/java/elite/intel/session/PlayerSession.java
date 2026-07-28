@@ -1,6 +1,5 @@
 package elite.intel.session;
 
-import com.google.common.eventbus.Subscribe;
 import elite.intel.db.dao.PlayerDao;
 import elite.intel.db.dao.ShipScansDao;
 import elite.intel.db.managers.*;
@@ -95,10 +94,6 @@ public class PlayerSession {
         bounties.add(bounty);
     }
 
-    public void removeBounty(BountyDto bounty) {
-        bounties.remove(bounty);
-    }
-
     public long getTotalBountyClaimed() {
         return Database.withDao(PlayerDao.class, dao -> {
             PlayerDao.Player player = dao.get();
@@ -126,11 +121,6 @@ public class PlayerSession {
 
     public void setRankAndProgressDto(RankAndProgressDto rankAndProgressDto) {
         rankAndProgress.save(rankAndProgressDto);
-    }
-
-    @Subscribe
-    public void onBounty(BountyDto data) {
-        bounties.add(data);
     }
 
     public Set<BountyDto> getBounties() {
@@ -357,10 +347,6 @@ public class PlayerSession {
         });
     }
 
-    public String getPlayerMissionStatement() {
-        return Database.withDao(PlayerDao.class, dao -> dao.get().getPlayerMissionStatement());
-    }
-
     public void setHomeSystem(LocationDto newHome) {
         if (newHome != null) {
             Database.withDao(PlayerDao.class, dao -> {
@@ -375,15 +361,6 @@ public class PlayerSession {
     public LocationDto getHomeSystem() {
         Long homeSystemId = Database.withDao(PlayerDao.class, dao -> dao.get().getHomeSystemId());
         return LocationManager.getInstance().findBySystemAddress(homeSystemId);
-    }
-
-    public void setPlayerMissionStatement(String playerMissionStatement) {
-        Database.withDao(PlayerDao.class, dao -> {
-            PlayerDao.Player player = dao.get();
-            player.setPlayerMissionStatement(playerMissionStatement);
-            dao.save(player);
-            return Void.class;
-        });
     }
 
     public void setCrewWagsPayout(long crewWagsPayout) {

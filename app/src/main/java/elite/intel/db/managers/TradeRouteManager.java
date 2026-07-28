@@ -128,24 +128,6 @@ public class TradeRouteManager {
     }
 
 
-    class TradeRouteTuple<K, V> {
-        private final K legNumber;
-        private final V entity;
-
-        public TradeRouteTuple(K legNumber, V entity) {
-            this.legNumber = legNumber;
-            this.entity = entity;
-        }
-
-        public K getLegNumber() {
-            return legNumber;
-        }
-
-        public V getEntity() {
-            return entity;
-        }
-    }
-
     public class TradeRouteLegTuple<K, V> {
         private final K legNumber;
         private final V tradeStopDto;

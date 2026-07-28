@@ -32,13 +32,6 @@ public final class CodexEntryManager {
         });
     }
 
-    public void clearCompleted(String starSystem, Long bodyId, String entry) {
-        Database.withDao(CodexEntryDao.class, dao -> {
-            dao.clearCompleted(entry, starSystem, bodyId);
-            return null;
-        });
-    }
-
     public void save(CodexEntryEvent event) {
         Database.withDao(CodexEntryDao.class, dao -> {
             CodexEntryDao.CodexEntry entry = new CodexEntryDao.CodexEntry();

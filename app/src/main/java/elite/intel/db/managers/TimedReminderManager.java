@@ -52,8 +52,4 @@ public final class TimedReminderManager {
         pending.clear();
     }
 
-    public synchronized boolean hasPending() {
-        pending.removeIf(ScheduledFuture::isDone);
-        return !pending.isEmpty();
-    }
 }

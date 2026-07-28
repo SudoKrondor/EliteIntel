@@ -9,14 +9,23 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 public class DatabaseMigrator {
 
     private static final Logger log = LogManager.getLogger(DatabaseMigrator.class);
     private static final Pattern MIGRATION_PATTERN = Pattern.compile("^(\\d{1,6})(__.*)?\\.sql$");
+    private static final Pattern DROP_COLUMN_PATTERN =
+            Pattern.compile("^\\s*ALTER\\s+TABLE\\s+.+\\s+DROP\\s+(COLUMN\\s+)?\\S+\\s*$",
+                    Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    /**
+     * Leading run of lines that carry no SQL: {@code --} comments and blank lines, in any mix.
+     */
+    private static final Pattern LEADING_NON_SQL_LINES = Pattern.compile("^(?:[ \\t]*--[^\\n]*\\n|[ \\t]*\\n)+");
     private static final String MIGRATIONS_PATH = "/db-migration";
 
     public static void migrate(Handle handle) throws Exception {
@@ -56,8 +65,9 @@ public class DatabaseMigrator {
                     handle.execute(trimmed);
                 } catch (Exception e) {
                     if (isDuplicateColumn(e)) {
-                        log.warn("Migration {}: column already exists, skipping: {}",
-                                file, trimmed.replaceAll("\\s+", " ").substring(0, Math.min(80, trimmed.replaceAll("\\s+", " ").length())));
+                        log.warn("Migration {}: column already exists, skipping: {}", file, abbreviate(trimmed));
+                    } else if (isDropColumn(trimmed) && isMissingColumn(e)) {
+                        log.warn("Migration {}: column already gone, skipping: {}", file, abbreviate(trimmed));
                     } else {
                         throw e;
                     }
@@ -90,6 +100,55 @@ public class DatabaseMigrator {
             }
         }
         return false;
+    }
+
+    /**
+     * Returns true if the exception chain indicates SQLite could not find a column the migration
+     * referenced. Only meaningful in combination with {@link #isDropColumn(String)}.
+     */
+    private static boolean isMissingColumn(Exception e) {
+        for (Throwable t = e; t != null; t = t.getCause()) {
+            if (t.getMessage() != null && t.getMessage().contains("no such column")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns true for an {@code ALTER TABLE ... DROP COLUMN} statement.
+     * <p>
+     * WHY: "no such column" is only a benign outcome for a drop, where it means the column is
+     * already gone and the statement's intent is fulfilled. Any other statement hitting that error
+     * is a genuine defect (a misspelled column in an UPDATE, say), and must abort the run rather
+     * than be logged and skipped, which would record the migration as applied while leaving the
+     * database half migrated. Unlike "duplicate column name", which can only arise from ADD COLUMN,
+     * this message needs the statement kind to disambiguate it.
+     */
+    static boolean isDropColumn(String statement) {
+        return DROP_COLUMN_PATTERN.matcher(stripLeadingComments(statement)).find();
+    }
+
+    /**
+     * Removes leading {@code --} comment and blank lines from a statement, exposing its first
+     * SQL keyword.
+     * <p>
+     * WHY: statements are split on {@code ;} and only whitespace-trimmed, so a statement carries
+     * whatever comment block preceded it. SQLite ignores those, but they push the keyword off the
+     * front and would otherwise hide a DROP COLUMN from {@link #isDropColumn(String)}. Blank lines
+     * have to be skipped too, since a section banner is separated from the statement it introduces
+     * by an empty line. Most of the drops in 01018 are commented one of these two ways.
+     */
+    private static String stripLeadingComments(String statement) {
+        return LEADING_NON_SQL_LINES.matcher(statement).replaceAll("").stripLeading();
+    }
+
+    /**
+     * Collapses whitespace and clips a statement for a single-line log message.
+     */
+    private static String abbreviate(String statement) {
+        String oneLine = statement.replaceAll("\\s+", " ");
+        return oneLine.length() <= 80 ? oneLine : oneLine.substring(0, 80);
     }
 
     private static Set<String> findMigrationFiles() throws IOException, URISyntaxException {

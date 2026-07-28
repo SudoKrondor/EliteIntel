@@ -24,14 +24,14 @@ public interface PlayerDao {
                        is_discovery_announcement_on, final_destination, game_version,
                        goods_sold_this_session, highest_single_transaction, in_game_name,
                        insurance_claims, is_mining_announcement_on, is_navigation_announcement_on,
-                       is_radio_transmission_on, is_route_announcement_on, jumping_to_star_system,
+                       is_radio_transmission_on, is_route_announcement_on,
                        last_known_carrier_location, last_scan_id, market_profits,
                        personal_credits_available, player_highest_military_rank,
-                       player_mission_statement, player_name, player_title, ships_owned, species_first_logged,
+                       player_name, ships_owned, species_first_logged,
                        total_bounty_claimed, total_distance_traveled, total_hyperspace_distance,
                        total_profits_from_exploration, total_systems_visited, exobiology_profits, alternative_name,
-                       journal_dir, bindings_dir, logging_enabled, game_build, bounty_collected_lifetime, homeSystemId, 
-                       localTtsServer, localLlmAddress, systemAddress, currentGenus, radarAnnouncementOn
+                       journal_dir, bindings_dir, game_build, bounty_collected_lifetime, homeSystemId,
+                       systemAddress, currentGenus, radarAnnouncementOn
                     )
                     VALUES (1, :currentPrimaryStar,
                        :carrierDepartureTime, :crewWagsPayout,
@@ -39,14 +39,13 @@ public interface PlayerDao {
                        :discoveryAnnouncementOn, :finalDestination, :gameVersion,
                        :goodsSoldThisSession, :highestSingleTransaction, :inGameName,
                        :insuranceClaims, :miningAnnouncementOn, :navigationAnnouncementOn,
-                       :radioTransmissionOn, :routeAnnouncementOn, :jumpingToStarSystem,
+                       :radioTransmissionOn, :routeAnnouncementOn,
                        :lastKnownCarrierLocation, :lastScanId, :marketProfits,
                        :personalCreditsAvailable, :playerHighestMilitaryRank,
-                       :playerMissionStatement, :playerName, :playerTitle,
-                       :shipsOwned, :speciesFirstLogged, :totalBountyClaimed, :totalDistanceTraveled, 
+                       :playerName, :shipsOwned, :speciesFirstLogged, :totalBountyClaimed, :totalDistanceTraveled,
                        :totalHyperspaceDistance, :totalProfitsFromExploration, :totalSystemsVisited, :exobiologyProfits, :alternativeName,
-                       :journalDirectory, :bindingsDirectory, :loggingEnabled, :gameBuild, :bountyCollectedLifetime, :homeSystemId, 
-                       :localTtsServer, :localLlmAddress, :systemAddress, :currentGenus, :radarAnnouncementOn
+                       :journalDirectory, :bindingsDirectory, :gameBuild, :bountyCollectedLifetime, :homeSystemId,
+                       :systemAddress, :currentGenus, :radarAnnouncementOn
                     )
             """)
     void save(@BindBean Player player);
@@ -70,15 +69,12 @@ public interface PlayerDao {
         private boolean isNavigationAnnouncementOn = true;
         private Boolean isRadioTransmissionOn = null;
         private boolean isRouteAnnouncementOn = true;
-        private String jumpingToStarSystem = "";
         private String lastKnownCarrierLocation = "";
         private long lastScanId = -1;
         private long marketProfits = 0;
         private long personalCreditsAvailable = 0;
         private String playerHighestMilitaryRank = "";
-        private String playerMissionStatement = "";
         private String playerName = "";
-        private String playerTitle = "";
         private int shipsOwned = 0;
         private int speciesFirstLogged = 0;
         private long totalBountyClaimed = 0;
@@ -93,11 +89,8 @@ public interface PlayerDao {
         private String alternativeName;
         private String journalDirectory;
         private String bindingsDirectory;
-        private Boolean loggingEnabled;
         private Long bountyCollectedLifetime = 0L;
         private Long systemAddress;
-        private String localTtsServer;
-        private String localLlmAddress;
         private String currentGenus;
         private boolean radarAnnouncementOn;
 
@@ -128,24 +121,12 @@ public interface PlayerDao {
             this.bindingsDirectory = bindingsDirectory;
         }
 
-        public Boolean getLoggingEnabled() {
-            return loggingEnabled;
-        }
-
-        public void setLoggingEnabled(Boolean loggingEnabled) {
-            this.loggingEnabled = loggingEnabled;
-        }
-
         public String getCurrentPrimaryStar() {
             return currentPrimaryStar;
         }
 
         public void setCurrentPrimaryStar(String currentPrimaryStar) {
             this.currentPrimaryStar = currentPrimaryStar;
-        }
-
-        public long getBountyCollectedThisSession() {
-            return totalBountyClaimed;
         }
 
         public String getCarrierDepartureTime() {
@@ -284,14 +265,6 @@ public interface PlayerDao {
             isRouteAnnouncementOn = routeAnnouncementOn;
         }
 
-        public String getJumpingToStarSystem() {
-            return jumpingToStarSystem;
-        }
-
-        public void setJumpingToStarSystem(String jumpingToStarSystem) {
-            this.jumpingToStarSystem = jumpingToStarSystem;
-        }
-
         public String getLastKnownCarrierLocation() {
             return lastKnownCarrierLocation;
         }
@@ -332,28 +305,12 @@ public interface PlayerDao {
             this.playerHighestMilitaryRank = playerHighestMilitaryRank;
         }
 
-        public String getPlayerMissionStatement() {
-            return playerMissionStatement;
-        }
-
-        public void setPlayerMissionStatement(String playerMissionStatement) {
-            this.playerMissionStatement = playerMissionStatement;
-        }
-
         public String getPlayerName() {
             return playerName;
         }
 
         public void setPlayerName(String playerName) {
             this.playerName = playerName;
-        }
-
-        public String getPlayerTitle() {
-            return playerTitle;
-        }
-
-        public void setPlayerTitle(String playerTitle) {
-            this.playerTitle = playerTitle;
         }
 
         public int getShipsOwned() {
@@ -443,20 +400,6 @@ public interface PlayerDao {
         public void setHomeSystemId(Long homeSystemId) {
             this.homeSystemId = homeSystemId;
         }
-        public String getLocalTtsServer() {
-            return localTtsServer;
-        }
-        public void setLocalTtsServer(String localTtsAddress) {
-            this.localTtsServer = localTtsAddress;
-        }
-
-        public String getLocalLlmAddress() {
-            return localLlmAddress;
-        }
-
-        public void setLocalLlmAddress(String localLlmAddress) {
-            this.localLlmAddress = localLlmAddress;
-        }
 
         public Long getSystemAddress() {
             return systemAddress;
@@ -505,15 +448,12 @@ public interface PlayerDao {
             p.setNavigationAnnouncementOn(rs.getBoolean("is_navigation_announcement_on"));
             p.setRadioTransmissionOn(rs.getObject("is_radio_transmission_on") != null && rs.getBoolean("is_radio_transmission_on"));
             p.setRouteAnnouncementOn(rs.getBoolean("is_route_announcement_on"));
-            p.setJumpingToStarSystem(rs.getString("jumping_to_star_system"));
             p.setLastKnownCarrierLocation(rs.getString("last_known_carrier_location"));
             p.setLastScanId(rs.getLong("last_scan_id"));
             p.setMarketProfits(rs.getLong("market_profits"));
             p.setPersonalCreditsAvailable(rs.getLong("personal_credits_available"));
             p.setPlayerHighestMilitaryRank(rs.getString("player_highest_military_rank"));
-            p.setPlayerMissionStatement(rs.getString("player_mission_statement"));
             p.setPlayerName(rs.getString("player_name"));
-            p.setPlayerTitle(rs.getString("player_title"));
             p.setShipsOwned(rs.getInt("ships_owned"));
             p.setSpeciesFirstLogged(rs.getInt("species_first_logged"));
             p.setTotalBountyClaimed(rs.getLong("total_bounty_claimed"));
@@ -526,11 +466,8 @@ public interface PlayerDao {
             p.setAlternativeName(rs.getString("alternative_name"));
             p.setJournalDirectory(rs.getString("journal_dir"));
             p.setBindingsDirectory(rs.getString("bindings_dir"));
-            p.setLoggingEnabled(rs.getBoolean("logging_enabled"));
             p.setGameBuild(rs.getString("game_build"));
             p.setHomeSystemId(rs.getLong("homeSystemId"));
-            p.setLocalTtsServer(rs.getString("localTtsServer"));
-            p.setLocalLlmAddress(rs.getString("localLlmAddress"));
             p.setSystemAddress(rs.getLong("systemAddress"));
             p.setCurrentGenus(rs.getString("currentGenus"));
             p.setRadarAnnouncementOn(rs.getBoolean("radarAnnouncementOn"));

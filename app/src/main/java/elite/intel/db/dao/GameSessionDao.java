@@ -15,28 +15,28 @@ public interface GameSessionDao {
 
 
     @SqlUpdate("""
-            INSERT OR REPLACE INTO game_session (id, aiPersonality,  kokoroVoice, googleVoice, sttApiKey,
-                                                             edsmApiKey, loggingEnabled, privacyModeOn, rmsThresholdHigh,
+            INSERT OR REPLACE INTO game_session (id, kokoroVoice, googleVoice,
+                                                             privacyModeOn, rmsThresholdHigh,
                                                              rmsThresholdLow, encryptedLLMKey, encryptedTTSKey,
-                                                             encryptedEDSSMKey, speechSpeed, localLlmCommandModel, localLlmQueryModel,
+                                                             speechSpeed,
                                                              useLocalCommandLlm, useLocalQueryLlm, useLocalTTS, notificationVolume, sttThreads, voiceVolume,
-                                                             localLlmProvider, localLlmAddress, conversationModeOn, companionModeOn,
-                                                             ollamaAddress, ollamaCommandModel, ollamaQueryModel,
-                                                             lmStudioAddress, lmStudioCommandModel, lmStudioQueryModel,
+                                                             localLlmProvider,
+                                                             ollamaAddress, ollamaCommandModel,
+                                                             lmStudioAddress, lmStudioCommandModel,
                                                              aiLanguage,
                                                              audioInputDevice, audioOutputDevice,
                                                              pushToTalkEnabled, pushToTalkControllerName,
                                                              pushToTalkButtonIndex, pushToTalkToggleMode,
                                                              noiseReductionEnabled, noiseReductionStrength
                                                 )
-                                  VALUES (1, :aiPersonality, :kokoroVoice, :googleVoice, :sttApiKey,
-                                                      :edsmApiKey, :loggingEnabled, :privacyModeOn, :rmsThresholdHigh,
+                                  VALUES (1, :kokoroVoice, :googleVoice,
+                                                      :privacyModeOn, :rmsThresholdHigh,
                                                       :rmsThresholdLow, :encryptedLLMKey, :encryptedTTSKey,
-                                                      :encryptedEDSSMKey,  :speechSpeed, :localLlmCommandModel, :localLlmQueryModel,
+                                                      :speechSpeed,
                                                       :useLocalCommandLlm, :useLocalQueryLlm, :useLocalTTS, :notificationVolume, :sttThreads, :voiceVolume,
-                                                      :localLlmProvider, :localLlmAddress, :conversationModeOn, :companionModeOn,
-                                                      :ollamaAddress, :ollamaCommandModel, :ollamaQueryModel,
-                                                      :lmStudioAddress, :lmStudioCommandModel, :lmStudioQueryModel,
+                                                      :localLlmProvider,
+                                                      :ollamaAddress, :ollamaCommandModel,
+                                                      :lmStudioAddress, :lmStudioCommandModel,
                                                       :aiLanguage,
                                                       :audioInputDevice, :audioOutputDevice,
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
@@ -54,22 +54,16 @@ public interface GameSessionDao {
 
         @Override public GameSession map(ResultSet rs, StatementContext ctx) throws SQLException {
             GameSession session = new GameSession();
-            session.setAiPersonality(rs.getString("aiPersonality"));
 
             session.setEncryptedLLMKey(rs.getString("encryptedLLMKey"));
             session.setEncryptedTTSKey(rs.getString("encryptedTTSKey"));
-            session.setEncryptedEDSSMKey(rs.getString("encryptedEDSSMKey"));
 
-            session.setLoggingEnabled(rs.getBoolean("loggingEnabled"));
             session.setKokoroVoice(rs.getString("kokoroVoice"));
             session.setGoogleVoice(rs.getString("googleVoice"));
             session.setPrivacyModeOn(rs.getBoolean("privacyModeOn"));
             session.setRmsThresholdHigh(rs.getDouble("rmsThresholdHigh"));
             session.setRmsThresholdLow(rs.getDouble("rmsThresholdLow"));
-            session.setEdsmApiKey(rs.getString("edsmApiKey"));
 
-            session.setLocalLlmCommandModel(rs.getString("localLlmCommandModel"));
-            session.setLocalLlmQueryModel(rs.getString("localLlmQueryModel"));
             session.setSpeechSpeed(rs.getFloat("speechSpeed"));
 
             session.setUseLocalCommandLlm(rs.getBoolean("useLocalCommandLlm"));
@@ -79,15 +73,10 @@ public interface GameSessionDao {
             session.setSttThreads(rs.getInt("sttThreads"));
             session.setVoiceVolume(rs.getInt("voiceVolume"));
             session.setLocalLlmProvider(rs.getString("localLlmProvider"));
-            session.setLocalLlmAddress(rs.getString("localLlmAddress"));
-            session.setConversationModeOn(rs.getBoolean("conversationModeOn"));
-            session.setCompanionModeOn(rs.getBoolean("companionModeOn"));
             session.setOllamaAddress(rs.getString("ollamaAddress"));
             session.setOllamaCommandModel(rs.getString("ollamaCommandModel"));
-            session.setOllamaQueryModel(rs.getString("ollamaQueryModel"));
             session.setLmStudioAddress(rs.getString("lmStudioAddress"));
             session.setLmStudioCommandModel(rs.getString("lmStudioCommandModel"));
-            session.setLmStudioQueryModel(rs.getString("lmStudioQueryModel"));
             session.setAiLanguage(rs.getString("aiLanguage"));
             session.setAudioInputDevice(rs.getString("audioInputDevice"));
             session.setAudioOutputDevice(rs.getString("audioOutputDevice"));
@@ -103,40 +92,27 @@ public interface GameSessionDao {
 
 
     class GameSession {
-        private String aiPersonality;
-        private String sttApiKey;
-
         private String encryptedLLMKey;
         private String encryptedTTSKey;
-        private String encryptedEDSSMKey;
 
-        private Boolean loggingEnabled;
         private String kokoroVoice;
         private String googleVoice;
         private Boolean privacyModeOn;
         private Double rmsThresholdHigh = 460.00;
         private Double rmsThresholdLow = 100.00;
-        private String edsmApiKey;
 
         private Float speechSpeed;
         private Float notificationVolume;
-        private String localLlmCommandModel;
-        private String localLlmQueryModel;
         private boolean useLocalCommandLlm;
         private boolean useLocalQueryLlm;
         private boolean useLocalTTS;
         private Integer sttThreads;
         private Integer voiceVolume;
         private String localLlmProvider;
-        private String localLlmAddress;
-        private boolean conversationModeOn;
-        private boolean companionModeOn;
         private String ollamaAddress;
         private String ollamaCommandModel;
-        private String ollamaQueryModel;
         private String lmStudioAddress;
         private String lmStudioCommandModel;
-        private String lmStudioQueryModel;
         private String aiLanguage;
         private String audioInputDevice;
         private String audioOutputDevice;
@@ -147,31 +123,6 @@ public interface GameSessionDao {
         private boolean noiseReductionEnabled = false;
         private int noiseReductionStrength = 1;
 
-
-        public String getAiPersonality() {
-            return aiPersonality;
-        }
-
-        public void setAiPersonality(String aiPersonality) {
-            this.aiPersonality = aiPersonality;
-        }
-
-
-        public String getSttApiKey() {
-            return sttApiKey;
-        }
-
-        public void setSttApiKey(String sttApiKey) {
-            this.sttApiKey = sttApiKey;
-        }
-
-        public Boolean getLoggingEnabled() {
-            return loggingEnabled;
-        }
-
-        public void setLoggingEnabled(Boolean loggingEnabled) {
-            this.loggingEnabled = loggingEnabled;
-        }
 
         /**
          * App-global Kokoro (local TTS) voice, independent of {@link #googleVoice}.
@@ -219,14 +170,6 @@ public interface GameSessionDao {
             this.rmsThresholdHigh = rmsThresholdHigh;
         }
 
-        public void setEdsmApiKey(String edsmApiKey) {
-            this.edsmApiKey = edsmApiKey;
-        }
-
-        public String getEdsmApiKey() {
-            return edsmApiKey;
-        }
-
         public String getEncryptedLLMKey() {
             return encryptedLLMKey;
         }
@@ -244,14 +187,6 @@ public interface GameSessionDao {
             this.encryptedTTSKey = encryptedTTSKey;
         }
 
-        public String getEncryptedEDSSMKey() {
-            return encryptedEDSSMKey;
-        }
-
-        public void setEncryptedEDSSMKey(String encryptedEDSSMKey) {
-            this.encryptedEDSSMKey = encryptedEDSSMKey;
-        }
-
         public Float getSpeechSpeed() {
             return speechSpeed;
         }
@@ -259,23 +194,6 @@ public interface GameSessionDao {
         public void setSpeechSpeed(Float speechSpeed) {
             this.speechSpeed = speechSpeed;
         }
-
-        public String getLocalLlmCommandModel() {
-            return localLlmCommandModel;
-        }
-
-        public void setLocalLlmCommandModel(String localLlmCommandModel) {
-            this.localLlmCommandModel = localLlmCommandModel;
-        }
-
-        public String getLocalLlmQueryModel() {
-            return localLlmQueryModel;
-        }
-
-        public void setLocalLlmQueryModel(String localLlmQueryModel) {
-            this.localLlmQueryModel = localLlmQueryModel;
-        }
-
 
         public boolean isUseLocalCommandLlm() {
             return useLocalCommandLlm;
@@ -333,30 +251,6 @@ public interface GameSessionDao {
             this.localLlmProvider = localLlmProvider;
         }
 
-        public String getLocalLlmAddress() {
-            return localLlmAddress;
-        }
-
-        public void setLocalLlmAddress(String localLlmAddress) {
-            this.localLlmAddress = localLlmAddress;
-        }
-
-        public boolean isConversationModeOn() {
-            return conversationModeOn;
-        }
-
-        public void setConversationModeOn(boolean conversationModeOn) {
-            this.conversationModeOn = conversationModeOn;
-        }
-
-        public boolean isCompanionModeOn() {
-            return companionModeOn;
-        }
-
-        public void setCompanionModeOn(boolean companionModeOn) {
-            this.companionModeOn = companionModeOn;
-        }
-
         public String getOllamaAddress() {
             return ollamaAddress;
         }
@@ -373,14 +267,6 @@ public interface GameSessionDao {
             this.ollamaCommandModel = ollamaCommandModel;
         }
 
-        public String getOllamaQueryModel() {
-            return ollamaQueryModel;
-        }
-
-        public void setOllamaQueryModel(String ollamaQueryModel) {
-            this.ollamaQueryModel = ollamaQueryModel;
-        }
-
         public String getLmStudioAddress() {
             return lmStudioAddress;
         }
@@ -395,14 +281,6 @@ public interface GameSessionDao {
 
         public void setLmStudioCommandModel(String lmStudioCommandModel) {
             this.lmStudioCommandModel = lmStudioCommandModel;
-        }
-
-        public String getLmStudioQueryModel() {
-            return lmStudioQueryModel;
-        }
-
-        public void setLmStudioQueryModel(String lmStudioQueryModel) {
-            this.lmStudioQueryModel = lmStudioQueryModel;
         }
 
         public String getAiLanguage() {

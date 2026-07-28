@@ -334,10 +334,6 @@ public class SystemSession {
             GameSessionDao.GameSession session = dao.get();
             session.setOllamaAddress(address);
             session.setOllamaCommandModel(commandModel);
-            // WHY: one local model now serves both roles, so nothing here reads the query column.
-            // It is still written because the column is NOT NULL, and because a V1.0 client sharing
-            // this database file still runs the dual-model pipeline and reads it.
-            session.setOllamaQueryModel(commandModel);
             dao.save(session);
             return Void.class;
         });
@@ -348,9 +344,6 @@ public class SystemSession {
             GameSessionDao.GameSession session = dao.get();
             session.setLmStudioAddress(address);
             session.setLmStudioCommandModel(commandModel);
-            // WHY: see setOllamaSettings - the query column is write-only on this branch, kept for the
-            // NOT NULL constraint and for a V1.0 client sharing the same database file.
-            session.setLmStudioQueryModel(commandModel);
             dao.save(session);
             return Void.class;
         });
@@ -417,22 +410,13 @@ public class SystemSession {
         });
     }
 
-    public void setConversationalMode(boolean b) {
-        Database.withDao(GameSessionDao.class, dao -> {
-            GameSessionDao.GameSession session = dao.get();
-            session.setConversationModeOn(b);
-            dao.save(session);
-            return Void.TYPE;
-        });
-    }
-
+    /**
+     * Always false: conversation mode was a flag on the legacy brain pipeline, which no longer
+     * exists. The backing column was dropped in migration 01018. Kept as a seam because the
+     * action-map generator still branches on it.
+     */
     public boolean conversationalModeOn() {
-        // HARDCODED OFF: testers are forced onto companion mode ahead of retiring the legacy LLM
-        // pipeline, so conversation mode (a legacy-pipeline flag) is unconditionally off. The
-        // setter still writes the DB (dormant) and the hidden toggle in CommonSettingsPanel plus
-        // the DB read below can be restored together when the modes become user-selectable again.
         return false;
-        // return Database.withDao(GameSessionDao.class, dao -> dao.get().isConversationModeOn());
     }
 
     public boolean isPushToTalkEnabled() {

@@ -17,13 +17,6 @@ public class StationMarketsManager {
         return INSTANCE;
     }
 
-    public GameEvents.MarketEvent findForStation(String stationName) {
-        return Database.withDao(StationMarketDao.class, dao -> {
-            StationMarketDao.StationMarket data = dao.findForStation(stationName);
-            return GsonFactory.getGson().fromJson(data.getJson(), GameEvents.MarketEvent.class);
-        });
-    }
-
     public void save(GameEvents.MarketEvent market) {
         Database.withDao(StationMarketDao.class, dao -> {
             StationMarketDao.StationMarket stationMarket = new StationMarketDao.StationMarket();

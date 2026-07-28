@@ -2,7 +2,6 @@ package elite.intel.db.managers;
 
 import elite.intel.db.dao.LocationDao;
 import elite.intel.db.util.Database;
-import elite.intel.gameapi.gamestate.dtos.GameEvents;
 import elite.intel.gameapi.journal.events.dto.LocationDto;
 import elite.intel.session.LocationData;
 import elite.intel.util.json.GsonFactory;
@@ -140,13 +139,6 @@ public class LocationManager {
         });
     }
 
-    public LocationDto findByStatus(GameEvents.StatusEvent.Destination destination) {
-        return Database.withDao(LocationDao.class, dao -> {
-            LocationDao.Location location = dao.findBySystemAddressAndInGameId(destination.getSystem(), destination.getBody());
-            return location == null ? new LocationDto(-1L) : GsonFactory.getGson().fromJson(location.getJson(), LocationDto.class);
-        });
-    }
-
     public Collection<LocationDto> findAllBySystemAddress(long systemAddress) {
         return Database.withDao(LocationDao.class, dao -> {
             List<LocationDao.Location> bySystemAddress = dao.findAllBySystemAddress(systemAddress);
@@ -155,13 +147,6 @@ public class LocationManager {
                 result.put(entity.getInGameId(), GsonFactory.getGson().fromJson(entity.getJson(), LocationDto.class));
             }
             return result.values();
-        });
-    }
-
-    public LocationDto findByLocationName(String type) {
-        return Database.withDao(LocationDao.class, dao -> {
-            LocationDao.Location location = dao.findByLocationName(type);
-            return location == null ? null : GsonFactory.getGson().fromJson(location.getJson(), LocationDto.class);
         });
     }
 

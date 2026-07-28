@@ -43,22 +43,6 @@ public class BrainTreeManager {
         });
     }
 
-    public StellarObjectSearchResultDto.Result findForStarSystem(String starSystem) {
-        return Database.withDao(BrainTreesDao.class, dao -> {
-            BrainTreesDao.BrainTreeLocation entity = dao.findForStarSystem(starSystem);
-            if(entity == null) return null;
-            return GsonFactory.getGson().fromJson(entity.getJson(), StellarObjectSearchResultDto.Result.class);
-        });
-    }
-
-    public StellarObjectSearchResultDto.Result findNearestForCoordinates(double x, double y, double z){
-        return Database.withDao(BrainTreesDao.class, dao -> {
-            BrainTreesDao.BrainTreeLocation entity = dao.findNearest(x, y, z);
-            if(entity == null) return null;
-            return GsonFactory.getGson().fromJson(entity.getJson(), StellarObjectSearchResultDto.Result.class);
-        });
-    }
-
     public StellarObjectSearchResultDto.Result findNearestWithMaterial(String material, double x, double y, double z){
         return Database.withDao(BrainTreesDao.class, dao ->{
             List<BrainTreesDao.BrainTreeLocation> entity = dao.findByMaterialNearest(material, x, y, z, 1);
