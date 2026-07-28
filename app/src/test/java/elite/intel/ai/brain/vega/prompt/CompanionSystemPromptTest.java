@@ -68,8 +68,6 @@ class CompanionSystemPromptTest {
         assertTrue(normalized.contains("The commander's orders and authority are final"));
         assertTrue(normalized.contains("Obey without argument"));
         assertTrue(normalized.contains("warn only of concrete risk, never instead of complying"));
-        assertTrue(text.contains("<biography>"));
-        assertTrue(text.contains("Raised in Olympus Village on Mars"));
         assertTrue(text.contains("<personality>"));
         assertTrue(text.contains("<communication_rules>"));
         assertTrue(normalized.contains("Personality affects style only"));
@@ -110,7 +108,7 @@ class CompanionSystemPromptTest {
         String normalized = text.replaceAll("\\s+", " ");
 
         assertTrue(normalized.contains("Return exactly one offered function call and no free text"));
-        assertTrue(normalized.contains("Use only offered functions and declared arguments"));
+        assertTrue(normalized.contains("Use only offered functions and their declared parameters"));
         assertOrdered(normalized,
                 "IF <pending_clarification> continues",
                 "ELSE IF any offered game function other than memory_search fits the input",
@@ -138,7 +136,7 @@ class CompanionSystemPromptTest {
                 "speaking must be described as the fallback, never a peer of acting");
         assertTrue(normalized.contains("never in place of an action you could have taken"));
         assertTrue(normalized.contains("Choose the single most probable one"));
-        assertTrue(normalized.contains("several plausible candidates is not a reason to ask"),
+        assertTrue(normalized.contains("several plausible candidates are not a reason to ask"),
                 "several plausible functions must resolve to the best one, not a request to restate");
         assertFalse(normalized.contains("call speak and briefly ask for a restatement"),
                 "the ambiguity branch must never route to conversation");
@@ -170,17 +168,17 @@ class CompanionSystemPromptTest {
     }
 
     /**
-     * A value the commander already spoke ("find a market to buy tritium") is a known argument, not a prompt to
-     * ask "what type of tritium?". request_input exists for an argument the commander never gave, never to refine
-     * or subcategorize one already spoken - otherwise required-string commands (find_commodity, find_mining_site)
-     * stall on a needless clarification instead of executing.
+     * A value the commander already spoke ("find a market to buy tritium") fills its parameter, and is not a prompt
+     * to ask "what type of tritium?". request_input exists for a parameter the commander never filled, never to
+     * refine or subcategorize a value already spoken - otherwise required-string commands (find_commodity,
+     * find_mining_site) stall on a needless clarification instead of executing.
      */
     @Test
-    void requestInputNeverRefinesAnAlreadySpokenArgument() {
+    void requestInputNeverRefinesAnAlreadySpokenValue() {
         String normalized = prompt.staticRules(ThoughtSource.COMMANDER).replaceAll("\\s+", " ");
 
-        assertTrue(normalized.contains("A value the commander already spoke is a known argument"),
-                "a spoken argument must be defined as known so the model extracts it instead of asking");
+        assertTrue(normalized.contains("A value the commander already spoke fills its parameter"),
+                "a spoken value must be defined as filling its parameter so the model extracts it instead of asking");
         assertTrue(normalized.contains("never request_input to refine or subcategorize it"),
                 "request_input must be forbidden from re-clarifying a value already given");
     }

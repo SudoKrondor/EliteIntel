@@ -46,8 +46,11 @@ Format:
 
 Example shape (illustrative, not a template to copy verbatim):
 
+# 4. Write instructions for testers
 
-# 4. Output
+This record is instructions for testers on what areas of the application require test for regression, changes or bug-fixes It should be written in a bullet form in plain, non-technical language. You do not need to include steps. Just list functionality to be tested in a bullet form.
+
+# 5. Output
 
 Write the message to `commit-message.txt` in the repo root and print it inline. Do not run `git add` or
 `git commit`. Mention that the draft is ready for the user to review and commit. Allways overrie `commit-message.txt`

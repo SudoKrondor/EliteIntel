@@ -6,15 +6,12 @@ import elite.intel.ai.brain.vega.clarify.ClarificationCoordinator;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.execution.ExecutionGateway;
-import elite.intel.ai.brain.vega.mind.CompanionState;
-import elite.intel.ai.brain.vega.mind.Thought;
-import elite.intel.ai.brain.vega.mind.ThoughtDependencies;
-import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.brain.vega.memory.CompanionMemoryPolicy;
+import elite.intel.ai.brain.vega.memory.MemoryGateway;
 import elite.intel.ai.brain.vega.memory.MemorySearchResult;
 import elite.intel.ai.brain.vega.memory.MemorySnapshot;
+import elite.intel.ai.brain.vega.model.GameStateSnapshot;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
 import elite.intel.ai.brain.vega.model.Urgency;
 import elite.intel.ai.brain.vega.model.execution.ExecutionRequest;
@@ -37,23 +34,12 @@ import elite.intel.ai.brain.vega.tools.SpeakFunction;
 import elite.intel.ai.brain.vega.tools.SystemFunctionProvider;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BooleanSupplier;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ThoughtTest {
 
@@ -117,6 +103,68 @@ class ThoughtTest {
         assertEquals(List.of("By how much?"), speech.requests.stream().map(SpeechRequest::text).toList());
         assertTrue(memory.writes.isEmpty());
         assertTrue(execution.requests.isEmpty(), "request_input is owned by CommanderThought");
+    }
+
+    /**
+     * A weak model asked "what commodity do you want to find?" about "find market where I can buy tritium". The
+     * commodity was already in the utterance, and the action's own trigger says where it ends, so the turn runs
+     * the action instead of asking the commander to repeat themselves.
+     */
+    @Test
+    void requestInputForAnArgumentTheCommanderAlreadySpokeRunsTheActionInstead() {
+        reducer.tools = List.of(findCommodity());
+        llm.results.add(ok(call(RequestInputFunction.ID, inputRequest("find_commodity", "key"))));
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "find_commodity".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        Thought.commander(Urgency.NORMAL, "find market where i can buy tritium", dependencies(types)).run();
+
+        assertEquals(List.of("find_commodity"), execution.toolNames());
+        assertEquals("tritium", execution.requests.get(0).arguments().get("key").getAsString());
+        assertTrue(clarification.peek().isEmpty(), "nothing was left to clarify");
+    }
+
+    @Test
+    void aDangerousActionStillAsksInsteadOfRunningARecoveredArgument() {
+        reducer.tools = List.of(findCommodity());
+        llm.results.add(ok(call(RequestInputFunction.ID, inputRequest("find_commodity", "key"))));
+        dangerous = invocation -> "find_commodity".equals(invocation.name());
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "find_commodity".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        Thought.commander(Urgency.NORMAL, "find market where i can buy tritium", dependencies(types)).run();
+
+        assertTrue(execution.requests.isEmpty(), "a dangerous action keeps its confirmation flow");
+        assertEquals("find_commodity", clarification.peek().orElseThrow().actionId());
+    }
+
+    @Test
+    void anUtteranceThatDoesNotStartWithTheTriggerStillAsks() {
+        reducer.tools = List.of(findCommodity());
+        llm.results.add(ok(call(RequestInputFunction.ID, inputRequest("find_commodity", "key"))));
+        IntelActionTypeResolver types = new IntelActionTypeResolver(id ->
+                "find_commodity".equals(id) ? IntelActionType.COMMAND : IntelActionType.SYSTEM);
+
+        Thought.commander(Urgency.NORMAL, "we should go shopping", dependencies(types)).run();
+
+        assertTrue(execution.requests.isEmpty(), "no trigger matched, so no value was spoken");
+        assertEquals("key", clarification.peek().orElseThrow().parameterName());
+    }
+
+    private static LlmToolDefinition findCommodity() {
+        return new LlmToolDefinition(
+                "find_commodity", "Find where to buy a commodity",
+                "find market where I can buy {key:X}, where can I buy {key:X}",
+                List.of(new ActionParameterSpec(
+                        "key", "string", true, "The commodity", List.of("gold"), null)));
+    }
+
+    private static JsonObject inputRequest(String actionId, String parameterName) {
+        JsonObject arguments = new JsonObject();
+        arguments.addProperty(RequestInputFunction.PARAM_ACTION_ID, actionId);
+        arguments.addProperty(RequestInputFunction.PARAM_PARAMETER_NAME, parameterName);
+        arguments.addProperty(RequestInputFunction.PARAM_QUESTION, "What commodity do you want to find?");
+        return arguments;
     }
 
     @Test

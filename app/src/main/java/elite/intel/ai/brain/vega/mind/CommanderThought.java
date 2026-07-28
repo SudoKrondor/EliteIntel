@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
+import elite.intel.ai.brain.i18n.TrailingStringAliasMatcher;
 import elite.intel.ai.brain.vega.clarify.PendingClarification;
 import elite.intel.ai.brain.vega.confirm.ConfirmationCoordinator;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
@@ -138,6 +139,14 @@ public final class CommanderThought extends Thought {
             LlmToolInvocation invocation
     ) {
         if (RequestInputFunction.ID.equals(invocation.name())) {
+            Optional<LlmToolInvocation> alreadySpoken = recoverSpokenArgument(invocation, tools);
+            if (alreadySpoken.isPresent()) {
+                LlmToolInvocation recovered = alreadySpoken.get();
+                IntelActionType recoveredType = dependencies.actionTypeResolver().resolve(recovered.name());
+                CompanionDiagnostics.info(trace(), "settle",
+                        "spoken argument recovered -> " + recoveredType + " " + recovered.name());
+                return dispatchGameCall(recovered, recoveredType);
+            }
             handleInputRequest(invocation, tools);
             return CompletableFuture.completedFuture(null);
         }
@@ -160,6 +169,57 @@ public final class CommanderThought extends Thought {
         }
         settleGameCall(invocation);
         return CompletableFuture.completedFuture(null);
+    }
+
+    /**
+     * Recovers an argument the commander already spoke, so a model that asks for it anyway does not strand the
+     * turn ("find market where I can buy tritium" answered with "what commodity do you want to find?"). It reuses
+     * the reflex gate's deterministic extraction: the utterance must begin with one of the target action's own
+     * localized triggers whose final placeholder is that very parameter, which is what makes the trailing words
+     * its value rather than a guess.
+     * <p>
+     * Deliberately narrow. It never fires while a clarification is pending (there the answer is the current
+     * utterance, which the model already owns), never when the action needs a second required argument the
+     * trigger cannot supply, and never for a dangerous action, which keeps its confirmation flow.
+     */
+    private Optional<LlmToolInvocation> recoverSpokenArgument(LlmToolInvocation request,
+                                                              List<LlmToolDefinition> tools) {
+        if (context.pendingClarification() != null) {
+            return Optional.empty();
+        }
+        String actionId = JsonUtils.getAsStringOrEmpty(request.arguments(), RequestInputFunction.PARAM_ACTION_ID);
+        String parameterName = JsonUtils.getAsStringOrEmpty(
+                request.arguments(), RequestInputFunction.PARAM_PARAMETER_NAME);
+        Optional<LlmToolDefinition> target = tools.stream()
+                .filter(tool -> actionId.equals(tool.name()))
+                .filter(tool -> dependencies.actionTypeResolver().resolve(tool.name()).isGameAction())
+                .findFirst();
+        if (target.isEmpty() || parameterName.isBlank() || !onlyRequiredParameter(target.get(), parameterName)) {
+            return Optional.empty();
+        }
+        Optional<String> spokenValue = TrailingStringAliasMatcher.findBestMatch(
+                        target.get().localizedTrainingPhrases(), target.get().parameters(), context.matchInput())
+                .filter(match -> parameterName.equals(match.parameterName()))
+                .map(TrailingStringAliasMatcher.Match::value)
+                .filter(value -> !value.isBlank());
+        if (spokenValue.isEmpty()) {
+            return Optional.empty();
+        }
+        JsonObject arguments = new JsonObject();
+        arguments.addProperty(parameterName, spokenValue.get());
+        LlmToolInvocation recovered = new LlmToolInvocation(request.id(), actionId, arguments);
+        return dependencies.dangerousActionPolicy().isDangerous(recovered)
+                ? Optional.empty()
+                : Optional.of(recovered);
+    }
+
+    /**
+     * True when the named parameter is the only argument the action cannot run without.
+     */
+    private static boolean onlyRequiredParameter(LlmToolDefinition tool, String parameterName) {
+        return tool.parameters().stream()
+                .filter(ActionParameterSpec::isRequired)
+                .allMatch(parameter -> parameterName.equals(parameter.getName()));
     }
 
     /**

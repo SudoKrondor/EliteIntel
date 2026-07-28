@@ -692,7 +692,6 @@ ai_action_aliases|es|MISSING|cycle_next_panel
 ai_action_aliases|es|MISSING|cycle_previous_page
 ai_action_aliases|es|MISSING|cycle_previous_panel
 ai_action_aliases|es|MISSING|display_radar_panel
-ai_action_aliases|es|MISSING|find_interstellar_factor
 ai_action_aliases|es|MISSING|launch_deploy_nomad
 ai_action_aliases|es|MISSING|navigate_to_pirate_mission_target
 ai_action_aliases|fr|MISSING|cycle_next_page

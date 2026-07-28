@@ -42,7 +42,8 @@ public final class MemorySearchQuery extends BaseQueryAnalyzer implements IntelQ
 
     @Override
     public String llmDescription() {
-        return "Search session memory for a subject. Returns bounded matches and an exact count when records are not summarized.";
+        return "Search past conversation and event records for a subject. Returns bounded matches and an exact count "
+                + "when records are not summarized. Not the saved reminder note - that is query_reminder.";
     }
 
     @Override
