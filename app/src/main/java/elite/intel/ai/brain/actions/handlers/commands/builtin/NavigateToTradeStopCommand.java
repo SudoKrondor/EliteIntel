@@ -58,7 +58,8 @@ public final class NavigateToTradeStopCommand implements IntelCommand {
         }
 
         GameEvents.CargoEvent shipCargo = playerSession.getShipCargo();
-        boolean cargoLoaded = shipCargo.getCount() > 0;
+        // Limpets sit in the hold but are not trade goods: a hold with only limpets still needs a buy leg.
+        boolean cargoLoaded = shipCargo.getTradeableCount() > 0;
 
         TradeRouteManager.TradeRouteLegTuple<Integer, TradeStopDto> nextStop = tradeRouteManager.getNextStop();
         if (nextStop == null) {

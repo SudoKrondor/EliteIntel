@@ -12,6 +12,11 @@ import java.util.List;
 public class GameEvents {
 
     public static class CargoEvent implements ToJsonConvertible, ToYamlConvertable {
+        /**
+         * Journal name of limpet drones; {@code Name_Localised} is "Limpet".
+         */
+        private static final String DRONES = "drones";
+
         @SerializedName("timestamp")
         private String timestamp;
         @SerializedName("event")
@@ -43,6 +48,26 @@ public class GameEvents {
 
         public List<Inventory> getInventory() {
             return inventory;
+        }
+
+        /**
+         * Cargo count excluding limpet drones. Limpets occupy the hold and are counted by
+         * {@link #getCount()}, but they are equipment rather than trade goods, so a hold holding
+         * nothing but limpets is empty as far as trading is concerned.
+         * Falls back to the reported total when the inventory breakdown is absent.
+         */
+        public int getTradeableCount() {
+            if (inventory == null || inventory.isEmpty()) {
+                return count;
+            }
+            int tradeable = 0;
+            for (Inventory item : inventory) {
+                if (DRONES.equalsIgnoreCase(item.getName())) {
+                    continue;
+                }
+                tradeable += (int) item.getCount();
+            }
+            return tradeable;
         }
 
         public String toJson() {
