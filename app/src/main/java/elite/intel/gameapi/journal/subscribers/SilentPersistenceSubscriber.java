@@ -3,8 +3,11 @@ package elite.intel.gameapi.journal.subscribers;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.mouth.kokoro.KokoroVoices;
 import elite.intel.db.dao.ShipDao;
+import elite.intel.db.managers.CarrierRouteLegs;
+import elite.intel.db.managers.FleetCarrierRouteManager;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ShipManager;
+import elite.intel.gameapi.PreScanOnly;
 import elite.intel.gameapi.journal.ScanBodyClassifier;
 import elite.intel.gameapi.journal.events.*;
 import elite.intel.gameapi.journal.events.dto.CarrierDataDto;
@@ -27,7 +30,12 @@ import static elite.intel.gameapi.journal.events.dto.LocationDto.LocationType.*;
  * Registered only on the pre-scan private EventBus. Never on the main bus!
  * Writes location and ship data to the DB silently; fires no events, makes no
  * network calls, and does not touch the live GameEventBus.
+ *
+ * <p>The {@link PreScanOnly} marker is what enforces that: this class sits in a package
+ * {@link elite.intel.gameapi.SubscriberRegistration} scans, so without it the live bus picks the
+ * class up and its narrower writes race — and beat — the real subscribers.
  */
+@PreScanOnly
 public class SilentPersistenceSubscriber {
 
     private static final Logger log = LogManager.getLogger(SilentPersistenceSubscriber.class);
@@ -38,6 +46,10 @@ public class SilentPersistenceSubscriber {
 
     // Tracked across events so Loadout can record the commander that owns this ship.
     private String lastCommanderName = null;
+
+    // Seeded before the replay starts, then advanced by each replayed arrival. See recordArrival.
+    private String lastKnownCarrierSystem = playerSession.getCurrentFleetCarrierSystem();
+    private boolean carrierRouteNeedsReplot = false;
 
     @Subscribe
     public void onLoadGame(LoadGameEvent event) {
@@ -172,27 +184,82 @@ public class SilentPersistenceSubscriber {
      * <p>WHY: deliberately narrower than the live CarrierLocationSubscriber. It does not decrement
      * fuel, because the journal is replayed on every start and the decrement would compound; and it
      * does not consult EDSM, because the pre-scan makes no network calls. Coordinates come from the
-     * location table if it already knows the system.
+     * location table, or failing that from the SystemAddress, which needs no network either.
+     *
+     * <p>Coordinates are written in every case: those on file belong to the system the carrier left,
+     * and left in place they would be read as this system's.
+     *
+     * <p>A carrier jumps on its own schedule, with or without the commander in the game at all, so an
+     * arrival the app was down for reaches it here or nowhere: the live parser drops every journal
+     * line older than app start ({@code BaseEvent.isReplay}). That makes this the only place that can
+     * retire the departure it was waiting for, and the only place that can notice the plotted route no
+     * longer starts where the carrier is.
      */
     @Subscribe
     public void onCarrierLocation(CarrierLocationEvent event) {
         if (!"FleetCarrier".equalsIgnoreCase(event.getCarrierType())) return;
 
         String starSystem = event.getStarSystem();
+        recordArrival(starSystem);
         playerSession.setLastKnownCarrierLocation(starSystem);
 
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
+        // WHY read before the name is overwritten: the name on file is the only thing that says which
+        // system the coordinates on file were resolved for.
+        boolean coordinatesAreThisSystems = CarrierCoordinates.alreadyResolvedFor(carrierData, starSystem);
         carrierData.setStarName(starSystem);
         carrierData.setSystemAddress(event.getSystemAddress());
 
         LocationDto known = locationManager.findPrimaryStar(starSystem);
         if (known.getX() != 0 || known.getY() != 0 || known.getZ() != 0) {
-            carrierData.setX(known.getX());
-            carrierData.setY(known.getY());
-            carrierData.setZ(known.getZ());
+            CarrierCoordinates.apply(carrierData, known.getX(), known.getY(), known.getZ());
+        } else if (!coordinatesAreThisSystems) {
+            // WHY only then: the journal is replayed on every start, and coordinates already resolved
+            // for this system - a plotted leg's exact ones, say - must not be downgraded to an
+            // estimate of it. Anything else on file belongs to the system the carrier left.
+            if (!CarrierCoordinates.applyBoxelCentre(carrierData, event.getSystemAddress())) {
+                CarrierCoordinates.clear(carrierData);
+            }
         }
         playerSession.setFleetCarrierData(carrierData);
         log.debug("PreScan: carrier last known at {}", starSystem);
+    }
+
+    /**
+     * Retires the scheduled departure this arrival completed, and notes whether it left the plotted
+     * route behind.
+     *
+     * <p>WHY tracked in a field rather than read back from the session: this class also writes
+     * {@code lastKnownCarrierLocation}, and a handler that reads the value it is about to write cannot
+     * tell an arrival from a position report. The field is seeded once, before the replay begins.
+     *
+     * <p>WHY the departure time is cleared only on a move: the game writes CarrierLocation at every
+     * LoadGame, where the carrier has not gone anywhere and a pending jump is still pending. Clearing
+     * on every replay would forget it. A departure the carrier has demonstrably made is over, and
+     * leaving it on file leaves the app counting down to a jump that already happened.
+     */
+    private void recordArrival(String starSystem) {
+        String arrival = CarrierRouteLegs.normalise(starSystem);
+        if (CarrierRouteLegs.isSameSystem(lastKnownCarrierSystem, arrival)) return;
+
+        // WHY read before the route is consulted anywhere else: the arrival leg is still in the table
+        // at this point, and it is the only thing that tells an on-route arrival from an off-route one.
+        boolean arrivedOffRoute = FleetCarrierRouteManager.getInstance().findByPrimaryStar(arrival) == null;
+        carrierRouteNeedsReplot = arrivedOffRoute;
+        lastKnownCarrierSystem = arrival;
+
+        playerSession.setCarrierDepartureTime(null);
+        log.debug("PreScan: carrier moved to {} while we were down; off-route: {}", arrival, arrivedOffRoute);
+    }
+
+    /**
+     * Whether the replay found the carrier somewhere its plotted route does not run from, which no
+     * later live event will repair on its own. Answered after the replay, by
+     * {@link elite.intel.gameapi.JournalPreScanner}, because re-plotting needs the network this class
+     * must not touch.
+     */
+    public boolean carrierRouteNeedsReplot() {
+        return carrierRouteNeedsReplot;
     }
 
     @Subscribe

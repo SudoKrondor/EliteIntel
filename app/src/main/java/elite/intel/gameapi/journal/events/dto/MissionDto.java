@@ -5,7 +5,6 @@ import elite.intel.gameapi.MissionTargets;
 import elite.intel.gameapi.MissionType;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
 import elite.intel.gameapi.journal.events.MissionAcceptedEvent;
-import elite.intel.util.UnknownEnumLogger;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.Locale;
@@ -71,21 +70,7 @@ public class MissionDto extends BaseJsonDto {
                 return type;
             }
         }
-        UnknownEnumLogger.log("MISSION_TYPE", name);
         return MissionType.getUnknown();
-    }
-
-    private MissionTargets toTargetType(String name) {
-        if (name == null) return null; // No target type associated
-
-        String converted = name.replaceAll("\\s+", "_").toUpperCase(Locale.ROOT); // underscore word splitting
-        for (MissionTargets type : MissionTargets.values()) {
-            if (type.getTargetType().equalsIgnoreCase(converted)) {
-                return type;
-            }
-        }
-        UnknownEnumLogger.log("TARGET_TYPE", name);
-        return MissionTargets.getUnknown();
     }
 
     public void setTarget(String target) {
@@ -297,5 +282,11 @@ public class MissionDto extends BaseJsonDto {
         return GsonFactory.toJsonObject(this);
     }
 
+    public boolean isWing() {
+        return isWing;
+    }
 
+    public String getExpiry() {
+        return expiry;
+    }
 }
