@@ -110,6 +110,83 @@ class BindingConflictScannerTest {
         assertEquals(1, conflicts.size());
     }
 
+    // --- map camera vs UI navigation: the one overlay where two families are live at once ---
+
+    @Test
+    void mapPanKeysConflictWithUiNavigationOnTheSameChord() {
+        // Reported in the field: W/A/S/D bound to both map movement and panel navigation, so the
+        // galaxy map would not pan. While the map is open both families fire off the same chord.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_W"),
+                "UI_Up", Set.of("Key_W")));
+
+        assertEquals(1, conflicts.size());
+        assertTrue(conflicts.get(0).description().contains("map"));
+    }
+
+    @Test
+    void everyMapCameraFamilyConflictsWithUiNavigation() {
+        // One chord per family, so the assertion names which pairs collided rather than just counting -
+        // a count alone would still pass if one family dropped out and another pair appeared.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateLeft", Set.of("Key_A"),
+                "UI_Left", Set.of("Key_A"),
+                "CamPitchUp", Set.of("Key_W"),
+                "UI_Up", Set.of("Key_W"),
+                "CamYawRight", Set.of("Key_D"),
+                "UI_Right", Set.of("Key_D"),
+                "CamZoomIn", Set.of("Key_S"),
+                "UI_Down", Set.of("Key_S"),
+                "GalaxyMapHome", Set.of("Key_H"),
+                "UI_Select", Set.of("Key_H")));
+
+        assertEquals(
+                List.of("CamPitchUp|UI_Up",
+                        "CamTranslateLeft|UI_Left",
+                        "CamYawRight|UI_Right",
+                        "CamZoomIn|UI_Down",
+                        "GalaxyMapHome|UI_Select"),
+                conflicts.stream().map(c -> c.actionA() + "|" + c.actionB()).sorted().toList());
+    }
+
+    @Test
+    void mapCameraStillDoesNotConflictWithAShipAction() {
+        // Ship controls ARE disabled while the map is open - only the UI_* overlap is new.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "CamTranslateForward", Set.of("Key_W"),
+                "SetSpeed100", Set.of("Key_W")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void unrelatedCameraFamiliesStillDoNotConflictWithUiNavigation() {
+        // FreeCam / placement / store / vanity cameras cannot be open alongside a UI panel, so they
+        // keep their sub-state exemption; only the map camera loses it.
+        List<Conflict> conflicts = BindingConflictScanner.scanKeysets(bindings(
+                "MoveFreeCamForward", Set.of("Key_W"),
+                "MovePlacementCamForward", Set.of("Key_E"),
+                "StoreCamZoomIn", Set.of("Key_R"),
+                "PitchCameraUp", Set.of("Key_T"),
+                "UI_Up", Set.of("Key_W"),
+                "UI_Down", Set.of("Key_E"),
+                "UI_Left", Set.of("Key_R"),
+                "UI_Right", Set.of("Key_T")));
+
+        assertTrue(conflicts.isEmpty());
+    }
+
+    @Test
+    void mapCameraCandidateChordIsRejectedAgainstUiNavigation() {
+        // The editor save-guard and live keyboard widget see it too.
+        Map<String, Set<String>> existing = bindings("UI_Up", Set.of("Key_W"));
+        CandidateConflict conflict = BindingConflictScanner.candidateConflict(
+                "CamTranslateForward", Set.of("Key_W"), existing);
+
+        assertNotNull(conflict);
+        assertEquals("UI_Up", conflict.otherBinding());
+    }
+
     @Test
     void constructionPanelNeverConflictsWithShipAction() {
         // The construction/colonisation panel is a separate UI panel, mutually exclusive with flight.

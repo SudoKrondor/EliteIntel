@@ -3,11 +3,6 @@ package elite.intel.ai.brain.actions.handlers.commands.custom;
 import com.google.common.eventbus.Subscribe;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.IntelActionContext;
-import elite.intel.ai.brain.actions.handlers.CommandHandlerFactory;
 import elite.intel.ai.hands.KeyBindingExecutor;
 import elite.intel.ai.hands.events.GameInputSequenceEvent;
 import elite.intel.ai.hands.events.GameInputStep;
@@ -18,11 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,9 +24,6 @@ class CustomCommandHandlerTest {
 
     private final InputCapture inputCapture = new InputCapture();
     private final TestSpeakExecutor testSpeakExecutor = new TestSpeakExecutor();
-
-    // Keys added to CommandHandlerFactory in individual tests - cleaned up in @AfterEach.
-    private final List<String> addedHandlerKeys = new ArrayList<>();
 
     @BeforeEach
     void registerCaptures() {
@@ -46,10 +35,6 @@ class CustomCommandHandlerTest {
         GameControllerBus.unregister(inputCapture);
         inputCapture.events.clear();
         testSpeakExecutor.spoken.clear();
-        for (String key : addedHandlerKeys) {
-            CommandHandlerFactory.getInstance().getCommandHandlers().remove(key);
-        }
-        addedHandlerKeys.clear();
     }
 
     // --- BINDING_TAP ---
@@ -143,92 +128,6 @@ class CustomCommandHandlerTest {
 
         assertEquals(1, inputCapture.events.size(), "BINDING_TAP must fire after SPEAK completes");
         assertEquals("AfterSpeak", inputCapture.events.getFirst().getSteps().getFirst().getBindingId());
-    }
-
-    // --- RUN_COMMAND ---
-
-    @Test
-    void runCommandStepDelegatesToRegisteredBuiltinHandler() {
-        AtomicBoolean called = new AtomicBoolean(false);
-        IntelAction fakeBuiltin = new IntelAction() {
-            @Override
-            public String id() {
-                return "fake_builtin";
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                called.set(true);
-                return null;
-            }
-        };
-        registerHandler("builtin_action", fakeBuiltin);
-
-        runCustomCommand("""
-                {"id":"m","name":"M","phrases":"p","steps":[
-                  {"type":"RUN_COMMAND","actionId":"builtin_action"}
-                ]}""");
-
-        assertTrue(called.get(), "Builtin handler must be called");
-    }
-
-    @Test
-    void runCommandStepSkipsWhenTargetHandlerIsCustomCommandHandler() {
-        // Register a second customCommand handler as the RUN_COMMAND target.
-        CustomCommandDefinition nested = deserialize("""
-                {"id":"custom_command_nested","name":"Nested","phrases":"p",
-                 "steps":[{"type":"SPEAK","text":"nested called"}]}""");
-        CustomCommandHandler nestedHandler = new CustomCommandHandler(nested, testSpeakExecutor);
-        registerHandler("custom_command_nested", nestedHandler);
-
-        // CustomCommand that tries to call another custom command.
-        runCustomCommand("""
-                {"id":"custom_command_caller","name":"Caller","phrases":"p","steps":[
-                  {"type":"RUN_COMMAND","actionId":"custom_command_nested"}
-                ]}""");
-
-        // Guard must prevent the nested customCommand from running - no speech from nested.
-        assertTrue(testSpeakExecutor.spoken.isEmpty(), "Cross-customCommand call must be blocked");
-    }
-
-    @Test
-    void runCommandStepSkipsUnknownActionId() {
-        // No exception - just logs a warning.
-        assertDoesNotThrow(() -> runCustomCommand("""
-                {"id":"m","name":"M","phrases":"p","steps":[
-                  {"type":"RUN_COMMAND","actionId":"does_not_exist_12345"}
-                ]}"""));
-        assertTrue(inputCapture.events.isEmpty());
-    }
-
-    @Test
-    void runCommandStepSkipsActionThatRejectsCustomCommandDelegation() {
-        AtomicBoolean called = new AtomicBoolean(false);
-        IntelAction companionOnly = new IntelAction() {
-            @Override
-            public String id() {
-                return "companion_only";
-            }
-
-            @Override
-            public boolean isAvailableIn(IntelActionContext context) {
-                return context != IntelActionContext.CUSTOM_COMMAND;
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                called.set(true);
-                return null;
-            }
-        };
-        registerHandler("companion_only", companionOnly);
-
-        runCustomCommand("""
-                {"id":"m","name":"M","phrases":"p","steps":[
-                  {"type":"RUN_COMMAND","actionId":"companion_only"}
-                ]}""");
-
-        assertFalse(called.get(), "Companion-only action must not run through a custom command");
     }
 
     // --- RAW_KEY ---
@@ -444,145 +343,6 @@ class CustomCommandHandlerTest {
         }
     }
 
-    // --- parameterized customCommands ---
-
-    @Test
-    void runCommandStepPassesResolvedStepParamsToNestedHandler() {
-        AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        IntelAction fakeBuiltin = new IntelAction() {
-            @Override
-            public String id() {
-                return "fake_builtin";
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                capturedParams.set(p);
-                return null;
-            }
-        };
-        registerHandler("builtin_with_params", fakeBuiltin);
-
-        CustomCommandDefinition customCommand = new CustomCommandDefinition(
-                "m", "M", "", "phrase",
-                List.of(new ActionParameterSpec("commodity", "string", true, "", null, null)),
-                List.of(CustomCommandStep.runCommandWithParams("builtin_with_params", Map.of("key", "${commodity}")))
-        );
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
-        JsonObject params = JsonParser.parseString("{\"commodity\": \"gold\"}").getAsJsonObject();
-        handler.handle("m", params, "");
-
-        assertNotNull(capturedParams.get(), "Nested handler must be called with resolved params");
-        assertEquals("gold", capturedParams.get().get("key").getAsString());
-    }
-
-    @Test
-    void runCommandStepPreservesJsonNumberType() {
-        AtomicReference<JsonObject> capturedParams = new AtomicReference<>();
-        IntelAction fakeBuiltin = new IntelAction() {
-            @Override
-            public String id() {
-                return "fake_builtin";
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                capturedParams.set(p);
-                return null;
-            }
-        };
-        registerHandler("navigate_fake", fakeBuiltin);
-
-        CustomCommandDefinition customCommand = new CustomCommandDefinition(
-                "m", "M", "", "phrase",
-                List.of(
-                        new ActionParameterSpec("lat", "number", true, "", null, null),
-                        new ActionParameterSpec("lon", "number", true, "", null, null)
-                ),
-                List.of(CustomCommandStep.runCommandWithParams("navigate_fake", Map.of("lat", "${lat}", "lon", "${lon}")))
-        );
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
-        JsonObject params = JsonParser.parseString("{\"lat\": -10.5, \"lon\": 45.2}").getAsJsonObject();
-        handler.handle("m", params, "");
-
-        assertNotNull(capturedParams.get());
-        assertEquals(-10.5, capturedParams.get().get("lat").getAsDouble(), 0.001);
-        assertEquals(45.2, capturedParams.get().get("lon").getAsDouble(), 0.001);
-    }
-
-    @Test
-    void abortsCustomCommandWhenRequiredParamIsMissing() {
-        AtomicBoolean called = new AtomicBoolean(false);
-        IntelAction fakeBuiltin = new IntelAction() {
-            @Override
-            public String id() {
-                return "fake_builtin";
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                called.set(true);
-                return null;
-            }
-        };
-        registerHandler("cmd_fake", fakeBuiltin);
-
-        CustomCommandDefinition customCommand = new CustomCommandDefinition(
-                "m", "M", "", "phrase",
-                List.of(new ActionParameterSpec("speed", "string", true, "", null, null)),
-                List.of(CustomCommandStep.runCommandWithParams("cmd_fake", Map.of("key", "${speed}")))
-        );
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
-        // No params provided — required "speed" is missing.
-        handler.handle("m", new JsonObject(), "");
-
-        assertFalse(called.get(), "CustomCommand must be aborted when required param is missing");
-    }
-
-    @Test
-    void speakStepResolvesParamTemplate() {
-        CustomCommandDefinition customCommand = new CustomCommandDefinition(
-                "m", "M", "", "phrase",
-                List.of(new ActionParameterSpec("target", "string", true, "", null, null)),
-                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "Targeting ${target}", null))
-        );
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
-        JsonObject params = JsonParser.parseString("{\"target\": \"drive\"}").getAsJsonObject();
-        handler.handle("m", params, "");
-
-        assertEquals(1, testSpeakExecutor.spoken.size());
-        assertEquals("Targeting drive", testSpeakExecutor.spoken.getFirst());
-    }
-
-    @Test
-    void optionalParamAbsentDoesNotAbortCustomCommand() {
-        AtomicBoolean called = new AtomicBoolean(false);
-        IntelAction fakeBuiltin = new IntelAction() {
-            @Override
-            public String id() {
-                return "fake_builtin";
-            }
-
-            @Override
-            public JsonObject handle(String a, JsonObject p, String r) {
-                called.set(true);
-                return null;
-            }
-        };
-        registerHandler("cmd_optional", fakeBuiltin);
-
-        CustomCommandDefinition customCommand = new CustomCommandDefinition(
-                "m", "M", "", "phrase",
-                List.of(new ActionParameterSpec("hint", "string", false, "", null, null)),
-                // step doesn't use the optional param at all
-                List.of(new CustomCommandStep(CustomCommandStep.Type.RUN_COMMAND, null, 0, null, "cmd_optional"))
-        );
-        CustomCommandHandler handler = new CustomCommandHandler(customCommand, testSpeakExecutor);
-        handler.handle("m", new JsonObject(), "");
-
-        assertTrue(called.get(), "CustomCommand with absent optional param must still execute");
-    }
-
     @Test
     void customCommandLockReleasedAfterInterrupt() throws InterruptedException {
         CustomCommandDefinition slowCustomCommand = deserialize("""
@@ -644,11 +404,6 @@ class CustomCommandHandlerTest {
 
     private CustomCommandDefinition deserialize(String json) {
         return GSON.fromJson(json, CustomCommandDefinition.class);
-    }
-
-    private void registerHandler(String key, IntelAction handler) {
-        CommandHandlerFactory.getInstance().getCommandHandlers().put(key, handler);
-        addedHandlerKeys.add(key);
     }
 
     // --- test doubles ---

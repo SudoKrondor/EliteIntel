@@ -1,11 +1,11 @@
 package elite.intel.ui.support;
 
-import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CustomCommandStepPickerItemTest {
 
@@ -44,11 +44,4 @@ class CustomCommandStepPickerItemTest {
         assertEquals(ids.size(), ids.stream().distinct().count());
     }
 
-    @Test
-    void builtInCommandItemsDoNotExposeCustomCommandEntries() {
-        CommandCatalog catalog = new CommandCatalog();
-        //just for test 1
-        assertFalse(catalog.entries().stream().anyMatch(entry -> entry.isCustomCommand()));
-        assertEquals(catalog.entries().size(), CustomCommandStepPickerItem.builtInCommandItems().size());
-    }
 }

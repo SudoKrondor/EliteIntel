@@ -1,8 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.commands.custom;
 
-import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.IntelActionContext;
 import elite.intel.ai.brain.actions.handlers.commands.CommandRegistry;
 import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalInputCommand;
 import elite.intel.ai.brain.actions.handlers.queries.ConnectionCheckQuery;
@@ -14,10 +12,15 @@ import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
 
 import java.util.*;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Validates custom-command identity, aliases, parameters, steps, and delegation boundaries. */
+/**
+ * Validates custom-command identity, aliases, and steps.
+ * <p>
+ * Custom commands sit alongside the built-in actions rather than replacing them, so an action key or
+ * trigger phrase that collides with a built-in is rejected outright - the classifier must never have to
+ * choose between a built-in and a user-authored twin of it.
+ */
 public final class CustomCommandValidator {
 
     /**
@@ -31,8 +34,6 @@ public final class CustomCommandValidator {
     static final Pattern SAFE_ID = Pattern.compile("[\\p{Ll}\\p{Lo}\\p{Nd}_]+");
     static final int MIN_ACTION_KEY_LENGTH = 3;
     static final int MAX_ACTION_KEY_LENGTH = 60;
-
-    private static final Pattern VALID_PARAM_NAME = Pattern.compile("[A-Za-z0-9_]+");
 
     private CustomCommandValidator() {
     }
@@ -62,8 +63,7 @@ public final class CustomCommandValidator {
     /**
      * Full customCommand validation including cross-custom command context.
      * Subsumes all checks from {@link #validateFormat} and additionally checks
-     * actionKey uniqueness, phrase collisions, parameter names/types, and step
-     * parameter references.
+     * actionKey uniqueness, phrase collisions, and step fields.
      *
      * @param existingCustomCommands    all currently saved customCommands, used for uniqueness and phrase checks
      * @param originalActionKey the customCommand's {@code actionKey} before editing ({@code null} for
@@ -81,8 +81,7 @@ public final class CustomCommandValidator {
         }
         validateIdentity(candidate, existingCustomCommands, originalActionKey, errors);
         validatePhrases(candidate, existingCustomCommands, originalActionKey, errors);
-        validateParameters(candidate, errors);
-        validateSteps(candidate, existingCustomCommands, errors);
+        validateSteps(candidate, errors);
         return List.copyOf(errors);
     }
 
@@ -164,52 +163,11 @@ public final class CustomCommandValidator {
         }
     }
 
-    private static void validateParameters(CustomCommandDefinition candidate, List<String> errors) {
-        List<ActionParameterSpec> params = candidate.getParameters();
-        if (params.isEmpty()) return;
-
-        Set<String> seen = new HashSet<>();
-        for (ActionParameterSpec param : params) {
-            if (param == null || param.getName() == null || param.getName().isBlank()) {
-                errors.add("Parameter name is required.");
-                continue;
-            }
-            String normalizedName = param.getName().toLowerCase(Locale.ROOT);
-            if (!VALID_PARAM_NAME.matcher(param.getName()).matches()) {
-                errors.add("Parameter '" + param.getName() + "': name may only contain letters, digits, or underscore.");
-            }
-            if (!seen.add(normalizedName)) {
-                errors.add("Duplicate parameter name: " + param.getName());
-            }
-            if (param.getType() == null || !ActionParameterSpec.VALID_TYPES.contains(param.getType())) {
-                errors.add("Parameter '" + param.getName() + "': type must be one of "
-                        + ActionParameterSpec.VALID_TYPES + ".");
-            }
-        }
-    }
-
-    private static void validateSteps(
-            CustomCommandDefinition candidate,
-            List<CustomCommandDefinition> existingCustomCommands,
-            List<String> errors
-    ) {
+    private static void validateSteps(CustomCommandDefinition candidate, List<String> errors) {
         List<CustomCommandStep> steps = candidate.getSteps();
         if (steps.isEmpty()) {
             errors.add("At least one step is required.");
             return;
-        }
-
-        Set<String> customCommandIds = new HashSet<>();
-        for (CustomCommandDefinition customCommand : safeCustomCommands(existingCustomCommands)) {
-            customCommandIds.add(normalize(customCommand.getActionKey()));
-        }
-        customCommandIds.add(normalize(candidate.getActionKey()));
-
-        Set<String> declaredParamNames = new HashSet<>();
-        for (ActionParameterSpec spec : candidate.getParameters()) {
-            if (spec != null && spec.getName() != null) {
-                declaredParamNames.add(spec.getName());
-            }
         }
 
         for (int i = 0; i < steps.size(); i++) {
@@ -220,10 +178,7 @@ public final class CustomCommandValidator {
                 continue;
             }
             switch (step.getType()) {
-                case SPEAK -> {
-                    requireText(step.getText(), prefix + "text is required.", errors);
-                    validateParamRefs(step.getText(), prefix, "text", declaredParamNames, errors);
-                }
+                case SPEAK -> requireText(step.getText(), prefix + "text is required.", errors);
                 case BINDING_TAP -> requireText(step.getBindingId(), prefix + "bindingId is required.", errors);
                 case BINDING_HOLD -> {
                     requireText(step.getBindingId(), prefix + "bindingId is required.", errors);
@@ -231,34 +186,6 @@ public final class CustomCommandValidator {
                 }
                 case DELAY -> requirePositive(step.getDurationMs(), prefix + "durationMs must be positive.", errors);
                 case RAW_KEY -> requireText(step.getRawKey(), prefix + "rawKey is required.", errors);
-                case RUN_COMMAND -> {
-                    requireText(step.getActionId(), prefix + "commandId is required.", errors);
-                    if (customCommandIds.contains(normalize(step.getActionId()))) {
-                        errors.add(prefix + "RUN_COMMAND cannot target another custom command.");
-                    }
-                    IntelAction builtIn = CommandRegistry.getInstance().byId().get(step.getActionId());
-                    if (builtIn != null && !builtIn.isAvailableIn(IntelActionContext.CUSTOM_COMMAND)) {
-                        errors.add(prefix + "RUN_COMMAND cannot target " + step.getActionId() + ".");
-                    }
-                    step.getStepParams().forEach((key, template) ->
-                            validateParamRefs(template, prefix, "stepParams[" + key + "]",
-                                    declaredParamNames, errors));
-                }
-            }
-        }
-    }
-
-    /** Checks that all {@code ${name}} references in {@code template} are declared custom command parameters. */
-    private static void validateParamRefs(
-            String template, String stepPrefix, String fieldName,
-            Set<String> declaredParamNames, List<String> errors
-    ) {
-        if (template == null || declaredParamNames.isEmpty()) return;
-        Matcher m = CustomCommandExecutionContext.PARAM_REF.matcher(template);
-        while (m.find()) {
-            String ref = m.group(1);
-            if (!declaredParamNames.contains(ref)) {
-                errors.add(stepPrefix + fieldName + " references undeclared parameter '" + ref + "'.");
             }
         }
     }

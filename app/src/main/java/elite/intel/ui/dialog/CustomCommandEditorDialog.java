@@ -1,6 +1,5 @@
 package elite.intel.ui.dialog;
 
-import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandStep;
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandValidator;
@@ -67,8 +66,6 @@ public final class CustomCommandEditorDialog extends JDialog {
      * Description is no longer surfaced; retained empty for backward-compatible persistence.
      */
     private String description = "";
-    private final ParamsTableModel paramsModel = new ParamsTableModel();
-    private final JTable paramsTable = new JTable(paramsModel);
     private final StepsTableModel stepsModel = new StepsTableModel();
     private final JTable stepsTable = new JTable(stepsModel);
     private final JTextArea errorsArea = textArea(4);
@@ -104,7 +101,6 @@ public final class CustomCommandEditorDialog extends JDialog {
         description = customCommand.getDescription();
         phrasesArea.setText(customCommand.getPhrases());
         keyLabel.setText(customCommand.getActionKey());
-        paramsModel.setParameters(customCommand.getParameters());
         stepsModel.setSteps(customCommand.getSteps());
     }
 
@@ -118,13 +114,9 @@ public final class CustomCommandEditorDialog extends JDialog {
         lc.gridx = 0;
         lc.gridy = 0;
         lc.weightx = 1;
-        lc.weighty = 0.6;             // identity + phrases get the larger share of the flexible height
+        lc.weighty = 1;
         lc.fill = GridBagConstraints.BOTH;
         leftColumn.add(identitySection, lc);
-        lc.gridy = 1;
-        lc.weighty = 0.4;            // parameters keep a fair share on top of their guaranteed minimum
-        lc.insets = new Insets(HudPalette.HUD_GAP, 0, 0, 0);
-        leftColumn.add(paramsPanel(), lc);
 
         JPanel columns = new HudTwoColumns(leftColumn, stepsPanel());
 
@@ -276,69 +268,6 @@ public final class CustomCommandEditorDialog extends JDialog {
                 .collect(Collectors.toList());
     }
 
-    private JPanel paramsPanel() {
-        HudSection panel = HudSection.flat(getText("actions.customCommands.editor.parameters"), new BorderLayout(0, HudPalette.HUD_GAP));
-
-        paramsTable.setFillsViewportHeight(true);
-        paramsTable.setRowHeight(26);
-        paramsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        HudTable.style(paramsTable);
-        paramsTable.getColumnModel().getColumn(0)
-                .setCellRenderer(new HudTable.ValueCellRenderer());
-        for (int i = 1; i <= 3; i++) {
-            paramsTable.getColumnModel().getColumn(i)
-                    .setCellRenderer(new HudTable.ValueCellRenderer());
-        }
-        paramsTable.getColumnModel().getColumn(2)
-                .setCellRenderer(new RequiredCellRenderer());
-        paramsTable.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) editParam();
-            }
-        });
-        JScrollPane scroll = HudTable.scrollPane(paramsTable);
-        int paramRows = paramsTable.getRowHeight() * 3 + paramsTable.getTableHeader().getPreferredSize().height;
-        scroll.setMinimumSize(new Dimension(0, paramRows));
-        scroll.setPreferredSize(new Dimension(0, paramRows));
-        panel.body().add(scroll, BorderLayout.CENTER);
-
-        // Table toolbar: buttons stretch evenly across the full table width.
-        JPanel buttons = AppTheme.transparentPanel(new GridLayout(1, 0, HudPalette.HUD_GAP, 0));
-        addStepButton(buttons, "actions.customCommands.editor.param.add", this::addParam);
-        addStepButton(buttons, "actions.customCommands.editor.param.edit", this::editParam);
-        addStepButton(buttons, "actions.customCommands.editor.param.remove", this::removeParam);
-        panel.body().add(buttons, BorderLayout.SOUTH);
-        return panel;
-    }
-
-    private void addParam() {
-        ActionParameterSpec spec = new CustomCommandParamSpecEditorDialog(this, null).showDialog();
-        if (spec != null) {
-            paramsModel.addParameter(spec);
-        }
-    }
-
-    private void editParam() {
-        int row = selectedParamRow();
-        if (row < 0) return;
-        ActionParameterSpec edited = new CustomCommandParamSpecEditorDialog(this, paramsModel.getParameter(row)).showDialog();
-        if (edited != null) {
-            paramsModel.setParameter(row, edited);
-        }
-    }
-
-    private void removeParam() {
-        int row = selectedParamRow();
-        if (row >= 0) {
-            paramsModel.removeParameter(row);
-        }
-    }
-
-    private int selectedParamRow() {
-        int viewRow = paramsTable.getSelectedRow();
-        return viewRow < 0 ? -1 : paramsTable.convertRowIndexToModel(viewRow);
-    }
 
     private JPanel stepsPanel() {
         HudSection panel = HudSection.flat(getText("actions.customCommands.editor.steps"), new BorderLayout(0, HudPalette.HUD_GAP));
@@ -441,12 +370,7 @@ public final class CustomCommandEditorDialog extends JDialog {
     }
 
     private void addStep() {
-        CustomCommandStep step = new CustomCommandStepEditorDialog(
-                this,
-                null,
-                paramsModel.parameters(),
-                this::addMissingCustomCommandParameters
-        ).showDialog();
+        CustomCommandStep step = new CustomCommandStepEditorDialog(this, null).showDialog();
         if (step != null) {
             stepsModel.addStep(step);
         }
@@ -457,27 +381,9 @@ public final class CustomCommandEditorDialog extends JDialog {
         if (row < 0) {
             return;
         }
-        CustomCommandStep edited = new CustomCommandStepEditorDialog(
-                this,
-                stepsModel.getStep(row),
-                paramsModel.parameters(),
-                this::addMissingCustomCommandParameters
-        ).showDialog();
+        CustomCommandStep edited = new CustomCommandStepEditorDialog(this, stepsModel.getStep(row)).showDialog();
         if (edited != null) {
             stepsModel.setStep(row, edited);
-        }
-    }
-
-    private void addMissingCustomCommandParameters(List<ActionParameterSpec> specs) {
-        if (specs == null || specs.isEmpty()) {
-            return;
-        }
-        for (ActionParameterSpec spec : specs) {
-            String name = spec == null ? null : spec.getName();
-            if (name == null || name.isBlank() || paramsModel.hasParameter(name)) {
-                continue;
-            }
-            paramsModel.addParameter(spec);
         }
     }
 
@@ -527,7 +433,6 @@ public final class CustomCommandEditorDialog extends JDialog {
                 name,
                 description,
                 phrases,
-                paramsModel.parameters(),
                 stepsModel.steps()
         );
     }
@@ -653,96 +558,6 @@ public final class CustomCommandEditorDialog extends JDialog {
         }
     }
 
-    private static final class ParamsTableModel extends AbstractTableModel {
-        private final List<ActionParameterSpec> params = new ArrayList<>();
-        private final String[] columns = {
-                getText("actions.customCommands.editor.param.column.name"),
-                getText("actions.customCommands.editor.param.column.type"),
-                getText("actions.customCommands.editor.param.column.required"),
-                getText("actions.customCommands.editor.param.column.description")
-        };
-
-        void setParameters(List<ActionParameterSpec> newParams) {
-            params.clear();
-            if (newParams != null) params.addAll(newParams);
-            fireTableDataChanged();
-        }
-
-        List<ActionParameterSpec> parameters() { return List.copyOf(params); }
-
-        ActionParameterSpec getParameter(int row) { return params.get(row); }
-
-        void addParameter(ActionParameterSpec spec) {
-            params.add(spec);
-            fireTableRowsInserted(params.size() - 1, params.size() - 1);
-        }
-
-        void setParameter(int row, ActionParameterSpec spec) {
-            params.set(row, spec);
-            fireTableRowsUpdated(row, row);
-        }
-
-        void removeParameter(int row) {
-            params.remove(row);
-            fireTableRowsDeleted(row, row);
-        }
-
-        boolean hasParameter(String name) {
-            return params.stream().anyMatch(param -> param.getName().equalsIgnoreCase(name));
-        }
-
-        @Override public int getRowCount() { return params.size(); }
-        @Override public int getColumnCount() { return columns.length; }
-        @Override public String getColumnName(int col) { return columns[col]; }
-
-        @Override
-        public Object getValueAt(int row, int col) {
-            ActionParameterSpec spec = params.get(row);
-            return switch (col) {
-                case 0 -> spec.getName();
-                case 1 -> spec.getType();
-                case 2 -> spec.isRequired();
-                case 3 -> spec.getDescription();
-                default -> "";
-            };
-        }
-    }
-
-    private static final class RequiredCellRenderer extends HudTable.ValueCellRenderer {
-        private boolean checked;
-
-        @Override
-        public Component getTableCellRendererComponent(
-                JTable table, Object value, boolean isSelected,
-                boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(
-                    table, value, isSelected, hasFocus, row, column);
-            this.checked = Boolean.TRUE.equals(value);
-            if (c instanceof JLabel l) {
-                l.setText("");
-            }
-            return c;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                        RenderingHints.VALUE_ANTIALIAS_ON);
-                int pad = getVerticalPadding();
-                int size = (int) Math.round((getHeight() - 2 * pad) * 0.8);  // smaller, with air
-                int x = (getWidth() - size) / 2;            // center horizontally
-                int y = (getHeight() - size) / 2;
-                Color tint = getForeground();
-                HudGlyphs.paintHudCheckMarker(g2, x, y, size, tint, checked);
-            } finally {
-                g2.dispose();
-            }
-        }
-    }
-
     private static final class StepsTableModel extends AbstractTableModel {
         private final List<CustomCommandStep> steps = new ArrayList<>();
         private final String[] columns = {
@@ -823,7 +638,6 @@ public final class CustomCommandEditorDialog extends JDialog {
             return switch (step.getType()) {
                 case SPEAK -> step.getText();
                 case BINDING_TAP, BINDING_HOLD -> step.getBindingId();
-                case RUN_COMMAND -> step.getActionId();
                 case DELAY -> "";
                 case RAW_KEY -> new BindingSlotDisplayFormatter().formatRawKeyStep(step.getRawKey(), step.getRawKeyModifier());
             };

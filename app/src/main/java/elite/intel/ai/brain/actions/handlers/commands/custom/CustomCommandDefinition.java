@@ -1,14 +1,16 @@
 package elite.intel.ai.brain.actions.handlers.commands.custom;
 
-import elite.intel.ai.brain.actions.ActionParameterSpec;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 /**
- * A user-defined customCommand: a named sequence of steps triggered by voice phrases.
+ * A user-defined customCommand: a named sequence of keystroke steps triggered by voice phrases.
  * Gson populates fields directly; call {@link #validate()} after deserialization.
+ * <p>
+ * Custom commands take no arguments. They are the VoiceAttack-style layer sitting alongside the
+ * built-in actions - a key sequence the game has no single binding for - so there is nothing for a
+ * spoken value to act on and the LLM is never asked to extract one.
  * <p>
  * Identity model:
  * <ul>
@@ -26,14 +28,9 @@ public final class CustomCommandDefinition {
     private final String description;
     /**
      * Comma-separated trigger phrases in the same format as alias provider keys,
-     * e.g. {@code "navigate and set speed, go to coordinates at speed"}.
-     * Phrases may include parameter placeholders such as {@code {lat:number, lon:number}} as
-     * LLM training hints; these are parsed by {@code ActionParameterKeyExtractor} for type inference
-     * but are not evaluated or substituted at custom command execution time.
+     * e.g. {@code "deploy for landing, landing configuration"}.
      */
     private final String phrases;
-    /** Optional parameter contract; may be null for parameterless customCommands (backward-compatible). */
-    private final List<ActionParameterSpec> parameters;
     private final List<CustomCommandStep> steps;
 
     /**
@@ -43,15 +40,12 @@ public final class CustomCommandDefinition {
      * @param actionKey LLM-facing routing token; editable, must be unique among customCommands
      */
     public CustomCommandDefinition(String id, String actionKey, String name, String description, String phrases,
-                           List<ActionParameterSpec> parameters, List<CustomCommandStep> steps) {
+                                   List<CustomCommandStep> steps) {
         this.id = id;
         this.actionKey = actionKey;
         this.name = name;
         this.description = description;
         this.phrases = phrases;
-        this.parameters = parameters == null
-                ? Collections.emptyList()
-                : Collections.unmodifiableList(new ArrayList<>(parameters));
         this.steps = steps == null
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(steps));
@@ -59,18 +53,10 @@ public final class CustomCommandDefinition {
 
     /**
      * Backward-compatible constructor: {@code actionKey} defaults to {@code id}.
-     * Prefer the 7-arg constructor for new code.
-     */
-    public CustomCommandDefinition(String id, String name, String description, String phrases,
-                           List<ActionParameterSpec> parameters, List<CustomCommandStep> steps) {
-        this(id, id, name, description, phrases, parameters, steps);
-    }
-
-    /**
-     * Creates a parameterless custom command definition. Equivalent to passing {@code null} for parameters.
+     * Prefer the 6-arg constructor for new code.
      */
     public CustomCommandDefinition(String id, String name, String description, String phrases, List<CustomCommandStep> steps) {
-        this(id, id, name, description, phrases, null, steps);
+        this(id, id, name, description, phrases, steps);
     }
 
     @SuppressWarnings("unused")
@@ -80,11 +66,12 @@ public final class CustomCommandDefinition {
         name = null;
         description = null;
         phrases = null;
-        parameters = null;
         steps = null;
     }
 
-    /** Validates all required fields and delegates to each parameter's and step's own validation. */
+    /**
+     * Validates all required fields and delegates to each step's own validation.
+     */
     public void validate() {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("CustomCommand id is blank");
@@ -101,14 +88,6 @@ public final class CustomCommandDefinition {
         if (steps == null || steps.isEmpty()) {
             throw new IllegalArgumentException("CustomCommand '" + id + "': steps list is empty");
         }
-        if (parameters != null) {
-            for (ActionParameterSpec param : parameters) {
-                if (param == null) {
-                    throw new IllegalArgumentException("CustomCommand '" + id + "': parameter entry is null");
-                }
-                param.validate();
-            }
-        }
         for (int i = 0; i < steps.size(); i++) {
             if (steps.get(i) == null) {
                 throw new IllegalArgumentException("CustomCommand '" + id + "': step " + i + " is null");
@@ -120,7 +99,7 @@ public final class CustomCommandDefinition {
     /**
      * Returns the ordered list of distinct binding IDs used by {@link CustomCommandStep.Type#BINDING_TAP}
      * and {@link CustomCommandStep.Type#BINDING_HOLD} steps. {@code DELAY}, {@code SPEAK}, and
-     * {@code RUN_COMMAND} steps are excluded. Duplicate binding IDs appear only once, in
+     * {@code RAW_KEY} steps are excluded. Duplicate binding IDs appear only once, in
      * first-occurrence order.
      */
     public List<String> distinctBindingIds() {
@@ -144,7 +123,5 @@ public final class CustomCommandDefinition {
     /** Returns description or empty string if not set. */
     public String getDescription() { return description != null ? description : ""; }
     public String getPhrases() { return phrases; }
-    /** Returns the parameter contract. Empty list means this customCommand has no declared parameters. */
-    public List<ActionParameterSpec> getParameters() { return parameters != null ? parameters : List.of(); }
     public List<CustomCommandStep> getSteps() { return steps == null ? List.of() : steps; }
 }
