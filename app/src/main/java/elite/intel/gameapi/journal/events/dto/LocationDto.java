@@ -168,8 +168,24 @@ public class LocationDto implements ToJsonConvertible {
         return shipyard;
     }
 
-    public void deletePartialBioSamples() {
-        partialBioSamples.clear();
+    /**
+     * Drops the in-progress samples of one genus, which is what completing its third sample means.
+     *
+     * <p>Scoped to the genus rather than clearing the list: a commander who walks past a different
+     * organism mid-set samples it and comes back, so two genuses are in progress at once more often
+     * than not. Clearing everything discarded the other genus's count, and nothing re-derives it -
+     * the game never repeats a sample stage it has already reported.
+     *
+     * <p>Matches on the language-independent FDev symbol, falling back to the localised name for
+     * samples recorded before symbols were captured.
+     */
+    public void deletePartialBioSamplesFor(String genusSymbol, String genusLocalised) {
+        partialBioSamples.removeIf(sample -> {
+            if (genusSymbol != null && sample.getGenusSymbol() != null) {
+                return genusSymbol.equals(sample.getGenusSymbol());
+            }
+            return genusLocalised != null && genusLocalised.equalsIgnoreCase(sample.getGenus());
+        });
     }
 
     public double getAxialTilt() {

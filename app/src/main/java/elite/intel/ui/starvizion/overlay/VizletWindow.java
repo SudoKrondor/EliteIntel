@@ -75,6 +75,22 @@ public abstract class VizletWindow extends JWindow {
         return true;
     }
 
+    /**
+     * Paints the window's backdrop before {@link #paintVizlet}. The default is
+     * the standard vizlet chrome: a rounded translucent fill with a thin border.
+     * <p>
+     * Overlays that own their whole surface - the HUD overlay, which needs a
+     * user-adjustable background alpha and the flat square styling of
+     * ED_HUD_REFERENCE.md - override this instead of reimplementing the window.
+     */
+    protected void paintBackground(Graphics2D g2, int w, int h) {
+        g2.setColor(BG_FILL);
+        g2.fillRoundRect(0, 0, w, h, ARC, ARC);
+        g2.setColor(BORDER_COLOR);
+        g2.setStroke(new BasicStroke(1f));
+        g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
+    }
+
     // -- Drag -----------------------------------------------------------------
 
     private void installDragSupport() {
@@ -158,15 +174,7 @@ public abstract class VizletWindow extends JWindow {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 int w = getWidth(), h = getHeight();
 
-                // Background fill with alpha
-                g2.setColor(BG_FILL);
-                g2.fillRoundRect(0, 0, w, h, ARC, ARC);
-
-                // Border
-                g2.setColor(BORDER_COLOR);
-                g2.setStroke(new BasicStroke(1f));
-                g2.drawRoundRect(0, 0, w - 1, h - 1, ARC, ARC);
-
+                paintBackground(g2, w, h);
                 paintVizlet(g2, w, h);
             } finally {
                 g2.dispose();

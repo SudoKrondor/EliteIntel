@@ -63,6 +63,17 @@ public interface LocationDao {
     @SqlQuery("select * from location where systemAddress = :systemAddress and json like '%\"locationType\": \"PRIMARY_STAR\"%'")
     Location findPrimaryBySystemAddress(long systemAddress);
 
+    /**
+     * Bodies in one system whose surface scan turned up biological genuses.
+     * <p>
+     * Filters on the array rather than on a key name because the genus entries changed shape
+     * once: rows written before the rename carry the display name under {@code species} and
+     * newer ones under {@code genusLocalised}. Both deserialise, and the great majority of
+     * stored bodies are the older shape, so matching a key name would find almost none of them.
+     */
+    @SqlQuery("select * from location where systemAddress = :systemAddress and json_array_length(json, '$.genus') > 0")
+    List<Location> findBioSignalBodies(long systemAddress);
+
     @SqlQuery("select * from location where systemAddress = :systemAddress")
     List<Location> findAllBySystemAddress(long systemAddress);
 

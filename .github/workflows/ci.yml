@@ -89,6 +89,40 @@ jobs:
           path: elite_intel_${{ env.VERSION }}.zip
           if-no-files-found: error
 
+  # The HUD overlay is a native binary, and both platforms' binaries are tracked
+  # in git rather than built during the release build (the auto-update ZIP only
+  # ships what git tracks, and build-zip fails on untracked files under
+  # distribution/). Build the Linux one locally with `./gradlew buildOverlay`;
+  # the Windows one needs a Windows toolchain, so it is built here and uploaded.
+  # Whenever overlay/src changes: download this artifact and commit it to
+  # distribution/overlays/ alongside the freshly built Linux binary.
+  build-overlay-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cairo
+            mingw-w64-x86_64-pango
+            mingw-w64-x86_64-pkgconf
+            make
+
+      - name: Build overlay
+        shell: msys2 {0}
+        run: cd overlay && make
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elite-intel-overlay-windows
+          path: distribution/overlays/elite-intel-overlay.exe
+          if-no-files-found: error
+
   build-windows:
     runs-on: ubuntu-latest
     needs: build-zip

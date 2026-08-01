@@ -138,6 +138,22 @@ public final class AppPaths {
         return getDistributionFile("embed/multilingual-e5-small");
     }
 
+    /**
+     * The native HUD overlay binary, shipped in distribution/overlays/ like the
+     * TTS/STT models so the installer bundles it.
+     * <p>
+     * The overlay is a separate process rather than Swing because AWT re-uploads
+     * a per-pixel translucent window on every repaint and visibly strobes on
+     * each typewriter tick, which no Java2D pipeline or process arrangement
+     * avoids.
+     */
+    public static Path getOverlayBinary() {
+        String name = OsDetector.getOs() == OsDetector.OS.WINDOWS
+                ? "elite-intel-overlay.exe"
+                : "elite-intel-overlay";
+        return getDistributionFile("overlays/" + name);
+    }
+
     private static Path getDistributionFile(String subPath) {
         if (isRunningFromJar()) {
             return APP_DIR.resolve(subPath);

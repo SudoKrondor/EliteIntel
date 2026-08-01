@@ -27,7 +27,8 @@ public interface GameSessionDao {
                                                              audioInputDevice, audioOutputDevice,
                                                              pushToTalkEnabled, pushToTalkControllerName,
                                                              pushToTalkButtonIndex, pushToTalkToggleMode,
-                                                             noiseReductionEnabled, noiseReductionStrength
+                                                             noiseReductionEnabled, noiseReductionStrength,
+                                                             overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :privacyModeOn, :rmsThresholdHigh,
@@ -41,7 +42,8 @@ public interface GameSessionDao {
                                                       :audioInputDevice, :audioOutputDevice,
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
                                                       :pushToTalkButtonIndex, :pushToTalkToggleMode,
-                                                      :noiseReductionEnabled, :noiseReductionStrength
+                                                      :noiseReductionEnabled, :noiseReductionStrength,
+                                                      :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -86,6 +88,11 @@ public interface GameSessionDao {
             session.setPushToTalkToggleMode(rs.getBoolean("pushToTalkToggleMode"));
             session.setNoiseReductionEnabled(rs.getBoolean("noiseReductionEnabled"));
             session.setNoiseReductionStrength(rs.getInt("noiseReductionStrength"));
+            session.setOverlayAlpha(rs.getDouble("overlayAlpha"));
+            session.setOverlayFontScale(rs.getDouble("overlayFontScale"));
+            session.setOverlayWidth(rs.getInt("overlayWidth"));
+            session.setOverlayX(rs.getInt("overlayX"));
+            session.setOverlayY(rs.getInt("overlayY"));
             return session;
         }
     }
@@ -122,6 +129,14 @@ public interface GameSessionDao {
         private boolean pushToTalkToggleMode = true;
         private boolean noiseReductionEnabled = false;
         private int noiseReductionStrength = 1;
+        /**
+         * HUD overlay layout. Scale 0 = derive from screen height; x/y -1 = leave where it opens.
+         */
+        private double overlayAlpha = 0.25;
+        private double overlayFontScale = 0;
+        private int overlayWidth = 760;
+        private int overlayX = -1;
+        private int overlayY = -1;
 
 
         /**
@@ -353,6 +368,52 @@ public interface GameSessionDao {
 
         public void setNoiseReductionStrength(int noiseReductionStrength) {
             this.noiseReductionStrength = noiseReductionStrength;
+        }
+
+        public double getOverlayAlpha() {
+            return overlayAlpha;
+        }
+
+        public void setOverlayAlpha(double overlayAlpha) {
+            this.overlayAlpha = overlayAlpha;
+        }
+
+        /**
+         * {@code 0} means the commander has not chosen one, so it is derived from screen height.
+         */
+        public double getOverlayFontScale() {
+            return overlayFontScale;
+        }
+
+        public void setOverlayFontScale(double overlayFontScale) {
+            this.overlayFontScale = overlayFontScale;
+        }
+
+        public int getOverlayWidth() {
+            return overlayWidth;
+        }
+
+        public void setOverlayWidth(int overlayWidth) {
+            this.overlayWidth = overlayWidth;
+        }
+
+        /**
+         * {@code -1} means no stored position, so the overlay opens wherever it defaults to.
+         */
+        public int getOverlayX() {
+            return overlayX;
+        }
+
+        public void setOverlayX(int overlayX) {
+            this.overlayX = overlayX;
+        }
+
+        public int getOverlayY() {
+            return overlayY;
+        }
+
+        public void setOverlayY(int overlayY) {
+            this.overlayY = overlayY;
         }
     }
 }

@@ -26,8 +26,24 @@ public class CodexEntryEventSubscriber {
             final Status status = Status.getInstance();
 
             if (event.getBodyID() == null) return;
+            // The star name is the only thing this handler contributes to the body, so it is written
+            // here, at once, under the per-body lock. The DTO below is read-only from this point on.
+            //
+            // WHY: this used to hold a DTO loaded now and save it whole at the end - after a blocking
+            // narration call. A codex entry fires in the same instant as the first ScanOrganic of the
+            // species, so that trailing save landed seconds later on top of the sample the scan
+            // handler had recorded, and the first sample of every new species vanished.
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBodyID());
-            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
+            String starName = locationManager.findBySystemAddress(event.getSystemAddress()).getStarName();
+            currentLocation.setStarName(starName); // for the codex lookups below, persisted or not
+            // A codex entry can name a body we hold no row for. That row is keyed on the body name,
+            // which this event does not carry, so there is nothing to persist - and persisting anyway
+            // means an insert with a null key, which would now fail ahead of the narration instead of
+            // after it.
+            if (currentLocation.getPlanetName() != null) {
+                locationManager.updateBody(event.getSystemAddress(), event.getBodyID(),
+                        location -> location.setStarName(starName));
+            }
             playerSession.setCurrentLocationId(event.getBodyID(), event.getSystemAddress());
             StringBuilder sb = new StringBuilder();
 
@@ -113,7 +129,6 @@ public class CodexEntryEventSubscriber {
             if (isOrganic) {
                 codexEntryManager.save(event);
             }
-            locationManager.save(currentLocation);
         });
     }
 

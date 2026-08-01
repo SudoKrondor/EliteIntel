@@ -33,3 +33,40 @@ tasks.named('build') {
     dependsOn project(':app').tasks.shadowJar
     dependsOn project(':updater').tasks.shadowJar
 }
+// --- Native HUD overlay ------------------------------------------------------
+// Builds overlay/src into distribution/overlays/, which the installer packages
+// like the TTS/STT models.
+//
+// Deliberately NOT wired into `build`: the binary it produces is tracked in git
+// (LFS), so building it on every `./gradlew build` would leave a dirty working
+// tree on machines that only touched the Java side. Run it by hand after
+// changing overlay/src, and commit the result. The Windows binary comes from the
+// build-overlay-windows CI job or from buildOverlayWindows below, the same way.
+tasks.register('buildOverlay', Exec) {
+    group = 'build'
+    description = 'Builds the native HUD overlay into distribution/overlays/'
+    workingDir = file('overlay')
+    commandLine 'make'
+    onlyIf { org.gradle.internal.os.OperatingSystem.current().isLinux() }
+    // The whole directory, so a new platform shell or header is picked up
+    // without editing this list - naming one file is how it went stale before.
+    inputs.dir('overlay/src')
+    outputs.file('distribution/overlays/elite-intel-overlay')
+    // The overlay needs X11/cairo/pango headers, which a contributor building
+    // only the Java side may not have. Report it instead of failing the build.
+    ignoreExitValue = true
+    doLast {
+        if (executionResult.get().exitValue != 0) {
+            logger.warn('buildOverlay: skipped - see overlay/Makefile for required dev packages')
+        }
+    }
+}
+
+// Cross-builds the Windows overlay from Linux via a Fedora/mingw container, so
+// local installer builds can package it alongside the Linux binary. Not part of
+// `build` - it needs docker/podman and a network fetch the first time.
+tasks.register('buildOverlayWindows', Exec) {
+    group = 'build'
+    description = 'Cross-builds the Windows HUD overlay into distribution/overlays/'
+    commandLine './overlay/build-windows.sh'
+}

@@ -30,6 +30,12 @@ public class App {
 
     private static final Logger log = LogManager.getLogger(App.class);
 
+    // NOTE: do NOT set sun.java2d.opengl here. The HUD overlay needs the GL
+    // pipeline to stop per-pixel translucent windows flickering, but the
+    // property is JVM-wide and corrupts the FlatLaf main window (missing tab
+    // bar, blank section frames). The overlay has to obtain that pipeline
+    // without imposing it on the rest of the UI.
+
     public static void main(String[] args) {
 
         // init kry and db first!

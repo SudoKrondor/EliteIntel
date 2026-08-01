@@ -106,8 +106,6 @@ gui|es|MISSING|actions.customCommands.export.section.selection
 gui|es|MISSING|actions.customCommands.import.section.review
 gui|es|MISSING|actions.customCommands.section.macros
 gui|es|MISSING|actions.section.commandSystems
-gui|es|MISSING|ai.action.hideObs
-gui|es|MISSING|ai.action.showObs
 gui|es|MISSING|ai.action.sleep
 gui|es|MISSING|ai.action.wake
 gui|es|MISSING|ai.commander.appName
