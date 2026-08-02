@@ -12,24 +12,14 @@ import elite.intel.util.AppPaths;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.awt.Point;
-import java.awt.Toolkit;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.awt.*;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -86,12 +76,16 @@ public class NativeHudOverlay {
      */
     NativeHudOverlay(Supplier<Path> binaryLocator) {
         this.binaryLocator = binaryLocator;
-        // Order is irrelevant - the highest priority wins each poll - but a
-        // source that has nothing to say returns empty and never competes.
+        // The highest priority wins each poll, and a source with nothing to say
+        // returns empty and never competes - so order only decides ties. Mining
+        // is listed ahead of exobiology because both are ambient: a commander in
+        // a ring is working the ring, not the sampling list of the system it
+        // happens to sit in.
         sources.add(new MassacreObjectiveSource());
         sources.add(new MissionObjectiveSource());
         sources.add(new TradeRouteObjectiveSource());
         sources.add(new MonetizedRouteObjectiveSource());
+        sources.add(new MiningObjectiveSource());
         sources.add(new ExobiologyObjectiveSource());
 
         SystemSession.HudOverlayLayout stored = systemSession.getHudOverlayLayout();
