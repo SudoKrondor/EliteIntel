@@ -10,6 +10,17 @@
 
 Model model = {
     .alpha = 0.25, .scale = 1.0, .width = 760, .want_x = -1, .want_y = -1,
+    // Below centre: the placement the VR overlay had before it was settable, so
+    // a commander who never opens the setting sees no change.
+    .vr_position = HUD_VR_BOTTOM,
+};
+
+/// Wire names for VrPosition, in enum order. The protocol carries the name
+/// rather than the number so a line stays readable in a log and an older binary
+/// meeting a newer name falls back instead of landing somewhere arbitrary.
+static const char *const VR_POSITION_NAMES[] = {
+    "top", "top_right", "right", "bottom_right",
+    "bottom", "bottom_left", "left", "top_left",
 };
 
 // -- helpers -----------------------------------------------------------------
@@ -69,6 +80,17 @@ static void push_line(const char *speaker, const char *text, int ai) {
     }
 }
 
+/// Maps a wire name onto a placement, keeping the current one when the name is
+/// not recognised: a newer app naming a position this binary has never heard of
+/// leaves the HUD where it is, rather than moving it somewhere unintended.
+static VrPosition parse_vr_position(const char *value, VrPosition current) {
+    int count = (int) (sizeof(VR_POSITION_NAMES) / sizeof(VR_POSITION_NAMES[0]));
+    for (int i = 0; i < count; i++) {
+        if (!strcmp(value, VR_POSITION_NAMES[i])) return (VrPosition) i;
+    }
+    return current;
+}
+
 static void apply_cfg(char *fields[], int n) {
     for (int i = 1; i < n; i++) {
         char *eq = strchr(fields[i], '=');
@@ -80,6 +102,7 @@ static void apply_cfg(char *fields[], int n) {
         else if (!strcmp(k, "width")) model.width = atoi(v);
         else if (!strcmp(k, "x"))     model.want_x = atoi(v);
         else if (!strcmp(k, "y"))     model.want_y = atoi(v);
+        else if (!strcmp(k, "vrpos")) model.vr_position = parse_vr_position(v, model.vr_position);
     }
 }
 

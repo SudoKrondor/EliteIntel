@@ -59,7 +59,7 @@ public class AppView extends JFrame implements AppViewInterface {
         installDarkDefaults();
         UiBus.register(this);
 
-        setIconImage(Toolkit.getDefaultToolkit().getImage(getClass().getResource("/images/elite-logo.png")));
+        AppTheme.applyAppIcon(this);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override

@@ -31,6 +31,7 @@ public class ButtonSettingsDialog extends JDialog {
         this.chosenColor = vizlet.getPressedColor();
         setSize(380, 310);
         setLocationRelativeTo(null);
+        AppTheme.applyAppIcon(this);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         buildUi();
         loadCurrent();

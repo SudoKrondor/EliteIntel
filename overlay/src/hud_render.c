@@ -152,12 +152,24 @@ int hud_render(cairo_t *cr, int width, int draw) {
     for (int i = 0; i < model.line_count; i++) {
         Line *l = &model.lines[i];
         char buf[MAX_TEXT + 96];
-        snprintf(buf, sizeof(buf), "%s: %.*s", l->speaker, l->visible_bytes, l->text);
-
-        pango_layout_set_text(body, buf, -1);
         int tw, th;
+
+        // Height is measured against the WHOLE line, never the part the
+        // typewriter has revealed so far, so the card is its final size from the
+        // first character and the text fills into space already reserved.
+        //
+        // Measuring the visible prefix instead grows the card every time a new
+        // character wraps onto a new row - once a second or so while the AI
+        // "types". On the desktop that is a window that jitters; in VR it is a
+        // new overlay texture of a new size handed to the compositor mid-
+        // sentence, which is the flicker a commander sees in the headset.
+        snprintf(buf, sizeof(buf), "%s: %s", l->speaker, l->text);
+        pango_layout_set_text(body, buf, -1);
         pango_layout_get_pixel_size(body, &tw, &th);
+
         if (draw) {
+            snprintf(buf, sizeof(buf), "%s: %.*s", l->speaker, l->visible_bytes, l->text);
+            pango_layout_set_text(body, buf, -1);
             set_rgb(cr, l->ai ? COL_AI : COL_USER, 1.0);
             cairo_move_to(cr, pad, y);
             pango_cairo_show_layout(cr, body);

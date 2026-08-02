@@ -32,6 +32,7 @@ public class AxesSettingsDialog extends JDialog {
         this.chosenColor = vizlet.getDotColor();
         setSize(380, 340);
         setLocationRelativeTo(null);
+        AppTheme.applyAppIcon(this);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         buildUi();
         loadCurrent();

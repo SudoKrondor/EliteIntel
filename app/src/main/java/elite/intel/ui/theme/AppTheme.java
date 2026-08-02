@@ -1,28 +1,8 @@
 package elite.intel.ui.theme;
 
-import elite.intel.ui.widget.HudBanner;
-import elite.intel.ui.widget.HudButton;
-import elite.intel.ui.widget.HudCheckBox;
-import elite.intel.ui.widget.HudComboBox;
-import elite.intel.ui.widget.HudFooter;
-import elite.intel.ui.widget.HudMetadataField;
-import elite.intel.ui.widget.HudModalScaffold;
-import elite.intel.ui.widget.HudModalSpec;
-import elite.intel.ui.widget.HudPanel;
-import elite.intel.ui.widget.HudPasswordField;
-import elite.intel.ui.widget.HudScrollPane;
-import elite.intel.ui.widget.HudSearchField;
-import elite.intel.ui.widget.HudSlider;
-import elite.intel.ui.widget.HudStepper;
-import elite.intel.ui.widget.HudTabbedPane;
-import elite.intel.ui.widget.HudTable;
-import elite.intel.ui.widget.HudTextArea;
-import elite.intel.ui.widget.HudTextField;
-import elite.intel.ui.widget.HudToggleButton;
-import elite.intel.ui.widget.StatusBadge;
-import elite.intel.ui.widget.TopStatusBar;
-
 import com.formdev.flatlaf.FlatClientProperties;
+import elite.intel.ui.widget.*;
+
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.border.Border;
@@ -31,7 +11,6 @@ import javax.swing.border.LineBorder;
 import javax.swing.plaf.basic.BasicScrollBarUI;
 import javax.swing.text.JTextComponent;
 import java.awt.*;
-import java.awt.image.BufferedImage;
 
 import static elite.intel.ui.theme.HudPalette.*;
 
@@ -63,6 +42,28 @@ public class AppTheme {
      */
     public static final String HUD_COMBO_EDITOR_LOCKED = "eliteIntel.hud.comboEditorLocked";
     public static final String HUD_CARD_BORDER_COLOR = "eliteIntel.hud.cardBorderColor";
+
+    /**
+     * The app's own icon, for every window that has to carry one.
+     */
+    private static final String APP_ICON = "/images/elite-logo.png";
+
+    /**
+     * Puts the app logo in a window's title bar and task switcher.
+     * <p>
+     * Only ownerless windows need this. A dialog opened with the main frame as its owner inherits
+     * the frame's icon; one opened with a {@code null} owner is parented to Swing's hidden shared
+     * frame instead, which has no icon, so the platform falls back to the stock Java cup - which is
+     * how a settings dialog ends up looking like it belongs to a different program.
+     * <p>
+     * A missing icon resource is ignored rather than thrown: a packaging slip must cost the
+     * commander an icon, not the window.
+     */
+    public static void applyAppIcon(Window window) {
+        java.net.URL icon = AppTheme.class.getResource(APP_ICON);
+        if (icon == null) return;
+        window.setIconImage(Toolkit.getDefaultToolkit().getImage(icon));
+    }
 
     // -- Button factories ------------------------------------------------------
 

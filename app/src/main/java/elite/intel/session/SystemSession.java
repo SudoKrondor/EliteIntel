@@ -516,7 +516,7 @@ public class SystemSession {
      *                  back from rather than fail on
      */
     public record HudOverlayLayout(double alpha, double fontScale, int width, int x, int y,
-                                   String displayMode) {
+                                   String displayMode, String vrPosition) {
     }
 
     public HudOverlayLayout getHudOverlayLayout() {
@@ -528,7 +528,8 @@ public class SystemSession {
                     session.getOverlayWidth(),
                     session.getOverlayX(),
                     session.getOverlayY(),
-                    session.getOverlayDisplayMode());
+                    session.getOverlayDisplayMode(),
+                    session.getOverlayVrPosition());
         });
     }
 
@@ -541,6 +542,7 @@ public class SystemSession {
             session.setOverlayX(layout.x());
             session.setOverlayY(layout.y());
             session.setOverlayDisplayMode(layout.displayMode());
+            session.setOverlayVrPosition(layout.vrPosition());
             dao.save(session);
             return null;
         });

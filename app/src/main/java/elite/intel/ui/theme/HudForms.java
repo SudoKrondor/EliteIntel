@@ -44,16 +44,18 @@ public final class HudForms {
         label.setPreferredSize(new Dimension(width, HUD_FIELD_HEIGHT));
     }
 
-    public static void addLabel(JPanel panel, String text, GridBagConstraints gbc) {
-        addLabel(panel, text, gbc, 220);
+    public static JLabel addLabel(JPanel panel, String text, GridBagConstraints gbc) {
+        return addLabel(panel, text, gbc, 220);
     }
 
     /**
      * Adds a dim-aware field label (section 5.1) at column 0. {@code labelWidth} fixes the label-column
      * width for aligned single-column forms; pass {@code <= 0} to size the label to its text so the
      * field hugs it (tight two-column forms - avoids the large gap after short labels).
+     *
+     * @return the label just added, for the callers that have to hide or re-title a whole row later
      */
-    public static void addLabel(JPanel panel, String text, GridBagConstraints gbc, int labelWidth) {
+    public static JLabel addLabel(JPanel panel, String text, GridBagConstraints gbc, int labelWidth) {
         gbc.gridx = 0;
         gbc.weightx = 0;
         gbc.fill = GridBagConstraints.NONE;
@@ -70,6 +72,7 @@ public final class HudForms {
             sizeFieldLabel(label, labelWidth);
         }
         panel.add(label, gbc);
+        return label;
     }
 
     public static void addField(JPanel panel, JComponent comp, GridBagConstraints gbc, int col, double weightX) {

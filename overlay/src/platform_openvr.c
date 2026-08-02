@@ -32,6 +32,7 @@
 #include "hud.h"
 #include "openvr_capi.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -56,13 +57,31 @@ typedef void *DynLib;
 #define DYN_SYM(lib, sym)  dlsym(lib, sym)
 #endif
 
-// Head-relative placement. The card follows the commander's head rather than
-// sitting in the world, because it carries at-a-glance nav/mining/trade state
-// that is useless if you have to remember where you left it. OpenVR is
-// right-handed with -Z forward, so forward is negative.
-#define HUD_FORWARD_M   -1.5f
-#define HUD_DOWN_M      -0.30f
+// Placement. The card sits in the world and does NOT follow the head: a panel
+// welded to your gaze is unreadable, because the eye never gets to settle on it
+// and you cannot look away from it either. Anything worn on the face has to be
+// glanced at, which means it has to hold still while you turn to it. See
+// place_overlay for what "the world" is measured from.
+//
+// Which way the card sits from centre is the commander's to choose (CFG vrpos);
+// how far off centre that is, is not. These two angles are the whole geometry:
+// the card hangs on a sphere of HUD_DISTANCE_M around the seated origin, turned
+// to face it, so every placement is the same size and the same distance away
+// and only the direction changes.
+//
+// 30 and 18 degrees put the card's near edge just outside the middle of the
+// view at its default width - clear of what the commander is aiming at, still
+// inside a glance. Smaller and it sits over the reticle; larger and it needs a
+// head turn rather than a glance.
+#define HUD_DISTANCE_M   1.5f
+#define HUD_YAW_DEG     30.0f
+#define HUD_PITCH_DEG   18.0f
 #define HUD_WIDTH_M      1.0f
+
+// Texture allocation is rounded up to a multiple of this, and the unused tail
+// is cropped off with texture bounds. See canvas_alloc_for.
+#define TEXTURE_STEP_PX  128
+#define TEXTURE_MAX_PX  4096
 
 // How long to wait between attempts to attach to SteamVR, and how finely that
 // wait is sliced so stdin keeps draining and the typewriter keeps its rhythm.
@@ -188,10 +207,15 @@ static const char *describe(const OpenVr *vr, EVRInitError error) {
 
 /// The cairo surface the HUD is drawn into, plus the RGBA copy handed to
 /// SteamVR. Kept together because they must always be the same size.
+///
+/// `content` is how much of that surface the card actually fills; the rest is
+/// cropped away by the overlay's texture bounds and never seen. See
+/// canvas_alloc_for for why the two are not the same number.
 typedef struct {
     cairo_surface_t *surface;
     unsigned char   *rgba;
     int width, height;
+    int content;
 } Canvas;
 
 static void canvas_free(Canvas *canvas) {
@@ -199,7 +223,7 @@ static void canvas_free(Canvas *canvas) {
     free(canvas->rgba);
     canvas->surface = NULL;
     canvas->rgba = NULL;
-    canvas->width = canvas->height = 0;
+    canvas->width = canvas->height = canvas->content = 0;
 }
 
 static int canvas_resize(Canvas *canvas, int width, int height) {
@@ -214,7 +238,25 @@ static int canvas_resize(Canvas *canvas, int width, int height) {
 
     canvas->width = width;
     canvas->height = height;
+    // Nothing has been drawn into the new surface yet, and SteamVR is still
+    // cropping to the old one, so the bounds must be re-sent whatever they were.
+    canvas->content = 0;
     return 1;
+}
+
+/// Rounds a content height up to the texture height we allocate for it.
+///
+/// Handing SetOverlayRaw a new width or height makes the compositor throw the
+/// backing texture away and build another one, and a commander sees that as the
+/// card blinking. Rounding to a step means an ordinary change - a reply one row
+/// taller, a mining row appearing - reuses the texture it already has and only
+/// moves the crop, so the size the compositor sees changes a handful of times a
+/// session instead of a handful of times a sentence.
+static int canvas_alloc_for(int content) {
+    if (content < 1) content = 1;
+    if (content > TEXTURE_MAX_PX) content = TEXTURE_MAX_PX;
+    int steps = (content + TEXTURE_STEP_PX - 1) / TEXTURE_STEP_PX;
+    return steps * TEXTURE_STEP_PX;
 }
 
 static unsigned char unpremultiply(unsigned value, unsigned alpha) {
@@ -261,15 +303,19 @@ static void to_rgba(const Canvas *canvas) {
 /// buffer could not be allocated, which is fatal to the session.
 static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t handle, Canvas *canvas) {
     int width = model.width > 0 ? model.width : 760;
-    int height = canvas->height > 0 ? canvas->height : 200;
-    if (!canvas_resize(canvas, width, height)) return 0;
+
+    // A surface of the right width has to exist before anything can be measured
+    // into it; its height at this point does not matter.
+    if (!canvas_resize(canvas, width, canvas->height > 0 ? canvas->height : TEXTURE_STEP_PX)) return 0;
 
     // Measure first, then size to the content, exactly as the desktop shells do
     // - the card grows and shrinks as objectives come and go.
     cairo_t *measure = cairo_create(canvas->surface);
-    int needed = hud_render(measure, width, 0);
+    int content = hud_render(measure, width, 0);
     cairo_destroy(measure);
-    if (needed > 0 && needed != canvas->height && !canvas_resize(canvas, width, needed)) return 0;
+    if (content < 1) content = 1;
+    if (content > TEXTURE_MAX_PX) content = TEXTURE_MAX_PX;
+    if (!canvas_resize(canvas, width, canvas_alloc_for(content))) return 0;
 
     cairo_t *cr = cairo_create(canvas->surface);
     hud_paint_background(cr);
@@ -277,10 +323,76 @@ static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t hand
     cairo_destroy(cr);
     cairo_surface_flush(canvas->surface);
 
+    // Crop the padding off the bottom. Only when it moves: the bounds are what
+    // decide the card's shape in the world, so re-sending the same ones every
+    // frame is work the compositor does not need.
+    if (content != canvas->content) {
+        canvas->content = content;
+        struct VRTextureBounds_t bounds = {
+            0.0f, 0.0f, 1.0f, (float) content / (float) canvas->height};
+        overlay->SetOverlayTextureBounds(handle, &bounds);
+    }
+
     to_rgba(canvas);
     overlay->SetOverlayRaw(handle, canvas->rgba,
                            (uint32_t) canvas->width, (uint32_t) canvas->height, 4);
     return 1;
+}
+
+// -- placement ---------------------------------------------------------------
+
+/// Turns a placement into the yaw and pitch that carry it there, in radians.
+/// Yaw is positive to the commander's right, pitch positive upward.
+static void angles_for(VrPosition position, float *yaw, float *pitch) {
+    // Spelled out rather than taken from math.h: M_PI is not in C11, and both
+    // this file's _POSIX_C_SOURCE and MinGW's headers hide it by default.
+    const float pi = 3.14159265358979323846f;
+    const float y = HUD_YAW_DEG * pi / 180.0f;
+    const float p = HUD_PITCH_DEG * pi / 180.0f;
+    switch (position) {
+        case HUD_VR_TOP:          *yaw =  0; *pitch =  p; break;
+        case HUD_VR_TOP_RIGHT:    *yaw =  y; *pitch =  p; break;
+        case HUD_VR_RIGHT:        *yaw =  y; *pitch =  0; break;
+        case HUD_VR_BOTTOM_RIGHT: *yaw =  y; *pitch = -p; break;
+        case HUD_VR_BOTTOM_LEFT:  *yaw = -y; *pitch = -p; break;
+        case HUD_VR_LEFT:         *yaw = -y; *pitch =  0; break;
+        case HUD_VR_TOP_LEFT:     *yaw = -y; *pitch =  p; break;
+        default:                  *yaw =  0; *pitch = -p; break;   // HUD_VR_BOTTOM
+    }
+}
+
+/// Hangs the card at `position` and points it back at the commander.
+///
+/// The transform is expressed in the SEATED universe, so SteamVR's "Reset
+/// Seated Position" - and the game's own recentre, which goes through the same
+/// call - is what decides where "ahead" is. That is the one control a commander
+/// already has, already knows, and can reach with the headset ON; anything in
+/// the app's settings window cannot be clicked from inside VR. It also survives
+/// a restart for free: the seated origin is SteamVR's to remember, so there is
+/// nothing here to persist.
+///
+/// The card is rotated to face the seated origin rather than left square to the
+/// world, because a panel 30 degrees off to one side and still facing straight
+/// ahead is read at an angle, and text is the first thing that costs.
+static void place_overlay(struct VR_IVROverlay_FnTable *overlay,
+                          VROverlayHandle_t handle, VrPosition position) {
+    float yaw, pitch;
+    angles_for(position, &yaw, &pitch);
+
+    float s = sinf(yaw), c = cosf(yaw);
+    float S = sinf(pitch), C = cosf(pitch);
+
+    // Rotation is Ry(-yaw) * Rx(pitch), whose third column - the card's own
+    // outward normal - comes out as the exact opposite of the direction it sits
+    // in, which is what "facing the commander" means here. OpenVR is
+    // right-handed with -Z forward, so the forward term is negated.
+    struct HmdMatrix34_t place = {{
+        {c, -s * S, -s * C,  HUD_DISTANCE_M * s * C},
+        {0,      C,     -S,  HUD_DISTANCE_M * S},
+        {s,  c * S,  c * C, -HUD_DISTANCE_M * c * C},
+    }};
+    overlay->SetOverlayTransformAbsolute(
+            handle, ETrackingUniverseOrigin_TrackingUniverseSeated, &place);
 }
 
 // -- session -----------------------------------------------------------------
@@ -350,10 +462,8 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
     }
 
     overlay->SetOverlayWidthInMeters(handle, HUD_WIDTH_M);
-    struct HmdMatrix34_t place = {{{1, 0, 0, 0},
-                                   {0, 1, 0, HUD_DOWN_M},
-                                   {0, 0, 1, HUD_FORWARD_M}}};
-    overlay->SetOverlayTransformTrackedDeviceRelative(handle, (TrackedDeviceIndex_t) 0, &place);
+    VrPosition placed = model.vr_position;
+    place_overlay(overlay, handle, placed);
     overlay->ShowOverlay(handle);
     hud_report_mode("vr", NULL);
 
@@ -365,6 +475,14 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
         if (hud_pump_stdin(TYPEWRITER_MS, &eof, &quit)) dirty = 1;
         if (hud_tick_typewriter()) dirty = 1;
         if (system && steamvr_is_quitting(system)) { outcome = SESSION_LOST; break; }
+
+        // Moving the card takes effect while the commander is wearing the
+        // headset, so they can try placements against the cockpit they are
+        // actually flying rather than restart the overlay to see each one.
+        if (model.vr_position != placed) {
+            placed = model.vr_position;
+            place_overlay(overlay, handle, placed);
+        }
 
         if (dirty) {
             if (!present(overlay, handle, &canvas)) {

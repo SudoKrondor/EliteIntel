@@ -1,6 +1,6 @@
 package elite.intel.ui.overlay;
 
-import java.awt.Point;
+import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +64,17 @@ public final class OverlayProtocol {
 
     public static String position(int x, int y) {
         return "CFG" + TAB + "x=" + x + TAB + "y=" + y;
+    }
+
+    /**
+     * Where the card hangs in the headset, e.g. {@code CFG vrpos=bottom_right}.
+     * <p>
+     * Sent to every child, not only a VR one: the desktop shells ignore keys
+     * that mean nothing to them, and which child is which is not something this
+     * layer tracks.
+     */
+    public static String vrPosition(HudVrPosition position) {
+        return "CFG" + TAB + "vrpos=" + position.wireName();
     }
 
     /**

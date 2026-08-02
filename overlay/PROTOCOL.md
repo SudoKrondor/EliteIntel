@@ -30,6 +30,7 @@ Configuration. Any subset, any order, at any time.
 | `scale` | font scale, `1.0` is calibrated for 1440p |
 | `x`,`y` | window position in screen pixels          |
 | `width` | window width in pixels; height follows content |
+| `vrpos` | where the card hangs in the headset: `top`, `top_right`, `right`, `bottom_right`, `bottom`, `bottom_left`, `left`, `top_left`. Ignored by the desktop shells; an unknown name leaves the card where it is |
 
 ```
 OBJ <title> <subtitle>
@@ -83,6 +84,19 @@ Unknown flags are ignored, for the same reason unknown commands are.
 
 `--vr=only` is the exception because of the "both at once" setting, where the app runs **two children
 **: a desktop overlay and a VR one, fed identical lines. If the VR child fell back there, its window would land exactly on top of the desktop child's — the commander would drag one and watch the other stay put. So it exits instead, and the desktop child is the whole overlay.
+
+## Placement in VR
+
+There is no window to drag in a headset, so the card is placed in two parts.
+
+`CFG vrpos=` chooses a
+**direction** — one of eight points around the centre of the forward view, 30° to either side and 18° above or below, always 1.5 m out and turned to face the commander. It applies live, so a commander wearing the headset sees each choice land.
+
+Which way is **ahead** is not the app's to set: the overlay's transform is expressed in SteamVR's
+*seated* universe, so "Reset Seated Position" — and the game's own view recentre, which goes through the same call — is what places the card, exactly as it places the cockpit. That is the one control reachable with a headset on, and it means there is no VR pose for the app to store: the seated origin is SteamVR's to remember.
+
+The card is
+**not** parented to the HMD. A panel welded to the gaze cannot be glanced at or looked away from, and every earlier version that followed the head was reported as unreadable.
 
 ## Reverse channel
 

@@ -67,6 +67,11 @@ public class NativeHudOverlay {
      */
     private volatile int windowX = -1;
     private volatile int windowY = -1;
+    /**
+     * Where the card hangs in the headset. Ignored by a desktop child, which is
+     * placed by dragging it.
+     */
+    private HudVrPosition vrPosition = HudVrPosition.DEFAULT;
 
     /**
      * Where the child binary lives. A seam, so tests can point it at nothing.
@@ -104,6 +109,7 @@ public class NativeHudOverlay {
         windowX = stored.x();
         windowY = stored.y();
         displayMode = parseDisplayMode(stored.displayMode());
+        vrPosition = HudVrPosition.parse(stored.vrPosition());
     }
 
     /**
@@ -194,6 +200,7 @@ public class NativeHudOverlay {
 
         send(OverlayProtocol.handshake());
         send(OverlayProtocol.config(backgroundAlpha, fontScale, width));
+        send(OverlayProtocol.vrPosition(vrPosition));
         if (windowX >= 0 || windowY >= 0) send(OverlayProtocol.position(windowX, windowY));
         lastObjective = null;
         children.forEach(this::startOutputReader);
@@ -387,7 +394,8 @@ public class NativeHudOverlay {
      */
     private void saveLayout() {
         systemSession.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
-                backgroundAlpha, fontScale, width, windowX, windowY, displayMode.name()));
+                backgroundAlpha, fontScale, width, windowX, windowY,
+                displayMode.name(), vrPosition.name()));
     }
 
     public double getFontScale() {
@@ -396,6 +404,23 @@ public class NativeHudOverlay {
 
     public HudDisplayMode getDisplayMode() {
         return displayMode;
+    }
+
+    public HudVrPosition getVrPosition() {
+        return vrPosition;
+    }
+
+    /**
+     * Moves the card in the headset. Applied live, unlike the display mode:
+     * placement is a line on the wire, not a decision made when a child is
+     * spawned, so the commander can try directions against the cockpit they are
+     * flying instead of restarting the overlay for each one.
+     */
+    public synchronized void setVrPosition(HudVrPosition position) {
+        if (position == null || position == vrPosition) return;
+        vrPosition = position;
+        send(OverlayProtocol.vrPosition(vrPosition));
+        saveLayout();
     }
 
     /**
