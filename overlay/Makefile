@@ -16,12 +16,16 @@ CORE    := src/hud_model.c src/hud_render.c
 ifeq ($(OS),Windows_NT)
   BIN           := elite-intel-overlay.exe
   SRC           := $(CORE) src/platform_win32.c
+  # Compiled resources: the window icon. Windows-only - X11 takes its icon from
+  # the running window, not from anything linked into the binary.
+  RES           := build/overlay_res.o
   DEPS          := cairo pangocairo
   PLATFORM_LIBS := -lgdi32 -luser32 -mwindows
   DEPS_HINT     := pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-pkgconf
 else
   BIN           := elite-intel-overlay
   SRC           := $(CORE) src/platform_x11.c
+  RES           :=
   DEPS          := x11 cairo pangocairo
   PLATFORM_LIBS :=
   DEPS_HINT     := sudo apt install libx11-dev libcairo2-dev libpango1.0-dev
@@ -40,10 +44,15 @@ check-deps:
 		echo "  $(DEPS_HINT)"; \
 		exit 1; }
 
-$(OUT_DIR)/$(BIN): $(SRC) src/hud.h
+$(OUT_DIR)/$(BIN): $(SRC) src/hud.h $(RES)
 	@mkdir -p $(OUT_DIR)
-	$(CC) $(CFLAGS) -o $@ $(SRC) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $(SRC) $(RES) $(LDFLAGS)
 	@echo "built $@"
 
+build/overlay_res.o: res/overlay.rc res/resource.h res/ai.ico
+	@mkdir -p build
+	windres -I res $< -o $@
+
 clean:
+	rm -rf build
 	rm -f $(OUT_DIR)/elite-intel-overlay $(OUT_DIR)/elite-intel-overlay.exe

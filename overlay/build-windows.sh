@@ -54,9 +54,14 @@ $RUNNER run --rm \
     CC=x86_64-w64-mingw32-gcc
     DEPS="cairo pangocairo"
 
+    # Window icon. Kept in step with the same rule in the Makefile, which is
+    # what the MSYS2 and CI builds use.
+    mkdir -p build
+    x86_64-w64-mingw32-windres -I res res/overlay.rc -o build/overlay_res.o
+
     $CC -O2 -Wall -Wextra -std=c11 $($PKG --cflags $DEPS) \
         -o /src/distribution/overlays/elite-intel-overlay.exe \
-        src/hud_model.c src/hud_render.c src/platform_win32.c \
+        src/hud_model.c src/hud_render.c src/platform_win32.c build/overlay_res.o \
         $($PKG --libs $DEPS) -lgdi32 -luser32 -lm -mwindows
 
     # Copy the mingw DLLs the binary actually imports, following transitive

@@ -11,8 +11,12 @@
 // Cairo's CAIRO_FORMAT_ARGB32 is already premultiplied, which is exactly the
 // format UpdateLayeredWindow wants with AC_SRC_ALPHA, so the buffer is handed
 // over without conversion.
+//
+// The window is deliberately NOT a tool window, so that OBS can capture it -
+// see the CreateWindowEx call for why.
 
 #include "hud.h"
+#include "../res/resource.h"
 
 #include <windows.h>
 #include <stdio.h>
@@ -146,6 +150,15 @@ int main(void) {
     wc.hInstance = inst;
     wc.lpszClassName = "EliteIntelHudOverlay";
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    // Taskbar and alt-tab entries exist now that this is not a tool window, and
+    // both draw the class icon. LoadImage rather than LoadIcon so each asks the
+    // .ico for the size it actually wants instead of stretching one bitmap.
+    wc.hIcon = (HICON) LoadImage(inst, MAKEINTRESOURCE(IDI_APPICON), IMAGE_ICON,
+                                 GetSystemMetrics(SM_CXICON),
+                                 GetSystemMetrics(SM_CYICON), 0);
+    wc.hIconSm = (HICON) LoadImage(inst, MAKEINTRESOURCE(IDI_APPICON), IMAGE_ICON,
+                                   GetSystemMetrics(SM_CXSMICON),
+                                   GetSystemMetrics(SM_CYSMICON), 0);
     RegisterClassEx(&wc);
 
     g_x = (GetSystemMetrics(SM_CXSCREEN) - model.width) / 2;
@@ -153,8 +166,28 @@ int main(void) {
 
     // WS_EX_NOACTIVATE is what keeps every keystroke going to the game: the
     // window can be clicked and dragged but never takes keyboard focus.
+    //
+    // WS_EX_TOOLWINDOW is deliberately absent. OBS rejects tool windows outright
+    // when it enumerates capturable windows - check_window_valid() in
+    // libobs/util/windows/window-helpers.c does `if (ex_styles & WS_EX_TOOLWINDOW)
+    // return false;` - so with it set the overlay never appeared in the window
+    // picker and could not be captured at all. Dropping it costs a taskbar
+    // button and an alt-tab entry, and
+    // costs nothing else: staying above the game is WS_EX_TOPMOST's job and
+    // keeping the keyboard is WS_EX_NOACTIVATE's, and both are still set.
+    //
+    // Capture still requires OBS's "Windows 10 (1903 and up)" method: the older
+    // BitBlt path cannot read a layered window's pixels.
+    //
+    // WS_EX_APPWINDOW is set for the same reason, for the VR mirroring tools.
+    // Desktop+ rejects a window with `(exStyle & WS_EX_NOACTIVATE) &&
+    // !(exStyle & WS_EX_APPWINDOW)` (IsCapturableWindow, src/Shared/
+    // WindowManager.cpp), reading not-activatable as not-a-real-window. We need
+    // WS_EX_NOACTIVATE for the keyboard, so WS_EX_APPWINDOW is what says the
+    // window is nonetheless a real one worth listing. It only forces a taskbar
+    // button, which dropping WS_EX_TOOLWINDOW already gave us.
     g_win = CreateWindowEx(
-            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_APPWINDOW,
             wc.lpszClassName, "EliteIntel HUD Overlay", WS_POPUP,
             g_x, g_y, model.width, g_height, NULL, NULL, inst, NULL);
     if (!g_win) { fprintf(stderr, "overlay: CreateWindowEx failed\n"); return 1; }
