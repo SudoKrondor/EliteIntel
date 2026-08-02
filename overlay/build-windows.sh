@@ -48,15 +48,19 @@ $RUNNER run --rm \
   -u "$BUILD_UID:$BUILD_GID" \
   "$IMAGE" \
   bash -c '
+    # NO APOSTROPHES anywhere below, not even in a comment: this whole block is
+    # one single-quoted argument, so the first one ends it and the rest of the
+    # script runs on the host instead of in the container.
     set -euo pipefail
     cd /src/overlay
     PKG=/usr/bin/x86_64-w64-mingw32-pkg-config
     CC=x86_64-w64-mingw32-gcc
     DEPS="cairo pangocairo"
 
-    $CC -O2 -Wall -Wextra -std=c11 $($PKG --cflags $DEPS) \
+    $CC -O2 -Wall -Wextra -std=c11 -isystem third_party/openvr $($PKG --cflags $DEPS) \
         -o /src/distribution/overlays/elite-intel-overlay.exe \
-        src/hud_model.c src/hud_render.c src/platform_win32.c \
+        src/main.c src/hud_model.c src/hud_render.c src/stdin_pump.c \
+        src/platform_openvr.c src/platform_win32.c \
         $($PKG --libs $DEPS) -lgdi32 -luser32 -lm -mwindows
 
     # Copy the mingw DLLs the binary actually imports, following transitive
@@ -83,8 +87,12 @@ $RUNNER run --rm \
     # symbols. They are shipped to every user, in the installer and in every
     # auto-update ZIP, so strip them. Nothing debuggable is lost: this is a
     # third-party runtime we do not step through.
+    #
+    # Only the DLLs copied above, never *.dll: openvr_api.dll is an MSVC-built
+    # binary from Valve, checked in rather than produced here, and running the
+    # mingw stripper over it risks breaking a file this build did not make.
     cd /src/distribution/overlays
-    x86_64-w64-mingw32-strip --strip-unneeded *.dll elite-intel-overlay.exe 2>/dev/null || true
+    x86_64-w64-mingw32-strip --strip-unneeded $copied elite-intel-overlay.exe 2>/dev/null || true
     echo "stripped; overlay payload now $(du -sh . | cut -f1)"
   '
 

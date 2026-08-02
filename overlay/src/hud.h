@@ -4,6 +4,10 @@
 // every platform shell. A shell owns only: creating a translucent always-on-top
 // window, pumping its event loop, dragging, and presenting a finished ARGB
 // buffer. Everything a commander actually sees is drawn by hud_render().
+//
+// There are three shells: platform_win32.c and platform_x11.c present to a
+// desktop window, platform_openvr.c presents to the SteamVR compositor. Which
+// one runs is decided in main.c and nowhere else.
 
 #ifndef EI_HUD_H
 #define EI_HUD_H
@@ -83,5 +87,42 @@ int hud_render(cairo_t *cr, int width, int draw);
 /// Fills the background at the configured alpha, replacing (not blending) the
 /// buffer. Shells call this before hud_render.
 void hud_paint_background(cairo_t *cr);
+
+/// Tells the app which shell actually came up, and why, when the answer is not
+/// the one it asked for. Sent once at startup; detail may be NULL.
+void hud_report_mode(const char *mode, const char *detail);
+
+/// Drains whatever is on stdin into the model, waiting at most timeout_ms for
+/// something to arrive. Returns 1 when the screen must be redrawn, sets *eof
+/// when the parent closed the pipe, and *quit on QUIT.
+int hud_pump_stdin(int timeout_ms, int *eof, int *quit);
+
+// -- shells ------------------------------------------------------------------
+
+/// What the app asked for on the command line. OFF is the default and the only
+/// mode that existed before VR support, so a spawn with no arguments gets
+/// exactly the overlay it always got.
+typedef enum {
+    VR_MODE_OFF,        // desktop shell; never even look for a headset
+    VR_MODE_AUTO,       // VR only when a headset is actually connected
+    VR_MODE_ON,         // VR whenever the SteamVR runtime is installed
+    VR_MODE_ONLY        // VR or nothing: exits rather than opening a window
+} VrMode;
+
+/// Why the VR shell did not take over. Everything except OK falls back to the
+/// desktop shell: a commander who asked for VR and cannot have it still gets an
+/// overlay, never a blank screen.
+typedef enum {
+    HUD_VR_OK,          // the VR shell ran and exited normally
+    HUD_VR_UNAVAILABLE, // no SteamVR runtime, or no headset in AUTO mode
+    HUD_VR_NOT_BUILT,   // runtime is there but the VR shell does not exist yet
+    HUD_VR_FAILED       // runtime is there and starting the overlay failed
+} VrResult;
+
+/// Runs the desktop shell for this platform (Win32 or X11) to completion.
+int hud_run_desktop(int argc, char **argv);
+
+/// Runs the SteamVR shell to completion, or reports why it cannot.
+VrResult hud_run_vr(VrMode mode);
 
 #endif

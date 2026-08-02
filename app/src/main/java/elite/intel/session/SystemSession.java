@@ -510,8 +510,13 @@ public class SystemSession {
      * @param width     card width in pixels
      * @param x         screen position, or {@code -1} for "wherever the overlay opens"
      * @param y         screen position, or {@code -1} for "wherever the overlay opens"
+     * @param displayMode where the HUD is drawn - {@code DESKTOP}, {@code VR} or {@code BOTH}. Text
+     *                  rather than the enum so the session layer does not depend on the UI layer,
+     *                  and so a value written by a newer build is something an older one can fall
+     *                  back from rather than fail on
      */
-    public record HudOverlayLayout(double alpha, double fontScale, int width, int x, int y) {
+    public record HudOverlayLayout(double alpha, double fontScale, int width, int x, int y,
+                                   String displayMode) {
     }
 
     public HudOverlayLayout getHudOverlayLayout() {
@@ -522,7 +527,8 @@ public class SystemSession {
                     session.getOverlayFontScale(),
                     session.getOverlayWidth(),
                     session.getOverlayX(),
-                    session.getOverlayY());
+                    session.getOverlayY(),
+                    session.getOverlayDisplayMode());
         });
     }
 
@@ -534,6 +540,7 @@ public class SystemSession {
             session.setOverlayWidth(layout.width());
             session.setOverlayX(layout.x());
             session.setOverlayY(layout.y());
+            session.setOverlayDisplayMode(layout.displayMode());
             dao.save(session);
             return null;
         });

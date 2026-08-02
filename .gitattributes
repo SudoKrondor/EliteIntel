@@ -16,3 +16,4 @@ app/libs/sherpa-onnx-v1.12.33.jar filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/elite-intel-overlay filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.exe filter=lfs diff=lfs merge=lfs -text
 distribution/overlays/*.dll filter=lfs diff=lfs merge=lfs -text
+distribution/overlays/*.so filter=lfs diff=lfs merge=lfs -text

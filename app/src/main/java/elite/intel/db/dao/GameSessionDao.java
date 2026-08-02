@@ -28,7 +28,8 @@ public interface GameSessionDao {
                                                              pushToTalkEnabled, pushToTalkControllerName,
                                                              pushToTalkButtonIndex, pushToTalkToggleMode,
                                                              noiseReductionEnabled, noiseReductionStrength,
-                                                             overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY
+                                                             overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
+                                                             overlayDisplayMode
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :privacyModeOn, :rmsThresholdHigh,
@@ -43,7 +44,8 @@ public interface GameSessionDao {
                                                       :pushToTalkEnabled, :pushToTalkControllerName,
                                                       :pushToTalkButtonIndex, :pushToTalkToggleMode,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
-                                                      :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY
+                                                      :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
+                                                      :overlayDisplayMode
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -93,6 +95,7 @@ public interface GameSessionDao {
             session.setOverlayWidth(rs.getInt("overlayWidth"));
             session.setOverlayX(rs.getInt("overlayX"));
             session.setOverlayY(rs.getInt("overlayY"));
+            session.setOverlayDisplayMode(rs.getString("overlayDisplayMode"));
             return session;
         }
     }
@@ -137,6 +140,7 @@ public interface GameSessionDao {
         private int overlayWidth = 760;
         private int overlayX = -1;
         private int overlayY = -1;
+        private String overlayDisplayMode = "DESKTOP";
 
 
         /**
@@ -410,6 +414,18 @@ public interface GameSessionDao {
 
         public int getOverlayY() {
             return overlayY;
+        }
+
+        /**
+         * Where the HUD is drawn: DESKTOP, VR or BOTH. Text, and read back
+         * leniently, so a row written by a newer build cannot break an older one.
+         */
+        public String getOverlayDisplayMode() {
+            return overlayDisplayMode;
+        }
+
+        public void setOverlayDisplayMode(String overlayDisplayMode) {
+            this.overlayDisplayMode = overlayDisplayMode;
         }
 
         public void setOverlayY(int overlayY) {

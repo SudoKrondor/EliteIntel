@@ -150,6 +150,12 @@ void hud_report_position(int x, int y) {
     fflush(stdout);
 }
 
+void hud_report_mode(const char *mode, const char *detail) {
+    if (detail) printf("MODE\t%s\t%s\n", mode, detail);
+    else        printf("MODE\t%s\n", mode);
+    fflush(stdout);
+}
+
 /// Splits raw stdin bytes into protocol lines. Owns the line buffer so both
 /// shells get identical behaviour: the buffering rule is part of the protocol,
 /// not part of a window.

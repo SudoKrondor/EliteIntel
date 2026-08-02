@@ -10,7 +10,8 @@ import java.awt.*;
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 
 /**
- * Settings for the HUD overlay: background transparency and text size.
+ * Settings for the HUD overlay: where it is drawn, background transparency and
+ * text size.
  * <p>
  * Background alpha and font scale are separate on purpose. A single "opacity"
  * control would dim the text along with the backdrop, which is what makes a
@@ -25,13 +26,14 @@ public class HudOverlaySettingsDialog extends JDialog {
 
     private final NativeHudOverlay overlay;
 
+    private JComboBox<HudDisplayMode> displayCombo;
     private JSlider alphaSlider;
     private JSlider scaleSlider;
 
     public HudOverlaySettingsDialog(NativeHudOverlay overlay) {
         super((Frame) null, getText("overlay.settings.title"), false);
         this.overlay = overlay;
-        setSize(420, 220);
+        setSize(420, 260);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         buildUi();
@@ -43,6 +45,28 @@ public class HudOverlaySettingsDialog extends JDialog {
         setContentPane(root);
 
         GridBagConstraints gbc = HudForms.baseGbc();
+
+        // First, because it decides which screen the two settings below are being
+        // judged against.
+        displayCombo = new JComboBox<>(HudDisplayMode.values());
+        displayCombo.setSelectedItem(overlay.getDisplayMode());
+        displayCombo.setToolTipText(getText("overlay.settings.display.tooltip"));
+        displayCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index, boolean selected, boolean focused) {
+                super.getListCellRendererComponent(list, value, index, selected, focused);
+                if (value instanceof HudDisplayMode mode) setText(label(mode));
+                return this;
+            }
+        });
+        // Applied immediately, like the sliders: choosing VR restarts the overlay
+        // children, which is the only way to see whether it worked.
+        displayCombo.addActionListener(e ->
+                overlay.setDisplayMode((HudDisplayMode) displayCombo.getSelectedItem()));
+        gbc.gridy++;
+        HudForms.addLabel(root, getText("overlay.settings.display"), gbc);
+        HudForms.addField(root, displayCombo, gbc, 1, 1.0);
 
         alphaSlider = new JSlider(ALPHA_MIN, ALPHA_MAX,
                 (int) Math.round(overlay.getBackgroundAlpha() * 100));
@@ -70,5 +94,13 @@ public class HudOverlaySettingsDialog extends JDialog {
         close.addActionListener(e -> dispose());
         gbc.gridy++;
         HudForms.addField(root, close, gbc, 1, 1.0);
+    }
+
+    private static String label(HudDisplayMode mode) {
+        return switch (mode) {
+            case DESKTOP -> getText("overlay.settings.display.desktop");
+            case VR -> getText("overlay.settings.display.vr");
+            case BOTH -> getText("overlay.settings.display.both");
+        };
     }
 }

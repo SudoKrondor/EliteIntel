@@ -26,16 +26,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * Owns the native HUD overlay child process and feeds it.
+ * Owns the native HUD overlay child processes and feeds them.
  * <p>
  * The overlay renders in its own process because AWT cannot draw a per-pixel
  * translucent window without strobing on every repaint. The Java side stays a
  * pure producer: it projects app state into {@link HudObjective} cards and
- * conversation lines, writes them as protocol lines to the child's stdin, and
+ * conversation lines, writes them as protocol lines to the children's stdin, and
  * knows nothing about rendering.
  * <p>
  * Whole lines are sent, never characters - the overlay owns the typewriter
  * animation, so the effect never depends on pipe timing.
+ * <p>
+ * There can be more than one child: {@link HudDisplayMode#BOTH} runs a desktop
+ * overlay and a VR overlay side by side. They are separate processes rather than
+ * one process drawing twice, which keeps them crash-isolated and costs only a
+ * second write of each line - both render from identical data, so they cannot
+ * drift apart.
  */
 public class NativeHudOverlay {
 
@@ -46,10 +52,10 @@ public class NativeHudOverlay {
     private final PlayerSession playerSession = PlayerSession.getInstance();
     private final ShipManager shipManager = ShipManager.getInstance();
 
-    private Process process;
-    private BufferedWriter writer;
+    private final List<Child> children = new ArrayList<>();
     private ScheduledExecutorService objectivePoll;
     private volatile HudObjective lastObjective;
+    private HudDisplayMode displayMode = HudDisplayMode.DESKTOP;
 
     private final SystemSession systemSession = SystemSession.getInstance();
 
@@ -97,22 +103,78 @@ public class NativeHudOverlay {
         width = stored.width() > 0 ? stored.width() : 760;
         windowX = stored.x();
         windowY = stored.y();
+        displayMode = parseDisplayMode(stored.displayMode());
+    }
+
+    /**
+     * Reads the stored mode leniently: anything unrecognised, including null from
+     * a row written before the column existed, means the desktop overlay.
+     * <p>
+     * A bad value here must not cost the commander their overlay, and falling
+     * back to DESKTOP is the one answer that always leaves something on screen.
+     */
+    static HudDisplayMode parseDisplayMode(String stored) {
+        if (stored == null) return HudDisplayMode.DESKTOP;
+        try {
+            return HudDisplayMode.valueOf(stored.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            log.warn("Unknown HUD overlay display mode {}, using DESKTOP", stored);
+            return HudDisplayMode.DESKTOP;
+        }
     }
 
     public void addSource(HudObjectiveSource source) {
         sources.add(source);
     }
 
-    public boolean isRunning() {
-        return process != null && process.isAlive();
+    public synchronized boolean isRunning() {
+        return children.stream().anyMatch(child -> child.process().isAlive());
+    }
+
+    /**
+     * One overlay process and the pipe into it.
+     * <p>
+     * The role is for the log only - it is what tells a commander reading a log
+     * which of two overlays reported something, or which one went away.
+     */
+    private record Child(String role, Process process, BufferedWriter writer) {
+    }
+
+    /**
+     * What to spawn for a display mode. Package-private and pure so the mapping
+     * can be tested without starting a process.
+     */
+    record ChildSpec(String role, List<String> command) {
+    }
+
+    /**
+     * The VR child of {@link HudDisplayMode#BOTH} gets {@code --vr=only}, which
+     * exits rather than falling back to a window: two desktop overlays would
+     * stack exactly on top of each other and the commander would drag one while
+     * the other stayed put. A lone VR child instead gets {@code --vr=on}, where
+     * falling back to a window is the friendly answer - some overlay beats none.
+     */
+    static List<ChildSpec> childSpecs(Path binary, HudDisplayMode mode) {
+        String bin = binary.toString();
+        return switch (mode) {
+            case DESKTOP -> List.of(new ChildSpec("desktop", List.of(bin)));
+            case VR -> List.of(new ChildSpec("vr", List.of(bin, "--vr=on")));
+            case BOTH -> List.of(
+                    new ChildSpec("desktop", List.of(bin)),
+                    new ChildSpec("vr", List.of(bin, "--vr=only")));
+        };
     }
 
     // -- lifecycle -----------------------------------------------------------
 
     /**
      * Spawns the overlay. Returns false (and logs) when the binary is missing or
-     * cannot start, so the caller can leave its toggle switched off rather than
-     * pretending the overlay is up.
+     * no child could be started, so the caller can leave its toggle switched off
+     * rather than pretending the overlay is up.
+     * <p>
+     * In {@link HudDisplayMode#BOTH} one child starting is enough to report
+     * success: on a machine with no SteamVR the VR child exits immediately and
+     * the desktop overlay is the whole overlay, which is exactly the intent.
      */
     public synchronized boolean start() {
         if (isRunning()) return true;
@@ -123,33 +185,40 @@ public class NativeHudOverlay {
             return false;
         }
         if (!ensureExecutable(binary)) return false;
+
+        children.clear();
+        for (ChildSpec spec : childSpecs(binary, displayMode)) {
+            spawn(spec).ifPresent(children::add);
+        }
+        if (children.isEmpty()) return false;
+
+        send(OverlayProtocol.handshake());
+        send(OverlayProtocol.config(backgroundAlpha, fontScale, width));
+        if (windowX >= 0 || windowY >= 0) send(OverlayProtocol.position(windowX, windowY));
+        lastObjective = null;
+        children.forEach(this::startOutputReader);
+
+        // Two buses on purpose: commander speech (NormalizedUserInputEvent)
+        // travels on the game bus, the AI's reply (AiResponseLogEvent) on the
+        // UI bus. Registering on only one silently drops half the exchange.
+        GameEventBus.register(this);
+        UiBus.register(this);
+        startObjectivePolling();
+        log.info("HUD overlay started: {} ({})", binary, displayMode);
+        return true;
+    }
+
+    private Optional<Child> spawn(ChildSpec spec) {
         try {
-            ProcessBuilder pb = new ProcessBuilder(binary.toString());
+            ProcessBuilder pb = new ProcessBuilder(spec.command());
             pb.redirectErrorStream(false);
             pb.redirectError(ProcessBuilder.Redirect.DISCARD);
-            process = pb.start();
-            writer = new BufferedWriter(new OutputStreamWriter(
-                    process.getOutputStream(), StandardCharsets.UTF_8));
-
-            send(OverlayProtocol.handshake());
-            send(OverlayProtocol.config(backgroundAlpha, fontScale, width));
-            if (windowX >= 0 || windowY >= 0) send(OverlayProtocol.position(windowX, windowY));
-            lastObjective = null;
-            startPositionReader();
-
-            // Two buses on purpose: commander speech (NormalizedUserInputEvent)
-            // travels on the game bus, the AI's reply (AiResponseLogEvent) on the
-            // UI bus. Registering on only one silently drops half the exchange.
-            GameEventBus.register(this);
-            UiBus.register(this);
-            startObjectivePolling();
-            log.info("HUD overlay started: {}", binary);
-            return true;
+            Process process = pb.start();
+            return Optional.of(new Child(spec.role(), process, new BufferedWriter(
+                    new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))));
         } catch (IOException e) {
-            log.error("Failed to start HUD overlay: {}", e.getMessage());
-            process = null;
-            writer = null;
-            return false;
+            log.error("Failed to start {} HUD overlay: {}", spec.role(), e.getMessage());
+            return Optional.empty();
         }
     }
 
@@ -194,15 +263,16 @@ public class NativeHudOverlay {
             objectivePoll = null;
         }
         unregisterBuses();
-        if (process != null) {
+        if (!children.isEmpty()) {
             send(OverlayProtocol.quit());
-            closeWriter();
-            // The child exits on QUIT or on EOF; destroy() is the backstop for a
-            // wedged process so a stale overlay can never outlive the app.
-            if (!waitForExit()) process.destroy();
-            process = null;
+            for (Child child : children) {
+                closeWriter(child);
+                // A child exits on QUIT or on EOF; destroy() is the backstop for
+                // a wedged one, so a stale overlay can never outlive the app.
+                if (!waitForExit(child)) child.process().destroy();
+            }
+            children.clear();
         }
-        writer = null;
         lastObjective = null;
     }
 
@@ -226,51 +296,64 @@ public class NativeHudOverlay {
         }
     }
 
-    private boolean waitForExit() {
+    private boolean waitForExit(Child child) {
         try {
-            return process.waitFor(2, TimeUnit.SECONDS);
+            return child.process().waitFor(2, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return false;
         }
     }
 
-    private void closeWriter() {
-        if (writer == null) return;
+    private void closeWriter(Child child) {
         try {
-            writer.close();
+            child.writer().close();
         } catch (IOException e) {
-            log.debug("Closing overlay stdin failed: {}", e.getMessage());
+            log.debug("Closing {} overlay stdin failed: {}", child.role(), e.getMessage());
         }
     }
 
     /**
-     * Reads the overlay's stdout so a dragged window is remembered.
+     * Reads a child's stdout so a dragged window is remembered.
      * <p>
      * The overlay is dragged with the mouse, so the app cannot know where it ended
      * up unless the overlay says so. It reports its position when a drag finishes;
      * this thread is also what keeps that pipe drained, which matters whether or
      * not anything is listening - an unread stdout pipe eventually fills and
-     * blocks the child mid-draw.
+     * blocks the child mid-draw. Every child gets a reader for that reason, even
+     * the VR one, which has no window to drag and so never reports a position.
      * <p>
      * Unknown lines are ignored, so an older binary that reports nothing, or a
      * newer one that reports more, both behave.
      */
-    private void startPositionReader() {
-        Process current = process;
+    private void startOutputReader(Child child) {
         Thread reader = new Thread(() -> {
             try (BufferedReader in = new BufferedReader(
-                    new InputStreamReader(current.getInputStream(), StandardCharsets.UTF_8))) {
+                    new InputStreamReader(child.process().getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
                 while ((line = in.readLine()) != null) {
-                    OverlayProtocol.parsePosition(line).ifPresent(this::rememberPosition);
+                    Optional<Point> position = OverlayProtocol.parsePosition(line);
+                    if (position.isPresent()) rememberPosition(position.get());
+                    else if (line.startsWith("MODE\t")) logMode(child, line);
                 }
             } catch (IOException e) {
-                log.debug("HUD overlay output closed: {}", e.getMessage());
+                log.debug("HUD overlay ({}) output closed: {}", child.role(), e.getMessage());
             }
-        }, "hud-overlay-reader");
+        }, "hud-overlay-reader-" + child.role());
         reader.setDaemon(true);
         reader.start();
+    }
+
+    /**
+     * Records which shell the child actually came up in, and why, when VR was
+     * asked for and could not be had.
+     * <p>
+     * This is the only place that reason ever surfaces - the child's stderr is
+     * discarded - so it is what a commander reporting "VR does nothing" can be
+     * asked to send.
+     */
+    private void logMode(Child child, String line) {
+        log.info("HUD overlay ({}): {}", child.role(), line.replace('\t', ' '));
     }
 
     private void rememberPosition(Point position) {
@@ -303,12 +386,32 @@ public class NativeHudOverlay {
      * lost is worse than a spare row write.
      */
     private void saveLayout() {
-        systemSession.setHudOverlayLayout(
-                new SystemSession.HudOverlayLayout(backgroundAlpha, fontScale, width, windowX, windowY));
+        systemSession.setHudOverlayLayout(new SystemSession.HudOverlayLayout(
+                backgroundAlpha, fontScale, width, windowX, windowY, displayMode.name()));
     }
 
     public double getFontScale() {
         return fontScale;
+    }
+
+    public HudDisplayMode getDisplayMode() {
+        return displayMode;
+    }
+
+    /**
+     * Changes where the HUD is drawn, restarting the overlay if it is up.
+     * <p>
+     * A restart is unavoidable: which shell a child runs is fixed when it is
+     * spawned. It is also the whole cost - only the overlay children go down and
+     * come back, never the speech, LLM or journal services.
+     */
+    public synchronized void setDisplayMode(HudDisplayMode mode) {
+        if (mode == null || mode == displayMode) return;
+        displayMode = mode;
+        saveLayout();
+        if (!isRunning()) return;
+        stop();
+        start();
     }
 
     /**
@@ -399,21 +502,39 @@ public class NativeHudOverlay {
     // -- transport -----------------------------------------------------------
 
     private synchronized void send(String line) {
-        if (writer == null || !isRunning()) return;
-        try {
-            writer.write(line);
-            writer.newLine();
-            writer.flush();
-        } catch (IOException e) {
-            // A broken pipe means the overlay died; tear down so the toggle can
-            // start a fresh one rather than writing into a dead process.
-            log.warn("HUD overlay pipe closed, shutting it down: {}", e.getMessage());
-            writer = null;
-            // shutdown(), not shutdownNow(): this can be reached from the poll
-            // thread itself, which must be allowed to finish rather than
-            // interrupt itself mid-teardown.
-            if (objectivePoll != null) objectivePoll.shutdown();
-            unregisterBuses();
+        if (children.isEmpty()) return;
+
+        List<Child> lost = new ArrayList<>();
+        for (Child child : children) {
+            try {
+                child.writer().write(line);
+                child.writer().newLine();
+                child.writer().flush();
+            } catch (IOException e) {
+                // A broken pipe means that child died. In BOTH mode this is the
+                // ordinary outcome for the VR child on a machine with no
+                // SteamVR, so it costs the desktop overlay nothing: only the
+                // dead child is dropped, and the survivors keep being fed.
+                log.info("HUD overlay ({}) pipe closed, dropping it: {}", child.role(), e.getMessage());
+                lost.add(child);
+            }
         }
+        if (lost.isEmpty()) return;
+
+        children.removeAll(lost);
+        if (children.isEmpty()) shutdownAfterLastChild();
+    }
+
+    /**
+     * Tears down the feed once no child is left to read it, so the toggle can
+     * start a fresh overlay rather than writing into dead processes.
+     */
+    private void shutdownAfterLastChild() {
+        log.warn("No HUD overlay process left; shutting the feed down");
+        // shutdown(), not shutdownNow(): this can be reached from the poll
+        // thread itself, which must be allowed to finish rather than interrupt
+        // itself mid-teardown.
+        if (objectivePoll != null) objectivePoll.shutdown();
+        unregisterBuses();
     }
 }

@@ -30,7 +30,7 @@ static long now_ms(void) {
     return tv.tv_sec * 1000L + tv.tv_usec / 1000L;
 }
 
-int main(int argc, char **argv) {
+int hud_run_desktop(int argc, char **argv) {
     int managed = 0;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--managed")) managed = 1;

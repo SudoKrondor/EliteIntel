@@ -136,7 +136,9 @@ static int pump_stdin(int *eof) {
     return dirty;
 }
 
-int main(void) {
+int hud_run_desktop(int argc, char **argv) {
+    (void) argc;                          // no Win32-only flags today
+    (void) argv;
     HINSTANCE inst = GetModuleHandle(NULL);
 
     WNDCLASSEX wc;

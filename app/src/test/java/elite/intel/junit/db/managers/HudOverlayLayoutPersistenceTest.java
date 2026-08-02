@@ -30,7 +30,7 @@ class HudOverlayLayoutPersistenceTest {
 
     @Test
     void aTunedLayoutIsReadBackWholeAndUnchanged() {
-        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40);
+        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40, "BOTH");
 
         session.setHudOverlayLayout(tuned);
 
@@ -42,7 +42,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void anOffPrimaryPositionSurvives() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300, "DESKTOP"));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(-1200, stored.x());
@@ -55,10 +55,33 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void theUnsetDefaultsAreDistinguishableFromChosenValues() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 0, 760, -1, -1));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 0, 760, -1, -1, "DESKTOP"));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(0d, stored.fontScale(), "0 means the commander never chose a text size");
         assertEquals(-1, stored.x(), "-1 means the overlay opens wherever it defaults to");
+    }
+
+    /**
+     * Where the HUD is drawn is the one overlay setting a commander cannot re-tune by eye: a VR
+     * commander who has to re-pick "headset" on every launch would reasonably conclude the feature
+     * does not work.
+     */
+    @Test
+    void theChosenDisplayModeSurvivesARestart() {
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR"));
+
+        assertEquals("VR", session.getHudOverlayLayout().displayMode());
+    }
+
+    /**
+     * An installation upgrading into the migration has no stored mode, and the column default has to
+     * be the desktop overlay - anything else would move a flat-screen commander's HUD into a headset
+     * they do not own on the strength of a schema change.
+     */
+    @Test
+    void theColumnDefaultIsTheDesktopOverlay() {
+        assertEquals("DESKTOP", previous.displayMode(),
+                "the value a row carries before anyone chooses a mode");
     }
 }

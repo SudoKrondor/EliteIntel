@@ -11,7 +11,10 @@
 # made once.
 
 OUT_DIR := ../distribution/overlays
-CORE    := src/hud_model.c src/hud_render.c
+# The SteamVR shell is in every build on both platforms: it loads openvr_api at
+# runtime rather than linking it, so it adds no build dependency and no DLL a
+# flat-screen commander has to have.
+CORE    := src/main.c src/hud_model.c src/hud_render.c src/stdin_pump.c src/platform_openvr.c
 
 ifeq ($(OS),Windows_NT)
   BIN           := elite-intel-overlay.exe
@@ -23,11 +26,11 @@ else
   BIN           := elite-intel-overlay
   SRC           := $(CORE) src/platform_x11.c
   DEPS          := x11 cairo pangocairo
-  PLATFORM_LIBS :=
+  PLATFORM_LIBS := -ldl
   DEPS_HINT     := sudo apt install libx11-dev libcairo2-dev libpango1.0-dev
 endif
 
-CFLAGS  += -O2 -Wall -Wextra -std=c11 $(shell pkg-config --cflags $(DEPS))
+CFLAGS  += -O2 -Wall -Wextra -std=c11 -isystem third_party/openvr $(shell pkg-config --cflags $(DEPS))
 LDFLAGS += $(shell pkg-config --libs $(DEPS)) $(PLATFORM_LIBS) -lm
 
 .PHONY: all clean check-deps

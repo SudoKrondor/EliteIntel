@@ -2,7 +2,7 @@ package elite.intel.ui.overlay;
 
 import org.junit.jupiter.api.Test;
 
-import java.awt.Point;
+import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -131,6 +131,20 @@ class OverlayProtocolTest {
         assertTrue(OverlayProtocol.parsePosition("POS\t12").isEmpty(), "a short line is not a position");
         assertTrue(OverlayProtocol.parsePosition("POS\tleft\ttop").isEmpty(), "non-numeric is not a position");
         assertTrue(OverlayProtocol.parsePosition("SIZE\t10\t20").isEmpty(), "an unknown verb is not a position");
+    }
+
+    /**
+     * The overlay announces which shell came up - desktop or VR - and why, when
+     * VR was asked for and could not be had. That line shares the stdout the
+     * position reports travel on, and the three-field form has exactly the shape
+     * a position has, so it is the one thing on that stream most likely to be
+     * misread as one. Nothing moves the overlay window on a fallback.
+     */
+    @Test
+    void aModeReportIsNotAPosition() {
+        assertTrue(OverlayProtocol.parsePosition("MODE\tdesktop").isEmpty());
+        assertTrue(OverlayProtocol.parsePosition("MODE\tvr").isEmpty());
+        assertTrue(OverlayProtocol.parsePosition("MODE\tdesktop\tno headset detected").isEmpty());
     }
 
     @Test
