@@ -7,6 +7,8 @@ public class StarSystemData {
     public String name;
     @SerializedName("information")
     public StarSystemInformation information;
+    @SerializedName("coords")
+    public StarSystemCoordinates coords;
 
     public String getName() {
         return name;
@@ -14,5 +16,12 @@ public class StarSystemData {
 
     public StarSystemInformation getInformation() {
         return information;
+    }
+
+    /**
+     * Present only when the request asked for coordinates, and only for a system EDSM knows.
+     */
+    public StarSystemCoordinates getCoords() {
+        return coords;
     }
 }

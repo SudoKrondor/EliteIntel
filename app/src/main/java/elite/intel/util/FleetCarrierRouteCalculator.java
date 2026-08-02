@@ -20,19 +20,10 @@ public class FleetCarrierRouteCalculator {
 
     public static String calculate() {
 
-        SpanshCarrierRouteClient client = new SpanshCarrierRouteClient();
         PlayerSession playerSession = PlayerSession.getInstance();
         FleetCarrierRouteManager routeManager = FleetCarrierRouteManager.getInstance();
         CarrierDataDto carrierData = playerSession.getFleetCarrierData();
 
-        int fuelSupply = carrierData.getFuelLevel();
-        int tritiumInReserve = carrierData.getFuelReserve();
-        if (tritiumInReserve > 0) {
-            fuelSupply = fuelSupply + tritiumInReserve;
-        }
-
-        int cargoCapacity = carrierData.getCargoCapacity();
-        int cargoSpaceUsed = carrierData.getCargoSpaceUsed();
         String destination = CarrierRouteLegs.normalise(ClipboardUtils.getClipboardText());
 
         if (destination == null) {
@@ -46,22 +37,11 @@ public class FleetCarrierRouteCalculator {
             return localizedEvent("event.carrier.route.locationUnavailable");
         }
 
-        CarrierRouteCriteria carrierRouteCriteria = new CarrierRouteCriteria(
-                origin,
-                destination,
-                cargoCapacity,
-                cargoSpaceUsed,
-                fuelSupply
-        );
-
-        Map<Integer, CarrierJump> plotted = client.calculateRoute(carrierRouteCriteria);
-        if (plotted.isEmpty()) {
-            // WHY return before storing: an unplottable destination must leave the current route
+        if (!plotAndStore(origin, destination)) {
+            // WHY nothing was stored: an unplottable destination must leave the current route
             // standing, and must not be reported against the legs of the route it failed to replace.
             return localizedEvent("event.carrier.route.navFailed", destination);
         }
-
-        routeManager.setFleetCarrierRoute(plotted);
 
         // WHY read back rather than count the plot: the manager drops the legs the carrier has
         // already flown, so only the stored route knows what is still ahead of it.
@@ -78,13 +58,44 @@ public class FleetCarrierRouteCalculator {
     }
 
     /**
+     * Plots from one system to another and stores the result, saying nothing to anyone.
+     *
+     * <p>WHY separate from {@link #calculate()}: that one is the commander's own request, so it reads
+     * his clipboard for the destination and speaks while it works. An automatic re-plot has its
+     * destination already, must not touch the clipboard, and may run before the companion is up.
+     *
+     * @return false when Spansh found no route, in which case the stored route is left standing.
+     */
+    public static boolean plotAndStore(String origin, String destination) {
+        CarrierDataDto carrierData = PlayerSession.getInstance().getFleetCarrierData();
+
+        int tritiumInReserve = carrierData.getFuelReserve();
+        int fuelSupply = carrierData.getFuelLevel() + Math.max(0, tritiumInReserve);
+
+        CarrierRouteCriteria criteria = new CarrierRouteCriteria(
+                origin,
+                destination,
+                carrierData.getCargoCapacity(),
+                carrierData.getCargoSpaceUsed(),
+                fuelSupply
+        );
+
+        Map<Integer, CarrierJump> plotted = new SpanshCarrierRouteClient().calculateRoute(criteria);
+        if (plotted.isEmpty()) return false;
+
+        FleetCarrierRouteManager.getInstance().setFleetCarrierRoute(plotted);
+        return true;
+    }
+
+    /**
      * The system the route is plotted from: the one the carrier is actually in.
      *
-     * <p>WHY not the nearest system to the carrier's coordinates: the coordinates lag the system
-     * name. The startup pre-scan keeps the previous system's coordinates whenever the new one is not
-     * yet in the location table, so a coordinate lookup resolves to the system the carrier left.
-     * Spansh then plots from there, and since the client drops only the first jump of what it is
-     * given, the carrier's own system comes back as leg 1 — a destination it is already sitting in.
+     * <p>WHY not the nearest system to the carrier's coordinates: the name is exact and the
+     * coordinates need not be. For a system nobody has flown to, they are the centre of the boxel the
+     * SystemAddress names, so the nearest known system to them can be a neighbour rather than the
+     * carrier's own. Spansh would then plot from there, and since the client drops only the first jump
+     * of what it is given, the carrier's own system could come back as leg 1: a destination it is
+     * already sitting in.
      *
      * <p>Coordinates remain the fallback for a carrier whose system name we have never seen.
      *

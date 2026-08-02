@@ -19,18 +19,6 @@
             </Policies>
             <DefaultRolloverStrategy max="7"/>
         </RollingFile>
-        <RollingFile name="unknownEnumFile"
-                     fileName="${logPath}/unknown-enum.log"
-                     filePattern="${logPath}/unknown-enum_%d{yyyy-MM-dd}.log"
-                     immediateFlush="true">
-            <PatternLayout pattern="${logPattern}"/>
-            <Policies>
-                <OnStartupTriggeringPolicy/>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="1MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="5"/>
-        </RollingFile>
     </Appenders>
 
     <Loggers>
@@ -56,30 +44,24 @@
         <Logger name="elite.intel.starvizion" level="error"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
-        <Logger name="elite.intel.gameapi.journal.subscribers" level="debug"/>
+        <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.LocationTrackingSubscriber" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers.SilentPersistenceSubscriber" level="error"/>
         <Logger name="elite.intel.gameapi.journal.EventRegistry" level="error"/>
-        <Logger name="elite.intel.gameapi.search.edsm.EdsmApiClient" level="debug"/>
-        <Logger name="elite.intel.search.spansh.client" level="debug"/>
+        <Logger name="elite.intel.gameapi.search.edsm.EdsmApiClient" level="error"/>
+        <Logger name="elite.intel.search.spansh.client" level="error"/>
         <Logger name="elite.intel.util.NavigationUtils" level="error"/>
         <Logger name="elite.intel.ai.hands.KeyBindingsParser" level="error"/>
         <Logger name="elite.intel.ai.brain.inference" level="error"/>
         <Logger name="elite.intel.ai.ears" level="error"/>
         <Logger name="elite.intel.ai.mouth" level="error"/>
-        <Logger name="elite.intel.ai.brain" level="info"/>
+        <Logger name="elite.intel.ai.brain" level="error"/>
         <Logger name="elite.intel.search.spansh" level="error"/>
         <Logger name="elite.intel.db" level="error"/>
         <Logger name="elite.intel.db.managers.SubSystemsManager" level="error"/>
         <Logger name="elite.intel.search.spansh.market" level="error"/>
         <Logger name="elite.intel.ai.brain.handlers" level="error"/>
         <Logger name="elite.intel.ws" level="error"/>
-
-        <Logger name="elite.intel.util.UnknownEnumLogger"
-                level="info"
-                additivity="false">
-            <AppenderRef ref="unknownEnumFile"/>
-        </Logger>
 
         <!-- Root logger -->
         <Root level="debug">

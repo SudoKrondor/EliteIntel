@@ -1,15 +1,10 @@
 package elite.intel.ui.support;
 
 
-import elite.intel.ai.brain.actions.catalog.CommandCatalog;
 import elite.intel.ai.hands.Bindings;
 import elite.intel.util.StringUtls;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Display item for custom command step pickers; the UI shows a label, while persistence stores only {@link #id()}.
@@ -19,17 +14,6 @@ public record CustomCommandStepPickerItem(String id, String label, boolean known
     public CustomCommandStepPickerItem {
         id = Objects.requireNonNull(id, "id");
         label = Objects.requireNonNull(label, "label");
-    }
-
-    /**
-     * Returns built-in command picker items only; customCommand commands are intentionally excluded for CustomCommand Editor v1.
-     */
-    public static List<CustomCommandStepPickerItem> builtInCommandItems() {
-        return new CommandCatalog().entries().stream()
-                .filter(entry -> !entry.isCustomCommand())
-                .map(entry -> new CustomCommandStepPickerItem(entry.id(), entry.name(), true))
-                .sorted((left, right) -> left.label().compareToIgnoreCase(right.label()))
-                .toList();
     }
 
     /**

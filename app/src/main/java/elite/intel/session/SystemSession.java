@@ -496,4 +496,53 @@ public class SystemSession {
             return null;
         });
     }
+
+    /**
+     * How the HUD overlay was last laid out.
+     * <p>
+     * Read and written as one value rather than five accessors because the overlay always sets all of
+     * it at once (it sends a single CFG line), and because a partial write here is a layout the
+     * commander never chose.
+     *
+     * @param alpha     background transparency in [0,1]
+     * @param fontScale text size multiplier; {@code 0} means the commander has not chosen one, so the
+     *                  caller derives it from screen height
+     * @param width     card width in pixels
+     * @param x         screen position, or {@code -1} for "wherever the overlay opens"
+     * @param y         screen position, or {@code -1} for "wherever the overlay opens"
+     * @param displayMode where the HUD is drawn - {@code DESKTOP}, {@code VR} or {@code BOTH}. Text
+     *                  rather than the enum so the session layer does not depend on the UI layer,
+     *                  and so a value written by a newer build is something an older one can fall
+     *                  back from rather than fail on
+     */
+    public record HudOverlayLayout(double alpha, double fontScale, int width, int x, int y,
+                                   String displayMode) {
+    }
+
+    public HudOverlayLayout getHudOverlayLayout() {
+        return Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            return new HudOverlayLayout(
+                    session.getOverlayAlpha(),
+                    session.getOverlayFontScale(),
+                    session.getOverlayWidth(),
+                    session.getOverlayX(),
+                    session.getOverlayY(),
+                    session.getOverlayDisplayMode());
+        });
+    }
+
+    public void setHudOverlayLayout(HudOverlayLayout layout) {
+        Database.withDao(GameSessionDao.class, dao -> {
+            GameSessionDao.GameSession session = dao.get();
+            session.setOverlayAlpha(layout.alpha());
+            session.setOverlayFontScale(layout.fontScale());
+            session.setOverlayWidth(layout.width());
+            session.setOverlayX(layout.x());
+            session.setOverlayY(layout.y());
+            session.setOverlayDisplayMode(layout.displayMode());
+            dao.save(session);
+            return null;
+        });
+    }
 }

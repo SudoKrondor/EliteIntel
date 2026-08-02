@@ -1,7 +1,6 @@
 package elite.intel.ai.brain.actions.handlers.commands.custom;
 
 import elite.intel.ai.brain.actions.IntelAction;
-import elite.intel.ai.brain.actions.handlers.commands.CommandParamRules;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.eventbus.UiBus;
 import elite.intel.ui.event.CustomCommandsSummaryChangedEvent;
@@ -117,34 +116,6 @@ public final class CustomCommandRegistry {
         this.customCommands = customCommands == null
                 ? Collections.emptyList()
                 : Collections.unmodifiableList(new ArrayList<>(customCommands));
-    }
-
-    /**
-     * Appends the rules for custom command parameters to the provided {@code StringBuilder}.
-     * This includes a description of required parameters for active custom commands
-     * based on the given mapping of reduced actions.
-     *
-     * @param reducedActions A map associating string keys (e.g., action phrases) to their corresponding
-     *                       action IDs for filtering relevant custom commands.
-     * @param sb             A {@code StringBuilder} object to which the constructed rules for
-     *                       custom command parameters will be appended.
-     */
-    public void appendCustomCommandParamRules(Map<String, String> reducedActions, StringBuilder sb) {
-        Set<String> activeIds = new HashSet<>(reducedActions.values());
-        List<CustomCommandDefinition> activeCustomCommands = customCommands.stream()
-                .filter(m -> activeIds.contains(m.getActionKey()))
-                .filter(m -> !m.getParameters().isEmpty())
-                .toList();
-        if (activeCustomCommands.isEmpty()) return;
-
-        sb.append("""      
-                CUSTOM COMMAND PARAMS (required for custom command actions above include ALL required params):
-                
-                """);
-        for (CustomCommandDefinition customCommand : activeCustomCommands) {
-            CommandParamRules.appendCommandBlock(
-                    customCommand.getActionKey(), customCommand.getParameters(), sb);
-        }
     }
 
     /**

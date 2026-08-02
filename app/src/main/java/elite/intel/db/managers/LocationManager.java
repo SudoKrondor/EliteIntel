@@ -7,6 +7,7 @@ import elite.intel.session.LocationData;
 import elite.intel.util.json.GsonFactory;
 
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +149,19 @@ public class LocationManager {
             }
             return result.values();
         });
+    }
+
+    /**
+     * Bodies in one system that a surface scan found biological genuses on, in body order.
+     * <p>
+     * Filtered in SQL rather than by loading the system and testing each body, because a
+     * well-explored system holds scores of rows and the caller wants the handful with biology.
+     */
+    public List<LocationDto> findBioSignalBodies(long systemAddress) {
+        return Database.withDao(LocationDao.class, dao -> dao.findBioSignalBodies(systemAddress).stream()
+                .map(entity -> GsonFactory.getGson().fromJson(entity.getJson(), LocationDto.class))
+                .sorted(Comparator.comparingLong(LocationDto::getBodyId))
+                .collect(Collectors.toList()));
     }
 
     public List<LocationDto> findStationsInCurrentStarSystem(long systemAddress) {

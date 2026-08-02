@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CodexEntryEventSubscriberTest {
 
@@ -28,6 +28,37 @@ class CodexEntryEventSubscriberTest {
 
         LocationData<Long, Long> loc = session.getLocationData();
         assertEquals(knownBodyId, loc.getInGameId(), "null BodyID must not overwrite current_location_id");
+    }
+
+    /**
+     * Payload/instruction parity for money: the organic payload can carry a report voucher, a Vista Genomics
+     * payment and a first-discovery bonus, so the instructions must name all three. When the voucher had no
+     * slot, the model gave it one - a 2500 voucher was voiced as "2.5K per sample", a rate that exists nowhere.
+     */
+    @Test
+    void organicInstructionsAccountForEveryCreditFigureAndBanDerivedRates() {
+        String instructions = CodexEntryEventSubscriber.narrationInstructions(true).toLowerCase();
+
+        assertTrue(instructions.contains("voucher"), "voucher figure must have a sanctioned slot: " + instructions);
+        assertTrue(instructions.contains("vista genomics"), "set-of-three payment must be named: " + instructions);
+        assertTrue(instructions.contains("first-discovery bonus"), "bonus figure must be named: " + instructions);
+        assertTrue(instructions.contains("per-sample rate"), "the absent per-sample rate must be ruled out: " + instructions);
+        assertTrue(instructions.contains("never relabel"), "relabelling must be forbidden: " + instructions);
+    }
+
+    /**
+     * A non-organic entry can still carry a voucher (a real geology entry carried 2500), and it is the only
+     * credit figure there - a non-organic name resolves to a null genus, so no Vista payment is appended.
+     * The branch must therefore name the voucher while still refusing every bio concept.
+     */
+    @Test
+    void nonOrganicInstructionsNameTheVoucherButExcludeBioConcepts() {
+        String instructions = CodexEntryEventSubscriber.narrationInstructions(false).toLowerCase();
+
+        assertTrue(instructions.contains("not a biological/organic entry"), instructions);
+        assertTrue(instructions.contains("voucher"), "the voucher is the one figure here and needs a slot: " + instructions);
+        assertFalse(instructions.contains("vista genomics"), "no bio payment slot on a non-organic entry: " + instructions);
+        assertTrue(instructions.contains("never relabel"), "relabelling must be forbidden here too: " + instructions);
     }
 
     private static CodexEntryEvent codexEntryEventNullBodyId(long systemAddress) {

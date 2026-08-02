@@ -351,7 +351,12 @@ class ThoughtTest {
 
         assertTrue(execution.requests.isEmpty());
         confirmation.confirm();
+        // Wait for the dispatch itself, not just for the worker to look done: a bare join(2000) lapses on a
+        // loaded machine and the assertions below then read a queue the confirmed action has not reached yet
+        // (seen as "expected: <[self_destruct]> but was: <[]>" under a full suite run).
+        waitUntil(() -> execution.toolNames().contains("self_destruct"));
         worker.join(2000);
+        assertFalse(worker.isAlive(), "worker did not finish; the assertions below would be vacuous");
 
         assertEquals(List.of("self_destruct"), execution.toolNames());
         assertTrue(memory.writes.isEmpty());

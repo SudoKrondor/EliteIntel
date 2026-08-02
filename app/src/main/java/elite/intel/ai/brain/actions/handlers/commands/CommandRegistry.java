@@ -70,11 +70,10 @@ public final class CommandRegistry {
 
     /**
      * Appends parameter rules for migrated built-in commands that (a) survived
-     * reduction and (b) declare a non-empty parameter schema. Mirrors
-     * CustomCommandRegistry.appendCustomCommandParamRules but sources the schema
-     * from the self-describing registry instead of custom-command definitions.
-     * Uses the shared CommandParamRules.appendCommandBlock formatter so built-in
-     * and custom param blocks stay identical. No-op (no header) when nothing active.
+     * reduction and (b) declare a non-empty parameter schema, sourcing the schema
+     * from the self-describing registry. Uses the shared
+     * {@link CommandParamRules#appendCommandBlock} formatter so every param block
+     * reads identically. No-op (no header) when nothing active.
      *
      * @param reducedActions phrase -> actionId map after reduction (values are action ids)
      * @param sb             prompt buffer to append to

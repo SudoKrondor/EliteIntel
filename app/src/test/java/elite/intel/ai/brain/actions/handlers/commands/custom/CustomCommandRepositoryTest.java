@@ -1,8 +1,5 @@
 package elite.intel.ai.brain.actions.handlers.commands.custom;
 
-import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
-import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRepository;
-import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandStep;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -196,6 +193,100 @@ class CustomCommandRepositoryTest {
         assertEquals("hi", m.getSteps().getFirst().getText());
     }
 
+    // --- legacy parameter-feature migration ---
+
+    @Test
+    void legacyRunCommandStepIsDroppedAndTheRestOfTheCustomCommandSurvives() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_legacy","actionKey":"custom_command_legacy","name":"Legacy",
+                  "description":"","phrases":"legacy phrase",
+                  "parameters":[{"name":"speed","type":"number","required":true}],
+                  "steps":[{"type":"BINDING_TAP","bindingId":"LandingGearToggle"},
+                           {"type":"RUN_COMMAND","actionId":"set_speed","stepParams":{"key":"${speed}"}},
+                           {"type":"DELAY","durationMs":100}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        List<CustomCommandStep> steps = loaded.getFirst().getSteps();
+        assertEquals(2, steps.size(), "the RUN_COMMAND step must be dropped, the others kept");
+        assertEquals(CustomCommandStep.Type.BINDING_TAP, steps.get(0).getType());
+        assertEquals(CustomCommandStep.Type.DELAY, steps.get(1).getType());
+    }
+
+    @Test
+    void legacyCustomCommandLeftWithNoStepsIsSkipped() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_only_delegated","actionKey":"custom_command_only_delegated","name":"Only Delegated",
+                  "description":"","phrases":"only delegated",
+                  "steps":[{"type":"RUN_COMMAND","actionId":"set_speed"}]}]
+                """, StandardCharsets.UTF_8);
+
+        assertTrue(repo.load(customCommandsFile()).isEmpty());
+        assertEquals(1, repo.getLastSkippedCount());
+    }
+
+    @Test
+    void legacyParamReferenceIsStrippedFromSpeakText() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_speak_param","actionKey":"custom_command_speak_param","name":"Speak Param",
+                  "description":"","phrases":"speak param",
+                  "steps":[{"type":"SPEAK","text":"throttle set to ${speed} percent"}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        assertEquals("throttle set to percent", loaded.getFirst().getSteps().getFirst().getText());
+    }
+
+    @Test
+    void legacyPlaceholderIsStrippedFromTriggerPhrases() throws IOException {
+        // Placeholders used to hint the LLM at values to extract. Nothing extracts values now, so a
+        // survivor would reach the model verbatim inside the tool description.
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_phrase_param","actionKey":"custom_command_phrase_param","name":"Phrase Param",
+                  "description":"","phrases":"navigate to {lat:number, lon:number}, set speed {speed:number} now",
+                  "steps":[{"type":"SPEAK","text":"acknowledged"}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        assertEquals("navigate to, set speed now", loaded.getFirst().getPhrases());
+    }
+
+    @Test
+    void aPhraseThatWasNothingButAPlaceholderIsDroppedFromTheGroup() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_bare_param","actionKey":"custom_command_bare_param","name":"Bare Param",
+                  "description":"","phrases":"deploy for landing, {speed:number}, landing configuration",
+                  "steps":[{"type":"SPEAK","text":"acknowledged"}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        assertEquals("deploy for landing, landing configuration", loaded.getFirst().getPhrases());
+    }
+
+    @Test
+    void legacyDeclaredParametersAreDroppedAndTheCustomCommandStillLoads() throws IOException {
+        Files.writeString(customCommandsFile(), """
+                [{"id":"custom_command_declared","actionKey":"custom_command_declared","name":"Declared",
+                  "description":"","phrases":"declared phrase",
+                  "parameters":[{"name":"speed","type":"number","required":true}],
+                  "steps":[{"type":"BINDING_TAP","bindingId":"LandingGearToggle"}]}]
+                """, StandardCharsets.UTF_8);
+
+        List<CustomCommandDefinition> loaded = repo.load(customCommandsFile());
+
+        assertEquals(1, loaded.size());
+        assertEquals(0, repo.getLastSkippedCount());
+        assertEquals(1, loaded.getFirst().getSteps().size());
+    }
+
     @Test
     void saveCreatesParentDirectories() {
         Path nestedFile = tempDir.resolve("nested").resolve("custom-commands").resolve("custom_commands.json");
@@ -204,7 +295,7 @@ class CustomCommandRepositoryTest {
                 "Nested Save",
                 "",
                 "nested save",
-                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hi", null))
+                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "hi"))
         );
 
         assertTrue(repo.save(List.of(customCommand), nestedFile));
@@ -338,6 +429,6 @@ class CustomCommandRepositoryTest {
 
     private static CustomCommandDefinition makeCustomCommand(String id, String name) {
         return new CustomCommandDefinition(id, name, "", "trigger " + id,
-                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "ok", null)));
+                List.of(new CustomCommandStep(CustomCommandStep.Type.SPEAK, null, 0, "ok")));
     }
 }

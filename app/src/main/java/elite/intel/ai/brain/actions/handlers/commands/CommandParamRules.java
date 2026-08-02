@@ -6,11 +6,8 @@ import java.util.List;
 
 /**
  * Shared formatter for command parameter rules injected into the action-extraction
- * system prompt. Single owner of the per-parameter block format so the built-in
- * (self-describing) and custom-command paths cannot drift apart.
- *
- * Format must match the original inline loop in
- * CustomCommandRegistry.appendCustomCommandParamRules byte-for-byte.
+ * system prompt. Single owner of the per-parameter block format, so every path that
+ * describes a parameter to the model produces identical text.
  */
 public final class CommandParamRules {
 

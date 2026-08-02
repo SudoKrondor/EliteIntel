@@ -1,0 +1,22 @@
+# Cross-compiles the Windows HUD overlay from a Linux box.
+#
+# Debian/Ubuntu ship the mingw-w64 toolchain but no mingw cairo/pango, which the
+# shared renderer needs. Fedora ships both, so the build runs in a Fedora image
+# rather than requiring a Windows machine or MSYS2.
+#
+# Not used at runtime and not shipped - purely a build tool, like install4j.
+
+FROM fedora:41
+
+RUN dnf -y install --setopt=install_weak_deps=False \
+        make \
+        mingw64-gcc \
+        mingw64-cairo \
+        mingw64-pango \
+        mingw64-glib2 \
+        mingw64-pkg-config \
+        mingw64-binutils \
+        binutils \
+    && dnf clean all
+
+WORKDIR /src

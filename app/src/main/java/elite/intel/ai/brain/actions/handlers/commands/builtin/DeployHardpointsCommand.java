@@ -20,7 +20,10 @@ public final class DeployHardpointsCommand implements IntelCommand {
 
     @Override
     public String llmDescription() {
-        return "Deploy (run out) the weapon hardpoints, arming weapons for combat.";
+        return "Deploy (run out) the ship's hardpoints. A hardpoint carries any hardpoint-mounted equipment - "
+                + "weapons, but equally mining lasers, limpet controllers and research or scanning gear - so this "
+                + "is what the commander needs before using any of it, not only before a fight. "
+                + "\"Hardpoints\" on its own is an order to deploy them, never a question about what is installed.";
     }
 
 

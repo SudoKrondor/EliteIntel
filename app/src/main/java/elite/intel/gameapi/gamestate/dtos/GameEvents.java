@@ -70,6 +70,41 @@ public class GameEvents {
             return tradeable;
         }
 
+        /**
+         * Limpets currently in the hold.
+         */
+        public int getDroneCount() {
+            if (inventory == null) return 0;
+            for (Inventory item : inventory) {
+                if (DRONES.equalsIgnoreCase(item.getName())) return (int) item.getCount();
+            }
+            return 0;
+        }
+
+        /**
+         * Takes one limpet out of the hold, reporting whether there was one to take.
+         * <p>
+         * The game does not rewrite {@code Cargo.json} when a limpet is launched - it only
+         * writes a {@code LaunchDrone} journal line - so between cargo snapshots this is the
+         * only thing keeping the count honest. It is a correction applied to a snapshot,
+         * never a tally of its own: the next {@code Cargo} event replaces this whole object
+         * and the game's number wins.
+         * <p>
+         * The row is kept at zero rather than removed, so a hold that has run dry still says
+         * so instead of going quiet.
+         */
+        public boolean launchDrone() {
+            if (inventory == null) return false;
+            for (Inventory item : inventory) {
+                if (!DRONES.equalsIgnoreCase(item.getName())) continue;
+                if (item.count < 1) return false;
+                item.count -= 1;
+                if (count > 0) count -= 1;
+                return true;
+            }
+            return false;
+        }
+
         public String toJson() {
             return GsonFactory.getGson().toJson(this);
         }

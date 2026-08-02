@@ -45,6 +45,10 @@ public class EdsmApiClient {
         try {
             query.append("systemName=").append(URLEncoder.encode(starSystemName, StandardCharsets.UTF_8));
             query.append("&showInformation=").append(showInformation);
+            // WHY always asked for: EDSM omits the coords block unless it is requested, so callers
+            // reading getCoords() off this response were reading null for systems EDSM knows the
+            // position of perfectly well.
+            query.append("&showCoordinates=1");
         } catch (Exception e) {
             log.error("Failed to encode query parameters", e);
             return new StarSystemDto();

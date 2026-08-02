@@ -100,15 +100,12 @@ gui|de|MISSING|vizlet.menu.unlock
 gui|de|MISSING|vizlet.unconfigured
 gui|es|MISSING|actions.commands.section.catalog
 gui|es|MISSING|actions.commands.suggest.section.correction
-gui|es|MISSING|actions.customCommands.editor.param.section.definition
 gui|es|MISSING|actions.customCommands.editor.section.identity
 gui|es|MISSING|actions.customCommands.editor.step.section.definition
 gui|es|MISSING|actions.customCommands.export.section.selection
 gui|es|MISSING|actions.customCommands.import.section.review
 gui|es|MISSING|actions.customCommands.section.macros
 gui|es|MISSING|actions.section.commandSystems
-gui|es|MISSING|ai.action.hideObs
-gui|es|MISSING|ai.action.showObs
 gui|es|MISSING|ai.action.sleep
 gui|es|MISSING|ai.action.wake
 gui|es|MISSING|ai.commander.appName

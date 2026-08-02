@@ -8,7 +8,6 @@ import elite.intel.ai.brain.actions.handlers.commands.builtin.IgnoreNonsensicalI
 import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
 import elite.intel.ai.brain.actions.handlers.queries.GeneralConversationQuery;
 import elite.intel.ai.brain.vega.model.IntelActionCategory;
-import elite.intel.ai.brain.vega.prompt.GameToolCandidates;
 import elite.intel.i18n.Language;
 import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,7 @@ class GameToolCandidatesTest {
     }
 
     private static CustomCommandDefinition macro(String actionKey, String phrases) {
-        return new CustomCommandDefinition("uuid-" + actionKey, actionKey, actionKey, "", phrases, List.of(), List.of());
+        return new CustomCommandDefinition("uuid-" + actionKey, actionKey, actionKey, "", phrases, List.of());
     }
 
     private static GameToolCandidates candidates(Map<String, IntelAction> commands,

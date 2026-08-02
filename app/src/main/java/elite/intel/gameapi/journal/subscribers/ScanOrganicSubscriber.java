@@ -62,7 +62,8 @@ public class ScanOrganicSubscriber {
             String species = subtractString(event.getSpeciesLocalised(), genus);
             if (event.getBody() == null) return;
             LocationDto currentLocation = locationManager.findBySystemAddress(event.getSystemAddress(), event.getBody());
-            currentLocation.setStarName(locationManager.findBySystemAddress(event.getSystemAddress()).getStarName());
+            String starName = locationManager.findBySystemAddress(event.getSystemAddress()).getStarName();
+            currentLocation.setStarName(starName);
             playerSession.setCurrentLocationId(event.getBody(), event.getSystemAddress());
 
             boolean isOurDiscovery = currentLocation.isOurDiscovery();
@@ -88,17 +89,15 @@ public class ScanOrganicSubscriber {
 
                 BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
                 bioSampleDto.setScanXof3(1);
-                currentLocation.addBioScan(bioSampleDto);
+                recordBioScan(event, starName, bioSampleDto);
                 deleteScannedCodexEntry(genusSymbol, currentLocation);
-                locationManager.save(currentLocation);
                 announce(sb.toString());
 
             } else if (scan2.equalsIgnoreCase(scanType)) {
                 BioSampleDto bioSampleDto = createBioSampleDto(genus, species, genusSymbol, speciesSymbol, isOurDiscovery);
                 bioSampleDto.setScanXof3(2);
-                currentLocation.addBioScan(bioSampleDto);
+                recordBioScan(event, starName, bioSampleDto);
                 deleteScannedCodexEntry(genusSymbol, currentLocation);
-                locationManager.save(currentLocation);
                 announce(localizedEvent("event.organic.sampleLogged", genus));
             } else if (scan3.equalsIgnoreCase(scanType)) {
                 sb = new StringBuilder();
@@ -115,9 +114,11 @@ public class ScanOrganicSubscriber {
                 deleteScannedCodexEntry(genusSymbol, currentLocation);
                 playerSession.addBioSample(bioSampleDto);
                 playerSession.setCurrentPartial(null);
-                currentLocation.deletePartialBioSamples();
                 playerSession.clearGenusPaymentAnnounced();
-                locationManager.save(currentLocation);
+                locationManager.updateBody(event.getSystemAddress(), event.getBody(), location -> {
+                    location.setStarName(starName);
+                    location.deletePartialBioSamplesFor(genusSymbol, genus);
+                });
 
                 List<GenusDto> allSpecies = currentLocation.getGenus();
                 List<ExoBio.DataDto> completedSpecies = completedScansForPlanet(playerSession.getBioCompletedSamples(), currentLocation.getPlanetName());
@@ -133,6 +134,23 @@ public class ScanOrganicSubscriber {
 
                 announce(sb.toString());
             }
+        });
+    }
+
+    /**
+     * Records one sample against the body under the per-body write lock.
+     *
+     * <p>WHY the lock rather than the plain find/mutate/save this used to do: the sample that opens a
+     * set arrives in the same journal instant as the CodexEntry for the same organism, and that
+     * subscriber writes the same row. Two blind whole-JSON upserts of a row each side loaded
+     * separately means the later writer wins and the sample is simply gone - which is exactly what
+     * happened to every first sample of a species new to the codex, while the second and third
+     * samples (no CodexEntry alongside them) persisted. See {@link LocationManager#updateBody}.
+     */
+    private void recordBioScan(ScanOrganicEvent event, String starName, BioSampleDto sample) {
+        locationManager.updateBody(event.getSystemAddress(), event.getBody(), location -> {
+            location.setStarName(starName);
+            location.addBioScan(sample);
         });
     }
 

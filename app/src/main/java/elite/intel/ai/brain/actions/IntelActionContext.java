@@ -7,6 +7,5 @@ package elite.intel.ai.brain.actions;
 public enum IntelActionContext {
     COMPANION_COMMANDER,
     LEGACY_ACTION_MAP,
-    CUSTOM_COMMAND,
     GUI
 }

@@ -133,8 +133,10 @@ public final class GameToolCandidates {
             String base = macro.getDescription().isBlank()
                     ? "User-defined macro \"" + id + "\"."
                     : macro.getDescription().strip();
+            // Custom commands are keystroke sequences: they take no arguments, so the model is offered a
+            // bare tool name with no input schema and is never asked to extract a value for one.
             out.add(new Candidate(id, phraseGroup.isBlank() ? id : phraseGroup,
-                    new LlmToolDefinition(id, describe(base, phraseGroup), phraseGroup, macro.getParameters())));
+                    new LlmToolDefinition(id, describe(base, phraseGroup), phraseGroup, List.of())));
         }
     }
 

@@ -242,6 +242,15 @@ public class PlayerSession {
         return cargoHold.get();
     }
 
+    /**
+     * Takes one limpet out of the stored hold, reporting whether there was one to take.
+     * The game announces a launch but does not rewrite {@code Cargo.json} for it, so this is
+     * what keeps the limpet count current between cargo snapshots.
+     */
+    public boolean recordDroneLaunched() {
+        return cargoHold.recordDroneLaunched();
+    }
+
     public void setReputation(ReputationEvent event) {
         reputationManager.save(event);
     }

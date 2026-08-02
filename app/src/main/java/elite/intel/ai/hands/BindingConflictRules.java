@@ -35,11 +35,22 @@ public class BindingConflictRules {
     public static String describe(String a, String b) {
         String d = DESCRIPTIONS.get(makeKey(a, b));
         if (d != null) return d;
+        if (isMapVersusUiNavigation(a, b)) {
+            String map = isMapCameraAction(a) ? a : b;
+            String ui = isMapCameraAction(a) ? b : a;
+            return StringUtls.humanizeBindingName(map) + " and " + StringUtls.humanizeBindingName(ui)
+                    + " share a key - inside the galaxy/system map both are live at once, so map movement"
+                    + " and panel navigation will fight each other";
+        }
         return StringUtls.humanizeBindingName(a) + " and " + StringUtls.humanizeBindingName(b) + " share a key and may interfere";
     }
 
     /**
      * Returns true when two actions sharing a key is safe and should not be flagged.
+     * <p>
+     * Unsafe first: {@link #isMapVersusUiNavigation} - the galaxy/system map is the one overlay where
+     * two families are live <em>simultaneously</em>, so it is checked before the mutual-exclusion
+     * rules below (which would otherwise clear it twice over).
      * <p>
      * Safe cases:
      * - Different input contexts (ship / buggy / humanoid / UI / construction) - mutually exclusive,
@@ -50,8 +61,55 @@ public class BindingConflictRules {
      * modes are only active inside a specific overlay and cannot fire alongside regular actions.
      */
     public static boolean isSafeOverlap(String a, String b) {
+        if (isMapVersusUiNavigation(a, b)) return false;
         if (isSubStateModeAction(a) || isSubStateModeAction(b)) return true;
         return !contextOf(a).equals(contextOf(b));
+    }
+
+    /**
+     * True when one action drives the galaxy/system map camera and the other is UI panel navigation.
+     * <p>
+     * This is the one case where the context model's "only one context is active" assumption breaks.
+     * Everywhere else the map camera behaves like a sub-state overlay and UI_* like its own context,
+     * so the two would be cleared twice over - but while the map is <em>open</em> both families are
+     * live at the same time: the {@code Cam*} keys pan/zoom the holographic map while {@code UI_*}
+     * moves the cursor through the map's panels and tabs. A shared chord fires both, and the map
+     * stops responding to movement correctly (reported in the field with W/A/S/D bound to
+     * {@code CamTranslate*} and {@code UI_Up}/{@code UI_Down}/{@code UI_Left}/{@code UI_Right}).
+     */
+    private static boolean isMapVersusUiNavigation(String a, String b) {
+        return (isMapCameraAction(a) && isUiNavigationAction(b))
+                || (isMapCameraAction(b) && isUiNavigationAction(a));
+    }
+
+    /**
+     * The four action families Elite groups under the galaxy/system map sections: {@code CamTranslate*}
+     * (pan), {@code CamPitch*} and {@code CamYaw*} (orbit), {@code CamZoom*}, plus {@code GalaxyMapHome}
+     * (a map-internal control, not the map-open toggle).
+     * <p>
+     * WHY: listed prefix by prefix rather than matching a bare {@code Cam} prefix. The action set belongs
+     * to Frontier, not to {@link Bindings}, so a future game update could ship a {@code Cam*} action in
+     * some unrelated context and it would silently start colliding with every {@code UI_*} binding. A new
+     * family has to be opted in here deliberately.
+     * <p>
+     * The other camera families all carry their own prefix ({@code FreeCam*}, {@code MoveFreeCam*},
+     * {@code PitchCamera*}, {@code MovePlacementCam*}, {@code StoreCam*}, {@code VanityCamera*}) and are
+     * excluded: none of them can be open at the same time as a UI panel.
+     */
+    private static boolean isMapCameraAction(String action) {
+        return action.startsWith("CamTranslate")
+                || action.startsWith("CamPitch")
+                || action.startsWith("CamYaw")
+                || action.startsWith("CamZoom")
+                || action.equals("GalaxyMapHome");
+    }
+
+    /**
+     * UI panel navigation ({@code UI_Up}, {@code UI_Left}, {@code UI_Select}, {@code UI_Back}, …).
+     * The whole family stays live while the map is open, not just the four direction keys.
+     */
+    private static boolean isUiNavigationAction(String action) {
+        return action.startsWith("UI_");
     }
 
     /**

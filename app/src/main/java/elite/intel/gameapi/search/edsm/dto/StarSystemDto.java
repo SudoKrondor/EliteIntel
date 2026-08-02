@@ -1,6 +1,7 @@
 package elite.intel.gameapi.search.edsm.dto;
 
 import com.google.gson.annotations.SerializedName;
+import elite.intel.gameapi.search.edsm.dto.data.StarSystemCoordinates;
 import elite.intel.gameapi.search.edsm.dto.data.StarSystemData;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
@@ -11,27 +12,15 @@ public class StarSystemDto implements ToJsonConvertible {
     @SerializedName("timestamp")
     public long timestamp;
 
-    @SerializedName("coords")
-    private Coords coords;
-
-    public Coords getCoords() {
-        return coords;
-    }
-
-    public static class Coords{
-        double x,y,z;
-
-        public double getX() {
-            return x;
-        }
-
-        public double getY() {
-            return y;
-        }
-
-        public double getZ() {
-            return z;
-        }
+    /**
+     * The system's position, or null when the response carried none.
+     *
+     * <p>WHY delegated: this wrapper is always built by hand around a parsed response, never
+     * deserialized itself, so a {@code coords} field of its own could only ever read null. The
+     * coordinates arrive inside the response element.
+     */
+    public StarSystemCoordinates getCoords() {
+        return data == null ? null : data.getCoords();
     }
 
     public StarSystemData getData() {

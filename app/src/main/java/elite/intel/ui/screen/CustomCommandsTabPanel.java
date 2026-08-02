@@ -211,7 +211,6 @@ public class CustomCommandsTabPanel extends JPanel {
                         row.phrases(),
                         false,
                         row.sequenceText(),
-                        row.customCommand().getParameters(),
                         () -> editCustomCommand(row),
                         () -> deleteCustomCommand(row)).showDialog());
     }
@@ -466,7 +465,6 @@ public class CustomCommandsTabPanel extends JPanel {
                 case DELAY -> label + step.getDurationMs() + " ms";
                 case BINDING_TAP -> label + step.getBindingId();
                 case BINDING_HOLD -> label + step.getBindingId() + " (" + step.getDurationMs() + " ms)";
-                case RUN_COMMAND -> label + step.getActionId();
                 case RAW_KEY -> {
                     String combo = new BindingSlotDisplayFormatter().formatRawKeyStep(step.getRawKey(),
                             step.getRawKeyModifier());

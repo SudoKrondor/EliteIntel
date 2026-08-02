@@ -80,6 +80,47 @@ class EdsmApiClientTest {
                 .withQueryParam("showInformation", equalTo("1")));
     }
 
+    /**
+     * EDSM omits the coords block unless it is asked for, so a caller reading getCoords() got null for
+     * systems EDSM knows the position of perfectly well.
+     */
+    @Test
+    void searchStarSystem_asksForCoordinates() {
+        stubFor(get(urlPathEqualTo("/api-v1/systems"))
+                .willReturn(okJson("[{\"name\":\"Sol\"}]")));
+
+        EdsmApiClient.searchStarSystem("Sol", 1);
+
+        verify(getRequestedFor(urlPathEqualTo("/api-v1/systems"))
+                .withQueryParam("showCoordinates", equalTo("1")));
+    }
+
+    @Test
+    void searchStarSystem_readsTheCoordinatesOffTheResponse() {
+        stubFor(get(urlPathEqualTo("/api-v1/systems"))
+                .willReturn(okJson("""
+                        [{"name":"Eephaik LY-R b47-6",
+                          "coords":{"x":-11758.34375,"y":-894.53125,"z":17880.5},
+                          "coordsLocked":false,"information":{}}]
+                        """)));
+
+        StarSystemDto dto = EdsmApiClient.searchStarSystem("Eephaik LY-R b47-6", 1);
+
+        assertNotNull(dto.getCoords(), "coordinates in the response must reach the caller");
+        assertEquals(-11758.34375, dto.getCoords().getX());
+        assertEquals(-894.53125, dto.getCoords().getY());
+        assertEquals(17880.5, dto.getCoords().getZ());
+    }
+
+    @Test
+    void searchStarSystem_reportsNoCoordinatesForAnUnknownSystem() {
+        // Uncharted space: EDSM answers [] and cannot say where the system is.
+        stubFor(get(urlPathEqualTo("/api-v1/systems"))
+                .willReturn(okJson("[]")));
+
+        assertNull(EdsmApiClient.searchStarSystem("Eephaik CX-V b31-9", 1).getCoords());
+    }
+
     @Test
     void searchStarSystem_urlEncodesSpacesInSystemName() {
         stubFor(get(urlPathEqualTo("/api-v1/systems"))
