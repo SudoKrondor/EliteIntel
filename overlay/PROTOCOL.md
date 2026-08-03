@@ -140,6 +140,23 @@ Two rules keep that pair honest, and both exist because breaking either one stra
 Frames are paced with `WaitFrameSync`, not with the typewriter. Free-running, the shell hands over forty full textures a second with no idea whether the compositor has finished with the last one; waiting for the frame lands each upload in exactly one compositor frame, and lands the texture and its crop in the
 *same* one.
 
+The two-second re-assert is measured from the last
+**re-assert**, never from the last frame drawn. Measured from the last frame it would reset on every typed character, so it would fire only while the HUD was idle and never during the conversation it exists to protect.
+
+## Holding an overlay handle
+
+An OpenVR overlay is not just a texture sink. The runtime queues events against the handle - shown, hidden, focus, dashboard, mouse, standby - and it does so whether or not anyone reads them.
+**`PollNextOverlayEvent` must be drained to empty every
+pass.** An overlay whose events are never collected falls progressively further behind and then stops updating, and closing and reopening the HUD empties the queue and buys another while, which is exactly the shape it gets reported in. Taking the headset off to use the desktop fills that queue fastest.
+
+This is a
+*different* queue from the `IVRSystem` one that carries `VREvent_Quit`. Draining either does nothing for the other, so both are drained.
+
+Two more level triggers sit on top of it, for the same reason as the crop:
+
+- `ShowOverlay` is a one-shot declaration of intent. If the overlay's own events say it went hidden, the intent is stated again on the next re-assert - and only then, so this never argues with a hide the runtime means to keep.
+- If the compositor refuses frames without a break for five seconds, the overlay is destroyed and rebuilt. That is the automated form of the workaround commanders find for themselves, and the threshold is long enough that a hiccup or a waking headset never spends one.
+
 ## Notes
 
 - Tabs inside `text`/`title`/

@@ -117,7 +117,17 @@ static uint64_t now_ms(void) {
 // managed to show while the app happily goes on talking to it. This is the
 // level trigger underneath: whatever the compositor missed, it gets again
 // within two seconds. It costs one upload per two seconds while idle.
+//
+// Measured from the last re-assert and NOT from the last frame drawn: tying it
+// to the last frame meant a busy conversation, which is the one time any of
+// this matters, reset the clock on every character and never re-asserted at all.
 #define REASSERT_MS      2000
+
+// How long the compositor must refuse frames without a break before the overlay
+// is thrown away and rebuilt. Long enough that a hiccup or a headset waking up
+// never triggers it; short enough that a commander does not sit looking at a
+// dead card. See reopen_overlay.
+#define STALL_RECOVER_MS 5000
 
 // -- the openvr entry points we use ------------------------------------------
 
@@ -486,6 +496,37 @@ static int steamvr_is_quitting(struct VR_IVRSystem_FnTable *system) {
     return 0;
 }
 
+/// Drains the overlay's OWN event queue, keeping `visible` current, and reports
+/// whether SteamVR asked us to stop.
+///
+/// WHY this exists: holding an overlay handle means the runtime queues events
+/// against it - shown, hidden, focus, dashboard, mouse, standby - whether or not
+/// anyone ever reads them. Nothing here read them, so the queue only ever grew,
+/// and an overlay whose events are never collected falls progressively further
+/// behind and then stops updating altogether. Restarting the overlay emptied it
+/// and bought another while, which is exactly the shape this was reported in.
+/// Taking the headset off to use the desktop is what fills the queue fastest,
+/// which is exactly when it was reported to stop. Draining is not bookkeeping,
+/// it is the rent on the handle.
+///
+/// The IVRSystem queue drained by steamvr_is_quitting is a DIFFERENT queue and
+/// does not cover this one.
+static int drain_overlay_events(struct VR_IVROverlay_FnTable *overlay,
+                                VROverlayHandle_t handle, int *visible) {
+    struct VREvent_t event;
+    int quitting = 0;
+
+    while (overlay->PollNextOverlayEvent(handle, &event, sizeof(event))) {
+        switch (event.eventType) {
+            case EVREventType_VREvent_OverlayShown:  *visible = 1; break;
+            case EVREventType_VREvent_OverlayHidden: *visible = 0; break;
+            case EVREventType_VREvent_Quit:          quitting = 1; break;
+            default: break;                 // discarded, but READ, which is the point
+        }
+    }
+    return quitting;
+}
+
 /// Advances the typewriter by however many characters the clock owes it, and
 /// reports whether anything moved. `typed_through` is the moment the last
 /// character was due, and is carried across calls.
@@ -512,6 +553,73 @@ static int advance_typewriter(uint64_t *typed_through) {
         moved = 1;
     }
     return moved;
+}
+
+/// Creates the overlay and puts it where it belongs. Shared by the first attach
+/// and by the stall recovery, so the two can never drift apart.
+static int open_overlay(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t *handle,
+                        VrPosition position) {
+    char key[] = "elite.intel.hud";
+    char title[] = "EliteIntel HUD";
+
+    if (overlay->CreateOverlay(key, title, handle) != EVROverlayError_VROverlayError_None) return 0;
+    overlay->SetOverlayWidthInMeters(*handle, HUD_WIDTH_M);
+    place_overlay(overlay, *handle, position);
+    overlay->ShowOverlay(*handle);
+    return 1;
+}
+
+/// Throws the overlay away and builds another one.
+///
+/// This is the automated form of the workaround commanders found for themselves:
+/// close the HUD, open it again, and it behaves for a while. Doing it for them
+/// is worth it because the alternative is a card that is simply dead until
+/// somebody notices. Reached only after frames have been refused without a break
+/// for STALL_RECOVER_MS, so a hiccup never costs anyone a rebuild.
+static int reopen_overlay(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t *handle,
+                          VrPosition position, Canvas *canvas) {
+    overlay->DestroyOverlay(*handle);
+    *handle = 0;
+    if (!open_overlay(overlay, handle, position)) return 0;
+
+    // A brand new overlay holds no texture and no crop, so nothing about the old
+    // one may be carried over as still committed.
+    canvas->content = 0;
+    return 1;
+}
+
+/// How the compositor has been treating our frames lately.
+typedef struct {
+    uint64_t refusing_since;    // start of the current run of refusals, 0 if none
+    int      reported;          // the current run has already been reported once
+} FrameHealth;
+
+/// Records how a submission went and says whether the overlay needs rebuilding.
+///
+/// Sets *dirty on a refusal so the frame is drawn again rather than dropped: the
+/// model has already moved on, and a dropped frame is a card that is quietly one
+/// reply behind for good.
+static int note_submission(struct VR_IVROverlay_FnTable *overlay, EVROverlayError submitted,
+                           FrameHealth *health, int *dirty) {
+    if (submitted == EVROverlayError_VROverlayError_None) {
+        if (health->reported) hud_report_mode("vr", NULL);
+        health->refusing_since = 0;
+        health->reported = 0;
+        return 0;
+    }
+
+    uint64_t now = now_ms();
+    if (!health->refusing_since) health->refusing_since = now;
+    if (!health->reported) {
+        health->reported = 1;
+        // Said once per run, not once per frame: a stalled compositor refuses
+        // forty times a second and the log is the only place this can be seen.
+        fprintf(stderr, "overlay: SteamVR refused the HUD frame: %s\n",
+                describe_overlay(overlay, submitted));
+        hud_report_mode("vr", describe_overlay(overlay, submitted));
+    }
+    *dirty = 1;
+    return now - health->refusing_since >= STALL_RECOVER_MS;
 }
 
 /// Runs as a SteamVR overlay until the app quits or SteamVR goes away.
@@ -545,35 +653,37 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
         return SESSION_FAILED;
     }
     // Optional: without it we simply do not learn that SteamVR is closing, and
-    // find out when the pipe or the compositor goes quiet instead.
+    // find out when the pipe or the compositor goes quiet instead. Said out loud
+    // because it also means one of the two event queues stops being drained, and
+    // an undrained queue is the failure this file has already been bitten by.
     struct VR_IVRSystem_FnTable *system = interface_table(vr, IVRSystem_Version);
+    if (!system && announce) {
+        fprintf(stderr, "overlay: SteamVR has no %s; shutdown will not be seen\n", IVRSystem_Version);
+    }
 
-    char key[] = "elite.intel.hud";
-    char title[] = "EliteIntel HUD";
+    VrPosition placed = model.vr_position;
     VROverlayHandle_t handle = 0;
-    if (overlay->CreateOverlay(key, title, &handle) != EVROverlayError_VROverlayError_None) {
+    if (!open_overlay(overlay, &handle, placed)) {
         if (announce) fprintf(stderr, "overlay: SteamVR would not create the overlay\n");
         vr->shutdown();
         return SESSION_FAILED;
     }
-
-    overlay->SetOverlayWidthInMeters(handle, HUD_WIDTH_M);
-    VrPosition placed = model.vr_position;
-    place_overlay(overlay, handle, placed);
-    overlay->ShowOverlay(handle);
     hud_report_mode("vr", NULL);
 
     Canvas canvas = {0};
+    FrameHealth health = {0};
     SessionOutcome outcome = SESSION_ENDED;
-    int quit = 0, eof = 0, dirty = 1;
-    uint64_t last_present = 0;
+    int quit = 0, eof = 0, dirty = 1, visible = 1;
     uint64_t typed_through = now_ms();
-    int rejected = 0;               // consecutive frames the compositor refused
+    uint64_t last_reassert = now_ms();
 
     while (!quit && !eof) {
         if (hud_pump_stdin(TYPEWRITER_MS, &eof, &quit)) dirty = 1;
         if (advance_typewriter(&typed_through)) dirty = 1;
         if (system && steamvr_is_quitting(system)) { outcome = SESSION_LOST; break; }
+        // Every pass, unconditionally. See drain_overlay_events for what an
+        // undrained overlay queue costs.
+        if (drain_overlay_events(overlay, handle, &visible)) { outcome = SESSION_LOST; break; }
 
         // Moving the card takes effect while the commander is wearing the
         // headset, so they can try placements against the cockpit they are
@@ -583,7 +693,16 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
             place_overlay(overlay, handle, placed);
         }
 
-        int reassert = now_ms() - last_present >= REASSERT_MS;
+        int reassert = now_ms() - last_reassert >= REASSERT_MS;
+        if (reassert) {
+            last_reassert = now_ms();
+            // ShowOverlay at attach was an edge-triggered write like the rest.
+            // If the runtime hid the card and we missed why, say again that we
+            // want it, but only while its own events tell us it is hidden, so
+            // this never argues with a hide the runtime means to keep.
+            if (!visible) overlay->ShowOverlay(handle);
+        }
+
         if (dirty || reassert) {
             // Pace to the compositor rather than to the typewriter. Left to
             // itself this loop redraws every time a character appears - forty
@@ -600,27 +719,22 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
                 outcome = SESSION_FAILED;
                 break;
             }
-            last_present = now_ms();
             dirty = 0;
 
             // A refused upload leaves the commander looking at the last frame
-            // that got through, with the app still cheerfully narrating into it
-            // - the overlay carries on, silently a conversation behind. It used
-            // to be silent because nothing read this result. Now the frame is
-            // simply drawn again next time round (nothing cleared `dirty`'s
-            // effect on the model), the crop goes with it, and if it keeps
-            // failing the commander is told once instead of being left to work
-            // out why their HUD stopped.
-            if (submitted != EVROverlayError_VROverlayError_None) {
-                if (rejected++ == 0) {
-                    fprintf(stderr, "overlay: SteamVR refused the HUD frame: %s\n",
-                            describe_overlay(overlay, submitted));
-                    hud_report_mode("vr", describe_overlay(overlay, submitted));
+            // that got through while the app carries on narrating into it, so
+            // the card sits quietly a conversation behind. It used to be silent
+            // because nothing read this result.
+            if (note_submission(overlay, submitted, &health, &dirty)) {
+                hud_report_mode("vr", "rebuilding the overlay after a stall");
+                if (!reopen_overlay(overlay, &handle, placed, &canvas)) {
+                    fprintf(stderr, "overlay: SteamVR would not rebuild the overlay\n");
+                    outcome = SESSION_FAILED;
+                    break;
                 }
-                dirty = 1;          // retry the same frame rather than drop it
-            } else if (rejected) {
-                rejected = 0;
-                hud_report_mode("vr", NULL);
+                health.refusing_since = 0;
+                health.reported = 0;
+                visible = 1;
             }
         }
     }
