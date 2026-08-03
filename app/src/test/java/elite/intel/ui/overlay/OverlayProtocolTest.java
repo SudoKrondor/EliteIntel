@@ -3,8 +3,16 @@ package elite.intel.ui.overlay;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -150,5 +158,52 @@ class OverlayProtocolTest {
     @Test
     void positionIsSentAsACfgTheOverlayAlreadyUnderstands() {
         assertEquals("CFG\tx=100\ty=200", OverlayProtocol.position(100, 200));
+    }
+
+    @Test
+    void theVrPlacementTravelsAsAName() {
+        assertEquals("CFG\tvrpos=bottom_right", OverlayProtocol.vrPosition(HudVrPosition.BOTTOM_RIGHT));
+        assertEquals("CFG\tvrpos=top", OverlayProtocol.vrPosition(HudVrPosition.TOP));
+    }
+
+    /**
+     * Both ends keep their own list of placements, and the C side resolves a name
+     * to a direction by its position in that list. A name added on one side only,
+     * or added in a different order, would silently hang the HUD somewhere the
+     * commander did not pick - and only a commander wearing a headset would ever
+     * see it. So the two lists are compared here rather than trusted to stay in
+     * step.
+     */
+    @Test
+    void everyPlacementNameIsOneTheOverlayKnows() {
+        List<String> inTheOverlay = vrPositionNamesFromTheCSide();
+
+        assertEquals(
+                Arrays.stream(HudVrPosition.values()).map(HudVrPosition::wireName).toList(),
+                inTheOverlay,
+                "VR_POSITION_NAMES in overlay/src/hud_model.c must match HudVrPosition, in order");
+    }
+
+    private static List<String> vrPositionNamesFromTheCSide() {
+        Path source = Stream.of(Path.of("overlay/src/hud_model.c"), Path.of("../overlay/src/hud_model.c"))
+                .filter(Files::isRegularFile)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(
+                        "overlay/src/hud_model.c not found from " + Path.of("").toAbsolutePath()));
+
+        String table;
+        try {
+            String text = Files.readString(source, StandardCharsets.UTF_8);
+            int start = text.indexOf("VR_POSITION_NAMES[]");
+            assertTrue(start > 0, "VR_POSITION_NAMES has gone from " + source);
+            table = text.substring(text.indexOf('{', start), text.indexOf('}', start));
+        } catch (IOException e) {
+            throw new AssertionError("cannot read " + source, e);
+        }
+
+        List<String> names = new ArrayList<>();
+        Matcher quoted = Pattern.compile("\"([a-z_]+)\"").matcher(table);
+        while (quoted.find()) names.add(quoted.group(1));
+        return names;
     }
 }

@@ -30,7 +30,7 @@ class HudOverlayLayoutPersistenceTest {
 
     @Test
     void aTunedLayoutIsReadBackWholeAndUnchanged() {
-        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40, "BOTH");
+        SystemSession.HudOverlayLayout tuned = new SystemSession.HudOverlayLayout(0.42, 1.25, 900, 1920, 40, "BOTH", "TOP_RIGHT");
 
         session.setHudOverlayLayout(tuned);
 
@@ -42,7 +42,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void anOffPrimaryPositionSurvives() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300, "DESKTOP"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1200, 300, "DESKTOP", "BOTTOM"));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(-1200, stored.x());
@@ -55,7 +55,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void theUnsetDefaultsAreDistinguishableFromChosenValues() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 0, 760, -1, -1, "DESKTOP"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 0, 760, -1, -1, "DESKTOP", "BOTTOM"));
 
         SystemSession.HudOverlayLayout stored = session.getHudOverlayLayout();
         assertEquals(0d, stored.fontScale(), "0 means the commander never chose a text size");
@@ -69,7 +69,7 @@ class HudOverlayLayoutPersistenceTest {
      */
     @Test
     void theChosenDisplayModeSurvivesARestart() {
-        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR"));
+        session.setHudOverlayLayout(new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "BOTTOM"));
 
         assertEquals("VR", session.getHudOverlayLayout().displayMode());
     }
@@ -83,5 +83,29 @@ class HudOverlayLayoutPersistenceTest {
     void theColumnDefaultIsTheDesktopOverlay() {
         assertEquals("DESKTOP", previous.displayMode(),
                 "the value a row carries before anyone chooses a mode");
+    }
+
+    /**
+     * In the headset there is no window to drag, so the chosen direction is the only record of where
+     * the commander put the card - and re-picking it every launch is done wearing a headset that
+     * cannot see this dialog.
+     */
+    @Test
+    void theChosenVrPlacementSurvivesARestart() {
+        session.setHudOverlayLayout(
+                new SystemSession.HudOverlayLayout(0.25, 1.0, 760, -1, -1, "VR", "TOP_LEFT"));
+
+        assertEquals("TOP_LEFT", session.getHudOverlayLayout().vrPosition());
+    }
+
+    /**
+     * An installation upgrading into the migration has no stored placement, and the column default
+     * has to be where the VR overlay already drew - below centre - so nobody's HUD moves on the
+     * strength of a schema change.
+     */
+    @Test
+    void theColumnDefaultIsWhereTheVrOverlayAlreadyDrew() {
+        assertEquals("BOTTOM", previous.vrPosition(),
+                "the value a row carries before anyone chooses a placement");
     }
 }

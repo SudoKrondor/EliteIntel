@@ -51,6 +51,25 @@ typedef struct {
     int  visible_bytes;      // typewriter cursor, always on a UTF-8 boundary
 } Line;
 
+/// Where the card sits in the headset, as a point of the compass on the
+/// commander's forward view - TOP is straight above centre, RIGHT is off to the
+/// right at eye level. Only the VR shell reads this; a desktop window is placed
+/// by dragging it.
+///
+/// Named for the view rather than for the compass (NORTH/EAST/...) because
+/// Elite already has a compass, pointing at planetary north, and a HUD setting
+/// that says NORTH would be read as pointing at that.
+typedef enum {
+    HUD_VR_TOP,
+    HUD_VR_TOP_RIGHT,
+    HUD_VR_RIGHT,
+    HUD_VR_BOTTOM_RIGHT,
+    HUD_VR_BOTTOM,
+    HUD_VR_BOTTOM_LEFT,
+    HUD_VR_LEFT,
+    HUD_VR_TOP_LEFT
+} VrPosition;
+
 typedef struct {
     Objective obj;
     Objective staging;       // filled by OBJ/ROW/BAR, committed by END
@@ -60,6 +79,7 @@ typedef struct {
     double scale;
     int  width;
     int  want_x, want_y;     // requested position; -1 means "leave as is"
+    VrPosition vr_position;  // VR only; the desktop shells ignore it
 } Model;
 
 extern Model model;

@@ -29,7 +29,7 @@ public interface GameSessionDao {
                                                              pushToTalkButtonIndex, pushToTalkToggleMode,
                                                              noiseReductionEnabled, noiseReductionStrength,
                                                              overlayAlpha, overlayFontScale, overlayWidth, overlayX, overlayY,
-                                                             overlayDisplayMode
+                                                             overlayDisplayMode, overlayVrPosition
                                                 )
                                   VALUES (1, :kokoroVoice, :googleVoice,
                                                       :privacyModeOn, :rmsThresholdHigh,
@@ -45,7 +45,7 @@ public interface GameSessionDao {
                                                       :pushToTalkButtonIndex, :pushToTalkToggleMode,
                                                       :noiseReductionEnabled, :noiseReductionStrength,
                                                       :overlayAlpha, :overlayFontScale, :overlayWidth, :overlayX, :overlayY,
-                                                      :overlayDisplayMode
+                                                      :overlayDisplayMode, :overlayVrPosition
                                           )
             """)
     void save(@BindBean GameSessionDao.GameSession data);
@@ -96,6 +96,7 @@ public interface GameSessionDao {
             session.setOverlayX(rs.getInt("overlayX"));
             session.setOverlayY(rs.getInt("overlayY"));
             session.setOverlayDisplayMode(rs.getString("overlayDisplayMode"));
+            session.setOverlayVrPosition(rs.getString("overlayVrPosition"));
             return session;
         }
     }
@@ -141,6 +142,7 @@ public interface GameSessionDao {
         private int overlayX = -1;
         private int overlayY = -1;
         private String overlayDisplayMode = "DESKTOP";
+        private String overlayVrPosition = "BOTTOM";
 
 
         /**
@@ -426,6 +428,18 @@ public interface GameSessionDao {
 
         public void setOverlayDisplayMode(String overlayDisplayMode) {
             this.overlayDisplayMode = overlayDisplayMode;
+        }
+
+        /**
+         * Where the HUD hangs in the headset: TOP, TOP_RIGHT, RIGHT and so on. Text, and read back
+         * leniently, so a row written by a newer build cannot break an older one.
+         */
+        public String getOverlayVrPosition() {
+            return overlayVrPosition;
+        }
+
+        public void setOverlayVrPosition(String overlayVrPosition) {
+            this.overlayVrPosition = overlayVrPosition;
         }
 
         public void setOverlayY(int overlayY) {

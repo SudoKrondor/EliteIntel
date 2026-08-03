@@ -28,6 +28,7 @@ public class KeyboardSettingsDialog extends JDialog {
         this.chosenTextColor = vizlet.getTextColor();
         setSize(380, 280);
         setLocationRelativeTo(null);
+        AppTheme.applyAppIcon(this);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         buildUi();
     }

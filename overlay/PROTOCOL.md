@@ -30,6 +30,7 @@ Configuration. Any subset, any order, at any time.
 | `scale` | font scale, `1.0` is calibrated for 1440p |
 | `x`,`y` | window position in screen pixels          |
 | `width` | window width in pixels; height follows content |
+| `vrpos` | where the card hangs in the headset: `top`, `top_right`, `right`, `bottom_right`, `bottom`, `bottom_left`, `left`, `top_left`. Ignored by the desktop shells; an unknown name leaves the card where it is |
 
 ```
 OBJ <title> <subtitle>
@@ -84,6 +85,19 @@ Unknown flags are ignored, for the same reason unknown commands are.
 `--vr=only` is the exception because of the "both at once" setting, where the app runs **two children
 **: a desktop overlay and a VR one, fed identical lines. If the VR child fell back there, its window would land exactly on top of the desktop child's — the commander would drag one and watch the other stay put. So it exits instead, and the desktop child is the whole overlay.
 
+## Placement in VR
+
+There is no window to drag in a headset, so the card is placed in two parts.
+
+`CFG vrpos=` chooses a
+**direction** — one of eight points around the centre of the forward view, 30° to either side and 18° above or below, always 1.5 m out and turned to face the commander. It applies live, so a commander wearing the headset sees each choice land.
+
+Which way is **ahead** is not the app's to set: the overlay's transform is expressed in SteamVR's
+*seated* universe, so "Reset Seated Position" — and the game's own view recentre, which goes through the same call — is what places the card, exactly as it places the cockpit. That is the one control reachable with a headset on, and it means there is no VR pose for the app to store: the seated origin is SteamVR's to remember.
+
+The card is
+**not** parented to the HMD. A panel welded to the gaze cannot be glanced at or looked away from, and every earlier version that followed the head was reported as unreadable.
+
 ## Reverse channel
 
 Lines the overlay writes to **stdout
@@ -104,12 +118,44 @@ Which shell actually came up, and why it is not what the app asked for, so a set
 | value | meaning |
 |---|---|
 | `desktop` | A window. With a `reason` when VR was asked for and could not be had. |
-| `vr` | Drawing in the headset. Sent on every attach, so a re-attach after SteamVR restarts is visible. |
+| `vr` | Drawing in the headset. Sent on every attach, so a re-attach after SteamVR restarts is visible. Also sent **with** a `reason` when the compositor starts refusing frames, and again without one when it starts taking them - an attached overlay that cannot get a frame through looks identical to a frozen app from the outside, and this is the only thing that tells the two apart. |
 | `waiting` | `--vr=only` could not attach and is retrying — e.g. `SteamVR is not running`. A later `vr` line follows if it succeeds. |
 | `none` | A `--vr=only` child giving up on its way out. |
 
 Reasons are plain text meant for a commander: `no headset detected`, `SteamVR runtime not installed`,
-`SteamVR is not running`, `SteamVR closed`, `SteamVR would not start an overlay`.
+`SteamVR is not running`, `SteamVR closed`, `SteamVR would not start an overlay`. A refused frame reports SteamVR's own error name (`VROverlayError_...`) instead, since that one is for us, not for them.
+
+## Drawing in VR
+
+The card is one texture, uploaded whole, plus a
+**crop** (`SetOverlayTextureBounds`) that trims the unused tail off the bottom. The texture height is rounded up to a 128px step so an ordinary change - a reply one row taller, a mining row appearing - reuses the texture the compositor already has and only moves the crop.
+
+Two rules keep that pair honest, and both exist because breaking either one strands the card on a stale frame while the app goes on talking to it:
+
+- **Texture first, crop
+  second.** The crop only means anything as a description of the texture it is cropping. Sent the other way round, the compositor holds a new crop against the old texture, and a new texture can arrive with its crop reset under it.
+- **Upload, then
+  re-assert.** Every write is checked, a refused frame is retried rather than dropped, and the whole card is re-sent every two seconds regardless. Everything else here is edge-triggered; this is the level trigger underneath it, so a single lost write costs a frame rather than the rest of the session.
+
+Frames are paced with `WaitFrameSync`, not with the typewriter. Free-running, the shell hands over forty full textures a second with no idea whether the compositor has finished with the last one; waiting for the frame lands each upload in exactly one compositor frame, and lands the texture and its crop in the
+*same* one.
+
+The two-second re-assert is measured from the last
+**re-assert**, never from the last frame drawn. Measured from the last frame it would reset on every typed character, so it would fire only while the HUD was idle and never during the conversation it exists to protect.
+
+## Holding an overlay handle
+
+An OpenVR overlay is not just a texture sink. The runtime queues events against the handle - shown, hidden, focus, dashboard, mouse, standby - and it does so whether or not anyone reads them.
+**`PollNextOverlayEvent` must be drained to empty every
+pass.** An overlay whose events are never collected falls progressively further behind and then stops updating, and closing and reopening the HUD empties the queue and buys another while, which is exactly the shape it gets reported in. Taking the headset off to use the desktop fills that queue fastest.
+
+This is a
+*different* queue from the `IVRSystem` one that carries `VREvent_Quit`. Draining either does nothing for the other, so both are drained.
+
+Two more level triggers sit on top of it, for the same reason as the crop:
+
+- `ShowOverlay` is a one-shot declaration of intent. If the overlay's own events say it went hidden, the intent is stated again on the next re-assert - and only then, so this never argues with a hide the runtime means to keep.
+- If the compositor refuses frames without a break for five seconds, the overlay is destroyed and rebuilt. That is the automated form of the workaround commanders find for themselves, and the threshold is long enough that a hiccup or a waking headset never spends one.
 
 ## Notes
 
