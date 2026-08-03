@@ -118,12 +118,27 @@ Which shell actually came up, and why it is not what the app asked for, so a set
 | value | meaning |
 |---|---|
 | `desktop` | A window. With a `reason` when VR was asked for and could not be had. |
-| `vr` | Drawing in the headset. Sent on every attach, so a re-attach after SteamVR restarts is visible. |
+| `vr` | Drawing in the headset. Sent on every attach, so a re-attach after SteamVR restarts is visible. Also sent **with** a `reason` when the compositor starts refusing frames, and again without one when it starts taking them - an attached overlay that cannot get a frame through looks identical to a frozen app from the outside, and this is the only thing that tells the two apart. |
 | `waiting` | `--vr=only` could not attach and is retrying — e.g. `SteamVR is not running`. A later `vr` line follows if it succeeds. |
 | `none` | A `--vr=only` child giving up on its way out. |
 
 Reasons are plain text meant for a commander: `no headset detected`, `SteamVR runtime not installed`,
-`SteamVR is not running`, `SteamVR closed`, `SteamVR would not start an overlay`.
+`SteamVR is not running`, `SteamVR closed`, `SteamVR would not start an overlay`. A refused frame reports SteamVR's own error name (`VROverlayError_...`) instead, since that one is for us, not for them.
+
+## Drawing in VR
+
+The card is one texture, uploaded whole, plus a
+**crop** (`SetOverlayTextureBounds`) that trims the unused tail off the bottom. The texture height is rounded up to a 128px step so an ordinary change - a reply one row taller, a mining row appearing - reuses the texture the compositor already has and only moves the crop.
+
+Two rules keep that pair honest, and both exist because breaking either one strands the card on a stale frame while the app goes on talking to it:
+
+- **Texture first, crop
+  second.** The crop only means anything as a description of the texture it is cropping. Sent the other way round, the compositor holds a new crop against the old texture, and a new texture can arrive with its crop reset under it.
+- **Upload, then
+  re-assert.** Every write is checked, a refused frame is retried rather than dropped, and the whole card is re-sent every two seconds regardless. Everything else here is edge-triggered; this is the level trigger underneath it, so a single lost write costs a frame rather than the rest of the session.
+
+Frames are paced with `WaitFrameSync`, not with the typewriter. Free-running, the shell hands over forty full textures a second with no idea whether the compositor has finished with the last one; waiting for the frame lands each upload in exactly one compositor frame, and lands the texture and its crop in the
+*same* one.
 
 ## Notes
 

@@ -50,12 +50,26 @@ typedef HMODULE DynLib;
 #else
 #include <dlfcn.h>
 #include <limits.h>
+#include <time.h>
 #include <unistd.h>
 typedef void *DynLib;
 #define DYN_OPEN(name)     dlopen(name, RTLD_LAZY | RTLD_LOCAL)
 #define DYN_CLOSE(lib)     dlclose(lib)
 #define DYN_SYM(lib, sym)  dlsym(lib, sym)
 #endif
+
+/// Milliseconds from an arbitrary origin, never going backwards. Only ever used
+/// for differences, so the origin does not matter - but a wall clock would, and
+/// a commander's clock moves when their timezone or NTP does.
+static uint64_t now_ms(void) {
+#ifdef _WIN32
+    return (uint64_t) GetTickCount64();
+#else
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    return (uint64_t) t.tv_sec * 1000u + (uint64_t) (t.tv_nsec / 1000000);
+#endif
+}
 
 // Placement. The card sits in the world and does NOT follow the head: a panel
 // welded to your gaze is unreadable, because the eye never gets to settle on it
@@ -87,6 +101,23 @@ typedef void *DynLib;
 // wait is sliced so stdin keeps draining and the typewriter keeps its rhythm.
 #define ATTACH_RETRY_MS  2000
 #define WAIT_SLICE_MS    100
+
+// How long to wait for the compositor to take the previous frame before drawing
+// the next one. Not a frame budget - a ceiling, so a stalled compositor cannot
+// stop us draining stdin. A headset frame is 8-14ms, so this is never reached
+// while SteamVR is healthy.
+#define FRAME_WAIT_MS      50
+
+// How often the card is re-sent even though nothing about it changed.
+//
+// WHY at all: every other write here is edge-triggered - a texture is uploaded
+// because a line arrived, a crop is sent because the height moved. Edge-
+// triggered state has no way back if a single write is lost, and a lost write
+// here is not a dropped frame, it is a card that stays on the last thing it
+// managed to show while the app happily goes on talking to it. This is the
+// level trigger underneath: whatever the compositor missed, it gets again
+// within two seconds. It costs one upload per two seconds while idle.
+#define REASSERT_MS      2000
 
 // -- the openvr entry points we use ------------------------------------------
 
@@ -203,6 +234,13 @@ static const char *describe(const OpenVr *vr, EVRInitError error) {
     return text ? text : "unknown error";
 }
 
+/// Names an overlay error, for the one line a commander is asked to send back.
+static const char *describe_overlay(struct VR_IVROverlay_FnTable *overlay, EVROverlayError error) {
+    if (!overlay->GetOverlayErrorNameFromEnum) return "unknown overlay error";
+    const char *text = overlay->GetOverlayErrorNameFromEnum(error);
+    return text ? text : "unknown overlay error";
+}
+
 // -- drawing -----------------------------------------------------------------
 
 /// The cairo surface the HUD is drawn into, plus the RGBA copy handed to
@@ -299,9 +337,17 @@ static void to_rgba(const Canvas *canvas) {
     }
 }
 
-/// Draws the current model and hands the frame to SteamVR. Returns 0 only if a
-/// buffer could not be allocated, which is fatal to the session.
-static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t handle, Canvas *canvas) {
+/// Draws the current model and hands the frame to SteamVR.
+///
+/// Returns 0 only if a buffer could not be allocated, which is fatal to the
+/// session. Whether the COMPOSITOR took the frame is a different question and
+/// comes back in *submitted - see the caller for why that is not folded into
+/// the return value.
+///
+/// `reassert` re-sends the crop even when it has not moved, which is how a card
+/// the compositor has somehow lost gets itself back without anyone noticing.
+static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t handle,
+                   Canvas *canvas, int reassert, EVROverlayError *submitted) {
     int width = model.width > 0 ? model.width : 760;
 
     // A surface of the right width has to exist before anything can be measured
@@ -323,19 +369,41 @@ static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t hand
     cairo_destroy(cr);
     cairo_surface_flush(canvas->surface);
 
-    // Crop the padding off the bottom. Only when it moves: the bounds are what
-    // decide the card's shape in the world, so re-sending the same ones every
-    // frame is work the compositor does not need.
-    if (content != canvas->content) {
-        canvas->content = content;
-        struct VRTextureBounds_t bounds = {
-            0.0f, 0.0f, 1.0f, (float) content / (float) canvas->height};
-        overlay->SetOverlayTextureBounds(handle, &bounds);
+    // Texture first, crop second, and never the other way round. The two
+    // together are one frame: the crop is meaningless except as a description of
+    // the texture it is cropping. Sending the crop first meant that between the
+    // two calls the compositor held a NEW crop against the OLD texture and drew
+    // the wrong slice of the wrong bitmap - one frame of a card that jumps or
+    // shows a band of the previous reply. Paced against WaitFrameSync (see the
+    // caller) both land in the same compositor frame and there is no between.
+    to_rgba(canvas);
+    EVROverlayError sent = overlay->SetOverlayRaw(
+            handle, canvas->rgba, (uint32_t) canvas->width, (uint32_t) canvas->height, 4);
+
+    if (sent == EVROverlayError_VROverlayError_None) {
+        // Only when it moves, or when we are re-asserting: the crop decides the
+        // card's shape in the world, so re-sending the same one every frame is
+        // work the compositor does not need.
+        if (content != canvas->content || reassert) {
+            struct VRTextureBounds_t bounds = {
+                0.0f, 0.0f, 1.0f, (float) content / (float) canvas->height};
+            sent = overlay->SetOverlayTextureBounds(handle, &bounds);
+            // Committed only once it has been taken. Recording it either way is
+            // how the original bug worked: the "unchanged, so skip it" test just
+            // above would then skip re-sending a crop the compositor never got,
+            // and the card would sit at a stale height with nothing to correct
+            // it. Zero on refusal, so the next upload carries the crop with it.
+            canvas->content = sent == EVROverlayError_VROverlayError_None ? content : 0;
+        }
+    } else {
+        // The compositor still holds the previous texture, so the crop it holds
+        // is still the right one FOR THAT texture. Forget that we ever committed
+        // this height, so the crop is re-sent alongside the first upload that
+        // gets through rather than being skipped as unchanged.
+        canvas->content = 0;
     }
 
-    to_rgba(canvas);
-    overlay->SetOverlayRaw(handle, canvas->rgba,
-                           (uint32_t) canvas->width, (uint32_t) canvas->height, 4);
+    *submitted = sent;
     return 1;
 }
 
@@ -418,6 +486,34 @@ static int steamvr_is_quitting(struct VR_IVRSystem_FnTable *system) {
     return 0;
 }
 
+/// Advances the typewriter by however many characters the clock owes it, and
+/// reports whether anything moved. `typed_through` is the moment the last
+/// character was due, and is carried across calls.
+///
+/// WHY the clock and not one character per pass: this loop's period is not the
+/// typewriter's and never was. It waits on stdin, and now waits for a compositor
+/// frame as well, so a character per pass reveals text at whatever rate the
+/// headset happens to run at. In BOTH mode that is visible: the desktop child
+/// types on a 25ms timer of its own, and the two are meant to be showing the
+/// same sentence at the same moment, not the same sentence at two speeds.
+static int advance_typewriter(uint64_t *typed_through) {
+    uint64_t now = now_ms();
+    int moved = 0;
+
+    while (now - *typed_through >= TYPEWRITER_MS) {
+        if (!hud_tick_typewriter()) {
+            // Fully revealed. Start the clock again from here so the pause
+            // before the next line does not bank characters that would then be
+            // spent all at once the moment it arrives.
+            *typed_through = now;
+            break;
+        }
+        *typed_through += TYPEWRITER_MS;
+        moved = 1;
+    }
+    return moved;
+}
+
 /// Runs as a SteamVR overlay until the app quits or SteamVR goes away.
 ///
 /// `announce` is cleared on repeat attempts so a commander who never starts
@@ -470,10 +566,13 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
     Canvas canvas = {0};
     SessionOutcome outcome = SESSION_ENDED;
     int quit = 0, eof = 0, dirty = 1;
+    uint64_t last_present = 0;
+    uint64_t typed_through = now_ms();
+    int rejected = 0;               // consecutive frames the compositor refused
 
     while (!quit && !eof) {
         if (hud_pump_stdin(TYPEWRITER_MS, &eof, &quit)) dirty = 1;
-        if (hud_tick_typewriter()) dirty = 1;
+        if (advance_typewriter(&typed_through)) dirty = 1;
         if (system && steamvr_is_quitting(system)) { outcome = SESSION_LOST; break; }
 
         // Moving the card takes effect while the commander is wearing the
@@ -484,13 +583,45 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
             place_overlay(overlay, handle, placed);
         }
 
-        if (dirty) {
-            if (!present(overlay, handle, &canvas)) {
+        int reassert = now_ms() - last_present >= REASSERT_MS;
+        if (dirty || reassert) {
+            // Pace to the compositor rather than to the typewriter. Left to
+            // itself this loop redraws every time a character appears - forty
+            // full textures a second, handed over with no idea whether the
+            // compositor had finished with the last one. Waiting for the frame
+            // makes each upload land in exactly one compositor frame, which is
+            // what stops the card shimmering while the AI types, and it is also
+            // what makes the texture and its crop below arrive together.
+            if (overlay->WaitFrameSync) overlay->WaitFrameSync(FRAME_WAIT_MS);
+
+            EVROverlayError submitted = EVROverlayError_VROverlayError_None;
+            if (!present(overlay, handle, &canvas, reassert, &submitted)) {
                 fprintf(stderr, "overlay: out of memory drawing the VR overlay\n");
                 outcome = SESSION_FAILED;
                 break;
             }
+            last_present = now_ms();
             dirty = 0;
+
+            // A refused upload leaves the commander looking at the last frame
+            // that got through, with the app still cheerfully narrating into it
+            // - the overlay carries on, silently a conversation behind. It used
+            // to be silent because nothing read this result. Now the frame is
+            // simply drawn again next time round (nothing cleared `dirty`'s
+            // effect on the model), the crop goes with it, and if it keeps
+            // failing the commander is told once instead of being left to work
+            // out why their HUD stopped.
+            if (submitted != EVROverlayError_VROverlayError_None) {
+                if (rejected++ == 0) {
+                    fprintf(stderr, "overlay: SteamVR refused the HUD frame: %s\n",
+                            describe_overlay(overlay, submitted));
+                    hud_report_mode("vr", describe_overlay(overlay, submitted));
+                }
+                dirty = 1;          // retry the same frame rather than drop it
+            } else if (rejected) {
+                rejected = 0;
+                hud_report_mode("vr", NULL);
+            }
         }
     }
 
