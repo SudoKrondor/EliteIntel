@@ -44,6 +44,17 @@ void hud_paint_background(cairo_t *cr) {
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 }
 
+void hud_paint_panel(cairo_t *cr, int width, int height) {
+    // Same colour and the same replace-don't-blend rule as above, confined to the
+    // card. See hud.h for why a transformed shell cannot use cairo_paint.
+    cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba(cr, COL_PANEL.r, COL_PANEL.g, COL_PANEL.b, model.alpha);
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_fill(cr);
+    cairo_restore(cr);
+}
+
 // -- layout / rendering ------------------------------------------------------
 
 static PangoLayout *make_layout(cairo_t *cr, int size, int bold) {

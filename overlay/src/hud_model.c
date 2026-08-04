@@ -13,6 +13,20 @@ Model model = {
     // Below centre: the placement the VR overlay had before it was settable, so
     // a commander who never opens the setting sees no change.
     .vr_position = HUD_VR_BOTTOM,
+    // On by default because this branch exists to look at it.
+    //
+    // Settled by looking at it in the cockpit rather than derived: 340px read as
+    // too small against the flat card it replaced, 0.08 barely read as a lean at
+    // all, and 0.12 measured off a screenshot at -0.119 was still called slightly
+    // shallow. 0.15 is that last nudge.
+    //
+    // It costs something real, and the cost grows with the angle: 0.15 over 620px
+    // drops a row's far end by 93px against a 25px row pitch, so a label and its
+    // right-aligned value sit nearly four rows apart at full lean. That is the
+    // trade the angle buys, and it is why hud_render's rows would have to stop
+    // being label-left / value-right before the lean can usefully go further.
+    .tilt = 0.15,
+    .tilt_width = 620,
 };
 
 /// Wire names for VrPosition, in enum order. The protocol carries the name
@@ -103,6 +117,10 @@ static void apply_cfg(char *fields[], int n) {
         else if (!strcmp(k, "x"))     model.want_x = atoi(v);
         else if (!strcmp(k, "y"))     model.want_y = atoi(v);
         else if (!strcmp(k, "vrpos")) model.vr_position = parse_vr_position(v, model.vr_position);
+        // Settable so an angle can be tried without a rebuild, which is the whole
+        // job while this is still an experiment. tilt=0 restores the flat card.
+        else if (!strcmp(k, "tilt"))      model.tilt = atof(v);
+        else if (!strcmp(k, "tiltwidth")) model.tilt_width = atoi(v);
     }
 }
 

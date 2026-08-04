@@ -80,6 +80,14 @@ typedef struct {
     int  width;
     int  want_x, want_y;     // requested position; -1 means "leave as is"
     VrPosition vr_position;  // VR only; the desktop shells ignore it
+
+    /// Desktop only; the VR shell ignores both, the mirror of vr_position above.
+    /// A VR card is already placed in the world and rotated to face the
+    /// commander, so shearing it as well would fight that placement rather than
+    /// add to it - and the whole point of the effect is to sit in the plane of a
+    /// monitor, which a headset does not have.
+    double tilt;             // shear at the screen edge; 0 disables the effect
+    int    tilt_width;       // logical card width while tilted, see hud_tilt.c
 } Model;
 
 extern Model model;
@@ -107,6 +115,53 @@ int hud_render(cairo_t *cr, int width, int draw);
 /// Fills the background at the configured alpha, replacing (not blending) the
 /// buffer. Shells call this before hud_render.
 void hud_paint_background(cairo_t *cr);
+
+/// Fills exactly the card's own rectangle at the configured alpha.
+///
+/// The difference from hud_paint_background matters only once a shell draws
+/// through a transform: cairo_paint covers the whole clip, which after a shear is
+/// the whole bounding box rather than the card, so the sheared corners would come
+/// out filled instead of transparent. Filling the card's rectangle through the
+/// same transform yields the parallelogram for free.
+void hud_paint_panel(cairo_t *cr, int width, int height);
+
+// -- desktop geometry --------------------------------------------------------
+//
+// Leaning the card so it sits like a cockpit panel rather than flat on the glass.
+// Lives outside the shells because both of them need identical geometry, and
+// outside hud_render because the renderer must not know: it draws the same card
+// it always did, into a context that happens to be sheared, which is what keeps
+// the typewriter, the colours and every glyph exactly as they are. Text stays
+// vector-crisp because Pango rasterises through the transform rather than being
+// warped after the fact.
+
+/// The shear for a card centred at (`card_center_x`, `card_center_y`) on a screen
+/// of `screen_width` x `screen_height`.
+///
+/// BOTH axes matter and the vertical one is not decoration: measured off a real
+/// cockpit, the lean reverses across eye level, so a card high on the right leans
+/// the opposite way to one low on the right. See hud_tilt.c for the numbers.
+/// Returns 0 when the effect is off, and along either centre line.
+double hud_tilt_slope(int card_center_x, int card_center_y,
+                      int screen_width, int screen_height);
+
+/// How tall a `width` x `height` card becomes once sheared. The width is
+/// unchanged - the shear is purely vertical - so no matching width call exists.
+int hud_tilt_height(double slope, int width, int height);
+
+/// Shears `cr` in place, ready for hud_paint_panel and hud_render. A slope of 0
+/// leaves the context alone, so shells need no branch of their own.
+void hud_tilt_apply(cairo_t *cr, double slope, int width);
+
+/// The card's logical width right now: the configured width, CAPPED at
+/// `tilt_width` while the lean is on.
+///
+/// A cap rather than an override, so a commander who chose a narrower card still
+/// gets it; only a card too wide to stay legible at an angle is pulled in, and
+/// that is reported once. Desktop shells measure and render at this, and it is
+/// deliberately not `model.width` directly, because in BOTH mode the VR child is
+/// fed the very same CFG lines and must keep its own full width.
+int hud_card_width(void);
 
 /// Tells the app which shell actually came up, and why, when the answer is not
 /// the one it asked for. Sent once at startup; detail may be NULL.

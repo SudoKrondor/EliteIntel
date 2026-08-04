@@ -13,6 +13,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/extensions/Xrandr.h>
 #include <X11/Xutil.h>
 #include <cairo/cairo-xlib.h>
 
@@ -28,6 +29,41 @@ static long now_ms(void) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+}
+
+/// The monitor the point (cx, cy) sits on, in root-window coordinates.
+///
+/// WHY XRandR rather than DisplayWidth/DisplayHeight: on a multi-head setup those
+/// describe the whole virtual screen spanning every monitor, so the computed
+/// "centre" lands on the seam between two displays and a card centred on the
+/// game's monitor is treated as far off centre. Elite commanders commonly run
+/// more than one display.
+///
+/// Degrades to the full screen when XRandR reports nothing, when the point is on
+/// no monitor (dragged into a gap between two of them), or on a server without
+/// the extension. That is the single-monitor answer, which is exactly right for
+/// the case it is describing.
+static void monitor_rect(Display *dpy, int screen, int cx, int cy,
+                         int *ox, int *oy, int *width, int *height) {
+    *ox = 0;
+    *oy = 0;
+    *width = DisplayWidth(dpy, screen);
+    *height = DisplayHeight(dpy, screen);
+
+    int count = 0;
+    XRRMonitorInfo *monitors = XRRGetMonitors(dpy, RootWindow(dpy, screen), True, &count);
+    if (!monitors) return;
+
+    for (int i = 0; i < count; i++) {
+        if (cx < monitors[i].x || cx >= monitors[i].x + monitors[i].width) continue;
+        if (cy < monitors[i].y || cy >= monitors[i].y + monitors[i].height) continue;
+        *ox = monitors[i].x;
+        *oy = monitors[i].y;
+        *width = monitors[i].width;
+        *height = monitors[i].height;
+        break;
+    }
+    XRRFreeMonitors(monitors);
 }
 
 int hud_run_desktop(int argc, char **argv) {
@@ -49,7 +85,7 @@ int hud_run_desktop(int argc, char **argv) {
         return 2;
     }
 
-    int width = model.width;
+    int width = hud_card_width();
     int height = 200;
     int x = (DisplayWidth(dpy, screen) - width) / 2;
     int y = (int) (DisplayHeight(dpy, screen) * 0.04);
@@ -100,6 +136,13 @@ int hud_run_desktop(int argc, char **argv) {
                 x = ev.xmotion.x_root - drag_x;
                 y = ev.xmotion.y_root - drag_y;
                 XMoveWindow(dpy, win, x, y);
+                // Moving the window used to be the whole of a drag, because
+                // nothing about the card depended on where it was. The lean does,
+                // so a move is now a reason to redraw: without this the card
+                // keeps whatever angle it had when it was last drawn for some
+                // other reason, and only snaps to the right one when the next
+                // line arrives. The Win32 shell always redrew here.
+                dirty = 1;
             }
         }
 
@@ -114,24 +157,35 @@ int hud_run_desktop(int argc, char **argv) {
             if (model.want_y >= 0) y = model.want_y;
             model.want_x = model.want_y = -1;
             XMoveWindow(dpy, win, x, y);
+            dirty = 1;                  // same reason as the drag above
         }
-        if (model.width != width && model.width > 0) {
-            width = model.width;
-            XResizeWindow(dpy, win, width, height);
-            cairo_xlib_surface_set_size(target, width, height);
-            cairo_surface_destroy(buffer);
-            buffer = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
-            dirty = 1;
-        }
+        if (hud_card_width() != width) dirty = 1;
 
         if (dirty) {
             dirty = 0;
-            cairo_t *measure = cairo_create(buffer);
-            int needed = hud_render(measure, width, 0);
-            cairo_destroy(measure);
 
-            if (needed != height && needed > 0) {
-                height = needed;
+            // Measured at the CARD's width, which is also the window's - the
+            // shear is vertical, so it makes the window taller and never wider.
+            int card_w = hud_card_width();
+
+            cairo_t *measure = cairo_create(buffer);
+            int card_h = hud_render(measure, card_w, 0);
+            cairo_destroy(measure);
+            if (card_h < 1) card_h = 1;
+
+            // Measured first: the lean depends on where the card's centre sits
+            // vertically, which is not known until its height is. Offsets are
+            // subtracted so the card's position is relative to ITS monitor, not
+            // to a virtual screen spanning all of them.
+            int cx = x + card_w / 2, cy = y + card_h / 2;
+            int sx, sy, sw, sh;
+            monitor_rect(dpy, screen, cx, cy, &sx, &sy, &sw, &sh);
+            double slope = hud_tilt_slope(cx - sx, cy - sy, sw, sh);
+
+            int win_h = hud_tilt_height(slope, card_w, card_h);
+            if (card_w != width || win_h != height) {
+                width = card_w;
+                height = win_h;
                 XResizeWindow(dpy, win, width, height);
                 cairo_xlib_surface_set_size(target, width, height);
                 cairo_surface_destroy(buffer);
@@ -139,8 +193,15 @@ int hud_run_desktop(int argc, char **argv) {
             }
 
             cairo_t *cr = cairo_create(buffer);
-            hud_paint_background(cr);
-            hud_render(cr, width, 1);
+            // Cleared, not painted over: the shear leaves a wedge top and bottom
+            // that has to reach the compositor as genuinely transparent.
+            cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+            cairo_paint(cr);
+            cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+
+            hud_tilt_apply(cr, slope, card_w);
+            hud_paint_panel(cr, card_w, card_h);
+            hud_render(cr, card_w, 1);
             cairo_destroy(cr);
 
             // One blit of a finished frame. The window is never cleared, so

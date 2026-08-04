@@ -14,7 +14,7 @@ OUT_DIR := ../distribution/overlays
 # The SteamVR shell is in every build on both platforms: it loads openvr_api at
 # runtime rather than linking it, so it adds no build dependency and no DLL a
 # flat-screen commander has to have.
-CORE    := src/main.c src/hud_model.c src/hud_render.c src/stdin_pump.c src/platform_openvr.c
+CORE    := src/main.c src/hud_model.c src/hud_render.c src/hud_tilt.c src/stdin_pump.c src/platform_openvr.c
 
 ifeq ($(OS),Windows_NT)
   BIN           := elite-intel-overlay.exe
@@ -25,9 +25,13 @@ ifeq ($(OS),Windows_NT)
 else
   BIN           := elite-intel-overlay
   SRC           := $(CORE) src/platform_x11.c
-  DEPS          := x11 cairo pangocairo
+  # xrandr is needed to find WHICH monitor the card is on. DisplayWidth/Height
+  # describe the whole virtual screen across every display, so on a multi-head
+  # desktop the card's position relative to "the screen" is meaningless. Windows
+  # needs no equivalent: MonitorFromWindow is in user32, already linked.
+  DEPS          := x11 xrandr cairo pangocairo
   PLATFORM_LIBS := -ldl
-  DEPS_HINT     := sudo apt install libx11-dev libcairo2-dev libpango1.0-dev
+  DEPS_HINT     := sudo apt install libx11-dev libxrandr-dev libcairo2-dev libpango1.0-dev
 endif
 
 CFLAGS  += -O2 -Wall -Wextra -std=c11 -isystem third_party/openvr $(shell pkg-config --cflags $(DEPS))
