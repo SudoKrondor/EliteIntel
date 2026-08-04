@@ -123,11 +123,32 @@ static uint64_t now_ms(void) {
 // this matters, reset the clock on every character and never re-asserted at all.
 #define REASSERT_MS      2000
 
+// How often the CROP is re-sent though it has not moved, as opposed to the
+// texture above.
+//
+// Split off from REASSERT_MS because the two are not the same risk. A texture
+// the compositor missed is the whole card frozen on an old reply, and costs one
+// upload to put right. A crop it missed is the card at a slightly wrong height,
+// and every crop write is already checked and re-sent from canvas->content on
+// the next upload that gets through - so its level trigger is covering a case we
+// have never actually seen, while sitting on the one beat a commander reported
+// as a flicker. Rarer, because the principle stands (an edge-triggered write to
+// the compositor gets a level trigger under it) but the rent it pays should
+// match what it insures.
+#define BOUNDS_REASSERT_MS 30000
+
 // How long the compositor must refuse frames without a break before the overlay
 // is thrown away and rebuilt. Long enough that a hiccup or a headset waking up
 // never triggers it; short enough that a commander does not sit looking at a
 // dead card. See reopen_overlay.
 #define STALL_RECOVER_MS 5000
+
+// The ceiling that wait doubles up to. A rebuild is a card that visibly vanishes
+// and comes back, so a cause this cannot fix - which is every cause we have not
+// thought of - must not cost a blink every five seconds for a whole session.
+// Backing off turns "flickering" into "one blink a minute", while still coming
+// back on its own the moment the compositor starts taking frames again.
+#define STALL_RECOVER_MAX_MS 60000
 
 // -- the openvr entry points we use ------------------------------------------
 
@@ -277,11 +298,23 @@ static void canvas_free(Canvas *canvas) {
 static int canvas_resize(Canvas *canvas, int width, int height) {
     if (canvas->surface && canvas->width == width && canvas->height == height) return 1;
 
+    // Said out loud because THIS is the event that makes the compositor throw its
+    // backing texture away, and a commander sees that as the card blinking. With
+    // the allocation grow-only (see canvas_alloc_for) a healthy session prints a
+    // handful of these and then goes quiet; a session still blinking every few
+    // seconds will print one per blink, which tells us in one glance whether the
+    // remaining flicker is this or something else entirely.
+    int old_width = canvas->width, old_height = canvas->height;
+
     canvas_free(canvas);
     canvas->surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, width, height);
     if (cairo_surface_status(canvas->surface) != CAIRO_STATUS_SUCCESS) return 0;
 
-    canvas->rgba = malloc((size_t) width * (size_t) height * 4);
+    // calloc, not malloc: only the rows the card actually fills are converted
+    // into this buffer (see to_rgba), and the tail below them is handed to
+    // SteamVR untouched on the very first upload. Zeroed, that tail is
+    // transparent; uninitialised, it is whatever was last in that heap page.
+    canvas->rgba = calloc((size_t) width * (size_t) height, 4);
     if (!canvas->rgba) return 0;
 
     canvas->width = width;
@@ -289,22 +322,37 @@ static int canvas_resize(Canvas *canvas, int width, int height) {
     // Nothing has been drawn into the new surface yet, and SteamVR is still
     // cropping to the old one, so the bounds must be re-sent whatever they were.
     canvas->content = 0;
+
+    if (old_height) fprintf(stderr, "overlay: HUD texture %dx%d -> %dx%d\n",
+                            old_width, old_height, width, height);
+    else            fprintf(stderr, "overlay: HUD texture %dx%d\n", width, height);
     return 1;
 }
 
-/// Rounds a content height up to the texture height we allocate for it.
+/// Rounds a content height up to the texture height we allocate for it, and
+/// never returns less than we have already allocated.
 ///
 /// Handing SetOverlayRaw a new width or height makes the compositor throw the
 /// backing texture away and build another one, and a commander sees that as the
-/// card blinking. Rounding to a step means an ordinary change - a reply one row
-/// taller, a mining row appearing - reuses the texture it already has and only
-/// moves the crop, so the size the compositor sees changes a handful of times a
-/// session instead of a handful of times a sentence.
-static int canvas_alloc_for(int content) {
+/// card blinking. Rounding to a step was half the answer: it stopped a reply
+/// growing one row taller from resizing anything. It could not stop the card
+/// SHRINKING back, and a conversation does nothing else - the third line pushes
+/// the oldest one out, an objective row comes and goes, a long reply is replaced
+/// by a short one - so the same step boundary was crossed downwards and upwards
+/// again every few seconds, which is exactly the cadence this was reported at.
+///
+/// So the allocation only ever grows. After the first minute of a session it
+/// stops changing altogether and every later frame is a texture update into a
+/// texture the compositor already has, plus a crop. The cost is holding the
+/// tallest buffer the session has needed; the saving is that only the rows the
+/// card fills are ever converted into it (see to_rgba), so a card that shrinks
+/// costs less work per frame, not more.
+static int canvas_alloc_for(const Canvas *canvas, int content) {
     if (content < 1) content = 1;
     if (content > TEXTURE_MAX_PX) content = TEXTURE_MAX_PX;
     int steps = (content + TEXTURE_STEP_PX - 1) / TEXTURE_STEP_PX;
-    return steps * TEXTURE_STEP_PX;
+    int wanted = steps * TEXTURE_STEP_PX;
+    return wanted > canvas->height ? wanted : canvas->height;
 }
 
 static unsigned char unpremultiply(unsigned value, unsigned alpha) {
@@ -312,19 +360,28 @@ static unsigned char unpremultiply(unsigned value, unsigned alpha) {
     return (unsigned char) (result > 255u ? 255u : result);
 }
 
-/// Converts cairo's premultiplied BGRA into the straight RGBA SetOverlayRaw
-/// expects.
+/// Converts the first `rows` rows of cairo's premultiplied BGRA into the
+/// straight RGBA SetOverlayRaw expects, and blanks the rest.
 ///
 /// Skipping the un-premultiply would darken every anti-aliased edge, which on a
 /// HUD that is mostly text means every glyph gets a dirty outline. Rows are
 /// copied through the surface stride rather than assuming it is width * 4,
 /// because cairo is free to pad rows and does on some widths.
-static void to_rgba(const Canvas *canvas) {
+///
+/// Only `rows` of them because the texture is now allocated for the tallest card
+/// the session has shown (see canvas_alloc_for) while the crop shows only the
+/// current one: converting the cropped-away tail would be a per-pixel divide per
+/// pixel nobody can see. It is blanked rather than left alone so that no frame
+/// where the compositor holds a taller crop than we meant - the one window where
+/// the tail is visible at all - can show a band of an older reply.
+static void to_rgba(const Canvas *canvas, int rows) {
     const unsigned char *src = cairo_image_surface_get_data(canvas->surface);
     int stride = cairo_image_surface_get_stride(canvas->surface);
     unsigned char *dst = canvas->rgba;
 
-    for (int y = 0; y < canvas->height; y++) {
+    if (rows > canvas->height) rows = canvas->height;
+
+    for (int y = 0; y < rows; y++) {
         const unsigned char *row = src + (size_t) y * (size_t) stride;
         for (int x = 0; x < canvas->width; x++) {
             unsigned blue = row[0], green = row[1], red = row[2], alpha = row[3];
@@ -345,6 +402,10 @@ static void to_rgba(const Canvas *canvas) {
             dst += 4;
         }
     }
+
+    if (rows < canvas->height) {
+        memset(dst, 0, (size_t) (canvas->height - rows) * (size_t) canvas->width * 4);
+    }
 }
 
 /// Draws the current model and hands the frame to SteamVR.
@@ -354,10 +415,11 @@ static void to_rgba(const Canvas *canvas) {
 /// comes back in *submitted - see the caller for why that is not folded into
 /// the return value.
 ///
-/// `reassert` re-sends the crop even when it has not moved, which is how a card
-/// the compositor has somehow lost gets itself back without anyone noticing.
+/// `reassert_bounds` re-sends the crop even when it has not moved, which is how a
+/// crop the compositor has somehow lost gets itself back. It runs on its own slow
+/// beat rather than the texture's; see BOUNDS_REASSERT_MS.
 static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t handle,
-                   Canvas *canvas, int reassert, EVROverlayError *submitted) {
+                   Canvas *canvas, int reassert_bounds, EVROverlayError *submitted) {
     int width = model.width > 0 ? model.width : 760;
 
     // A surface of the right width has to exist before anything can be measured
@@ -371,7 +433,7 @@ static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t hand
     cairo_destroy(measure);
     if (content < 1) content = 1;
     if (content > TEXTURE_MAX_PX) content = TEXTURE_MAX_PX;
-    if (!canvas_resize(canvas, width, canvas_alloc_for(content))) return 0;
+    if (!canvas_resize(canvas, width, canvas_alloc_for(canvas, content))) return 0;
 
     cairo_t *cr = cairo_create(canvas->surface);
     hud_paint_background(cr);
@@ -386,7 +448,7 @@ static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t hand
     // the wrong slice of the wrong bitmap - one frame of a card that jumps or
     // shows a band of the previous reply. Paced against WaitFrameSync (see the
     // caller) both land in the same compositor frame and there is no between.
-    to_rgba(canvas);
+    to_rgba(canvas, content);
     EVROverlayError sent = overlay->SetOverlayRaw(
             handle, canvas->rgba, (uint32_t) canvas->width, (uint32_t) canvas->height, 4);
 
@@ -394,7 +456,7 @@ static int present(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t hand
         // Only when it moves, or when we are re-asserting: the crop decides the
         // card's shape in the world, so re-sending the same one every frame is
         // work the compositor does not need.
-        if (content != canvas->content || reassert) {
+        if (content != canvas->content || reassert_bounds) {
             struct VRTextureBounds_t bounds = {
                 0.0f, 0.0f, 1.0f, (float) content / (float) canvas->height};
             sent = overlay->SetOverlayTextureBounds(handle, &bounds);
@@ -496,6 +558,37 @@ static int steamvr_is_quitting(struct VR_IVRSystem_FnTable *system) {
     return 0;
 }
 
+/// Records a change in whether the runtime is drawing our card, saying where the
+/// answer came from.
+///
+/// Logged because this flag decides both whether we ask to be shown again and
+/// whether a refused frame counts as a stall, so a log showing rebuilds without
+/// showing what visibility was doing cannot be read. Transitions only - they are
+/// human-paced, one per dashboard open or headset doff - and `how` distinguishes
+/// the event stream from the poll that corrects it, which is the difference
+/// between "the commander opened the dashboard" and "we were wrong".
+static void set_visible(int *visible, int now_visible, const char *how) {
+    if (*visible == now_visible) return;
+    *visible = now_visible;
+    fprintf(stderr, "overlay: SteamVR %s the HUD (%s)\n", now_visible ? "shows" : "hides", how);
+}
+
+/// Asks the runtime outright whether our card is being drawn, and corrects the
+/// event-tracked answer with it.
+///
+/// WHY, when the events already say: because they only say it once. `visible` was
+/// a flag rebuilt from a stream of edges, so a single OverlayShown that never
+/// arrived - or arrived before we owned the handle to hear it on - left it stuck
+/// at 0 for the rest of the session. Stuck at 0 means the reassert below asks to
+/// be shown every two seconds forever, against a card that was never hidden, and
+/// a re-show is not free to look at. One direct question on the same beat makes
+/// that state unreachable instead of merely unlikely.
+static void poll_visibility(struct VR_IVROverlay_FnTable *overlay,
+                            VROverlayHandle_t handle, int *visible) {
+    if (!overlay->IsOverlayVisible) return;         // older runtime: events only
+    set_visible(visible, overlay->IsOverlayVisible(handle) ? 1 : 0, "poll");
+}
+
 /// Drains the overlay's OWN event queue, keeping `visible` current, and reports
 /// whether SteamVR asked us to stop.
 ///
@@ -518,8 +611,8 @@ static int drain_overlay_events(struct VR_IVROverlay_FnTable *overlay,
 
     while (overlay->PollNextOverlayEvent(handle, &event, sizeof(event))) {
         switch (event.eventType) {
-            case EVREventType_VREvent_OverlayShown:  *visible = 1; break;
-            case EVREventType_VREvent_OverlayHidden: *visible = 0; break;
+            case EVREventType_VREvent_OverlayShown:  set_visible(visible, 1, "event"); break;
+            case EVREventType_VREvent_OverlayHidden: set_visible(visible, 0, "event"); break;
             case EVREventType_VREvent_Quit:          quitting = 1; break;
             default: break;                 // discarded, but READ, which is the point
         }
@@ -571,11 +664,18 @@ static int open_overlay(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t
 
 /// Throws the overlay away and builds another one.
 ///
-/// This is the automated form of the workaround commanders found for themselves:
-/// close the HUD, open it again, and it behaves for a while. Doing it for them
-/// is worth it because the alternative is a card that is simply dead until
-/// somebody notices. Reached only after frames have been refused without a break
-/// for STALL_RECOVER_MS, so a hiccup never costs anyone a rebuild.
+/// This is the automated form of the workaround commanders found for themselves
+/// when the HUD went dead mid-session: close it, open it again, and it behaves
+/// for a while. It is a BACKSTOP and no longer the answer to that bug - the
+/// cause was found (an overlay event queue nobody drained; see
+/// drain_overlay_events) and is fixed at the cause. What is left here is cover
+/// for the same symptom arriving by some route we have not diagnosed, because a
+/// card that is simply dead until somebody notices is the worst outcome
+/// available and worth a blink to avoid.
+///
+/// That ordering is why the thresholds in note_submission are free to be
+/// conservative: making a rebuild rarer now risks a slower recovery from an
+/// unknown bug, not a return of the known one.
 static int reopen_overlay(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle_t *handle,
                           VrPosition position, Canvas *canvas) {
     overlay->DestroyOverlay(*handle);
@@ -589,27 +689,58 @@ static int reopen_overlay(struct VR_IVROverlay_FnTable *overlay, VROverlayHandle
 }
 
 /// How the compositor has been treating our frames lately.
+///
+/// Two clocks, because "refused while we are being drawn" and "refused at all"
+/// need different answers. See note_submission.
 typedef struct {
-    uint64_t refusing_since;    // start of the current run of refusals, 0 if none
+    uint64_t refusing_since;    // run of refusals WHILE VISIBLE, 0 if none
+    uint64_t refusing_ever;     // run of refusals whatever the visibility, 0 if none
     int      reported;          // the current run has already been reported once
+    uint64_t recover_after;     // how long this run must refuse to earn a rebuild
 } FrameHealth;
+
+static void health_reset(FrameHealth *health) {
+    health->refusing_since = 0;
+    health->refusing_ever = 0;
+    health->reported = 0;
+    health->recover_after = STALL_RECOVER_MS;
+}
+
+/// Doubles the wait a rebuild has to earn, up to the ceiling. Called after each
+/// rebuild, cleared by health_reset the moment a frame gets through, so a run of
+/// rebuilds that is fixing nothing gets rarer while a genuine one-off stall
+/// costs the next stall nothing.
+static void health_backoff(FrameHealth *health) {
+    health->recover_after *= 2;
+    if (health->recover_after > STALL_RECOVER_MAX_MS) health->recover_after = STALL_RECOVER_MAX_MS;
+}
 
 /// Records how a submission went and says whether the overlay needs rebuilding.
 ///
 /// Sets *dirty on a refusal so the frame is drawn again rather than dropped: the
 /// model has already moved on, and a dropped frame is a card that is quietly one
 /// reply behind for good.
+///
+/// `visible` is what keeps this honest. A refused frame is only evidence of a
+/// stall while the runtime is actually drawing us; when it is not - the dashboard
+/// is up, the headset is in standby or off the commander's head - refusing our
+/// frames is the correct behaviour and not a fault to recover from. Counting
+/// those was the bug: the rebuild below cannot fix a hidden overlay, so it fired,
+/// achieved nothing, fired again five seconds later, and went on doing that for
+/// as long as the dashboard was open. Every one of those rebuilds is a card that
+/// vanishes and comes back, which is what a commander sees as the HUD restarting
+/// itself every few seconds.
 static int note_submission(struct VR_IVROverlay_FnTable *overlay, EVROverlayError submitted,
-                           FrameHealth *health, int *dirty) {
+                           FrameHealth *health, int visible, int *dirty) {
     if (submitted == EVROverlayError_VROverlayError_None) {
         if (health->reported) hud_report_mode("vr", NULL);
-        health->refusing_since = 0;
-        health->reported = 0;
+        health_reset(health);
         return 0;
     }
 
     uint64_t now = now_ms();
     if (!health->refusing_since) health->refusing_since = now;
+    if (!health->refusing_ever) health->refusing_ever = now;
     if (!health->reported) {
         health->reported = 1;
         // Said once per run, not once per frame: a stalled compositor refuses
@@ -619,7 +750,24 @@ static int note_submission(struct VR_IVROverlay_FnTable *overlay, EVROverlayErro
         hud_report_mode("vr", describe_overlay(overlay, submitted));
     }
     *dirty = 1;
-    return now - health->refusing_since >= STALL_RECOVER_MS;
+
+    if (!visible) {
+        // Stopped rather than paused: a commander coming back from ten minutes
+        // in the dashboard must not have those ten minutes counted against them
+        // and land on an instant rebuild the moment the card is shown again.
+        health->refusing_since = 0;
+
+        // The valve, and the reason the other clock exists. Rebuilding is how
+        // the overlay recovers from going dead altogether - the failure this
+        // whole path was written for - and that failure is a runtime we are no
+        // longer getting sane answers from. If it also stopped delivering our
+        // OverlayShown, `visible` is stuck at 0 and the test above would have
+        // quietly disarmed the only recovery there is. So visibility may DELAY a
+        // rebuild, never veto one: a full minute of nothing getting through
+        // earns one whatever the runtime claims about who can see us.
+        return now - health->refusing_ever >= STALL_RECOVER_MAX_MS;
+    }
+    return now - health->refusing_since >= health->recover_after;
 }
 
 /// Runs as a SteamVR overlay until the app quits or SteamVR goes away.
@@ -669,13 +817,23 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
         return SESSION_FAILED;
     }
     hud_report_mode("vr", NULL);
+    // The one line that says the VR shell is actually up, and the two facts about
+    // the runtime that change how it behaves: which overlay interface we got, and
+    // whether frame pacing exists at all. WaitFrameSync is optional and missing on
+    // older SteamVR, which silently drops us back to submitting whenever we feel
+    // like it - the exact condition the shimmering-while-typing fix depends on -
+    // and there would otherwise be no way to tell that from the outside.
+    fprintf(stderr, "overlay: attached to SteamVR as %s (frame pacing %s)\n",
+            IVROverlay_Version, overlay->WaitFrameSync ? "available" : "UNAVAILABLE");
 
     Canvas canvas = {0};
-    FrameHealth health = {0};
+    FrameHealth health;
+    health_reset(&health);
     SessionOutcome outcome = SESSION_ENDED;
     int quit = 0, eof = 0, dirty = 1, visible = 1;
     uint64_t typed_through = now_ms();
     uint64_t last_reassert = now_ms();
+    uint64_t last_bounds_reassert = now_ms();
 
     while (!quit && !eof) {
         if (hud_pump_stdin(TYPEWRITER_MS, &eof, &quit)) dirty = 1;
@@ -696,12 +854,20 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
         int reassert = now_ms() - last_reassert >= REASSERT_MS;
         if (reassert) {
             last_reassert = now_ms();
+            // Asked before it is acted on, so the decision below is made against
+            // what the runtime says right now rather than against whatever the
+            // event stream last managed to tell us.
+            poll_visibility(overlay, handle, &visible);
             // ShowOverlay at attach was an edge-triggered write like the rest.
             // If the runtime hid the card and we missed why, say again that we
-            // want it, but only while its own events tell us it is hidden, so
-            // this never argues with a hide the runtime means to keep.
+            // want it - but only while it agrees the card is hidden, so this can
+            // neither argue with a hide the runtime means to keep nor hammer a
+            // card that was visible all along.
             if (!visible) overlay->ShowOverlay(handle);
         }
+
+        int reassert_bounds = now_ms() - last_bounds_reassert >= BOUNDS_REASSERT_MS;
+        if (reassert_bounds) last_bounds_reassert = now_ms();
 
         if (dirty || reassert) {
             // Pace to the compositor rather than to the typewriter. Left to
@@ -714,7 +880,7 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
             if (overlay->WaitFrameSync) overlay->WaitFrameSync(FRAME_WAIT_MS);
 
             EVROverlayError submitted = EVROverlayError_VROverlayError_None;
-            if (!present(overlay, handle, &canvas, reassert, &submitted)) {
+            if (!present(overlay, handle, &canvas, reassert_bounds, &submitted)) {
                 fprintf(stderr, "overlay: out of memory drawing the VR overlay\n");
                 outcome = SESSION_FAILED;
                 break;
@@ -725,15 +891,40 @@ static SessionOutcome run_session(const OpenVr *vr, int announce) {
             // that got through while the app carries on narrating into it, so
             // the card sits quietly a conversation behind. It used to be silent
             // because nothing read this result.
-            if (note_submission(overlay, submitted, &health, &dirty)) {
+            if (note_submission(overlay, submitted, &health, visible, &dirty)) {
+                // From refusing_ever, not refusing_since: the visibility clock is
+                // deliberately zeroed while the runtime says nobody can see us,
+                // so reading it here would print the time since the epoch on
+                // exactly the rebuild that most needs explaining.
+                unsigned long stalled = (unsigned long) (now_ms() - health.refusing_ever);
+                int blind = !visible;
                 hud_report_mode("vr", "rebuilding the overlay after a stall");
                 if (!reopen_overlay(overlay, &handle, placed, &canvas)) {
                     fprintf(stderr, "overlay: SteamVR would not rebuild the overlay\n");
                     outcome = SESSION_FAILED;
                     break;
                 }
+                // The run is cleared but the backoff is NOT: only a frame the
+                // compositor actually takes proves the rebuild worked, and that
+                // clears it in note_submission. Clearing it here would make every
+                // rebuild look like the first one and put us straight back on a
+                // five-second beat.
                 health.refusing_since = 0;
+                health.refusing_ever = 0;
                 health.reported = 0;
+                health_backoff(&health);
+                // Every number here matters to whoever reads this log: how long
+                // the compositor had been refusing says whether this was a real
+                // stall or a threshold set too low, whether we were hidden says
+                // which of the two clocks fired, and the next threshold says
+                // whether the backoff is doing its job when these repeat.
+                fprintf(stderr, "overlay: rebuilt the HUD after %lums of refused frames%s;"
+                                " next rebuild needs %lums\n",
+                        stalled, blind ? " while hidden" : "",
+                        (unsigned long) health.recover_after);
+                // A handle that was just created and shown is shown. Assumed
+                // rather than waited for, so a runtime that does not send us
+                // OverlayShown cannot leave stall detection switched off.
                 visible = 1;
             }
         }
