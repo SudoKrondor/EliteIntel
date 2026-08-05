@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.vega;
 
+import elite.intel.ai.brain.CompanionIdentity;
 import elite.intel.ai.brain.i18n.ResponseTextProvider;
 import elite.intel.i18n.Language;
 import elite.intel.session.SystemSession;
@@ -18,8 +19,8 @@ public final class CompanionConfig {
     // TODO: back the confirmation code word by GUI/DB settings.
     private static final String CONFIRMATION_CODE_WORD = "password";
 
-    // TODO: back the companion name by GUI/DB settings.
-    private static final String COMPANION_NAME = "Vega";
+    // The name itself lives with the identity clause it appears in - see CompanionIdentity.
+    private static final String COMPANION_NAME = CompanionIdentity.name();
 
     // Localization key (i18n.responses bundle) for the name's spoken/STT form per language: Latin "Vega" for
     // Latin-script languages, "Вега" for Cyrillic (ru/uk). Input matching only - never used in the prompt.

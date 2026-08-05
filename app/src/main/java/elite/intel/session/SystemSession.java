@@ -302,9 +302,16 @@ public class SystemSession {
         });
     }
 
+    /**
+     * The active ship's name, or {@code null} when no ship is known.
+     * <p>
+     * It used to answer "I have no designation" - a spoken sentence, from when the prompt made the AI the ship
+     * itself. Its only caller writes this into a prompt as a ship name, so an unknown ship is now absent, not a
+     * sentence pretending to be one.
+     */
     public String getDesignation() {
         ShipDao.Ship ship = shipManager.getShip();
-        return ship == null ? "I have no designation" : ship.getShipName();
+        return ship == null ? null : ship.getShipName();
     }
 
 

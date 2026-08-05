@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.vega.prompt;
 
+import elite.intel.ai.brain.CompanionIdentity;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.commons.PromptFactory;
 import elite.intel.ai.brain.vega.CompanionConfig;
@@ -20,6 +21,13 @@ public final class CompanionSystemPrompt implements SystemPromptText {
 
     static String companionName() {
         return CompanionConfig.companionName();
+    }
+
+    /**
+     * Who the companion is - the same clause the analysis prompt opens with.
+     */
+    static String identityClause() {
+        return CompanionIdentity.identityClause();
     }
 
     static String languageName() {

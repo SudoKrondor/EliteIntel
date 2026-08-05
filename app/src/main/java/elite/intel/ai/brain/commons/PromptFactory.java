@@ -1,6 +1,7 @@
 package elite.intel.ai.brain.commons;
 
 import elite.intel.ai.brain.AiPromptFactory;
+import elite.intel.ai.brain.CompanionIdentity;
 import elite.intel.ai.brain.ShipPersonality;
 import elite.intel.i18n.Language;
 import elite.intel.session.PlayerSession;
@@ -29,9 +30,20 @@ public class PromptFactory implements AiPromptFactory {
         isDryRun = dryRun;
     }
 
+    /**
+     * Opens the analysis prompt with the same identity the companion prompts use.
+     * <p>
+     * This block used to read "You are {shipName}, a ship in Elite Dangerous" - the model answered as the hull,
+     * while the companion prompt answered as an AI named Vega, so a single session spoke with two identities
+     * depending on which path produced the line. The ship is now something she flies, not something she is.
+     */
     private void youAre(StringBuilder sb) {
-        sb.append("You are ").append(aiName()).append(", a ship in Elite Dangerous - space sim game. ");
-        sb.append(" refer to your self as 'I' and your sensor data as 'my'. ");
+        sb.append(CompanionIdentity.identityClause()).append(' ');
+        String ship = shipName();
+        if (ship != null) {
+            sb.append("You serve aboard the commander's ship, ").append(ship).append(". ");
+        }
+        sb.append("Refer to yourself as 'I' and to the ship's sensor data as 'ours'. ");
     }
 
     @Override
@@ -66,7 +78,7 @@ public class PromptFactory implements AiPromptFactory {
         return """
                 Do not end responses with filler phrases like "Ready for orders", "All set", or "Should we proceed?".
                 Do not use the word "player". Use "we" or "commander" instead.
-                Do not confuse the ship (you) with the fleet carrier (our base).
+                Do not confuse the ship we fly with the fleet carrier (our base).
                 """;
     }
 
@@ -75,12 +87,12 @@ public class PromptFactory implements AiPromptFactory {
     public String appendBehavior() {
         StringBuilder sb = new StringBuilder();
         sb.append(" Behavior: ");
-        sb.append(" Refer to your self as 'I', your loadout and sensor data as 'my' ");
+        sb.append(" Refer to your self as 'I'; the ship's loadout and sensor data are 'ours' ");
         sb.append(" Do not start your responses with fillers like 'well', 'oh', 'oh look' go straight to the point");
         sb.append(" Do not end responses with any fillers, or unnecessary phrases like 'Ready for exploration', 'Ready for orders', 'All set', 'Ready to explore', 'Should we proceed?', or similar open-ended questions or remarks.\n");
-        sb.append(" Do not use words like 'player' or 'you', it breaks immersion. Use 'we' instead. ");
+        sb.append(" Never say 'player' or 'user', it breaks immersion: the commander is 'you', the ship and crew are 'we'. ");
         sb.append(" Do not confuse 'Next Waypoint' with 'Current Location'");
-        sb.append(" Do not confuse 'ship' (you) with 'carrier' (our base)");
+        sb.append(" Do not confuse 'ship' (the one we fly) with 'carrier' (our base)");
         sb.append(" For alpha numeric numbers or names, star system codes or ship plates (e.g., Syralaei RH-F, KI-U), use NATO phonetic alphabet (e.g., Syralaei Romeo Hotel dash Foxtrot, Kilo India dash Uniform). Use planetShortName for planets when available.\n");
         sb.append(" For your info: Distances between stars in light years. Distance between planets in light seconds. Distances between bio samples are in metres. User knows this and expects it. \n");
         sb.append(" Bio samples are taken from organisms not stellar objects.\n");
@@ -89,15 +101,19 @@ public class PromptFactory implements AiPromptFactory {
         return sb.toString();
     }
 
+    /**
+     * Restates the identity next to the personality clause, so style is never read as a change of speaker.
+     */
     private void appendCadenceAndPersonality(StringBuilder sb) {
         ShipPersonality aiPersonality = systemSession.getAIPersonality();
         sb.append(" Personality: ");
-        sb.append(aiPersonality.getPersonalityClause());
+        sb.append(CompanionIdentity.identityAndPersonality(aiPersonality));
     }
 
     private String getSessionValues() {
+        // No youAre() here: generateAnalysisPrompt already opened with it, and repeating the identity
+        // verbatim two paragraphs apart only spends tokens.
         StringBuilder sb = new StringBuilder();
-        youAre(sb);
         String carrierName = playerSession.getFleetCarrierData() != null ? playerSession.getFleetCarrierData().getCarrierName() : null;
         if (carrierName != null && !carrierName.isEmpty()) {
             sb.append("Our home base ").append(carrierName);
@@ -131,8 +147,12 @@ public class PromptFactory implements AiPromptFactory {
                 .append(choices).append(".\n");
     }
 
-    private String aiName() {
-        return systemSession.getDesignation();
+    /**
+     * The active ship's name, or {@code null} when no ship is known - the prompt then simply omits it.
+     */
+    private String shipName() {
+        String designation = systemSession.getDesignation();
+        return designation == null || designation.isBlank() ? null : designation;
     }
 
     public static String ttsResponseRules() {
