@@ -4,7 +4,6 @@ import elite.intel.ai.hands.BindingsApplyException;
 import elite.intel.ai.hands.BindingsMonitor;
 import elite.intel.ai.hands.PlayerBackupService;
 import elite.intel.ui.support.BindingApplyResultPresenter;
-import elite.intel.ui.theme.AppTheme;
 import elite.intel.ui.widget.HudFooter;
 import elite.intel.ui.widget.HudPanel;
 import elite.intel.ui.widget.HudSection;
@@ -22,7 +21,7 @@ import java.util.List;
 
 import static elite.intel.ui.i18n.MultiLingualTextProvider.getText;
 import static elite.intel.ui.theme.AppTheme.*;
-import static elite.intel.ui.theme.HudPalette.*;
+import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGROUND;
 
 /**
  * The "Binding Management" sub-tab of BIND FORGE: a manual "Backup Now" action, a flat list of
@@ -219,10 +218,7 @@ public class BindingManagementPanel extends JPanel {
     private File resolveActiveBindsFileOrShowError() {
         try {
             return BindingsMonitor.getInstance().resolveActiveBindsFile();
-        } catch (Exception e) {
-            // WHY: resolveActiveBindsFile() declares the same broad `throws Exception` as
-            // BindingsLoader.getLatestBindsFile() (which BindingProfilePanel also catches
-            // broadly for the same reason) - nothing more specific to catch here.
+        } catch (IOException e) {
             log.warn("Could not resolve the active bindings preset for restore: {}", e.getMessage());
             showRestoreError(e.getMessage());
             return null;

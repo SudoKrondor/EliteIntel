@@ -51,16 +51,35 @@ class OverlayProtocolTest {
     void tabsAndNewlinesInTextAreNeutralised() {
         // LLM replies and commander speech are arbitrary text; an embedded tab
         // would silently shift the fields after it.
-        String line = OverlayProtocol.say("CMDR", "left\tright\nsecond", false);
+        String line = OverlayProtocol.say("CMDR", "left\tright\nsecond", OverlayProtocol.Speaker.COMMANDER);
 
         assertEquals("SAY\tCMDR\t0\tleft right second", line);
         assertEquals(4, line.split("\t", -1).length);
     }
 
     @Test
-    void aiFlagSelectsTheSpeakerColour() {
-        assertTrue(OverlayProtocol.say("Nomad", "hello", true).startsWith("SAY\tNomad\t1\t"));
-        assertTrue(OverlayProtocol.say("CMDR", "hello", false).startsWith("SAY\tCMDR\t0\t"));
+    void theSpeakerKindSelectsTheLineColour() {
+        assertTrue(OverlayProtocol.say("CMDR", "hello", OverlayProtocol.Speaker.COMMANDER)
+                .startsWith("SAY\tCMDR\t0\t"));
+        assertTrue(OverlayProtocol.say("Nomad", "hello", OverlayProtocol.Speaker.AI)
+                .startsWith("SAY\tNomad\t1\t"));
+        assertTrue(OverlayProtocol.say("Jameson Memorial traffic control", "hello", OverlayProtocol.Speaker.RADIO)
+                .startsWith("SAY\tJameson Memorial traffic control\t2\t"));
+    }
+
+    /**
+     * The codes extend the 0/1 flag this field used to be rather than replacing it, which is what lets radio
+     * ship without a protocol version bump: an overlay built before radio existed reads 2 as a non-zero
+     * "is AI" and draws the line in the AI colour, exactly as it did before.
+     */
+    @Test
+    void radioStaysTruthyForAnOverlayThatOnlyKnowsTheOldFlag() {
+        String line = OverlayProtocol.say("Jameson Memorial traffic control", "hello",
+                OverlayProtocol.Speaker.RADIO);
+
+        int legacyFlag = Integer.parseInt(line.split("\t", -1)[2]);
+        assertTrue(legacyFlag != 0, "an old binary must still read radio as \"not the commander\"");
+        assertEquals(1, OverlayProtocol.VERSION, "extending the field must not need a new protocol version");
     }
 
     @Test
@@ -95,7 +114,7 @@ class OverlayProtocolTest {
      */
     @Test
     void aLongReplyIsTrimmedRatherThanLeftForTheReaderToDrop() {
-        String line = OverlayProtocol.say("Nomad", "x".repeat(5000), true);
+        String line = OverlayProtocol.say("Nomad", "x".repeat(5000), OverlayProtocol.Speaker.AI);
 
         assertTrue(line.getBytes(StandardCharsets.UTF_8).length < 1024, "line stays inside the reader's budget");
         assertTrue(line.endsWith("…"), "the commander can see it was cut short");

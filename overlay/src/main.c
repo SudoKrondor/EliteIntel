@@ -28,6 +28,20 @@ static VrMode parse_vr_mode(int argc, char **argv) {
     return mode;
 }
 
+/// Whether to draw for a VR capture tool instead of for the commander's monitor.
+///
+/// A mode of its own rather than a variant of --vr because it is not VR as far
+/// as this binary is concerned: there is no SteamVR, no compositor and no
+/// headset here, just a window drawn so that something else can pin it. Which
+/// also means it never probes SteamVR and never falls back - it is a desktop
+/// window by construction, and cannot fail the way an overlay can.
+static int parse_capture(int argc, char **argv) {
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--capture")) return 1;
+    }
+    return 0;
+}
+
 static const char *fallback_reason(VrMode mode, VrResult result) {
     switch (result) {
         case HUD_VR_UNAVAILABLE:
@@ -43,6 +57,14 @@ static const char *fallback_reason(VrMode mode, VrResult result) {
 int main(int argc, char **argv) {
     VrMode mode = parse_vr_mode(argc, argv);
     const char *reason = NULL;
+
+    // Read before anything draws, and never touched again: the shells and the
+    // renderer branch on it while building their first frame.
+    model.capture = parse_capture(argc, argv);
+    if (model.capture) {
+        hud_report_mode("capture", NULL);
+        return hud_run_desktop(argc, argv);
+    }
 
     if (mode != VR_MODE_OFF) {
         VrResult result = hud_run_vr(mode);

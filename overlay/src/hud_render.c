@@ -18,12 +18,26 @@ static const Rgb COL_DANGER   = {0.85, 0.31, 0.31};
 static const Rgb COL_DISABLED = {0.43, 0.29, 0.16};
 static const Rgb COL_USER     = {0.31, 0.77, 0.42};
 static const Rgb COL_AI       = {0.45, 0.64, 0.71};
+// Radio traffic: somebody else on the channel, not the ship's own AI. Violet,
+// matched to COL_AI's brightness and saturation rather than picked by eye - all
+// three lanes sit near 0.61 relative luminance at ~0.36 saturation, so only the
+// hue tells them apart (~134, ~196, ~274 degrees). Mirrors
+// HUD_COLOR_ROLE_RADIO_TRANSMISSION_LOG_TEXT (0xB78CD9) in HudPalette.java.
+static const Rgb COL_RADIO    = {0.72, 0.55, 0.85};
 static const Rgb COL_PANEL    = {0.06, 0.09, 0.13};
 
 static int sz(int base) { return (int) (base * model.scale + 0.5); }
 
 static void set_rgb(cairo_t *cr, Rgb c, double a) {
     cairo_set_source_rgba(cr, c.r, c.g, c.b, a);
+}
+
+static Rgb color_for_speaker(Speaker k) {
+    switch (k) {
+        case SPK_COMMANDER: return COL_USER;
+        case SPK_RADIO:     return COL_RADIO;
+        default:            return COL_AI;
+    }
 }
 
 static Rgb color_for(State s) {
@@ -35,13 +49,35 @@ static Rgb color_for(State s) {
     }
 }
 
+/// The alpha the card's background is filled at.
+///
+/// Opaque when drawing for a capture tool: a see-through window is composited
+/// by the tool against black, or against whatever desktop happens to be behind
+/// it, so the commander would be reading their HUD through their own wallpaper.
+/// The configured alpha is what a commander looking at their own monitor asked
+/// for, and it stays exactly that for every mode but capture.
+static double panel_alpha(void) {
+    return model.capture ? 1.0 : model.alpha;
+}
+
 void hud_paint_background(cairo_t *cr) {
     // SOURCE, not OVER: replace the buffer outright. The background carries the
     // configured alpha; glyphs are drawn opaque on top.
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
-    cairo_set_source_rgba(cr, COL_PANEL.r, COL_PANEL.g, COL_PANEL.b, model.alpha);
+    cairo_set_source_rgba(cr, COL_PANEL.r, COL_PANEL.g, COL_PANEL.b, panel_alpha());
     cairo_paint(cr);
     cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+}
+
+void hud_paint_panel(cairo_t *cr, int width, int height) {
+    // Same colour and the same replace-don't-blend rule as above, confined to the
+    // card. See hud.h for why a transformed shell cannot use cairo_paint.
+    cairo_save(cr);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_rgba(cr, COL_PANEL.r, COL_PANEL.g, COL_PANEL.b, panel_alpha());
+    cairo_rectangle(cr, 0, 0, width, height);
+    cairo_fill(cr);
+    cairo_restore(cr);
 }
 
 // -- layout / rendering ------------------------------------------------------
@@ -170,7 +206,7 @@ int hud_render(cairo_t *cr, int width, int draw) {
         if (draw) {
             snprintf(buf, sizeof(buf), "%s: %.*s", l->speaker, l->visible_bytes, l->text);
             pango_layout_set_text(body, buf, -1);
-            set_rgb(cr, l->ai ? COL_AI : COL_USER, 1.0);
+            set_rgb(cr, color_for_speaker(l->kind), 1.0);
             cairo_move_to(cr, pad, y);
             pango_cairo_show_layout(cr, body);
         }

@@ -168,6 +168,9 @@ public class NativeHudOverlay {
             case BOTH -> List.of(
                     new ChildSpec("desktop", List.of(bin)),
                     new ChildSpec("vr", List.of(bin, "--vr=only")));
+            // No --vr at all: this child never probes SteamVR, because the
+            // headset is the capture tool's problem and not ours.
+            case CAPTURE_WINDOW -> List.of(new ChildSpec("capture", List.of(bin, "--capture")));
         };
     }
 
@@ -204,6 +207,7 @@ public class NativeHudOverlay {
         if (windowX >= 0 || windowY >= 0) send(OverlayProtocol.position(windowX, windowY));
         lastObjective = null;
         children.forEach(this::startOutputReader);
+        children.forEach(this::startErrorReader);
 
         // Two buses on purpose: commander speech (NormalizedUserInputEvent)
         // travels on the game bus, the AI's reply (AiResponseLogEvent) on the
@@ -219,7 +223,13 @@ public class NativeHudOverlay {
         try {
             ProcessBuilder pb = new ProcessBuilder(spec.command());
             pb.redirectErrorStream(false);
-            pb.redirectError(ProcessBuilder.Redirect.DISCARD);
+            // PIPE, not DISCARD. The overlay writes everything it knows about a
+            // failing SteamVR to stderr - which init error, which interface
+            // version is missing, which EVROverlayError the compositor refused a
+            // frame with - and discarding it meant a commander reporting "the VR
+            // HUD flickers" could send us a log with nothing in it but the mode
+            // line. See startErrorReader for the obligation that comes with this.
+            pb.redirectError(ProcessBuilder.Redirect.PIPE);
             Process process = pb.start();
             return Optional.of(new Child(spec.role(), process, new BufferedWriter(
                     new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))));
@@ -352,12 +362,46 @@ public class NativeHudOverlay {
     }
 
     /**
+     * Copies the child's stderr into the app log, one line at a time.
+     * <p>
+     * This thread is not optional once stderr is a pipe rather than DISCARD: a
+     * pipe nobody reads fills its buffer and then blocks the child inside
+     * fprintf, which for the VR shell means it stops drawing and stops draining
+     * its own stdin - the overlay would freeze on whatever frame it had, for the
+     * one reason hardest to guess from the outside. The same rule already applies
+     * to stdout, and for the same reason; see {@link #startOutputReader}.
+     * <p>
+     * Logged at info, at the same level as the mode line, because this channel
+     * carries both - which SteamVR interface we attached to as readily as which
+     * error a frame was refused with. Every line is edge-triggered, written once
+     * per occurrence and never per frame, and every one is prefixed "overlay: "
+     * by the child, so the whole VR story greps out of a commander's log in one
+     * pass whether it ends in a failure or not.
+     */
+    private void startErrorReader(Child child) {
+        Thread reader = new Thread(() -> {
+            try (BufferedReader in = new BufferedReader(
+                    new InputStreamReader(child.process().getErrorStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = in.readLine()) != null) {
+                    if (!line.isBlank()) log.info("HUD overlay ({}): {}", child.role(), line);
+                }
+            } catch (IOException e) {
+                log.debug("HUD overlay ({}) stderr closed: {}", child.role(), e.getMessage());
+            }
+        }, "hud-overlay-stderr-" + child.role());
+        reader.setDaemon(true);
+        reader.start();
+    }
+
+    /**
      * Records which shell the child actually came up in, and why, when VR was
      * asked for and could not be had.
      * <p>
-     * This is the only place that reason ever surfaces - the child's stderr is
-     * discarded - so it is what a commander reporting "VR does nothing" can be
-     * asked to send.
+     * This is the one line that says what a commander is actually looking at, so
+     * it is what somebody reporting "VR does nothing" can be asked to send. The
+     * detail behind it now arrives on stderr as well; see
+     * {@link #startErrorReader}.
      */
     private void logMode(Child child, String line) {
         log.info("HUD overlay ({}): {}", child.role(), line.replace('\t', ' '));
@@ -452,14 +496,33 @@ public class NativeHudOverlay {
     @Subscribe
     public void onUserInput(NormalizedUserInputEvent event) {
         if (event.getText() == null || event.getText().isBlank()) return;
-        send(OverlayProtocol.say(playerSession.getPlayerName(), event.getText(), false));
+        send(OverlayProtocol.say(playerSession.getPlayerName(), event.getText(),
+                OverlayProtocol.Speaker.COMMANDER));
     }
 
     @Subscribe
     public void onAiResponse(AiResponseLogEvent event) {
         if (event.getData() == null || event.getData().isBlank()) return;
-        String speaker = shipManager.getShip() == null ? "AI" : shipManager.getShip().getShipName();
-        send(OverlayProtocol.say(speaker, event.getData(), true));
+        // A named speaker is a radio transmission: the AI is the only voice that speaks unattributed.
+        OverlayProtocol.Speaker kind = isRadio(event)
+                ? OverlayProtocol.Speaker.RADIO
+                : OverlayProtocol.Speaker.AI;
+        send(OverlayProtocol.say(speakerOf(event), event.getData(), kind));
+    }
+
+    private static boolean isRadio(AiResponseLogEvent event) {
+        return event.getSpeaker() != null && !event.getSpeaker().isBlank();
+    }
+
+    /**
+     * The ship speaks for the AI, but a radio transmission is somebody else on the
+     * channel - a station, a carrier, another commander - so it is named after its
+     * own source. Attributing it to the ship put words in the AI's mouth that it
+     * never said.
+     */
+    private String speakerOf(AiResponseLogEvent event) {
+        if (isRadio(event)) return event.getSpeaker();
+        return shipManager.getShip() == null ? "AI" : shipManager.getShip().getShipName();
     }
 
     /**

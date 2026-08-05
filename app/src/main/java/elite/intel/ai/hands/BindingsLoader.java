@@ -21,9 +21,17 @@ import java.util.Optional;
 public class BindingsLoader {
     private static final Logger log = LogManager.getLogger(BindingsLoader.class);
 
-    public File getLatestBindsFile() throws Exception {
-        Path bindingsDir = PlayerSession.getInstance().getBindingsDir();
+    public File getLatestBindsFile() throws IOException {
+        return getLatestBindsFile(PlayerSession.getInstance().getBindingsDir());
+    }
 
+    /**
+     * Same resolution against a caller-supplied directory, for callers that already hold one (and for tests,
+     * which cannot lean on the session singleton). Which {@code .binds} the app decided to read is not
+     * reproducible from the directory alone - the active preset drives it - so anything that needs to name
+     * that file must come through here rather than re-deriving it.
+     */
+    public File getLatestBindsFile(Path bindingsDir) throws IOException {
         String presetName = findActivePresetName(bindingsDir);
         if (!presetName.isEmpty()) {
             Optional<Path> matched;
@@ -46,7 +54,7 @@ public class BindingsLoader {
         // Fallback: most recently modified .binds file
         Path latestFilePath = listAllBindsFiles(bindingsDir).stream()
                 .max(Comparator.comparingLong(p -> p.toFile().lastModified()))
-                .orElseThrow(() -> new Exception("No .binds file found in " + bindingsDir));
+                .orElseThrow(() -> new IOException("No .binds file found in " + bindingsDir));
 
         log.info("Selected latest bindings file (fallback): {}", latestFilePath.getFileName());
         return latestFilePath.toFile();

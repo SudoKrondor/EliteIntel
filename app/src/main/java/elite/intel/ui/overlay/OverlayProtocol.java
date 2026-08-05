@@ -96,8 +96,32 @@ public final class OverlayProtocol {
         }
     }
 
-    public static String say(String speaker, String text, boolean ai) {
-        return "SAY" + TAB + sanitize(speaker) + TAB + (ai ? "1" : "0")
+    /**
+     * Who a conversation line is from, which is all the overlay needs to colour it.
+     * <p>
+     * The wire codes extend the {@code 0}/{@code 1} boolean this field used to carry rather than replacing it,
+     * so an overlay binary built before radio existed reads {@link #RADIO} as a non-zero "is AI" and draws it
+     * in the AI colour - which is exactly what it did before. That keeps the protocol version at 1: a stale
+     * binary renders the old way instead of refusing to start.
+     */
+    public enum Speaker {
+        COMMANDER(0),
+        AI(1),
+        RADIO(2);
+
+        private final int code;
+
+        Speaker(int code) {
+            this.code = code;
+        }
+
+        int code() {
+            return code;
+        }
+    }
+
+    public static String say(String speaker, String text, Speaker kind) {
+        return "SAY" + TAB + sanitize(speaker) + TAB + kind.code()
                 + TAB + clamp(sanitize(text), MAX_SAY_BYTES);
     }
 

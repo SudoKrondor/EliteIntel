@@ -10,7 +10,13 @@
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout pattern="${logPattern}"/>
         </Console>
-        <RollingFile name="rollingFile" fileName="${logPath}/${rollingFileName}.log" filePattern="${logPath}/${rollingFileName}_%d{yyyy-MM-dd}.log" immediateFlush="true">
+        <!-- %i is not decoration: the size policy below rolls at 1MB, and a
+             pattern with only a date in it gives every roll on the same day the
+             same filename, so each one overwrites the last and a long session
+             keeps just the most recent megabyte of history. The counter is what
+             makes the 7 kept files actually be 7 files. -->
+        <RollingFile name="rollingFile" fileName="${logPath}/${rollingFileName}.log"
+                     filePattern="${logPath}/${rollingFileName}_%d{yyyy-MM-dd}_%i.log" immediateFlush="true">
             <PatternLayout pattern="${logPattern}"/>
             <Policies>
                 <OnStartupTriggeringPolicy/>
@@ -42,6 +48,16 @@
         <Logger name="elite.intel" level="error"/>
         <!-- More specific than elite.intel above, so this wins for the StarVizion subtree -->
         <Logger name="elite.intel.starvizion" level="error"/>
+        <!-- Also more specific than elite.intel, and deliberately louder than it.
+             The HUD overlay is a separate native process: this logger carries its
+             mode line and everything the child writes to stderr - which SteamVR
+             interface it attached to, which EVROverlayError a frame was refused
+             with, when a texture was reallocated. At error level none of that
+             reached the file, so a commander reporting "the VR HUD flickers" could
+             only ever send us a log with nothing about the overlay in it. Every
+             line here is edge-triggered, never per-frame, so the cost is a handful
+             of lines a session. -->
+        <Logger name="elite.intel.ui.overlay" level="info"/>
         <Logger name="elite.intel.gameapi.JournalParser" level="error"/>
         <Logger name="elite.intel.gameapi.AuxiliaryFilesMonitor" level="error"/>
         <Logger name="elite.intel.gameapi.journal.subscribers" level="error"/>

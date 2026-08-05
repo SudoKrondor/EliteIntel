@@ -259,7 +259,7 @@ public class KokoroTTS implements MouthInterface {
             }
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-            UiBus.publish(new AiResponseLogEvent(sanitizedText));
+            UiBus.publish(new AiResponseLogEvent(sanitizedText, event.getSpeaker()));
 
             // Split on sentence boundaries and enqueue each piece for synthesis.
             String[] allSentences = sanitizedText.split("(?<=[.,!?])\\s+(?=\\S)");

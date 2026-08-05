@@ -30,5 +30,23 @@ public enum HudDisplayMode {
      * with {@code --vr=only} so it exits rather than falling back - a fallback
      * here would put a second desktop window exactly on top of the first.
      */
-    BOTH
+    BOTH,
+
+    /**
+     * A plain window for a VR capture tool - Desktop+, OVR Toolkit, Virtual
+     * Desktop - to pin into the headset itself, instead of this app talking to
+     * SteamVR at all.
+     * <p>
+     * Exists because {@link #VR} hands the compositor a full texture per typed
+     * character, and on a streamed headset that has been reported as a heavy
+     * frame-rate cost. A capture tool takes the window on the GPU, on its own
+     * schedule, and gives the commander placement and curvature controls this
+     * app does not have.
+     * <p>
+     * It is not {@link #DESKTOP} pointed at a capture tool. That window leans,
+     * is see-through, and is a tool window - which capture pickers filter out,
+     * so it cannot even be selected. This mode is the same shell drawn flat and
+     * opaque, in a window those pickers list.
+     */
+    CAPTURE_WINDOW
 }

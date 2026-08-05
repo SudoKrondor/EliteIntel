@@ -51,7 +51,7 @@ public class VocalisationRouter {
                     ? voices[(int) (Math.random() * voices.length)].name()
                     : allVoices[0].name();
             publishToMouth(new VocalisationRequestEvent(
-                    event.getText(), voice, RadioTransmissionEvent.class, true, true));
+                    event.getText(), voice, RadioTransmissionEvent.class, true, true, event.getSource()));
         }
     }
 

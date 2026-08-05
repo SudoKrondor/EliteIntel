@@ -59,7 +59,7 @@ $RUNNER run --rm \
 
     $CC -O2 -Wall -Wextra -std=c11 -isystem third_party/openvr $($PKG --cflags $DEPS) \
         -o /src/distribution/overlays/elite-intel-overlay.exe \
-        src/main.c src/hud_model.c src/hud_render.c src/stdin_pump.c \
+        src/main.c src/hud_model.c src/hud_render.c src/hud_tilt.c src/stdin_pump.c \
         src/platform_openvr.c src/platform_win32.c \
         $($PKG --libs $DEPS) -lgdi32 -luser32 -lm -mwindows
 

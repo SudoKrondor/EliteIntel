@@ -3,11 +3,7 @@ package elite.intel.ai.mouth.google;
 import com.google.cloud.texttospeech.v1.*;
 import com.google.common.eventbus.Subscribe;
 import elite.intel.ai.ears.AudioDeviceEnumerator;
-import elite.intel.ai.mouth.AudioDeClicker;
-import elite.intel.ai.mouth.MainVoicePlaybackGate;
-import elite.intel.ai.mouth.MouthInterface;
-import elite.intel.ai.mouth.RadioFilter;
-import elite.intel.ai.mouth.VocalisationHandle;
+import elite.intel.ai.mouth.*;
 import elite.intel.ai.mouth.subscribers.events.*;
 import elite.intel.eventbus.GameEventBus;
 import elite.intel.eventbus.UiBus;
@@ -229,7 +225,7 @@ public class GoogleTTSImpl implements MouthInterface {
             }
 
             GameEventBus.publish(new PlayBeepEvent(AudioPlayer.BEEP_2));
-            UiBus.publish(new AiResponseLogEvent(event.getText()));
+            UiBus.publish(new AiResponseLogEvent(event.getText(), event.getSpeaker()));
             log.debug("Added VoiceRequest to queue: text='{}', voice='{}'", event.getText(), voiceName);
         } catch (InterruptedException e) {
             handle.complete();

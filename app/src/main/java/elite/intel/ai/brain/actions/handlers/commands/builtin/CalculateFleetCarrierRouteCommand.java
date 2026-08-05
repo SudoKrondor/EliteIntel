@@ -14,9 +14,18 @@ import elite.intel.util.FleetCarrierRouteCalculator;
 public final class CalculateFleetCarrierRouteCommand implements IntelCommand {
     public static final String ID = "calculate_fleet_carrier_route";
 
+    /**
+     * States what it consumes and what it replaces, because the neighbouring query answers questions about the
+     * route this one creates. "Analyse the carrier route" chose this command over that query - and this command
+     * takes its destination from the clipboard, so a wrong pick does not merely answer the wrong question, it
+     * plots a route to whatever the commander last copied.
+     */
     @Override
     public String llmDescription() {
-        return "Calculate a multi-jump tritium route for the commander's own personal fleet carrier.";
+        return "PLOT A NEW multi-jump tritium route for the commander's own fleet carrier to a destination read "
+                + "from the system clipboard, replacing any route already plotted. Use only when the commander "
+                + "asks to create, plot, plan or re-calculate a route. Never use it to describe, analyse or "
+                + "answer questions about a route that already exists.";
     }
 
 

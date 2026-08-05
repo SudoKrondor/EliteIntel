@@ -13,6 +13,20 @@ Model model = {
     // Below centre: the placement the VR overlay had before it was settable, so
     // a commander who never opens the setting sees no change.
     .vr_position = HUD_VR_BOTTOM,
+    // On by default because this branch exists to look at it.
+    //
+    // Settled by looking at it in the cockpit rather than derived: 340px read as
+    // too small against the flat card it replaced, 0.08 barely read as a lean at
+    // all, and 0.12 measured off a screenshot at -0.119 was still called slightly
+    // shallow. 0.15 is that last nudge.
+    //
+    // It costs something real, and the cost grows with the angle: 0.15 over 620px
+    // drops a row's far end by 93px against a 25px row pitch, so a label and its
+    // right-aligned value sit nearly four rows apart at full lean. That is the
+    // trade the angle buys, and it is why hud_render's rows would have to stop
+    // being label-left / value-right before the lean can usefully go further.
+    .tilt = 0.15,
+    .tilt_width = 620,
 };
 
 /// Wire names for VrPosition, in enum order. The protocol carries the name
@@ -63,7 +77,21 @@ static int split_tabs(char *line, char *fields[], int max) {
     return n;
 }
 
-static void push_line(const char *speaker, const char *text, int ai) {
+/// Maps the wire code onto a speaker, treating anything unknown as the AI.
+///
+/// A newer app may send a code this binary has never heard of. Falling back to
+/// the AI keeps such a line readable in the colour the overlay has always used
+/// for "not the commander", rather than dropping it or drawing it as the
+/// commander's own words.
+static Speaker parse_speaker(int code) {
+    switch (code) {
+        case SPK_COMMANDER: return SPK_COMMANDER;
+        case SPK_RADIO:     return SPK_RADIO;
+        default:            return SPK_AI;
+    }
+}
+
+static void push_line(const char *speaker, const char *text, Speaker kind) {
     if (model.line_count == MAX_LINES) {
         memmove(&model.lines[0], &model.lines[1], sizeof(Line) * (MAX_LINES - 1));
         model.line_count--;
@@ -71,7 +99,7 @@ static void push_line(const char *speaker, const char *text, int ai) {
     Line *l = &model.lines[model.line_count++];
     snprintf(l->speaker, sizeof(l->speaker), "%s", speaker);
     snprintf(l->text, sizeof(l->text), "%s", text);
-    l->ai = ai;
+    l->kind = kind;
     l->visible_bytes = 0;
     // Any still-typing earlier line is completed, so a fast exchange never
     // strands a half-written line above the new one.
@@ -103,6 +131,10 @@ static void apply_cfg(char *fields[], int n) {
         else if (!strcmp(k, "x"))     model.want_x = atoi(v);
         else if (!strcmp(k, "y"))     model.want_y = atoi(v);
         else if (!strcmp(k, "vrpos")) model.vr_position = parse_vr_position(v, model.vr_position);
+        // Settable so an angle can be tried without a rebuild, which is the whole
+        // job while this is still an experiment. tilt=0 restores the flat card.
+        else if (!strcmp(k, "tilt"))      model.tilt = atof(v);
+        else if (!strcmp(k, "tiltwidth")) model.tilt_width = atoi(v);
     }
 }
 
@@ -157,7 +189,8 @@ int hud_handle_command(char *line, int *quit) {
         return 1;
     }
     if (!strcmp(f[0], "SAY")) {
-        push_line(n > 1 ? f[1] : "", n > 3 ? f[3] : "", n > 2 ? atoi(f[2]) : 0);
+        push_line(n > 1 ? f[1] : "", n > 3 ? f[3] : "",
+                  parse_speaker(n > 2 ? atoi(f[2]) : SPK_COMMANDER));
         return 1;
     }
     return 0;  // unknown verb: ignored on purpose, see PROTOCOL.md

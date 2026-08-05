@@ -62,6 +62,22 @@ class HudDisplayModeChildrenTest {
     }
 
     /**
+     * Capture mode is a window and nothing else. It must never carry a {@code --vr}
+     * flag: probing SteamVR is the cost this mode exists to avoid, and a fallback
+     * path would be meaningless for a window that cannot fail to open.
+     */
+    @Test
+    void theCaptureWindowNeverGoesNearSteamVr() {
+        List<NativeHudOverlay.ChildSpec> specs =
+                NativeHudOverlay.childSpecs(BINARY, HudDisplayMode.CAPTURE_WINDOW);
+
+        assertEquals(1, specs.size());
+        assertTrue(specs.get(0).command().contains("--capture"));
+        assertTrue(specs.get(0).command().stream().noneMatch(arg -> arg.startsWith("--vr")),
+                "capture mode must not probe SteamVR");
+    }
+
+    /**
      * A stored mode is read leniently in every direction: a row written before the
      * column existed, a value from a newer build, or anything hand-edited. Falling
      * back to DESKTOP is the one answer that always leaves something on screen.
@@ -78,6 +94,8 @@ class HudDisplayModeChildrenTest {
         assertEquals(HudDisplayMode.VR, NativeHudOverlay.parseDisplayMode("VR"));
         assertEquals(HudDisplayMode.BOTH, NativeHudOverlay.parseDisplayMode("both"));
         assertEquals(HudDisplayMode.DESKTOP, NativeHudOverlay.parseDisplayMode(" Desktop "));
+        assertEquals(HudDisplayMode.CAPTURE_WINDOW,
+                NativeHudOverlay.parseDisplayMode("capture_window"));
     }
 
     /**
