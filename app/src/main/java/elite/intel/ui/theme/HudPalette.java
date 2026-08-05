@@ -29,6 +29,7 @@ public final class HudPalette {
     public static final Color HUD_COLOR_6E4A28 = new Color(0x6E4A28);
     public static final Color HUD_COLOR_72A2B4 = new Color(0x72A2B4);
     public static final Color HUD_COLOR_8B0101 = new Color(0x8B0101);
+    public static final Color HUD_COLOR_B78CD9 = new Color(0xB78CD9);
     public static final Color HUD_COLOR_9A6A3C = new Color(0x9A6A3C);
     public static final Color HUD_COLOR_B85A14 = new Color(0xB85A14);
     public static final Color HUD_COLOR_BB7A32 = new Color(0xBB7A32);
@@ -104,6 +105,13 @@ public final class HudPalette {
     /** Commander chat lane marker/rail (left rail + bottom prompt glyph); own role so it can diverge from text. */
     public static final Color HUD_COLOR_ROLE_COMMANDER_MARKER = HUD_COLOR_4FC56B;
     public static final Color HUD_COLOR_ROLE_ASSISTANT_RESPONSE_LOG_TEXT = HUD_COLOR_72A2B4;
+    /**
+     * Radio traffic in the chat lane: station control, carriers, other commanders - somebody on the channel,
+     * not the ship's own AI. Violet, picked to sit at the AI blue's brightness and saturation (both near 0.61
+     * relative luminance, ~0.36 HSV saturation) so the three lanes read as one family; only the hue separates
+     * them, at roughly 134°, 196° and 274°. Mirrored by {@code COL_RADIO} in {@code overlay/src/hud_render.c}.
+     */
+    public static final Color HUD_COLOR_ROLE_RADIO_TRANSMISSION_LOG_TEXT = HUD_COLOR_B78CD9;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TEXT = HUD_COLOR_5A6368;
     public static final Color HUD_COLOR_ROLE_SYSTEM_LOG_TIMESTAMP_TEXT = HUD_COLOR_5A6368;
 

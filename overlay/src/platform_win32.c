@@ -101,7 +101,12 @@ static void present(void) {
     // whole desktop.
     int sx, sy, sw, sh;
     screen_rect(&sx, &sy, &sw, &sh);
-    double slope = hud_tilt_slope(g_x + card_w / 2 - sx, g_y + card_h / 2 - sy, sw, sh);
+    // Flat when the window is being captured: the lean is a perspective trick
+    // that reads as depth only in the plane of the monitor it was measured
+    // against. Pinned in a headset it is just a skewed card, and it costs width.
+    double slope = model.capture
+                   ? 0.0
+                   : hud_tilt_slope(g_x + card_w / 2 - sx, g_y + card_h / 2 - sy, sw, sh);
 
     int win_h = hud_tilt_height(slope, card_w, card_h);
     if (card_w != g_width || win_h != g_height) resize_surface(card_w, win_h);
@@ -190,7 +195,7 @@ static int pump_stdin(int *eof) {
 }
 
 int hud_run_desktop(int argc, char **argv) {
-    (void) argc;                          // no Win32-only flags today
+    (void) argc;                          // --capture is read in main, into model
     (void) argv;
     HINSTANCE inst = GetModuleHandle(NULL);
 
@@ -210,11 +215,24 @@ int hud_run_desktop(int argc, char **argv) {
     g_y = (int) (GetSystemMetrics(SM_CYSCREEN) * 0.04);
 
     // WS_EX_NOACTIVATE is what keeps every keystroke going to the game: the
-    // window can be clicked and dragged but never takes keyboard focus.
+    // window can be clicked and dragged but never takes keyboard focus. It is
+    // the one style capture mode keeps, because a HUD that steals focus from
+    // the game is wrong however it is being viewed.
+    //
+    // WS_EX_TOOLWINDOW is the style that has to go in capture mode, and it is
+    // the reason this mode exists at all: a tool window is deliberately hidden
+    // from the taskbar, from alt-tab, and from the window pickers Desktop+, OVR
+    // Toolkit and Virtual Desktop put in front of the commander. The overlay
+    // they cannot find is the overlay they cannot pin. WS_EX_TOPMOST goes with
+    // it - a window that is about to become a texture in a headset has no
+    // business sitting above everything on the desktop it left behind.
+    DWORD ex_style = model.capture
+                     ? (WS_EX_LAYERED | WS_EX_NOACTIVATE)
+                     : (WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
     g_win = CreateWindowEx(
-            WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
-            wc.lpszClassName, "EliteIntel HUD Overlay", WS_POPUP,
-            g_x, g_y, hud_card_width(), g_height, NULL, NULL, inst, NULL);
+            ex_style, wc.lpszClassName,
+            model.capture ? "EliteIntel HUD (VR capture)" : "EliteIntel HUD Overlay",
+            WS_POPUP, g_x, g_y, hud_card_width(), g_height, NULL, NULL, inst, NULL);
     if (!g_win) { fprintf(stderr, "overlay: CreateWindowEx failed\n"); return 1; }
 
     HDC screen = GetDC(NULL);

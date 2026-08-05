@@ -61,11 +61,18 @@ public class AnalyzeCarrierVoyageQuery extends BaseQueryAnalyzer implements Inte
               Never name a system that is not in refuelSystems.
             """;
 
+    /**
+     * Says "already plotted" and owns the word "analyse" outright: this tool and
+     * {@code calculate_fleet_carrier_route} both answer to "carrier route", and a model that reads only the noun
+     * picks the command - which plots a new route from the clipboard instead of answering the question asked.
+     */
     @Override
     public String llmDescription() {
-        return "Report a carrier's plotted route: its final destination, the jumps remaining, travel time, "
-                + "tritium needed, and where it can refuel on the way. Covers the commander's own fleet carrier "
-                + "by default, and the squadron carrier when the commander says \"squadron\".";
+        return "ANALYSE AND REPORT the route a carrier ALREADY has plotted: its final destination, the jumps "
+                + "remaining, travel time, tritium needed, the fuel balance, and which stops along the way can "
+                + "refuel it. Use for every question about an existing route - including \"analyse the carrier "
+                + "route\" and \"where can we refuel\" - and never to plot a new one. Covers the commander's own "
+                + "fleet carrier by default, and the squadron carrier when the commander says \"squadron\".";
     }
 
     @Override

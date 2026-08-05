@@ -208,7 +208,7 @@ public class BindingsMonitor {
      * found one yet. Shared by anything that needs "the active game binds file" outside the
      * monitoring loop itself (e.g. {@code BindingProfilePanel}, restore-to-live).
      */
-    public File resolveActiveBindsFile() throws Exception {
+    public File resolveActiveBindsFile() throws IOException {
         return currentBindsFile != null ? currentBindsFile : bindingsLoader.getLatestBindsFile();
     }
 

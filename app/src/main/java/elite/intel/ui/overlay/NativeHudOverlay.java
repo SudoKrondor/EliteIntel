@@ -168,6 +168,9 @@ public class NativeHudOverlay {
             case BOTH -> List.of(
                     new ChildSpec("desktop", List.of(bin)),
                     new ChildSpec("vr", List.of(bin, "--vr=only")));
+            // No --vr at all: this child never probes SteamVR, because the
+            // headset is the capture tool's problem and not ours.
+            case CAPTURE_WINDOW -> List.of(new ChildSpec("capture", List.of(bin, "--capture")));
         };
     }
 
@@ -493,14 +496,33 @@ public class NativeHudOverlay {
     @Subscribe
     public void onUserInput(NormalizedUserInputEvent event) {
         if (event.getText() == null || event.getText().isBlank()) return;
-        send(OverlayProtocol.say(playerSession.getPlayerName(), event.getText(), false));
+        send(OverlayProtocol.say(playerSession.getPlayerName(), event.getText(),
+                OverlayProtocol.Speaker.COMMANDER));
     }
 
     @Subscribe
     public void onAiResponse(AiResponseLogEvent event) {
         if (event.getData() == null || event.getData().isBlank()) return;
-        String speaker = shipManager.getShip() == null ? "AI" : shipManager.getShip().getShipName();
-        send(OverlayProtocol.say(speaker, event.getData(), true));
+        // A named speaker is a radio transmission: the AI is the only voice that speaks unattributed.
+        OverlayProtocol.Speaker kind = isRadio(event)
+                ? OverlayProtocol.Speaker.RADIO
+                : OverlayProtocol.Speaker.AI;
+        send(OverlayProtocol.say(speakerOf(event), event.getData(), kind));
+    }
+
+    private static boolean isRadio(AiResponseLogEvent event) {
+        return event.getSpeaker() != null && !event.getSpeaker().isBlank();
+    }
+
+    /**
+     * The ship speaks for the AI, but a radio transmission is somebody else on the
+     * channel - a station, a carrier, another commander - so it is named after its
+     * own source. Attributing it to the ship put words in the AI's mouth that it
+     * never said.
+     */
+    private String speakerOf(AiResponseLogEvent event) {
+        if (isRadio(event)) return event.getSpeaker();
+        return shipManager.getShip() == null ? "AI" : shipManager.getShip().getShipName();
     }
 
     /**

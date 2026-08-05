@@ -94,21 +94,33 @@ int hud_run_desktop(int argc, char **argv) {
     attrs.colormap = XCreateColormap(dpy, root, vinfo.visual, AllocNone);
     attrs.background_pixel = 0;
     attrs.border_pixel = 0;
-    attrs.override_redirect = managed ? False : True;
+    // Capture mode is managed for the same reason it drops the notification
+    // hint below: an override-redirect window is invisible to the window
+    // manager, and so to anything that asks the window manager what windows
+    // exist - which is how a capture tool builds the list the commander picks
+    // from.
+    attrs.override_redirect = (managed || model.capture) ? False : True;
     attrs.event_mask = ExposureMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask;
 
     Window win = XCreateWindow(dpy, root, x, y, width, height, 0, 32,
                                InputOutput, vinfo.visual,
                                CWColormap | CWBackPixel | CWBorderPixel |
                                CWOverrideRedirect | CWEventMask, &attrs);
-    XStoreName(dpy, win, "EliteIntel HUD Overlay");
+    XStoreName(dpy, win, model.capture ? "EliteIntel HUD (VR capture)" : "EliteIntel HUD Overlay");
 
     Atom wtype = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
-    Atom notif = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
-    XChangeProperty(dpy, win, wtype, XA_ATOM, 32, PropModeReplace, (unsigned char *) &notif, 1);
-    Atom wstate = XInternAtom(dpy, "_NET_WM_STATE", False);
-    Atom above = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
-    XChangeProperty(dpy, win, wstate, XA_ATOM, 32, PropModeReplace, (unsigned char *) &above, 1);
+    // NOTIFICATION says "transient, not a real window" and window lists honour
+    // that by leaving it out; NORMAL is what puts capture mode in the list a
+    // commander picks from. Keep-above goes with it: this window is going to be
+    // read in a headset, not on the desktop it is sitting on.
+    Atom kind = XInternAtom(dpy, model.capture ? "_NET_WM_WINDOW_TYPE_NORMAL"
+                                               : "_NET_WM_WINDOW_TYPE_NOTIFICATION", False);
+    XChangeProperty(dpy, win, wtype, XA_ATOM, 32, PropModeReplace, (unsigned char *) &kind, 1);
+    if (!model.capture) {
+        Atom wstate = XInternAtom(dpy, "_NET_WM_STATE", False);
+        Atom above = XInternAtom(dpy, "_NET_WM_STATE_ABOVE", False);
+        XChangeProperty(dpy, win, wstate, XA_ATOM, 32, PropModeReplace, (unsigned char *) &above, 1);
+    }
 
     XMapWindow(dpy, win);
     XRaiseWindow(dpy, win);
@@ -180,7 +192,8 @@ int hud_run_desktop(int argc, char **argv) {
             int cx = x + card_w / 2, cy = y + card_h / 2;
             int sx, sy, sw, sh;
             monitor_rect(dpy, screen, cx, cy, &sx, &sy, &sw, &sh);
-            double slope = hud_tilt_slope(cx - sx, cy - sy, sw, sh);
+            // Flat when captured: see the same decision in platform_win32.c.
+            double slope = model.capture ? 0.0 : hud_tilt_slope(cx - sx, cy - sy, sw, sh);
 
             int win_h = hud_tilt_height(slope, card_w, card_h);
             if (card_w != width || win_h != height) {

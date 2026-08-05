@@ -542,7 +542,7 @@ public class BindingProfilePanel extends JPanel {
         }
     }
 
-    private File resolveGameBindsFile() throws Exception {
+    private File resolveGameBindsFile() throws IOException {
         return monitor.resolveActiveBindsFile();
     }
 

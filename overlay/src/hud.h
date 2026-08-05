@@ -44,10 +44,23 @@ typedef struct {
     int  present;
 } Objective;
 
+/// Who a conversation line is from - the only thing that decides its colour.
+///
+/// The values are the wire codes, and they extend the 0/1 flag this field used
+/// to be: a binary built before SPK_RADIO existed reads a 2 as "true" and draws
+/// the line in the AI colour, which is what it did before radio had a colour of
+/// its own. So the app can send the new code to an old overlay without the
+/// protocol version having to change.
+typedef enum {
+    SPK_COMMANDER = 0,
+    SPK_AI        = 1,
+    SPK_RADIO     = 2        // station control, carriers, other commanders
+} Speaker;
+
 typedef struct {
     char speaker[64];
     char text[MAX_TEXT];
-    int  ai;
+    Speaker kind;
     int  visible_bytes;      // typewriter cursor, always on a UTF-8 boundary
 } Line;
 
@@ -88,6 +101,17 @@ typedef struct {
     /// monitor, which a headset does not have.
     double tilt;             // shear at the screen edge; 0 disables the effect
     int    tilt_width;       // logical card width while tilted, see hud_tilt.c
+
+    /// Draw for a capture tool rather than for the commander's own eyes.
+    ///
+    /// Set once from --capture and never by the protocol, because it is a
+    /// property of who is looking at the window, not of the card. It turns off
+    /// the two things the desktop overlay does BECAUSE it is seen on a monitor:
+    /// the lean, which is a perspective trick that only works in the plane of a
+    /// screen, and the see-through background, which a capture tool composites
+    /// against black or against whatever is behind the window. Both are wrong
+    /// once the window is a texture in a headset.
+    int capture;
 } Model;
 
 extern Model model;

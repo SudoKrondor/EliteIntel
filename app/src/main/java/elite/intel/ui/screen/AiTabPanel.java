@@ -9,15 +9,18 @@ import elite.intel.eventbus.UiBus;
 import elite.intel.session.PlayerSession;
 import elite.intel.session.SystemSession;
 import elite.intel.ui.dialog.AudioInterfaceDialog;
+import elite.intel.ui.event.*;
 import elite.intel.ui.overlay.HudOverlaySettingsDialog;
 import elite.intel.ui.overlay.NativeHudOverlay;
-import elite.intel.ui.event.*;
+import elite.intel.ui.support.DiagnosticsBundle;
 import elite.intel.ui.telemetry.LlmSessionStatsSnapshot;
 import elite.intel.ui.telemetry.LlmSessionStatsTracker;
 import elite.intel.ui.theme.HudGlyphs;
 import elite.intel.ui.theme.HudPalette;
 import elite.intel.ui.widget.*;
 import elite.intel.util.SleepNoThrow;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -28,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -41,6 +45,14 @@ import static elite.intel.ui.theme.HudPalette.HUD_COLOR_ROLE_APPLICATION_BACKGRO
 import static elite.intel.ui.theme.HudPalette.HUD_GAP;
 
 public class AiTabPanel extends JPanel {
+
+    private static final Logger log = LogManager.getLogger(AiTabPanel.class);
+
+    /**
+     * Matches {@code logPath}/{@code rollingFileName} in {@code log4j2.xml}; both are relative to the working
+     * directory, so this resolves the same way the appender does.
+     */
+    private static final Path APP_LOG_FILE = Path.of("logs", "elite-intel.log");
 
     private JButton wakeWordButton;
     private JButton hudOverlayButton;
@@ -292,11 +304,13 @@ public class AiTabPanel extends JPanel {
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
-    /** Builds the SYSTEM LOG header action: a save-glyph button that writes the full transcript to a file. */
+    /**
+     * Builds the SYSTEM LOG header action: a save-glyph button that writes the diagnostics bundle to a zip.
+     */
     private HudGlyphButton buildSaveLogButton() {
         return new HudGlyphButton(HudGlyphs::paintHudSaveGlyph,
                 HudPalette.HUD_COLOR_ROLE_SECONDARY_TEXT, HudPalette.HUD_COLOR_ROLE_PRIMARY_ACTION,
-                getText("ai.section.systemMessages.save.tooltip"), this::saveSystemLog,
+                getText("ai.section.systemMessages.save.tooltip"), this::saveDiagnosticsBundle,
                 HudPalette.HUD_ICON_HEADER_ACTION);
     }
 
@@ -346,39 +360,68 @@ public class AiTabPanel extends JPanel {
     }
 
     /**
-     * Writes the full SYSTEM LOG transcript to a user-chosen {@code .log} file. Runs on the EDT (button click).
-     * The outcome (saved file, empty log, or write error) is reported back as a SYSTEM LOG line, so feedback
-     * stays inside the HUD instead of a native popup.
+     * Writes the diagnostics bundle - system log, application log, live journal and active bindings - to a
+     * user-chosen {@code .zip}. The chooser runs on the EDT (button click); the collection does not, because
+     * a journal file runs to megabytes and freezing the HUD while copying it would look like the hang the
+     * commander is probably reporting. Every outcome is reported as a SYSTEM LOG line, so feedback stays
+     * inside the HUD instead of a native popup.
      */
-    private void saveSystemLog() {
-        String content = systemPanel.exportText();
-        if (content.isBlank()) {
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.empty")));
-            return;
-        }
+    private void saveDiagnosticsBundle() {
         JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle(getText("ai.section.systemMessages.save.title"));
-        chooser.setSelectedFile(new File(defaultLogFileName()));
-        chooser.setFileFilter(new FileNameExtensionFilter("Log (*.log)", "log"));
+        chooser.setSelectedFile(new File(defaultBundleFileName()));
+        chooser.setFileFilter(new FileNameExtensionFilter("Zip (*.zip)", "zip"));
         if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) {
             return;
         }
-        File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".log")) {
-            file = new File(file.getAbsolutePath() + ".log");
+        File chosen = chooser.getSelectedFile();
+        if (!chosen.getName().toLowerCase(Locale.ROOT).endsWith(".zip")) {
+            chosen = new File(chosen.getAbsolutePath() + ".zip");
         }
+        File target = chosen;
+
+        // Read the transcript on the EDT: it is Swing state, and the worker must not touch it.
+        DiagnosticsBundle.Sources sources = new DiagnosticsBundle.Sources(
+                SystemSession.getInstance().readVersionFromResources(),
+                systemPanel.exportText(),
+                APP_LOG_FILE,
+                PlayerSession.getInstance().getJournalPath(),
+                PlayerSession.getInstance().getBindingsDir());
+
+        Thread.ofVirtual().name("diagnostics-bundle").start(() -> writeBundle(target, sources));
+    }
+
+    /**
+     * Runs on the bundle worker, so it reports every outcome and lets nothing escape.
+     * <p>
+     * The broad catch is the deliberate kind: this is a thread boundary, and an exception leaving it kills
+     * the worker in silence. The commander would watch the file chooser close and never learn whether a
+     * bundle exists - in the one feature whose whole job is explaining a failure.
+     */
+    private void writeBundle(File target, DiagnosticsBundle.Sources sources) {
         try {
-            Files.writeString(file.toPath(), content, StandardCharsets.UTF_8);
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.success", file.getName())));
-        } catch (IOException e) {
-            UiBus.publish(new AppLogEvent(getText("ai.section.systemMessages.save.error", String.valueOf(e.getMessage()))));
+            DiagnosticsBundle.Result result = DiagnosticsBundle.writeTo(target.toPath(), sources);
+            // The file exists either way, so it is always reported as saved. What could not be collected
+            // goes in the same line rather than in a separate "nothing worked" message that would have to
+            // contradict the zip sitting on disk.
+            String message = result.omitted().isEmpty()
+                    ? getText("ai.section.systemMessages.save.success", target.getName())
+                    : getText("ai.section.systemMessages.save.partial",
+                    target.getName(), String.join("; ", result.omitted()));
+            UiBus.publish(new AppLogEvent(message));
+        } catch (IOException | RuntimeException e) {
+            log.warn("Diagnostics bundle failed: {}", target, e);
+            UiBus.publish(new AppLogEvent(
+                    getText("ai.section.systemMessages.save.error", String.valueOf(e.getMessage()))));
         }
     }
 
-    /** Timestamped default file name, e.g. {@code companion_diagnostics_20260704_132155.log}. */
-    private static String defaultLogFileName() {
-        return "companion_diagnostics_"
-                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".log";
+    /**
+     * Timestamped default file name, e.g. {@code elite_intel_debug_20260704_132155.zip}.
+     */
+    private static String defaultBundleFileName() {
+        return "elite_intel_debug_"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".zip";
     }
 
     /** Timestamped default file name, e.g. {@code companion_memory_dump_20260704_132155.json}. */

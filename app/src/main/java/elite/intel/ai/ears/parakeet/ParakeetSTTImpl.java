@@ -403,6 +403,13 @@ public class ParakeetSTTImpl implements EarsInterface {
                 String finalTranscript = stripTrashPrefix(transcript);
                 if (finalTranscript.isBlank()) return;
 
+                // Laughter is what the engine returns for noise it cannot map to words, so it is
+                // never something the commander said - drop it before it costs an AI round trip.
+                if (LaughterFilter.isLaughter(finalTranscript)) {
+                    log.debug("Discarding laughter transcript: [{}]", finalTranscript);
+                    return;
+                }
+
                 UiBus.publish(new AppLogEvent("STT: [" + finalTranscript + "]"));
 
                 if (capturedWhileAwake) {

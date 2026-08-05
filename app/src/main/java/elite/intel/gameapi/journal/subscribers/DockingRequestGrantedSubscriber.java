@@ -17,18 +17,21 @@ public class DockingRequestGrantedSubscriber {
         String playerName = playerSession.getVariablePlayerName();
 
         if (event.getStationName().equalsIgnoreCase(playerSession.getFleetCarrierData().getCallSign())) {
+            String carrierName = playerSession.getFleetCarrierData().getCarrierName();
             GameEventBus.publish(new RadioTransmissionEvent(
                     localizedEvent("event.docking.trafficControl",
-                            playerSession.getFleetCarrierData().getCarrierName(),
+                            carrierName,
                             event.getLandingPad(),
-                            localizedEvent("event.docking.welcomeHome", playerName))
+                            localizedEvent("event.docking.welcomeHome", playerName)),
+                    localizedEvent("event.trafficControl.speaker", carrierName)
             ));
         } else {
             GameEventBus.publish(new RadioTransmissionEvent(
                     localizedEvent("event.docking.trafficControl",
                             event.getStationName(),
                             event.getLandingPad(),
-                            localizedEvent("event.docking.goodToSeeYou", playerName))
+                            localizedEvent("event.docking.goodToSeeYou", playerName)),
+                    localizedEvent("event.trafficControl.speaker", event.getStationName())
             ));
         }
     }

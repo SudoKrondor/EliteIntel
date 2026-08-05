@@ -25,4 +25,8 @@ while true; do
   sleep 4
   emit "SAY${T}Nomad${T}1${T}Gold to Titov Port. Twelve thousand four hundred eighty credits profit."
   sleep 5
+  # Radio traffic (kind 2), so all three lane colours are on screen together -
+  # which is the only way to judge whether they still read as one family.
+  emit "SAY${T}Bloch Terminal traffic control${T}2${T}This is Bloch Terminal traffic control. Proceed to landing pad 7."
+  sleep 5
 done

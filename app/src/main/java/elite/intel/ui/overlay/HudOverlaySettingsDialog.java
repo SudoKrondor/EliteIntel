@@ -59,6 +59,7 @@ public class HudOverlaySettingsDialog extends JDialog {
     private HudComboBox<HudVrPosition> vrPositionCombo;
     private JLabel vrPositionLabel;
     private JTextArea vrHint;
+    private JTextArea captureHint;
     private HudSlider alphaSlider;
     private HudSlider scaleSlider;
     private Timer scaleCommit;
@@ -116,6 +117,14 @@ public class HudOverlaySettingsDialog extends JDialog {
         vrHint = wrappedNote(getText("overlay.settings.vr.placement"));
         gbc.gridy++;
         HudForms.addSpanComponent(root, vrHint, gbc);
+
+        // Capture mode needs the commander to do something outside this app, and
+        // nothing on screen would tell them: the window simply appears on the
+        // desktop and nothing arrives in the headset until a capture tool pins
+        // it. Said here rather than left to the release notes.
+        captureHint = wrappedNote(getText("overlay.settings.display.captureWindow.hint"));
+        gbc.gridy++;
+        HudForms.addSpanComponent(root, captureHint, gbc);
 
         alphaSlider = new HudSlider(ALPHA_MIN, ALPHA_MAX, 1,
                 (int) Math.round(overlay.getBackgroundAlpha() * 100));
@@ -180,6 +189,9 @@ public class HudOverlaySettingsDialog extends JDialog {
         vrPositionLabel.setVisible(inVr);
         vrPositionCombo.setVisible(inVr);
         vrHint.setVisible(inVr);
+        // Placement is the capture tool's to offer in capture mode, not ours, so
+        // the compass rows stay hidden and this takes their place.
+        captureHint.setVisible(mode == HudDisplayMode.CAPTURE_WINDOW);
     }
 
     /**
@@ -211,6 +223,7 @@ public class HudOverlaySettingsDialog extends JDialog {
             case DESKTOP -> getText("overlay.settings.display.desktop");
             case VR -> getText("overlay.settings.display.vr");
             case BOTH -> getText("overlay.settings.display.both");
+            case CAPTURE_WINDOW -> getText("overlay.settings.display.captureWindow");
         };
     }
 

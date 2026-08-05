@@ -8,7 +8,10 @@ import elite.intel.eventbus.GameEventBus;
 import elite.intel.gameapi.journal.events.ReceiveTextEvent;
 import elite.intel.session.PlayerSession;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import static elite.intel.util.StringUtls.localizedEvent;
 
@@ -53,12 +56,22 @@ public class TransmissionReceivedSubscriber {
                 if (event.getFrom().toLowerCase().contains("military")) return;
                 if (event.getMessage().contains("$STATION_docking_granted;")) return;
 
+                // The sender as the game names it for a human: From is a symbol like
+                // "$ShipName_Police_Federation;" for anything that is not a commander.
+                String source = event.getFromLocalised() == null || event.getFromLocalised().isBlank()
+                        ? event.getFrom()
+                        : event.getFromLocalised();
+
                 if (isStation) {
                     if (!event.getMessageLocalised().toLowerCase().contains("fire zone")) {
-                        GameEventBus.publish(new RadioTransmissionEvent(localizedEvent("event.transmission.trafficControl", event.getFrom(), event.getMessageLocalised())));
+                        // One resolution of the sender for both: the spoken line and the label on screen
+                        // name the same station, rather than disagreeing whenever the journal localises it.
+                        GameEventBus.publish(new RadioTransmissionEvent(
+                                localizedEvent("event.transmission.trafficControl", source, event.getMessageLocalised()),
+                                localizedEvent("event.trafficControl.speaker", source)));
                     }
                 } else {
-                    GameEventBus.publish(new RadioTransmissionEvent(event.getMessageLocalised()));
+                    GameEventBus.publish(new RadioTransmissionEvent(event.getMessageLocalised(), source));
                 }
             }
         });

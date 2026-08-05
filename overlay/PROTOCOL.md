@@ -50,11 +50,14 @@ CLR
 Clears the objective card. The window shrinks to just the conversation.
 
 ```
-SAY <speaker> <ai> <text>
+SAY <speaker> <kind> <text>
 ```
 
-Appends a conversation line. `ai` is `0` (commander) or
-`1` (ship AI) and selects the colour. The overlay owns the typewriter animation - the app sends whole lines and never streams characters, so the animation never depends on pipe timing.
+Appends a conversation line. `kind` says who is speaking and selects the colour: `0` commander (green), `1` ship AI (blue), `2` radio traffic — station control, carriers, other commanders (violet). An unrecognised value is drawn as the AI, so a newer app never loses a line on an older overlay.
+
+`kind` extends the `0`/`1` flag it replaced instead of redefining it, which is why adding radio did not bump the protocol version: an overlay built before `2` existed reads it as a non-zero "is AI" and colours the line exactly as it used to.
+
+The overlay owns the typewriter animation - the app sends whole lines and never streams characters, so the animation never depends on pipe timing.
 
 ```
 QUIT
@@ -65,12 +68,13 @@ Exits cleanly.
 ## Command line
 
 ```
-elite-intel-overlay [--vr[=on|auto|off]] [--managed]
+elite-intel-overlay [--vr[=on|auto|off]] [--capture] [--managed]
 ```
 
 | flag         | meaning                                                                     |
 |--------------|-----------------------------------------------------------------------------|
 | *(none)*     | Desktop overlay. Identical to every version before VR support existed.      |
+| `--capture`  | Desktop shell drawn for a **VR capture tool** to pin — flat, opaque, and in a window Desktop+ / OVR Toolkit / Virtual Desktop will actually list. Never touches SteamVR, so it overrides `--vr`. See below. |
 | `--vr=off`   | Same as passing nothing. SteamVR is never even probed.                      |
 | `--vr=auto`  | SteamVR overlay **only when a headset is actually connected**, desktop otherwise. |
 | `--vr=on`    | SteamVR overlay whenever the runtime is installed, headset awake or not. `--vr` is a synonym. |
@@ -84,6 +88,20 @@ Unknown flags are ignored, for the same reason unknown commands are.
 
 `--vr=only` is the exception because of the "both at once" setting, where the app runs **two children
 **: a desktop overlay and a VR one, fed identical lines. If the VR child fell back there, its window would land exactly on top of the desktop child's — the commander would drag one and watch the other stay put. So it exits instead, and the desktop child is the whole overlay.
+
+## Capture mode
+
+`--capture` is for commanders who would rather let a purpose-built tool put the HUD in their headset than have this binary talk to SteamVR. It draws the ordinary desktop card, with three differences, each of which exists because something else is going to be looking at the window:
+
+| | desktop | `--capture` |
+|---|---|---|
+| lean | sheared by position on screen | flat — the shear reads as depth only in the plane of a monitor |
+| background | `CFG alpha` | opaque — a capture tool composites transparency against black, or against the desktop behind the window |
+| window | tool window, always-on-top, `override_redirect` on X11 | a normal, listed window titled `EliteIntel HUD (VR capture)` |
+
+That last row is the reason this is a mode and not advice. Capture pickers enumerate ordinary top-level windows; the desktop overlay is deliberately not one, so it never appears in the list and cannot be pinned at all.
+
+Placement, curvature and opacity in the headset belong to the capture tool in this mode — `CFG vrpos=` is ignored, because there is no SteamVR overlay to place.
 
 ## Placement in VR
 
