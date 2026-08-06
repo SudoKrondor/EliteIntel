@@ -29,6 +29,14 @@ public final class CompanionConfig {
     // --- runtime tuning (provisional; TODO: back by GUI/DB settings) ---
     /** Max read-only query handlers that may execute concurrently after their cognitive turns settle. */
     private static final int MAX_PARALLEL_QUERY_EXECUTIONS = 4;
+    /**
+     * How many function calls one commander turn may settle. Above one so a commander who asks two things in a
+     * breath ("check the loadout, what is our cargo capacity") is answered rather than repaired down to half an
+     * answer; two rather than more, because everything past the second call is far more often a model padding
+     * its response than a commander asking for a third thing, and each extra call is another execution and
+     * another spoken line.
+     */
+    private static final int MAX_COMMANDER_TOOL_CALLS = 2;
     /** Hard lifecycle ceiling for a live thought. */
     private static final Duration THOUGHT_WATCHDOG_TIMEOUT = Duration.ofSeconds(60);
     /** One deadline for queue wait plus all physical attempts of a logical LLM request. */
@@ -78,6 +86,13 @@ public final class CompanionConfig {
     /** Max read-only query handlers that may execute concurrently. */
     public static int maxParallelQueryExecutions() {
         return MAX_PARALLEL_QUERY_EXECUTIONS;
+    }
+
+    /**
+     * Max function calls one commander turn settles; a longer response is repaired down to this.
+     */
+    public static int maxCommanderToolCalls() {
+        return MAX_COMMANDER_TOOL_CALLS;
     }
 
     /** Hard lifecycle ceiling for a live thought. */

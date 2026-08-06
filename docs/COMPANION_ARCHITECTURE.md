@@ -1,337 +1,308 @@
-# Архитектура компаньона
+# Companion architecture
 
-Этот документ описывает действующую архитектуру режима компаньона в EliteIntel. Он является источником истины для границ компонентов, протокола вызова функций, правил записи памяти и жизненного цикла выполнения.
+This document describes the current architecture of the companion mode in EliteIntel. It is the source of truth for component boundaries, the function-calling protocol, the memory-write rules and the execution lifecycle.
 
-Версия: **v0.33**, 2026-07-16.
+Version: **v0.34**, 2026-08-06.
 
-## 1. Основные правила
+## 1. Core rules
 
-1. Источников мысли два: `COMMANDER` и `EVENT`.
-2. Каждый ход модели завершается ровно одним вызовом функции.
-3. Модель не классифицирует тему, важность или тип памяти.
-4. Память принимает только завершённые `MemoryRecord`. Частичная реплика, незавершённый запрос или одинокий результат функции в неё не попадают.
-5. Команды и макросы являются исполнением, а не разговором, поэтому не создают разговорную память. Единственное явное исключение — прямой вызов `RememberCommand` из хода `COMMANDER`, который владеет записью `SAVED_TEXT`.
-6. Тип записи определяется кодом по фактически завершённому пути: разговор, запрос данных, игровое событие или явное запоминание.
-7. Все данные одного хода принадлежат его неизменяемому `ThoughtContext`; поздний результат не читает состояние более нового хода.
-8. Остановка, прерывание и смена поколения среды выполнения не должны публиковать позднюю речь или частичную память.
+1. There are two thought sources: `COMMANDER` and `EVENT`.
+2. Every model turn ends in function calls. The caller itself declares the limit (`LlmRequest.maxToolCalls`): every turn accepts exactly one call except a `COMMANDER` turn, where a single utterance may hold several requests.
+3. The model does not classify topic, importance or memory kind.
+4. Memory accepts only completed `MemoryRecord`s. A partial reply, an unfinished query or a lone function result never enters it.
+5. Commands and macros are execution rather than conversation, so they create no conversational memory. The single explicit exception is a direct `RememberCommand` call from a `COMMANDER` turn, which owns the `SAVED_TEXT` record.
+6. The record kind is determined by code from the path that actually completed: conversation, data query, game event or explicit memorisation.
+7. All data of one turn belongs to its immutable `ThoughtContext`; a late result never reads the state of a newer turn.
+8. Stopping, interruption and a runtime-generation change must never publish late speech or partial memory.
 
-## 2. Состав системы
+## 2. System composition
 
-`CompanionRuntimeGraph` объединяет одну согласованную среду выполнения:
+`CompanionRuntimeGraph` assembles one coherent runtime:
 
-- `ThoughtDispatcher` принимает реплики командира и реакции игровых подписчиков;
-- `ThoughtDependencies` передаёт мыслям шлюзы, политики и координаторы;
-- `CompanionLlmGateway` отвечает за один логический запрос к модели и проверку протокола;
-- `ExecutionGateway` выполняет игровые и системные функции;
-- `SpeechGateway` передаёт готовую речь активному голосовому движку;
-- `SessionMemoryGateway` хранит память текущего сеанса;
-- `OversizedMemoryCompressor` фоново превращает слишком длинную завершённую запись в короткий цельный gist;
-- `MidTermToLongTermConsolidator` транзакционно сворачивает записи, ожидающие консолидации, в раздельные сводки;
-- `CompanionDiagnostics` и `CompanionMemoryDump` показывают ход выполнения и состояние памяти.
+- `ThoughtDispatcher` accepts commander input and game-subscriber reactions;
+- `ThoughtDependencies` hands thoughts their gateways, policies and coordinators;
+- `CompanionLlmGateway` owns one logical model request and the protocol validation;
+- `ExecutionGateway` runs game and system functions;
+- `SpeechGateway` passes finished speech to the active voice engine;
+- `SessionMemoryGateway` holds the current session's memory;
+- `OversizedMemoryCompressor` turns an over-long completed record into a short, whole gist in the background;
+- `MidTermToLongTermConsolidator` transactionally folds records awaiting consolidation into separate summaries;
+- `CompanionDiagnostics` and `CompanionMemoryDump` expose execution progress and memory state.
 
-`CompanionRuntime` публикует граф целиком. При перезапуске старое поколение закрывается, после чего его асинхронные результаты больше не имеют права менять новую среду.
+`CompanionRuntime` publishes the graph as a whole. On restart the old generation is closed, after which its asynchronous results are no longer allowed to change the new runtime.
 
-## 3. Приём и маршрутизация
+## 3. Intake and routing
 
-### 3.1 Реплика командира
+### 3.1 Commander input
 
-`ThoughtDispatcher.submitCommanderInput` выполняет следующие действия:
+`ThoughtDispatcher.submitCommanderInput` performs the following:
 
-1. сохраняет исходный текст для диагностики и исполнения;
-2. удаляет обращение по имени компаньона и применяет только акустические исправления STT;
-3. один раз снимает `GameStateSnapshot`;
-4. проверяет точный `ReflexResolver`;
-5. создаёт `ReflexThought` при полном совпадении, иначе `CommanderThought`;
-6. помещает мысль в последовательную очередь `COMMANDER`.
+1. keeps the raw text for diagnostics and execution;
+2. strips the companion's name as a form of address and applies acoustic STT corrections only;
+3. takes a `GameStateSnapshot` once;
+4. checks the exact `ReflexResolver`;
+5. creates a `ReflexThought` on a full match, otherwise a `CommanderThought`;
+6. places the thought on the sequential `COMMANDER` lane.
 
-Только полное совпадение с одной безопасной функцией без параметров обходит модель. Любая другая реплика передаётся
-LLM, а `SemanticActionReducer` используется лишь для выбора предложенного ей набора функций.
+Only a full match against a single safe, parameterless function bypasses the model. Every other utterance goes to the LLM, and `SemanticActionReducer` serves only to select the function set offered to it.
 
-### 3.2 Игровое событие
+### 3.2 Game event
 
-Игровые подписчики обращаются только к `CompanionNarrator`:
+Game subscribers address `CompanionNarrator` only:
 
-- `filler` сразу передаёт одноразовую служебную фразу в речь и не пишет память;
-- `narrate` создаёт `EventThought`, который формулирует переданные данные через модель;
-- `announce` создаёт `EventThought`, который произносит готовую фразу без модели.
+- `filler` passes a one-off service phrase straight to speech and writes no memory;
+- `narrate` creates an `EventThought` that phrases the supplied data through the model;
+- `announce` creates an `EventThought` that speaks a finished phrase without the model.
 
-Подписчик заранее решает, нужно ли сообщать событие, и передаёт уже отобранные данные. Данные и инструкции ограничиваются отдельными пределами и живут только в текущем `ThoughtContext` и промпте; история диалога в EVENT-промпт не передаётся. В память попадает только итоговая успешная фраза: ответ `speak`, сформированный моделью, либо готовое verbatim-объявление. `EVENT` не получает игровые функции.
+The subscriber decides in advance whether an event is worth reporting and passes data it has already selected. Data and instructions are bounded by separate limits and live only in the current `ThoughtContext` and prompt; dialogue history is not passed into the EVENT prompt. Only the final successful phrase enters memory: the model's `speak` reply, or the ready verbatim announcement. `EVENT` receives no game functions.
 
-## 4. Очереди, параллельность и прерывание
+## 4. Lanes, concurrency and interruption
 
-Для `COMMANDER` и `EVENT` существуют отдельные последовательные `ThoughtLane`. Поэтому реакции на события не задерживают распознавание команд, а командные ходы сохраняют порядок поступления.
+`COMMANDER` and `EVENT` have separate sequential `ThoughtLane`s. Event reactions therefore never delay command recognition, and commander turns keep their admission order.
 
-После выбора игровой функции длительный обработчик отделяется от познавательной очереди:
+Once a game function has been selected, a long-running handler is detached from the cognitive lane:
 
-- команды и макросы выполняются последовательно;
-- запросы данных выполняются в пуле до четырёх потоков;
-- короткие системные функции исполняются в ходе самой мысли.
+- commands and macros run sequentially;
+- data queries run in a pool of up to four threads;
+- short system functions run inside the thought itself.
 
-Мысль остаётся зарегистрированной как активная до завершения отделённого обработчика. Это позволяет `isIdle`, сторожевому таймеру, остановке и прерыванию учитывать её полный жизненный цикл.
+The thought stays registered as live until the detached handler finishes. This lets `isIdle`, the watchdog, stop and interrupt account for its full lifecycle.
 
-Срочная мысль прерывает активные мысли и становится первой в своей очереди. Сторожевой таймер проверяет активные мысли каждые пять секунд и прерывает ход, который длится более 60 секунд. Логический срок запроса к модели равен 50 секундам, то есть заканчивается раньше срока мысли.
+An urgent thought interrupts live thoughts and goes to the head of its lane. The watchdog checks live thoughts every five seconds and interrupts a turn running longer than 60 seconds. The logical model-request deadline is 50 seconds, so it expires before the thought deadline.
 
-Если обработчик уже начал внешнее действие, отмена не обещает отменить это действие физически. Она запрещает позднему результату создавать речь или память.
+If a handler has already started an external action, cancellation does not promise to undo that action physically. It only forbids the late result from producing speech or memory.
 
-## 5. Виды мыслей
+## 5. Kinds of thought
 
 ### 5.1 `CommanderThought`
 
-Полный путь командира:
+The full commander path:
 
-1. редуктор выбирает небольшой набор доступных игровых функций;
-2. память предоставляет недавнюю историю и допустимые факты;
-3. `PromptComposer` собирает сообщения и функции;
-4. `CompanionLlmGateway` возвращает один проверенный вызов;
-5. мысль исполняет этот вызов и применяет правило записи, соответствующее результату.
+1. the reducer selects a small set of available game functions;
+2. memory supplies recent history and admissible facts;
+3. `PromptComposer` assembles the messages and functions;
+4. `CompanionLlmGateway` returns validated calls, no more than the limit the turn declared;
+5. the thought settles them one after another and applies to each the write rule matching its result.
 
-Если локализованная тренировочная фраза заканчивается обязательным строковым параметром, точное совпадение её префикса гарантированно добавляет функцию к кандидатам, но не вытесняет семантических конкурентов. Быстрый рефлекс параметризованные функции не исполняет.
+A single utterance may hold several requests ("check the loadout, what is our cargo capacity"), so a commander turn settles up to `CompanionConfig.maxCommanderToolCalls()` calls. A batch is several answers to one utterance, not simultaneous actions: the calls run strictly in sequence in model order, each starting only once the previous one has finished, and a failure in one does not cancel the rest.
 
-Для `RememberCommand` модель передаёт строковый аргумент, но команда не доверяет его формулировке. Она сама извлекает локализованный суффикс из той же канонической реплики, которую видела модель, и сохраняет именно его. Поэтому пропуск слова или удачная переформулировка модели не может стать доверенным текстом.
+Two kinds of call never enter a batch: `request_input` suspends the turn until the commander answers, and a dangerous action waits for confirmation, so either of them reduces the model's response to itself alone. `speak` beside a game call is dropped, because the answer is the call's own outcome; a response with no game calls keeps the first call. `CommanderThought.settleableCalls` is the single owner of that reduction.
 
-`RememberCommand` доступна только в `COMPANION_COMMANDER`: она отсутствует в legacy action map, а `RUN_COMMAND` пользовательского макроса не имеет права её вызывать.
+The acknowledgement is spoken once per turn however many commands it carries, but each command still speaks its own outcome.
+
+If a localized training phrase ends in a required string parameter, an exact match on its prefix is guaranteed to add the function to the candidates, but does not displace semantic competitors. The fast reflex never runs parameterized functions.
+
+For `RememberCommand` the model supplies a string argument, but the command does not trust its wording. It extracts the localized suffix itself from the very same canonical utterance the model saw, and stores exactly that. A dropped word or a felicitous rephrasing by the model therefore cannot become trusted text.
+
+`RememberCommand` is available in `COMPANION_COMMANDER` only: it is absent from the legacy action map, and a user macro's `RUN_COMMAND` has no right to invoke it.
 
 ### 5.2 `ReflexThought`
 
-Получает заранее выбранную безопасную функцию без параметров:
+Receives a pre-selected safe, parameterless function:
 
-- команда выполняется без записи памяти;
-- только успешный запрос с непустым ответом публикует один завершённый `QUERY`; ошибка, пустой результат, отмена и прерывание ничего не записывают.
+- a command runs with no memory write;
+- only a successful query with a non-empty answer publishes one completed `QUERY`; failure, an empty result, cancellation and interruption write nothing.
 
 ### 5.3 `EventThought`
 
-Имеет два режима:
+Has two modes:
 
-- narration: один вызов `speak` формулируется моделью;
-- verbatim: готовая фраза произносится без модели.
+- narration: one `speak` call is phrased by the model;
+- verbatim: a finished phrase is spoken without the model.
 
-Только итоговая успешная фраза публикуется как одноэлементный `EVENT`. Исходные данные события не записываются. Ошибка, пустая фраза, отмена или прерывание ничего не записывают.
+Only the final successful phrase is published, as a single-entry `EVENT`. The source event data is never recorded. Failure, an empty phrase, cancellation or interruption write nothing.
 
-## 6. Протокол модели
+## 6. Model protocol
 
-### 6.1 Один завершающий вызов
+### 6.1 One call per request
 
-`CommanderPrompt` требует вернуть только один вызов функции. Допустимые варианты:
+`CommanderPrompt` requires function calls and no free text. One request takes one call; a second call is licensed only by a second, distinct request in the same utterance, never by indecision between candidates for the same one. The admissible options for a call are:
 
-- выбранная игровая функция, включая встроенную команду `remember(text)`;
-- `request_input` для одного отсутствующего обязательного параметра;
-- обычный query `memory_search` для явного поиска по памяти;
-- `speak` для разговора, ответа из доверенного факта или сообщения о неподдерживаемом запросе.
+- the selected game function, including the built-in `remember(text)` command;
+- `request_input` for one missing required parameter;
+- the ordinary `memory_search` query for an explicit memory lookup;
+- `speak` for conversation, for an answer drawn from a trusted fact, or to report an unsupported request.
 
-`memory_search` проходит через reducer и реестр запросов вместе с остальными игровыми query. Он не входит в набор
-системных функций и появляется у модели только когда reducer выбрал его для текущей реплики.
+`memory_search` goes through the reducer and the query registry along with every other game query. It is not part of the system-function set and appears to the model only when the reducer selected it for the current utterance.
 
-`classify_turn` отсутствует. Вместе с ним отсутствуют обязательный составной ответ, тема, важность, `canonical_fact` и отдельный классификационный этап.
+`classify_turn` does not exist. Neither does the mandatory composite response, the topic, the importance, the `canonical_fact` or a separate classification stage.
 
-`CommanderPrompt` задаёт один короткий порядок `if-else`:
+`CommanderPrompt` states one short `if-else` order:
 
-1. продолжающееся `pending_clarification`;
-2. ровно одна явно подходящая игровая функция, кроме `memory_search`;
-3. неоднозначность между несколькими игровыми функциями;
-4. явный запрос на вспоминание, поиск, список или подсчёт через `memory_search`;
-5. полный ответ из доверенного факта;
-6. `speak` как окончательная ветвь.
+1. a continuing `pending_clarification`;
+2. any offered game function other than `memory_search` that fits the input, choosing the single most probable one, since several plausible candidates are not a reason to ask;
+3. an explicit request to recall, search, list or count through `memory_search`;
+4. a complete answer from a trusted fact;
+5. `speak` as the final branch.
 
-Обычная история диалога — только контекст, а не доказательство текущего игрового состояния. Доверенными игровыми
-данными считаются актуальные подключаемые fact-source. Записи памяти, включая `EVENT` и `SAVED_TEXT`, автоматически
-в промпт не подмешиваются и доступны для поиска только через `memory_search`. Ограниченный набор live-фактов не может
-доказывать полный список, отсутствие других данных или точное общее число.
+Ordinary dialogue history is context only, never evidence of current game state. Trusted game data means the live pluggable fact sources. Memory records, including `EVENT` and `SAVED_TEXT`, are never mixed into the prompt automatically and are reachable only through `memory_search`. A relevance-limited set of live facts cannot prove a complete list, the absence of other data, or an exact total.
 
-### 6.2 Проверка ответа
+### 6.2 Response validation
 
-`CompanionLlmGateway` принимает ответ только при выполнении всех условий:
+`CompanionLlmGateway` accepts a response only when all of the following hold:
 
-1. ответ разобран как корректный результат модели;
-2. присутствует ровно один вызов;
-3. функция была предложена в этом запросе;
-4. аргументы параметризованной функции соответствуют её точной схеме.
+1. the response parsed as a valid model result;
+2. at least one call is present, and their number does not exceed the limit the request declared (`LlmRequest.maxToolCalls`);
+3. every function was offered in this request;
+4. a parameterized function's arguments match its exact schema.
 
-Если предложенная функция не объявляет параметров, любые сгенерированные моделью поля аргументов отбрасываются и
-обработчик получает пустой объект `{}`. Для функций с параметрами неизвестные поля по-прежнему делают вызов невалидным.
+Repeated identical calls (same name and same arguments) are dropped before validation: that is one intent stated twice, not two actions. The same function with different arguments remains two calls.
 
-Для исправимого нарушения допускается одна повторная попытка:
+If an offered function declares no parameters, any argument fields the model generated are discarded and the handler receives an empty `{}` object. For functions with parameters, unknown fields still make the call invalid.
 
-- неразбираемый или составной ответ повторяет исходный запрос без добавления выдуманной истории;
-- вызов неизвестной функции получает правдивый результат `rejected`, после чего модель снова выбирает из исходного набора;
-- вызов предложенной функции с неверными аргументами получает `rejected` с точной схемой, а исправление ограничивается уже выбранной функцией. Так модель исправляет параметры и не заменяет запрос разговором.
+A repairable violation is allowed one retry:
 
-LM Studio получает `parallel_tool_calls=false`. Повторный вызов относится к проверке одного логического ответа и не превращает ход в протокол из нескольких обязательных функций.
+- an unparseable response repeats the original request without adding invented history: there is nothing in it to reject;
+- a call to an unknown function receives a truthful `rejected` result, after which the model chooses again from the original set;
+- a call to an offered function with wrong arguments receives `rejected` together with the exact schema, and the repair is narrowed to the function already chosen. The model then fixes the parameters instead of replacing the request with conversation;
+- a response with more calls than the limit receives `rejected` on every call, stating the limit, and the function set is narrowed to the ones the model itself named: only the count is in dispute, not the choice. If the model still exceeds the limit after the repair, the calls it named first are executed up to the allowance, so the turn is not wasted.
 
-Сетевые ошибки, `429` и `5xx` могут получить одну физическую повторную отправку с задержкой 250–750 мс. Постоянные ошибки и отмена не запускают исправление протокола.
+LM Studio receives `parallel_tool_calls` set to whether the turn settles several calls, so the limit is the same at the request level and at the provider level. The retry belongs to validating one logical response and does not turn the turn into a protocol of several mandatory functions.
 
-## 7. Уточнение параметров и опасные действия
+Network failures, `429` and `5xx` may receive one physical resend after a 250-750 ms delay. Permanent failures and cancellation do not start a protocol repair.
 
-`request_input(action_id, parameter_name, question)` открывает один `PendingClarification`, только если:
+## 7. Parameter clarification and dangerous actions
 
-- функция присутствовала в наборе текущего хода;
-- это игровая функция;
-- указанный параметр действительно обязателен;
-- вопрос не пуст.
+`request_input(action_id, parameter_name, question)` opens one `PendingClarification` only if:
 
-Следующая реплика атомарно забирает это состояние. Оно передаётся модели отдельно от слов командира и не записывается в память.
+- the function was present in the current turn's set;
+- it is a game function;
+- the named parameter really is required;
+- the question is not empty.
 
-Опасность определяет код после выбора функции. Модель не получает задачу классифицировать действие как опасное. Компаньон произносит локализованный вопрос подтверждения и ждёт кодовое слово через `ConfirmationCoordinator`. Подтверждение, отказ и ожидание не создают разговорную запись.
+The next utterance takes that state atomically. It is passed to the model separately from the commander's words and is never written to memory.
 
-## 8. Модель памяти
+Danger is determined by code after the function has been selected. The model is never asked to classify an action as dangerous. The companion speaks a localized confirmation question and waits for the code word through `ConfirmationCoordinator`. Confirmation, refusal and waiting create no conversational record.
 
-### 8.1 Единица записи
+## 8. Memory model
 
-Единственная записываемая единица — `MemoryRecord(timestamp, kind, entries)`. Конструктор проверяет форму, а хранилище добавляет, вытесняет и возвращает запись только целиком.
+### 8.1 The unit of record
 
-| `MemoryKind` | Форма записи | Кто создаёт |
+The only writable unit is `MemoryRecord(timestamp, kind, entries)`. The constructor validates the shape, and the store appends, evicts and returns a record only as a whole.
+
+| `MemoryKind` | Record shape | Created by |
 | --- | --- | --- |
-| `DIALOGUE` | `COMMANDER` → `COMPANION` | завершённый `speak` в ходе командира |
-| `QUERY` | `COMMANDER` → `COMPANION` | успешный запрос с непустым ответом |
-| `EVENT` | `EVENT` | итоговая LLM-наррация или verbatim-объявление |
-| `SAVED_TEXT` | `COMMANDER` | прямой `RememberCommand` |
+| `DIALOGUE` | `COMMANDER` → `COMPANION` | a completed `speak` in a commander turn |
+| `QUERY` | `COMMANDER` → `COMPANION` | a successful query with a non-empty answer |
+| `EVENT` | `EVENT` | the final LLM narration or a verbatim announcement |
+| `SAVED_TEXT` | `COMMANDER` | a direct `RememberCommand` |
 
-`QUERY` намеренно не хранит имя функции, `toolCallId` и JSON-аргументы: памяти нужна завершённая смысловая пара, а не технический протокол исполнения. `EVENT` хранит одну итоговую фразу без исходного массива события.
+`QUERY` deliberately stores no function name, `toolCallId` or JSON arguments: memory needs the completed semantic pair, not the technical execution protocol. `EVENT` stores one final phrase without the source event payload.
 
-### 8.2 Правила публикации
+### 8.2 Publication rules
 
-- Обычный разговор записывается только после непустого ответа `speak`, сразу всей парой.
-- `QUERY` публикуется только после успешного непустого ответа обработчика, сразу парой `COMMANDER` → `COMPANION`. Ошибка озвучивается, но не записывается; пустой ответ, отмена и прерывание также оставляют память без изменений.
-- `EVENT` публикуется только после успешной итоговой фразы модели или готового verbatim-объявления. Исходные данные события остаются временными и в память не попадают.
-- `RememberCommand` сохраняет `SAVED_TEXT` только при прямом ходе командира. Она сама извлекает непустой локализованный суффикс из канонической реплики, показанной модели; аргумент модели не используется как содержание памяти. Подтверждение команды не образует `DIALOGUE`.
-- Остальные команды, макрос, подтверждение опасного действия, `request_input`, служебный ответ об ошибке и незавершённый ход память не изменяют.
+- Ordinary conversation is recorded only after a non-empty `speak` reply, as the whole pair at once.
+- `QUERY` is published only after a successful non-empty handler answer, as a `COMMANDER` → `COMPANION` pair. A failure is voiced but not recorded; an empty answer, cancellation and interruption likewise leave memory unchanged. A reflex publishes the record and the speech as one indivisible action. A commander turn voices each answer as soon as the handler returns it, but publishes one pair for the whole turn with the answers in the order they were voiced: otherwise one utterance would appear in history as several identical questions. Publication happens at the end of the turn, so it does not depend on which path executed the call.
+- `EVENT` is published only after a successful final phrase from the model or a ready verbatim announcement. The source event data stays transient and never enters memory.
+- `RememberCommand` stores `SAVED_TEXT` only on a direct commander turn. It extracts the non-empty localized suffix itself from the canonical utterance shown to the model; the model's argument is never used as memory content. The command's acknowledgement forms no `DIALOGUE`.
+- All other commands, a macro, a dangerous-action confirmation, `request_input`, a service error reply and an unfinished turn leave memory unchanged.
 
-Определение `MemoryKind` полностью принадлежит этим путям кода. Модель не выбирает вид записи и не присваивает ей метаданные.
+Deciding the `MemoryKind` belongs entirely to these code paths. The model neither chooses the record kind nor assigns metadata to it.
 
-### 8.3 Области хранения и вытеснение
+### 8.3 Storage areas and eviction
 
-`SessionMemoryGateway` содержит четыре области.
+`SessionMemoryGateway` holds four areas.
 
-#### Недавняя область
+#### Recent area
 
-- до 15 завершённых записей;
-- мягкий предел 1200 оценочных токенов;
-- при переполнении удаляется самая старая запись целиком;
-- как минимум одна запись сохраняется даже при превышении токенного предела;
-- обычное поле ограничивается 200 символами до помещения в историю.
+- up to 15 completed records;
+- a soft limit of 1200 estimated tokens;
+- on overflow the oldest record is removed whole;
+- at least one record is kept even when the token limit is exceeded;
+- an ordinary field is bounded to 200 characters before it enters history.
 
-Если хотя бы одно обычное поле длиннее лимита, `SessionMemoryGateway` до первой мутации передаёт весь завершённый
-`MemoryRecord` в `OversizedMemoryCompressor`. Компрессор работает вне thought-lane, сокращает только длинные поля
-через отдельный LLM-запрос с единственным tool `speak` и затем заново публикует целую запись с исходными `kind`,
-`timestamp` и порядком источников. Поэтому длинный `QUERY` не может оставить в памяти только вопрос или только
-ответ, а его полный исходный ответ продолжает озвучиваться без ожидания фонового gist. Пока сжатие не завершилось,
-записи в памяти ещё нет.
+If even one ordinary field is longer than the limit, `SessionMemoryGateway` passes the whole completed `MemoryRecord` to `OversizedMemoryCompressor` before the first mutation. The compressor works outside the thought lane, shortens only the long fields through a separate LLM request whose sole tool is `speak`, and then republishes the whole record with its original `kind`, `timestamp` and source order. A long `QUERY` therefore cannot leave only the question or only the answer in memory, and its full original answer keeps being spoken without waiting for the background gist. Until compression finishes, the record is not in memory yet.
 
-Для сокращения используется специализированный prompt короткой однофразовой выжимки, которому предлагается только
-системная функция `speak`. Компрессор забирает проверенный аргумент `speak.text` непосредственно из результата LLM и
-не передаёт вызов исполнителю, поэтому эта техническая функция ничего не озвучивает. Свободный текст модели, включая
-возможное рассуждение, игнорируется общим tool-calling gateway и в память не попадает.
+Shortening uses a dedicated prompt for a short single-phrase digest, offered the `speak` system function only. The compressor takes the validated `speak.text` argument straight from the LLM result and never passes the call to the executor, so this technical function speaks nothing. Free text from the model, including any reasoning, is ignored by the shared tool-calling gateway and never enters memory.
 
-Пустой или неизвлекаемый ответ компрессора и ошибка провайдера не уничтожают запись: к исходному тексту применяется
-детерминированный fallback с многоточием по ближайшей границе слова. Извлечённый gist сверх лимита ограничивается тем
-же способом, после чего вся запись сохраняется атомарно. Если worker уже закрыт или не принял задачу, fallback
-выполняется синхронно в gateway. Отложенно завершившаяся запись вставляется по исходному `timestamp`, чтобы не
-переставлять диалог и события относительно более новых записей.
+An empty or unextractable compressor answer and a provider failure do not destroy the record: a deterministic fallback applies an ellipsis at the nearest word boundary of the original text. An extracted gist over the limit is bounded the same way, after which the whole record is stored atomically. If the worker is already closed or did not accept the task, the fallback runs synchronously in the gateway. A record that completed late is inserted at its original `timestamp`, so dialogue and events are not reordered relative to newer records.
 
-При выходе из недавней истории:
+On leaving recent history:
 
-- `DIALOGUE` переходит в сохранённую историю разговоров;
-- `EVENT` переходит в сохранённую историю событий;
-- `QUERY` удаляется;
-- `SAVED_TEXT` здесь не хранится.
+- `DIALOGUE` moves to retained conversation history;
+- `EVENT` moves to retained event history;
+- `QUERY` is deleted;
+- `SAVED_TEXT` is not stored here.
 
-Недавняя история остаётся дословной. Перед добавлением в сохранённую историю целые записи одного вида
-дедуплицируются: у `DIALOGUE` смысл должен совпасть в обеих частях пары с порогом `0.95`, а `EVENT` совпадает только
-по точному тексту. Более свежая retained-запись заменяет старую; уже опубликованная `pending`-запись не изменяется и
-не получает вторую копию.
+Recent history stays verbatim. Before being added to retained history, whole records of the same kind are deduplicated: `DIALOGUE` must match in meaning across both halves of the pair at a threshold of `0.95`, while `EVENT` matches on exact text only. A newer retained record replaces the older one; a `pending` record that was already published is neither changed nor given a second copy.
 
-#### Сохранённая история
+#### Retained history
 
-Два независимых набора имеют разное время вытеснения:
+Two independent sets with different eviction times:
 
-- до 60 записей `DIALOGUE`;
-- до 120 записей `EVENT`.
+- up to 60 `DIALOGUE` records;
+- up to 120 `EVENT` records.
 
-Переполнение одного набора не вытесняет записи другого. Старые записи целиком переходят в следующую область.
+Overflow of one set never evicts records from the other. Old records move whole to the next area.
 
-#### Область ожидания консолидации (`pending`)
+#### Consolidation waiting area (`pending`)
 
-- хранит вытесненные `DIALOGUE` и `EVENT` до успешной атомарной фиксации сводки;
-- продолжает отдавать обе группы поиску;
-- продолжает отдавать `EVENT` явному `memory_search`;
-- удаляет только те записи, которые покрыты успешно зафиксированной сводкой.
+- holds evicted `DIALOGUE` and `EVENT` records until a summary commits atomically;
+- keeps offering both groups to search;
+- keeps offering `EVENT` to an explicit `memory_search`;
+- deletes only the records covered by a successfully committed summary.
 
-#### Долговременная область сеанса
+#### Long-term session area
 
-- отдельная сводка `DIALOGUE`;
-- отдельная сводка `EVENT`;
-- ограниченное хранилище дословных `SAVED_TEXT`.
+- a separate `DIALOGUE` summary;
+- a separate `EVENT` summary;
+- a bounded store of verbatim `SAVED_TEXT`.
 
-Консолидатор берёт по десять ожидающих записей одного вида и объединяет их с прежней сводкой. Успешная атомарная фиксация под одной блокировкой заменяет сводку и удаляет только покрытый ею пакет. Максимальная длина сводки — 1500 символов.
+The consolidator takes ten waiting records of one kind and merges them with the previous summary. A successful atomic commit under one lock replaces the summary and deletes only the batch it covers. The maximum summary length is 1500 characters.
 
-Ошибка сжатия не меняет прежнюю сводку и не удаляет пакет из области ожидания. Пакет возвращается в буфер и автоматически повторяется с короткой увеличивающейся задержкой; новая запись для этого не требуется. После трёх неудачных ответов модели фиксируется ограниченная локальная сводка из уже завершённых записей. Поэтому постоянная ошибка модели не блокирует этот вид памяти до конца сеанса. Пользователь получает одно локализованное сообщение при первой ошибке.
+A compression failure changes neither the previous summary nor removes the batch from the waiting area. The batch returns to the buffer and is retried automatically with a short increasing delay; no new record is required for that. After three failed model responses, a bounded local summary is committed from the already completed records. A persistent model failure therefore cannot block this memory kind for the rest of the session. The user receives one localized message on the first failure.
 
-`SAVED_TEXT` минует недавнюю, сохранённую и ожидающую области, общий автоматический предел в 200 символов и оба
-механизма сжатия. Для него действуют собственные пределы: до 1000 символов в записи и до 500 записей за сеанс.
-Допустимая фраза хранится дословно; точный дубликат повторно не добавляется, а превышение предела отклоняется до
-изменения памяти.
+`SAVED_TEXT` bypasses the recent, retained and waiting areas, the shared automatic 200-character limit and both compression mechanisms. It has its own limits: up to 1000 characters per record and up to 500 records per session. An admissible phrase is stored verbatim; an exact duplicate is not added again, and exceeding the limit is rejected before memory changes.
 
-### 8.4 Поиск и live-факты
+### 8.4 Search and live facts
 
-`memory_search` выполняет единственный явный поиск на уровне целых `MemoryRecord` по недавней, сохранённой и
-ожидающей областям, сводкам и `SAVED_TEXT`. Он возвращает ограниченный по числу и размеру список наиболее релевантных
-`items`. `exactRecordCount` доступен только тогда, когда все совпадения всё ещё представлены отдельными записями; при
-совпадении со сводкой он равен `null`, потому что после сжатия точный исторический подсчёт невозможен. `matchingUnits`
-отражает только число поисковых единиц и не используется как фактический подсчёт. Каждый элемент сохраняет
-происхождение; если `truncated=true`, список нельзя выдавать за полный. Записи и сводки ранжируются по словесному и
-смысловому совпадению, затем по времени исходных данных.
+`memory_search` performs the single explicit search at whole-`MemoryRecord` level across the recent, retained and waiting areas, the summaries and `SAVED_TEXT`. It returns a list of the most relevant `items`, bounded in count and size. `exactRecordCount` is available only while every match is still represented by individual records; on a match against a summary it is `null`, because an exact historical count is impossible after compression. `matchingUnits` reflects only the number of search units and is never used as a factual count. Every item keeps its provenance; if `truncated=true`, the list must not be presented as complete. Records and summaries are ranked by lexical and semantic match, then by the time of the source data.
 
-Автоматический `<facts>` содержит только актуальные данные источников, зарегистрированных через
-`@RegisterMemoryFactSource`. Каждый источник сам проверяет релевантность текущей реплике; общий сборщик ограничивает
-результат двумя фактами на источник и шестью фактами на ход. Записи session memory, `EVENT`, `SAVED_TEXT` и сводки в
-этот блок не попадают. Подключаемый источник `situation` сообщает стабильное английское описание текущей игровой
-ситуации из `PlayerSituation.i18nKey()`; язык диалога на этот внутренний факт не влияет.
+The automatic `<facts>` block contains only live data from sources registered through `@RegisterMemoryFactSource`. Each source decides for itself whether it is relevant to the current utterance; the shared collector bounds the result to two facts per source and six facts per turn. Session-memory records, `EVENT`, `SAVED_TEXT` and summaries never enter this block. The pluggable `situation` source reports a stable English description of the current game situation from `PlayerSituation.i18nKey()`; the dialogue language does not affect this internal fact.
 
-## 9. История в промпте
+## 9. History in the prompt
 
-`PromptComposer` воспроизводит недавние завершённые записи в исходных ролях:
+`PromptComposer` replays recent completed records in their original roles:
 
-- `DIALOGUE`: `user`, затем `assistant`;
-- `QUERY`: `user`, затем `assistant` с готовым ответом;
-- `EVENT`: не воспроизводится как ход чата и доступен только явному `memory_search`;
-- `SAVED_TEXT`: не воспроизводится как ход чата и доступен только явному `memory_search`.
+- `DIALOGUE`: `user`, then `assistant`;
+- `QUERY`: `user`, then `assistant` with the finished answer;
+- `EVENT`: not replayed as a chat turn and reachable only by an explicit `memory_search`;
+- `SAVED_TEXT`: not replayed as a chat turn and reachable only by an explicit `memory_search`.
 
-`PromptComposer` формирует ровно одно сообщение `SYSTEM`: сначала статические правила, затем в самом конце динамический
-`<facts>`. Текущая реплика остаётся последним сообщением `USER` и передаётся без обёртки, если нет активного
-`pending_clarification`. Состояние уточнения по-прежнему добавляется к текущей реплике в отдельном `<context>`, потому
-что это продолжение незавершённого запроса, а не игровой факт.
+`PromptComposer` forms exactly one `SYSTEM` message: the static rules first, then the dynamic `<facts>` at the very end. The current utterance stays the last `USER` message and is passed unwrapped when no `pending_clarification` is active. Clarification state is still appended to the current utterance in a separate `<context>`, because it is the continuation of an unfinished request rather than a game fact.
 
-История не содержит искусственных границ хода, промежуточных состояний обработки и классификационных сообщений. Поэтому каждый видимый фрагмент является завершённым и допустимым для протокола чата.
+History contains no artificial turn boundaries, intermediate processing states or classification messages. Every visible fragment is therefore complete and valid for the chat protocol.
 
-## 10. Речь
+## 10. Speech
 
-Компаньон передаёт готовый текст через `SpeechGateway`. Активный голосовой движок принимает конкретный `VocalisationHandle` и обязан завершить его при успехе, ошибке, отмене или остановке.
+The companion passes finished text through `SpeechGateway`. The active voice engine accepts a concrete `VocalisationHandle` and must complete it on success, failure, cancellation or stop.
 
-STT остаётся активным во время речи. Новая распознанная реплика создаёт событие прерывания, после чего контроллер отдельно прерывает речь и активные мысли. Программное подавление акустического эха не является частью этой архитектуры.
+STT stays active during speech. A newly recognized utterance raises an interruption event, after which the controller separately interrupts speech and live thoughts. Software acoustic echo suppression is not part of this architecture.
 
-## 11. Диагностика
+## 11. Diagnostics
 
-Каждая мысль получает метку `SOURCE#n`. Основные диагностические этапы:
+Every thought receives a `SOURCE#n` tag. The main diagnostic stages are:
 
-- `intake` — принятый текст и выбранный путь;
-- `reduce` — кандидаты игровых функций;
-- `compose` — число системных функций, фактов и записей истории;
-- `llm-http` — время физического обращения;
-- `llm` — проверенный вызов или причина исправления;
-- `settle` — выбранный завершающий путь;
-- `exec-time` — время обработчика;
-- `memory` и `memory-search` — число найденных результатов;
-- `done` — полное время мысли.
+- `intake` - the accepted text and the chosen path;
+- `reduce` - the game-function candidates;
+- `compose` - the number of system functions, facts and history records;
+- `llm-http` - the time of the physical request;
+- `llm` - the validated call or the reason for a repair;
+- `settle` - the chosen settling path;
+- `exec-time` - the handler's time;
+- `memory` and `memory-search` - the number of results found;
+- `done` - the thought's total time.
 
-`CompanionMemoryDump` показывает записи по областям и видам, сохраняя границы `MemoryRecord` и отдельно показывая записи, ожидающие консолидации.
+`CompanionMemoryDump` shows records by area and kind, preserving `MemoryRecord` boundaries and showing records awaiting consolidation separately.
 
-## 12. Проверки изменений
+## 12. Verifying changes
 
-Минимальный набор проверок для изменений архитектуры:
+The minimum set of checks for architecture changes:
 
-1. `:app:compileJava` и `:app:compileTestJava`;
-2. `:app:test` для модульных и интеграционных проверок без внешней модели;
-3. адресный `:app:localIntegrationTest` для выбранного языкового набора при доступной локальной модели;
-4. проверка дампа памяти: отсутствие частичных записей и сырых EVENT-данных, парная форма `QUERY`, видимость ожидающих записей до атомарной фиксации;
-5. проверка диагностической расшифровки хода модели: один завершающий вызов и отсутствие классификационного этапа.
+1. `:app:compileJava` and `:app:compileTestJava`;
+2. `:app:test` for unit and integration checks that need no external model;
+3. a targeted `:app:localIntegrationTest` for the chosen language set when a local model is available;
+4. a memory-dump check: no partial records and no raw EVENT data, `QUERY` in paired form, records awaiting consolidation visible before the atomic commit;
+5. a check of the diagnostic transcript of the model turn: one settling call and no classification stage.
 
-Изменение правил памяти считается завершённым только тогда, когда одновременно обновлены модель записи, хранилище, воспроизведение истории, диагностика, документация и тесты.
+A change to the memory rules counts as finished only when the record model, the store, history replay, diagnostics, documentation and tests have all been updated together.

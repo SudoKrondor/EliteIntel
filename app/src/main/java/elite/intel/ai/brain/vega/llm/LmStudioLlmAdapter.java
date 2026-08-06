@@ -1,11 +1,12 @@
 package elite.intel.ai.brain.vega.llm;
 
 import com.google.gson.JsonObject;
+import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 
 /**
  * LM Studio (local, OpenAI-compatible) provider adapter: the {@link OpenAiCompatibleLlmAdapter} protocol with
- * the configured served model, {@code tool_choice=required}, a single tool call, and no Mistral
- * {@code prompt_cache_key}. The model name (e.g. a loaded Gemma) comes from the LM Studio settings.
+ * the configured served model, {@code tool_choice=required}, and no Mistral {@code prompt_cache_key}. The model
+ * name (e.g. a loaded Gemma) comes from the LM Studio settings.
  */
 public final class LmStudioLlmAdapter extends OpenAiCompatibleLlmAdapter {
 
@@ -14,8 +15,10 @@ public final class LmStudioLlmAdapter extends OpenAiCompatibleLlmAdapter {
     }
 
     @Override
-    protected void addToolRequestParameters(JsonObject body) {
-        body.addProperty("parallel_tool_calls", false);
+    protected void addToolRequestParameters(JsonObject body, LlmRequest request) {
+        // Parallel calls follow what the caller can settle: a turn that reads one invocation must not be sent a
+        // response with several, and one that settles a batch would otherwise never receive one here.
+        body.addProperty("parallel_tool_calls", request.maxToolCalls() > 1);
         body.addProperty("reasoning_effort", "none");
         body.addProperty("stream", false);
     }
