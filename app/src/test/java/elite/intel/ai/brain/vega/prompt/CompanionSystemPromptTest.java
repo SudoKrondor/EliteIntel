@@ -20,7 +20,12 @@ class CompanionSystemPromptTest {
      * dilutes the rest for a small local model. Raise this number only with a reason that is not "the new rule
      * did not fit".
      *
-     * <p>It last fired when the identity clause landed (623 words). Two passages paid for it rather than raising
+     * <p>It last fired when the request_input branch was made conditional on that function actually being listed
+     * (it is withheld when nothing offered takes a required argument, so the old unconditional ELSE told the model
+     * to call a function that was not there). "Never claim completion without calling the action" paid for it: it
+     * repeats <em>Speaking is the fallback ... never in place of an action you could have taken</em>.
+     *
+     * <p>Before that it fired when the identity clause landed (623 words). Two passages paid for it rather than raising
      * the number: "never describe the request in the third person", already covered by <em>Address the commander
      * as "you"</em> and by <em>never echo or restate the input</em>; and "Weigh the commander's words against each
      * function's triggers and description, and commit to the best", which repeats the {@code <language>} block's

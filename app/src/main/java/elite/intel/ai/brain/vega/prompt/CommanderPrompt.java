@@ -70,7 +70,8 @@ final class CommanderPrompt {
                       A value the commander already spoke fills its parameter: extract it verbatim, never request_input to
                       refine or subcategorize it.
                       IF you know every required parameter's value: call that function.
-              ELSE: call request_input with the exact action_id and one exact missing parameter_name.
+                      ELSE IF request_input is listed: call it with the exact action_id and missing parameter_name.
+                      ELSE: call your chosen function with no arguments.
 
             ELSE IF the commander explicitly asks to recall, search, list, or count remembered information:
               IF memory_search is offered: call memory_search.
@@ -85,7 +86,7 @@ final class CommanderPrompt {
 
                     Treat single-word or very short ship-context phrases as likely commands, not conversation; never echo or
                     restate the input. Game-data questions require their matching function, never a guessed answer. Only
-                    request_input opens a continuation. Never claim completion without calling the action.
+                            request_input opens a continuation.
             </function_calling>
             """;
 

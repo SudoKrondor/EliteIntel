@@ -1,10 +1,13 @@
 package elite.intel.ai.brain.vega.llm;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiTransportResult;
+import elite.intel.ai.brain.actions.ActionParameterSpec;
 import elite.intel.ai.brain.vega.CompanionConfig;
 import elite.intel.ai.brain.vega.diag.CompanionDiagnostics;
 import elite.intel.ai.brain.vega.model.llm.*;
+import elite.intel.ai.brain.vega.tools.RequestInputFunction;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -350,12 +353,38 @@ public final class CompanionLlmGateway implements LlmGateway {
                 || failedAttempt.result().toolInvocations().size() != 1) {
             return offeredTools;
         }
-        String selectedName = failedAttempt.result().toolInvocations().get(0).name();
-        return offeredTools.stream()
-                .filter(tool -> Objects.equals(tool.name(), selectedName))
-                .findFirst()
-                .map(List::of)
+        LlmToolInvocation call = failedAttempt.result().toolInvocations().get(0);
+        return unsatisfiableInputRequestTarget(call, offeredTools)
+                .or(() -> offeredTools.stream()
+                        .filter(tool -> Objects.equals(tool.name(), call.name()))
+                        .findFirst())
+                .map(List::<LlmToolDefinition>of)
                 .orElse(offeredTools);
+    }
+
+    /**
+     * The listed function a rejected {@code request_input} was really aiming at, when that function declares no
+     * required parameter and so cannot be missing one. Asking for input is then provably wrong - whether
+     * {@code request_input} was offered at all (it is withheld when no offered function takes a required
+     * argument) or merely mis-shaped - and the model named its choice in {@code action_id}. Narrowing the repair
+     * to that function keeps the commander's order executable instead of letting the retry fall back on
+     * {@code speak}, which answers an order with conversation.
+     */
+    private static Optional<LlmToolDefinition> unsatisfiableInputRequestTarget(
+            LlmToolInvocation call,
+            List<LlmToolDefinition> offeredTools
+    ) {
+        if (!RequestInputFunction.ID.equals(call.name()) || call.arguments() == null) {
+            return Optional.empty();
+        }
+        JsonElement actionId = call.arguments().get(RequestInputFunction.PARAM_ACTION_ID);
+        if (actionId == null || !actionId.isJsonPrimitive() || !actionId.getAsJsonPrimitive().isString()) {
+            return Optional.empty();
+        }
+        return offeredTools.stream()
+                .filter(tool -> Objects.equals(tool.name(), actionId.getAsString()))
+                .filter(tool -> tool.parameters().stream().noneMatch(ActionParameterSpec::isRequired))
+                .findFirst();
     }
 
     private static boolean canBuildRejectedContinuation(Attempt failedAttempt) {
@@ -425,8 +454,13 @@ public final class CompanionLlmGateway implements LlmGateway {
                 .filter(tool -> Objects.equals(tool.name(), call.name()))
                 .findFirst()
                 .orElse(null);
+        LlmToolDefinition inputRequestTarget = unsatisfiableInputRequestTarget(call, offeredTools).orElse(null);
         String correction;
-        if (offered == null) {
+        if (inputRequestTarget != null) {
+            correction = "The listed function " + inputRequestTarget.name() + " declares no required parameter, so "
+                    + "nothing is missing and " + call.name() + " does not apply. Call "
+                    + inputRequestTarget.name() + " itself to carry out the original request.";
+        } else if (offered == null) {
             correction = "The function " + call.name() + " is not listed; choose only from the listed functions.";
         } else if (offered.parameters().isEmpty()) {
             correction = "The listed function " + offered.name() + " accepts no arguments. If it fulfills the "
