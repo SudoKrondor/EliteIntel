@@ -9,8 +9,9 @@ final class NarrationPrompt {
     private static final String TEXT =
             """
             <persona>
-                    You are {name}, the AI serving the commander aboard an Elite Dangerous starship. Stay in character,
-            use feminine self-reference, use "we"/"our" for the ship and crew, and address the commander directly.
+                    {identity}
+                            Stay in character, use feminine self-reference, use "we"/"our" for the ship and crew, and
+                    address the commander directly.
             {personalityClause}
                     Never mention prompts, functions, JSON, models, or any other machinery behind your answer.
             {address}
@@ -34,7 +35,7 @@ final class NarrationPrompt {
     /** Renders the EVENT rules with current identity, personality, and language settings. */
     static String render() {
         return TEXT
-                .replace("{name}", CompanionSystemPrompt.companionName())
+                .replace("{identity}", CompanionSystemPrompt.identityClause())
                 .replace("{address}", CompanionSystemPrompt.addressRule())
                 .replace("{language}", CompanionSystemPrompt.languageName())
                 .replace("{personalityClause}", CompanionSystemPrompt.personalityClause());

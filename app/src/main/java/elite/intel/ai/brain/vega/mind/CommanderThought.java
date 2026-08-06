@@ -141,11 +141,11 @@ public final class CommanderThought extends Thought {
         if (RequestInputFunction.ID.equals(invocation.name())) {
             Optional<LlmToolInvocation> alreadySpoken = recoverSpokenArgument(invocation, tools);
             if (alreadySpoken.isPresent()) {
-                LlmToolInvocation recovered = alreadySpoken.get();
-                IntelActionType recoveredType = dependencies.actionTypeResolver().resolve(recovered.name());
-                CompanionDiagnostics.info(trace(), "settle",
-                        "spoken argument recovered -> " + recoveredType + " " + recovered.name());
-                return dispatchGameCall(recovered, recoveredType);
+                return dispatchRecovered(alreadySpoken.get(), "spoken argument recovered");
+            }
+            Optional<LlmToolInvocation> nothingMissing = recoverParameterlessAction(invocation, tools);
+            if (nothingMissing.isPresent()) {
+                return dispatchRecovered(nothingMissing.get(), "no parameter to request");
             }
             handleInputRequest(invocation, tools);
             return CompletableFuture.completedFuture(null);
@@ -211,6 +211,44 @@ public final class CommanderThought extends Thought {
         return dependencies.dangerousActionPolicy().isDangerous(recovered)
                 ? Optional.empty()
                 : Optional.of(recovered);
+    }
+
+    /**
+     * Recovers the action itself when the model asks for input on a target that declares no required parameter.
+     * Nothing can be missing there, so the request is provably wrong, and without this the order comes back as a
+     * question ("enter next fleet carrier destination" answered with "which system?" for an action that reads the
+     * next leg from the stored carrier route).
+     * <p>
+     * Shares {@link #recoverSpokenArgument}'s guards: never while a clarification is pending, where the turn's
+     * meaning belongs to the pending action, and never for a dangerous action, which keeps its confirmation flow.
+     */
+    private Optional<LlmToolInvocation> recoverParameterlessAction(LlmToolInvocation request,
+                                                                   List<LlmToolDefinition> tools) {
+        if (context.pendingClarification() != null) {
+            return Optional.empty();
+        }
+        String actionId = JsonUtils.getAsStringOrEmpty(request.arguments(), RequestInputFunction.PARAM_ACTION_ID);
+        boolean nothingToRequest = tools.stream()
+                .filter(tool -> actionId.equals(tool.name()))
+                .filter(tool -> dependencies.actionTypeResolver().resolve(tool.name()).isGameAction())
+                .anyMatch(tool -> tool.parameters().stream().noneMatch(ActionParameterSpec::isRequired));
+        if (!nothingToRequest) {
+            return Optional.empty();
+        }
+        LlmToolInvocation recovered = new LlmToolInvocation(request.id(), actionId, new JsonObject());
+        return dependencies.dangerousActionPolicy().isDangerous(recovered)
+                ? Optional.empty()
+                : Optional.of(recovered);
+    }
+
+    /**
+     * Dispatches an action recovered from a misdirected {@code request_input}, recording why it was recovered.
+     */
+    private CompletableFuture<Void> dispatchRecovered(LlmToolInvocation recovered, String reason) {
+        IntelActionType recoveredType = dependencies.actionTypeResolver().resolve(recovered.name());
+        CompanionDiagnostics.info(trace(), "settle",
+                reason + " -> " + recoveredType + " " + recovered.name());
+        return dispatchGameCall(recovered, recoveredType);
     }
 
     /**

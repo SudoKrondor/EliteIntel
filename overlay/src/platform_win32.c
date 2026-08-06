@@ -226,8 +226,18 @@ int hud_run_desktop(int argc, char **argv) {
     // they cannot find is the overlay they cannot pin. WS_EX_TOPMOST goes with
     // it - a window that is about to become a texture in a headset has no
     // business sitting above everything on the desktop it left behind.
+    //
+    // WS_EX_APPWINDOW is what makes the pickers actually list it, and dropping
+    // the tool window style is not enough on its own. WS_EX_NOACTIVATE also
+    // hides a window from the taskbar and from alt-tab, and the pickers read
+    // that as "not a real window": Desktop+ rejects a window outright when it
+    // has WS_EX_NOACTIVATE without WS_EX_APPWINDOW. WS_EX_APPWINDOW is the
+    // documented way to say the window is a real one anyway, so it buys back
+    // the taskbar entry and the picker entry without giving up the focus
+    // guarantee above. OBS never applied that rule, which is why it could find
+    // and capture this window while Desktop+ could not even list it.
     DWORD ex_style = model.capture
-                     ? (WS_EX_LAYERED | WS_EX_NOACTIVATE)
+                     ? (WS_EX_LAYERED | WS_EX_NOACTIVATE | WS_EX_APPWINDOW)
                      : (WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
     g_win = CreateWindowEx(
             ex_style, wc.lpszClassName,

@@ -3,16 +3,7 @@ package elite.intel.ai.brain.vega.llm;
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.AiTransportResult;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
-import elite.intel.ai.brain.vega.llm.CompanionLlmGateway;
-import elite.intel.ai.brain.vega.llm.LlmProviderAdapter;
-import elite.intel.ai.brain.vega.llm.LlmTransport;
-import elite.intel.ai.brain.vega.model.llm.LlmMessage;
-import elite.intel.ai.brain.vega.model.llm.LlmMessageRole;
-import elite.intel.ai.brain.vega.model.llm.LlmRequest;
-import elite.intel.ai.brain.vega.model.llm.LlmResult;
-import elite.intel.ai.brain.vega.model.llm.LlmToolDefinition;
-import elite.intel.ai.brain.vega.model.llm.LlmToolInvocation;
-import elite.intel.ai.brain.vega.model.llm.PromptCacheProfile;
+import elite.intel.ai.brain.vega.model.llm.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -20,22 +11,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CompanionLlmGatewayTest {
 
@@ -148,6 +128,59 @@ class CompanionLlmGatewayTest {
         assertTrue(rejection.contains("accepts only these argument fields: target"));
         assertEquals(List.of("navigate"), adapter.requests.get(1).tools().stream()
                 .map(LlmToolDefinition::name).toList());
+    }
+
+    /**
+     * Asking for input on an action that declares no required parameter is provably wrong - nothing can be
+     * missing - and the model already named its choice in {@code action_id}. Observed with a small local model:
+     * "enter next fleet carrier destination" produced a mis-shaped request_input (which is not even offered when
+     * nothing takes an argument), and the free retry answered the order with sarcasm because speak was still on
+     * the table. The repair now aims at the action itself.
+     */
+    @Test
+    void inputRequestForAParameterlessActionIsRepairedIntoThatAction() throws Exception {
+        JsonObject invalid = new JsonObject();
+        invalid.addProperty("action_id", "enter_fleet_carrier_destination");
+        invalid.addProperty("missing_parameter_name", "system name");
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                call("request_input", invalid), calls("enter_fleet_carrier_destination"));
+
+        LlmResult result = run(adapter, request(tool("enter_fleet_carrier_destination"), tool("speak")));
+
+        assertEquals("enter_fleet_carrier_destination", result.toolInvocations().get(0).name());
+        LlmRequest repair = adapter.requests.get(1);
+        assertEquals(List.of("enter_fleet_carrier_destination"),
+                repair.tools().stream().map(LlmToolDefinition::name).toList(),
+                "speak must not remain available to abandon the order");
+        assertTrue(repair.messages().get(3).content().contains("declares no required parameter"));
+    }
+
+    @Test
+    void inputRequestForAnActionThatDoesNeedAnArgumentIsRepairedAsItself() throws Exception {
+        LlmToolDefinition navigate = new LlmToolDefinition(
+                "navigate", "description", "", List.of(
+                new ActionParameterSpec("target", "string", true, "destination", List.of(), null)));
+        LlmToolDefinition requestInput = new LlmToolDefinition(
+                "request_input", "ask for one missing parameter", "", List.of(
+                new ActionParameterSpec("action_id", "string", true, "action", List.of(), null),
+                new ActionParameterSpec("parameter_name", "string", true, "parameter", List.of(), null),
+                new ActionParameterSpec("question", "string", true, "question", List.of(), null)));
+        JsonObject invalid = new JsonObject();
+        invalid.addProperty("action_id", "navigate");
+        invalid.addProperty("missing_parameter_name", "target");
+        JsonObject valid = new JsonObject();
+        valid.addProperty("action_id", "navigate");
+        valid.addProperty("parameter_name", "target");
+        valid.addProperty("question", "Which system?");
+        ScriptedAdapter adapter = new ScriptedAdapter(
+                call("request_input", invalid), call("request_input", valid));
+
+        LlmResult result = run(adapter, request(navigate, requestInput, tool("speak")));
+
+        assertEquals("request_input", result.toolInvocations().get(0).name());
+        assertEquals(List.of("request_input"), adapter.requests.get(1).tools().stream()
+                        .map(LlmToolDefinition::name).toList(),
+                "an action with a genuinely missing argument must still be able to ask");
     }
 
     @Test

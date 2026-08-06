@@ -151,6 +151,51 @@ class ThoughtTest {
         assertEquals("key", clarification.peek().orElseThrow().parameterName());
     }
 
+    /**
+     * "enter next fleet carrier destination" was answered with a question about a system name, for a command that
+     * declares no parameters at all (it types the next leg of the stored carrier route). Nothing can be missing
+     * there, so the order runs instead of being handed back as conversation.
+     */
+    @Test
+    void requestInputForAnActionThatDeclaresNoParameterRunsItInstead() {
+        reducer.tools = List.of(enterCarrierDestination());
+        llm.results.add(ok(call(RequestInputFunction.ID,
+                inputRequest("enter_fleet_carrier_destination", "system_name"))));
+
+        Thought.commander(Urgency.NORMAL, "enter next fleet carrier destination",
+                dependencies(carrierDestinationIsACommand())).run();
+
+        assertEquals(List.of("enter_fleet_carrier_destination"), execution.toolNames());
+        assertTrue(execution.requests.get(0).arguments().entrySet().isEmpty(),
+                "a parameterless action never receives the invented argument");
+        assertTrue(clarification.peek().isEmpty(), "nothing was left to clarify");
+    }
+
+    @Test
+    void aDangerousParameterlessActionStillKeepsItsConfirmationFlow() {
+        reducer.tools = List.of(enterCarrierDestination());
+        llm.results.add(ok(call(RequestInputFunction.ID,
+                inputRequest("enter_fleet_carrier_destination", "system_name"))));
+        dangerous = invocation -> "enter_fleet_carrier_destination".equals(invocation.name());
+
+        Thought.commander(Urgency.NORMAL, "enter next fleet carrier destination",
+                dependencies(carrierDestinationIsACommand())).run();
+
+        assertTrue(execution.requests.isEmpty(), "a dangerous action is never recovered into execution");
+    }
+
+    private static LlmToolDefinition enterCarrierDestination() {
+        return new LlmToolDefinition(
+                "enter_fleet_carrier_destination", "Type the next carrier route leg and confirm it",
+                "enter carrier destination, enter next fleet carrier destination", List.of());
+    }
+
+    private static IntelActionTypeResolver carrierDestinationIsACommand() {
+        return new IntelActionTypeResolver(id -> "enter_fleet_carrier_destination".equals(id)
+                ? IntelActionType.COMMAND
+                : IntelActionType.SYSTEM);
+    }
+
     private static LlmToolDefinition findCommodity() {
         return new LlmToolDefinition(
                 "find_commodity", "Find where to buy a commodity",

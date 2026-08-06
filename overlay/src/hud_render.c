@@ -24,7 +24,8 @@ static const Rgb COL_AI       = {0.45, 0.64, 0.71};
 // hue tells them apart (~134, ~196, ~274 degrees). Mirrors
 // HUD_COLOR_ROLE_RADIO_TRANSMISSION_LOG_TEXT (0xB78CD9) in HudPalette.java.
 static const Rgb COL_RADIO    = {0.72, 0.55, 0.85};
-static const Rgb COL_PANEL    = {0.06, 0.09, 0.13};
+//static const Rgb COL_PANEL    = {0.06, 0.09, 0.13};
+static const Rgb COL_PANEL    = {0.01569,  0.02745,  0.03529};
 
 static int sz(int base) { return (int) (base * model.scale + 0.5); }
 

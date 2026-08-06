@@ -1,5 +1,6 @@
 package elite.intel.ai.brain.vega.prompt;
 
+import elite.intel.ai.brain.CompanionIdentity;
 import elite.intel.ai.brain.commons.AiResponseLanguagePolicy;
 import elite.intel.ai.brain.vega.model.ThoughtSource;
 import elite.intel.i18n.Language;
@@ -19,7 +20,18 @@ class CompanionSystemPromptTest {
      * dilutes the rest for a small local model. Raise this number only with a reason that is not "the new rule
      * did not fit".
      *
-     * <p>It last fired when the state-gating rule landed and the prompt was at 598 - one word under. Two passages
+     * <p>It last fired when the request_input branch was made conditional on that function actually being listed
+     * (it is withheld when nothing offered takes a required argument, so the old unconditional ELSE told the model
+     * to call a function that was not there). "Never claim completion without calling the action" paid for it: it
+     * repeats <em>Speaking is the fallback ... never in place of an action you could have taken</em>.
+     *
+     * <p>Before that it fired when the identity clause landed (623 words). Two passages paid for it rather than raising
+     * the number: "never describe the request in the third person", already covered by <em>Address the commander
+     * as "you"</em> and by <em>never echo or restate the input</em>; and "Weigh the commander's words against each
+     * function's triggers and description, and commit to the best", which repeats the {@code <language>} block's
+     * instruction to match the commander's wording against the offered triggers.
+     *
+     * <p>It fired before that when the state-gating rule landed and the prompt was at 598 - one word under. Two passages
      * were cut to make room rather than raising it: the biography's career sentences (which licensed "when to
      * challenge risky decisions", working directly against <em>Obey without argument</em> and against the new
      * rule) and the grounding block's gloss on the {@code source} XML attribute, which explained a label the
@@ -56,6 +68,28 @@ class CompanionSystemPromptTest {
 
     private static String inputLanguageName() {
         return SystemSession.getInstance().getLanguage().displayName();
+    }
+
+    /**
+     * Both spoken sources must open by saying what she is: an AI, named, and not hedging about it.
+     *
+     * <p>WHY: the previous persona line ("the AI serving the commander aboard an Elite Dangerous starship")
+     * named the role but never the nature, and the analysis path opened with "You are {shipName}, a ship" - so
+     * the same session could answer as a crew member in one turn and as the hull in the next. One clause,
+     * {@code CompanionIdentity.identityClause()}, now opens every prompt whose output is spoken.
+     */
+    @Test
+    void bothSpokenPromptsOpenWithTheSameAiIdentity() {
+        String identity = CompanionIdentity.identityClause();
+        assertTrue(identity.contains("artificial intelligence"), "she must be named as an AI, not merely 'the AI'");
+        assertTrue(identity.contains(CompanionIdentity.name()));
+        assertTrue(identity.contains("never pretend otherwise"));
+
+        for (ThoughtSource source : ThoughtSource.values()) {
+            String normalized = prompt.staticRules(source).replaceAll("\\s+", " ");
+            assertTrue(normalized.contains(identity.replaceAll("\\s+", " ")),
+                    () -> source + " prompt must carry the shared identity clause verbatim");
+        }
     }
 
     @Test
