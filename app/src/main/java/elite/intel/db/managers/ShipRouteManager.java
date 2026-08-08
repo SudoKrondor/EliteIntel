@@ -104,10 +104,13 @@ public class ShipRouteManager {
         });
     }
 
+    /**
+     * The system the plotted route ends at, or null when nothing is plotted.
+     * <p>
+     * Legs are consumed as they are flown, so this is the destination still
+     * ahead of the commander rather than the one the route was first plotted to.
+     */
     public String getDestination() {
-        return Database.withDao(ShipRouteDao.class, dao -> {
-            List<ShipRouteDao.Route> routes = dao.getAll();
-            return routes.isEmpty() ? null : routes.get(routes.size() - 1).getSystemName();
-        });
+        return Database.withDao(ShipRouteDao.class, ShipRouteDao::getFinalSystemName);
     }
 }

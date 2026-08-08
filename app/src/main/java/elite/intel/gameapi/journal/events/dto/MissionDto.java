@@ -53,6 +53,7 @@ public class MissionDto extends BaseJsonDto {
                     && "++".equals(event.getInfluence())
                     || "+".equals(event.getInfluence()));
             setWing(event.isWing());
+            setExpiry(event.getExpiry());
             setDestinationSystem(event.getDestinationSystem());
             setDestinationSettlement(event.getDestinationSettlement());
             setMissionTargetFaction(event.getTargetFaction());
@@ -135,6 +136,15 @@ public class MissionDto extends BaseJsonDto {
 
     public void setWing(boolean wing) {
         this.isWing = wing;
+    }
+
+    /**
+     * Journal {@code Expiry}, an ISO-8601 instant. Absent on missions that never
+     * expire (and on rows written before this was carried across from the
+     * accepted event), so every reader has to tolerate null.
+     */
+    public void setExpiry(String expiry) {
+        this.expiry = expiry;
     }
 
     public void setDestinationSettlement(String destinationSettlement) {

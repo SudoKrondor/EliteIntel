@@ -77,6 +77,25 @@ class RanksKeyResolutionTest {
         assertAllResolved("pilotFederation", Ranks.getLocalizedPilotFederationRankMap().values());
     }
 
+    /**
+     * The two Federation "... Commander" tiers are addressed by billet (executive officer, then
+     * commanding officer) rather than by the rank word, which the game hands to every pilot.
+     * <p>
+     * Asserted in RU and FR because both hold genuine naval terms there. English cannot catch a
+     * bundle that quietly falls back: DE and IT keep "Skipper" as the loanword it already is, so
+     * only a locale whose values differ from English proves the keys were really translated.
+     */
+    @Test
+    void commanderTierHonorificsAreTranslatedNotPassedThrough() {
+        SystemSession.getInstance().setLanguage(Language.RU);
+        assertEquals("Старпом", Ranks.getFederationHonorificMap().get("Lieutenant Commander"));
+        assertEquals("Шкипер", Ranks.getFederationHonorificMap().get("Post Commander"));
+
+        SystemSession.getInstance().setLanguage(Language.FR);
+        assertEquals("Second", Ranks.getFederationHonorificMap().get("Lieutenant Commander"));
+        assertEquals("Pacha", Ranks.getFederationHonorificMap().get("Post Commander"));
+    }
+
     @Test
     void localizedRankNamesResolveToDisplayText() {
         // The honorific maps are keyed by the English rank names getLocalizedRankName expects.

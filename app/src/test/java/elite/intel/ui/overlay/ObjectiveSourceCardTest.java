@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static elite.intel.ui.overlay.HudCards.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -266,18 +267,4 @@ class ObjectiveSourceCardTest {
         });
     }
 
-    private static List<String> labels(HudObjective card) {
-        return card.rows().stream().map(HudRow::label).toList();
-    }
-
-    private static HudRow rowOf(HudObjective card, String label) {
-        return card.rows().stream()
-                .filter(r -> label.equals(r.label()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("no " + label + " row in " + labels(card)));
-    }
-
-    private static String valueOf(HudObjective card, String label) {
-        return rowOf(card, label).value();
-    }
 }

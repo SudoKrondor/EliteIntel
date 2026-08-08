@@ -45,10 +45,26 @@ class RanksHonorificTest {
         assertEquals("Admiral", Ranks.getPlayerHonorific(0, 14));
     }
 
+    /**
+     * The two Federation tiers the journal names "... Commander" are addressed by billet rather
+     * than by rank. "Commander" is what the game calls every pilot regardless of service record,
+     * so reusing it here told the commander nothing about the rank they had earned.
+     */
     @Test
-    void playerHonorific_federationPostCommander_resolvesCommander() {
-        // Federation=10 ("Post Commander") > Empire=0 → "Commander"
-        assertEquals("Commander", Ranks.getPlayerHonorific(0, 10));
+    void playerHonorific_federationCommanderTiers_areAddressedByBillet() {
+        // Federation=9 ("Lieutenant Commander") and 10 ("Post Commander"), Empire=0
+        assertEquals("XO", Ranks.getPlayerHonorific(0, 9));
+        assertEquals("Skipper", Ranks.getPlayerHonorific(0, 10));
+    }
+
+    /**
+     * Post Captain and above keep their own honorifics, so the billet titles must not have leaked
+     * upward into the ranks that already read as ranks.
+     */
+    @Test
+    void playerHonorific_federationRanksAboveCommanderAreUnchanged() {
+        assertEquals("Captain", Ranks.getPlayerHonorific(0, 11));
+        assertEquals("Admiral", Ranks.getPlayerHonorific(0, 12));
     }
 
     @Test

@@ -176,8 +176,12 @@ public class Ranks {
         rankMap.put("Warrant Officer",      getText("ranks.honorific.warrant"));
         rankMap.put("Ensign",               getText("ranks.honorific.ensign"));
         rankMap.put("Lieutenant",           getText("ranks.honorific.lieutenant"));
-        rankMap.put("Lieutenant Commander", getText("ranks.honorific.commander"));
-        rankMap.put("Post Commander",       getText("ranks.honorific.commander"));
+        // WHY: both of these read as "Commander" in the journal, which is what every pilot in the
+        // game is called anyway, so the honorific said nothing about the rank earned. They are
+        // addressed by billet instead, the way a navy does it: these two tiers are the pay grades
+        // that crew a warship's executive officer and her commanding officer.
+        rankMap.put("Lieutenant Commander", getText("ranks.honorific.xo"));
+        rankMap.put("Post Commander", getText("ranks.honorific.skipper"));
         rankMap.put("Post Captain",         getText("ranks.honorific.captain"));
         rankMap.put("Rear Admiral",         getText("ranks.honorific.admiral"));
         rankMap.put("Vice Admiral",         getText("ranks.honorific.admiral"));
