@@ -80,7 +80,7 @@ class CarrierLocationSubscriberTest {
         route.setFleetCarrierRoute(Map.of(1, leg("Deciat", 120), 2, leg("Shinrarta Dezhra", 95)));
 
         CarrierDataDto carrier = new CarrierDataDto();
-        carrier.setFuelLevel(500);
+        carrier.setMeasuredFuelLevel(500);
         session.setFleetCarrierData(carrier);
 
         subscriber.onCarrierLocationEvent(carrierLocationEvent("Deciat", "FleetCarrier", 3803463824L));

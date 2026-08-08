@@ -2,8 +2,11 @@ package elite.intel.ai.brain.vega.prompt;
 
 import com.google.gson.JsonObject;
 import elite.intel.ai.brain.actions.ActionParameterSpec;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandDefinition;
+import elite.intel.ai.brain.actions.handlers.commands.custom.CustomCommandRegistry;
 import elite.intel.ai.brain.i18n.AiActionLocalizations;
 import elite.intel.ai.brain.i18n.AliasPhrase;
+import elite.intel.ai.brain.i18n.AliasVocabulary;
 import elite.intel.ai.brain.vega.confirm.CommandFlagDangerousActionPolicy;
 import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.mind.CommanderThought;
@@ -19,11 +22,11 @@ import java.util.stream.Collectors;
 
 /**
  * The companion's reflex gate (§2.5/§5.1): decides, before any thought is born, whether a commander utterance
- * is a pure reflex - an input that matches a training phrase verbatim and resolves to exactly one safe action
- * whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
+ * is a pure reflex - an input that matches a training phrase, word for word or as a damaged transcript of one,
+ * and resolves to exactly one safe action whose arguments are already known. Such an input is executed directly (no LLM, a {@code ReflexThought});
  * everything else falls through to the full {@link CommanderThought}.
  * <p>
- * Deliberately strict, so a reflex never misfires. It requires all of: a verbatim phrase match (not word
+ * Deliberately strict, so a reflex never misfires. It requires all of: a full-phrase match (not word
  * overlap), exactly one matching action, every required argument supplied without inference, the action
  * currently visible, and not dangerous (a dangerous command must keep its confirmation flow). It covers
  * COMMANDS and QUERIES (a verbatim query alias like "squadron carrier route" resolves it directly;
@@ -37,6 +40,13 @@ import java.util.stream.Collectors;
  * It introduces no new classification, reusing the existing owners: {@link GameToolCandidates} for the visible
  * commands and their localized phrases/parameters, {@link AiActionLocalizations#splitPhraseGroup} for phrase
  * splitting, and the {@link DangerousActionPolicy} for the danger flag.
+ * <p>
+ * A second pass ({@link FuzzyAliasMatch}) runs only when nothing matched word for word, and treats the input
+ * as a damaged transcript of one alias - "request lending permission" for "request landing permission". It is
+ * bounded by the same guards as the first pass plus its own (a word we authored is never repaired, word counts
+ * must agree, one word must land exactly), because the transcript is the only text here nobody authored:
+ * everything downstream of the microphone is ours, so an STT slip is the one input worth repairing rather than
+ * escalating to a model that answers it differently on different days.
  */
 public final class ReflexResolver {
 
@@ -68,12 +78,27 @@ public final class ReflexResolver {
     private static final String UNRESOLVABLE_PARAMETER = "\0";
 
     /**
+     * How the input reached its alias: word-for-word, or through {@link FuzzyAliasMatch}.
+     */
+    public enum MatchKind {
+        EXACT, FUZZY
+    }
+
+    /**
      * One resolved reflex: the action to run and the arguments its alias already pinned down.
      */
-    public record Reflex(String actionId, Map<String, String> arguments) {
+    public record Reflex(String actionId, Map<String, String> arguments, MatchKind matchKind) {
 
         public Reflex {
             arguments = Map.copyOf(arguments);
+            Objects.requireNonNull(matchKind, "matchKind");
+        }
+
+        /**
+         * A word-for-word match, which is how most reflexes resolve.
+         */
+        public Reflex(String actionId, Map<String, String> arguments) {
+            this(actionId, arguments, MatchKind.EXACT);
         }
 
         /**
@@ -88,6 +113,10 @@ public final class ReflexResolver {
 
     private final Function<GameStateSnapshot, List<CommandPhrase>> commandSource;
     private final DangerousActionPolicy dangerousActionPolicy;
+    /**
+     * Words the fuzzy pass treats as heard rather than damaged; see {@link #spokenWords()}.
+     */
+    private final Supplier<Set<String>> vocabularySource;
 
     /** Production: commands from the live registries, visibility from the turn snapshot, danger from the command. */
     public ReflexResolver() {
@@ -109,13 +138,55 @@ public final class ReflexResolver {
     /** Test seam: derive eligible commands from the exact commander-turn visibility snapshot. */
     public ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource,
                           DangerousActionPolicy dangerousActionPolicy) {
-        this.commandSource = commandSource;
-        this.dangerousActionPolicy = dangerousActionPolicy;
+        this(commandSource, dangerousActionPolicy, ReflexResolver::spokenWords);
     }
 
     /**
-     * The single safe command whose training phrase the input matches verbatim, with its arguments, or
-     * empty when the input is not a reflex (no match, an ambiguous tie, an argument the alias does not supply,
+     * Test seam: supply the commands and the vocabulary together, so a case that injects its own commands is
+     * not also matched against the live alias bundles.
+     */
+    ReflexResolver(Supplier<List<CommandPhrase>> commandSource, DangerousActionPolicy dangerousActionPolicy,
+                   Supplier<Set<String>> vocabularySource) {
+        this(snapshot -> commandSource.get(), dangerousActionPolicy, vocabularySource);
+    }
+
+    /**
+     * Canonical constructor: commands, danger policy and vocabulary all explicit.
+     */
+    private ReflexResolver(Function<GameStateSnapshot, List<CommandPhrase>> commandSource,
+                           DangerousActionPolicy dangerousActionPolicy,
+                           Supplier<Set<String>> vocabularySource) {
+        this.commandSource = commandSource;
+        this.dangerousActionPolicy = dangerousActionPolicy;
+        this.vocabularySource = vocabularySource;
+    }
+
+    /**
+     * Every word the commander's own command set is built from: the authored aliases of the session language,
+     * plus the phrases of their custom commands.
+     * <p>
+     * The macro phrases matter as much as the aliases here. A word only they contain would otherwise be
+     * unknown to the vocabulary, and unknown means repairable, so a macro utterance could be aligned onto a
+     * builtin alias of the same word count - and because macros are never reflex candidates, the macro itself
+     * could not win the tie that would make {@link #resolve} abandon. Read live rather than cached: a macro
+     * saved mid-session must count immediately, and the common case (no macros) allocates nothing.
+     */
+    private static Set<String> spokenWords() {
+        Set<String> authored = AliasVocabulary.forCurrentLanguage();
+        List<CustomCommandDefinition> macros = CustomCommandRegistry.getInstance().getCustomCommands();
+        if (macros.isEmpty()) {
+            return authored;
+        }
+        Set<String> words = new HashSet<>(authored);
+        for (CustomCommandDefinition macro : macros) {
+            words.addAll(AliasVocabulary.tokenize(macro.getPhrases()));
+        }
+        return words;
+    }
+
+    /**
+     * The single safe command whose training phrase the input matches, word for word or as a damaged
+     * transcript of one, with its arguments, or empty when the input is not a reflex (no match, an ambiguous tie, an argument the alias does not supply,
      * dangerous, or not a command) - in which case the input takes the normal LLM path.
      */
     public Optional<Reflex> resolve(String input) {
@@ -133,9 +204,16 @@ public final class ReflexResolver {
             return Optional.empty();
         }
         String needle = canonicalizeForMatch(input);
-        List<Reflex> matches = commandSource.apply(Objects.requireNonNull(gameStateSnapshot)).stream()
+        List<CommandPhrase> visible = commandSource.apply(Objects.requireNonNull(gameStateSnapshot));
+        List<Reflex> matches = visible.stream()
                 .flatMap(command -> matchVerbatim(command, needle).stream())
                 .toList();
+        if (matches.isEmpty()) {
+            // Nothing was said word for word. Before handing a phrase we may still recognize to the model,
+            // try it as a damaged rendering of one alias - the transcript is the one part of this pipeline
+            // nobody authored.
+            matches = matchFuzzy(visible, needle);
+        }
         if (matches.size() != 1) {
             return Optional.empty(); // no command, or an ambiguous tie - let the LLM decide
         }
@@ -163,6 +241,46 @@ public final class ReflexResolver {
                 return Optional.empty(); // the alias cannot supply every argument - the LLM must extract them
             }
             return Optional.of(new Reflex(command.id(), alias.literalArguments()));
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Every visible action whose alias the input matches as a damaged transcript, one entry per action.
+     * <p>
+     * Runs only when nothing matched word for word, so an authored alias always wins over a repaired one, and
+     * it can add a reflex but never redirect an existing one. Ambiguity is handled where the verbatim pass
+     * handles it: two actions matching means the caller abandons and the model decides.
+     */
+    private List<Reflex> matchFuzzy(List<CommandPhrase> visible, String needle) {
+        List<String> heard = AliasVocabulary.tokenize(needle);
+        if (heard.isEmpty()) {
+            return List.of();
+        }
+        Set<String> vocabulary = vocabularySource.get();
+        List<Reflex> matches = new ArrayList<>();
+        for (CommandPhrase command : visible) {
+            matchFuzzy(command, heard, vocabulary).ifPresent(matches::add);
+        }
+        return matches;
+    }
+
+    /**
+     * The reflex for the one phrase in this command's group the input is a damaged rendering of, subject to the
+     * same argument rule as {@link #matchVerbatim}: an alias that leaves a parameter for the model to extract
+     * is not a reflex however well the words match.
+     */
+    private static Optional<Reflex> matchFuzzy(CommandPhrase command, List<String> heard, Set<String> vocabulary) {
+        for (String phrase : AiActionLocalizations.splitPhraseGroup(command.phraseGroup())) {
+            AliasPhrase alias = AliasPhrase.parse(phrase);
+            if (!FuzzyAliasMatch.phraseMatches(heard, AliasVocabulary.tokenize(alias.spokenText()), vocabulary)) {
+                continue;
+            }
+            if (alias.hasVariableArgument()
+                    || !alias.literalArguments().keySet().containsAll(command.parameters())) {
+                return Optional.empty();
+            }
+            return Optional.of(new Reflex(command.id(), alias.literalArguments(), MatchKind.FUZZY));
         }
         return Optional.empty();
     }

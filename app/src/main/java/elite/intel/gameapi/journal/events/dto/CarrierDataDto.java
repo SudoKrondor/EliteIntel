@@ -38,6 +38,12 @@ public class CarrierDataDto implements ToJsonConvertible {
     private int refuelSupplyTax;
     private int repairSupplyTax;
     private int fuelSupply=0;
+    /**
+     * Whether {@link #fuelSupply} is a figure the game reported. False for a level we worked out ourselves,
+     * and false for a carrier we have never had a reading for, which is exactly the doubt an announcement
+     * has to voice rather than hide.
+     */
+    private boolean fuelSupplyMeasured = false;
     private double x,y,z;
     private final Map<String, Integer> commodity = new HashMap<>();
 
@@ -234,12 +240,37 @@ public class CarrierDataDto implements ToJsonConvertible {
     }
 
 
-    public void setFuelLevel(int fuelLevel) {
-        this.fuelSupply = fuelLevel;
+    /**
+     * Records a depot level the game itself reported (CarrierStats, or the total a fuel deposit confirms).
+     * Only these figures are exact, and only until we work out the next one ourselves.
+     */
+    public void setMeasuredFuelLevel(int tons) {
+        this.fuelSupply = tons;
+        this.fuelSupplyMeasured = true;
+    }
+
+    /**
+     * Charges tritium we believe a jump burned, taken from the plotted leg rather than from the game.
+     * <p>
+     * WHY it marks the level inexact: the game reports the depot only when the commander opens carrier
+     * management, so between those moments this is arithmetic on top of an older reading, and it drifts
+     * with every tonne that moves any other way - a market sale, a squadron mate's donation. Something
+     * has to know the difference, or an estimate gets announced with the confidence of a measurement.
+     */
+    public void chargeEstimatedFuel(int tons) {
+        this.fuelSupply = this.fuelSupply - tons;
+        this.fuelSupplyMeasured = false;
     }
 
     public int getFuelLevel() {
         return fuelSupply;
+    }
+
+    /**
+     * Whether {@link #getFuelLevel()} is a figure the game reported rather than one we worked out.
+     */
+    public boolean isFuelLevelMeasured() {
+        return fuelSupplyMeasured;
     }
 
     public double getZ() {

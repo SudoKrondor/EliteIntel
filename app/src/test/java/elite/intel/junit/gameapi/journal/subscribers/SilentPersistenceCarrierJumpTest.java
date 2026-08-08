@@ -89,7 +89,7 @@ class SilentPersistenceCarrierJumpTest {
         FleetCarrierRouteManager route = FleetCarrierRouteManager.getInstance();
         route.clear();
         CarrierDataDto carrier = new CarrierDataDto();
-        carrier.setFuelLevel(500);
+        carrier.setMeasuredFuelLevel(500);
         session.setFleetCarrierData(carrier);
 
         // The journal is replayed on every start, so a decrement here would compound each launch.

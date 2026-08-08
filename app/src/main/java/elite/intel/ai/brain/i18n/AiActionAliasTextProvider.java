@@ -2,9 +2,7 @@ package elite.intel.ai.brain.i18n;
 
 import elite.intel.i18n.Language;
 
-import java.util.Locale;
-import java.util.MissingResourceException;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public final class AiActionAliasTextProvider {
 
@@ -30,6 +28,17 @@ public final class AiActionAliasTextProvider {
         Locale locale = locale(language);
         if (getBundle(locale).containsKey(key)) return true;
         return getBundle(Locale.ROOT).containsKey(key);
+    }
+
+    /**
+     * Every alias key this language resolves, its own plus the English base keys it falls back to (which
+     * {@link #resolveText} would serve it anyway). Lets a caller walk the whole authored phrase set without
+     * going through the action registries.
+     */
+    public static Set<String> keys(Language language) {
+        Set<String> keys = new LinkedHashSet<>(getBundle(locale(language)).keySet());
+        keys.addAll(getBundle(Locale.ROOT).keySet());
+        return keys;
     }
 
     private static String resolveText(Locale locale, String key) {

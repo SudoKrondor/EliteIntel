@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -126,9 +127,10 @@ public final class ThoughtDispatcher implements ManagedService {
      * {@link #inputNormalizer} (acoustic corrections only) - this is the form used for the reflex gate and, on
      * the LLM path, the reducer, prompt current-input, and conversational memory. The raw words are retained for
      * execution and intake diagnostics. The reflex gate runs first ({@link ReflexResolver}): a canonicalized input that
-     * matches a training phrase verbatim and resolves to exactly one safe command, with every argument the alias
-     * supplies, becomes a deterministic {@code ReflexThought} (no LLM); everything else becomes a full
-     * {@code CommanderThought}.
+     * matches a training phrase - word for word, or as a damaged transcript of one - and resolves to exactly one
+     * safe command, with every argument the alias supplies, becomes a deterministic {@code ReflexThought} (no
+     * LLM); everything else becomes a full {@code CommanderThought}. The intake line names which of the two
+     * matched, {@code (exact)} or {@code (fuzzy)}.
      */
     public void submitCommanderInput(String input) {
         if (input == null || input.isBlank()) {
@@ -163,7 +165,8 @@ public final class ThoughtDispatcher implements ManagedService {
                 .map(reflex -> Thought.reflex(context, reflex.actionId(), reflex.argumentsJson(), dependencies))
                 .orElseGet(() -> Thought.commander(context, dependencies));
         String route = reflexCommand.isPresent()
-                ? "reflex " + reflexCommand.get().actionId() + reflexCommand.get().arguments() + " (exact)"
+                ? "reflex " + reflexCommand.get().actionId() + reflexCommand.get().arguments()
+                + " (" + reflexCommand.get().matchKind().name().toLowerCase(Locale.ROOT) + ")"
                 : "think";
         CompanionDiagnostics.info(thought.trace(), "intake",
                 "\"" + CompanionDiagnostics.truncate(input) + "\" -> " + route);

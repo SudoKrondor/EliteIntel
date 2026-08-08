@@ -83,7 +83,7 @@ class CarrierViewTest {
     @Test
     void fuelAloneIsEnoughToCountAsData() {
         CarrierDataDto data = new CarrierDataDto();
-        data.setFuelLevel(120);
+        data.setMeasuredFuelLevel(120);
 
         assertTrue(view(data, Map.of(), () -> 0).hasData());
     }

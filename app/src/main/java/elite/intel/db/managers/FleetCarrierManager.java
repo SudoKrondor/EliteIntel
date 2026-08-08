@@ -49,7 +49,7 @@ public class FleetCarrierManager {
         carrierData.setDockingAccess(event.getDockingAccess());
         carrierData.setAllowNotorious(event.isAllowNotorious());
         carrierData.setPendingDecommission(event.isPendingDecommission());
-        carrierData.setFuelLevel(event.getFuelLevel());
+        carrierData.setMeasuredFuelLevel(event.getFuelLevel());
 
         if (event.getSpaceUsage() != null) {
             CarrierStatsEvent.SpaceUsage spaceUsage = event.getSpaceUsage();

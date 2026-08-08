@@ -71,7 +71,7 @@ public final class CompanionRuntimeGraphFactory {
 
             memoryGateway = new SessionMemoryGateway();
             memoryConsolidator = new MidTermToLongTermConsolidator(
-                    memoryGateway, llmGateway, speechGateway, runtimeGeneration);
+                    memoryGateway, llmGateway, runtimeGeneration);
             oversizedMemoryCompressor = new OversizedMemoryCompressor(
                     memoryGateway, llmGateway, runtimeGeneration);
             memoryGateway.setPendingConsolidationListener(memoryConsolidator);

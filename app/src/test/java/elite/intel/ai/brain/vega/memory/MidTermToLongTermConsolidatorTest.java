@@ -2,43 +2,39 @@ package elite.intel.ai.brain.vega.memory;
 
 import elite.intel.ai.brain.vega.CompanionRuntimeGeneration;
 import elite.intel.ai.brain.vega.llm.LlmGateway;
-import elite.intel.ai.brain.vega.memory.*;
 import elite.intel.ai.brain.vega.model.llm.LlmRequest;
 import elite.intel.ai.brain.vega.model.llm.LlmResult;
 import elite.intel.ai.brain.vega.model.memory.MemoryKind;
 import elite.intel.ai.brain.vega.model.memory.MemoryRecord;
-import elite.intel.ai.brain.vega.model.speech.SpeechRequest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.ArrayDeque;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Deque;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Consolidation is housekeeping, and it is silent.
+ *
+ * <p>It used to speak: the first failure of a batch submitted "Memory consolidation failed; some older
+ * memory was lost" to the commander, who could do nothing with it. The batch is retained and retried, and
+ * after repeated model failures a bounded local summary is committed instead, so the only thing the notice
+ * ever achieved was to make a recovered failure sound like a fault. The cases that asserted on those notices
+ * are gone with the collaborator: the consolidator no longer holds a {@code SpeechGateway} at all, so being
+ * silent is now guaranteed by construction rather than by an assertion. What the failure path still owes is
+ * the recovery, which {@link #repeatedOversizedCompressionCommitsBoundedLocalFallback} and
+ * {@link #failedBatchRetriesWithoutWaitingForAnotherRecord} cover.
+ */
 class MidTermToLongTermConsolidatorTest {
 
     private static final Executor SYNC = Runnable::run;
 
     private final RecordingMemory memory = new RecordingMemory();
     private final FakeLlm llm = new FakeLlm();
-    private final List<SpeechRequest> notices = new ArrayList<>();
     private final MidTermToLongTermConsolidator consolidator =
-            new MidTermToLongTermConsolidator(memory, llm, request -> {
-                notices.add(request);
-                return CompletableFuture.completedFuture(null);
-            }, SYNC);
+            new MidTermToLongTermConsolidator(memory, llm, SYNC);
 
     private static MemoryRecord event(int index) {
         return MemoryRecord.event(Instant.ofEpochSecond(index), "event-" + index);
@@ -61,7 +57,6 @@ class MidTermToLongTermConsolidatorTest {
         assertEquals(MemoryKind.EVENT, llm.lastKind);
         assertEquals("compact event summary", memory.summaries.get(MemoryKind.EVENT));
         assertEquals("dialogue remains", memory.summaries.get(MemoryKind.DIALOGUE));
-        assertTrue(notices.isEmpty());
     }
 
     @Test
@@ -92,7 +87,6 @@ class MidTermToLongTermConsolidatorTest {
         assertTrue(memory.summaries.get(MemoryKind.EVENT).length()
                 <= CompanionMemoryPolicy.summaryMaxChars());
         assertEquals(CompanionMemoryPolicy.consolidationBatchSize(), memory.committed.size());
-        assertEquals(1, notices.size());
     }
 
     @Test
@@ -113,9 +107,7 @@ class MidTermToLongTermConsolidatorTest {
         BlockingLlm delayedLlm = new BlockingLlm();
         ExecutorService worker = Executors.newSingleThreadExecutor();
         MidTermToLongTermConsolidator delayed = new MidTermToLongTermConsolidator(
-                delayedMemory, delayedLlm,
-                request -> CompletableFuture.completedFuture(null),
-                new CompanionRuntimeGeneration(), worker);
+                delayedMemory, delayedLlm, new CompanionRuntimeGeneration(), worker);
         for (int i = 0; i < CompanionMemoryPolicy.consolidationBatchSize(); i++) {
             delayed.onPending(event(i));
         }

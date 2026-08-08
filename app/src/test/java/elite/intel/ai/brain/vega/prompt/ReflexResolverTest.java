@@ -1,33 +1,47 @@
 package elite.intel.ai.brain.vega.prompt;
 
+import elite.intel.ai.brain.i18n.AiActionLocalizations;
+import elite.intel.ai.brain.i18n.AliasPhrase;
+import elite.intel.ai.brain.i18n.AliasVocabulary;
 import elite.intel.ai.brain.vega.confirm.DangerousActionPolicy;
 import elite.intel.ai.brain.vega.model.GameStateSnapshot;
-import elite.intel.ai.brain.vega.prompt.ReflexResolver;
 import elite.intel.ai.brain.vega.prompt.ReflexResolver.CommandPhrase;
 import elite.intel.session.PlayerSituation;
 import elite.intel.session.Status;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * The reflex gate: an input is a reflex only when it matches a training phrase verbatim and resolves to
- * exactly one safe action whose every required argument is already known. Word overlap, an ambiguous tie, an
- * action still needing argument extraction and a dangerous action are all rejected (they take the LLM /
- * confirmation path instead).
+ * The reflex gate: an input is a reflex only when it matches a training phrase - word for word, or as a
+ * damaged transcript of one - and resolves to exactly one safe action whose every required argument is already
+ * known. Word overlap, an ambiguous tie, an action still needing argument extraction and a dangerous action
+ * are all rejected (they take the LLM / confirmation path instead).
  */
 class ReflexResolverTest {
 
     private static final DangerousActionPolicy NOTHING_DANGEROUS = invocation -> false;
 
+    /**
+     * Injects the vocabulary alongside the commands, so a case is matched against its own aliases rather than
+     * against whichever words the shipped bundles happen to contain. Mirrors production, where every word of
+     * every authored alias is by definition a word we wrote.
+     */
     private static ReflexResolver resolver(List<CommandPhrase> commands, DangerousActionPolicy danger) {
-        return new ReflexResolver(() -> commands, danger);
+        return new ReflexResolver(() -> commands, danger, () -> vocabularyOf(commands));
+    }
+
+    private static Set<String> vocabularyOf(List<CommandPhrase> commands) {
+        Set<String> words = new HashSet<>();
+        for (CommandPhrase command : commands) {
+            for (String phrase : AiActionLocalizations.splitPhraseGroup(command.phraseGroup())) {
+                words.addAll(AliasVocabulary.tokenize(AliasPhrase.parse(phrase).spokenText()));
+            }
+        }
+        return words;
     }
 
     /**
@@ -83,12 +97,57 @@ class ReflexResolverTest {
     }
 
     @Test
-    void nonVerbatimInputIsNotAReflex() {
+    void looseWordOverlapIsNotAReflex() {
         ReflexResolver resolver = resolver(
                 List.of(new CommandPhrase("open_nav", "open navigation", true)), NOTHING_DANGEROUS);
 
         assertTrue(resolver.resolve("open the navigation panel please").isEmpty(),
-                "word overlap is not enough - the phrase must match verbatim");
+                "sharing words is not enough - the phrase must match the alias word for word, or be a "
+                        + "same-length damaged rendering of it");
+    }
+
+    /**
+     * The transcript is the only text in this pipeline nobody authored, so a mis-transcribed word is repaired
+     * rather than escalated - but only while every other word of the phrase still agrees.
+     */
+    @Test
+    void aDamagedWordIsStillAReflexWhenTheRestOfThePhraseAgrees() {
+        ReflexResolver resolver = resolver(
+                List.of(new CommandPhrase("open_nav", "open navigation", true)), NOTHING_DANGEROUS);
+
+        assertEquals(Optional.of("open_nav"), actionId(resolver.resolve("open navigashon")));
+        assertEquals(ReflexResolver.MatchKind.FUZZY,
+                resolver.resolve("open navigashon").orElseThrow().matchKind());
+        assertEquals(ReflexResolver.MatchKind.EXACT,
+                resolver.resolve("open navigation").orElseThrow().matchKind(),
+                "an authored alias must never be reported as a repair");
+    }
+
+    /**
+     * A word that appears in some alias was written by us, so the commander said it. Without this the repair
+     * would quietly rewrite one command into another that happens to sit one letter away.
+     */
+    @Test
+    void aWordWeAuthoredIsNeverTreatedAsDamage() {
+        ReflexResolver resolver = resolver(List.of(
+                new CommandPhrase("launch_fighter", "launch fighter", true),
+                new CommandPhrase("find_lunch", "lunch spot", true)), NOTHING_DANGEROUS);
+
+        assertTrue(resolver.resolve("lunch fighter").isEmpty(),
+                "\"lunch\" is a word we wrote, so it is not a mis-heard \"launch\"");
+    }
+
+    /**
+     * Two actions reachable from one damaged phrase is the case the reflex must not gamble on, exactly as for
+     * a shared verbatim phrase.
+     */
+    @Test
+    void anAmbiguousRepairIsNotAReflex() {
+        ReflexResolver resolver = resolver(List.of(
+                new CommandPhrase("deploy_gear", "deploy gear", true),
+                new CommandPhrase("deploy_nets", "deploy near", true)), NOTHING_DANGEROUS);
+
+        assertTrue(resolver.resolve("deploy xear").isEmpty(), "one letter from both - the LLM disambiguates");
     }
 
     @Test
