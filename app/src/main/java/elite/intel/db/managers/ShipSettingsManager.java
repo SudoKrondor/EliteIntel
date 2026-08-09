@@ -25,6 +25,7 @@ public class ShipSettingsManager {
                 shipSettings.setHonkTrigger(1);
                 shipSettings.setHonkFireGroup("A");
                 shipSettings.setHonkOnJump(false);
+                shipSettings.setHgeAlerts(false);
                 dao.save(shipSettings);
             }
             return shipSettings;

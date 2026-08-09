@@ -29,6 +29,11 @@ public class ShipSettingsPopup {
                 shipSettings::getHonkTrigger,
                 shipSettings::setHonkTrigger
         ));
+        rows.add(new CheckboxRow(
+                getText("automation.hgeMaterialAlert"),
+                shipSettings::isHgeAlerts,
+                shipSettings::setHgeAlerts
+        ));
 
         TradeProfileDao.TradeProfile tradeProfile =
                 TradeProfileManager.getInstance().getOrCreateProfile(shipSettings.getShipId());

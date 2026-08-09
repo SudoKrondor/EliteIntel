@@ -2,6 +2,7 @@ package elite.intel.gameapi.search.spansh.station.interstellarfactors;
 
 import com.google.gson.annotations.SerializedName;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
+import elite.intel.gameapi.search.spansh.station.StationSearchHit;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -93,7 +94,7 @@ public class InterstellarFactorsResultDto extends BaseJsonDto implements ToJsonC
         }
     }
 
-    public static class Result implements ToJsonConvertible {
+    public static class Result implements ToJsonConvertible, StationSearchHit {
 
         @SerializedName("allegiance")
         private String allegiance;

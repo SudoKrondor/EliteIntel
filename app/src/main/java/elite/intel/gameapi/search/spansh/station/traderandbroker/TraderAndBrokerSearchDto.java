@@ -2,6 +2,7 @@ package elite.intel.gameapi.search.spansh.station.traderandbroker;
 
 import com.google.gson.annotations.SerializedName;
 import elite.intel.gameapi.gamestate.dtos.BaseJsonDto;
+import elite.intel.gameapi.search.spansh.station.StationSearchHit;
 import elite.intel.util.json.GsonFactory;
 import elite.intel.util.json.ToJsonConvertible;
 
@@ -35,7 +36,7 @@ public class TraderAndBrokerSearchDto extends BaseJsonDto implements ToJsonConve
         return results;
     }
 
-    public static class Result implements ToJsonConvertible {
+    public static class Result implements ToJsonConvertible, StationSearchHit {
 
         @SerializedName("controlling_minor_faction")
         private String controllingMinorFaction;

@@ -19,6 +19,14 @@ import static elite.intel.util.StringUtls.localizedEvent;
 
 public class TradersAndBrokersSearch {
 
+    /**
+     * How many candidates to ask Spansh for. Deliberately larger than the one result we use: every
+     * station in the commander's own system is dropped before we pick (see
+     * {@link #excludeCurrentSystem}) and a busy home system can account for several of them, then a
+     * pledged commander skips past stations held by a rival power. The list has to survive both.
+     */
+    private static final int SEARCH_PAGE_SIZE = 10;
+
     private static TradersAndBrokersSearch instance;
     private static PlayerSession playerSession;
 
@@ -40,7 +48,7 @@ public class TradersAndBrokersSearch {
         LocationDao.Coordinates galacticCoordinates = locationManager.getGalacticCoordinates();
 
         TraderAndBrokerSearchCriteria criteria = new TraderAndBrokerSearchCriteria();
-        criteria.setSize(5);
+        criteria.setSize(SEARCH_PAGE_SIZE);
         criteria.setPage(0);
 
         TraderAndBrokerSearchCriteria.ReferenceCoords coordinates = new TraderAndBrokerSearchCriteria.ReferenceCoords();
@@ -88,7 +96,15 @@ public class TradersAndBrokersSearch {
             return null;
         }
 
-        results = results.stream().sorted(Comparator.comparingDouble(TraderAndBrokerSearchDto.Result::getDistance)).toList();
+        results = CurrentSystemFilter.exclude(results, playerSession.getPrimaryStarName())
+                .stream()
+                .sorted(Comparator.comparingDouble(TraderAndBrokerSearchDto.Result::getDistance))
+                .toList();
+
+        if (results.isEmpty()) {
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
+            return null;
+        }
 
         TraderAndBrokerSearchDto.Result result = null;
         String pledgedPower = playerSession.getRankAndProgressDto().getPledgedToPower();
@@ -107,18 +123,22 @@ public class TradersAndBrokersSearch {
             }
         }
 
-        if (result != null) {
-            GameEventBus.publish(
-                    new AiVoxResponseEvent(localizedEvent("event.search.headTo",
-                            result.getSystemName(),
-                            result.getStationName(),
-                            TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)))
-            );
-            ReminderManager.getInstance().setReminder(
-                    localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName()
-            );
-            return result.getSystemName();
+        if (result == null) {
+            // WHY: every candidate sits in rival-power space. Saying so beats the silent null this
+            // used to return, which left the commander with no route and no explanation.
+            GameEventBus.publish(new AiVoxResponseEvent(localizedEvent("event.search.noMatch")));
+            return null;
         }
-        return null;
+
+        GameEventBus.publish(
+                new AiVoxResponseEvent(localizedEvent("event.search.headTo",
+                        result.getSystemName(),
+                        result.getStationName(),
+                        TimeUtils.transformToYMDHtimeAgo(result.getUpdatedAt(), TimeUtils.LOCAL_DATE_TIME)))
+        );
+        ReminderManager.getInstance().setReminder(
+                localizedEvent("event.search.reminder", result.getStationName()), result.getSystemName()
+        );
+        return result.getSystemName();
     }
 }

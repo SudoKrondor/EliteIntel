@@ -8,13 +8,16 @@ import elite.intel.db.dao.LocationDao;
 import elite.intel.db.managers.LocationManager;
 import elite.intel.db.managers.ReminderManager;
 import elite.intel.gameapi.inputs.RoutePlotter;
+import elite.intel.gameapi.search.spansh.station.CurrentSystemFilter;
 import elite.intel.gameapi.search.spansh.station.vista.VistaGenomicsLocationDto;
 import elite.intel.gameapi.search.spansh.station.vista.VistaGenomicsSearch;
 import elite.intel.gameapi.search.spansh.station.vista.VistaSearchCriteria;
+import elite.intel.session.PlayerSession;
 import elite.intel.session.Status;
 import elite.intel.util.StringUtls;
 import elite.intel.util.json.GetNumberFromParam;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,12 +73,16 @@ public final class FindVistaGenomicsCommand implements IntelCommand {
         coords.setZ(galacticCoordinates.z());
         criteria.setReferenceCoords(coords);
 
-        List<VistaGenomicsLocationDto.Result> results = VistaGenomicsSearch.findVistaGenomics(criteria);
-        if (results == null || results.isEmpty()) {
+        List<VistaGenomicsLocationDto.Result> results = CurrentSystemFilter.exclude(
+                VistaGenomicsSearch.findVistaGenomics(criteria), PlayerSession.getInstance().getPrimaryStarName());
+        if (results.isEmpty()) {
             return StringUtls.localizedResponse("handler.vistaGenomics.notFound");
         }
 
-        Optional<VistaGenomicsLocationDto.Result> first = results.stream().findFirst();
+        // Unlike the other station searches this DTO hands back Spansh's order untouched, so nearest
+        // has to be picked rather than assumed.
+        Optional<VistaGenomicsLocationDto.Result> first =
+                results.stream().min(Comparator.comparingDouble(VistaGenomicsLocationDto.Result::getDistance));
         RoutePlotter routePlotter = new RoutePlotter();
         VistaGenomicsLocationDto.Result result = first.get();
 

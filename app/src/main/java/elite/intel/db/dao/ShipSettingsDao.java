@@ -19,12 +19,13 @@ public interface ShipSettingsDao {
 
 
     @SqlUpdate("""
-            INSERT INTO ship_settings (shipId, honkTrigger, honkFireGroup, honkOnJump)
-            values(:shipId, :honkTrigger, :honkFireGroup, :honkOnJump)
+            INSERT INTO ship_settings (shipId, honkTrigger, honkFireGroup, honkOnJump, hgeAlerts)
+            values(:shipId, :honkTrigger, :honkFireGroup, :honkOnJump, :hgeAlerts)
                 on conflict (shipId) do update set
                     honkTrigger   = excluded.honkTrigger,
                     honkFireGroup = excluded.honkFireGroup,
-                    honkOnJump    = excluded.honkOnJump
+                    honkOnJump    = excluded.honkOnJump,
+                    hgeAlerts     = excluded.hgeAlerts
             """)
     void save(@BindBean ShipSettingsDao.ShipSettings settings);
 
@@ -37,6 +38,7 @@ public interface ShipSettingsDao {
             entity.setHonkTrigger(rs.getInt("honkTrigger"));
             entity.setHonkFireGroup(rs.getString("honkFireGroup"));
             entity.setHonkOnJump(rs.getBoolean("honkOnJump"));
+            entity.setHgeAlerts(rs.getBoolean("hgeAlerts"));
             return entity;
         }
     }
@@ -46,6 +48,7 @@ public interface ShipSettingsDao {
         int honkTrigger;
         String honkFireGroup;
         boolean honkOnJump;
+        boolean hgeAlerts;
 
         public int getShipId() {
             return shipId;
@@ -77,6 +80,14 @@ public interface ShipSettingsDao {
 
         public void setHonkOnJump(boolean honkOnJump) {
             this.honkOnJump = honkOnJump;
+        }
+
+        public boolean isHgeAlerts() {
+            return hgeAlerts;
+        }
+
+        public void setHgeAlerts(boolean hgeAlerts) {
+            this.hgeAlerts = hgeAlerts;
         }
     }
 }
